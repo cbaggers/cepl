@@ -3,4 +3,4 @@
 (in-package #:cepl)
 
 (defun test ()
-  (print "test func"))
+  (print "Test Func"))

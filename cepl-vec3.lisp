@@ -5,7 +5,7 @@
 ;;; Maths bits, not in the right place but I just need
 ;;; to start writing.
 
-;;; need to inline
+;;; Need to inline
 ;;; we will make destructive and no destructive versions,
 ;;; looking at some existing code the desctructive versions
 ;;; end up being comparitively fast to C. I will use -d as local
