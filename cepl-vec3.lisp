@@ -5,9 +5,6 @@
 ;;; Maths bits, not in the right place but I just need
 ;;; to start writing.
 
-;;; need a zero, unit-x, unit-y, unit-z, negative of all units
-;;; & unit scale (all 1's)
-
 ;;; need to inline
 ;;; we will make destructive and no destructive versions,
 ;;; looking at some existing code the desctructive versions
@@ -26,8 +23,25 @@
 
 ;;; vector3 operations
 
-(defun vec3 (x y z)
+;;; need a zero, unit-x, unit-y, unit-z, negative of all units
+;;; & unit scale (all 1's)
+
+(defun vec3 (&optional (x 0) (y 0) (z 0))
   (vector x y z))
+
+(defparameter *unit-x* (vector 1.0 0.0 0.0))
+(defparameter *unit-y* (vector 0.0 1.0 0.0))
+(defparameter *unit-z* (vector 0.0 0.0 1.0))
+(defparameter *unit-scale* (vector 1.0 1.0 1.0))
+
+(defun c-x (u)
+  (svref u 0))
+
+(defun c-y (u)
+  (svref u 1))
+
+(defun c-z (u)
+  (svref u 2))
 
 (defun c-= (u v)
   (and (= (svref u 0) (svref v 0))
@@ -120,15 +134,15 @@
     (+ (* ux vx) (* uy vy) (* uz vz))))
 
 (defun c-absolute-dot (u v) 
-  (let ((ux (svref u 0))
-	(uy (svref u 1))
-	(uz (svref u 2))
-	(vx (svref v 0))
-	(vy (svref v 1))
-	(vz (svref v 2)))
-    (+ (abs (* ux vx)) (abs (* uy vy)) (abs (* uz vz)))))
+  (+ (abs (* (c-x u) (c-x v))) 
+     (abs (* (c-y u) (c-y v))) 
+     (abs (* (c-z u) (c-z v)))))
 
 (defun c-normalize (u)
+  "This normalizes the vector, it makes sure a zero length
+   vector won't throw an error and assumes any length less
+   than 1e-08 is 0. THis makes sense with floating point
+   inaccuracies."
   (let ((a (c-length u))) 
     (if (> a 1e-08) 
 	(c-/ u a)
