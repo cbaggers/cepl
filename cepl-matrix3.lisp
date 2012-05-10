@@ -1,5 +1,10 @@
 (in-package #:cepl-matrix3)
 
+;; Read page 85 of 'Essential Mathematics for Games
+;; and realtime applications' under 'implementation'
+;; to see how we should store the matrices... I think
+;; this current work is wrong, or at least less good :)
+
 ;; Code adapted from Ogre which in turn was adapted 
 ;; from Wild Magic 0.2 Matrix math (free source code 
 ;; http://www.geometrictools.com/) and also from Nklien's
@@ -39,33 +44,59 @@
 ;; this again
 ;; const unsigned int Matrix3::ms_iSvdMaxIterations = 32;
 
+;; [TODO] Ultimately I want to have all math function contents
+;; generated at compile time by macros so we can set a single
+;; flag for left or right handed co-ord systems and have it 
+;; properly handled
+
+;----------------------------------------------------------------
+
+;; [TODO] Does this need to be able to take values?
 (defun make-matrix3 ()
-  (make-array 9 :initial-element 0))
+  (make-array 9 :initial-element 0.0
+	      :element-type `single-float))
+
+;----------------------------------------------------------------
+
+(defun from-axes (x-axis y-axis z-axis)
+  (let ((mat (make-matrix3)))
+    (setf (aref mat 0) (aref x-axis 0))
+    (setf (aref mat 1) (aref y-axis 0))
+    (setf (aref mat 2) (aref z-axis 0))
+    (setf (aref mat 3) (aref x-axis 1))
+    (setf (aref mat 4) (aref y-axis 1))
+    (setf (aref mat 5) (aref z-axis 1))
+    (setf (aref mat 6) (aref x-axis 2))
+    (setf (aref mat 7) (aref y-axis 2))
+    (setf (aref mat 8) (aref z-axis 2))
+    mat))
 
 ;----------------------------------------------------------------
 
 (defun matrix-row (matrix row-num)
   (assert (and (>= row-num 0) (< row-num 3)))
   (let ((offset (* row-num 3)))
-    (vector (aref matrix offset)
-	    (aref matrix (+ 1 offset))
-	    (aref matrix (+ 2 offset)))))
+    (cepl-vec3:make-vector3 (aref matrix offset)
+			    (aref matrix (+ 1 offset))
+			    (aref matrix (+ 2 offset)))))
 
 ;----------------------------------------------------------------
 
 (defun matrix-column (matrix col-num)
   (assert (and (>= col-num 0) (< col-num 3)))
-  (vector (aref matrix col-num)
-	  (aref matrix (+ 3 col-num))
-	  (aref matrix (+ 6 col-num))))
+  (cepl-vec3:make-vector3 (aref matrix col-num)
+			  (aref matrix (+ 3 col-num))
+			  (aref matrix (+ 6 col-num))))
 
 ;----------------------------------------------------------------
 
-(defun matrix-element (matrix row col)
-  (aref matrix (+ col (* row 3))))
+(defmacro matrix-elm (matrix-a row col)
+    `(aref ,matrix-a ,(+ col (* row 3))))
 
 ;----------------------------------------------------------------
 
+;; [TODO] Bah I dont like functions for constants, must be nice way
+;; of doing this
 (defun c-identity ()
   #(1 0 0 0 1 0 0 0 1))
 
@@ -104,9 +135,15 @@
 	 (loop for col-num below 3
 	      do (let ((row (matrix-row matrix-a))
 		       (col (matrix-column matrix b)))
-		   (setf (aref result (+ col (* row 3)) 
-				(+ ()))))))
+		   (setf (matrix-elm result row-num col-num)
+			 (+ (* (aref row 0) (aref col 0))
+			    (* (aref row 1) (aref col 1))
+			    (* (aref row 2) (aref col 2)))))))
     result))
+
+;----------------------------------------------------------------
+
+;(defun c-*)
 
 ;----------------------------------------------------------------
 

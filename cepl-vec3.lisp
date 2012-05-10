@@ -345,7 +345,12 @@
    will <b>NOT</b> be normalised, to maximise efficiency
    The returned vector will be on the side from which the arc 
    from u to v is anticlockwise.
-   This is because CEPL uses a right-handed coordinate system."
+   This is because CEPL uses a right-handed coordinate system.
+   Another note on the cross product is that if vector-a and 
+   vector-b are normalized the length of the resulting vector
+   will be sin(a) where a is the angle between the two vectors.
+   The fact that we don't normalize may be useful in our 
+   quaternion functions later on."
   (declare ((simple-array single-float (3)) vector-a vector-b))
   (let ((ux (c-x vector-a))
 	(uy (c-y vector-a))
