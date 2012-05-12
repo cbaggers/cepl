@@ -2,7 +2,10 @@
 
 (defpackage #:base
   (:use #:cl)
-  (:export :float-zero))
+  (:export :float-zero
+	   :+float-threshold+
+	   :c-sqrt
+	   :c-inv-sqrt))
 
 (defpackage #:cepl-vec3
   (:use #:cl #:base)

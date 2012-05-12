@@ -61,7 +61,7 @@
 ;; version of the matrix. The rest of the code does not need to 
 ;; 'know'
 
-(defmacro matrix-elm (matrix-a row col)
+(defmacro m-elm (matrix-a row col)
   (cond ((and (numberp row) (numberp col)) 
 	 `(aref ,matrix-a ,(+ row (* col 3))))
 	((numberp col)
@@ -80,15 +80,15 @@
 
 (defun make-matrix3 ( a b c d e f g h i )
   (let ((result (zero-matrix3)))
-    (setf (matrix-elm result 0 0) a)
-    (setf (matrix-elm result 0 1) b)
-    (setf (matrix-elm result 0 2) c)
-    (setf (matrix-elm result 1 0) d)
-    (setf (matrix-elm result 1 1) e)
-    (setf (matrix-elm result 1 2) f)
-    (setf (matrix-elm result 2 0) g)
-    (setf (matrix-elm result 2 1) h)
-    (setf (matrix-elm result 2 2) i)
+    (setf (m-elm result 0 0) a)
+    (setf (m-elm result 0 1) b)
+    (setf (m-elm result 0 2) c)
+    (setf (m-elm result 1 0) d)
+    (setf (m-elm result 1 1) e)
+    (setf (m-elm result 1 2) f)
+    (setf (m-elm result 2 0) g)
+    (setf (m-elm result 2 1) h)
+    (setf (m-elm result 2 2) i)
     result))
 
 ;----------------------------------------------------------------
@@ -107,22 +107,22 @@
 ;----------------------------------------------------------------
 
 (defun get-rows (matrix-a)
-   (list (cepl-vec3:make-vector3 (matrix-elm matrix-a 0 0)
-				 (matrix-elm matrix-a 1 0)
-				 (matrix-elm matrix-a 2 0))
-	 (cepl-vec3:make-vector3 (matrix-elm matrix-a 0 1)
-				 (matrix-elm matrix-a 1 1)
-				 (matrix-elm matrix-a 2 1))
-	 (cepl-vec3:make-vector3 (matrix-elm matrix-a 0 2)
-				 (matrix-elm matrix-a 1 2)
-				 (matrix-elm matrix-a 2 2))))
+   (list (cepl-vec3:make-vector3 (m-elm matrix-a 0 0)
+				 (m-elm matrix-a 1 0)
+				 (m-elm matrix-a 2 0))
+	 (cepl-vec3:make-vector3 (m-elm matrix-a 0 1)
+				 (m-elm matrix-a 1 1)
+				 (m-elm matrix-a 2 1))
+	 (cepl-vec3:make-vector3 (m-elm matrix-a 0 2)
+				 (m-elm matrix-a 1 2)
+				 (m-elm matrix-a 2 2))))
 
 ;----------------------------------------------------------------
 
 (defun get-row (matrix-a row-num)
-  (cepl-vec3:make-vector3 (matrix-elm matrix-a 0 row-num)
-			  (matrix-elm matrix-a 1 row-num)
-			  (matrix-elm matrix-a 2 row-num)))
+  (cepl-vec3:make-vector3 (m-elm matrix-a 0 row-num)
+			  (m-elm matrix-a 1 row-num)
+			  (m-elm matrix-a 2 row-num)))
 
 ;----------------------------------------------------------------
 
@@ -140,22 +140,22 @@
 ;----------------------------------------------------------------
 
 (defun get-columns (matrix-a)
-   (list (cepl-vec3:make-vector3 (matrix-elm matrix-a 0 0)
-				 (matrix-elm matrix-a 0 1)
-				 (matrix-elm matrix-a 0 2))
-	 (cepl-vec3:make-vector3 (matrix-elm matrix-a 1 0)
-				 (matrix-elm matrix-a 1 1)
-				 (matrix-elm matrix-a 1 2))
-	 (cepl-vec3:make-vector3 (matrix-elm matrix-a 2 0)
-				 (matrix-elm matrix-a 2 1)
-				 (matrix-elm matrix-a 2 2))))
+   (list (cepl-vec3:make-vector3 (m-elm matrix-a 0 0)
+				 (m-elm matrix-a 0 1)
+				 (m-elm matrix-a 0 2))
+	 (cepl-vec3:make-vector3 (m-elm matrix-a 1 0)
+				 (m-elm matrix-a 1 1)
+				 (m-elm matrix-a 1 2))
+	 (cepl-vec3:make-vector3 (m-elm matrix-a 2 0)
+				 (m-elm matrix-a 2 1)
+				 (m-elm matrix-a 2 2))))
 
 ;----------------------------------------------------------------
 
 (defun get-column (matrix-a col-num)
-  (cepl-vec3:make-vector3 (matrix-elm matrix-a col-num 0)
-			  (matrix-elm matrix-a col-num 1)
-			  (matrix-elm matrix-a col-num 2)))
+  (cepl-vec3:make-vector3 (m-elm matrix-a col-num 0)
+			  (m-elm matrix-a col-num 1)
+			  (m-elm matrix-a col-num 2)))
 
 ;----------------------------------------------------------------
 
@@ -193,21 +193,21 @@
 ;;[TODO] should definately inline this 
 ;;[TODO] Would it be faster not to have to cofactors too?
 (defun determinate-cramer (matrix-a)
-  (let ((cofactor-0 (- (* (matrix-elm matrix-a 1 1)
-			  (matrix-elm matrix-a 2 2))
-		       (* (matrix-elm matrix-a 1 2)
-			  (matrix-elm matrix-a 2 1))))
-	(cofactor-3 (- (* (matrix-elm matrix-a 0 2)
-			  (matrix-elm matrix-a 2 1))
-		       (* (matrix-elm matrix-a 0 1)
-			  (matrix-elm matrix-a 2 2))))
-	(cofactor-6 (- (* (matrix-elm matrix-a 0 1)
-			  (matrix-elm matrix-a 1 2))
-		       (* (matrix-elm matrix-a 0 2)
-			  (matrix-elm matrix-a 1 1)))))
-    (values (+ (* (matrix-elm matrix-a 0 0) cofactor-0)
-	       (* (matrix-elm matrix-a 1 0) cofactor-3)
-	       (* (matrix-elm matrix-a 2 0) cofactor-6))
+  (let ((cofactor-0 (- (* (m-elm matrix-a 1 1)
+			  (m-elm matrix-a 2 2))
+		       (* (m-elm matrix-a 1 2)
+			  (m-elm matrix-a 2 1))))
+	(cofactor-3 (- (* (m-elm matrix-a 0 2)
+			  (m-elm matrix-a 2 1))
+		       (* (m-elm matrix-a 0 1)
+			  (m-elm matrix-a 2 2))))
+	(cofactor-6 (- (* (m-elm matrix-a 0 1)
+			  (m-elm matrix-a 1 2))
+		       (* (m-elm matrix-a 0 2)
+			  (m-elm matrix-a 1 1)))))
+    (values (+ (* (m-elm matrix-a 0 0) cofactor-0)
+	       (* (m-elm matrix-a 1 0) cofactor-3)
+	       (* (m-elm matrix-a 2 0) cofactor-6))
 	    cofactor-0 cofactor-3 cofactor-6)))
 
 ;----------------------------------------------------------------
@@ -222,92 +222,92 @@
       (make-matrix3 (* inv-det cofactor-0)
 		    (* inv-det cofactor-3)
 		    (* inv-det cofactor-6)
-		    (* inv-det (- (* (matrix-elm matrix-a 1 2)
-				     (matrix-elm matrix-a 2 0))
-				  (* (matrix-elm matrix-a 1 0)
-				     (matrix-elm matrix-a 2 2))))
-		    (* inv-det (- (* (matrix-elm matrix-a 0 0)
-				     (matrix-elm matrix-a 2 2))
-				  (* (matrix-elm matrix-a 0 2)
-				     (matrix-elm matrix-a 2 0))))
-		    (* inv-det (- (* (matrix-elm matrix-a 0 2)
-				     (matrix-elm matrix-a 1 0))
-				  (* (matrix-elm matrix-a 0 0 )
-				     (matrix-elm matrix-a 1 2))))
-		    (* inv-det (- (* (matrix-elm matrix-a 1 0)
-				     (matrix-elm matrix-a 2 1))
-				  (* (matrix-elm matrix-a 1 1)
-				     (matrix-elm matrix-a 2 0))))
-		    (* inv-det (- (* (matrix-elm matrix-a 0 1)
-				     (matrix-elm matrix-a 2 0))
-				  (* (matrix-elm matrix-a 0 0)
-				     (matrix-elm matrix-a 2 1))))
-		    (* inv-det (- (* (matrix-elm matrix-a 0 0)
-				     (matrix-elm matrix-a 1 1))
-				  (* (matrix-elm matrix-a 0 1)
-				     (matrix-elm matrix-a 1 0))))))))
+		    (* inv-det (- (* (m-elm matrix-a 1 2)
+				     (m-elm matrix-a 2 0))
+				  (* (m-elm matrix-a 1 0)
+				     (m-elm matrix-a 2 2))))
+		    (* inv-det (- (* (m-elm matrix-a 0 0)
+				     (m-elm matrix-a 2 2))
+				  (* (m-elm matrix-a 0 2)
+				     (m-elm matrix-a 2 0))))
+		    (* inv-det (- (* (m-elm matrix-a 0 2)
+				     (m-elm matrix-a 1 0))
+				  (* (m-elm matrix-a 0 0 )
+				     (m-elm matrix-a 1 2))))
+		    (* inv-det (- (* (m-elm matrix-a 1 0)
+				     (m-elm matrix-a 2 1))
+				  (* (m-elm matrix-a 1 1)
+				     (m-elm matrix-a 2 0))))
+		    (* inv-det (- (* (m-elm matrix-a 0 1)
+				     (m-elm matrix-a 2 0))
+				  (* (m-elm matrix-a 0 0)
+				     (m-elm matrix-a 2 1))))
+		    (* inv-det (- (* (m-elm matrix-a 0 0)
+				     (m-elm matrix-a 1 1))
+				  (* (m-elm matrix-a 0 1)
+				     (m-elm matrix-a 1 0))))))))
 
 ;----------------------------------------------------------------
 
 (defun transpose (matrix-a)
-  (make-matrix3 (matrix-elm matrix-a 0 0)
-		(matrix-elm matrix-a 1 0)
-		(matrix-elm matrix-a 2 0)
-		(matrix-elm matrix-a 0 1)
-		(matrix-elm matrix-a 1 1)
-		(matrix-elm matrix-a 2 1)
-		(matrix-elm matrix-a 0 2)
-		(matrix-elm matrix-a 1 2)
-		(matrix-elm matrix-a 2 2)))
+  (make-matrix3 (m-elm matrix-a 0 0)
+		(m-elm matrix-a 1 0)
+		(m-elm matrix-a 2 0)
+		(m-elm matrix-a 0 1)
+		(m-elm matrix-a 1 1)
+		(m-elm matrix-a 2 1)
+		(m-elm matrix-a 0 2)
+		(m-elm matrix-a 1 2)
+		(m-elm matrix-a 2 2)))
 
 ;----------------------------------------------------------------
 
 ;;This is taken straight from 'Essential Mathematics for Game..'
 ;; Must be a more efficient way :)
 (defun adjoint (matrix-a)
-  (make-matrix3  (- (* (matrix-elm matrix-a 1 1)
-		       (matrix-elm matrix-a 2 2))
-		    (* (matrix-elm matrix-a 1 2)
-		       (matrix-elm matrix-a 2 1)))
-		 (- (* (matrix-elm matrix-a 0 2)
-		       (matrix-elm matrix-a 2 1))
-		    (* (matrix-elm matrix-a 0 1)
-		       (matrix-elm matrix-a 2 2)))
-		 (- (* (matrix-elm matrix-a 0 1)
-		       (matrix-elm matrix-a 1 2))
-		    (* (matrix-elm matrix-a 0 2)
-		       (matrix-elm matrix-a 1 1)))
-		 (- (* (matrix-elm matrix-a 1 2)
-		       (matrix-elm matrix-a 2 0))
-		    (* (matrix-elm matrix-a 1 0)
-		       (matrix-elm matrix-a 2 2)))
-		 (- (* (matrix-elm matrix-a 0 0)
-		       (matrix-elm matrix-a 2 2))
-		    (* (matrix-elm matrix-a 0 2)
-		       (matrix-elm matrix-a 2 0)))
-		 (- (* (matrix-elm matrix-a 0 2)
-		       (matrix-elm matrix-a 1 0))
-		    (* (matrix-elm matrix-a 0 0)
-		       (matrix-elm matrix-a 1 2)))
-		 (- (* (matrix-elm matrix-a 1 0)
-		       (matrix-elm matrix-a 2 1))
-		    (* (matrix-elm matrix-a 1 1)
-		       (matrix-elm matrix-a 2 0)))
-		 (- (* (matrix-elm matrix-a 0 1)
-		       (matrix-elm matrix-a 2 0))
-		    (* (matrix-elm matrix-a 0 0)
-		       (matrix-elm matrix-a 2 1)))
-		 (- (* (matrix-elm matrix-a 0 0)
-		       (matrix-elm matrix-a 1 1))
-		    (* (matrix-elm matrix-a 0 1)
-		       (matrix-elm matrix-a 1 0)))))
+  (make-matrix3  (- (* (m-elm matrix-a 1 1)
+		       (m-elm matrix-a 2 2))
+		    (* (m-elm matrix-a 1 2)
+		       (m-elm matrix-a 2 1)))
+		 (- (* (m-elm matrix-a 0 2)
+		       (m-elm matrix-a 2 1))
+		    (* (m-elm matrix-a 0 1)
+		       (m-elm matrix-a 2 2)))
+		 (- (* (m-elm matrix-a 0 1)
+		       (m-elm matrix-a 1 2))
+		    (* (m-elm matrix-a 0 2)
+		       (m-elm matrix-a 1 1)))
+		 (- (* (m-elm matrix-a 1 2)
+		       (m-elm matrix-a 2 0))
+		    (* (m-elm matrix-a 1 0)
+		       (m-elm matrix-a 2 2)))
+		 (- (* (m-elm matrix-a 0 0)
+		       (m-elm matrix-a 2 2))
+		    (* (m-elm matrix-a 0 2)
+		       (m-elm matrix-a 2 0)))
+		 (- (* (m-elm matrix-a 0 2)
+		       (m-elm matrix-a 1 0))
+		    (* (m-elm matrix-a 0 0)
+		       (m-elm matrix-a 1 2)))
+		 (- (* (m-elm matrix-a 1 0)
+		       (m-elm matrix-a 2 1))
+		    (* (m-elm matrix-a 1 1)
+		       (m-elm matrix-a 2 0)))
+		 (- (* (m-elm matrix-a 0 1)
+		       (m-elm matrix-a 2 0))
+		    (* (m-elm matrix-a 0 0)
+		       (m-elm matrix-a 2 1)))
+		 (- (* (m-elm matrix-a 0 0)
+		       (m-elm matrix-a 1 1))
+		    (* (m-elm matrix-a 0 1)
+		       (m-elm matrix-a 1 0)))))
 
 ;----------------------------------------------------------------
 
-(defun trace (matrix-a)
-  (+ (matrix-elm matrix-a 0 0)
-     (matrix-elm matrix-a 1 1)
-     (matrix-elm matrix-a 2 2)))
+(defun c-trace (matrix-a)
+  (+ (m-elm matrix-a 0 0)
+     (m-elm matrix-a 1 1)
+     (m-elm matrix-a 2 2)))
 
 ;----------------------------------------------------------------
 
@@ -315,7 +315,7 @@
 
 ;----------------------------------------------------------------
 
-(defun rotation-euler (x y z)
+(defun make-rotation-matrix-euler (x y z)
   (let ((cx (cos x))
 	(cy (cos y))
 	(cz (cos z))
@@ -323,14 +323,187 @@
 	(sy (sin y))
 	(sz (sin z)))
     (make-matrix3 (* cy cz)
-		  (- (* cy sz))
-		  sy
 		  (+ (* sx sy cz) (* cx sz))
-		  (+ (- (* sx sy sz)) (* cx sz))
-		  (- (* sx cy))
 		  (+ (- (* cx sy cz)) (* sx sz))
+		  (- (* cy sz))
+		  (+ (- (* sx sy sz)) (* cx sz))
 		  (+ (* cx sy sz) (* sx cz))
+		  sy
+		  (- (* sx cy))
 		  (* cx cy))))
+
+;----------------------------------------------------------------
+
+;;not sure if there was a mistake in the book calculating
+;;tyz
+(defun make-rotation-matrix-aa (axis angle)
+  (let* ((c-a (cos angle))
+	 (s-a (sin angle))
+	 (tt (- 1.0 c-a))
+	 (norm-axis (cepl-vec3:c-normalize axis))
+	 (tx (* tt (cepl-vec3:c-x norm-axis)))
+	 (ty (* tt (cepl-vec3:c-y norm-axis)))
+	 (tz (* tt (cepl-vec3:c-z norm-axis)))
+	 (sx (* s-a (cepl-vec3:c-x norm-axis)))
+	 (sy (* s-a (cepl-vec3:c-y norm-axis)))
+	 (sz (* s-a (cepl-vec3:c-z norm-axis)))
+	 (txy (* tx (cepl-vec3:c-y norm-axis)))
+	 (tyz (* tx (cepl-vec3:c-z norm-axis)))
+	 (txz (* tx (cepl-vec3:c-z norm-axis))))
+    (make-matrix3 (+ c-a (* tx (cepl-vec3:c-x norm-axis)))
+		  (+ txy xz)
+		  (- txz sy)
+		  (- txy sz)
+		  (+ c (* ty (cepl-vec3:c-y norm-axis)))
+		  (+ tyz sx)
+		  (+ txz sy)
+		  (- tyz sx)
+		  (+ c (* tz (cepl-vec3:c-z norm-axis))))))
+
+;----------------------------------------------------------------
+
+(defun make-scale-matrix-vec (vec)
+  (make-matrix3 (cepl-vec3:c-x vec)
+		0.0
+		0.0
+		0.0
+		(cepl-vec3:c-y vec)
+		0.0
+		0.0
+		0.0
+		(cepl-vec3:c-z vec)))
+
+;----------------------------------------------------------------
+
+(defun make-scale-matrix (x y z)
+  (make-matrix3 (cepl-vec3:c-x x)
+		0.0
+		0.0
+		0.0
+		(cepl-vec3:c-y y)
+		0.0
+		0.0
+		0.0
+		(cepl-vec3:c-z z)))
+
+;----------------------------------------------------------------
+
+(defun make-xrotation-matrix (angle)
+  (let ((c-a (cos angle))
+	(s-a (sin angle)))
+    (make-matrix3 1.0
+		  0.0
+		  0.0
+		  0.0
+		  c-a
+		  s-a
+		  0.0
+		  (- s-a)
+		  c-a)))
+
+;----------------------------------------------------------------
+
+(defun make-yrotation-matrix (angle)
+  (let ((c-a (cos angle))
+	(s-a (sin angle)))
+    (make-matrix3 c-a
+		  0.0
+		  (- s-a)
+		  0.0
+		  1.0
+		  0.0
+		  s-a
+		  0.0
+		  c-a)))
+
+;----------------------------------------------------------------
+
+(defun make-zrotation-matrix (angle)
+  (let ((c-a (cos angle))
+	(s-a (sin angle)))
+    (make-matrix3 c-a
+		  s-a
+		  0.0
+		  (- s-a)
+		  c-a
+		  0.0
+		  0.0
+		  0.0 
+		  1.0)))
+
+;----------------------------------------------------------------
+
+;; Gets one set of possible z-y-x fixed angles that will generate
+;; this matrix. Assumes that this is a rotation matrix
+;; [TODO] returned as vector x-y-z
+;; [TODO] Implement c-sqrt in base
+(defun get-fixed-angles (matrix-a)
+  (let* ((sy (m-elm matrix-a 0 2))
+	 (cy (base:c-sqrt (- 1.0 (* cy cy)))))
+    (if (not (base:float-zero cy))
+	(let* ((factor (/ 1.0 cy))
+	       (sx (* factor (- (m-elm matrix-a 2 1))))
+	       (cx (* factor (m-elm matrix-a 2 2)))
+	       (sz (* factor (- (m-elm matrix-a 1 0))))
+	       (cz (* factor (m-elm matrix-a 0 0))))
+	  (cepl-vec3:make-vector3 (atan sx cx)
+				  (atan sy cy)
+				  (atan sz cz)))
+	(let* ((sz 0.0)
+	       (cx 1.0)
+	       (sz (m-elm matrix-a 1 2))
+	       (cz (m-elm matrix-a 1 1)))
+	  (cepl-vec3:make-vector3 (atan sx cx)
+				  (atan sy cy)
+				  (atan sz cz))))))
+
+;----------------------------------------------------------------
+
+;; Gets one possible axis-angle pair that will generate this 
+;; matrix. Assumes that this is a rotation matrix
+;; [TODO] find out how we can declaim angle to be float
+;; [TODO] Find out what kPI is and replicate it here
+;; [TODO] Comment the fuck out of this and work out how it works
+(defun get-axis-angle (matrix-a)
+  (let* ((c-a (* 0.5 (- (c-trace matrix-a) 1.0)))
+	 (angle (acos c-a)))
+    (cond (((base:float-zero angle) 
+            ;angle is zero so axis can be anything
+	    (cepl-vec3:make-vector3 1.0 0.0 0.0))
+	   ((< angle (- kPI base:+float-threshold+))
+	    ;its not 180 degrees
+	    (let ((axis (cepl-vec3:make-vector3 ()
+						()
+						())))
+	      (cepl-vec3:c-normalize axis)))
+	   (t (let* ((i (if (> (m-elm matrix-a 1 1)
+			       (m-elm matrix-a 0 0))
+			    1
+			    (if (> (m-elm matrix-a 2 2)
+				   (m-elm matrix-a 0 0))
+				2
+				0)))
+		     (j (% (+ i 1) 3))
+		     (k (% (+ j 1) 3))
+		     (s (base:c-sqrt (+ 1.0 
+					(- 
+					 (m-elm matrix-a 
+					       (+ i (* i 3)))
+					 (m-elm matrix-a 
+					       (+ j (* j 3)))
+					 (m-elm matrix-a 
+					       (+ k (* k 3)))))))
+		     (recip (/ 1.0 s))
+		     (result (cepl-vec3:make-vector3 0.0 
+						     0.0 
+						     0.0)))
+		(setf (aref result i) (* 0.5 s))
+		(setf (aref result j) (* recip
+					 (m-elm matrix-a
+						(+ i (* j 3)))))
+		(setf (aref result j) (* recip
+					 (m-elm matrix-a
+						(+ k (* i 3)))))))))))
 
 ;----------------------------------------------------------------
 
@@ -352,17 +525,15 @@
 
 ;----------------------------------------------------------------
 
-(defun c-* (matrix-a matrix-b)
+(defun c-negate (matrix-a)
   (let ((result (zero-matrix3)))
-    (loop for row-num below 3
-	 (loop for col-num below 3
-	    do (let ((row (get-row matrix-a row-num))
-		     (col (get-column matrix-b col-num)))
-		 (setf (matrix-elm result row-num col-num)
-		       (+ (* (aref row 0) (aref col 0))
-			  (* (aref row 1) (aref col 1))
-			  (* (aref row 2) (aref col 2)))))))
+    (loop for i below 9
+	 do (setf (aref result i) (- (aref matrix-a i))))
     result))
+
+;----------------------------------------------------------------
+
+(defun c-* (matrix-a matrix-b))
 
 ;----------------------------------------------------------------
 
