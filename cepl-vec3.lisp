@@ -293,13 +293,9 @@
 (defun c-dot (vector-a vector-b)
   "Return the dot product of the vector-a and vector-b."
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (let ((ux (c-x vector-a))
-	(uy (c-y vector-a))
-	(uz (c-z vector-a))
-	(vx (c-x vector-b))
-	(vy (c-y vector-b))
-	(vz (c-z vector-b)))
-    (+ (* ux vx) (* uy vy) (* uz vz))))
+  (+ (* (c-x vector-a) (c-x vector-b)) 
+     (* (c-y vector-a) (c-y vector-b)) 
+     (* (c-z vector-a) (c-z vector-b))))
 
 ;----------------------------------------------------------------
 
