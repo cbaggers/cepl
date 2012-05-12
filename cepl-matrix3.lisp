@@ -94,15 +94,15 @@
 ;----------------------------------------------------------------
 
 (defun make-from-rows (row-1 row-2 row-3)
-  (make-matrix3 (cepl-vec3:c-x row-1)
-		(cepl-vec3:c-y row-1)
-		(cepl-vec3:c-z row-1) 
-		(cepl-vec3:c-x row-2)
-		(cepl-vec3:c-y row-2)
-		(cepl-vec3:c-z row-2)
-		(cepl-vec3:c-x row-3)
-		(cepl-vec3:c-y row-3)
-		(cepl-vec3:c-z row-3)))
+  (make-matrix3 (cepl-vec3:v-x row-1)
+		(cepl-vec3:v-y row-1)
+		(cepl-vec3:v-z row-1) 
+		(cepl-vec3:v-x row-2)
+		(cepl-vec3:v-y row-2)
+		(cepl-vec3:v-z row-2)
+		(cepl-vec3:v-x row-3)
+		(cepl-vec3:v-y row-3)
+		(cepl-vec3:v-z row-3)))
 
 ;----------------------------------------------------------------
 
@@ -127,15 +127,15 @@
 ;----------------------------------------------------------------
 
 (defun make-from-columns (col-1 col-2 col-3)
-  (make-matrix3 (cepl-vec3:c-x col-1)
-		(cepl-vec3:c-x col-2)
-		(cepl-vec3:c-x col-3) 
-		(cepl-vec3:c-y col-1)
-		(cepl-vec3:c-y col-2)
-		(cepl-vec3:c-y col-3)
-		(cepl-vec3:c-z col-1)
-		(cepl-vec3:c-z col-2)
-		(cepl-vec3:c-z col-3)))
+  (make-matrix3 (cepl-vec3:v-x col-1)
+		(cepl-vec3:v-x col-2)
+		(cepl-vec3:v-x col-3) 
+		(cepl-vec3:v-y col-1)
+		(cepl-vec3:v-y col-2)
+		(cepl-vec3:v-y col-3)
+		(cepl-vec3:v-z col-1)
+		(cepl-vec3:v-z col-2)
+		(cepl-vec3:v-z col-3)))
 
 ;----------------------------------------------------------------
 
@@ -159,7 +159,7 @@
 
 ;----------------------------------------------------------------
 
-(defun c-zerop (mat-a)
+(defun mzerop (mat-a)
   (loop for i 
      below 9
      if (not (float-zero (aref mat-a i)))
@@ -168,7 +168,7 @@
 
 ;----------------------------------------------------------------
 
-(defun c-identityp (mat-a)
+(defun identityp (mat-a)
   (and (= (aref mat-a 0) 1.0)
        (= (aref mat-a 4) 1.0)
        (= (aref mat-a 8) 1.0)
@@ -181,7 +181,7 @@
 
 ;----------------------------------------------------------------
 
-(defun c-eql (mat-a mat-b)
+(defun meql (mat-a mat-b)
   (loop for i 
      below 9
      if (/= (aref mat-a i) (aref mat-b i))
@@ -304,7 +304,7 @@
 
 ;----------------------------------------------------------------
 
-(defun c-trace (mat-a)
+(defun mtrace (mat-a)
   (+ (melm mat-a 0 0)
      (melm mat-a 1 1)
      (melm mat-a 2 2)))
@@ -340,51 +340,51 @@
   (let* ((c-a (cos angle))
 	 (s-a (sin angle))
 	 (tt (- 1.0 c-a))
-	 (norm-axis (cepl-vec3:c-normalize axis))
-	 (tx (* tt (cepl-vec3:c-x norm-axis)))
-	 (ty (* tt (cepl-vec3:c-y norm-axis)))
-	 (tz (* tt (cepl-vec3:c-z norm-axis)))
-	 (sx (* s-a (cepl-vec3:c-x norm-axis)))
-	 (sy (* s-a (cepl-vec3:c-y norm-axis)))
-	 (sz (* s-a (cepl-vec3:c-z norm-axis)))
-	 (txy (* tx (cepl-vec3:c-y norm-axis)))
-	 (tyz (* tx (cepl-vec3:c-z norm-axis)))
-	 (txz (* tx (cepl-vec3:c-z norm-axis))))
-    (make-matrix3 (+ c-a (* tx (cepl-vec3:c-x norm-axis)))
+	 (norm-axis (cepl-vec3:normalize axis))
+	 (tx (* tt (cepl-vec3:v-x norm-axis)))
+	 (ty (* tt (cepl-vec3:v-y norm-axis)))
+	 (tz (* tt (cepl-vec3:v-z norm-axis)))
+	 (sx (* s-a (cepl-vec3:v-x norm-axis)))
+	 (sy (* s-a (cepl-vec3:v-y norm-axis)))
+	 (sz (* s-a (cepl-vec3:v-z norm-axis)))
+	 (txy (* tx (cepl-vec3:v-y norm-axis)))
+	 (tyz (* tx (cepl-vec3:v-z norm-axis)))
+	 (txz (* tx (cepl-vec3:v-z norm-axis))))
+    (make-matrix3 (+ c-a (* tx (cepl-vec3:v-x norm-axis)))
 		  (+ txy xz)
 		  (- txz sy)
 		  (- txy sz)
-		  (+ c (* ty (cepl-vec3:c-y norm-axis)))
+		  (+ c (* ty (cepl-vec3:v-y norm-axis)))
 		  (+ tyz sx)
 		  (+ txz sy)
 		  (- tyz sx)
-		  (+ c (* tz (cepl-vec3:c-z norm-axis))))))
+		  (+ c (* tz (cepl-vec3:v-z norm-axis))))))
 
 ;----------------------------------------------------------------
 
 (defun make-scale-matrix-vec (vec)
-  (make-matrix3 (cepl-vec3:c-x vec)
+  (make-matrix3 (cepl-vec3:v-x vec)
 		0.0
 		0.0
 		0.0
-		(cepl-vec3:c-y vec)
+		(cepl-vec3:v-y vec)
 		0.0
 		0.0
 		0.0
-		(cepl-vec3:c-z vec)))
+		(cepl-vec3:v-z vec)))
 
 ;----------------------------------------------------------------
 
 (defun make-scale-matrix (x y z)
-  (make-matrix3 (cepl-vec3:c-x x)
+  (make-matrix3 (cepl-vec3:v-x x)
 		0.0
 		0.0
 		0.0
-		(cepl-vec3:c-y y)
+		(cepl-vec3:v-y y)
 		0.0
 		0.0
 		0.0
-		(cepl-vec3:c-z z)))
+		(cepl-vec3:v-z z)))
 
 ;----------------------------------------------------------------
 
@@ -436,11 +436,10 @@
 ;; Gets one set of possible z-y-x fixed angles that will generate
 ;; this matrix. Assumes that this is a rotation matrix
 ;; [TODO] returned as vector x-y-z
-;; [TODO] Implement c-sqrt in base
 (defun get-fixed-angles (mat-a)
   (let* ((sy (melm mat-a 0 2))
 	 (cy (base:c-sqrt (- 1.0 (* cy cy)))))
-    (if (not (base:float-zero cy))
+    (if (not (float-zero cy))
 	(let* ((factor (/ 1.0 cy))
 	       (sx (* factor (- (melm mat-a 2 1))))
 	       (cx (* factor (melm mat-a 2 2)))
@@ -462,13 +461,12 @@
 ;; Gets one possible axis-angle pair that will generate this 
 ;; matrix. Assumes that this is a rotation matrix
 ;; [TODO] find out how we can declaim angle to be float
-;; [TODO] Find out what kPI is and replicate it here
 ;; [TODO] Comment the fuck out of this and work out how it works
 
 (defun get-axis-angle (mat-a)
-  (let* ((c-a (* 0.5 (- (c-trace mat-a) 1.0)))
+  (let* ((c-a (* 0.5 (- (mtrace mat-a) 1.0)))
 	 (angle (acos c-a)))
-    (cond ((base:float-zero angle) 
+    (cond ((float-zero angle) 
 	   ;angle is zero so axis can be anything
 	   (cepl-vec3:make-vector3 1.0 0.0 0.0))
 	  ((< angle (- base:+pi+ base:+float-threshold+))
@@ -477,7 +475,7 @@
 			(- (melm mat-a 1 2) (melm mat-a 2 1))
 			(- (melm mat-a 2 0) (melm mat-a 0 2))
 			(- (melm mat-a 0 1) (melm mat-a 1 0)))))
-	     (cepl-vec3:c-normalize axis)))
+	     (cepl-vec3:normalize axis)))
 	  (t (let* ((i (if (> (melm mat-a 1 1)
 			      (melm mat-a 0 0))
 			   1
@@ -500,11 +498,12 @@
 	       (setf (aref result j) (* recip
 					(melm mat-a i j)))
 	       (setf (aref result j) (* recip
-					(melm mat-a k i))))))))
+					(melm mat-a k i)))
+	       result)))))
 
 ;----------------------------------------------------------------
 
-(defun c-+ (mat-a mat-b)
+(defun m+ (mat-a mat-b)
   (let ((r (zero-matrix3)))
     (loop for i below 9
 	 do (setf (aref r i) (+ (aref mat-a i) 
@@ -513,7 +512,7 @@
 
 ;----------------------------------------------------------------
 
-(defun c-- (mat-a mat-b)
+(defun m- (mat-a mat-b)
   (let ((r (zero-matrix3)))
     (loop for i below 9
 	 do (setf (aref r i) (- (aref mat-a i) 
@@ -522,7 +521,7 @@
 
 ;----------------------------------------------------------------
 
-(defun c-negate (mat-a)
+(defun negate (mat-a)
   (let ((result (zero-matrix3)))
     (loop for i below 9
 	 do (setf (aref result i) (- (aref mat-a i))))
@@ -530,11 +529,11 @@
 
 ;----------------------------------------------------------------
 
-(defun c-* (mat-a mat-b))
+(defun m* (mat-a mat-b))
 
 ;----------------------------------------------------------------
 
-;;(defun c-*vec ())
+;;(defun m*vec ())
 
 ;----------------------------------------------------------------
 

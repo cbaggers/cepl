@@ -73,113 +73,113 @@
 ;;     (and (consp lst) (bull (cdr lst)))))
 ;; Final justification is that it's purely for syntatic clarity
 ;; and not for any computational reason.
-(defmacro c-x (vec)
+(defmacro v-x (vec)
   `(aref ,vec 0))
 
-(defmacro c-y (vec)
+(defmacro v-y (vec)
   `(aref ,vec 1))
 
-(defmacro c-z (vec)
+(defmacro v-z (vec)
   `(aref ,vec 2))
 
 ;----------------------------------------------------------------
 
 ;; Would be interesting to see if checking that the arrays
 ;; are not 'eq' first would speed this up 
-(declaim (inline c-=)
+(declaim (inline v=)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
-			  (boolean)) c-=))
-(defun c-= (vector-a vector-b)
+			  (boolean)) v=))
+(defun v= (vector-a vector-b)
   "Returns either t if the two vectors are equal. 
    Otherwise it returns nil."
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (and (= (c-x vector-a) (c-x vector-b))
-       (= (c-y vector-a) (c-y vector-b))
-       (= (c-z vector-a) (c-z vector-b))))
+  (and (= (v-x vector-a) (v-x vector-b))
+       (= (v-y vector-a) (v-y vector-b))
+       (= (v-z vector-a) (v-z vector-b))))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-/=)
+(declaim (inline v/=)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
-			  (boolean)) c-/=))
-(defun c-/= (vector-a vector-b)
+			  (boolean)) v/=))
+(defun v/= (vector-a vector-b)
   (declare ((simple-array single-float (3)) vector-a vector-b))
   "Returns either t if the two vectors are not equal. 
    Otherwise it returns nil."
-  (or (/= (c-x vector-a) (c-x vector-b))
-      (/= (c-y vector-a) (c-y vector-b))
-      (/= (c-z vector-a) (c-z vector-b)))) 
+  (or (/= (v-x vector-a) (v-x vector-b))
+      (/= (v-y vector-a) (v-y vector-b))
+      (/= (v-z vector-a) (v-z vector-b)))) 
 
 ;----------------------------------------------------------------
 
 ;; Not sure how to optomise this
-(defun c-+ (&rest vec3s)
-  (reduce #'c-+1 vec3s))
+(defun v+ (&rest vec3s)
+  (reduce #'v+1 vec3s))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-+1)
+(declaim (inline v+1)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
-			  (simple-array single-float (3))) c-+1))
-(defun c-+1 (vector-a vector-b)
+			  (simple-array single-float (3))) v+1))
+(defun v+1 (vector-a vector-b)
   "Add two vectors and return a new vector containing the result"
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (make-vector3 (+ (c-x vector-a) (c-x vector-b))
-		(+ (c-y vector-a) (c-y vector-b))
-		(+ (c-z vector-a) (c-z vector-b))))
+  (make-vector3 (+ (v-x vector-a) (v-x vector-b))
+		(+ (v-y vector-a) (v-y vector-b))
+		(+ (v-z vector-a) (v-z vector-b))))
 
 ;----------------------------------------------------------------
 
 ;; Not sure how to optomise this
-(defun c-- (&rest vec3s)
+(defun v- (&rest vec3s)
   "minus list of vector3s"
-  (reduce #'c--1 vec3s))
+  (reduce #'v-1 vec3s))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c--1)
+(declaim (inline v-1)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
-			  (simple-array single-float (3))) c--1))
-(defun c--1 (vector-a vector-b)
+			  (simple-array single-float (3))) v-1))
+(defun v-1 (vector-a vector-b)
   "Subtract two vectors and return a new vector containing 
    the result"
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (make-vector3 (- (c-x vector-a) (c-x vector-b))
-		(- (c-y vector-a) (c-y vector-b))
-		(- (c-z vector-a) (c-z vector-b))))
+  (make-vector3 (- (v-x vector-a) (v-x vector-b))
+		(- (v-y vector-a) (v-y vector-b))
+		(- (v-z vector-a) (v-z vector-b))))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-*)
+(declaim (inline v*)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (single-float)) 
-			  (simple-array single-float (3))) c-*))
-(defun c-* (vector-a a)
+			  (simple-array single-float (3))) v*))
+(defun v* (vector-a a)
   "Multiply vector by scalar"
   (declare ((simple-array single-float (3)) vector-a)
 	   ((single-float) a))
-  (make-vector3 (* (c-x vector-a) a)
-		(* (c-y vector-a) a)
-		(* (c-z vector-a) a)))
+  (make-vector3 (* (v-x vector-a) a)
+		(* (v-y vector-a) a)
+		(* (v-z vector-a) a)))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-*vec)
+(declaim (inline v*vec)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
 			  (simple-array single-float (3))) 
-		c-*vec))
-(defun c-*vec (vector-a vector-b) 
+		v*vec))
+(defun v*vec (vector-a vector-b) 
   "Multiplies components, is not dot product, not sure what
    i'll need this for yet but hey!"
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (make-vector3 (* (c-x vector-a) (c-x vector-b))
-		(* (c-y vector-a) (c-y vector-b))
-		(* (c-z vector-a) (c-z vector-b))))
+  (make-vector3 (* (v-x vector-a) (v-x vector-b))
+		(* (v-y vector-a) (v-y vector-b))
+		(* (v-z vector-a) (v-z vector-b))))
 
 ;----------------------------------------------------------------
 
@@ -187,155 +187,155 @@
 ;;; from ogre but some of the optomisations will be coming over
 ;;; as well, this may not be relevent in lisp, I will see later
 ;;; on.
-(declaim (inline c-/)
+(declaim (inline v/)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (single-float)) 
-			  (simple-array single-float (3))) c-/))
-(defun c-/ (vector-a a)
+			  (simple-array single-float (3))) v/))
+(defun v/ (vector-a a)
   "divide vector by scalar and return result as new vector"
   (declare ((simple-array single-float (3)) vector-a)
 	   ((single-float) a))
   (let ((b (/ 1 a)))
-    (make-vector3 (* (c-x vector-a) b)
-		  (* (c-y vector-a) b)
-		  (* (c-z vector-a) b))))
+    (make-vector3 (* (v-x vector-a) b)
+		  (* (v-y vector-a) b)
+		  (* (v-z vector-a) b))))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-/vec)
+(declaim (inline v/vec)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
 			  (simple-array single-float (3))) 
-		c-/vec))
-(defun c-/vec (vector-a vector-b) 
+		v/vec))
+(defun v/vec (vector-a vector-b) 
   "Divides components, not sure what, i'll need this for 
    yet but hey!"
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (make-vector3 (/ (c-x vector-a) (c-x vector-b))
-		(/ (c-y vector-a) (c-y vector-b))
-		(/ (c-z vector-a) (c-z vector-b))))
+  (make-vector3 (/ (v-x vector-a) (v-x vector-b))
+		(/ (v-y vector-a) (v-y vector-b))
+		(/ (v-z vector-a) (v-z vector-b))))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-negate)
+(declaim (inline negate)
 	 (ftype (function ((simple-array single-float (3))) 
 			  (simple-array single-float (3))) 
-		c-negate))
-(defun c-negate (vector-a)
+		negate))
+(defun negate (vector-a)
   "Return a vector that is the negative of the vector passed in"
   (declare ((simple-array single-float (3)) vector-a))
-  (make-vector3 (- (c-x vector-a))
-		(- (c-y vector-a))
-		(- (c-z vector-a))))
+  (make-vector3 (- (v-x vector-a))
+		(- (v-y vector-a))
+		(- (v-z vector-a))))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-length-squared)
+(declaim (inline vlength-squared)
 	 (ftype (function ((simple-array single-float (3))) 
-			  (single-float)) c-length-squared))
-(defun c-length-squared (vector-a)
+			  (single-float)) vlength-squared))
+(defun vlength-squared (vector-a)
   "Return the squared length of the vector. A regular length
    is the square root of this value. The sqrt function is slow
    so if all thats needs doing is to compare lengths then always
    use the length squared function"
   (declare ((simple-array single-float (3)) vector-a))
-  (let ((x (c-x vector-a))
-	(y (c-y vector-a))
-	(z (c-z vector-a)))
+  (let ((x (v-x vector-a))
+	(y (v-y vector-a))
+	(z (v-z vector-a)))
     (+ (* x x) (* y y) (* z z))))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-length)
+(declaim (inline vlength)
 	 (ftype (function ((simple-array single-float (3))) 
-			  (single-float)) c-length))
-(defun c-length (vector-a)
+			  (single-float)) vlength))
+(defun vlength (vector-a)
   "If you only need to compare relative lengths then definately
    stick to length-squared as the sqrt is a slow operation."
   (declare ((simple-array single-float (3)) vector-a))
-  (sqrt (c-length-squared vector-a)))
+  (sqrt (vlength-squared vector-a)))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-distance-squared)
+(declaim (inline distance-squared)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
 			  (single-float)) 
-		c-distance-squared))
-(defun c-distance-squared (vector-a vector-b)
+		distance-squared))
+(defun distance-squared (vector-a vector-b)
   "finds the squared distance between 2 points defined by vectors
    vector-a & vector-b"
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (c-length-squared (c-- vector-b vector-a)))
+  (vlength-squared (v- vector-b vector-a)))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-distance)
+(declaim (inline distance)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
 			  (single-float)) 
-		c-distance))
-(defun c-distance (vector-a vector-b)
+		distance))
+(defun distance (vector-a vector-b)
   "Return the distance between 2 points defined by vectors 
    vector-a & vector-b. If comparing distances, use 
    c-distance-squared as it desnt require a sqrt and thus is 
    faster."
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (sqrt (c-distance-squared vector-a vector-b)))
+  (sqrt (distance-squared vector-a vector-b)))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-dot)
+(declaim (inline dot)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
 			  (single-float)) 
-		c-dot))
-(defun c-dot (vector-a vector-b)
+		dot))
+(defun dot (vector-a vector-b)
   "Return the dot product of the vector-a and vector-b."
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (+ (* (c-x vector-a) (c-x vector-b)) 
-     (* (c-y vector-a) (c-y vector-b)) 
-     (* (c-z vector-a) (c-z vector-b))))
+  (+ (* (v-x vector-a) (v-x vector-b)) 
+     (* (v-y vector-a) (v-y vector-b)) 
+     (* (v-z vector-a) (v-z vector-b))))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-absolute-dot)
+(declaim (inline absolute-dot)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
 			  (single-float)) 
-		c-absolute-dot))
-(defun c-absolute-dot (vector-a vector-b) 
+		absolute-dot))
+(defun absolute-dot (vector-a vector-b) 
   "Return the absolute dot product of the vector-a and vector-b."
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (+ (abs (* (c-x vector-a) (c-x vector-b))) 
-     (abs (* (c-y vector-a) (c-y vector-b))) 
-     (abs (* (c-z vector-a) (c-z vector-b)))))
+  (+ (abs (* (v-x vector-a) (v-x vector-b))) 
+     (abs (* (v-y vector-a) (v-y vector-b))) 
+     (abs (* (v-z vector-a) (v-z vector-b)))))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-normalize)
+(declaim (inline normalize)
 	 (ftype (function ((simple-array single-float (3))) 
 			  (simple-array single-float (3))) 
-		c-normalize))
-(defun c-normalize (vector-a)
+		normalize))
+(defun normalize (vector-a)
   "This normalizes the vector, it makes sure a zero length
    vector won't throw an error and assumes any length less
    than 1e-08 is 0. THis makes sense with floating point
    inaccuracies."
   (declare ((simple-array single-float (3)) vector-a))
-  (let ((a (c-length vector-a))) 
+  (let ((a (vlength vector-a))) 
     (if (> a 1e-08) 
-	(c-/ vector-a a)
+	(v/ vector-a a)
 	vector-a)))
 
 ;----------------------------------------------------------------
 
-(declaim (inline c-cross)
+(declaim (inline cross)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
 			  (simple-array single-float (3)))
-		c-cross))
-(defun c-cross (vector-a vector-b)
+		cross))
+(defun cross (vector-a vector-b)
   "Calculates the cross-product of 2 vectors, i.e. the vector 
    that lies perpendicular to them both. The resultign vector
    will <b>NOT</b> be normalised, to maximise efficiency
@@ -348,12 +348,12 @@
    The fact that we don't normalize may be useful in our 
    quaternion functions later on."
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (let ((ux (c-x vector-a))
-	(uy (c-y vector-a))
-	(uz (c-z vector-a))
-	(vx (c-x vector-b))
-	(vy (c-y vector-b))
-	(vz (c-z vector-b)))
+  (let ((ux (v-x vector-a))
+	(uy (v-y vector-a))
+	(uz (v-z vector-a))
+	(vx (v-x vector-b))
+	(vy (v-y vector-b))
+	(vz (v-z vector-b)))
     (make-vector3 (- (* uy vz) (* uz vy))
 		  (- (* uz vx) (* ux vz))
 		  (- (* ux vy) (* uy vx)))))
