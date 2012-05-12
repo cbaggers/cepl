@@ -2,8 +2,9 @@
 
 (defpackage #:base
   (:use #:cl)
-  (:export :float-zero
-	   :+float-threshold+
+  (:export :+float-threshold+
+	   :+pi+
+	   :float-zero
 	   :c-sqrt
 	   :c-inv-sqrt))
 

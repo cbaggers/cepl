@@ -1,6 +1,7 @@
 (in-package #:base)
 
 (defconstant +float-threshold+ 1.0e-6)
+(defconstant +pi+ 3.1415926535897932384626433832795)
 
 
 ;; Returns t if float is essentially zero
