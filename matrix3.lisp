@@ -1,5 +1,4 @@
-(in-package #:cepl-matrix3)
-(import `base:float-zero)
+(in-package #:matrix3)
 
 ;; Code adapted from Ogre which in turn was adapted 
 ;; from Wild Magic 0.2 Matrix math (free source code 
@@ -94,66 +93,66 @@
 ;----------------------------------------------------------------
 
 (defun make-from-rows (row-1 row-2 row-3)
-  (make-matrix3 (cepl-vec3:v-x row-1)
-		(cepl-vec3:v-y row-1)
-		(cepl-vec3:v-z row-1) 
-		(cepl-vec3:v-x row-2)
-		(cepl-vec3:v-y row-2)
-		(cepl-vec3:v-z row-2)
-		(cepl-vec3:v-x row-3)
-		(cepl-vec3:v-y row-3)
-		(cepl-vec3:v-z row-3)))
+  (make-matrix3 (v-x row-1)
+		(v-y row-1)
+		(v-z row-1) 
+		(v-x row-2)
+		(v-y row-2)
+		(v-z row-2)
+		(v-x row-3)
+		(v-y row-3)
+		(v-z row-3)))
 
 ;----------------------------------------------------------------
 
 (defun get-rows (mat-a)
-   (list (cepl-vec3:make-vector3 (melm mat-a 0 0)
+   (list (make-vector3 (melm mat-a 0 0)
 				 (melm mat-a 1 0)
 				 (melm mat-a 2 0))
-	 (cepl-vec3:make-vector3 (melm mat-a 0 1)
+	 (make-vector3 (melm mat-a 0 1)
 				 (melm mat-a 1 1)
 				 (melm mat-a 2 1))
-	 (cepl-vec3:make-vector3 (melm mat-a 0 2)
+	 (make-vector3 (melm mat-a 0 2)
 				 (melm mat-a 1 2)
 				 (melm mat-a 2 2))))
 
 ;----------------------------------------------------------------
 
 (defun get-row (mat-a row-num)
-  (cepl-vec3:make-vector3 (melm mat-a 0 row-num)
+  (make-vector3 (melm mat-a 0 row-num)
 			  (melm mat-a 1 row-num)
 			  (melm mat-a 2 row-num)))
 
 ;----------------------------------------------------------------
 
 (defun make-from-columns (col-1 col-2 col-3)
-  (make-matrix3 (cepl-vec3:v-x col-1)
-		(cepl-vec3:v-x col-2)
-		(cepl-vec3:v-x col-3) 
-		(cepl-vec3:v-y col-1)
-		(cepl-vec3:v-y col-2)
-		(cepl-vec3:v-y col-3)
-		(cepl-vec3:v-z col-1)
-		(cepl-vec3:v-z col-2)
-		(cepl-vec3:v-z col-3)))
+  (make-matrix3 (v-x col-1)
+		(v-x col-2)
+		(v-x col-3) 
+		(v-y col-1)
+		(v-y col-2)
+		(v-y col-3)
+		(v-z col-1)
+		(v-z col-2)
+		(v-z col-3)))
 
 ;----------------------------------------------------------------
 
 (defun get-columns (mat-a)
-   (list (cepl-vec3:make-vector3 (melm mat-a 0 0)
+   (list (make-vector3 (melm mat-a 0 0)
 				 (melm mat-a 0 1)
 				 (melm mat-a 0 2))
-	 (cepl-vec3:make-vector3 (melm mat-a 1 0)
+	 (make-vector3 (melm mat-a 1 0)
 				 (melm mat-a 1 1)
 				 (melm mat-a 1 2))
-	 (cepl-vec3:make-vector3 (melm mat-a 2 0)
+	 (make-vector3 (melm mat-a 2 0)
 				 (melm mat-a 2 1)
 				 (melm mat-a 2 2))))
 
 ;----------------------------------------------------------------
 
 (defun get-column (mat-a col-num)
-  (cepl-vec3:make-vector3 (melm mat-a col-num 0)
+  (make-vector3 (melm mat-a col-num 0)
 			  (melm mat-a col-num 1)
 			  (melm mat-a col-num 2)))
 
@@ -340,51 +339,51 @@
   (let* ((c-a (cos angle))
 	 (s-a (sin angle))
 	 (tt (- 1.0 c-a))
-	 (norm-axis (cepl-vec3:normalize axis))
-	 (tx (* tt (cepl-vec3:v-x norm-axis)))
-	 (ty (* tt (cepl-vec3:v-y norm-axis)))
-	 (tz (* tt (cepl-vec3:v-z norm-axis)))
-	 (sx (* s-a (cepl-vec3:v-x norm-axis)))
-	 (sy (* s-a (cepl-vec3:v-y norm-axis)))
-	 (sz (* s-a (cepl-vec3:v-z norm-axis)))
-	 (txy (* tx (cepl-vec3:v-y norm-axis)))
-	 (tyz (* tx (cepl-vec3:v-z norm-axis)))
-	 (txz (* tx (cepl-vec3:v-z norm-axis))))
-    (make-matrix3 (+ c-a (* tx (cepl-vec3:v-x norm-axis)))
+	 (norm-axis (vector3:normalize axis))
+	 (tx (* tt (v-x norm-axis)))
+	 (ty (* tt (v-y norm-axis)))
+	 (tz (* tt (v-z norm-axis)))
+	 (sx (* s-a (v-x norm-axis)))
+	 (sy (* s-a (v-y norm-axis)))
+	 (sz (* s-a (v-z norm-axis)))
+	 (txy (* tx (v-y norm-axis)))
+	 (tyz (* tx (v-z norm-axis)))
+	 (txz (* tx (v-z norm-axis))))
+    (make-matrix3 (+ c-a (* tx (v-x norm-axis)))
 		  (+ txy xz)
 		  (- txz sy)
 		  (- txy sz)
-		  (+ c (* ty (cepl-vec3:v-y norm-axis)))
+		  (+ c (* ty (v-y norm-axis)))
 		  (+ tyz sx)
 		  (+ txz sy)
 		  (- tyz sx)
-		  (+ c (* tz (cepl-vec3:v-z norm-axis))))))
+		  (+ c (* tz (v-z norm-axis))))))
 
 ;----------------------------------------------------------------
 
 (defun make-scale-matrix-vec (vec)
-  (make-matrix3 (cepl-vec3:v-x vec)
+  (make-matrix3 (v-x vec)
 		0.0
 		0.0
 		0.0
-		(cepl-vec3:v-y vec)
+		(v-y vec)
 		0.0
 		0.0
 		0.0
-		(cepl-vec3:v-z vec)))
+		(v-z vec)))
 
 ;----------------------------------------------------------------
 
 (defun make-scale-matrix (x y z)
-  (make-matrix3 (cepl-vec3:v-x x)
+  (make-matrix3 (v-x x)
 		0.0
 		0.0
 		0.0
-		(cepl-vec3:v-y y)
+		(v-y y)
 		0.0
 		0.0
 		0.0
-		(cepl-vec3:v-z z)))
+		(v-z z)))
 
 ;----------------------------------------------------------------
 
@@ -438,21 +437,21 @@
 ;; [TODO] returned as vector x-y-z
 (defun get-fixed-angles (mat-a)
   (let* ((sy (melm mat-a 0 2))
-	 (cy (base:c-sqrt (- 1.0 (* cy cy)))))
+	 (cy (c-sqrt (- 1.0 (* cy cy)))))
     (if (not (float-zero cy))
 	(let* ((factor (/ 1.0 cy))
 	       (sx (* factor (- (melm mat-a 2 1))))
 	       (cx (* factor (melm mat-a 2 2)))
 	       (sz (* factor (- (melm mat-a 1 0))))
 	       (cz (* factor (melm mat-a 0 0))))
-	  (cepl-vec3:make-vector3 (atan sx cx)
+	  (make-vector3 (atan sx cx)
 				  (atan sy cy)
 				  (atan sz cz)))
 	(let* ((sz 0.0)
 	       (cx 1.0)
 	       (sz (melm mat-a 1 2))
 	       (cz (melm mat-a 1 1)))
-	  (cepl-vec3:make-vector3 (atan sx cx)
+	  (make-vector3 (atan sx cx)
 				  (atan sy cy)
 				  (atan sz cz))))))
 
@@ -468,14 +467,14 @@
 	 (angle (acos c-a)))
     (cond ((float-zero angle) 
 	   ;angle is zero so axis can be anything
-	   (cepl-vec3:make-vector3 1.0 0.0 0.0))
+	   (make-vector3 1.0 0.0 0.0))
 	  ((< angle (- base:+pi+ base:+float-threshold+))
 					;its not 180 degrees
-	   (let ((axis (cepl-vec3:make-vector3 
+	   (let ((axis (make-vector3 
 			(- (melm mat-a 1 2) (melm mat-a 2 1))
 			(- (melm mat-a 2 0) (melm mat-a 0 2))
 			(- (melm mat-a 0 1) (melm mat-a 1 0)))))
-	     (cepl-vec3:normalize axis)))
+	     (vector3:normalize axis)))
 	  (t (let* ((i (if (> (melm mat-a 1 1)
 			      (melm mat-a 0 0))
 			   1
@@ -485,13 +484,13 @@
 			       0)))
 		    (j (mod (+ i 1) 3))
 		    (k (mod (+ j 1) 3))
-		    (s (base:c-sqrt (+ 1.0 
+		    (s (c-sqrt (+ 1.0 
 				       (- 
 					(melm mat-a i i)
 					(melm mat-a j j)
 					(melm mat-a k k)))))
 		    (recip (/ 1.0 s))
-		    (result (cepl-vec3:make-vector3 0.0 
+		    (result (make-vector3 0.0 
 						    0.0 
 						    0.0)))
 	       (setf (aref result i) (* 0.5 s))

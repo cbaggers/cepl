@@ -1,6 +1,6 @@
 ;;; This package is for all the vector3 math functions
 
-(in-package #:cepl-vec3)
+(in-package #:vector3)
 
 ;;; Maths bits, not in the right place but I just need
 ;;; to start writing.

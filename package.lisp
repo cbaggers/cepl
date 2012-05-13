@@ -8,18 +8,24 @@
 	   :c-sqrt
 	   :c-inv-sqrt))
 
-(defpackage #:cepl-vec3
+(defpackage #:vector3
   (:use #:cl #:base)
-  (:export :make-vector3 :c-= :c-/= :c-+ :c=+1 :c--1 :c-*
-	   :c-*vec :c-/ :c-/vec :c-negate :c-length-squared
-	   :c-length :c-distance-squared :c-distance :c-dot
-	   :c-absolute-dot :c-normalize :c-cross
+  (:export :make-vector3 :v= :v/= :v+ :v+1 :v- :v-1 :v*
+	   :v*vec :v/ :v/vec :negate :vlength-squared
+	   :vlength :distance-squared :distance :dot
+	   :absolute-dot :normalize :cross
 	   :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
-	   :c-x :c-y :c-z))
+	   :v-x :v-y :v-z))
 
-(defpackage #:cepl-matrix3
-  (:use #:cl #:base #:cepl-vec3))
+(defpackage #:matrix3
+  (:use #:cl #:base #:vector3)
+  (:import-from :base :float-zero
+		      :c-sqrt)
+  (:import-from :vector3 :v-x
+		         :v-y
+		         :v-z
+		         :make-vector3))
 
 (defpackage #:cepl
-  (:use #:cl #:base #:cepl-vec3 #:cepl-matrix3))
+  (:use #:cl #:base #:vector3 #:matrix3))
 

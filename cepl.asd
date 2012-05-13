@@ -8,6 +8,6 @@
   :components ((:file "package")
                (:file "cepl")
 	       (:file "base")
-	       (:file "cepl-vec3")
-	       (:file "cepl-matrix3")))
+	       (:file "vector3")
+	       (:file "matrix3")))
 
