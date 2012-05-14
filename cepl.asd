@@ -6,8 +6,8 @@
                #:cl-glu
                #:cl-glut)
   :components ((:file "package")
-               (:file "cepl")
 	       (:file "base")
 	       (:file "vector3")
-	       (:file "matrix3")))
+	       (:file "matrix3")
+	       (:file "cepl")))
 

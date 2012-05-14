@@ -2,15 +2,12 @@
 
 (in-package #:vector3)
 
-;;; Maths bits, not in the right place but I just need
-;;; to start writing.
 
-;;; Need to inline
-;;; we will make destructive and no destructive versions,
+;;; [TODO] make destructive versions aswell
 ;;; looking at some existing code the desctructive versions
-;;; end up being comparitively fast to C. I will use -d as local
-;;; parlance for destructive.
+;;; end up being comparitively fast to C. 
 ;;; see http://stackoverflow.com/questions/8356494/efficient-vector-operations-of-linear-algebra-in-common-lisp-especially-sbcl for more details
+
 ;;; Also see http://nklein.com/2009/06/speedy-matrix-multiplication-in-lisp-again/ for a nice guide to declaim and its effects.
 
 ;;; Annoyingly as everything else is reliant on the speed of the 
@@ -22,9 +19,6 @@
 ;;; for forcing float type on everything.
 
 ;;; vector3 operations
-
-;;; need a zero, unit-x, unit-y, unit-z, negative of all units
-;;; & unit scale (all 1's)
 
 ;----------------------------------------------------------------
 
@@ -55,6 +49,8 @@
 (defparameter *unit-y* (vector 0.0 1.0 0.0))
 (defparameter *unit-z* (vector 0.0 0.0 1.0))
 (defparameter *unit-scale* (vector 1.0 1.0 1.0))
+(defparameter *origin* (vector 0.0 0.0 0.0))
+
 
 ;----------------------------------------------------------------
 
@@ -82,6 +78,28 @@
 (defmacro v-z (vec)
   `(aref ,vec 2))
 
+;----------------------------------------------------------------
+
+;;[TODO] What is faster (* x x) or (expt x 2) ?
+(declaim (inline vzerop)
+	 (ftype (function ((simple-array single-float (3))) 
+			  (boolean)) vzerop))
+(defun vzerop (vector-a)
+  (declare ((simple-array single-float (3)) vector-a))
+  (float-zero-sq (+ (expt (v-x vector-a) 2)
+		    (expt (v-y vector-a) 2)
+		    (expt (v-z vector-a) 2))))
+
+;----------------------------------------------------------------
+
+(declaim (inline unitp)
+	 (ftype (function ((simple-array single-float (3))) 
+			  (boolean)) unitp))
+(defun unitp (vector-a)
+  (declare ((simple-array single-float (3)) vector-a))
+  (float-zero-sq (- 1.0 (+ (expt (v-x vector-a) 2)
+			   (expt (v-y vector-a) 2)
+			   (expt (v-z vector-a) 2)))))
 ;----------------------------------------------------------------
 
 ;; Would be interesting to see if checking that the arrays
@@ -253,7 +271,7 @@
   "If you only need to compare relative lengths then definately
    stick to length-squared as the sqrt is a slow operation."
   (declare ((simple-array single-float (3)) vector-a))
-  (sqrt (vlength-squared vector-a)))
+  (c-sqrt (vlength-squared vector-a)))
 
 ;----------------------------------------------------------------
 
@@ -278,10 +296,10 @@
 (defun distance (vector-a vector-b)
   "Return the distance between 2 points defined by vectors 
    vector-a & vector-b. If comparing distances, use 
-   c-distance-squared as it desnt require a sqrt and thus is 
+   c-distance-squared as it desnt require a c-sqrt and thus is 
    faster."
   (declare ((simple-array single-float (3)) vector-a vector-b))
-  (sqrt (distance-squared vector-a vector-b)))
+  (c-sqrt (distance-squared vector-a vector-b)))
 
 ;----------------------------------------------------------------
 
@@ -313,20 +331,20 @@
 
 ;----------------------------------------------------------------
 
+;; [TODO] shouldnt this return a zero vector in event of zero 
+;; length? does it matter?
 (declaim (inline normalize)
 	 (ftype (function ((simple-array single-float (3))) 
 			  (simple-array single-float (3))) 
 		normalize))
 (defun normalize (vector-a)
   "This normalizes the vector, it makes sure a zero length
-   vector won't throw an error and assumes any length less
-   than 1e-08 is 0. THis makes sense with floating point
-   inaccuracies."
+   vector won't throw an error."
   (declare ((simple-array single-float (3)) vector-a))
-  (let ((a (vlength vector-a))) 
-    (if (> a 1e-08) 
-	(v/ vector-a a)
-	vector-a)))
+  (let ((len (vlength-squared vector-a))) 
+    (if (float-zero len)
+	vector-a
+	(v* vector-a (c-inv-sqrt len)))))
 
 ;----------------------------------------------------------------
 
@@ -335,27 +353,22 @@
 			   (simple-array single-float (3))) 
 			  (simple-array single-float (3)))
 		cross))
-(defun cross (vector-a vector-b)
+(defun cross (vec-a vec-b)
   "Calculates the cross-product of 2 vectors, i.e. the vector 
    that lies perpendicular to them both. The resultign vector
    will <b>NOT</b> be normalised, to maximise efficiency
    The returned vector will be on the side from which the arc 
    from u to v is anticlockwise.
    This is because CEPL uses a right-handed coordinate system.
-   Another note on the cross product is that if vector-a and 
-   vector-b are normalized the length of the resulting vector
+   Another note on the cross product is that if vec-a and 
+   vec-b are normalized the length of the resulting vector
    will be sin(a) where a is the angle between the two vectors.
    The fact that we don't normalize may be useful in our 
    quaternion functions later on."
-  (declare ((simple-array single-float (3)) vector-a vector-b))
-  (let ((ux (v-x vector-a))
-	(uy (v-y vector-a))
-	(uz (v-z vector-a))
-	(vx (v-x vector-b))
-	(vy (v-y vector-b))
-	(vz (v-z vector-b)))
-    (make-vector3 (- (* uy vz) (* uz vy))
-		  (- (* uz vx) (* ux vz))
-		  (- (* ux vy) (* uy vx)))))
+  (declare ((simple-array single-float (3)) vec-a vec-b))
+  (make-vector3 
+   (- (* (v-y vec-a) (v-z vec-b)) (* (v-z vec-a) (v-y vec-b)))
+   (- (* (v-z vec-a) (v-x vec-b)) (* (v-x vec-a) (v-z vec-b)))
+   (- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b)))))
 
 

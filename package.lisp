@@ -1,12 +1,16 @@
 ;;;; package.lisp
 
-(defpackage #:base
+(defpackage :base
   (:use #:cl)
   (:export :+float-threshold+
 	   :+pi+
 	   :float-zero
+	   :float-zero-sq
 	   :c-sqrt
 	   :c-inv-sqrt))
+
+(defpackage #:math-macros
+  (:use #:cl #:base))
 
 (defpackage #:vector3
   (:use #:cl #:base)
@@ -15,7 +19,10 @@
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :cross
 	   :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
-	   :v-x :v-y :v-z))
+	   :v-x :v-y :v-z)
+  (:import-from :base :float-zero
+		:float-zero-sq
+		:c-sqrt))
 
 (defpackage #:matrix3
   (:use #:cl #:base #:vector3)

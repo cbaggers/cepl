@@ -1,8 +1,10 @@
-(in-package #:base)
+(in-package :base)
 
 (defconstant +float-threshold+ 1.0e-6)
+(defconstant +float-threshold-sq+ (expt 1.0e-6 2))
 (defconstant +pi+ 3.1415926535897932384626433832795)
 
+;----------------------------------------------------------------
 
 ;; Returns t if float is essentially zero
 ;; This is handle the fact that floats get
@@ -15,11 +17,28 @@
   (declare (single-float x))
   (< x +float-threshold+))
 
+;----------------------------------------------------------------
+
+;; Returns t if float is essentially zero-squared
+;; This sounds mental but its used when we need 
+;; to check if a distance squared is essentialy 
+;; zero
+;; [TODO] Maybe this is mental...go check
+(declaim (inline float-zero-sq)
+	 (ftype (function ((single-float)) 
+			  (boolean)) 
+		float-zero-sq))
+(defun float-zero-sq (x)
+  (declare (single-float x))
+  (< x +float-threshold-sq+))
+
 
 (declaim (inline inv-sqrt)
 	 (ftype (function ((single-float)) 
 			  (single-float)) 
 		inv-sqrt))
+
+;----------------------------------------------------------------
 
 ;;Come back and implement the fast versions of these two
 (defun c-sqrt (x)
@@ -29,6 +48,8 @@
 (defun c-inv-sqrt (x)
   (declare (single-float x))
   (/ 1.0 (sqrt x)))
+
+;----------------------------------------------------------------
 
 ;; from quake3
 ;; float Q_rsqrt( float number )
