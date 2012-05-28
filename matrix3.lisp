@@ -70,16 +70,16 @@
 ;----------------------------------------------------------------
 
 (defun identity-matrix3 ()
-  #(1 0 0 0 1 0 0 0 1))
+  #(1.0 0.0 0.0 
+    0.0 1.0 0.0 
+    0.0 0.0 1.0))
 
 (defun zero-matrix3 ()
-  #(0 0 0 0 0 0 0 0 0))
+  #(0.0 0.0 0.0 
+    0.0 0.0 0.0 
+    0.0 0.0 0.0))
 
 ;----------------------------------------------------------------
-
-123
-456
-
 
 (defun make-matrix3 ( a b c d e f g h i )
   (let ((result (zero-matrix3)))
@@ -366,7 +366,7 @@
 (defun get-fixed-angles (mat-a)
   (let* ((sy (melm mat-a 0 2))
 	 (cy (c-sqrt (- 1.0 (* cy cy)))))
-    (if (not (float-zero cy))
+    (if (not (float-zero cy)) ; [TODO: not correct PI-epsilon]
 	(let* ((factor (/ 1.0 cy))
 	       (sx (* factor (- (melm mat-a 2 1))))
 	       (cx (* factor (melm mat-a 2 2)))
@@ -444,13 +444,48 @@
 
 ;----------------------------------------------------------------
 
-
 ;;[TODO] Need to finish the multiplication functions
-(defun m* (mat-a mat-b))
+(defun m* (mat-a mat-b)
+  (make-matrix3 (+ (* (melm mat-a 0 0) (melm mat-b 0 0))
+		   (* (melm mat-a 0 1) (melm mat-b 1 0))
+		   (* (melm mat-a 0 2) (melm mat-b 2 0)))
+		(+ (* (melm mat-a 1 0) (melm mat-b 0 0))
+		   (* (melm mat-a 1 1) (melm mat-b 1 0))
+		   (* (melm mat-a 1 2) (melm mat-b 2 0)))
+		(+ (* (melm mat-a 2 0) (melm mat-b 0 0))
+		   (* (melm mat-a 2 1) (melm mat-b 1 0))
+		   (* (melm mat-a 2 2) (melm mat-b 2 0)))
+		(+ (* (melm mat-a 0 0) (melm mat-b 0 1))
+		   (* (melm mat-a 0 1) (melm mat-b 1 1))
+		   (* (melm mat-a 0 2) (melm mat-b 2 1)))
+		(+ (* (melm mat-a 1 0) (melm mat-b 0 1))
+		   (* (melm mat-a 1 1) (melm mat-b 1 1))
+		   (* (melm mat-a 1 2) (melm mat-b 2 1)))
+		(+ (* (melm mat-a 2 0) (melm mat-b 0 1))
+		   (* (melm mat-a 2 1) (melm mat-b 1 1))
+		   (* (melm mat-a 2 2) (melm mat-b 2 1)))
+		(+ (* (melm mat-a 0 0) (melm mat-b 0 2))
+		   (* (melm mat-a 0 1) (melm mat-b 1 2))
+		   (* (melm mat-a 0 2) (melm mat-b 2 2)))
+		(+ (* (melm mat-a 0 1) (melm mat-b 0 2))
+		   (* (melm mat-a 1 1) (melm mat-b 1 2))
+		   (* (melm mat-a 1 2) (melm mat-b 2 2)))
+		(+ (* (melm mat-a 2 0) (melm mat-b 0 2))
+		   (* (melm mat-a 2 1) (melm mat-b 1 2))
+		   (* (melm mat-a 2 2) (melm mat-b 2 2))))
 
 ;----------------------------------------------------------------
 
-;;(defun m*vec ())
+(defun m*vec (mat-a vec-a)
+  (make-vector3 (+ (* (melm mat-a 0 0) (v-x vec-a))
+		   (* (melm mat-a 0 1) (v-y vec-a))
+		   (* (melm mat-a 0 2) (v-z vec-a)))
+		(+ (* (melm mat-a 1 0) (v-x vec-a))
+		   (* (melm mat-a 1 1) (v-y vec-a))
+		   (* (melm mat-a 1 2) (v-z vec-a)))
+		(+ (* (melm mat-a 2 0) (v-x vec-a))
+		   (* (melm mat-a 2 1) (v-y vec-a))
+		   (* (melm mat-a 2 2) (v-z vec-a))))))
 
 ;----------------------------------------------------------------
 

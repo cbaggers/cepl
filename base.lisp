@@ -32,19 +32,21 @@
   (declare (single-float x))
   (< x +float-threshold-sq+))
 
-
-(declaim (inline inv-sqrt)
-	 (ftype (function ((single-float)) 
-			  (single-float)) 
-		inv-sqrt))
-
 ;----------------------------------------------------------------
 
 ;;Come back and implement the fast versions of these two
+(declaim (inline c-sqrt)
+	 (ftype (function ((single-float)) 
+			  (single-float)) 
+		c-sqrt))
 (defun c-sqrt (x)
   (declare (single-float x))
   (sqrt x))
 
+(declaim (inline c-inv-sqrt)
+	 (ftype (function ((single-float)) 
+			  (single-float)) 
+		c-inv-sqrt))
 (defun c-inv-sqrt (x)
   (declare (single-float x))
   (/ 1.0 (sqrt x)))

@@ -30,6 +30,35 @@
 
 ;----------------------------------------------------------------
 
+;; These have been defined as macros as it want to guarantee they
+;; are 'inlined' as it were and also to avoid any possible cost 
+;; of the implied let. THe 'implied let' thing is an assumption 
+;; on my part from something I read in "ansi common lisp" 
+;; (declaim (inline single?))
+;; (defun single? (lst)
+;;   (and (consp lst) (null (cdr lst))))
+;; (defun foo (x)
+;;   (single? (bar x)))
+;; is equivilent to 
+;; (defun foo (x)
+;;   (let ((lst (bar x)))
+;;     (and (consp lst) (bull (cdr lst)))))
+;; Final justification is that it's purely for syntatic clarity
+;; and not for any computational reason.
+(defmacro v-x (vec)
+  `(aref ,vec 0))
+
+(defmacro v-y (vec)
+  `(aref ,vec 1))
+
+(defmacro v-z (vec)
+  `(aref ,vec 2))
+
+(defmacro v-w (vec)
+  `(aref ,vec 3))
+
+;----------------------------------------------------------------
+
 ;; 
 (defmacro apply-across-elements (call array-forms 
 			     num-of-elms &body body)
