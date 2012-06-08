@@ -1,4 +1,4 @@
-(in-package #:matrix3)
+(in-package :matrix3)
 
 ;; Code adapted from Ogre which in turn was adapted 
 ;; from Wild Magic 0.2 Matrix math (free source code 

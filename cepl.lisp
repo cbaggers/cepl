@@ -3,4 +3,4 @@
 (in-package :cepl)
 
 (defun test ()
-  (print "Test Func"))
+  (vector3:make-vector3 1.0 2.0 3.0))
