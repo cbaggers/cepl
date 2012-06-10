@@ -1,6 +1,6 @@
 ;;; This package is for all the vector2 math functions
 
-(in-package #:vector2)
+(in-package :vector2)
 
 
 ;;; [TODO] make destructive versions aswell
