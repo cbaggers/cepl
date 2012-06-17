@@ -5,7 +5,7 @@
 
 ;;; this version is going to be tidied using the lispy 
 ;;; abstractions provided by the cl-eopgl and glut libraries
-(in-package :cepl)
+(in-package :arc-tuts)
 
 ;;;--------------------------------------------------------------
 

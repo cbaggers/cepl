@@ -217,11 +217,11 @@
 
 ;----------------------------------------------------------------
 
-(defun make-translation (vec-a)
+(defun make-translation (vec3-a)
   (make-matrix4 
-   1.0  0.0  0.0  (v-x vec-a)
-   0.0  1.0  0.0  (v-y vec-a)
-   0.0  0.0  1.0  (v-z vec-a)
+   1.0  0.0  0.0  (v-x vec3-a)
+   0.0  1.0  0.0  (v-y vec3-a)
+   0.0  0.0  1.0  (v-z vec3-a)
    0.0  0.0  0.0  1.0))
 
 ;----------------------------------------------------------------
@@ -282,7 +282,7 @@
 
 ;----------------------------------------------------------------
 
-(defun scaling (scale-vec3)
+(defun make-scale (scale-vec3)
   (make-matrix4
    (v-x scale-vec3)  0.0               0.0               0.0
    0.0               (v-y scale-vec3)  0.0               0.0
@@ -397,7 +397,7 @@
 
 ;----------------------------------------------------------------
 ;; [TODO] why cant this be named negate?
-(defun negate4 (mat-a)
+(defun negate (mat-a)
   (let ((r (zero-matrix4)))
     (loop for i below 16
        do (setf (aref r i) (- (aref mat-a i))))

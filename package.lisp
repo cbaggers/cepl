@@ -58,6 +58,17 @@
 
 (defpackage :matrix3
   (:use :cl)
+  (:export :melm :identity-matrix3 :zero-matrix3 
+	   :make-matrix3 :make-from-rows :get-rows
+	   :get-row :make-from-columns :get-columns
+	   :get-column :determinate-cramer :inverse
+	   :mzerop :identityp :meql :transpose :adjoint
+	   :mtrace :make-rotation-matrix-euler 
+	   :make-rotation-mat-aa :make-scale-matrix-vec
+	   :make-scale-matrix :make-xrotation-matrix 
+	   :make-yrotation-matrix :make-zrotation-matrix
+	   :get-fixed-angles :get-axis-angle :m+ :m- :negate
+	   :m* :m*vec)
   (:import-from :base :float-zero
 		      :c-sqrt)
   (:import-from :vector3 
@@ -68,6 +79,16 @@
 ;;[TODO] why does adding :vector3 in the :use cause conflicts?
 (defpackage :matrix4
   (:use :cl)
+  (:export :melm :identity-matrix4 :zero-matrix4 
+	   :2dclipspace-to-imagespace-matrix4 :make-matrix4
+	   :mzerop :identityp :meql :minor :adjoint 
+	   :determinant :affine-inverse :transpose 
+	   :make-translation :rotation-from-matrix
+	   :rotation-from-euler :rotation-from-axis-angle
+	   :make-scale :make-rotation-x :make-rotation-y
+	   :make-rotation-z :get-fixed-angles :mtrace
+	   :get-axis-angle :m+ :m- :negate :m*scalar
+	   :mcol*vec4 :mrow*vec4 :m* :transform)
   (:import-from :base :float-zero
 		      :c-sqrt)
   (:import-from :vector3 

@@ -363,6 +363,7 @@
 ;; Gets one set of possible z-y-x fixed angles that will generate
 ;; this matrix. Assumes that this is a rotation matrix
 ;; [TODO] returned as vector x-y-z
+
 (defun get-fixed-angles (mat-a)
   (let* ((sy (melm mat-a 0 2))
 	 (cy (c-sqrt (- 1.0 (* cy cy)))))
@@ -488,7 +489,7 @@
 		   (* (melm mat-a 2 2) (v-z vec-a))))))
 
 ;----------------------------------------------------------------
-
+;;EXAMPLE FROM WEB (NKLIEN)
 ;; 4x4 matrix vec multiply
 (declaim (ftype (function ((simple-array single-float (12))
                            (simple-array single-float (3)))
