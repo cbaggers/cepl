@@ -100,6 +100,11 @@
 
 (defpackage :cepl
   (:use :cl)
+  (:export :restartable :with-bind-buffer :with-bind-vao
+	   :with-use-program :make-gl-array-from-array
+	   :setup-buffer :sub-buffer :draw-elements-base-vertex
+	   :file-to-string :make-shader :shader-type-from-path
+	   :make-program)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 
