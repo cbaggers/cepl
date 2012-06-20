@@ -14,22 +14,21 @@
 ;----------------------------------------------------------------
 
 (defun identity-matrix4 ()
-  #(1.0 0.0 0.0 0.0
-    0.0 1.0 0.0 0.0
-    0.0 0.0 1.0 0.0
-    0.0 0.0 0.0 1.0))
+  (make-array 16 :element-type `single-float :initial-contents
+	      #(1.0 0.0 0.0 0.0
+		0.0 1.0 0.0 0.0
+		0.0 0.0 1.0 0.0
+		0.0 0.0 0.0 1.0)))
 
 (defun zero-matrix4 ()
-  #(0.0 0.0 0.0 0.0
-    0.0 0.0 0.0 0.0
-    0.0 0.0 0.0 0.0
-    0.0 0.0 0.0 0.0))
+  (make-array 16 :element-type `single-float))
 
 (defun 2dclipspace-to-imagespace-matrix4 ()
-  #(0.5  0.0  0.0  0.5
-    0.0 -0.0  0.0  0.5
-    0.0  0.0  1.0  0.0
-    0.0  0.0  0.0  1.0))
+  (make-array 16 :element-type `single-float :initial-contents
+	      #(0.5  0.0  0.0  0.5
+		0.0 -0.0  0.0  0.5
+		0.0  0.0  1.0  0.0
+		0.0  0.0  0.0  1.0)))
 
 ;----------------------------------------------------------------
 
@@ -217,7 +216,7 @@
 
 ;----------------------------------------------------------------
 
-(defun make-translation (vec3-a)
+(defun translation (vec3-a)
   (make-matrix4 
    1.0  0.0  0.0  (v-x vec3-a)
    0.0  1.0  0.0  (v-y vec3-a)
@@ -282,7 +281,7 @@
 
 ;----------------------------------------------------------------
 
-(defun make-scale (scale-vec3)
+(defun scale (scale-vec3)
   (make-matrix4
    (v-x scale-vec3)  0.0               0.0               0.0
    0.0               (v-y scale-vec3)  0.0               0.0

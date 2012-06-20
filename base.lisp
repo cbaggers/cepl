@@ -2,7 +2,9 @@
 
 (defconstant +float-threshold+ 1.0e-6)
 (defconstant +float-threshold-sq+ (expt 1.0e-6 2))
+;; [TODO] Need to declare type of these as float
 (defconstant +pi+ 3.1415926535897932384626433832795)
+(defconstant +one-degree-in-radians+ (/ (* +pi+ 2.0) 360.0))
 
 ;----------------------------------------------------------------
 

@@ -3,6 +3,7 @@
 (defpackage :base
   (:use :cl)
   (:export :+float-threshold+
+	   :+one-degree-in-radians+
 	   :+pi+
 	   :float-zero
 	   :float-zero-sq
@@ -83,9 +84,9 @@
 	   :2dclipspace-to-imagespace-matrix4 :make-matrix4
 	   :mzerop :identityp :meql :minor :adjoint 
 	   :determinant :affine-inverse :transpose 
-	   :make-translation :rotation-from-matrix
+	   :translation :rotation-from-matrix
 	   :rotation-from-euler :rotation-from-axis-angle
-	   :make-scale :make-rotation-x :make-rotation-y
+	   :scale :make-rotation-x :make-rotation-y
 	   :make-rotation-z :get-fixed-angles :mtrace
 	   :get-axis-angle :m+ :m- :negate :m*scalar
 	   :mcol*vec4 :mrow*vec4 :m* :transform)
@@ -104,7 +105,7 @@
 	   :with-use-program :make-gl-array-from-array
 	   :setup-buffer :sub-buffer :draw-elements-base-vertex
 	   :file-to-string :make-shader :shader-type-from-path
-	   :make-program)
+	   :make-program :calculate-frustrum-scale)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 

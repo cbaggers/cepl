@@ -118,3 +118,6 @@
 	  (gl:delete-shader shader))
     program))
 
+(defun calculate-frustrum-scale (field-of-view-degrees)
+  (/ 1.0 (tan (/ (* field-of-view-degrees base:+one-degree-in-radians+) 2.0))))
+
