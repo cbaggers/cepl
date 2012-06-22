@@ -11,8 +11,6 @@
 
 ;----------------------------------------------------------------
 
-;----------------------------------------------------------------
-
 (defun identity-matrix4 ()
   (make-array 16 :element-type `single-float :initial-contents
 	      #(1.0 0.0 0.0 0.0
@@ -239,25 +237,29 @@
 
 ;----------------------------------------------------------------
 
-(defun rotation-from-euler (x y z)
+(defun rotation-from-euler (vec3-a)
   "This is an unrolled contatenation of rotation matrices x
    y & z. The arguments in the originl were in reverse order"
-  (let ((sx (sin x)) (cx (cos x))
+  (let* ((x (v-x vec3-a)) (y (v-y vec3-a)) (z (v-z vec3-a))
+	(sx (sin x)) (cx (cos x))
 	(sy (sin y)) (cy (cos y))
 	(sz (sin z)) (cz (cos z)))
-    (make-matrix4 (* cy cz)  (- (* cy sz))  sy  0.0
-		  
-		  (+ (* sx sy sz) (* cx sz))
-		  (- (+ (* sx sy sz) (* cx sz))) ;is this right?
-		  (- (* sx cy))
+    (make-matrix4 (* cy cz)
+		  (+ (* sx sy cz) (* cx sz))
+		  (- (* sx sz) (* cx sy cz))
 		  0.0
 
-		  (- (+ (* cx sy cz) (* sx sz)))
+		  (- (* cy sz))
+		  (- (* cx cz) (* sx sy sz)) ;is this right?
 		  (+ (* cx sy sz) (* sx cz))
+		  0.0
+
+		  sy
+		  (- (* sx cy))
 		  (* cx cy)
 		  0.0
 
-		  0.0  0.0  0.0  1.0)))
+		  0.0 0.0 0.0 1.0)))
 
 ;----------------------------------------------------------------
 
@@ -290,7 +292,7 @@
 
 ;----------------------------------------------------------------
 
-(defun make-rotation-x (angle)
+(defun rotation-x (angle)
   (let ((s-a (sin angle))
 	(c-a (cos angle)))
     (make-matrix4 1.0  0.0  0.0     0.0
@@ -300,7 +302,7 @@
 
 ;----------------------------------------------------------------
 
-(defun make-rotation-y (angle)
+(defun rotation-y (angle)
   (let ((s-a (sin angle))
 	(c-a (cos angle)))
     (make-matrix4 c-a      0.0  s-a  0.0
@@ -310,7 +312,7 @@
 
 ;----------------------------------------------------------------
 
-(defun make-rotation-z (angle)
+(defun rotation-z (angle)
   (let ((s-a (sin angle))
 	(c-a (cos angle)))
     (make-matrix4 c-a  (- s-a)  0.0  0.0

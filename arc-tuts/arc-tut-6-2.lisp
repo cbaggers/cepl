@@ -126,7 +126,7 @@
 	 (new-pos (make-vector3 (* 4.0 (sin new-loop)) 
 				(* 4.0 (cos new-loop)) 
 				-20.0))
-	 (new-scale (make-vector3 (+ 2.0 (sin new-loop))
+	 (new-scale (make-vector3 (+ 1.0 (sin new-loop))
 				  (+ 1.0 (cos new-loop))
 				  1.0)))
     (make-entity :pos new-pos
@@ -144,10 +144,13 @@
 		 (gl:uniform-matrix 
 		    (model->cam-uniform win) 4
 		    (vector (matrix4:m*
-			     (matrix4:translation 
+			     (matrix4:translation
 			      (entity-pos ent))
-			     (matrix4:scale 
-			      (entity-scale ent))))
+			     (matrix4:rotation-from-euler
+			      (make-vector3
+			       (entity-loop-angle ent)
+			       (entity-loop-angle ent)
+			       (entity-loop-angle ent)))))
 		    nil)
 		 (gl:draw-elements :triangles
 				   (gl:make-null-gl-array 

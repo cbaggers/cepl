@@ -86,8 +86,8 @@
 	   :determinant :affine-inverse :transpose 
 	   :translation :rotation-from-matrix
 	   :rotation-from-euler :rotation-from-axis-angle
-	   :scale :make-rotation-x :make-rotation-y
-	   :make-rotation-z :get-fixed-angles :mtrace
+	   :scale :rotation-x :rotation-y
+	   :rotation-z :get-fixed-angles :mtrace
 	   :get-axis-angle :m+ :m- :negate :m*scalar
 	   :mcol*vec4 :mrow*vec4 :m* :transform)
   (:import-from :base :float-zero
