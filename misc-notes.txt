@@ -1,0 +1,28 @@
+buffers
+-------
+as usual, these are just blocks of unformatted data
+
+stream
+------
+Based around VAOs
+Streams have a stream-format 
+
+stream-format
+-------------
+this is used to work out vars, stride and all the rest
+based around a struct...somehow
+DO we want this to be a stream format...why not data format?
+My thinking is that we will want this to reorder the elements
+depending on the best memory layout practices.
+
+program
+-------
+make-program will spit of a lambda which will render using the
+pipeline contained. its arguments are those of the vertex shader.
+It will expext uniforms and a list of render-jobs
+
+renderable
+----------
+stream with the bounds of the data so you could have multiple
+object mesh data in one buffer and use this to define a 'stream'
+for each one. 
