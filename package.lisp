@@ -10,6 +10,22 @@
 	   :c-sqrt
 	   :c-inv-sqrt))
 
+(defpackage :cepl-utils
+  (:use :cl)
+  (:nicknames :utils)
+  (:export :file-to-string))
+
+(defpackage :cepl-gl
+  (:use :cl :cl-opengl :cffi)
+  (:nicknames :cgl)
+  (:shadow :define-gl-array-format
+	   :emit-gl-array-struct-clause)
+  (:export :dumb-make-program :with-use-program :make-stream
+	   :with-bind-vao :def-data-format :data-format 
+	   :aref-gl :alloc-array-gl :gen-buffer :populate-buffer
+	   :with-bind-buffer :make-shader))
+
+
 (defpackage :math-macros
   (:use :cl)
   (:export :apply-across-elements
