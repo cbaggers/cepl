@@ -38,7 +38,7 @@
 				     (- f-near f-far)) 0.0)))
 
 (defun init-prog (win)
-  (setf (program win) (cepl:make-program `("tut6-1.vert"
+  (setf (program win) (defunct:make-program `("tut6-1.vert"
 					   "tut6-1.frag")))
   (setf (cam->clip-uniform win) 
 	(gl:get-uniform-location (program win) 
@@ -47,14 +47,14 @@
 	(gl:get-uniform-location (program win)
 				 "modelToCameraMatrix"))
   (setf (frustrum-scale win) 
-	(cepl:calculate-frustrum-scale 45.0))
+	(defunct:calculate-frustrum-scale 45.0))
   (setf (cam->clip win) (make-cam-clip-matrix win))
-  (cepl:with-use-program (program win)
+  (defunct:with-use-program (program win)
     (gl:uniform-matrix (cam->clip-uniform win)
 		       4 (vector (cam->clip win)))))
 
 (defun init-vb (win)
-  (setf (vertex-data win) (cepl:make-gl-array-from-array :float
+  (setf (vertex-data win) (defunct:make-gl-array-from-array :float
 			   #(+1.0  +1.0  +1.0 
 			     -1.0  -1.0  +1.0 
 			     -1.0  +1.0  -1.0 
@@ -74,7 +74,7 @@
 			     0.0  0.0  1.0  1.0
 			     1.0  0.0  0.0  1.0
 			     0.5  0.5  0.0  1.0)))
-  (setf (index-data win) (cepl:make-gl-array-from-array :short
+  (setf (index-data win) (defunct:make-gl-array-from-array :short
 			  #(0  1  2 
 			    1  0  3 
 			    2  3  0 
@@ -85,9 +85,9 @@
 			    7  6  4 
 			    6  7  5)))
   (setf (vertex-buffer win) 
-	(cepl:setup-buffer :array-buffer (vertex-data win)))
+	(defunct:setup-buffer :array-buffer (vertex-data win)))
   (setf (index-buffer win)
-	(cepl:setup-buffer :element-array-buffer (index-data win))))
+	(defunct:setup-buffer :element-array-buffer (index-data win))))
 
 (defun init-vaos (win)
   ;; Sorry about the num-of-verts magic number crap
@@ -95,7 +95,7 @@
   (let* ((num-of-verts 8)
 	 (ob-1-color-offset (* 4 3 num-of-verts)))
     (setf (vao-1 win) (gl:gen-vertex-array))
-    (cepl:with-bind-vao (vao-1 win)
+    (defunct:with-bind-vao (vao-1 win)
       (gl:bind-buffer :array-buffer (vertex-buffer win))
       (gl:enable-vertex-attrib-array 0)
       (gl:enable-vertex-attrib-array 1)
@@ -138,8 +138,8 @@
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (setf (entities win) (mapcar #'move-entity (entities win)))
-  (cepl:with-use-program (program win)
-    (cepl:with-bind-vao (vao-1 win)
+  (defunct:with-use-program (program win)
+    (defunct:with-bind-vao (vao-1 win)
       (labels ((draw-entity (ent) 
 		 (gl:uniform-matrix 
 		    (model->cam-uniform win) 4
@@ -166,7 +166,7 @@
 	(* (frustrum-scale win) (/ height width)))
   (setf (matrix4:melm (cam->clip win) 1 1)
 	(frustrum-scale win))
-  (cepl:with-use-program (program win)
+  (defunct:with-use-program (program win)
     (gl:uniform-matrix (cam->clip-uniform win)
 		       4 (vector (cam->clip win))))
   (gl:viewport 0 0 width height))
@@ -181,7 +181,7 @@
    (make-instance 'arc-tut-window)))
 
 (defmethod glut:idle ((win arc-tut-window))
-  (cepl:restartable
+  (defunct:restartable
     (let ((connection (or swank::*emacs-connection*
 			  (swank::default-connection))))
       (when connection

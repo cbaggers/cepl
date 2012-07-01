@@ -6,6 +6,9 @@
 
 (in-package :cepl-gl)
 
+(define-condition cgl-compile-shader-error (error)
+  ((text :initarg :text :reader text)))
+
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
 ;;;---------;;;
@@ -166,20 +169,27 @@ COMPONENT is returned."
 	  (t (error "Could not extract shader type from shader"))
 	  )))
 
-(defun make-shader (file-path &optional (shader-type 
-			      (shader-type-from-path file-path)))
-  (let* ((source-string (cepl-utils:file-to-string file-path))
-	 (shader (gl:create-shader shader-type)))
-    (gl:shader-source shader source-string)
-    (gl:compile-shader shader)
-    ;;check for compile errors
-    (if (not (gl:get-shader shader :compile-status))
-	(let ((error-string (write-to-string 
-			     (gl:get-shader-info-log shader))))
-	  (error (format nil "Error compiling shader ~a~%~a" 
-			 file-path
-			 error-string))))
-    shader))
+(defun make-shader (file-path &optional 
+				(shader-type 
+			      (shader-type-from-path file-path))
+				(shader-id 
+				 (gl:create-shader shader-type)))
+  (restart-case  
+      (let ((source-string (utils:file-to-string file-path)))
+	(gl:shader-source shader-id source-string)
+	(gl:compile-shader shader-id)
+	;;check for compile errors
+	(if (not (gl:get-shader shader-id :compile-status))
+	    (error `cgl-compile-shader-error
+		   :text (format nil 
+				 "Error compiling shader ~a~%~a" 
+				 file-path
+				 (gl:get-shader-info-log 
+				  shader-id)))))
+    (reload-recompile-shader () (make-shader file-path
+					     shader-type
+					     shader-id)))
+  shader-id)
 
 (defun dumb-make-program (shaders)
   (let ((program (gl:create-program)))
@@ -188,11 +198,8 @@ COMPONENT is returned."
     (gl:link-program program)
     ;;check for linking errors
     (if (not (gl:get-program program :link-status))
-	(let ((error-string (write-to-string
-			     (gl:get-program-info-log program))))
-	  (print error-string)
-	  (error (format nil "Error Linking Program~%~a" 
-			 error-string))))
+	(error (format nil "Error Linking Program~%~a" 
+		       (gl:get-program-info-log program))))
     (loop for shader in shaders
        do (gl:detach-shader program shader)
 	  (gl:delete-shader shader))

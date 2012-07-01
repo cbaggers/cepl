@@ -129,9 +129,22 @@
   (:import-from :vector4
 		:make-vector4))
 
+(defpackage :defunct
+  (:use :cl)
+  (:export :restartable :with-bind-buffer :with-bind-vao
+	   :with-use-program :make-gl-array-from-array
+	   :setup-buffer :sub-buffer :draw-elements-base-vertex
+	   :file-to-string :make-shader :shader-type-from-path
+	   :make-program :calculate-frustrum-scale)
+  (:import-from :vector2
+		:make-vector2)
+  (:import-from :vector3 
+		:make-vector3)
+  (:import-from :vector4
+		:make-vector4))
 
 (defpackage :arc-tuts
-  (:use :cl :cepl )
+  (:use :cl :defunct )
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 
