@@ -1,4 +1,4 @@
-;; this has two objects with no depth
+;; its so ugly!
 (in-package :arc-tuts)
 
 ;;;--------------------------------------------------------------
