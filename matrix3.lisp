@@ -393,7 +393,7 @@
     (cond ((float-zero angle) 
 	   ;angle is zero so axis can be anything
 	   (make-vector3 1.0 0.0 0.0))
-	  ((< angle (- base:+pi+ base:+float-threshold+))
+	  ((< angle (- base-maths:+pi+ base-maths:+float-threshold+))
 	   ;its not 180 degrees
 	   (let ((axis (make-vector3 
 			(- (melm mat-a 1 2) (melm mat-a 2 1))

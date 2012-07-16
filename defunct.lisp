@@ -18,7 +18,7 @@
 
 
 (defun calculate-frustrum-scale (field-of-view-degrees)
-  (/ 1.0 (tan (/ (* field-of-view-degrees base:+one-degree-in-radians+) 2.0))))
+  (/ 1.0 (tan (/ (* field-of-view-degrees base-maths:+one-degree-in-radians+) 2.0))))
 
 (defmacro with-bind-buffer (target buffer-id &body body)
   `(unwind-protect

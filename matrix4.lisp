@@ -324,7 +324,7 @@
 
 (defun get-fixed-angles (mat-a)
   (let* ((sy (melm mat-a 0 2))
-	 (cy (base:c-sqrt (- 1.0 (* sy sy)))))
+	 (cy (base-maths:c-sqrt (- 1.0 (* sy sy)))))
     (if (float-zero cy)
 	(let ((sz 0.0)
 	      (cz 1.0)
@@ -352,7 +352,7 @@
 	 (cos-theta (* 0.5 (- trace-a 1.0)))
 	 (angle (acos cos-theta)))
     (cond ((float-zero angle) (values vector3:*unit-x* angle))
-	  ((float-zero (- base:+pi+ angle))
+	  ((float-zero (- base-maths:+pi+ angle))
 	   (values 
 	    (vector3:normalize
 	     (make-vector3 (- (melm mat-a 2 1) (melm mat-a 1 2))

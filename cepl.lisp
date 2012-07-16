@@ -2,7 +2,7 @@
 
 (in-package :cepl)
 
-;; right now this si just functions we use across demos.
+;; right now this is just functions we use across demos.
 ;; later this will be formalized when I draw up a decent 
 ;; design for the api/whatever-this-is
 
@@ -26,5 +26,12 @@
 
 
 (defun calculate-frustrum-scale (field-of-view-degrees)
-  (/ 1.0 (tan (/ (* field-of-view-degrees base:+one-degree-in-radians+) 2.0))))
+  (/ 1.0 (tan (/ (* field-of-view-degrees base-maths:+one-degree-in-radians+) 2.0))))
 
+;;;------------------------------------------------------------------
+
+(defmacro with-init-cepl (&body body)
+  `(progn 
+     ;;(setf *cepl-* nil)
+     (sdl:with-init ()
+       (,@body))))

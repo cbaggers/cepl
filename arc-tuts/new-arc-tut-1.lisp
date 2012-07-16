@@ -29,9 +29,12 @@
 	 do (setf (cgl:aref-gl gl-array index 'x) item))
     (cgl:populate-buffer buffer-id gl-array)
     (setf (program win) (cgl:dumb-make-program 
-			 (mapcar #'cgl:make-shader
-				 `("./tut1.vert" "./tut1.frag")))
-	  (vertex-buffer win) buffer-id)))
+			 (mapcar #'cgl:make-shader	
+	 '("/home/baggers/Code/lisp/cepl/arc-tuts/tut1.vert"
+	  "/home/baggers/Code/lisp/cepl/arc-tuts/tut1.frag")))
+	  (vertex-buffer win) buffer-id)
+    (print (cgl:program-uniforms (program win)))))
+
 
 (defmethod glut:display ((win arc-tut-window))
   (gl:clear-color 0.0 0.0 0.0 0.0)

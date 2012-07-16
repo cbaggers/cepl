@@ -4,9 +4,11 @@
   :serial t
   :depends-on (#:cl-opengl
                #:cl-glu
-               #:cl-glut)
+               #:cl-glut
+	       #:lispbuilder-sdl)
   :components ((:file "package")
-	       (:file "base")
+	       (:file "base-maths")
+	       (:file "base-macros")
 	       (:file "cepl-utils")
 	       (:file "math-macros")
 	       (:file "cepl-gl")

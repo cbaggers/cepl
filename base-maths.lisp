@@ -1,4 +1,4 @@
-(in-package :base)
+(in-package :base-maths)
 
 (defconstant +float-threshold+ 1.0e-6)
 (defconstant +float-threshold-sq+ (expt 1.0e-6 2))

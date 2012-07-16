@@ -1,6 +1,6 @@
 ;;;; package.lisp
 
-(defpackage :base
+(defpackage :base-maths
   (:use :cl)
   (:export :+float-threshold+
 	   :+one-degree-in-radians+
@@ -10,20 +10,40 @@
 	   :c-sqrt
 	   :c-inv-sqrt))
 
+(defpackage :base-macros
+  (:use :cl)
+  (:export :defun-memobind
+	   :defmemo))
+
+(defpackage :cepl-time
+  (:use :cl)
+  (:export :make-time-buffer
+	   :make-stepper
+	   :on-step-call))
+
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :file-to-string))
+  (:export :file-to-string
+	   :walk-replace
+	   :flatten
+	   :mkstr
+	   :symb
+	   :make-keyword
+	   :group))
 
 (defpackage :cepl-gl
   (:use :cl :cl-opengl :cffi)
   (:nicknames :cgl)
   (:shadow :define-gl-array-format
-	   :emit-gl-array-struct-clause)
+	   :emit-gl-array-struct-clause
+	   :buffer-data
+	   :bind-buffer)
   (:export :dumb-make-program :with-use-program :make-stream
 	   :with-bind-vao :def-data-format :data-format 
 	   :aref-gl :alloc-array-gl :gen-buffer :populate-buffer
-	   :with-bind-buffer :make-shader))
+	   :with-bind-buffer :make-shader :program-attributes
+	   :program-uniforms :populate-gl-array))
 
 
 (defpackage :math-macros
@@ -33,12 +53,13 @@
 
 (defpackage :vector2
   (:use :cl)
+  (:nicknames :v2)
   (:export :make-vector2 :v= :v/= :v+ :v+1 :v- :v-1 :v*
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :perp-dot
 	   :*unit-x* :*unit-y* :*unit-scale*)
-  (:import-from :base :float-zero
+  (:import-from :base-maths :float-zero
 		      :float-zero-sq
 		      :c-sqrt
 		      :c-inv-sqrt)
@@ -47,12 +68,13 @@
 
 (defpackage :vector3
   (:use :cl)
+  (:nicknames :v3)
   (:export :make-vector3 :v= :v/= :v+ :v+1 :v- :v-1 :v*
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :cross
 	   :*unit-x* :*unit-y* :*unit-z* :*unit-scale*)
-  (:import-from :base :float-zero
+  (:import-from :base-maths :float-zero
 		      :float-zero-sq
 		      :c-sqrt
 		      :c-inv-sqrt)
@@ -61,12 +83,13 @@
 
 (defpackage :vector4
   (:use :cl)
+  (:nicknames :v4)
   (:export :make-vector4 :v= :v/= :v+ :v+1 :v- :v-1 :v*
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :cross
 	   :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*)
-  (:import-from :base :float-zero
+  (:import-from :base-maths :float-zero
 		      :float-zero-sq
 		      :c-sqrt
 		      :c-inv-sqrt)
@@ -75,6 +98,7 @@
 
 (defpackage :matrix3
   (:use :cl)
+  (:nicknames :m3)
   (:export :melm :identity-matrix3 :zero-matrix3 
 	   :make-matrix3 :make-from-rows :get-rows
 	   :get-row :make-from-columns :get-columns
@@ -86,7 +110,7 @@
 	   :make-yrotation-matrix :make-zrotation-matrix
 	   :get-fixed-angles :get-axis-angle :m+ :m- :negate
 	   :m* :m*vec)
-  (:import-from :base :float-zero
+  (:import-from :base-maths :float-zero
 		      :c-sqrt)
   (:import-from :vector3 
 		:make-vector3)
@@ -96,6 +120,7 @@
 ;;[TODO] why does adding :vector3 in the :use cause conflicts?
 (defpackage :matrix4
   (:use :cl)
+  (:nicknames :m4)
   (:export :melm :identity-matrix4 :zero-matrix4 
 	   :2dclipspace-to-imagespace-matrix4 :make-matrix4
 	   :mzerop :identityp :meql :minor :adjoint 
@@ -106,7 +131,7 @@
 	   :rotation-z :get-fixed-angles :mtrace
 	   :get-axis-angle :m+ :m- :negate :m*scalar
 	   :mcol*vec4 :mrow*vec4 :m* :transform)
-  (:import-from :base :float-zero
+  (:import-from :base-maths :float-zero
 		      :c-sqrt)
   (:import-from :vector3 
 		:make-vector3)
@@ -145,6 +170,17 @@
 
 (defpackage :arc-tuts
   (:use :cl :defunct )
+  (:import-from :vector2
+		:make-vector2)
+  (:import-from :vector3 
+		:make-vector3)
+  (:import-from :vector4
+		:make-vector4)
+  (:import-from :math-macros
+		:v-x :v-y :v-z :v-w))
+
+(defpackage :cepl-examples
+  (:use :cl :cepl-gl)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 
