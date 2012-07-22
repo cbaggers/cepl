@@ -35,15 +35,40 @@
 (defpackage :cepl-gl
   (:use :cl :cl-opengl :cffi)
   (:nicknames :cgl)
-  (:shadow :define-gl-array-format
-	   :emit-gl-array-struct-clause
+  (:shadow :buffer-data
+	   :bind-buffer
+	   :enable-vertex-attrib-array
+	   :vertex-attrib-pointer
+	   :uniform-matrix
+	   :define-gl-array-format
+	   :alloc-gl-array
+	   :bind-vertex-array
+	   :use-program
+	   :make-program)
+  (:export :cgl-compile-shader-error 
+	   :enable-vertex-attrib-array
+	   :vertex-attrib-pointer 
+	   :uniform-matrix
 	   :buffer-data
-	   :bind-buffer)
-  (:export :dumb-make-program :with-use-program :make-stream
-	   :with-bind-vao :def-data-format :data-format 
-	   :aref-gl :alloc-array-gl :gen-buffer :populate-buffer
-	   :with-bind-buffer :make-shader :program-attributes
-	   :program-uniforms :populate-gl-array))
+	   :multi-populate-buffer
+	   :dumb-make-program
+	   :define-gl-array-format
+	   :destructuring-populate
+	   :alloc-array-gl
+	   :bind-vertex-attrib-pointer
+	   :bind-vao
+	   :bind-vertex-array
+	   :make-vao
+	   :gl-stream
+	   :program-attrib-count
+	   :program-attributes
+	   :program-uniform-count
+	   :program-uniforms
+	   :use-program
+	   :shader-type-from-path
+	   :make-shader
+	   :link-shaders
+	   :make-program))
 
 
 (defpackage :math-macros

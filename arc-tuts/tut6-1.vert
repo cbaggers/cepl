@@ -7,10 +7,11 @@ smooth out vec4 theColor;
 
 uniform mat4 cameraToClipMatrix;
 uniform mat4 modelToCameraMatrix;
+uniform float jam;
 
 void main()
 {
-	vec4 cameraPos = modelToCameraMatrix * position;
+	vec4 cameraPos = modelToCameraMatrix * position + jam;
 	gl_Position = cameraToClipMatrix * cameraPos;
 	theColor = color;
 }

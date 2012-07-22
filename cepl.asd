@@ -10,8 +10,9 @@
 	       (:file "base-maths")
 	       (:file "base-macros")
 	       (:file "cepl-utils")
-	       (:file "math-macros")
+	       (:file "cepl-time")
 	       (:file "cepl-gl")
+	       (:file "math-macros")
 	       (:file "vector2")
 	       (:file "vector3")
 	       (:file "vector4")
@@ -19,4 +20,3 @@
 	       (:file "matrix4")
 	       (:file "cepl")
 	       (:file "defunct")))
-

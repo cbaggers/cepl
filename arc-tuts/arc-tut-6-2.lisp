@@ -38,8 +38,9 @@
 				     (- f-near f-far)) 0.0)))
 
 (defun init-prog (win)
-  (setf (program win) (defunct:make-program `("tut6-1.vert"
-					   "tut6-1.frag")))
+  (setf (program win) (defunct:make-program `("/home/baggers/Code/lisp/cepl/arc-tuts/tut6-1.vert"
+					   "/home/baggers/Code/lisp/cepl/arc-tuts/tut6-1.frag")))
+  (print (defunct::program-uniforms (program win)))
   (setf (cam->clip-uniform win) 
 	(gl:get-uniform-location (program win) 
 				 "cameraToClipMatrix"))

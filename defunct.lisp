@@ -38,6 +38,15 @@
             (progn ,@body))
      (gl:use-program 0)))
 
+(defun program-uniform-count (program)
+  (gl::get-program program :active-uniforms))
+
+(defun program-uniforms (program)
+  (loop for i from 0 below (program-uniform-count program)
+     collect (multiple-value-bind (size type name)
+		 (gl::get-active-uniform program i)
+	       (list name type size))))
+
 ;;;--------------------------------------------------------------
 
 (defun setup-buffer (buf-type gl-array 
