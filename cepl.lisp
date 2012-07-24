@@ -8,15 +8,6 @@
 
 ;;;--------------------------------------------------------------
 
-(defmacro continuable (&body body)
-  "Helper macro since we use continue restarts a lot 
-   (remember to hit C in slime or pick the restart so errors don't kill the app"
-  `(restart-case 
-       (progn ,@body)
-     (continue () :report "Continue")))
-
-;;;--------------------------------------------------------------
-
 (defun draw-elements-base-vertex (mode array indices base-vertex
 			    &key (count (gl::gl-array-size array)))
   (%gl:draw-elements-base-vertex mode count
@@ -27,6 +18,18 @@
 
 (defun calculate-frustrum-scale (field-of-view-degrees)
   (/ 1.0 (tan (/ (* field-of-view-degrees base-maths:+one-degree-in-radians+) 2.0))))
+
+
+(defun make-cam-clip-matrix (frustrum-scale)
+  (let* ((f-near 1.0)
+	 (f-far 45.0)
+	 (f-scale frustrum-scale))
+    (matrix4:make-matrix4 f-scale 0.0 0.0 0.0
+			  0.0 f-scale 0.0 0.0
+			  0.0 0.0 (/ (+ f-far f-near)
+				     (- f-near f-far)) -1.0
+			  0.0 0.0 (/ (* 2 f-far f-near)
+				     (- f-near f-far)) 0.0)))
 
 ;;;------------------------------------------------------------------
 

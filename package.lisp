@@ -13,7 +13,8 @@
 (defpackage :base-macros
   (:use :cl)
   (:export :defun-memobind
-	   :defmemo))
+	   :defmemo
+	   :continuable))
 
 (defpackage :cepl-time
   (:use :cl)
@@ -24,8 +25,8 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :file-to-string
-	   :walk-replace
+  (:export :walk-replace
+	   :file-to-string
 	   :flatten
 	   :mkstr
 	   :symb
@@ -49,9 +50,10 @@
 	   :enable-vertex-attrib-array
 	   :vertex-attrib-pointer 
 	   :uniform-matrix
+	   :gen-buffer
 	   :buffer-data
+	   :bind-buffer
 	   :multi-populate-buffer
-	   :dumb-make-program
 	   :define-gl-array-format
 	   :destructuring-populate
 	   :alloc-array-gl
@@ -60,15 +62,18 @@
 	   :bind-vertex-array
 	   :make-vao
 	   :gl-stream
+	   :make-gl-stream
 	   :program-attrib-count
 	   :program-attributes
 	   :program-uniform-count
 	   :program-uniforms
+	   :get-uniforms
 	   :use-program
 	   :shader-type-from-path
 	   :make-shader
 	   :link-shaders
-	   :make-program))
+	   :make-program
+	   :set-program-uniforms))
 
 
 (defpackage :math-macros
@@ -167,11 +172,10 @@
 
 (defpackage :cepl
   (:use :cl)
-  (:export :restartable :with-bind-buffer :with-bind-vao
-	   :with-use-program :make-gl-array-from-array
-	   :setup-buffer :sub-buffer :draw-elements-base-vertex
-	   :file-to-string :make-shader :shader-type-from-path
-	   :make-program :calculate-frustrum-scale)
+  (:export :draw-elements-base-vertex
+	   :calculate-frustrum-scale
+	   :with-init-cepl
+	   :make-cam-clip-matrix)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 
@@ -205,7 +209,7 @@
 		:v-x :v-y :v-z :v-w))
 
 (defpackage :cepl-examples
-  (:use :cl :cepl-gl)
+  (:use :cl)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 

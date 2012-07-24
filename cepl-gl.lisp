@@ -26,7 +26,7 @@
   (gl:vertex-attrib-pointer index size type normalised stride
 			    pointer))
 
-(defun unform-matrix (program-id location dim matrices)
+(defun uniform-matrix (program-id location dim matrices)
   (use-program program-id)
   (gl:uniform-matrix location dim matrices nil))
 
@@ -42,10 +42,13 @@
 
 
 ;; [TODO] Needs working out so we can express data population well
-(defun buffer-data (buffer-id gl-array &key (buffer-type :array-buffer) (draw-type :static-draw))
+(defun buffer-data (buffer-id array &key (buffer-type :array-buffer) (draw-type :static-draw))
   (bind-buffer buffer-type buffer-id)
-  (gl:buffer-data buffer-type draw-type gl-array)
-  buffer-id)
+  (gl:buffer-data buffer-type draw-type array)
+  (list (list buffer-id 
+	      0 
+	      (gl::gl-array-type array) 
+	      (gl::gl-array-size array))))
 
 (defun multi-populate-buffer (buffer-id arrays 
 			     &key (buffer-type :array-buffer) 
@@ -67,15 +70,14 @@
 	      (gl:buffer-sub-data buffer-type array
 				  :buffer-offset offset)
 	      (setf offset (+ offset size)))))
-    (values buffer-id 
-	    (loop for array in arrays
-		 for size in array-byte-sizes
-		 with offset = 0
-	       do (setf offset (+ offset size))
-	       collect (list buffer-id
-			     offset
-			     (gl::gl-array-type array) 
-			     (gl::gl-array-size array))))))
+    (loop for array in arrays
+       for size in array-byte-sizes
+       with offset = 0
+       do (setf offset (+ offset size))
+       collect (list buffer-id
+		     offset
+		     (gl::gl-array-type array) 
+		     (gl::gl-array-size array)))))
 
 ;; get a list of the array size in bytes of all the arrays
 ;; use buffer-data to push the first array in.
@@ -110,7 +112,7 @@ type. The following parameters are supported:
      (setf (get ',name 'vertex-array-binder)
            (compile
             nil
-            `(lambda (p)
+            `(lambda (attribute-index p)
                ,,@(loop with stride = `(foreign-type-size ',name)
                         for c in clauses
                         for offset = `(foreign-slot-offset
@@ -118,13 +120,45 @@ type. The following parameters are supported:
 				       ',(caadr (member 
 						 :components c)))
                         collect `(emit-gl-array-bind-clause
-                                  ',c ,offset ,stride 'p)))))
-     (setf (get ',name 'layout)
+                                  ',c ,offset ,stride 
+				  'attribute-index'p)))))
+     (setf (get ',name 'format)
 	   (lambda () 
 	     ',clauses))
      (setf (get ',name 'cgl-destructuring-populate)
 	   (destructured-populate ,@clauses))
      ',name))
+
+(defun emit-gl-array-struct-clause (clause)
+  (destructuring-bind (&key type components &allow-other-keys)
+      clause
+    (loop for c in components
+          collect `(,c ,type))))
+
+(defun emit-gl-array-bind-clause (clause offset stride index-sym psym)
+  (destructuring-bind (&rest rest &key type components
+                                  &allow-other-keys)
+      clause
+    (let* ((array-type `vertex-attrib)
+	   (func-name (gl::symbolicate-package "%GL" array-type "-POINTER"))
+          (address-expr `(inc-pointer ,psym ,offset))
+          (size (length components)))
+      (destructuring-bind (&key (normalized nil) &allow-other-keys)
+	  rest
+	`(,func-name ,index-sym ,size ,type ,normalized ,stride
+		     ,address-expr)))))
+
+
+;; The offset here needs to be a pointer
+(defun bind-vertex-attrib-pointer (attribute-index array-type 
+				   &optional (offset 0))
+  (funcall (get array-type 'vertex-array-binder) 
+	   attribute-index
+	   (cffi:make-pointer offset)))
+
+
+(defun gl-array-format (array-type)
+  (get array-type 'format))
 
 (defun destructuring-populate (array data)
   (let ((func (get (gl::gl-array-type array) 
@@ -134,20 +168,23 @@ type. The following parameters are supported:
 
 ;;[TODO] These names are too similar
 (defmacro destructured-populate (&body clauses)
-  `(lambda (array data)
-	     (loop for vert in data
-		 for i from 0
-		do (destructuring-bind ,(list-components
-					 clauses) 
-		       vert
-		     ,@(loop for comp in (utils:flatten 
-					  (list-components
-					   clauses))
-			  collect (list 'setf 
-					`(aref-gl 
-					  array
-					  i
-					  ',comp) comp))))))
+  (let ((loop-token (gensym "LOOP")))
+    `(lambda (array data)
+       (loop for vert in data
+	  for ,loop-token from 0
+	  do (destructuring-bind ,(list-components
+				   clauses) 
+		 (if (numberp vert)
+		     (list (list vert))
+		     vert)
+	       ,@(loop for comp in (utils:flatten 
+				    (list-components
+				     clauses))
+		    collect (list 'setf 
+				  `(aref-gl 
+				    array
+				    ,loop-token
+				    ',comp) comp)))))))
 
 (defun list-components (clauses)
   (loop for clause in clauses
@@ -157,24 +194,6 @@ type. The following parameters are supported:
 		 (declare (ignore rest))
 		 components)))
 
-(defun emit-gl-array-struct-clause (clause)
-  (destructuring-bind (&key type components &allow-other-keys)
-      clause
-    (loop for c in components
-          collect `(,c ,type))))
-
-(defun emit-gl-array-bind-clause (clause offset stride psym)
-  (destructuring-bind (&rest rest &key type components
-                                  &allow-other-keys)
-      clause
-    (let* ((array-type `vertex-attrib)
-	   (func-name (gl::symbolicate-package "%GL" array-type "-POINTER"))
-          (address-expr `(inc-pointer ,psym ,offset))
-          (size (length components)))
-      (destructuring-bind (&key (index 0) (normalized nil) &allow-other-keys)
-	  rest
-	`(,func-name ,index ,size ,type ,normalized ,stride
-		     ,address-expr)))))
 
 ;; needs to be here right now as I don't know how to set
 ;; vertex-array-binder to be in cl-opengl
@@ -189,12 +208,6 @@ type. The following parameters are supported:
 
 (defun alloc-array-gl (type count)
   (alloc-gl-array type count))
-
-
-(defun bind-vertex-attrib-pointer (array-type 
-				   &optional (offset 0))
-  "Calls ."
-  (funcall (get array-type 'vertex-array-binder) offset))
 
 
 ;; Grr, wanted to use this but coudl work out how to do the 
@@ -229,8 +242,8 @@ COMPONENT is returned."
             value)))
 
 ;;;--------------------------------------------------------------
-;;; VAO ;;;
-;;;-----;;;
+;;; VAOS ;;;
+;;;------;;;
 
 ;; This creates a function call bind-vao which only evaluates
 ;; 'gl:bind-vertex-array' when vao-id is different from the 
@@ -341,11 +354,11 @@ COMPONENT is returned."
 			   (integer)) 
 			  (integer)) 
 		uniform-1i))
-(defun uniform-1i (location val-f)
+(defun uniform-1i (location val-i)
   (declare (type integer location)
-	   (type integer val-f))
-  (%gl:uniform-1i location val-f)
-  val-f)
+	   (type integer val-i))
+  (%gl:uniform-1i location val-i)
+  val-i)
 
 
 (declaim (inline uniform-2i)
@@ -471,11 +484,18 @@ COMPONENT is returned."
 (defun program-uniform-count (program)
   (get-program program :active-uniforms))
 
-(defun program-uniforms (program)
-  (loop for i from 0 below (program-uniform-count program)
+(defun program-uniforms (program-id)
+  (loop for i from 0 below (program-uniform-count program-id)
      collect (multiple-value-bind (size type name)
-		 (get-active-uniform program i)
+		 (get-active-uniform program-id i)
 	       (list name type size))))
+
+(defun get-uniforms (program)
+  (let ((program-id (funcall program t)))
+    (loop for detail in (program-uniforms program-id)
+       collect (list (utils:make-keyword
+		      (lispify-name (car detail)))
+		     (second detail)))))
 
 (base-macros:defmemo use-program (program-id)
    (gl:use-program program-id))
@@ -523,21 +543,22 @@ COMPONENT is returned."
 	(error (format nil "Error Linking Program~%~a" 
 		       (gl:get-program-info-log program))))
     (loop for shader in shaders
-       do (gl:detach-shader program shader)
-	  (gl:delete-shader shader))
+       do (gl:detach-shader program shader))
     program))
+;; remove (gl:delete-shader shader) as it messes up retrying 
+;; stuff
 
 (defun no-bind-draw-one (stream)
   (let ((e-type (gl-stream-element-type stream)))
     (bind-vao (gl-stream-vao stream))
     (if e-type
-	(gl:draw-elements (gl-stream-draw-style stream)
-			  e-type
-			  :count 
-			  (gl-stream-length stream))
-	(gl:draw-arrays (gl-stream-draw-style stream)
-			(gl-stream-start stream)
-			(gl-stream-length stream)))))
+	(%gl:draw-elements (gl-stream-draw-style stream)
+			   (gl-stream-length stream) 
+			   (gl::cffi-type-to-gl e-type)
+			   (cffi:make-pointer 0))
+	(%gl:draw-arrays (gl-stream-draw-style stream)
+			 (gl-stream-start stream)
+			 (gl-stream-length stream)))))
 
 ;; get uniforms
 ;; turn names into lispy keyword names
@@ -565,27 +586,39 @@ COMPONENT is returned."
 			  (lispify-name (car detail))) uni-hash)
 		(let ((location (gl:get-uniform-location 
 				 program-id
-				 (car detail))))
+				 (car detail)))
+		      (uniform-updater (glsl-uniform-type-to-function 
+					(second detail))))
 		  (lambda (val)
-		    (funcall (glsl-uniform-type-to-function 
-			      (second detail)) location val)))))
+		    (funcall uniform-updater location val)))))
     uni-hash))
 
 (defun lispify-name (name)
   (string-upcase (substitute #\- #\_ name)))
 
 (defun make-program (shaders)
- (let* ((program-id (link-program shaders))
-	(uniform-details)
+ (let* ((program-id (link-shaders shaders))
+	(uniform-details (program-uniforms program-id))
 	(uniform-hash (hash-uniform-handlers program-id
-					     uniform-details)))
-   (values (lambda (streams &rest uniforms)
-	     (use-program program-id)
-	     (when uniforms
-	       (loop for i below (length uniforms) by 2
-		  do (funcall (gethash (nth i uniforms) 
-				       uniform-hash)
-			      (nth (1+ i) uniforms))))
-	     (loop for stream in streams
-		  do (no-bind-draw-one stream))))))
+					     uniform-details))
+	(uniform-lispy-names (loop for detail in uniform-details
+				collect (utils:make-keyword 
+					 (lispify-name
+					  (car detail))))))
+   (lambda (streams &rest uniforms)	     
+     (use-program program-id)
+     (when uniforms
+       (loop for i below (length uniforms) by 2
+	  do (let ((uniform-updater (gethash (nth i uniforms) 
+					     uniform-hash))) 
+	       (if uniform-updater
+		   (funcall uniform-updater (nth (1+ i) uniforms))
+		   (error (format nil "Uniform not found, must be one of ~{~a~^, ~}" uniform-lispy-names))))))
+     (if (eq streams t)
+	 program-id
+	 (loop for stream in streams
+	    do (no-bind-draw-one stream))))))
 
+
+(defun set-program-uniforms (program &rest uniforms)
+  (apply program (cons nil uniforms)))

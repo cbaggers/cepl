@@ -1,0 +1,47 @@
+
+CEPL-EXAMPLES> *buffer-layout*
+((1 0 VERT-DATA 3))
+
+'cgl:make-vao' uses buffer formats to bind-vertex-attrib-pointers
+and also to enable-vertex-attrib-arrays....that is a problem for
+at least the latter as one interleaved array can be multiple 
+attributes
+--------------------
+buffer 1:
+position 
+color
+
+buffer 2:
+normal
+
+buffer 3:
+tex-data
+
+3 buffers
+4 array-formats
+4 attributes
+--------------------
+buffer 1:
+position - color
+normal
+
+buffer 2:
+tex-data
+
+2 buffers
+3 array-formats
+4 attributes
+--------------------
+I made some changes but I actually need independant binding. 
+So I need to really rethink how this is done.
+
+define attribute-format or interleaved-attribute-format
+make c-array using format 
+populate c-array with data using destructuring-populate
+populate-buffer with c-array/s - This needs to spit out 
+		     	         a buffer-attributes...or 
+				 some other name
+make-vao takes the buffer-attributes and binds them in turn
+
+so we will probably kill 
+
