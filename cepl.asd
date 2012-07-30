@@ -18,5 +18,4 @@
 	       (:file "vector4")
 	       (:file "matrix3")
 	       (:file "matrix4")
-	       (:file "cepl")
-	       (:file "defunct")))
+	       (:file "cepl")))
