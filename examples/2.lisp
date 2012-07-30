@@ -25,9 +25,7 @@
 
 ;;(0 4 :FLOAT NIL 0 #.(SB-SYS:INT-SAP #X00000000))
 (defun init () 
-  (setf *shaders* (mapcar #'cgl:make-shader 
-	    `("/home/baggers/Code/lisp/cepl/examples/tut3.vert"
-	      "/home/baggers/Code/lisp/cepl/examples/tut3.frag")))
+  (setf *shaders* (mapcar #'cgl:make-shader `("2.vert" "2.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
 
   (setf *vertex-array* '((( 0.0   0.2  0.0  1.0))

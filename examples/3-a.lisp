@@ -38,9 +38,7 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *shaders* (mapcar #'cgl:make-shader 
-	    `("/home/baggers/Code/lisp/cepl/examples/ex1.vert"
-	      "/home/baggers/Code/lisp/cepl/examples/ex1.frag")))
+  (setf *shaders* (mapcar #'cgl:make-shader `("3.vert" "3.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* (cepl:calculate-frustrum-scale 45.0))
   (setf *cam-clip-matrix* (cepl:make-cam-clip-matrix 
