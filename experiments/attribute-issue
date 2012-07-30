@@ -43,5 +43,13 @@ populate-buffer with c-array/s - This needs to spit out
 				 some other name
 make-vao takes the buffer-attributes and binds them in turn
 
-so we will probably kill 
+--------------------
+I have now killed the bind-clause stuff and so cepl will not
+work now!
+
+next I need to:
+* rename everything
+* rework buffer-data to give the buffer-attributes we need
+* rework make-vao to handle calling attrib-pointer itself
+* Put head between legs and kiss nethers goodbye
 

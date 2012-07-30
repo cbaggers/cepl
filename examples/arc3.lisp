@@ -15,30 +15,27 @@
 (defparameter *buffer-layouts* nil)
 (defparameter *vao* nil)
 (defparameter *streams* nil)
+(defparameter *move-loop-length* 100)
+(defparameter *move-loop-pos* 0)
 
 
-(cgl:define-interleaved-attribute-format vert-data 
-  (:index 0 :type :float :components (x y z w))
-  (:index 1 :type :float :components (r g b a)))
+(cgl:define-interleaved-attribute-format vert-data
+    (:type :float :components (x y z w)))
 
+
+;;(0 4 :FLOAT NIL 0 #.(SB-SYS:INT-SAP #X00000000))
 (defun init () 
   (setf *shaders* (mapcar #'cgl:make-shader 
-	    `("/home/baggers/Code/lisp/cepl/examples/tut2.vert"
-	      "/home/baggers/Code/lisp/cepl/examples/tut2.frag")))
+	    `("/home/baggers/Code/lisp/cepl/examples/tut3.vert"
+	      "/home/baggers/Code/lisp/cepl/examples/tut3.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
 
-  (setf *vertex-array* '((( 0.0     0.5  0.0  1.0)
-			  ( 0.0     1.0  0.0  1.0))
-
-			 (( 0.5  -0.366  0.0  1.0)
-			  ( 0.0     1.0  0.0  1.0))
-
-			 ((-0.5  -0.366  0.0  1.0)
-			  ( 0.0     0.0  1.0  1.0))))
+  (setf *vertex-array* '((( 0.0   0.2  0.0  1.0))
+			 ((-0.2  -0.2  0.0  1.0))
+			 (( 0.2  -0.2  0.0  1.0))))
 
   (setf *vertex-array-gl* (cgl:alloc-array-gl 'vert-data (length *vertex-array*)))
   (cgl:destructuring-populate *vertex-array-gl* *vertex-array*)
-
   (setf *vertex-buffer* (cgl:gen-buffer))
   (setf *buffer-layouts*
   	(cgl:buffer-data *vertex-buffer* *vertex-array-gl*))
@@ -56,16 +53,15 @@
 
 
 (defun draw ()
+  (setf *move-loop-pos* (mod (+ 0.06 *move-loop-pos*) 
+			     *move-loop-length*))
+
   (cgl::clear-color 0.0 0.0 0.0 0.0)
   (cgl::clear :color-buffer-bit)
-  
-  (cgl:bind-buffer :array-buffer *vertex-buffer*)
 
-
-  (gl:enable-vertex-attrib-array 0)
-  (gl:enable-vertex-attrib-array 1)
-
-  (funcall *prog-1* *streams*)
+  (funcall *prog-1* *streams* 
+  	   :offset (make-vector2 (* 0.5 (sin *move-loop-pos*))
+  				 (* 0.5 (cos *move-loop-pos*))))
   
   (gl:flush)
   (sdl:update-display))
@@ -102,3 +98,4 @@
       (:idle ()
 	     (base-macros:continuable (update-swank))
 	     (base-macros:continuable (draw))))))
+

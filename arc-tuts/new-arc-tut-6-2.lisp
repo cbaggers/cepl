@@ -1,4 +1,4 @@
-;; its so ugly!
+;; this has two objects with no depth
 (in-package :arc-tuts)
 
 ;;;--------------------------------------------------------------
@@ -38,9 +38,10 @@
 				     (- f-near f-far)) 0.0)))
 
 (defun init-prog (win)
-  (setf (program win) (defunct:make-program `("/home/baggers/Code/lisp/cepl/arc-tuts/tut6-1.vert"
-					   "/home/baggers/Code/lisp/cepl/arc-tuts/tut6-1.frag")))
-  (print (defunct::program-uniforms (program win)))
+  (setf (program win) (defunct:make-program 
+       `("/home/baggers/Code/lisp/cepl/arc-tuts/tut6-1.vert"
+	 "/home/baggers/Code/lisp/cepl/arc-tuts/tut6-1.frag")))
+  (print (cgl:program-uniforms (program win)))
   (setf (cam->clip-uniform win) 
 	(gl:get-uniform-location (program win) 
 				 "cameraToClipMatrix"))
@@ -49,6 +50,7 @@
 				 "modelToCameraMatrix"))
   (setf (frustrum-scale win) 
 	(defunct:calculate-frustrum-scale 45.0))
+
   (setf (cam->clip win) (make-cam-clip-matrix win))
   (defunct:with-use-program (program win)
     (gl:uniform-matrix (cam->clip-uniform win)
@@ -152,7 +154,7 @@
 			       (entity-loop-angle ent)
 			       (entity-loop-angle ent)
 			       (entity-loop-angle ent)))))
-		    nil )
+		    nil)
 		 (gl:draw-elements :triangles
 				   (gl:make-null-gl-array 
 				      :unsigned-short)
@@ -178,8 +180,12 @@
     (#\Esc (glut:destroy-current-window))))
 
 (defun run-demo ()
-  (glut:display-window 
-   (make-instance 'arc-tut-window)))
+  (let ((w (make-instance 'arc-tut-window)))
+    (unwind-protect
+         (glut:display-window w)
+      (when (not (glut::destroyed w))
+	(setf (glut::destroyed w) t)
+	(glut:destroy-window (glut:id w))))))
 
 (defmethod glut:idle ((win arc-tut-window))
   (defunct:restartable

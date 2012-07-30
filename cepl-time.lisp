@@ -1,5 +1,7 @@
 ;; Functions and macros for handling time in games
 
+(in-package cepl-time)
+
 (defun make-time-buffer ()
   (let ((last-time (get-internal-real-time)))
     (lambda () 
@@ -34,13 +36,13 @@
 			&body body)
   (if (not (symbolp step-progress))
       (error "Only symbols may be passed to the key arguments.")
-      (let ((!step-prog (gensym (mkstr step-progress)))
-	    (!step-size (gensym (mkstr step-size))))
+      (let ((!step-prog (gensym (cepl-utils:mkstr step-progress)))
+	    (!step-size (gensym (cepl-utils:mkstr step-size))))
 	`(let ((,!step-prog (funcall ,stepper ,time))
 	       ,@(when step-size
 		       `((,!step-size (funcall ,stepper t)))))
 	   (when ,!step-prog
-	     ,(utils:walk-replace step-progress !step-prog 
+	     ,@(utils:walk-replace step-progress !step-prog 
 		   (utils:walk-replace step-size !step-size body)))))))
 
 ;; CL-USER> (macroexpand `(with-stepper-call jam 100 sp

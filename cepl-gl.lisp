@@ -30,61 +30,6 @@
   (use-program program-id)
   (gl:uniform-matrix location dim matrices nil))
 
-;;;--------------------------------------------------------------
-;;; BUFFERS ;;;
-;;;---------;;;
-
-(base-macros:defmemo bind-buffer (target buffer-id)
-  (gl:bind-buffer target buffer-id))
-
-(defun gen-buffer ()
-  (first (gen-buffers 1)))
-
-
-;; [TODO] Needs working out so we can express data population well
-(defun buffer-data (buffer-id array &key (buffer-type :array-buffer) (draw-type :static-draw))
-  (bind-buffer buffer-type buffer-id)
-  (gl:buffer-data buffer-type draw-type array)
-  (list (list buffer-id 
-	      0 
-	      (gl::gl-array-type array) 
-	      (gl::gl-array-size array))))
-
-(defun multi-populate-buffer (buffer-id arrays 
-			     &key (buffer-type :array-buffer) 
-			           (draw-type :static-draw))
-  "This beast will take a list of arrays and auto-magically
-   push them into a buffer taking care of both interleaving 
-   and sequencial data and handling all the offsets."
-  (let* ((array-byte-sizes (loop for array in arrays
-				collect 
-				(gl:gl-array-byte-size array)))
-	 (total-size (apply #'+ array-byte-sizes)))
-    (bind-buffer buffer-type buffer-id)
-    (gl:buffer-data buffer-type draw-type (car arrays)
-		    :size total-size)
-    (let ((offset 0))
-      (loop for array in (cdr arrays)
-	   for size in array-byte-sizes
-	 do (progn
-	      (gl:buffer-sub-data buffer-type array
-				  :buffer-offset offset)
-	      (setf offset (+ offset size)))))
-    (loop for array in arrays
-       for size in array-byte-sizes
-       with offset = 0
-       do (setf offset (+ offset size))
-       collect (list buffer-id
-		     offset
-		     (gl::gl-array-type array) 
-		     (gl::gl-array-size array)))))
-
-;; get a list of the array size in bytes of all the arrays
-;; use buffer-data to push the first array in.
-;; the use buffer-sub-data to push every other array using the 
-;; list of sizes to handle the offset
-;; return the buffer-id
-;; [TODO] Needs to handle offsets into the array
 
 ;;;--------------------------------------------------------------
 ;;; GL-ARRAYS ;;;
@@ -92,7 +37,26 @@
 
 ;; (setf (gl:glaref array index 'x) 1.675)
 
-(defmacro define-gl-array-format (name &body clauses)
+(defun simple-1d-populate (array data)
+  (loop for datum in data
+       for i from 0
+       do (setf (aref-gl array i) datum)))
+
+(defun simple-array-attrib-error (&rest args)
+  (declare (ignore args))
+  (error "Sorry, attribute-formats cannot be generated from primitive array types"))
+
+;;[TODO] What types do we need to support here?
+(loop for type-name in `(:float :short)
+   do (progn
+	(setf (get type-name 'cgl-destructuring-populate)
+	      #'simple-1d-populate)
+	(setf (get type-name 'vertex-attrib-formats) nil)))
+
+(defmacro define-attribute-format (name &rest args)
+  `(define-interleaved-attribute-format ,name ,args))
+
+(defmacro define-interleaved-attribute-format (name &body clauses)
   "Defines a vertex array format spcification. Each clause has
 the format (array-type parameter*) where array-type is always
 VERTEX-ATTRIB.
@@ -103,68 +67,60 @@ type. The following parameters are supported:
     :TYPE -- array element type (all array types)
     :COMPONENTS -- list of component (slot) names for this array (all types)
     :STAGE -- active texture for the array (TEX-COORD type)
-    :INDEX -- vertex attribute index (VERTEX-ATTRIB type)
     :NORMALIZED -- whether values should be normalized (VERTEX-ATTRIB)
 "
   `(progn
      (defcstruct ,name
-       ,@(mapcan #'emit-gl-array-struct-clause clauses))
-     (setf (get ',name 'vertex-array-binder)
-           (compile
-            nil
-            `(lambda (attribute-index p)
-               ,,@(loop with stride = `(foreign-type-size ',name)
-                        for c in clauses
-                        for offset = `(foreign-slot-offset
-                                       ',name 
-				       ',(caadr (member 
-						 :components c)))
-                        collect `(emit-gl-array-bind-clause
-                                  ',c ,offset ,stride 
-				  'attribute-index'p)))))
-     (setf (get ',name 'format)
-	   (lambda () 
-	     ',clauses))
+       ,@(mapcan #'emit-attrib-struct-clause clauses))
      (setf (get ',name 'cgl-destructuring-populate)
 	   (destructured-populate ,@clauses))
+     (setf (get ',name 'vertex-attrib-formats)
+	   (list ,@(loop with stride = (if (> (length clauses) 1)
+					 `(foreign-type-size ',name)
+					 0)
+		      for c in clauses
+		      for offset = `(foreign-slot-offset
+				     ',name 
+				     ',(caadr 
+					(member :components c)))
+		      collect `(lambda (x) 
+				 (emit-attrib-format
+				  ',c 
+				  (cffi:make-pointer (+ ,offset x)) 
+				  ,stride )))))
      ',name))
 
-(defun emit-gl-array-struct-clause (clause)
+(defun emit-attrib-format (clause offset stride)
+  (destructuring-bind (&key (normalized :false) type components
+			    &allow-other-keys)
+      clause
+    `(,(length components) ,type ,normalized ,stride ,offset)))
+
+(defun emit-attrib-struct-clause (clause)
   (destructuring-bind (&key type components &allow-other-keys)
       clause
     (loop for c in components
           collect `(,c ,type))))
 
-(defun emit-gl-array-bind-clause (clause offset stride index-sym psym)
-  (destructuring-bind (&rest rest &key type components
-                                  &allow-other-keys)
-      clause
-    (let* ((array-type `vertex-attrib)
-	   (func-name (gl::symbolicate-package "%GL" array-type "-POINTER"))
-          (address-expr `(inc-pointer ,psym ,offset))
-          (size (length components)))
-      (destructuring-bind (&key (normalized nil) &allow-other-keys)
-	  rest
-	`(,func-name ,index-sym ,size ,type ,normalized ,stride
-		     ,address-expr)))))
+(defun attrib-formats (array-type)
+  (get array-type 'vertex-attrib-formats))
 
-
-;; The offset here needs to be a pointer
-(defun bind-vertex-attrib-pointer (attribute-index array-type 
-				   &optional (offset 0))
-  (funcall (get array-type 'vertex-array-binder) 
-	   attribute-index
-	   (cffi:make-pointer offset)))
-
-
-(defun gl-array-format (array-type)
-  (get array-type 'format))
+(defun attrib-format (array-type &optional  (sub-attrib 0)
+				    (offset 0))
+  (let ((formats (get array-type 'vertex-attrib-formats)))
+    (if (null formats)
+	(error "Sorry but attribute formats are not available for this array-type")
+	(funcall (nth sub-attrib formats) offset))))
 
 (defun destructuring-populate (array data)
   (let ((func (get (gl::gl-array-type array) 
 		   'cgl-destructuring-populate)))
     (funcall func array data)
     array))
+
+(defun destructuring-allocate (array-type data)
+  (let ((array (alloc-array-gl array-type (length data))))
+    (destructuring-populate array data)))
 
 ;;[TODO] These names are too similar
 (defmacro destructured-populate (&body clauses)
@@ -198,12 +154,8 @@ type. The following parameters are supported:
 ;; needs to be here right now as I don't know how to set
 ;; vertex-array-binder to be in cl-opengl
 (defun alloc-gl-array (type count)
-  (if (get type 'vertex-array-binder)
-      (gl::make-gl-vertex-array
-       :pointer (foreign-alloc type :count count)
-       :size count :type type :binder (get type 'vertex-array-binder))
-      (gl::make-gl-array :pointer (foreign-alloc type :count count)
-                     :size count :type type)))
+  (gl::make-gl-array :pointer (foreign-alloc type :count count)
+                     :size count :type type))
 
 
 (defun alloc-array-gl (type count)
@@ -242,6 +194,63 @@ COMPONENT is returned."
             value)))
 
 ;;;--------------------------------------------------------------
+;;; BUFFERS ;;;
+;;;---------;;;
+
+(base-macros:defmemo bind-buffer (target buffer-id)
+  (gl:bind-buffer target buffer-id))
+
+(defun gen-buffer ()
+  (first (gen-buffers 1)))
+
+;;(cons (+ (car b) 100) (subseq b 1))
+;; SIZE TYPE NORMALIZED STRIDE POINTER
+(defun buffer-data (buffer-id array 
+		    &key (buffer-type :array-buffer) 
+		          (draw-type :static-draw))
+  (bind-buffer buffer-type buffer-id)
+  (gl:buffer-data buffer-type draw-type array)
+  (loop for formatter in (attrib-formats (gl::gl-array-type array))
+     for i from 0
+     collect (cons buffer-id (funcall formatter 0))))
+
+(defun multi-populate-buffer (buffer-id arrays 
+			     &key (buffer-type :array-buffer) 
+			           (draw-type :static-draw))
+  "This beast will take a list of arrays and auto-magically
+   push them into a buffer taking care of both interleaving 
+   and sequencial data and handling all the offsets."
+  (let* ((array-byte-sizes (loop for array in arrays
+				collect 
+				(gl:gl-array-byte-size array)))
+	 (total-size (apply #'+ array-byte-sizes)))
+    (bind-buffer buffer-type buffer-id)
+    (gl:buffer-data buffer-type draw-type (car arrays)
+		    :size total-size)
+    (loop for array in (cdr arrays)
+       for size in array-byte-sizes
+       with offset = 0
+       with attr-count = 0
+       do (progn
+	    (gl:buffer-sub-data buffer-type array
+				:buffer-offset offset)
+	    (setf offset (+ offset size)))
+       collect (loop for formatter in (attrib-formats
+				       (gl::gl-array-type array))
+		  for i from 0
+		  do (setf attr-count (1+ attr-count))
+		  collect (cons buffer-id 
+				(funcall formatter offset))))))
+
+;; get a list of the array size in bytes of all the arrays
+;; use buffer-data to push the first array in.
+;; the use buffer-sub-data to push every other array using the 
+;; list of sizes to handle the offset
+;; return the buffer-id
+;; [TODO] Needs to handle offsets into the array
+
+
+;;;--------------------------------------------------------------
 ;;; VAOS ;;;
 ;;;------;;;
 
@@ -264,14 +273,11 @@ COMPONENT is returned."
     (bind-vao vao-id)
     (loop for attr-format in formats
        for attr-num from 0
-       do (destructuring-bind (buffer-id 
-			       offset
-			       array-type
-			       length) attr-format
-	    (declare (ignore length))
+       do (let ((buffer-id (car attr-format)))
 	    (bind-buffer :array-buffer buffer-id)
 	    (gl:enable-vertex-attrib-array attr-num)
-	    (bind-vertex-attrib-pointer array-type offset)))
+	    (apply #'%gl:vertex-attrib-pointer
+		   (cons attr-num (cdr attr-format)))))
     (when element-buffer
       (bind-buffer :element-array-buffer element-buffer))
     (bind-vao 0)
@@ -413,7 +419,7 @@ COMPONENT is returned."
 	   (type (simple-array single-float (4)) mat2))
   (with-foreign-object (array '%gl:float 4)
     (dotimes (j 4)
-      (setf (mem-aref array '%gl:float (+ j j))
+      (setf (mem-aref array '%gl:float j)
 	    (aref mat2 j)))
     (%gl:uniform-matrix-2fv location 1 nil array))
   mat2)
@@ -429,7 +435,7 @@ COMPONENT is returned."
 	   (type (simple-array single-float (9)) mat3))
   (with-foreign-object (array '%gl:float 9)
     (dotimes (j 9)
-      (setf (mem-aref array '%gl:float (+ j j))
+      (setf (mem-aref array '%gl:float j)
 	    (aref mat3 j)))
     (%gl:uniform-matrix-3fv location 1 nil array))
   mat3)
@@ -445,7 +451,7 @@ COMPONENT is returned."
 	   (type (simple-array single-float (16)) mat4))
   (with-foreign-object (array '%gl:float 16)
     (dotimes (j 16)
-      (setf (mem-aref array '%gl:float (+ j j))
+      (setf (mem-aref array '%gl:float j)
 	    (aref mat4 j)))
     (%gl:uniform-matrix-4fv location 1 nil array))
   mat4)
@@ -552,14 +558,17 @@ COMPONENT is returned."
   (let ((e-type (gl-stream-element-type stream)))
     (bind-vao (gl-stream-vao stream))
     (if e-type
-	(%gl:draw-elements (gl-stream-draw-style stream)
-			   (gl-stream-length stream) 
-			   (gl::cffi-type-to-gl e-type)
-			   (cffi:make-pointer 0))
+	(gl:draw-elements (gl-stream-draw-style stream)
+			  (gl::make-null-gl-array e-type)
+			  :count (gl-stream-length stream))
 	(%gl:draw-arrays (gl-stream-draw-style stream)
 			 (gl-stream-start stream)
 			 (gl-stream-length stream)))))
 
+	;; (%gl:draw-elements (gl-stream-draw-style stream)
+	;; 		   (gl-stream-length stream) 
+	;; 		   (gl::make-null-gl-array e-type)
+	;; 		   (cffi:make-pointer 0))
 ;; get uniforms
 ;; turn names into lispy keyword names
 ;; hash those against lambdas that will call the cl-opengl 
@@ -622,3 +631,6 @@ COMPONENT is returned."
 
 (defun set-program-uniforms (program &rest uniforms)
   (apply program (cons nil uniforms)))
+
+(defun draw-streams (program streams &rest uniforms)
+  (apply program (cons streams uniforms)))

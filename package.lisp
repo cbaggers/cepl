@@ -41,23 +41,29 @@
 	   :enable-vertex-attrib-array
 	   :vertex-attrib-pointer
 	   :uniform-matrix
-	   :define-gl-array-format
 	   :alloc-gl-array
 	   :bind-vertex-array
 	   :use-program
-	   :make-program)
+	   :make-program
+	   :aref-gl
+	   :alloc-gl-array)
   (:export :cgl-compile-shader-error 
 	   :enable-vertex-attrib-array
-	   :vertex-attrib-pointer 
+	   :vertex-attrib-pointer
+	   :define-attribute-format
+	   :define-interleaved-attribute-format
+	   :attrib-formats
+	   :attrib-format
+	   :destructuring-populate
+	   :destructuring-allocate
+	   :alloc-gl-array
+	   :alloc-array-gl
+	   :aref-gl
 	   :uniform-matrix
 	   :gen-buffer
 	   :buffer-data
 	   :bind-buffer
 	   :multi-populate-buffer
-	   :define-gl-array-format
-	   :destructuring-populate
-	   :alloc-array-gl
-	   :bind-vertex-attrib-pointer
 	   :bind-vao
 	   :bind-vertex-array
 	   :make-vao
@@ -73,7 +79,8 @@
 	   :make-shader
 	   :link-shaders
 	   :make-program
-	   :set-program-uniforms))
+	   :set-program-uniforms
+	   :draw-streams))
 
 
 (defpackage :math-macros

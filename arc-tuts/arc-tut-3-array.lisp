@@ -85,7 +85,7 @@
     (dotimes (i data-length)
       (setf (gl:glaref arr i) (aref data i)))
     (gl:bind-buffer buf-type buffer)
-    (gl:buffer-data buf-type :stream-draw arr)
+    (gl:buffer-data buf-type :static-draw arr)
     (gl:free-gl-array arr)
     (gl:bind-buffer buf-type 0)
     buffer))
@@ -103,7 +103,7 @@
 
 (defclass arc-tut-window (glut:window)
   ((vbuff :accessor vertex-buffer)
-   (va :accessor vertex-array)
+   (va :accessor vertex-list)
    (program :accessor program)
    (offset :accessor offset-uniform))
   (:default-initargs :width 500 :height 500 :pos-x 100
@@ -111,18 +111,37 @@
 		     :mode `(:double :alpha :depth :stencil)
 		     :title "ArcSynthesis Tut 3"))
 
+(gl:define-gl-array-format vert-format 
+  (gl:vertex-attrib :type :float :components (x y z w)))
+
+(defun setup-buffer2 (vert-list)
+  (let* ((data-len (length vert-list))
+	 (arr (gl:alloc-gl-array 'vert-format data-len))
+	 (buffer (car (gl:gen-buffers 1))))
+    (loop for datum in vert-list
+	 for index from 0
+	 do (destructuring-bind (x y z w) datum
+	      (setf (gl:glaref arr index 'x) x
+		    (gl:glaref arr index 'y) y
+		    (gl:glaref arr index 'z) z
+		    (gl:glaref arr index 'w) w)))
+    (gl:bind-buffer :array-buffer buffer)
+    (gl:buffer-data :array-buffer :static-draw arr)
+;;    (gl:free-gl-array arr)
+    (gl:bind-buffer :array-buffer 0)
+    buffer))
+
 
 (defmethod glut:display-window :before ((win arc-tut-window))
   (setf (program win) (initialize-program 
-		       `("./tut3.vert" "./tut3.frag"))
-	(vertex-array win) #(  0.0  0.2  0.0  1.0
- 			      -0.2 -0.2  0.0  1.0
-			       0.2 -0.2  0.0  1.0)
-	(vertex-buffer win) (setup-buffer :array-buffer
-					  :float 
-					  (vertex-array win))
+		       `("tut3.vert" "tut3.frag"))
+	(vertex-list win)  '(( 0.0  0.2  0.0  1.0)
+			     ( -0.2 -0.2  0.0  1.0)
+			     ( 0.2 -0.2  0.0  1.0))
 	(offset-uniform win) (gl:get-uniform-location (program win)
-						      "offset")))
+						      "offset"))
+  (setf (vertex-buffer win) (setup-buffer2 (vertex-list win))))
+
 
 (defmethod glut:display ((win arc-tut-window))
   (restartable
@@ -167,15 +186,6 @@
 	 (x (* 0.5 (sin (* scale curr-time-through-loop))))
 	 (y (* 0.5 (cos (* scale curr-time-through-loop)))))
     (make-vector2 x y)))
-
-(defmethod adjust-vertex-data ((win arc-tut-window) offset)
-  (let ((v-data (vertex-array win)))
-    (loop for i from 0 below (length v-data) by 4
-       for va = (aref v-data i)
-       for vb = (aref v-data (+ i 1))
-       do (setf (aref v-data i) (+ va (v-x offset)))
-	  (setf (aref v-data (+ i 1)) (+ vb (v-y offset))))
-    (sub-buffer :array-buffer :float (vertex-buffer win) v-data)))
 
 (defun run-demo ()
   (glut:display-window (make-instance 'arc-tut-window)))

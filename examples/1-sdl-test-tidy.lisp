@@ -11,16 +11,10 @@
 (defparameter *prog-1* nil)
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
-(defparameter *shaders* nil)
-(defparameter *vertex-data-list* nil)
-(defparameter *vertex-data-gl* nil)
-(defparameter *index-data-list* nil)
-(defparameter *index-data-gl* nil)
-(defparameter *vert-buffer* nil)
-(defparameter *index-buffer* nil)
-(defparameter *buffer-layout* nil)
-(defparameter *vao-1* nil)
 (defparameter *entities* nil)
+(defparameter *loops* 0)
+(defparameter *timer* (cepl-time:make-time-buffer))
+(defparameter *stepper* (cepl-time:make-stepper 1000))
 
 ;; Define data formats 
 (cgl:define-interleaved-attribute-format vert-data 
@@ -38,74 +32,58 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *shaders* (mapcar #'cgl:make-shader 
-	    `("/home/baggers/Code/lisp/cepl/examples/ex1.vert"
-	      "/home/baggers/Code/lisp/cepl/examples/ex1.frag")))
-  (setf *prog-1* (cgl:make-program *shaders*))
-  (setf *frustrum-scale* (cepl:calculate-frustrum-scale 45.0))
-  (setf *cam-clip-matrix* (cepl:make-cam-clip-matrix 
-			   *frustrum-scale*))
-  (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
+  (let* ((index-list '(0  1  2 
+		       1  0  3 
+		       2  3  0 
+		       3  2  1 
+		       5  4  6 
+		       4  5  7 
+		       7  6  4 
+		       6  7  5))
+	 (vert-array (cgl:destructuring-allocate 
+		      'vert-data 
+		      '(((+1.0  +1.0  +1.0)  (0.0  1.0  0.0  1.0)) 
+			((-1.0  -1.0  +1.0)  (0.0  0.0  1.0  1.0))
+			((-1.0  +1.0  -1.0)  (1.0  0.0  0.0  1.0))
+			((+1.0  -1.0  -1.0)  (0.5  0.5  0.0  1.0))
+			((-1.0  -1.0  -1.0)  (0.0  1.0  0.0  1.0)) 
+			((+1.0  +1.0  -1.0)  (0.0  0.0  1.0  1.0))
+			((+1.0  -1.0  +1.0)  (1.0  0.0  0.0  1.0))
+			((-1.0  +1.0  +1.0)  (0.5  0.5  0.0  1.0)))))
+	(index-array (cgl:destructuring-allocate :short index-list))
+	(vert-buffer (cgl:gen-buffer))
+	(index-buffer (cgl:gen-buffer)))
 
-  ;;setup data 
-  (setf *vertex-data-list* 
-  	'(((+1.0  +1.0  +1.0)  (0.0  1.0  0.0  1.0)) 
-  	  ((-1.0  -1.0  +1.0)  (0.0  0.0  1.0  1.0))
-  	  ((-1.0  +1.0  -1.0)  (1.0  0.0  0.0  1.0))
-  	  ((+1.0  -1.0  -1.0)  (0.5  0.5  0.0  1.0))
-  	  ((-1.0  -1.0  -1.0)  (0.0  1.0  0.0  1.0)) 
-  	  ((+1.0  +1.0  -1.0)  (0.0  0.0  1.0  1.0))
-  	  ((+1.0  -1.0  +1.0)  (1.0  0.0  0.0  1.0))
-  	  ((-1.0  +1.0  +1.0)  (0.5  0.5  0.0  1.0))))
-  (setf *vertex-data-gl* 
-  	(cgl:alloc-array-gl 'vert-data 
-  			    (length *vertex-data-list*)))
-  (cgl:destructuring-populate *vertex-data-gl* 
-  			      *vertex-data-list*)
+    ;; make program
+    (setf *prog-1* (cgl:make-program (mapcar #'cgl:make-shader 
+					     '("ex1.vert" "ex1.frag"))))
+    (setf *frustrum-scale* (cepl:calculate-frustrum-scale 45.0))
+    (setf *cam-clip-matrix* (cepl:make-cam-clip-matrix 
+			     *frustrum-scale*))
+    (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
 
-  (setf *index-data-list* 
-  	'(0  1  2 
-  	  1  0  3 
-  	  2  3  0 
-  	  3  2  1 
-	  
-  	  5  4  6 
-  	  4  5  7 
-  	  7  6  4 
-  	  6  7  5))
-  (setf *index-data-gl* 
-  	(cgl:alloc-array-gl :short
-  			    (length *index-data-list*)))
-  ;; (cgl:destructuring-populate *index-data-gl* 
-  ;; 			      *index-data-list*)
-  (loop for index in *index-data-list*
-       for i from 0
-       do (setf (cgl::aref-gl *index-data-gl* i) index))
+    ;;setup data 
 
-  ;;setup buffers
-  (setf *vert-buffer* (cgl:gen-buffer))
-  (setf *buffer-layout*
-  	(cgl:buffer-data *vert-buffer* *vertex-data-gl*))
+    (cgl:buffer-data index-buffer index-array
+		     :buffer-type :element-array-buffer)
 
-  (setf *index-buffer* (cgl:gen-buffer))
-  (cgl:buffer-data *index-buffer* *index-data-gl* 
-		   :buffer-type :element-array-buffer)
-
-  ;;setup vaos
-  (setf *vao-1* (cgl:make-vao *buffer-layout* *index-buffer*))
-
-  ;;create entities
-  (setf *entities* 
-  	(list 
-  	 (make-entity :stream (cgl:make-gl-stream 
-  			      :vao *vao-1*
-  			      :length (length *index-data-list*)
-  			      :element-type :unsigned-short))
-	 (make-entity :loop-angle 180.0
-		      :stream (cgl:make-gl-stream 
-			       :vao *vao-1*
-			       :length (length *index-data-list*)
-			       :element-type :unsigned-short))))
+    ;;setup vaos & create entities
+    (let ((vao-1
+	   (cgl:make-vao (cgl:buffer-data vert-buffer vert-array)
+			 index-buffer)))
+      (setf *entities* 
+	    (list 
+	     (make-entity :stream 
+			  (cgl:make-gl-stream 
+			   :vao vao-1
+			   :length (length index-list)
+			   :element-type :unsigned-short))
+	     (make-entity :loop-angle 180.0
+			  :stream 
+			  (cgl:make-gl-stream 
+			   :vao vao-1
+			   :length (length index-list)
+			   :element-type :unsigned-short))))))
   
   ;;set options
   (cgl::clear-color 0.0 0.0 0.0 0.0)
@@ -115,12 +93,14 @@
   (gl:enable :depth-test)
   (gl:depth-mask :true)
   (gl:depth-func :lequal)
-  (gl:depth-range 0.0 1.0))  
+  (gl:depth-range 0.0 1.0)
+  (funcall *timer*))  
 
 ;----------------------------------------------
 
 (defun move-entity (ent)
-  (let* ((new-loop (mod (+ (entity-loop-angle ent) 0.05) 360.0))
+  (let* ((new-loop (mod (+ (entity-loop-angle ent) 0.25)
+			(* base-maths:+pi+ 2)))
 	 (new-pos (make-vector3 (* 8.0 (sin new-loop)) 
 				0.0
 				(+ -20.0 (* 8.0 (cos new-loop))) ))
@@ -139,6 +119,10 @@
     ent))
 
 (defun draw ()
+  (setf *loops* (1+ *loops*))
+  (cepl-time:on-step-call (*stepper* (funcall *timer*))
+    (print *loops*)
+    (setf *loops* 0))
   (cgl::clear-depth 1.0)
   (cgl::clear :color-buffer-bit :depth-buffer-bit)
 
