@@ -1,7 +1,5 @@
-;; This is just to get a feel of SDL
-;; In the arc-tuts folder I was going through online tutorials
-;; but these were usign GLUT which takes control of your main 
-;; loop which isn't really great for flexible programming.
+;; This is simply to get a colored triangle up on the screen
+;; in is pretty much the 'hello world' of opengl demos
 
 
 (in-package :cepl-examples)
@@ -26,7 +24,7 @@
   (setf *prog-1* (cgl:make-program *shaders*))
 
   (setf *vertex-array* '((( 0.0     0.5  0.0  1.0)
-			  ( 0.0     1.0  0.0  1.0))
+			  ( 1.0     0.0  0.0  1.0))
 
 			 (( 0.5  -0.366  0.0  1.0)
 			  ( 0.0     1.0  0.0  1.0))

@@ -1,7 +1,5 @@
-;; This is just to get a feel of SDL
-;; In the arc-tuts folder I was going through online tutorials
-;; but these were usign GLUT which takes control of your main 
-;; loop which isn't really great for flexible programming.
+;; This is a simple triangle translating around a fixed point
+;; It is to test basic uniform handling
 
 
 (in-package :cepl-examples)

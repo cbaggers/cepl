@@ -444,7 +444,6 @@
 
 ;----------------------------------------------------------------
 
-;;[TODO] Need to finish the multiplication functions
 (defun m* (mat-a mat-b)
   (make-matrix3 (+ (* (melm mat-a 0 0) (melm mat-b 0 0))
 		   (* (melm mat-a 0 1) (melm mat-b 1 0))

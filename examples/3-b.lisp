@@ -1,7 +1,15 @@
-;; This is just to get a feel of SDL
-;; In the arc-tuts folder I was going through online tutorials
-;; but these were usign GLUT which takes control of your main 
-;; loop which isn't really great for flexible programming.
+;; This is the same as 3-a but I have made an effort to use
+;; less lines of code. I was testing this as I want to be able
+;; to have all the features and flexibility of standard opengl
+;; without having the ugly interface. To that end I would prefer
+;; that the replacement not only performs well but also is tidier
+;; and more concise.
+;; Right now I'm still making use of global variables which is 
+;; rubbish but it wouldn't be hard to get rid of this. The reason
+;; I didnt was that it would be too different from 3-a and so a 
+;; comparison would be a bit moot.
+;; I also added a fps count into this one which gave me a great
+;; chance to try out cepl-time.
 
 
 (in-package :cepl-examples)
@@ -12,6 +20,7 @@
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *entities* nil)
+;; for fps
 (defparameter *loops* 0)
 (defparameter *timer* (cepl-time:make-time-buffer))
 (defparameter *stepper* (cepl-time:make-stepper 1000))
@@ -56,7 +65,7 @@
 
     ;; make program
     (setf *prog-1* (cgl:make-program (mapcar #'cgl:make-shader 
-					     '("ex1.vert" "ex1.frag"))))
+					     '("3.vert" "3.frag"))))
     (setf *frustrum-scale* (cepl:calculate-frustrum-scale 45.0))
     (setf *cam-clip-matrix* (cepl:make-cam-clip-matrix 
 			     *frustrum-scale*))

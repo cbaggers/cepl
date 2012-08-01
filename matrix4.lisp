@@ -50,6 +50,35 @@
     (setf (melm result 3 3) p)
     result))
 
+
+;----------------------------------------------------------------
+
+(defun make-from-rows (row-1 row-2 row-3 row-4)
+  (make-matrix4 (v-x row-1) (v-y row-1) (v-z row-1) (v-w row-1) 
+		(v-x row-2) (v-y row-2)	(v-z row-2) (v-w row-2)
+		(v-x row-3) (v-y row-3) (v-z row-3) (v-w row-3)
+		(v-x row-4) (v-y row-4) (v-z row-4) (v-w row-4)))
+
+;----------------------------------------------------------------
+
+(defun get-rows (mat-a)
+   (list (make-vector4 (melm mat-a 0 0)
+		       (melm mat-a 0 1)
+		       (melm mat-a 0 2)
+		       (melm mat-a 0 3))
+	 (make-vector4 (melm mat-a 1 0)
+		       (melm mat-a 1 1)
+		       (melm mat-a 1 2)
+		       (melm mat-a 1 3))
+	 (make-vector4 (melm mat-a 2 0)
+		       (melm mat-a 2 1)
+		       (melm mat-a 2 2)
+		       (melm mat-a 2 3))
+	 (make-vector4 (melm mat-a 3 0)
+		       (melm mat-a 3 1)
+		       (melm mat-a 3 2)
+		       (melm mat-a 3 3))))
+
 ;----------------------------------------------------------------
 
 (defun mzerop (mat-a)
@@ -230,10 +259,10 @@
 
 (defun rotation-from-matrix3 (m-a)
   (make-matrix4 
-   (melm m-a 0 0)  (melm m-a 0 1)  (melm m-a 0 2)  0.0
-   (melm m-a 1 0)  (melm m-a 1 1)  (melm m-a 1 2)  0.0
-   (melm m-a 2 0)  (melm m-a 2 1)  (melm m-a 2 2)  0.0
-   0.0             0.0             0.0             1.0))
+   (m3:melm m-a 0 0)  (m3:melm m-a 0 1)  (m3:melm m-a 0 2)  0.0
+   (m3:melm m-a 1 0)  (m3:melm m-a 1 1)  (m3:melm m-a 1 2)  0.0
+   (m3:melm m-a 2 0)  (m3:melm m-a 2 1)  (m3:melm m-a 2 2)  0.0
+   0.0                0.0                0.0                1.0))
 
 ;----------------------------------------------------------------
 
@@ -397,7 +426,7 @@
     r))
 
 ;----------------------------------------------------------------
-;; [TODO] why cant this be named negate?
+
 (defun negate (mat-a)
   (let ((r (zero-matrix4)))
     (loop for i below 16
