@@ -44,9 +44,9 @@
 (defun mkstr (&rest args)
   "Takes a list of strings or symbols and returns one string
    of them concatenated together. For example:
-    CEPL-EXAMPLES> (cepl-utils:mkstr 'jam 'ham)
+    CEPL-EXAMPLES> (cepl-utils:mkstr 'jam 'ham')
      'JAMHAM'
-    CEPL-EXAMPLES> (cepl-utils:mkstr "jam" "ham")
+    CEPL-EXAMPLES> (cepl-utils:mkstr 'jam' 'ham')
      'jamham'"
   (with-output-to-string (s)
     (dolist (a args) (princ a s))))
