@@ -7,7 +7,8 @@ My first lisp project, a chance to play about and get something up in opengl.
 
 -----
 
-*Requires*:
+**Requires**
+
 cl-opengl
 lispbuilder
 glop
