@@ -1,3 +1,9 @@
+;; These are the enums cl-opengl has that relates to types
+;; used in GLSL shaders.
+;; I have grouped them by type and they are used in cepl-gl
+;; under the uniforms section for mapping from the type of 
+;; the uniform to the function that would update the uniform.
+
 ## attribute types + room for expansion.
 :float-vec2
 :float-vec2-arb

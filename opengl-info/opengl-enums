@@ -1,3 +1,8 @@
+;; This is the entire list of enums that opengl uses.
+;; it has proved very handy and that is why it is here. I refered
+;; to it when I was making the uniform handing code in cepl-gl
+;; (see also the glsl-enums file)
+
 # This is the OpenGL and OpenGL ES enumerant registry.
 #
 # It is an extremely important file. Do not mess with it unless

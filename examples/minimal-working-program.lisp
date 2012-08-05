@@ -1,8 +1,8 @@
-;; This is just to get a feel of SDL
-;; In the arc-tuts folder I was going through online tutorials
-;; but these were usign GLUT which takes control of your main 
-;; loop which isn't really great for flexible programming.
+;; This is my starting point in the examples.
+;; It's simple function is to open an sdl window and start
+;; a basic game loop calling all the basic functions you need.
 
+;; it makes it very easy to start adding extra code.
 
 (in-package :cepl-examples)
 
