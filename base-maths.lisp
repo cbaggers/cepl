@@ -1,3 +1,9 @@
+;; This contaisn the maths functions that will be used
+;; all over cepl as opposed to 'belonging' to a certain
+;; segment of game functionality.
+;; the base-* packages are meant to be 'used' so that 
+;; there is no need to write the package name.
+
 (in-package :base-maths)
 
 (defconstant +float-threshold+ 1.0e-6)

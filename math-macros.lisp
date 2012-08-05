@@ -12,8 +12,8 @@
 ;; differences in dimensions wherever possible.
 
 ;; THESE SHOULD NOT BE USED OUTSIDE OF THE MATHS PACKAGES
-;; THEY ARE NOT GOOD LISP AND THEIR USE SHOULD BE AS MEASURED
-;; AS POSSIBLE
+;; THEY ARE NOT NECESSARILY GOOD LISP AND THEIR USE SHOULD 
+;; BE AS MEASURED AS POSSIBLE
 
 (in-package :math-macros)
 
@@ -114,8 +114,3 @@
   `(,func ,@(element-x-of-arrays elm-num array-names)))
 
 ;----------------------------------------------------------------
-
-;; Put these here for now due to a lack of somewhere else
-;; vec4 does not have distance
-;; vec4 doesnt appear to have a negate function
-;; vec4 doesnt have a cross product

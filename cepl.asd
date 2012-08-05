@@ -3,9 +3,8 @@
 (asdf:defsystem #:cepl
   :serial t
   :depends-on (#:cl-opengl
-               #:cl-glu
-               #:cl-glut
-	       #:lispbuilder-sdl)
+	       #:lispbuilder-sdl
+	       #:glop)
   :components ((:file "package")
 	       (:file "base-maths")
 	       (:file "base-macros")

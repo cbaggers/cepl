@@ -1,0 +1,10 @@
+
+;; You can enable/disable vsync using:
+;; 0 disable - 1 enable
+;; SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL,1)
+
+;; And to check if its enabled:
+
+;; test is an int 
+;; SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL,&test)
+

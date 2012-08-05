@@ -1,10 +1,9 @@
-;;;; cepl.lisp
+;; This is a dumping ground for homless functions
+;; If anything is here currently then it needs to be rehomed or
+;; the essence of the functionality decided, generalised and 
+;; rehomed.
 
 (in-package :cepl)
-
-;; right now this is just functions we use across demos.
-;; later this will be formalized when I draw up a decent 
-;; design for the api/whatever-this-is
 
 ;;;--------------------------------------------------------------
 
@@ -31,10 +30,4 @@
 			  0.0 0.0 (/ (* 2 f-far f-near)
 				     (- f-near f-far)) 0.0)))
 
-;;;------------------------------------------------------------------
-
-(defmacro with-init-cepl (&body body)
-  `(progn 
-     ;;(setf *cepl-* nil)
-     (sdl:with-init ()
-       (,@body))))
+;;;--------------------------------------------------------------

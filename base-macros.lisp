@@ -1,4 +1,6 @@
 ;; a load of handy macros to use around the place
+;; the base-* packages are meant to be 'used' so that 
+;; there is no need to write the package name.
 
 (in-package :base-macros)
 
@@ -10,14 +12,17 @@
 
 ;; Actually, This is over the top for a lot of what we need, see 
 ;; below this for a different memoise function.
-(defmacro defun-memobind (bind-type-name bind-expression &optional (default nil))
+(defmacro defun-memobind (bind-type-name bind-expression 
+			  &optional (default nil))
   (let* ((args (cdr bind-expression))
 	 (curs-n-caches (loop for arg in args
 			   collect (list (gensym "CUS") 
 					 (gensym "CAS") 
 					 (gensym "CU")))))
-    `(let ,(loop for i in (utils:flatten (loop for trip in curs-n-caches
-					       collect (list (first trip) (second trip))))
+    `(let ,(loop for i in (utils:flatten 
+			   (loop for trip in curs-n-caches
+			      collect (list (first trip) 
+					    (second trip))))
 	      collect (list i default))
        (defun ,(utils:symb 'bind- bind-type-name) ,args
 	 (unless (and ,@(loop for trip in curs-n-caches

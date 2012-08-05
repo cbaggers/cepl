@@ -1,3 +1,8 @@
+;; This is the 3x3 matrix functionality. 
+;; There will be a generic function-set to make this as easy
+;; as possible for people writing the games but this will 
+;; be in a seperate package (prehaps the base-maths one)
+
 (in-package :matrix3)
 
 ;; Code adapted from Ogre which in turn was adapted 

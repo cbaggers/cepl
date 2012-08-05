@@ -1,6 +1,5 @@
-;; This is to expand on using uniforms. Testing translation,
-;; rotation and scaling in a 3D scene. It is also a better 
-;; test of the vao generation functions
+;; This is the same as 4.lisp but without vsync..hmm
+;; didnt seem to work
 
 
 (in-package :cepl-examples)
@@ -21,6 +20,10 @@
 (defparameter *vao-1* nil)
 (defparameter *entities* nil)
 (defparameter *camera* nil)
+;; for fps
+(defparameter *loops* 0)
+(defparameter *timer* (cepl-time:make-time-buffer))
+(defparameter *stepper* (cepl-time:make-stepper 1000))
 
 ;; Define data formats 
 (cgl:define-interleaved-attribute-format vert-data 
@@ -165,11 +168,28 @@
   (gl:depth-range 0.0 1.0)
   (gl:enable :depth-clamp))  
 
-;; (defun entity-matrix (entity)
-;;   (reduce #'m4:m* (list
-;; 		   (m4:scale (entity-scale entity))
-;; 		   (m4:rotation-from-euler (entity-rotation entity))
-;; 		   (m4:translation (entity-position entity)))))
+(defun opengl-context ()
+  (let ((wm-info (cffi:foreign-alloc 'sdl-cffi::SDL-Sys-WM-info)))
+    ;; Set the wm-info structure to the current SDL version.
+    (sdl-cffi::set-sdl-version 
+     (cffi:foreign-slot-value wm-info 
+			      'sdl-cffi::SDL-Sys-WM-info 
+			      'sdl-cffi::version))
+    (sdl-cffi::SDL-Get-WM-Info wm-info)
+    ;; For Windows
+    #+windows(cffi:foreign-slot-value wm-info 
+				      'sdl-cffi::SDL-Sys-WM-info 
+				      'sdl-cffi::hglrc)
+    ;; For X
+    #-windows(cffi:foreign-slot-pointer 
+	      (cffi:foreign-slot-pointer 
+	       (cffi:foreign-slot-pointer wm-info
+					  'sdl-cffi::SDL-Sys-WM-info
+					  'sdl-cffi::info)
+	       'sdl-cffi::SDL-Sys-WM-info-info
+	       'sdl-cffi::x11) ;pointer
+	      'sdl-cffi::SDL-Sys-WM-info-info-x11 ;type 
+	      'sdl-cffi::hglrc))) ;undefined slot name
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list
@@ -181,6 +201,10 @@
 ;----------------------------------------------
 
 (defun draw ()
+  ;; (setf *loops* (1+ *loops*))
+  ;; (cepl-time:on-step-call (*stepper* (funcall *timer*))
+  ;;   (print *loops*)
+  ;;   (setf *loops* 0))
   (cgl::clear-depth 1.0)
   (cgl::clear :color-buffer-bit :depth-buffer-bit)
 
@@ -188,10 +212,10 @@
 			    (calculate-cam-look-at-w2c-matrix
 			     *camera*))
 
-  (loop for entity in *entities*
+  (loop for entity in  *entities*
        do (setf (entity-rotation entity) 
 	     (v3:v+ (entity-rotation (car *entities*))
-		    (make-vector3 0.1 0.2 0.0))))
+		    (make-vector3 0.03 0.03 0.0))))
 
   (loop for entity in *entities*
        do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 
@@ -222,15 +246,19 @@
 (defun run-demo () 
   (sdl:with-init ()
     (sdl:window 
-     640 480 :opengl t
+     640 480 
+     :opengl t
      :resizable t
+     :flags sdl-cffi::sdl-opengl
      :opengl-attributes '((:sdl-gl-doublebuffer 1)
 			  (:sdl-gl-alpha-size 0)
 			  (:sdl-gl-depth-size 16) 
 			  (:sdl-gl-stencil-size 8)
 			  (:sdl-gl-red-size 8)
 			  (:sdl-gl-green-size 8)
-			  (:sdl-gl-blue-size 8)))
+			  (:sdl-gl-blue-size 8)
+			  (:SDL-GL-SWAP-CONTROL 1)))
+    (setf (sdl:frame-rate) 0)
     (init)
     (reshape 640 480)
     (setf cl-opengl-bindings:*gl-get-proc-address* #'sdl-cffi::sdl-gl-get-proc-address)
@@ -241,3 +269,9 @@
       (:idle ()
 	     (base-macros:continuable (update-swank))
 	     (base-macros:continuable (draw))))))
+
+
+
+
+
+

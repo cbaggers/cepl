@@ -1,4 +1,7 @@
-;;; This package is for all the vector3 math functions
+;; This package is for all the vector3 math functions
+;; There will be a generic function-set to make this as easy
+;; as possible for people writing the games but this will 
+;; be in a seperate package (prehaps the base-maths one)
 
 (in-package #:vector3)
 

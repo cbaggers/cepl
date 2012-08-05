@@ -1,6 +1,8 @@
-;; This is to expand on using uniforms. Testing translation,
-;; rotation and scaling in a 3D scene. It is also a better 
-;; test of the vao generation functions
+;; This was meant to be a test of the awesome GLOP library instead
+;; of SDL. It seems to have everything I need but it crashes 
+;; immediately under my optimus setup under linux. Such a pain as 
+;; it looks near perfect for my needs.
+
 
 
 (in-package :cepl-examples)
@@ -180,7 +182,7 @@
 
 ;----------------------------------------------
 
-(defun draw ()
+(defun draw (win)
   (cgl::clear-depth 1.0)
   (cgl::clear :color-buffer-bit :depth-buffer-bit)
 
@@ -197,7 +199,7 @@
        do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 
   		   :modeltoworldmatrix (entity-matrix entity)))
   (gl:flush)
-  (sdl:update-display))
+  (glop:swap-buffers win))
 
 (defun reshape (width height)  
   (setf (matrix4:melm *cam-clip-matrix* 0 0)
@@ -216,28 +218,21 @@
 
 ;----------------------------------------------
 
-;; currently anything changed in here is going to need a restart
-;; this is obviously unacceptable and will be fixed when I can
-;; extract the sdl event handling from their loop system.
-(defun run-demo () 
-  (sdl:with-init ()
-    (sdl:window 
-     640 480 :opengl t
-     :resizable t
-     :opengl-attributes '((:sdl-gl-doublebuffer 1)
-			  (:sdl-gl-alpha-size 0)
-			  (:sdl-gl-depth-size 16) 
-			  (:sdl-gl-stencil-size 8)
-			  (:sdl-gl-red-size 8)
-			  (:sdl-gl-green-size 8)
-			  (:sdl-gl-blue-size 8)))
+(defun run-demo ()
+  (let ((win (glop:create-window "Glop test window" 640 480)))
     (init)
-    (reshape 640 480)
-    (setf cl-opengl-bindings:*gl-get-proc-address* #'sdl-cffi::sdl-gl-get-proc-address)
-    (sdl:with-events () 
-      (:quit-event () t)
-      (:VIDEO-RESIZE-EVENT (:w width :h height) 
-			   (reshape width height))
-      (:idle ()
-	     (base-macros:continuable (update-swank))
-	     (base-macros:continuable (draw))))))
+    (loop for evt = (glop:next-event win :blocking nil)
+         with running = t
+         while running
+         if evt
+         do (typecase evt
+              (glop:key-press-event
+               (when (eq (glop:keysym evt) :escape)
+                 (glop:push-close-event win)))
+              (glop:close-event (setf running nil))
+	      (glop:resize-event (reshape 640 480)) ;need vars
+              (t (format t "Unhandled event: ~A~%" evt)))
+       else do (progn
+		 (base-macros:continuable (update-swank))
+		 (base-macros:continuable (draw))))
+    (glop:destroy-window win)))

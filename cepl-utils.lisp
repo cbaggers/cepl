@@ -1,3 +1,8 @@
+;; This is a stack of useful functions not really thought of as
+;; tools for writing games specifically, but rather for writing
+;; cepl. 
+;; Saying that though, any use is wonderful so enjoy.
+
 (in-package :cepl-utils)
 
 ;;this will be pretty inefficient, but shoudl be fine for code trees
