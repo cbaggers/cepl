@@ -20,7 +20,8 @@
   (:index 1 :type :float :components (r g b a)))
 
 (defun init () 
-  (setf *shaders* (mapcar #'cgl:make-shader `("1.vert" "1.frag")))
+  (setf *shaders* 
+	(mapcar #'cgl:make-shader `("1.vert" "1.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
 
   (setf *vertex-array* '((( 0.0     0.5  0.0  1.0)

@@ -39,8 +39,9 @@
 (defun init () 
   (setf *shaders* (mapcar #'cgl:make-shader `("3.vert" "3.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
-  (setf *frustrum-scale* (cepl:calculate-frustrum-scale 45.0))
-  (setf *cam-clip-matrix* (cepl:make-cam-clip-matrix 
+  (setf *frustrum-scale* 
+	(cepl-camera:calculate-frustrum-scale 45.0))
+  (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix 
 			   *frustrum-scale*))
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
 

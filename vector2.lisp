@@ -58,8 +58,11 @@
 	 (ftype (function ((simple-array single-float (2))) 
 			  (boolean)) vzerop))
 (defun vzerop (vector-a)
+  "Checks if the length of the vector is zero. As this is a 
+   floating point number it checks to see if the length is
+   below a threshold set in the base-maths package"
   (declare ((simple-array single-float (2)) vector-a))
-  (float-zero-sq (apply-across-elements + ((vc-a vector-a)) 2
+  (float-zero (apply-across-elements + ((vc-a vector-a)) 2
 		   (expt vc-a 2))))
 
 ;----------------------------------------------------------------
@@ -68,8 +71,11 @@
 	 (ftype (function ((simple-array single-float (2))) 
 			  (boolean)) unitp))
 (defun unitp (vector-a)
+  "Checks if the vector is of unit length. As this is a 
+   floating point number it checks to see if the length is
+   within the range of 1 + or - and threshold set in base-maths"
   (declare ((simple-array single-float (2)) vector-a))
-  (float-zero-sq (- 1.0 (apply-across-elements + ((vc-a vector-a)) 2
+  (float-zero (- 1.0 (apply-across-elements + ((vc-a vector-a)) 2
 			  (expt vc-a 2)))))
 ;----------------------------------------------------------------
 
@@ -103,6 +109,8 @@
 
 ;; Not sure how to optomise this
 (defun v+ (&rest vec2s)
+  "takes any number of vectors and add them all together 
+   returning a new vector2"
   (reduce #'v+1 vec2s))
 
 ;----------------------------------------------------------------
@@ -122,7 +130,8 @@
 
 ;; Not sure how to optomise this
 (defun v- (&rest vec2s)
-  "minus list of vector2s"
+  "takes any number of vectors and subtract them and return
+   a new vector4"
   (reduce #'v-1 vec2s))
 
 ;----------------------------------------------------------------
@@ -233,7 +242,8 @@
 	 (ftype (function ((simple-array single-float (2))) 
 			  (single-float)) vlength))
 (defun vlength (vector-a)
-  "If you only need to compare relative lengths then definately
+  "Returns the length of a vector
+   If you only need to compare relative lengths then definately
    stick to length-squared as the sqrt is a slow operation."
   (declare ((simple-array single-float (2)) vector-a))
   (c-sqrt (vlength-squared vector-a)))
@@ -322,4 +332,16 @@
     (declare ((simple-array single-float (2)) vector-a vector-b))
     (v- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b))))
 
+;----------------------------------------------------------------
 
+(declaim (inline cross)
+	 (ftype (function ((simple-array single-float (3)) 
+			   (simple-array single-float (3))) 
+			  float)
+		cross))
+(defun cross (vec-a vec-b)
+  "Calculates the 2 dimensional cross-product of 2 vectors, 
+   which results in a single floating point value which is
+   2 times the area of the triangle."
+  (declare ((simple-array single-float (3)) vec-a vec-b))  
+  (- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b))))

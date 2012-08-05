@@ -30,6 +30,17 @@
   (use-program program-id)
   (gl:uniform-matrix location dim matrices nil))
 
+;;;--------------------------------------------------------------
+;;; EXTRA OPENGL FUNCTIONS ;;;
+;;;------------------------;;;
+
+(defun draw-elements-base-vertex (mode array indices base-vertex
+			 &key (count (gl::gl-array-size array)))
+  (%gl:draw-elements-base-vertex mode count
+                     (gl::cffi-type-to-gl 
+		      (gl::gl-array-type array))
+                     (gl::gl-array-pointer-offset array indices)
+		     base-vertex))
 
 ;;;--------------------------------------------------------------
 ;;; GL-ARRAYS ;;;
@@ -38,11 +49,14 @@
 ;; (setf (gl:glaref array index 'x) 1.675)
 
 (defun simple-1d-populate (array data)
+  "Reads a flat list of data into a gl-array"
   (loop for datum in data
        for i from 0
        do (setf (aref-gl array i) datum)))
 
 (defun simple-array-attrib-error (&rest args)
+  "This is just to kick off an error. There will be a better
+   way of doing this, but for now it does the job"
   (declare (ignore args))
   (error "Sorry, attribute-formats cannot be generated from primitive array types"))
 
@@ -54,26 +68,47 @@
 	(setf (get type-name 'vertex-attrib-formats) nil)))
 
 (defmacro define-attribute-format (name &rest args)
+  "This allows the user to create a non interleaved 
+   attribute format. 
+
+   In actuality it is just a bit of syntatic sugar and itself
+   uses the define-interleaved-attribute-format macro.
+
+   Attribute formats are the key to getting CEPL to do a lot 
+   of the ugly low level work of opengl for you. They are used
+   in defining the streams of vertex data you pass to the shader.
+   As we have these formats available we can also use them to 
+   tell cepl how to push data into opengl buffers.
+   Finally the attribute format also works as a 'type' for the
+   gl-arrays."
   `(define-interleaved-attribute-format ,name ,args))
 
 (defmacro define-interleaved-attribute-format (name &body clauses)
-  "Defines a vertex array format spcification. Each clause has
-the format (array-type parameter*) where array-type is always
-VERTEX-ATTRIB.
+  "Defines a vertex attribute format. Each clause is as list 
+   of parameters which are used to define the type, legnth, etc
+   of the attributes themselves.
 
-Parameters are keyword arguments for the corresponding array
-type. The following parameters are supported:
+   Parameters are keyword arguments for the corresponding array
+   type. The following parameters are supported:
 
     :TYPE -- array element type (all array types)
-    :COMPONENTS -- list of component (slot) names for this array (all types)
+    :COMPONENTS -- list of component (slot) names for this array
+                   (all types)
     :STAGE -- active texture for the array (TEX-COORD type)
-    :NORMALIZED -- whether values should be normalized (VERTEX-ATTRIB)
-"
+    :NORMALIZED -- whether values should be normalized
+
+   Attribute formats are the key to getting CEPL to do a lot 
+   of the ugly low level work of opengl for you. They are used
+   in defining the streams of vertex data you pass to the shader.
+   As we have these formats available we can also use them to 
+   tell cepl how to push data into opengl buffers.
+   Finally the attribute format also works as a 'type' for the
+   gl-arrays."
   `(progn
      (defcstruct ,name
        ,@(mapcan #'emit-attrib-struct-clause clauses))
      (setf (get ',name 'cgl-destructuring-populate)
-	   (destructured-populate ,@clauses))
+	   (dpopulate ,@clauses))
      (setf (get ',name 'vertex-attrib-formats)
 	   (list ,@(loop with stride = (if (> (length clauses) 1)
 					 `(foreign-type-size ',name)
@@ -91,39 +126,108 @@ type. The following parameters are supported:
      ',name))
 
 (defun emit-attrib-format (clause offset stride)
+  "this is a helper function for define-interleaved-attribute-..
+   format that really only exists to remove a little of the 
+   complexity from the core loop of ...
+   define-interleaved-attribute-format"
   (destructuring-bind (&key (normalized :false) type components
 			    &allow-other-keys)
       clause
     `(,(length components) ,type ,normalized ,stride ,offset)))
 
 (defun emit-attrib-struct-clause (clause)
+  "This is a helper function is used to flatten the clauses 
+   passed to define-interleaved-attribute-format into the format
+   expected by defcstruct."
   (destructuring-bind (&key type components &allow-other-keys)
       clause
     (loop for c in components
           collect `(,c ,type))))
 
 (defun attrib-formats (array-type)
+  "Returns a list of the attribute formats for the specified 
+   gl-array type"
   (get array-type 'vertex-attrib-formats))
 
 (defun attrib-format (array-type &optional  (sub-attrib 0)
 				    (offset 0))
+  "Returns the specified attribute format of the provided array
+   type. For interleaved types you can specify the attribute
+  you ar interested in and also provide an offset to be used."
   (let ((formats (get array-type 'vertex-attrib-formats)))
     (if (null formats)
 	(error "Sorry but attribute formats are not available for this array-type")
 	(funcall (nth sub-attrib formats) offset))))
 
 (defun destructuring-populate (array data)
+  "This function takes a gl-array and a list of data and 
+   populates the gl-array using the data. 
+   The data must be a list of sublists. Each sublist must
+   be in the format expected by a destrucutring-bind with
+   the target format being that specified by the array-type.
+  
+   That sucks as an explanation so here is an example:
+
+   given a format as defined below:
+    (cgl:define-interleaved-attribute-format vert-data 
+      (:type :float :components (x y z))
+      (:type :float :components (r g b a)))
+
+   and an array made using this format
+    (setf *vertex-data-gl* (cgl:alloc-array-gl 'vert-data 3))
+
+   then you can populate it as so:
+    (cgl:destructuring-populate *vertex-data-gl* 
+     	               '((( 0.0     0.5  0.0)
+			  ( 1.0     0.0  0.0  1.0))
+
+			 (( 0.5  -0.366  0.0)
+			  ( 0.0     1.0  0.0  1.0))
+
+			 ((-0.5  -0.366  0.0)
+			  ( 0.0     0.0  1.0  1.0))))
+
+   Hopefully that makes sense."
   (let ((func (get (gl::gl-array-type array) 
 		   'cgl-destructuring-populate)))
     (funcall func array data)
     array))
 
 (defun destructuring-allocate (array-type data)
+  "This function will create a new gl-array with a length
+   equal to the length of the data provided, and then populate 
+   the gl-array.
+
+   The data must be a list of sublists. Each sublist must
+   be in the format expected by a destrucutring-bind with
+   the target format being that specified by the array-type.
+  
+   That sucks as an explanation so here is an example:
+
+   given a format as defined below:
+    (cgl:define-interleaved-attribute-format vert-data 
+      (:type :float :components (x y z))
+      (:type :float :components (r g b a)))
+
+   then you can create and populate it a new gl-array as so:
+    (setf *new-gl-arrray*
+        (cgl:destructuring-alocate 'vert-data 
+     	               '((( 0.0     0.5  0.0)
+			  ( 1.0     0.0  0.0  1.0))
+
+			 (( 0.5  -0.366  0.0)
+			  ( 0.0     1.0  0.0  1.0))
+
+			 ((-0.5  -0.366  0.0)
+			  ( 0.0     0.0  1.0  1.0)))))
+
+   Hopefully that makes sense."
   (let ((array (alloc-array-gl array-type (length data))))
     (destructuring-populate array data)))
 
-;;[TODO] These names are too similar
-(defmacro destructured-populate (&body clauses)
+(defmacro dpopulate (&body clauses)
+  "This is the macro that generates the code which is used
+   by the destructuring-populate function."
   (let ((loop-token (gensym "LOOP")))
     `(lambda (array data)
        (loop for vert in data
@@ -143,6 +247,8 @@ type. The following parameters are supported:
 				    ',comp) comp)))))))
 
 (defun list-components (clauses)
+  "This is a helper function for dpopulate which returns
+   a list of component portions of the clauses"  
   (loop for clause in clauses
        collect (destructuring-bind (&rest rest &key components
 					  &allow-other-keys)
@@ -154,11 +260,13 @@ type. The following parameters are supported:
 ;; needs to be here right now as I don't know how to set
 ;; vertex-array-binder to be in cl-opengl
 (defun alloc-gl-array (type count)
+  "Creates a new gl-array of specified type and length"
   (gl::make-gl-array :pointer (foreign-alloc type :count count)
                      :size count :type type))
 
 
 (defun alloc-array-gl (type count)
+  "Creates a new gl-array of specified type and length"
   (alloc-gl-array type count))
 
 
@@ -167,7 +275,7 @@ type. The following parameters are supported:
 ;; (setf (symbol-function 'aref-gl) (symbol-function 'glaref))
 (declaim (inline aref-gl))
 (defun aref-gl (array index &optional (component nil c-p))
-  "Returns the INDEX-th component of ARRAY. If COMPONENT is
+  "Returns the INDEX-th component of gl-array. If COMPONENT is
 supplied and ARRAY is of a compound type the component named
 COMPONENT is returned."
   (if c-p
@@ -201,13 +309,19 @@ COMPONENT is returned."
   (gl:bind-buffer target buffer-id))
 
 (defun gen-buffer ()
+  "Generates a single opengl buffer"
   (first (gen-buffers 1)))
 
-;;(cons (+ (car b) 100) (subseq b 1))
-;; SIZE TYPE NORMALIZED STRIDE POINTER
 (defun buffer-data (buffer-id array 
 		    &key (buffer-type :array-buffer) 
 		          (draw-type :static-draw))
+  "This function populates an opengl buffer with the contents 
+   of the array. You can also pass in the buffer type and the 
+   draw type this buffer is to be used for.
+   
+   The function returns a list of buffer formats which can
+   be passed, as they are or mixed with others from other 
+   buffers, and used to create VAOs."
   (bind-buffer buffer-type buffer-id)
   (gl:buffer-data buffer-type draw-type array)
   (loop for formatter in (attrib-formats (gl::gl-array-type array))
@@ -219,7 +333,11 @@ COMPONENT is returned."
 			           (draw-type :static-draw))
   "This beast will take a list of arrays and auto-magically
    push them into a buffer taking care of both interleaving 
-   and sequencial data and handling all the offsets."
+   and sequencial data and handling all the offsets.
+ 
+   The function returns a list of buffer formats which can
+   be passed, as they are or mixed with others from other 
+   buffers, and used to create VAOs."
   (let* ((array-byte-sizes (loop for array in arrays
 				collect 
 				(gl:gl-array-byte-size array)))
@@ -242,14 +360,6 @@ COMPONENT is returned."
 		  collect (cons buffer-id 
 				(funcall formatter offset))))))
 
-;; get a list of the array size in bytes of all the arrays
-;; use buffer-data to push the first array in.
-;; the use buffer-sub-data to push every other array using the 
-;; list of sizes to handle the offset
-;; return the buffer-id
-;; [TODO] Needs to handle offsets into the array
-
-
 ;;;--------------------------------------------------------------
 ;;; VAOS ;;;
 ;;;------;;;
@@ -259,8 +369,11 @@ COMPONENT is returned."
 ;; value of vao-id last time bind-vao was called.
 (base-macros:defmemo bind-vao (vao-id)
   (gl:bind-vertex-array vao-id))
+(setf (documentation 'bind-vao 'function) 
+      "Binds the vao specfied")
 
 (defun bind-vertex-array (vao-id)
+  "Binds the vao specfied"
   (bind-vao vao-id))
 
 ;;[TODO] can bind-buffer inside vao have any other target
@@ -268,7 +381,9 @@ COMPONENT is returned."
 ;;[TODO] is enable-vertex-attrib-array relevent here?
 ;;       it is superseded by later calls?
 (defun make-vao (formats &optional (element-buffer nil))
-  ;;make vao here
+  "This function takes a list of buffers formats and 
+   optionaly an element buffer and returns a new vertex
+   array object which can then be used in a stream."
   (let ((vao-id (gl:gen-vertex-array)))
     (bind-vao vao-id)
     (loop for attr-format in formats
@@ -479,49 +594,64 @@ COMPONENT is returned."
 ;;;----------;;;
 
 (defun program-attrib-count (program)
+  "Returns the number of attributes used by the shader"
   (get-program program :active-attributes))
 
 (defun program-attributes (program)
+  "Returns a list of details of the attributes used by
+   the program. Each element in the list is a list in the
+   format: (attribute-name attribute-type attribute-size)"
   (loop for i from 0 below (program-attrib-count program)
      collect (multiple-value-bind (size type name)
 		 (get-active-attrib program i)
 	       (list name type size))))
 
 (defun program-uniform-count (program)
+  "Returns the number of uniforms used by the shader"
   (get-program program :active-uniforms))
 
 (defun program-uniforms (program-id)
+  "Returns a list of details of the uniforms used by
+   the program. Each element in the list is a list in the
+   format: (uniform-name uniform-type uniform-size)"
   (loop for i from 0 below (program-uniform-count program-id)
      collect (multiple-value-bind (size type name)
 		 (get-active-uniform program-id i)
 	       (list name type size))))
 
 (defun get-uniforms (program)
+  "Takes a program and returns a list of uniforms"
   (let ((program-id (funcall program t)))
     (loop for detail in (program-uniforms program-id)
        collect (list (utils:make-keyword
 		      (lispify-name (car detail)))
-		     (second detail)))))
+		     (second detail)
+		     (third detail)))))
 
 (base-macros:defmemo use-program (program-id)
    (gl:use-program program-id))
+(setf (documentation 'use-program 'function) 
+  "Installs a program object as part of current rendering state")
 
 
-;; This is one DUMB function...but its serving my needs for now
 (defun shader-type-from-path (path)
-  "This uses the extension to return the type of the shader"
+  "This uses the extension to return the type of the shader.
+   Currently it only recognises .vert or .frag files"
   (let* ((plen (length path))
 	 (exten (subseq path (- plen 5) plen)))
     (cond ((equal exten ".vert") :vertex-shader)
 	  ((equal exten ".frag") :fragment-shader)
-	  (t (error "Could not extract shader type from shader"))
-	  )))
+	  (t (error "Could not extract shader type from shader file extension (must be .vert or .frag)")))))
 
-(defun make-shader (file-path &optional 
-				(shader-type 
-			      (shader-type-from-path file-path))
-				(shader-id 
-				 (gl:create-shader shader-type)))
+(defun make-shader (file-path 
+		    &optional 
+		      (shader-type 
+		       (shader-type-from-path file-path))
+		      (shader-id 
+		       (gl:create-shader shader-type)))
+  "This makes a new opengl shader object by compiling the text
+   in the specified file and, unless specified, establishing the
+   shader type from the file extension"
   (restart-case  
       (let ((source-string (utils:file-to-string file-path)))
 	(gl:shader-source shader-id source-string)
@@ -540,6 +670,8 @@ COMPONENT is returned."
   shader-id)
 
 (defun link-shaders (shaders)
+  "Links all the shaders provided and returns an opengl program
+   object"
   (let ((program (gl:create-program)))
     (loop for shader in shaders
        do (gl:attach-shader program shader))
@@ -551,10 +683,12 @@ COMPONENT is returned."
     (loop for shader in shaders
        do (gl:detach-shader program shader))
     program))
-;; remove (gl:delete-shader shader) as it messes up retrying 
-;; stuff
 
 (defun no-bind-draw-one (stream)
+  "This draws the single stream provided using the currently 
+   bound program. Please note: It Does Not bind the program so
+   this function should only be used from another function which
+   is handling the binding."
   (let ((e-type (gl-stream-element-type stream)))
     (bind-vao (gl-stream-vao stream))
     (if e-type
@@ -565,10 +699,7 @@ COMPONENT is returned."
 			 (gl-stream-start stream)
 			 (gl-stream-length stream)))))
 
-	;; (%gl:draw-elements (gl-stream-draw-style stream)
-	;; 		   (gl-stream-length stream) 
-	;; 		   (gl::make-null-gl-array e-type)
-	;; 		   (cffi:make-pointer 0))
+
 ;; get uniforms
 ;; turn names into lispy keyword names
 ;; hash those against lambdas that will call the cl-opengl 
@@ -580,13 +711,12 @@ COMPONENT is returned."
 ;;   if there are keys lookup the uniforms and call the lambdas
 ;;   loop through the renderables and call draw on each 
 
-;; bah move draw style to the stream struct
-
-;; (("cameratoclipmatrix" :FLOAT-MAT4-ARB 1) ("jam" :FLOAT 1)
-;;  ("modelToCameraMatrix" :FLOAT-MAT4-ARB 1)) 
-
 ;; [TODO] Doesnt handle arrays yet
 (defun hash-uniform-handlers (program-id uniform-details)
+  "This function takes a list of uniforms details (as given 
+   by program-uniforms) and returns a hash table matching as
+   'lispified' version of the uniform name to a lambda which 
+   will update the specific uniform."
   (let ((uni-hash (make-hash-table 
 		   :test `eq 
 		   :size (length uniform-details))))
@@ -603,34 +733,59 @@ COMPONENT is returned."
     uni-hash))
 
 (defun lispify-name (name)
+  "take a string and changes it to uppercase and replaces
+   all underscores _ with minus symbols -"
   (string-upcase (substitute #\- #\_ name)))
 
 (defun make-program (shaders)
- (let* ((program-id (link-shaders shaders))
-	(uniform-details (program-uniforms program-id))
-	(uniform-hash (hash-uniform-handlers program-id
-					     uniform-details))
-	(uniform-lispy-names (loop for detail in uniform-details
-				collect (utils:make-keyword 
-					 (lispify-name
-					  (car detail))))))
-   (lambda (streams &rest uniforms)	     
-     (use-program program-id)
-     (when uniforms
-       (loop for i below (length uniforms) by 2
-	  do (let ((uniform-updater (gethash (nth i uniforms) 
-					     uniform-hash))) 
-	       (if uniform-updater
-		   (funcall uniform-updater (nth (1+ i) uniforms))
-		   (error (format nil "Uniform not found, must be one of ~{~a~^, ~}" uniform-lispy-names))))))
-     (if (eq streams t)
-	 program-id
-	 (loop for stream in streams
-	    do (no-bind-draw-one stream))))))
+  "Takes a list of shader, links them into an opengl program
+   object and wraps it in a lambda.
+   The reasoning for this is that a shader program is essentially
+   a function in that it takes a values and produces an output
+   while escapsulating the inner workings from the rest of the
+   program. The fact that the program runs on the gpu rather than
+   the cpu is incidental.
+   So an opengl 'program' is a function. It is a function that
+   takes as it main argument a list of streams which it 's job is
+   to render. The other arguments are &key arguments where the
+   key is the name of the uniform and the value is the value
+   you wish to set the uniform to.
+   Opengl Uniforms maintain between calls to the program so you
+   only need to specify a uniform argument when you wish to 
+   change its value."
+  (let* ((program-id (link-shaders shaders))
+	 (uniform-details (program-uniforms program-id))
+	 (uniform-hash (hash-uniform-handlers program-id
+					      uniform-details))
+	 (uniform-lispy-names (loop for detail in uniform-details
+				 collect (utils:make-keyword 
+					  (lispify-name
+					   (car detail))))))
+    (lambda (streams &rest uniforms)	     
+      (use-program program-id)
+      (when uniforms
+	(loop for i below (length uniforms) by 2
+	   do (let ((uniform-updater (gethash (nth i uniforms) 
+					      uniform-hash))) 
+		(if uniform-updater
+		    (funcall uniform-updater (nth (1+ i) uniforms))
+		    (error (format nil "Uniform not found, must be one of ~{~a~^, ~}" uniform-lispy-names))))))
+      (if (eq streams t)
+	  program-id
+	  (loop for stream in streams
+	     do (no-bind-draw-one stream))))))
 
 
 (defun set-program-uniforms (program &rest uniforms)
+  "This is a really syntactic sugar around setting uniforms
+   of a program. It takes a program and &key arguments where
+   the key is the name of the uniform and the value is the value
+   you wish to set the uniform to."
   (apply program (cons nil uniforms)))
 
 (defun draw-streams (program streams &rest uniforms)
+  "This is a really syntactic sugar around funcall'ing a program.
+   It takes a program, a list of streams and &key arguments where
+   the key is the name of the uniform and the value is the value
+   you wish to set the uniform to."
   (apply program (cons streams uniforms)))

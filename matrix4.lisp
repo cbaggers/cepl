@@ -8,6 +8,11 @@
 ;----------------------------------------------------------------
 
 (defmacro melm (mat-a row col)
+  "A helper macro to provide access to data in the matrix by row
+   and column number. The actual data is stored in a 1d list in
+   column major order, but this abstraction means we only have 
+   to think in row major order which is how most mathematical
+   texts and online tutorials choose to show matrices"
   (cond ((and (numberp row) (numberp col)) 
 	 `(aref ,mat-a ,(+ row (* col 4))))
 	((numberp col)
@@ -17,6 +22,7 @@
 ;----------------------------------------------------------------
 
 (defun identity-matrix4 ()
+  "Return a 4x4 identity matrix"
   (make-array 16 :element-type `single-float :initial-contents
 	      #(1.0 0.0 0.0 0.0
 		0.0 1.0 0.0 0.0
@@ -24,6 +30,7 @@
 		0.0 0.0 0.0 1.0)))
 
 (defun zero-matrix4 ()
+  "Return a 4x4 zero matrix"
   (make-array 16 :element-type `single-float))
 
 (defun 2dclipspace-to-imagespace-matrix4 ()
@@ -36,6 +43,7 @@
 ;----------------------------------------------------------------
 
 (defun make-matrix4 ( a b c d e f g h i j k l m n o p )
+  "Make a 4x4 matrix. Data must be provided in row major order"
   (let ((result (zero-matrix4)))
     (setf (melm result 0 0) a)
     (setf (melm result 0 1) b)
@@ -59,6 +67,8 @@
 ;----------------------------------------------------------------
 
 (defun make-from-rows (row-1 row-2 row-3 row-4)
+  "Make a 4x4 matrix using the data in the 4 vector4s provided
+   to populate the rows"
   (make-matrix4 (v-x row-1) (v-y row-1) (v-z row-1) (v-w row-1) 
 		(v-x row-2) (v-y row-2)	(v-z row-2) (v-w row-2)
 		(v-x row-3) (v-y row-3) (v-z row-3) (v-w row-3)
@@ -67,6 +77,7 @@
 ;----------------------------------------------------------------
 
 (defun get-rows (mat-a)
+  "Return the rows of the matrix as 4 vector4s"
    (list (make-vector4 (melm mat-a 0 0)
 		       (melm mat-a 0 1)
 		       (melm mat-a 0 2)
@@ -86,7 +97,72 @@
 
 ;----------------------------------------------------------------
 
+(defun get-row (mat-a row-num)
+  "Return the specified row of the matrix a vector4"
+  (make-vector4 (melm mat-a row-num 0)
+		(melm mat-a row-num 1)
+		(melm mat-a row-num 2)
+		(melm mat-a row-num 3)))
+
+
+;----------------------------------------------------------------
+
+(defun make-from-columns (col-1 col-2 col-3 col-4)
+  "Make a 4x4 matrix using the data in the 4 vector4s provided
+   to populate the columns"
+  (make-matrix4 (v-x col-1)
+		(v-x col-2)
+		(v-x col-3)
+		(v-x col-4)
+		(v-y col-1)
+		(v-y col-2)
+		(v-y col-3)
+		(v-y col-4)
+		(v-z col-1)
+		(v-z col-2)
+		(v-z col-3)
+		(v-z col-4)
+		(v-w col-1)
+		(v-w col-2)
+		(v-w col-3)
+		(v-w col-4)))
+
+;----------------------------------------------------------------
+
+(defun get-columns (mat-a)
+  "Return the columns of the matrix as 4 vector4s"
+   (list (make-vector4 (melm mat-a 0 0)
+		       (melm mat-a 1 0)
+		       (melm mat-a 2 0)
+		       (melm mat-a 3 0))
+	 (make-vector4 (melm mat-a 0 1)
+		       (melm mat-a 1 1)
+		       (melm mat-a 2 1)
+		       (melm mat-a 3 1))
+	 (make-vector4 (melm mat-a 0 2)
+		       (melm mat-a 1 2)
+		       (melm mat-a 2 2)
+		       (melm mat-a 3 2))
+	 (make-vector4 (melm mat-a 0 3)
+		       (melm mat-a 1 3)
+		       (melm mat-a 2 3)
+		       (melm mat-a 3 3))))
+
+;----------------------------------------------------------------
+
+(defun get-column (mat-a col-num)
+  "Return the specified column of the matrix a vector4"
+  (make-vector4 (melm mat-a 0 col-num)
+		(melm mat-a 1 col-num)
+		(melm mat-a 2 col-num)
+		(melm mat-a 3 col-num)))
+
+;----------------------------------------------------------------
+
 (defun mzerop (mat-a)
+  "Returns 't' if this is a zero matrix (as contents of the 
+   matrix are floats the values have an error bound as defined
+   in base-maths"
   (loop for i below 16
      if (not (float-zero (aref mat-a i)))
      do (return nil)
@@ -94,12 +170,15 @@
 
 ;----------------------------------------------------------------
 
-
+;[TODO] should the checks for '1.0' also have the error bounds?
 (defun identityp (mat-a)
-  (and (= (melm mat-a 0 0) 1.0)
-       (= (melm mat-a 1 1) 1.0)
-       (= (melm mat-a 2 2) 1.0)
-       (= (melm mat-a 3 3) 1.0)
+  "Returns 't' if this is an identity matrix (as contents of the 
+   matrix are floats the values have an error bound as defined
+   in base-maths"
+  (and (float-zero (- (melm mat-a 0 0) 1.0))
+       (float-zero (- (melm mat-a 1 1) 1.0))
+       (float-zero (- (melm mat-a 2 2) 1.0))
+       (float-zero (- (melm mat-a 3 3) 1.0))
        (float-zero (melm mat-a 0 1))
        (float-zero (melm mat-a 0 2))
        (float-zero (melm mat-a 0 3))
@@ -116,6 +195,8 @@
 ;----------------------------------------------------------------
 
 (defun meql (mat-a mat-b)
+  "Returns t if all elements of both matrices provided are 
+   equal"
   (loop for i 
      below 16
      if (/= (aref mat-a i) (aref mat-b i))
@@ -155,6 +236,7 @@
 ;----------------------------------------------------------------
 
 (defun adjoint (mat-a)
+  "Returns the adjoint of the matrix"
   (make-matrix4 (minor mat-a 1 2 3 1 2 3)
 		(- (minor mat-a 0 2 3 1 2 3))
 		(minor mat-a 0 1 3 1 2 3)
@@ -178,6 +260,7 @@
 ;----------------------------------------------------------------
 
 (defun determinant (mat-a)
+  "Returns the determinant of the matrix"
   (+ (* (melm mat-a 0 0) (minor mat-a 1 2 3 1 2 3))
      (- (* (melm mat-a 0 1) (minor mat-a 1 2 3 0 2 3)))
      (* (melm mat-a 0 2) (minor mat-a 1 2 3 0 1 3))
@@ -187,6 +270,7 @@
 
 ;;this one is from 'Essential Maths'
 (defun affine-inverse (mat-a)
+  "Returns the affine inverse of the matrix"
   ;;calculate upper left 3x3 matrix determinant
   (let* ((cofac-0 (- (* (melm mat-a 1 1) (melm mat-a 2 2))
 		     (* (melm mat-a 2 1) (melm mat-a 1 2))))
@@ -240,6 +324,7 @@
 ;----------------------------------------------------------------
 ;; could just feed straight from array into make
 (defun transpose (m-a)
+  "Returns the transpose of the provided matrix"
   (make-matrix4 
    (melm m-a 0 0) (melm m-a 1 0) (melm m-a 2 0) (melm m-a 3 0)
    (melm m-a 0 1) (melm m-a 1 1) (melm m-a 2 1) (melm m-a 3 1)
@@ -249,6 +334,8 @@
 ;----------------------------------------------------------------
 
 (defun translation (vec3-a)
+  "Takes a vector3 and returns a matrix4 which will translate
+   by the specified amount"
   (make-matrix4 
    1.0  0.0  0.0  (v-x vec3-a)
    0.0  1.0  0.0  (v-y vec3-a)
@@ -263,6 +350,9 @@
 ;----------------------------------------------------------------
 
 (defun rotation-from-matrix3 (m-a)
+  "Takes a 3x3 rotation matrix and returns a 4x4 rotation matrix
+   with the same values. The 4th component is filled as an 
+   identity matrix would be."
   (make-matrix4 
    (m3:melm m-a 0 0)  (m3:melm m-a 0 1)  (m3:melm m-a 0 2)  0.0
    (m3:melm m-a 1 0)  (m3:melm m-a 1 1)  (m3:melm m-a 1 2)  0.0
@@ -274,50 +364,55 @@
 (defun rotation-from-euler (vec3-a)
   "This is an unrolled contatenation of rotation matrices x
    y & z. The arguments in the originl were in reverse order"
-  (let* ((x (v-x vec3-a)) (y (v-y vec3-a)) (z (v-z vec3-a))
-	(sx (sin x)) (cx (cos x))
-	(sy (sin y)) (cy (cos y))
-	(sz (sin z)) (cz (cos z)))
-    (make-matrix4 (* cy cz)
-		  (+ (* sx sy cz) (* cx sz))
-		  (- (* sx sz) (* cx sy cz))
-		  0.0
-
-		  (- (* cy sz))
-		  (- (* cx cz) (* sx sy sz)) ;is this right?
-		  (+ (* cx sy sz) (* sx cz))
-		  0.0
-
-		  sy
-		  (- (* sx cy))
-		  (* cx cy)
-		  0.0
-
-		  0.0 0.0 0.0 1.0)))
+  (let ((x (v-x vec3-a)) (y (v-y vec3-a)) (z (v-z vec3-a)))
+    (let ((sx (sin x)) (cx (cos x))
+	  (sy (sin y)) (cy (cos y))
+	  (sz (sin z)) (cz (cos z)))
+      (make-matrix4 (* cy cz)
+		    (+ (* sx sy cz) (* cx sz))
+		    (- (* sx sz) (* cx sy cz))
+		    0.0
+		    
+		    (- (* cy sz))
+		    (- (* cx cz) (* sx sy sz)) ;is this right?
+		    (+ (* cx sy sz) (* sx cz))
+		    0.0
+		    
+		    sy
+		    (- (* sx cy))
+		    (* cx cy)
+		    0.0
+		    
+		    0.0 0.0 0.0 1.0))))
 
 ;----------------------------------------------------------------
 
 (defun rotation-from-axis-angle (axis3 angle)
-  (let* ((ca (cos angle)) (sa (sin angle)) (ta (- 1.0 ca))
-	 (n-axis (vector3:normalize axis3))
-	 (tx (* ta (v-x n-axis)))
-	 (ty (* ta (v-x n-axis)))
-	 (tz (* ta (v-x n-axis)))
-	 (sx (* sa (v-x n-axis)))
-	 (sy (* sa (v-x n-axis)))
-	 (sz (* sa (v-x n-axis)))
-	 (txy (* tx (v-y n-axis)))
-	 (tyz (* tx (v-z n-axis))) ;this doesnt look right
-	 (txz (* tx (v-z n-axis))))
+  "Returns a matrix which will rotate a point about the axis
+   specified by the angle provided"
+  (let* ((c-a (cos angle)) 
+	 (s-a (sin angle)) 
+	 (tt (- 1.0 c-a))
+	 (norm-axis (vector3:normalize axis3))
+	 (tx (* tt (v-x norm-axis)))
+	 (ty (* tt (v-x norm-axis)))
+	 (tz (* tt (v-x norm-axis)))
+	 (sx (* s-a (v-x norm-axis)))
+	 (sy (* s-a (v-x norm-axis)))
+	 (sz (* s-a (v-x norm-axis)))
+	 (txy (* tx (v-y norm-axis)))
+	 (tyz (* ty (v-z norm-axis)))
+	 (txz (* tx (v-z norm-axis))))
     (make-matrix4
-     (+ ca  (* tx (v-x n-axis)))  (- txy sz)  (+ txz sy)  0.0
-     (+ txy sz)  (+ ca (* ty (v-y n-axis)))  (- tyz sx)  0.0
-     (- txz sy)  (+ tyz sx)  (+ ca (* tz (v-z n-axis)))  0.0
-     0.0  0.0  0.0  1.0)))
+     (+ c-a (* tx (v-x norm-axis))) (- txy sz) (+ txz sy) 0.0
+     (+ txy xz) (+ c (* ty (v-y norm-axis))) (- tyz sx) 0.0
+     (- txz sy) (+ tyz sx) (+ c (* tz (v-z norm-axis))) 0.0
+     0.0   0.0   0.0   1.0)))
 
 ;----------------------------------------------------------------
 
 (defun scale (scale-vec3)
+  "Returns a matrix which will scale by the amounts specified"
   (make-matrix4
    (v-x scale-vec3)  0.0               0.0               0.0
    0.0               (v-y scale-vec3)  0.0               0.0
@@ -327,6 +422,8 @@
 ;----------------------------------------------------------------
 
 (defun rotation-x (angle)
+  "Returns a matrix which would rotate a point around the x axis
+   by the specified amount"
   (let ((s-a (sin angle))
 	(c-a (cos angle)))
     (make-matrix4 1.0  0.0  0.0     0.0
@@ -337,6 +434,8 @@
 ;----------------------------------------------------------------
 
 (defun rotation-y (angle)
+  "Returns a matrix which would rotate a point around the y axis
+   by the specified amount"
   (let ((s-a (sin angle))
 	(c-a (cos angle)))
     (make-matrix4 c-a      0.0  s-a  0.0
@@ -347,6 +446,8 @@
 ;----------------------------------------------------------------
 
 (defun rotation-z (angle)
+  "Returns a matrix which would rotate a point around the z axis
+   by the specified amount"
   (let ((s-a (sin angle))
 	(c-a (cos angle)))
     (make-matrix4 c-a  (- s-a)  0.0  0.0
@@ -356,7 +457,12 @@
 
 ;----------------------------------------------------------------
 
+;; [TODO] returned as vector x-y-z
+
 (defun get-fixed-angles (mat-a)
+  "Gets one set of possible z-y-x fixed angles that will generate
+   this matrix. Assumes that this is a rotation matrix. Result
+   is returned as vector3"
   (let* ((sy (melm mat-a 0 2))
 	 (cy (base-maths:c-sqrt (- 1.0 (* sy sy)))))
     (if (float-zero cy)
@@ -375,12 +481,18 @@
 ;----------------------------------------------------------------
 
 (defun mtrace (mat-a)
+  "Returns the trace of the matrix (That is the diagonal values)"
   (+ (melm mat-a 0 0) (melm mat-a 1 1) 
      (melm mat-a 2 2) (melm mat-a 3 3)))
 
 ;----------------------------------------------------------------
 
+;; [TODO] find out how we can declaim angle to be float
+;; [TODO] Comment the fuck out of this and work out how it works
+
 (defun get-axis-angle (mat-a)
+  "Gets one possible axis-angle pair that will generate this 
+   matrix. Assumes that this is a rotation matrix"
   (let* ((trace-a (+ (melm mat-a 0 0) (melm mat-a 1 1) 
 			    (melm mat-a 2 2)))
 	 (cos-theta (* 0.5 (- trace-a 1.0)))
@@ -417,6 +529,8 @@
 ;----------------------------------------------------------------
 
 (defun m+ (mat-a mat-b)
+  "Adds the 2 matrices component wise and returns the result as
+   a new matrix"
   (let ((r (zero-matrix4)))
     (loop for i below 16
 	 do (setf (aref r i) (+ (aref mat-a i) (aref mat-b i))))
@@ -425,6 +539,8 @@
 ;----------------------------------------------------------------
 
 (defun m- (mat-a mat-b)
+  "Subtracts the 2 matrices component wise and returns the result
+   as a new matrix"
   (let ((r (zero-matrix4)))
     (loop for i below 16
        do (setf (aref r i) (- (aref mat-a i) (aref mat-b i))))
@@ -433,6 +549,7 @@
 ;----------------------------------------------------------------
 
 (defun negate (mat-a)
+  "Negates the components of the matrix"
   (let ((r (zero-matrix4)))
     (loop for i below 16
        do (setf (aref r i) (- (aref mat-a i))))
@@ -441,6 +558,8 @@
 ;----------------------------------------------------------------
 
 (defun m*scalar (mat-a scalar)
+  "Multiplies the components of the matrix by the scalar 
+   provided"
   (let ((result (zero-matrix4)))
     (loop for i below 16
 	 do (setf (aref result i) (* scalar (aref mat-a i))))
@@ -483,6 +602,8 @@
 ;----------------------------------------------------------------
 
 (defun m* (mat-a mat-b)
+  "Multiplies 2 matrices and returns the result as a new 
+   matrix"
   (make-matrix4 (+ (* (melm mat-a 0 0) (melm mat-b 0 0)) 
 		   (* (melm mat-a 0 1) (melm mat-b 1 0))
 		   (* (melm mat-a 0 2) (melm mat-b 2 0)) 
@@ -551,6 +672,7 @@
 ;----------------------------------------------------------------
 
 (defun transform (mat-a vec)
+  "Returns the transform of a matrix"
   (make-vector3 (+ (* (melm mat-a 0 0) (v-x vec))
 		   (* (melm mat-a 0 1) (v-y vec))
 		   (* (melm mat-a 0 2) (v-z vec))
@@ -566,11 +688,3 @@
 
 ;----------------------------------------------------------------
 
-;----------------------------------------------------------------
-;; 0  4  8 12
-;; 1  5  9 13
-;; 2  6 10 14
-;; 3  7 11 15
-;----------------------------------------------------------------
-;----------------------------------------------------------------
-;----------------------------------------------------------------

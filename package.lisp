@@ -6,7 +6,6 @@
 	   :+one-degree-in-radians+
 	   :+pi+
 	   :float-zero
-	   :float-zero-sq
 	   :c-sqrt
 	   :c-inv-sqrt))
 
@@ -48,6 +47,7 @@
 	   :aref-gl
 	   :alloc-gl-array)
   (:export :cgl-compile-shader-error 
+	   :draw-elements-base-vertex
 	   :enable-vertex-attrib-array
 	   :vertex-attrib-pointer
 	   :define-attribute-format
@@ -97,7 +97,6 @@
 	   :absolute-dot :normalize :perp-dot
 	   :*unit-x* :*unit-y* :*unit-scale*)
   (:import-from :base-maths :float-zero
-		      :float-zero-sq
 		      :c-sqrt
 		      :c-inv-sqrt)
   (:import-from :math-macros
@@ -112,7 +111,6 @@
 	   :absolute-dot :normalize :cross
 	   :*unit-x* :*unit-y* :*unit-z* :*unit-scale*)
   (:import-from :base-maths :float-zero
-		      :float-zero-sq
 		      :c-sqrt
 		      :c-inv-sqrt)
   (:import-from :math-macros
@@ -127,7 +125,6 @@
 	   :absolute-dot :normalize :cross
 	   :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*)
   (:import-from :base-maths :float-zero
-		      :float-zero-sq
 		      :c-sqrt
 		      :c-inv-sqrt)
   (:import-from :math-macros
@@ -141,10 +138,9 @@
 	   :get-row :make-from-columns :get-columns
 	   :get-column :determinate-cramer :inverse
 	   :mzerop :identityp :meql :transpose :adjoint
-	   :mtrace :make-rotation-matrix-euler 
-	   :make-rotation-mat-aa :make-scale-matrix-vec
-	   :make-scale-matrix :make-xrotation-matrix 
-	   :make-yrotation-matrix :make-zrotation-matrix
+	   :mtrace :rotation-from-euler 
+	   :rotation-from-axis-angle :scale
+	   :rotation-x :rotation-y :rotation-z
 	   :get-fixed-angles :get-axis-angle :m+ :m- :negate
 	   :m* :m*vec)
   (:import-from :base-maths :float-zero
@@ -177,12 +173,19 @@
   (:import-from :math-macros
 		:apply-across-elements :v-x :v-y :v-z :v-w))
 
+(defpackage :cepl-camera
+  (:use :cl)
+  (:export :calculate-frustrum-scale
+	   :make-cam-clip-matrix)
+  (:import-from :vector2
+		:make-vector2)
+  (:import-from :vector3 
+		:make-vector3)
+  (:import-from :vector4
+		:make-vector4))
+
 (defpackage :cepl
   (:use :cl)
-  (:export :draw-elements-base-vertex
-	   :calculate-frustrum-scale
-	   :with-init-cepl
-	   :make-cam-clip-matrix)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 

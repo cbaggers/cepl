@@ -64,8 +64,11 @@
 	 (ftype (function ((simple-array single-float (4))) 
 			  (boolean)) vzerop))
 (defun vzerop (vector-a)
+  "Checks if the length of the vector is zero. As this is a 
+   floating point number it checks to see if the length is
+   below a threshold set in the base-maths package"
   (declare ((simple-array single-float (4)) vector-a))
-  (float-zero-sq (apply-across-elements + ((vc-a vector-a)) 4
+  (float-zero (apply-across-elements + ((vc-a vector-a)) 4
 		   (expt vc-a 2))))
 
 ;----------------------------------------------------------------
@@ -74,8 +77,11 @@
 	 (ftype (function ((simple-array single-float (4))) 
 			  (boolean)) unitp))
 (defun unitp (vector-a)
+  "Checks if the vector is of unit length. As this is a 
+   floating point number it checks to see if the length is
+   within the range of 1 + or - and threshold set in base-maths"
   (declare ((simple-array single-float (4)) vector-a))
-  (float-zero-sq (- 1.0 (apply-across-elements + ((vc-a vector-a)) 4
+  (float-zero (- 1.0 (apply-across-elements + ((vc-a vector-a)) 4
 			  (expt vc-a 2)))))
 ;----------------------------------------------------------------
 
@@ -109,6 +115,8 @@
 
 ;; Not sure how to optomise this
 (defun v+ (&rest vec4s)
+  "takes any number of vectors and add them all together 
+   returning a new vector"
   (reduce #'v+1 vec4s))
 
 ;----------------------------------------------------------------
@@ -128,7 +136,8 @@
 
 ;; Not sure how to optomise this
 (defun v- (&rest vec4s)
-  "minus list of vector4s"
+  "takes any number of vectors and subtract them and return
+   a new vector4"
   (reduce #'v-1 vec4s))
 
 ;----------------------------------------------------------------
@@ -241,7 +250,8 @@
 	 (ftype (function ((simple-array single-float (4))) 
 			  (single-float)) vlength))
 (defun vlength (vector-a)
-  "If you only need to compare relative lengths then definately
+  "Returns the length of a vector
+   If you only need to compare relative lengths then definately
    stick to length-squared as the sqrt is a slow operation."
   (declare ((simple-array single-float (4)) vector-a))
   (c-sqrt (vlength-squared vector-a)))
@@ -320,28 +330,3 @@
 	(v* vector-a (c-inv-sqrt len)))))
 
 ;----------------------------------------------------------------
-
-(declaim (inline cross)
-	 (ftype (function ((simple-array single-float (4)) 
-			   (simple-array single-float (4))) 
-			  (simple-array single-float (4)))
-		cross))
-(defun cross (vec-a vec-b)
-  "Calculates the cross-product of 2 vectors, i.e. the vector 
-   that lies perpendicular to them both. The resultign vector
-   will <b>NOT</b> be normalised, to maximise efficiency
-   The returned vector will be on the side from which the arc 
-   from u to v is anticlockwise.
-   This is because CEPL uses a right-handed coordinate system.
-   Another note on the cross product is that if vec-a and 
-   vec-b are normalized the length of the resulting vector
-   will be sin(a) where a is the angle between the two vectors.
-   The fact that we don't normalize may be useful in our 
-   quaternion functions later on."
-  (declare ((simple-array single-float (4)) vec-a vec-b))
-  (make-vector4 
-   (- (* (v-y vec-a) (v-z vec-b)) (* (v-z vec-a) (v-y vec-b)))
-   (- (* (v-z vec-a) (v-x vec-b)) (* (v-x vec-a) (v-z vec-b)))
-   (- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b)))))
-
-

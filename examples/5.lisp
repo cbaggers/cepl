@@ -86,8 +86,9 @@
   (setf *camera* (make-camera :position (make-vector3 0.0 9.0 0.0)))
   (setf *shaders* (mapcar #'cgl:make-shader `("4.vert" "4.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
-  (setf *frustrum-scale* (cepl:calculate-frustrum-scale 45.0))
-  (setf *cam-clip-matrix* (cepl:make-cam-clip-matrix 
+  (setf *frustrum-scale* 
+	(cepl-camera:calculate-frustrum-scale 45.0))
+  (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix 
 			   *frustrum-scale*))
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
 
@@ -234,5 +235,5 @@
               (t (format t "Unhandled event: ~A~%" evt)))
        else do (progn
 		 (base-macros:continuable (update-swank))
-		 (base-macros:continuable (draw))))
+		 (base-macros:continuable (draw win))))
     (glop:destroy-window win)))

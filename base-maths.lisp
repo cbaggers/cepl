@@ -7,38 +7,23 @@
 (in-package :base-maths)
 
 (defconstant +float-threshold+ 1.0e-6)
-(defconstant +float-threshold-sq+ (expt 1.0e-6 2))
 ;; [TODO] Need to declare type of these as float
 (defconstant +pi+ 3.1415926535897932384626433832795)
 (defconstant +one-degree-in-radians+ (/ (* +pi+ 2.0) 360.0))
 
 ;----------------------------------------------------------------
 
-;; Returns t if float is essentially zero
-;; This is handle the fact that floats get
-;; less accurate the closer they get to zero
 (declaim (inline float-zero)
 	 (ftype (function ((single-float)) 
 			  (boolean)) 
 		float-zero))
 (defun float-zero (x)
+  "Returns t if float is essentially zero
+   This is to handle the fact that floats get less accurate the
+   closer they get to zero so we have to test that a float is 
+   within a range rather than being exacting equal to 0.0"
   (declare (single-float x))
-  (< x +float-threshold+))
-
-;----------------------------------------------------------------
-
-;; Returns t if float is essentially zero-squared
-;; This sounds mental but its used when we need 
-;; to check if a distance squared is essentialy 
-;; zero
-;; [TODO] Maybe this is mental...go check
-(declaim (inline float-zero-sq)
-	 (ftype (function ((single-float)) 
-			  (boolean)) 
-		float-zero-sq))
-(defun float-zero-sq (x)
-  (declare (single-float x))
-  (< x +float-threshold-sq+))
+  (< (abs x) +float-threshold+))
 
 ;----------------------------------------------------------------
 
@@ -48,6 +33,7 @@
 			  (single-float)) 
 		c-sqrt))
 (defun c-sqrt (x)
+  "Calculates the square root of a number"
   (declare (single-float x))
   (sqrt x))
 
@@ -56,6 +42,7 @@
 			  (single-float)) 
 		c-inv-sqrt))
 (defun c-inv-sqrt (x)
+  "Calculates the inverse square root of a number"
   (declare (single-float x))
   (/ 1.0 (sqrt x)))
 

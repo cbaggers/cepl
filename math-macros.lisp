@@ -46,15 +46,19 @@
 ;; Final justification is that it's purely for syntatic clarity
 ;; and not for any computational reason.
 (defmacro v-x (vec)
+  "Returns the x component of the vector"
   `(aref ,vec 0))
 
 (defmacro v-y (vec)
+  "Returns the y component of the vector"
   `(aref ,vec 1))
 
 (defmacro v-z (vec)
+  "Returns the z component of the vector"
   `(aref ,vec 2))
 
 (defmacro v-w (vec)
+  "Returns the w component of the vector"  
   `(aref ,vec 3))
 
 ;----------------------------------------------------------------
@@ -62,6 +66,30 @@
 ;; 
 (defmacro apply-across-elements (call array-forms 
 			     num-of-elms &body body)
+  "This is a helper macro to limit the amount of ugly code 
+   in some of the maths libraries. See the following for 2 
+   examples of how it is used:
+   ;; (apply-across-elements make-vector3 ((vc-a vector-a)) 3
+   ;;   (* vc-a b)))
+
+   ;; (MAKE-VECTOR3 (* (AREF VECTOR-A 0) B)
+   ;;               (* (AREF VECTOR-A 1) B)
+   ;; 	         (* (AREF VECTOR-A 2) B))
+
+
+   ;; (apply-to-elements make-matrix3 ((vc-a mat-a) 
+   ;;                                  (vc-b mat-b)) 9
+   ;;   (+ vc-a vc-b))
+
+   ;; (MAKE-MATRIX3 (+ (AREF MAT-A 0) (AREF MAT-B 0))
+   ;; 	         (+ (AREF MAT-A 1) (AREF MAT-B 1)) 
+   ;; 	         (+ (AREF MAT-A 2) (AREF MAT-B 2))
+   ;; 	         (+ (AREF MAT-A 3) (AREF MAT-B 3))
+   ;; 	         (+ (AREF MAT-A 4) (AREF MAT-B 4))
+   ;; 	         (+ (AREF MAT-A 5) (AREF MAT-B 5))
+   ;; 	         (+ (AREF MAT-A 6) (AREF MAT-B 6))
+   ;; 	         (+ (AREF MAT-A 7) (AREF MAT-B 7))
+   ;; 	         (+ (AREF MAT-A 8) (AREF MAT-B 8)))"
   (labels ((subst-many (el-num tree swap-list) 
 	     (if (null swap-list)
 		 tree
@@ -79,38 +107,5 @@
 		 nil)))
     `(,call ,@(gen-line))))
 
-;; (apply-across-elements make-vector3 ((vc-a vector-a)) 3
-;;   (* vc-a b)))
-
-;; (MAKE-VECTOR3 (* (AREF VECTOR-A 0) B)
-;;               (* (AREF VECTOR-A 1) B)
-;; 	         (* (AREF VECTOR-A 2) B))
-
-
-;; (apply-to-elements make-matrix3 ((vc-a mat-a) (vc-b mat-b)) 9
-;;   (+ vc-a vc-b))
-
-;; (MAKE-MATRIX3 (+ (AREF MAT-A 0) (AREF MAT-B 0))
-;; 	         (+ (AREF MAT-A 1) (AREF MAT-B 1)) 
-;; 	         (+ (AREF MAT-A 2) (AREF MAT-B 2))
-;; 	         (+ (AREF MAT-A 3) (AREF MAT-B 3))
-;; 	         (+ (AREF MAT-A 4) (AREF MAT-B 4))
-;; 	         (+ (AREF MAT-A 5) (AREF MAT-B 5))
-;; 	         (+ (AREF MAT-A 6) (AREF MAT-B 6))
-;; 	         (+ (AREF MAT-A 7) (AREF MAT-B 7))
-;; 	         (+ (AREF MAT-A 8) (AREF MAT-B 8)))
-
 ;----------------------------------------------------------------
 
-(defun element-x-of-arrays (elm-num list-of-names)
-  (labels ((list-of-elms (names)
-	     (if (null names)
-		 nil
-		 (cons `(aref ,(car names) ,elm-num)
-		       (list-of-elms (cdr names))))))
-    (list-of-elms list-of-names)))
-
-(defmacro apply-over-elem-x (func elm-num &rest array-names)
-  `(,func ,@(element-x-of-arrays elm-num array-names)))
-
-;----------------------------------------------------------------
