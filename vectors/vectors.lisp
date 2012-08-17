@@ -5,6 +5,8 @@
 
 (in-package :vectors)
 
+
+
 ;----------------------------------------------------------------
 
 ;; Reader macro used to make vectors of any size

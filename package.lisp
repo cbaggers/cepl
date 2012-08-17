@@ -11,8 +11,8 @@
 
 (defpackage :base-macros
   (:use :cl)
-  (:export :defun-memobind
-	   :defmemo
+  (:export :defmemo
+	   :once-only
 	   :continuable))
 
 (defpackage :cepl-time
