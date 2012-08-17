@@ -84,8 +84,8 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *camera* (make-camera :position (make-vector3 0.0 9.0 0.0)))
-  (setf *shaders* (mapcar #'cgl:make-shader `("4.vert" "4.frag")))
+  (setf *camera* (make-camera :position (make-vector3 0.0 0.0 0.0)))
+  (setf *shaders* (mapcar #'cgl:make-shader `("6.vert" "6.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
 	(cepl-camera:calculate-frustrum-scale 45.0))
@@ -94,36 +94,26 @@
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
 
   ;;setup data 
-  (setf *vertex-data-list* 
-  	'(((+1.0  +1.0  +1.0)  (0.0  1.0  0.0  1.0)) 
-  	  ((-1.0  -1.0  +1.0)  (0.0  0.0  1.0  1.0))
-  	  ((-1.0  +1.0  -1.0)  (1.0  0.0  0.0  1.0))
-  	  ((+1.0  -1.0  -1.0)  (0.5  0.5  0.0  1.0))
-  	  ((-1.0  -1.0  -1.0)  (0.0  1.0  0.0  1.0)) 
-  	  ((+1.0  +1.0  -1.0)  (0.0  0.0  1.0  1.0))
-  	  ((+1.0  -1.0  +1.0)  (1.0  0.0  0.0  1.0))
-  	  ((-1.0  +1.0  +1.0)  (0.5  0.5  0.0  1.0))))
-  (setf *vertex-data-gl* 
-  	(cgl:alloc-array-gl 'vert-data 
-  			    (length *vertex-data-list*)))
-  (cgl:destructuring-populate *vertex-data-gl* 
-  			      *vertex-data-list*)
+  (let ((monkey-data 
+	 (first (model-parsers:parse-obj-file "heart.obj"))))
+    (setf *vertex-data-list* (gethash :vertices monkey-data))
+    (setf *index-data-list* (gethash :faces monkey-data)))
 
+  (setf *vertex-data-list* (mapcar 
+			    #'(lambda (x) 
+				(list x (list (random 1.0) (random 1.0) (random 1.0) 1.0))) *vertex-data-list*))
   (setf *index-data-list* 
-  	'(0  1  2 
-  	  1  0  3 
-  	  2  3  0 
-  	  3  2  1 
-	  
-  	  5  4  6 
-  	  4  5  7 
-  	  7  6  4 
-  	  6  7  5))
+	(loop for face in *index-data-list*
+	   append (mapcar #'car (subseq face 0 3))))
+  ;; put in glarrays
+  (setf *vertex-data-gl* 
+	(cgl:alloc-array-gl 'vert-data 
+			    (length *vertex-data-list*)))
+  (cgl:destructuring-populate *vertex-data-gl* 
+			      *vertex-data-list*)
   (setf *index-data-gl* 
-  	(cgl:alloc-array-gl :short
-  			    (length *index-data-list*)))
-  ;; (cgl:destructuring-populate *index-data-gl* 
-  ;; 			      *index-data-list*)
+	  (cgl:alloc-array-gl :short
+			      (length *index-data-list*)))
   (loop for index in *index-data-list*
        for i from 0
        do (setf (cgl::aref-gl *index-data-gl* i) index))
@@ -147,22 +137,15 @@
   			      :element-type :unsigned-short)))
     (setf *entities* 
 	  (list 
-	   (make-entity :position (make-vector3 0.0 0.0 -20.0)
-			:stream stream)
-	   (make-entity :position (make-vector3 0.0 0.0 -25.0)
-			:stream stream)
-	   (make-entity :position (make-vector3 5.0 0.0 -20.0)
-			:stream stream)
 	   (make-entity :position (make-vector3 0.0 0.0 -15.0)
-			:stream stream)
-	   (make-entity :position (make-vector3 -5.0 0.0 -20.0)
+			:rotation (make-vector3 -1.57079633 0.0 0.0)
 			:stream stream))))
   
   ;;set options
   (cgl::clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
-  (gl:front-face :cw)
+  (gl:front-face :ccw)
   (gl:enable :depth-test)
   (gl:depth-mask :true)
   (gl:depth-func :lequal)
@@ -216,7 +199,7 @@
   (let ((entity (first *entities*)))
     (setf (entity-rotation entity) 
 	  (v3:v+ (entity-rotation entity)
-		 (make-vector3 0.03 0.03 0.0))))
+		 (make-vector3 0.00 0.01 0.02))))
   
   (loop for entity in *entities*
        do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 

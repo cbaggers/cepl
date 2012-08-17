@@ -11,8 +11,8 @@
 (defconstant +pi+ 3.1415926535897932384626433832795)
 (defconstant +one-degree-in-radians+ (/ (* +pi+ 2.0) 360.0))
 
-;----------------------------------------------------------------
 
+;----------------------------------------------------------------
 (declaim (inline float-zero)
 	 (ftype (function ((single-float)) 
 			  (boolean)) 

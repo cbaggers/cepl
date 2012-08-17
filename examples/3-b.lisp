@@ -16,14 +16,9 @@
 
 ;; Globals - Too damn many of them, but its in keeping with
 ;;           the tutorials online
-(defparameter *prog-1* nil)
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *entities* nil)
-;; for fps
-(defparameter *loops* 0)
-(defparameter *timer* (cepl-time:make-time-buffer))
-(defparameter *stepper* (cepl-time:make-stepper 1000))
 
 ;; Define data formats 
 (cgl:define-interleaved-attribute-format vert-data 
@@ -40,7 +35,7 @@
 
 ;----------------------------------------------
 
-(defun init () 
+(defun init (program) 
   (let* ((index-list '(0  1  2 
 		       1  0  3 
 		       2  3  0 
@@ -51,29 +46,27 @@
 		       6  7  5))
 	 (vert-array (cgl:destructuring-allocate 
 		      'vert-data 
-		      '(((+1.0  +1.0  +1.0)  (0.0  1.0  0.0  1.0)) 
-			((-1.0  -1.0  +1.0)  (0.0  0.0  1.0  1.0))
-			((-1.0  +1.0  -1.0)  (1.0  0.0  0.0  1.0))
-			((+1.0  -1.0  -1.0)  (0.5  0.5  0.0  1.0))
-			((-1.0  -1.0  -1.0)  (0.0  1.0  0.0  1.0)) 
-			((+1.0  +1.0  -1.0)  (0.0  0.0  1.0  1.0))
-			((+1.0  -1.0  +1.0)  (1.0  0.0  0.0  1.0))
-			((-1.0  +1.0  +1.0)  (0.5  0.5  0.0  1.0)))))
-	(index-array (cgl:destructuring-allocate :short index-list))
+		      '(((+1.0  +1.0  +1.0) (0.0  1.0  0.0  1.0))
+			((-1.0  -1.0  +1.0) (0.0  0.0  1.0  1.0))
+			((-1.0  +1.0  -1.0) (1.0  0.0  0.0  1.0))
+			((+1.0  -1.0  -1.0) (0.5  0.5  0.0  1.0))
+			((-1.0  -1.0  -1.0) (0.0  1.0  0.0  1.0))
+			((+1.0  +1.0  -1.0) (0.0  0.0  1.0  1.0))
+			((+1.0  -1.0  +1.0) (1.0  0.0  0.0  1.0))
+			((-1.0  +1.0  +1.0) (0.5  0.5  0.0  1.0)))))
+	(index-array (cgl:destructuring-allocate :short 
+						 index-list))
 	(vert-buffer (cgl:gen-buffer))
 	(index-buffer (cgl:gen-buffer)))
 
-    ;; make program
-    (setf *prog-1* (cgl:make-program (mapcar #'cgl:make-shader 
-					     '("3.vert" "3.frag"))))
     (setf *frustrum-scale* 
 	  (cepl-camera:calculate-frustrum-scale 45.0))
     (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix 
 			     *frustrum-scale*))
-    (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
+    (cgl:set-program-uniforms program :cameratoclipmatrix 
+			      *cam-clip-matrix*)
 
     ;;setup data 
-
     (cgl:buffer-data index-buffer index-array
 		     :buffer-type :element-array-buffer)
 
@@ -103,8 +96,7 @@
   (gl:enable :depth-test)
   (gl:depth-mask :true)
   (gl:depth-func :lequal)
-  (gl:depth-range 0.0 1.0)
-  (funcall *timer*))  
+  (gl:depth-range 0.0 1.0))  
 
 ;----------------------------------------------
 
@@ -128,11 +120,7 @@
     (setf (entity-pos ent) new-pos)
     ent))
 
-(defun draw ()
-  (setf *loops* (1+ *loops*))
-  (cepl-time:on-step-call (*stepper* (funcall *timer*))
-    (print *loops*)
-    (setf *loops* 0))
+(defun draw (program)
   (cgl::clear-depth 1.0)
   (cgl::clear :color-buffer-bit :depth-buffer-bit)
 
@@ -140,18 +128,19 @@
   (setf *entities* (mapcar #'move-entity *entities*))
 
   (loop for entity in *entities*
-       do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 
+       do (cgl::draw-streams program (list (entity-stream entity)) 
   		   :modeltocameramatrix (entity-matrix entity)))
   (gl:flush)
   (sdl:update-display))
 
-(defun reshape (width height)  
+(defun reshape (program width height)  
   (setf (matrix4:melm *cam-clip-matrix* 0 0)
   	(* *frustrum-scale* (/ height width)))
   (setf (matrix4:melm *cam-clip-matrix* 1 1)
   	*frustrum-scale*)
-  (cgl:set-program-uniforms *prog-1* 
-			    :cameratoclipmatrix *cam-clip-matrix*)
+  (cgl:set-program-uniforms program
+			    :cameratoclipmatrix
+			    *cam-clip-matrix*)
   (cgl::viewport 0 0 width height))
 
 (defun update-swank ()
@@ -165,6 +154,12 @@
 ;; currently anything changed in here is going to need a restart
 ;; this is obviously unacceptable and will be fixed when I can
 ;; extract the sdl event handling from their loop system.
+
+;; (defparameter program nil)
+;; (defparameter *frustrum-scale* nil)
+;; (defparameter *cam-clip-matrix* nil)
+;; (defparameter *entities* nil)
+
 (defun run-demo () 
   (sdl:with-init ()
     (sdl:window 
@@ -177,13 +172,25 @@
 			  (:sdl-gl-red-size 8)
 			  (:sdl-gl-green-size 8)
 			  (:sdl-gl-blue-size 8)))
-    (init)
-    (reshape 640 480)
-    (setf cl-opengl-bindings:*gl-get-proc-address* #'sdl-cffi::sdl-gl-get-proc-address)
-    (sdl:with-events () 
-      (:quit-event () t)
-      (:VIDEO-RESIZE-EVENT (:w width :h height) 
-			   (reshape width height))
-      (:idle ()
-	     (base-macros:continuable (update-swank))
-	     (base-macros:continuable (draw))))))
+    (let ((prog-1 (cgl:make-program 
+		   (mapcar #'cgl:make-shader 
+			   '("3.vert" "3.frag"))))
+	  (loops 0)
+	  (timer (cepl-time:make-time-buffer))
+	  (stepper (cepl-time:make-stepper 1000)))
+      (init prog-1)
+      (reshape prog-1 640 480)
+      (setf cl-opengl-bindings:*gl-get-proc-address* 
+	    #'sdl-cffi::sdl-gl-get-proc-address)
+      (sdl:with-events () 
+	(:quit-event () t)
+	(:VIDEO-RESIZE-EVENT (:w width :h height) 
+			     (reshape prog-1 width height))
+	(:idle ()
+	       (base-macros:continuable (update-swank))
+	       (base-macros:continuable (draw prog-1))
+	       (setf loops (1+ loops))
+	       (cepl-time:on-step-call (stepper
+					(funcall timer))
+		 (print loops)
+		 (setf loops 0)))))))

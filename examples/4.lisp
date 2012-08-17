@@ -189,11 +189,11 @@
 			    (calculate-cam-look-at-w2c-matrix
 			     *camera*))
 
-  (loop for entity in *entities*
-       do (setf (entity-rotation entity) 
-	     (v3:v+ (entity-rotation (car *entities*))
-		    (make-vector3 0.1 0.2 0.0))))
-
+  (let ((entity (car *entities*)))
+    (setf (entity-rotation entity) 
+	  (v3:v+ (entity-rotation (car *entities*))
+		 (make-vector3 0.1 0.2 0.0))))
+  
   (loop for entity in *entities*
        do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 
   		   :modeltoworldmatrix (entity-matrix entity)))

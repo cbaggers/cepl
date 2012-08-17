@@ -80,3 +80,47 @@
     (if source 
 	(rec source nil) 
 	nil)))
+
+(defvar safe-read-from-string-blacklist
+  '(#\# #\: #\|))
+
+(let ((rt (copy-readtable nil)))
+  (defun safe-reader-error (stream closech)
+    (declare (ignore stream closech))
+    (error "safe-read-from-string failure"))
+
+  (dolist (c safe-read-from-string-blacklist)
+    (set-macro-character
+      c #'safe-reader-error nil rt))
+
+  (defun safe-read-from-string (s &optional fail)
+    (if (stringp s)
+      (let ((*readtable* rt) *read-eval*)
+        (handler-bind
+          ((error (lambda (condition)
+                    (declare (ignore condition))
+                    (return-from
+                      safe-read-from-string fail))))
+          (read-from-string s)))
+      fail)))
+
+(defun sub-at-index (seq index new-val)
+  (append (subseq seq 0 index)
+	  (list new-val)
+	  (subseq seq (1+ index))))
+
+;;; The following util was taken from SBCL's
+;;; src/code/*-extensions.lisp
+
+(defun symbolicate-package (package &rest things)
+  "Concatenate together the names of some strings and symbols,
+producing a symbol in the current package."
+  (let* ((length (reduce #'+ things
+                         :key (lambda (x) (length (string x)))))
+         (name (make-array length :element-type 'character)))
+    (let ((index 0))
+      (dolist (thing things (values (intern name package)))
+        (let* ((x (string thing))
+               (len (length x)))
+          (replace name x :start1 index)
+          (incf index len))))))

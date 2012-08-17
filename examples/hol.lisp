@@ -11,13 +11,23 @@
 (defparameter *cam-clip-matrix* nil)
 (defparameter *shaders* nil)
 (defparameter *vertex-data-list* nil)
-(defparameter *vertex-data-gl* nil)
+(defparameter *heart-vert-gl* nil)
 (defparameter *index-data-list* nil)
 (defparameter *index-data-gl* nil)
 (defparameter *vert-buffer* nil)
 (defparameter *index-buffer* nil)
 (defparameter *buffer-layout* nil)
 (defparameter *vao-1* nil)
+
+(defparameter *vertex-data-list2* nil)
+(defparameter *text-vert-gl* nil)
+(defparameter *index-data-list2* nil)
+(defparameter *index-data-gl2* nil)
+(defparameter *vert-buffer2* nil)
+(defparameter *index-buffer2* nil)
+(defparameter *buffer-layout2* nil)
+(defparameter *vao-2* nil)
+
 (defparameter *entities* nil)
 (defparameter *camera* nil)
 ;; for fps
@@ -84,8 +94,8 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *camera* (make-camera :position (make-vector3 0.0 9.0 0.0)))
-  (setf *shaders* (mapcar #'cgl:make-shader `("4.vert" "4.frag")))
+  (setf *camera* (make-camera :position (make-vector3 0.0 0.0 0.0)))
+  (setf *shaders* (mapcar #'cgl:make-shader `("6.vert" "6.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
 	(cepl-camera:calculate-frustrum-scale 45.0))
@@ -94,75 +104,99 @@
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
 
   ;;setup data 
-  (setf *vertex-data-list* 
-  	'(((+1.0  +1.0  +1.0)  (0.0  1.0  0.0  1.0)) 
-  	  ((-1.0  -1.0  +1.0)  (0.0  0.0  1.0  1.0))
-  	  ((-1.0  +1.0  -1.0)  (1.0  0.0  0.0  1.0))
-  	  ((+1.0  -1.0  -1.0)  (0.5  0.5  0.0  1.0))
-  	  ((-1.0  -1.0  -1.0)  (0.0  1.0  0.0  1.0)) 
-  	  ((+1.0  +1.0  -1.0)  (0.0  0.0  1.0  1.0))
-  	  ((+1.0  -1.0  +1.0)  (1.0  0.0  0.0  1.0))
-  	  ((-1.0  +1.0  +1.0)  (0.5  0.5  0.0  1.0))))
-  (setf *vertex-data-gl* 
-  	(cgl:alloc-array-gl 'vert-data 
-  			    (length *vertex-data-list*)))
-  (cgl:destructuring-populate *vertex-data-gl* 
-  			      *vertex-data-list*)
+  (let ((heart-data 
+	 (first (model-parsers:parse-obj-file "heart.obj")))
+	(text-data 
+	 (first (model-parsers:parse-obj-file "text.obj"))))
+    (setf *vertex-data-list* (mapcar 
+			      #'(lambda (x) 
+				  (list x (list (random 1.0) 
+						(random 1.0)
+						(random 1.0)
+						1.0))) 
+			      (gethash :vertices heart-data)))
+    (setf *index-data-list* 
+	  (loop for face in (gethash :faces heart-data)
+	     append (mapcar #'car (subseq face 0 3))))
+    (setf *vertex-data-list2* (mapcar 
+			       #'(lambda (x) 
+				   (list x '(0.5 0.94 0.85 1.0))) 
+			       (gethash :vertices text-data)))
+    (setf *index-data-list2* 
+	  (loop for face in (gethash :faces text-data)
+	     append (mapcar #'car (subseq face 0 3)))))
 
-  (setf *index-data-list* 
-  	'(0  1  2 
-  	  1  0  3 
-  	  2  3  0 
-  	  3  2  1 
-	  
-  	  5  4  6 
-  	  4  5  7 
-  	  7  6  4 
-  	  6  7  5))
+
+  ;; put in glarrays
+  (setf *heart-vert-gl* 
+	(cgl:alloc-array-gl 'vert-data 
+			    (length *vertex-data-list*)))
+  (cgl:destructuring-populate *heart-vert-gl* 
+			      *vertex-data-list*)
   (setf *index-data-gl* 
-  	(cgl:alloc-array-gl :short
-  			    (length *index-data-list*)))
-  ;; (cgl:destructuring-populate *index-data-gl* 
-  ;; 			      *index-data-list*)
+	  (cgl:alloc-array-gl :short
+			      (length *index-data-list*)))
   (loop for index in *index-data-list*
        for i from 0
        do (setf (cgl::aref-gl *index-data-gl* i) index))
 
+  (setf *text-vert-gl* 
+	(cgl:alloc-array-gl 'vert-data 
+			    (length *vertex-data-list2*)))
+  (cgl:destructuring-populate *text-vert-gl* 
+			      *vertex-data-list2*)
+  (setf *index-data-gl2* 
+	  (cgl:alloc-array-gl :short
+			      (length *index-data-list2*)))
+  (loop for index in *index-data-list2*
+       for i from 0
+       do (setf (cgl::aref-gl *index-data-gl2* i) index))
+
   ;;setup buffers
   (setf *vert-buffer* (cgl:gen-buffer))
   (setf *buffer-layout*
-  	(cgl:buffer-data *vert-buffer* *vertex-data-gl*))
+  	(cgl:buffer-data *vert-buffer* *heart-vert-gl*))
 
   (setf *index-buffer* (cgl:gen-buffer))
   (cgl:buffer-data *index-buffer* *index-data-gl* 
 		   :buffer-type :element-array-buffer)
 
+  (setf *vert-buffer2* (cgl:gen-buffer))
+  (setf *buffer-layout2*
+  	(cgl:buffer-data *vert-buffer2* *text-vert-gl*))
+
+  (setf *index-buffer2* (cgl:gen-buffer))
+  (cgl:buffer-data *index-buffer2* *index-data-gl2* 
+		   :buffer-type :element-array-buffer)
+
   ;;setup vaos
   (setf *vao-1* (cgl:make-vao *buffer-layout* *index-buffer*))
+  (setf *vao-2* (cgl:make-vao *buffer-layout2* *index-buffer2*))
 
   ;;create entities
   (let ((stream (cgl:make-gl-stream 
   			      :vao *vao-1*
   			      :length (length *index-data-list*)
+  			      :element-type :unsigned-short))
+	(stream2 (cgl:make-gl-stream 
+  			      :vao *vao-2*
+  			      :length (length *index-data-list2*)
   			      :element-type :unsigned-short)))
     (setf *entities* 
 	  (list 
-	   (make-entity :position (make-vector3 0.0 0.0 -20.0)
-			:stream stream)
-	   (make-entity :position (make-vector3 0.0 0.0 -25.0)
-			:stream stream)
-	   (make-entity :position (make-vector3 5.0 0.0 -20.0)
+	   (make-entity :position (make-vector3 0.0 0.0 -15.0)
+			:rotation (make-vector3 0.0 -1.57079633 0.0)
 			:stream stream)
 	   (make-entity :position (make-vector3 0.0 0.0 -15.0)
-			:stream stream)
-	   (make-entity :position (make-vector3 -5.0 0.0 -20.0)
-			:stream stream))))
+			:rotation (make-vector3 -1.57079633 0.0 0.0)
+			:stream stream2
+			:scale (make-vector3 2.0 2.0 2.0)))))
   
   ;;set options
   (cgl::clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
-  (gl:front-face :cw)
+  (gl:front-face :ccw)
   (gl:enable :depth-test)
   (gl:depth-mask :true)
   (gl:depth-func :lequal)
@@ -216,7 +250,7 @@
   (let ((entity (first *entities*)))
     (setf (entity-rotation entity) 
 	  (v3:v+ (entity-rotation entity)
-		 (make-vector3 0.03 0.03 0.0))))
+		 (make-vector3 0.00 0.01 0.00))))
   
   (loop for entity in *entities*
        do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 

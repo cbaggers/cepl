@@ -30,7 +30,10 @@
 	   :mkstr
 	   :symb
 	   :make-keyword
-	   :group))
+	   :group
+	   :safe-read-from-string
+	   :sub-at-index
+	   :symbolicate-package))
 
 (defpackage :cepl-gl
   (:use :cl :cl-opengl :cffi)
@@ -130,6 +133,17 @@
   (:import-from :math-macros
 		:apply-across-elements :v-x :v-y :v-z :v-w))
 
+(defpackage :vectors
+  (:use :cl)
+  (:nicknames :v)
+  (:export :v+)
+  (:import-from :vector2
+		:make-vector2)
+  (:import-from :vector3 
+		:make-vector3)
+  (:import-from :vector4
+		:make-vector4))
+
 (defpackage :matrix3
   (:use :cl)
   (:nicknames :m3)
@@ -150,7 +164,6 @@
   (:import-from :math-macros
 		:apply-across-elements :v-x :v-y :v-z :v-w))
 
-;;[TODO] why does adding :vector3 in the :use cause conflicts?
 (defpackage :matrix4
   (:use :cl)
   (:nicknames :m4)
@@ -173,10 +186,24 @@
   (:import-from :math-macros
 		:apply-across-elements :v-x :v-y :v-z :v-w))
 
+(defpackage :matrices
+  (:use :cl)
+  (:nicknames :m))
+
 (defpackage :cepl-camera
   (:use :cl)
   (:export :calculate-frustrum-scale
 	   :make-cam-clip-matrix)
+  (:import-from :vector2
+		:make-vector2)
+  (:import-from :vector3 
+		:make-vector3)
+  (:import-from :vector4
+		:make-vector4))
+
+(defpackage :model-parsers
+  (:use :cl)
+  (:export :parse-obj-file)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 

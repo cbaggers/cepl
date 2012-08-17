@@ -4,7 +4,8 @@
   :serial t
   :depends-on (#:cl-opengl
 	       #:lispbuilder-sdl
-	       #:glop)
+	       #:glop
+	       #:cl-utilities)
   :components ((:file "package")
 	       (:file "base-maths")
 	       (:file "base-macros")
@@ -12,10 +13,13 @@
 	       (:file "cepl-time")
 	       (:file "cepl-gl")
 	       (:file "math-macros")
-	       (:file "vector2")
-	       (:file "vector3")
-	       (:file "vector4")
-	       (:file "matrix3")
-	       (:file "matrix4")
+	       (:file "vectors/vector2")
+	       (:file "vectors/vector3")
+	       (:file "vectors/vector4")
+	       (:file "vectors/vectors")
+	       (:file "matrices/matrix3")
+	       (:file "matrices/matrix4")
+	       (:file "matrices/matrices")
 	       (:file "cepl-camera")
+	       (:file "model-parsers/parse-obj")
 	       (:file "cepl")))
