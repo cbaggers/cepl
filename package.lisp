@@ -98,7 +98,8 @@
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :perp-dot
-	   :*unit-x* :*unit-y* :*unit-scale*)
+	   :*unit-x* :*unit-y* :*unit-scale*
+	   :vzerop :unitp :cross)
   (:import-from :base-maths :float-zero
 		      :c-sqrt
 		      :c-inv-sqrt)
@@ -112,7 +113,8 @@
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :cross
-	   :*unit-x* :*unit-y* :*unit-z* :*unit-scale*)
+	   :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
+	   :vzerop :unitp :cross)
   (:import-from :base-maths :float-zero
 		      :c-sqrt
 		      :c-inv-sqrt)
@@ -126,7 +128,8 @@
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :cross
-	   :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*)
+	   :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*
+	   :vzerop :unitp)
   (:import-from :base-maths :float-zero
 		      :c-sqrt
 		      :c-inv-sqrt)
@@ -136,7 +139,10 @@
 (defpackage :vectors
   (:use :cl)
   (:nicknames :v)
-  (:export :v+)
+  (:export :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
+	   :/ :length :length-squared :distance :distance-squared
+	   :dot :absolute-dot :perp-dot :normalize :cross) 
+  (:shadow :zerop :+ := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 

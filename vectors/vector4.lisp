@@ -294,7 +294,7 @@
 (defun dot (vector-a vector-b)
   "Return the dot product of the vector-a and vector-b."
   (declare ((simple-array single-float (4)) vector-a vector-b))
-  (apply-across-elements make-vector4 ((vc-a vector-a) 
+  (apply-across-elements + ((vc-a vector-a) 
 				       (vc-b vector-b)) 4
     (* vc-a vc-b)))
 
@@ -308,8 +308,8 @@
 (defun absolute-dot (vector-a vector-b) 
   "Return the absolute dot product of the vector-a and vector-b."
   (declare ((simple-array single-float (4)) vector-a vector-b))
-  (apply-across-elements make-vector4 ((vc-a vector-a) 
-				       (vc-b vector-b)) 4
+  (apply-across-elements + ((vc-a vector-a) 
+			    (vc-b vector-b)) 4
     (abs (* vc-a vc-b))))
 
 ;----------------------------------------------------------------

@@ -95,16 +95,18 @@
 
   ;;setup data 
   (let ((monkey-data 
-	 (first (model-parsers:parse-obj-file "heart.obj"))))
+	 (first (model-parsers:parse-obj-file "6.obj"))))
     (setf *vertex-data-list* (gethash :vertices monkey-data))
     (setf *index-data-list* (gethash :faces monkey-data)))
 
   (setf *vertex-data-list* (mapcar 
 			    #'(lambda (x) 
 				(list x (list (random 1.0) (random 1.0) (random 1.0) 1.0))) *vertex-data-list*))
+
   (setf *index-data-list* 
 	(loop for face in *index-data-list*
 	   append (mapcar #'car (subseq face 0 3))))
+
   ;; put in glarrays
   (setf *vertex-data-gl* 
 	(cgl:alloc-array-gl 'vert-data 

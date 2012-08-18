@@ -286,8 +286,8 @@
 (defun dot (vector-a vector-b)
   "Return the dot product of the vector-a and vector-b."
   (declare ((simple-array single-float (2)) vector-a vector-b))
-  (apply-across-elements make-vector2 ((vc-a vector-a) 
-				       (vc-b vector-b)) 2
+  (apply-across-elements + ((vc-a vector-a) 
+			    (vc-b vector-b)) 2
     (* vc-a vc-b)))
 
 ;----------------------------------------------------------------
@@ -300,8 +300,8 @@
 (defun absolute-dot (vector-a vector-b) 
   "Return the absolute dot product of the vector-a and vector-b."
   (declare ((simple-array single-float (2)) vector-a vector-b))
-  (apply-across-elements make-vector2 ((vc-a vector-a) 
-				       (vc-b vector-b)) 2
+  (apply-across-elements + ((vc-a vector-a) 
+			    (vc-b vector-b)) 2
     (abs (* vc-a vc-b))))
 
 ;----------------------------------------------------------------
@@ -326,11 +326,11 @@
 (declaim (inline perp-dot)
 	 (ftype (function ((simple-array single-float (2)) 
 			   (simple-array single-float (2))) 
-			  (simple-array single-float (2)))
+			  float)
 		perp-dot))
 (defun perp-dot (vec-a vec-b)
-    (declare ((simple-array single-float (2)) vector-a vector-b))
-    (v- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b))))
+    (declare ((simple-array single-float (2)) vec-a vec-b))
+    (- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b))))
 
 ;----------------------------------------------------------------
 
