@@ -141,7 +141,8 @@
   (:nicknames :v)
   (:export :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
 	   :/ :length :length-squared :distance :distance-squared
-	   :dot :absolute-dot :perp-dot :normalize :cross :eq) 
+	   :dot :absolute-dot :perp-dot :normalize :cross :eq
+	   :swizzle :strict-swizzle) 
   (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
 		:make-vector2)

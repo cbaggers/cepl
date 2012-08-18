@@ -29,6 +29,28 @@
 
 ;----------------------------------------------------------------
 
+(defun swizzle (&rest vectors)
+    "Takes a list of vectors and combines them into a new vector"
+    (labels ((seqify (x) 
+	       (if (or (listp x) (arrayp x))
+		   x
+		   (list x))))
+      (let ((combined (mapcar #'(lambda (x) 
+				  (coerce x 'single-float))
+		       (apply #'concatenate 'list
+			      (mapcar #'seqify vectors)))))
+	(print combined)
+	(apply #'make-vector combined))))
+
+;; doesnt restrict length and needs correctly typed vectors
+(defun strict-swizzle (&rest vectors)
+  (apply #'concatenate 
+         `(SIMPLE-ARRAY SINGLE-FLOAT 
+                        (,(apply #'cl:+ (mapcar #'cl:length vectors)))) 
+         vectors))
+
+;----------------------------------------------------------------
+
 (defun make-vector (x y &optional z w)
   "This takes floats and give back a vector, this is just an
    array but it specifies the array type and populates it. "
