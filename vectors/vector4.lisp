@@ -87,29 +87,16 @@
 
 ;; Would be interesting to see if checking that the arrays
 ;; are not 'eq' first would speed this up 
-(declaim (inline v=)
+(declaim (inline v-eq)
 	 (ftype (function ((simple-array single-float (4)) 
 			   (simple-array single-float (4))) 
-			  (boolean)) v=))
-(defun v= (vector-a vector-b)
+			  (boolean)) v-eq))
+(defun v-eq (vector-a vector-b)
   "Returns either t if the two vectors are equal. 
    Otherwise it returns nil."
   (declare ((simple-array single-float (4)) vector-a vector-b))
   (apply-across-elements and ((vc-a vector-a) (vc-b vector-b)) 4
     (= vc-a vc-b)))
-
-;----------------------------------------------------------------
-
-(declaim (inline v/=)
-	 (ftype (function ((simple-array single-float (4)) 
-			   (simple-array single-float (4))) 
-			  (boolean)) v/=))
-(defun v/= (vector-a vector-b)
-  (declare ((simple-array single-float (4)) vector-a vector-b))
-  "Returns either t if the two vectors are not equal. 
-   Otherwise it returns nil."
-  (apply-across-elements or ((vc-a vector-a) (vc-b vector-b)) 4
-    (/= vc-a vc-b))) 
 
 ;----------------------------------------------------------------
 

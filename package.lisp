@@ -94,7 +94,7 @@
 (defpackage :vector2
   (:use :cl)
   (:nicknames :v2)
-  (:export :make-vector2 :v= :v/= :v+ :v+1 :v- :v-1 :v*
+  (:export :make-vector2 :v+ :v+1 :v- :v-1 :v* :v-eq
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :perp-dot
@@ -109,7 +109,7 @@
 (defpackage :vector3
   (:use :cl)
   (:nicknames :v3)
-  (:export :make-vector3 :v= :v/= :v+ :v+1 :v- :v-1 :v*
+  (:export :make-vector3 :v+ :v+1 :v- :v-1 :v* :v-eq
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :cross
@@ -124,7 +124,7 @@
 (defpackage :vector4
   (:use :cl)
   (:nicknames :v4)
-  (:export :make-vector4 :v= :v/= :v+ :v+1 :v- :v-1 :v*
+  (:export :make-vector4 :v+ :v+1 :v- :v-1 :v* :v-eq
 	   :v*vec :v/ :v/vec :negate :vlength-squared
 	   :vlength :distance-squared :distance :dot
 	   :absolute-dot :normalize :cross
@@ -141,8 +141,8 @@
   (:nicknames :v)
   (:export :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
 	   :/ :length :length-squared :distance :distance-squared
-	   :dot :absolute-dot :perp-dot :normalize :cross) 
-  (:shadow :zerop :+ := :/= :1+ :1- :- :* :/ :length)
+	   :dot :absolute-dot :perp-dot :normalize :cross :eq) 
+  (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 
