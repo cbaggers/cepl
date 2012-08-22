@@ -78,3 +78,9 @@
      (continue () :report "Continue")))
 
 ;;;--------------------------------------------------------------
+
+(defmacro do-until (test &body body)
+  (let ((ignorable (gensym)))
+    `(do ((,ignorable t)) (,test)
+       (declare (ignore ,ignorable))
+       ,@body)))

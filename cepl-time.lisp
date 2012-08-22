@@ -1,4 +1,4 @@
-;; Functions and macros for handling time in games
+>;; Functions and macros for handling time in games
 ;; This area is very prone to change as time is so integral
 ;; to game building.
 

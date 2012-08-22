@@ -13,7 +13,8 @@
   (:use :cl)
   (:export :defmemo
 	   :once-only
-	   :continuable))
+	   :continuable
+	   :do-until))
 
 (defpackage :cepl-time
   (:use :cl)
@@ -228,7 +229,7 @@
 		:make-vector4))
 
 (defpackage :cepl-examples
-  (:use :cl)
+  (:use :cl :base-macros)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 
