@@ -1,12 +1,15 @@
 ;; I'm trying to discover some kind of decent way of handling 
-;; time that is lispy tranparent to other code. Expressive
+;; time that is lispy and tranparent to other code. Expressive
 ;; enough to handle all time conditions in games and simple
 ;; enough that it can be combined so we can compose new 
 ;; time functionality..should be a doddle...<cough>..*tumbleweed*
 
+;; ideas for terminology
+;; '(until before between within at when unless by)
+
 ;;---------------------------------------------------------------
 
-;; '(until before between within at when unless by)
+;; ignore these two...on te wrong track here
 
 (defmacro within ((end-time &optional (start-time 0)) &body body)
   (let ((time-cache (gensym "time-cache")))
@@ -79,8 +82,8 @@
 ;; it is going to have to look inside the lexical scope of the 
 ;; closure...this sounds ugly.
 
-;; time-buffer relative real time since last call
-;; time-cache relative time since made(/last reset?)
+;; time-buffer - converts absolute time to relative time
+;; time-cache - converts relative time to absolute time
 ;;
 ;; both of these have time sources.
 ;; time-cache can be made using time-buffer so may not be equal
@@ -187,8 +190,8 @@
 (defun expired (temporal-lambda)
   (funcall temporal-lambda :*expired?*))
 
-;; look into variable capture as is not currently portable for regular
-;; lambdas (passing :*expired?* will crash them.
+;; look into variable capture as is not currently portable for 
+;; regular lambdas as passing :*expired?* will crash them.
 
 (defvar *expired?* nil)
 
@@ -218,7 +221,7 @@
 ;; multiple threads).
 
 ;; But we still have the problem of.'what if a lambda does get
-;; passed *expired?* and DOESNT crash, we have undefined 
+;; passed :*expired?* and DOESNT crash, we have undefined 
 ;; behaviour.
 
 ;; how about conditionals?...been chatting and could be good
