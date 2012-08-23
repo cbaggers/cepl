@@ -1,21 +1,40 @@
->;; Functions and macros for handling time in games
+;; Functions and macros for handling time in games
 ;; This area is very prone to change as time is so integral
 ;; to game building.
 
 (in-package cepl-time)
 
-(defun make-time-buffer ()
+;; This is just an alias with a more fitting name
+(setf (symbol-function 'absolute-system-time) 
+      #'get-internal-real-time)
+
+(defun make-time-buffer (&optional (abs-time-source
+				    #'get-internal-real-time))
   "This make a time buffer. A time buffer is a lambda which each
-   time it is called reuns the ammount of time since it was last
+   time it is called retuns the ammount of time since it was last
    called. 
    It is called a time buffer as it can be imagined as
-   'storing up' time for use later."
-  (let ((last-time (get-internal-real-time)))
+   'storing up' time for use later.
+   In short: a time-buffer converts absolute time into relative
+   time."
+  (let ((last-time (funcall abs-time-source)))
     (lambda () 
-      (let* ((now (get-internal-real-time))
+      (let* ((now (funcall abs-time-source))
 	     (delta (- now last-time)))
 	(setf last-time now)
 	delta))))
+
+(defun make-time-cache (&optional (rel-time-source
+				   (make-time-buffer)))
+  "This make a time cache. A time cache is a lambda which each
+   time it is called retuns the ammount of time since it was 
+   created. 
+   In short: a time-cache converts relative time into absolute 
+   time."  
+  (let ((cached-time 0))
+    (lambda () 
+      (setf cached-time (+ cached-time (funcall rel-time-source)))
+      cached-time)))
 
 
 (defun make-stepper (step-size)
@@ -77,3 +96,97 @@
 	   (when ,!step-prog
 	     ,@(utils:walk-replace step-progress !step-prog 
 		   (utils:walk-replace step-size !step-size body)))))))
+
+
+;----------------------------------------------------
+
+(define-condition temporally-expired (condition) ())
+
+(defun withinp (start end time-source)
+  (let ((current-time (funcall time-source)))
+    (if (> current-time start)
+        (if (< current-time end)
+            (values t nil)
+            (values nil t))
+        (values nil nil))))
+
+
+(defun make-withinp (start end)
+  (lambda (time-source) (withinp start end time-source)))
+
+
+(defun make-tlambda (time-source temporalp func-to-call)
+  "This functon is the helper function for the tlambda macro
+   ----
+   Temporal lambdas are quite simply 'lambdas with an expiry date!'
+   They are defined in a similar way to regular lambdas except that
+   you also have to provide a time source and a temporal-predicate.
+   When you call the lambda it will only evaluate it's body if the 
+   conditions of the predicate are met. When the conditions are not
+   met the lambda will return nil
+   For example you could specify that the temporal lambda only work
+   for 20 seconds.
+   Of course in the above example, after the 20 seconds has passed
+   the temporal lambda will never evaluate again. In this state it 
+   is said to have expired, when a temporal lambda that has expired 
+   is called it emits a 'temporally-expired' condition, this can be
+   caught to allow you to clean up expired tlambdas."
+  (lambda (&rest args)
+    (multiple-value-bind (in-scope expired) 
+	(funcall temporalp time-source)
+      (when expired
+	(signal 'temporally-expired))
+      (if in-scope
+	  (apply func-to-call args)
+	  nil))))
+
+
+(defmacro tlambda (time-source temporalp args &body body)
+  "Create a temporal lambda
+   ----
+   Temporal lambdas are quite simply 'lambdas with an expiry date!'
+   They are defined in a similar way to regular lambdas except that
+   you also have to provide a time source and a temporal-predicate.
+   When you call the lambda it will only evaluate it's body if the 
+   conditions of the predicate are met. When the conditions are not
+   met the lambda will return nil
+   For example you could specify that the temporal lambda only work
+   for 20 seconds.
+   Of course in the above example, after the 20 seconds has passed
+   the temporal lambda will never evaluate again. In this state it 
+   is said to have expired, when a temporal lambda that has expired 
+   is called it emits a 'temporally-expired' condition, this can be
+   caught to allow you to clean up expired tlambdas."
+  (let ((internalf (gensym "internalf")))
+    `(labels ((,internalf ,args ,@body))
+      (make-tlambda ,time-source ,temporalp #',internalf))))
+
+
+(defmacro with-expired ((expired-var) &body body)
+  "This macro is used to capture whether and temporal lambda
+   has expired. The sole argument is the name of the variable
+   you wish to contain the state of the tlambda and after the 
+   tlambda has been called the specified var will contain
+   either nil meaning that it hasnt expired, or t meaning it 
+   has.
+   It is perfectly safe to call regular functions or lambdas
+   within this form as they are seen as the equivilent of a
+   tlambda with it's temporal predicate set to 'always'.
+   Here is an example usage, note that before the funcall 
+   'expired?' will always be nil.
+
+     (with-expired (expired?)
+       (let ((result (funcall tlam)))
+	 (when expired?
+	   (setf result 'NOOOOOO!'))
+	 result))"
+  `(let ((,expired-var nil))
+     (handler-bind ((temporally-expired 
+		     #'(lambda (x) 
+			 (declare (ignore x))
+			 (setf ,expired-var t))))
+       ,@body)))
+
+
+
+

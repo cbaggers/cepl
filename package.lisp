@@ -18,9 +18,15 @@
 
 (defpackage :cepl-time
   (:use :cl)
-  (:export :make-time-buffer
+  (:nicknames :ct :ctime)
+  (:export :absolute-system-time
+	   :make-time-buffer
+	   :make-time-cache
 	   :make-stepper
-	   :on-step-call))
+	   :on-step-call
+	   :make-withinp
+	   :tlambda
+	   :with-expired))
 
 (defpackage :cepl-utils
   (:use :cl)

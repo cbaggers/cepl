@@ -230,3 +230,54 @@
 
 ;; Ok so I'm not tapping out...more fun to come
 
+
+;; use conditions emit if dynamic var is true
+;; definitely the irght direction of thought
+
+(define-condition temporally-expired (condition))
+
+(defun make-tlambda (time-source temporalp func-to-call)
+  (lambda (&rest args)
+    (multiple-value-bind (in-scope expired) 
+	(funcall temporalp time-source)
+      (when expired
+	(signal 'temporally-expired))
+      (if in-scope
+	  (apply func-to-call args)
+	  nil))))
+
+;;--ideas--
+;;this works fine with regular lambdas
+(with-expired (expired)
+  (let ((result (funcall tlam)))
+    (print result)
+    (if expired
+	(print "expired")
+	(print "not expired"))))
+
+;;this won't work fine with all regular lambdas
+(expiredp tlam)
+
+
+;;this is how we can catch the expired condition
+(let ((expired nil))
+  (handler-bind ((temporally-expired #'(lambda () 
+					 (setf expired t))))
+    (print (funcall tlam))))
+
+;;-------
+
+(defmacro with-expired ((expired-var) &body body)
+  `(let ((,expired-var nil))
+     (handler-bind ((temporally-expired 
+		     #'(lambda () 
+			 (setf ,expired-var t))))
+       ,@body)))
+
+
+
+(defun test (tlam)
+  (with-expired (expired?)
+    (print (funcall tlam))
+    (when expired?
+      (print "NOOOOOO!"))))
