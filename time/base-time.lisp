@@ -2,7 +2,7 @@
 ;; This area is very prone to change as time is so integral
 ;; to game building.
 
-(in-package cepl-time)
+(in-package base-time)
 
 ;; This is just an alias with a more fitting name
 (setf (symbol-function 'absolute-system-time) 
@@ -85,8 +85,8 @@
    the lambda returns a scalar between 0 and 1.0 which is how 
    much overflow there was (the overflow remains in the store).
    Here is an example:
-    CEPL-EXAMPLES> (setf stepper (cepl-time:make-stepper 1000))
-     #<CLOSURE (LAMBDA (TIME) :IN CEPL-TIME:MAKE-STEPPER) {10085B249B}>
+    CEPL-EXAMPLES> (setf stepper (make-stepper 1000))
+     #<CLOSURE (LAMBDA (TIME) :IN MAKE-STEPPER) {10085B249B}>
     CEPL-EXAMPLES> (funcall stepper 400)
      NIL
     CEPL-EXAMPLES> (funcall stepper 400)

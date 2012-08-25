@@ -10,7 +10,7 @@
 	       (:file "base-maths")
 	       (:file "base-macros")
 	       (:file "cepl-utils")
-	       (:file "cepl-time")
+	       (:file "time/base-time")
 	       (:file "cepl-gl")
 	       (:file "math-macros")
 	       (:file "vectors/vector2")

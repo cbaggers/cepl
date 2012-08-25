@@ -16,7 +16,7 @@
 	   :continuable
 	   :do-until))
 
-(defpackage :cepl-time
+(defpackage :base-time
   (:use :cl)
   (:nicknames :ct :ctime)
   (:export :absolute-system-time
@@ -243,12 +243,9 @@
 		:make-vector4))
 
 (defpackage :cepl-examples
-  (:use :cl :base-macros)
-  (:import-from :vector2
-		:make-vector2)
-  (:import-from :vector3 
-		:make-vector3)
-  (:import-from :vector4
-		:make-vector4)
+  (:use :cl 
+	:base-macros
+	:base-maths
+	:base-time)
   (:import-from :math-macros
 		:v-x :v-y :v-z :v-w))

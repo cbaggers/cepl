@@ -176,8 +176,8 @@
 		   (mapcar #'cgl:make-shader 
 			   '("3.vert" "3.frag"))))
 	  (loops 0)
-	  (timer (cepl-time:make-time-buffer))
-	  (stepper (cepl-time:make-stepper 1000)))
+	  (timer (make-time-buffer))
+	  (stepper (make-stepper 1000)))
       (init prog-1)
       (reshape prog-1 640 480)
       (setf cl-opengl-bindings:*gl-get-proc-address* 
@@ -190,7 +190,7 @@
 	       (base-macros:continuable (update-swank))
 	       (base-macros:continuable (draw prog-1))
 	       (setf loops (1+ loops))
-	       (cepl-time:on-step-call (stepper
-					(funcall timer))
+	       (on-step-call (stepper
+			      (funcall timer))
 		 (print loops)
 		 (setf loops 0)))))))

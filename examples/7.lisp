@@ -236,10 +236,10 @@
     ;; folder, and as soon as I have nailed that down I will
     ;; and player controls to this (or prehaps another) example.
     (let ((loops 0)
-	  (draw-timer (cepl-time:make-time-buffer))
-	  (draw-stepper (cepl-time:make-stepper (/ 1000.0 60)))
-	  (fps-timer (cepl-time:make-time-buffer))
-	  (fps-stepper (cepl-time:make-stepper 1000))
+	  (draw-timer (make-time-buffer))
+	  (draw-stepper (make-stepper (/ 1000.0 60)))
+	  (fps-timer (make-time-buffer))
+	  (fps-stepper (make-stepper 1000))
 	  (running t))
       (do-until (not running)
 	(dolist (event (collect-sdl-events))
@@ -252,7 +252,7 @@
 		    (width
 		     (sdl::video-resize-w event)))
 		(reshape width height)))))
-	(cepl-time:on-step-call (draw-stepper 
+	(on-step-call (draw-stepper 
 				 (funcall draw-timer))
 	  (continuable (update-swank))
 	  (continuable (draw)))

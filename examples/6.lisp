@@ -22,8 +22,8 @@
 (defparameter *camera* nil)
 ;; for fps
 (defparameter *loops* 0)
-(defparameter *timer* (cepl-time:make-time-buffer))
-(defparameter *stepper* (cepl-time:make-stepper 1000))
+(defparameter *timer* (make-time-buffer))
+(defparameter *stepper* (make-stepper 1000))
 
 ;; Define data formats 
 (cgl:define-interleaved-attribute-format vert-data 
@@ -188,7 +188,7 @@
 
 (defun draw ()
   ;; (setf *loops* (1+ *loops*))
-  ;; (cepl-time:on-step-call (*stepper* (funcall *timer*))
+  ;; (on-step-call (*stepper* (funcall *timer*))
   ;;   (print *loops*)
   ;;   (setf *loops* 0))
   (cgl::clear-depth 1.0)
