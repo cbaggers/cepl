@@ -24,7 +24,13 @@
 	   :make-time-cache
 	   :make-stepper
 	   :on-step-call
-	   :make-withinp
+	   :withinp
+	   :beforep
+	   :t<
+	   :t>
+	   :temporally-expired
+	   :untilp
+	   :afterp
 	   :tlambda
 	   :with-expired))
 

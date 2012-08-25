@@ -101,66 +101,47 @@
 ;----------------------------------------------------
 
 (define-condition temporally-expired (condition) ())
+;; '(until before between within at when unless by)
 
-(defun withinp (start end time-source)
-  (let ((current-time (funcall time-source)))
-    (if (> current-time start)
-        (if (< current-time end)
-            (values t nil)
-            (values nil t))
-        (values nil nil))))
+(defun withinp (current-time start end)
+  (if current-time
+      (if (> current-time start)
+          (if (< current-time end)
+              current-time
+              (progn (signal 'temporally-expired)
+                     nil))
+          nil)
+      nil))
 
+(setf (symbol-function 'betweenp)
+      #'withinp)
 
-(defun make-withinp (start end)
-  (lambda (time-source) (withinp start end time-source)))
+(defun beforep (current-time time)
+  "test"
+  (if current-time
+      (if (< current-time time)
+          current-time
+          (progn (signal 'temporally-expired)
+                     nil))
+      nil))
 
+(setf (symbol-function 't<)
+      #'beforep)
 
-(defun make-tlambda (time-source temporalp func-to-call)
-  "This functon is the helper function for the tlambda macro
-   ----
-   Temporal lambdas are quite simply 'lambdas with an expiry date!'
-   They are defined in a similar way to regular lambdas except that
-   you also have to provide a time source and a temporal-predicate.
-   When you call the lambda it will only evaluate it's body if the 
-   conditions of the predicate are met. When the conditions are not
-   met the lambda will return nil
-   For example you could specify that the temporal lambda only work
-   for 20 seconds.
-   Of course in the above example, after the 20 seconds has passed
-   the temporal lambda will never evaluate again. In this state it 
-   is said to have expired, when a temporal lambda that has expired 
-   is called it emits a 'temporally-expired' condition, this can be
-   caught to allow you to clean up expired tlambdas."
-  (lambda (&rest args)
-    (multiple-value-bind (in-scope expired) 
-	(funcall temporalp time-source)
-      (when expired
-	(signal 'temporally-expired))
-      (if in-scope
-	  (apply func-to-call args)
-	  nil))))
+(setf (symbol-function 'untilp)
+      #'beforep)
 
+(defun afterp (current-time time)
+  (if current-time
+      (if (> current-time time)
+          current-time
+          nil)
+      nil))
 
-(defmacro tlambda (time-source temporalp args &body body)
-  "Create a temporal lambda
-   ----
-   Temporal lambdas are quite simply 'lambdas with an expiry date!'
-   They are defined in a similar way to regular lambdas except that
-   you also have to provide a time source and a temporal-predicate.
-   When you call the lambda it will only evaluate it's body if the 
-   conditions of the predicate are met. When the conditions are not
-   met the lambda will return nil
-   For example you could specify that the temporal lambda only work
-   for 20 seconds.
-   Of course in the above example, after the 20 seconds has passed
-   the temporal lambda will never evaluate again. In this state it 
-   is said to have expired, when a temporal lambda that has expired 
-   is called it emits a 'temporally-expired' condition, this can be
-   caught to allow you to clean up expired tlambdas."
-  (let ((internalf (gensym "internalf")))
-    `(labels ((,internalf ,args ,@body))
-      (make-tlambda ,time-source ,temporalp #',internalf))))
+(setf (symbol-function 't>)
+      #'beforep)
 
+;; at is tricky, what if you miss it?
 
 (defmacro with-expired ((expired-var) &body body)
   "This macro is used to capture whether and temporal lambda
@@ -188,5 +169,43 @@
        ,@body)))
 
 
+(defmacro tlambda (time-source temporalp args &body body)
+  "Create a temporal lambda
+   ----
+   Temporal lambdas are quite simply 'lambdas with an expiry date!'
+   They are defined in a similar way to regular lambdas except that
+   you also have to provide a time source and a temporal-predicate.
+   When you call the lambda it will only evaluate it's body if the 
+   conditions of the predicate are met. When the conditions are not
+   met the lambda will return nil
+   For example you could specify that the temporal lambda only work
+   for 20 seconds.
+   Of course in the above example, after the 20 seconds has passed
+   the temporal lambda will never evaluate again. In this state it 
+   is said to have expired, when a temporal lambda that has expired 
+   is called it emits a 'temporally-expired' condition. This can be
+   caught to allow you to clean up expired tlambdas.)"
+  (labels ((same-sym-namep (sym compare)
+	     (and (symbolp sym)
+		  (symbolp compare)
+		  (string= (symbol-name sym) 
+			   (symbol-name compare)))))
+    (let ((internalf (gensym "internalf"))
+	  (time-source-sym (gensym "time-source"))
+	  (time-sym (gensym "current-time")))
+      (cepl-utils:walk-replace 
+       '!time time-sym
+       `(let ((,time-source-sym ,time-source))
+	  (labels ((,internalf ,args ,@body))
+	    (lambda (&rest args)
+	      (let ((,time-sym (funcall ,time-source-sym)))
+		(if ,temporalp
+		    (apply #',internalf args)
+		    nil)))))
+       :test #'same-sym-namep))))
 
 
+;; probably useless...this was just me playing about
+(defmacro tdefun (name (time-source temporalp args) &body body)
+  `(setf (symbol-function ',name)
+         (tlambda ,time-source ,temporalp ,args ,@body)))

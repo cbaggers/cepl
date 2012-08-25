@@ -281,3 +281,96 @@
     (print (funcall tlam))
     (when expired?
       (print "NOOOOOO!"))))
+
+;;----------------
+
+(defmacro tlambda (time-source temporalp args &body body)
+  "Create a temporal lambda
+   ----
+   Temporal lambdas are quite simply 'lambdas with an expiry date!'
+   They are defined in a similar way to regular lambdas except that
+   you also have to provide a time source and a temporal-predicate.
+   When you call the lambda it will only evaluate it's body if the 
+   conditions of the predicate are met. When the conditions are not
+   met the lambda will return nil
+   For example you could specify that the temporal lambda only work
+   for 20 seconds.
+   Of course in the above example, after the 20 seconds has passed
+   the temporal lambda will never evaluate again. In this state it 
+   is said to have expired, when a temporal lambda that has expired 
+   is called it emits a 'temporally-expired' condition. This can be
+   caught to allow you to clean up expired tlambdas."
+  (let ((internalf (gensym "internalf"))
+        (time-source-sym (gensym "time-source"))
+        (time-sym (gensym "current-time")))
+    (cepl-utils:walk-replace '!time time-sym
+                  `(let ((,time-source-sym ,time-source))
+                     (labels ((,internalf ,args ,@body))
+                       (lambda (&rest args)
+                         (let ((,time-sym (funcall ,time-source-sym)))
+                           (if ,temporalp
+                               (apply #',internalf args)
+                               nil))))))))
+
+;;Example
+(tlambda (make-time-buffer) (within 10 20 !time) (x) (print x))
+
+(tlambda (make-time-cache) (afterp 3000 (beforep 15000 !time)) ()
+  (print "wooo"))
+
+(defmacro tdefun (name (time-source temporalp args) &body body)
+  `(setf (symbol-function ',name)
+         (tlambda ,time-source ,temporalp ,args ,@body)))
+
+
+;; SHOULD TEMPORAL PREDICATES TAKE TIME SOURCE OR JUST NUMBERS
+;; also should they return t or time?
+;; how do tperds handle passing of expired?
+;; how about we move the 'temporally-expired signal into the temporal 
+;; predicates. This way it works in any structure we devise
+
+;----------------------------------------------------
+
+(define-condition temporally-expired (condition) ())
+
+;; '(until before between within at when unless by)
+
+(defun withinp (current-time start end)
+  (if current-time
+      (if (> current-time start)
+          (if (< current-time end)
+              current-time
+              (progn (signal 'temporally-expired)
+                     nil))
+          nil)
+      nil))
+
+(setf (symbol-function 'betweenp)
+      #'withinp)
+
+(defun beforep (current-time time)
+  "test"
+  (if current-time
+      (if (< current-time time)
+          current-time
+          (progn (signal 'temporally-expired)
+                     nil))
+      nil))
+
+(setf (symbol-function 't<)
+      #'beforep)
+
+(setf (symbol-function 'untilp)
+      #'beforep)
+
+(defun afterp (current-time time)
+  (if current-time
+      (if (> current-time time)
+          current-time
+          nil)
+      nil))
+
+(setf (symbol-function 't>)
+      #'beforep)
+
+;; at is tricky, what if you miss it?

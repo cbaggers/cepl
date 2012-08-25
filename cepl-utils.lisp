@@ -6,20 +6,23 @@
 (in-package :cepl-utils)
 
 ;; This will be pretty inefficient, but shoudl be fine for code trees
-(defun walk-replace (to-replace replace-with form)
+(defun walk-replace (to-replace replace-with form 
+		     &key (test #'eql))
   "This walks a list tree ('form') replacing all occurences of 
    'to-replace' with 'replace-with'. This is pretty inefficent
    but will be fine for macros."
   (cond ((null form) nil)
-	((atom form) (if (eql form to-replace)
+	((atom form) (if (funcall test form to-replace)
 			 replace-with
 			 form))
 	(t (cons (walk-replace to-replace 
 			       replace-with 
-			       (car form)) 
+			       (car form)
+			       :test test) 
 		 (walk-replace to-replace 
 			       replace-with 
-			       (cdr form))))))
+			       (cdr form)
+			       :test test)))))
 
 (defun file-to-string (path)
   "Sucks up an entire file from PATH into a freshly-allocated 
