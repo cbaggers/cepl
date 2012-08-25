@@ -22,6 +22,8 @@
   (:export :absolute-system-time
 	   :make-time-buffer
 	   :make-time-cache
+	   :make-itime-buffer
+	   :make-itime-cache
 	   :make-stepper
 	   :on-step-call
 	   :withinp

@@ -24,6 +24,24 @@
 	(setf last-time now)
 	delta))))
 
+(defun make-itime-buffer (&optional (abs-time-source
+				    #'get-internal-real-time))
+  "This make a time buffer. A time buffer is a lambda which each
+   time it is called retuns the ammount of time since it was last
+   called. 
+   It is called a time buffer as it can be imagined as
+   'storing up' time for use later.
+   In short: a time-buffer converts absolute time into relative
+   time."
+  (let ((last-time (funcall abs-time-source)))
+    (lambda (&optional command) 
+      (case command
+	(:reset (setf last-time (funcall abs-time-source))))
+      (let* ((now (funcall abs-time-source))
+	     (delta (- now last-time)))
+	(setf last-time now)
+	delta))))
+
 (defun make-time-cache (&optional (rel-time-source
 				   (make-time-buffer)))
   "This make a time cache. A time cache is a lambda which each
@@ -36,6 +54,20 @@
       (setf cached-time (+ cached-time (funcall rel-time-source)))
       cached-time)))
 
+(defun make-itime-cache (&optional (rel-time-source
+				   (make-time-buffer)))
+  "This make a time cache. A time cache is a lambda which each
+   time it is called retuns the ammount of time since it was 
+   created. 
+   In short: a time-cache converts relative time into absolute 
+   time."  
+  (let ((cached-time 0))
+    (lambda (&optional command) 
+      (setf cached-time (+ cached-time (funcall rel-time-source)))
+      (case command
+	(:reset (progn (setf cached-time 0)
+		       0))
+	(t cached-time)))))
 
 (defun make-stepper (step-size)
   "Makes a stepper. 
