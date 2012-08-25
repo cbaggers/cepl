@@ -26,13 +26,17 @@
 
 (defun make-itime-buffer (&optional (abs-time-source
 				    #'get-internal-real-time))
-  "This make a time buffer. A time buffer is a lambda which each
-   time it is called retuns the ammount of time since it was last
-   called. 
+  "This make an interactive time buffer. A time buffer is a lambda 
+   which each time it is called retuns the ammount of time since 
+   it was last called.
    It is called a time buffer as it can be imagined as
    'storing up' time for use later.
    In short: a time-buffer converts absolute time into relative
-   time."
+   time.
+   The interactive part is that you can pass and optional command
+   :reset to zero the time buffer. This can save creating a new 
+   time-cache, which can be handy when you are outside the original
+   context but you want to maintain the lexical scope."
   (let ((last-time (funcall abs-time-source)))
     (lambda (&optional command) 
       (case command
@@ -44,9 +48,9 @@
 
 (defun make-time-cache (&optional (rel-time-source
 				   (make-time-buffer)))
-  "This make a time cache. A time cache is a lambda which each
-   time it is called retuns the ammount of time since it was 
-   created. 
+  "This make an interactive time cache. A time cache is a lambda 
+   which each time it is called retuns the ammount of time since
+   it was created. 
    In short: a time-cache converts relative time into absolute 
    time."  
   (let ((cached-time 0))
@@ -60,7 +64,11 @@
    time it is called retuns the ammount of time since it was 
    created. 
    In short: a time-cache converts relative time into absolute 
-   time."  
+   time.
+   The interactive part is that you can pass and optional command
+   :reset to zero the time buffer. This can save creating a new 
+   time-cache, which can be handy when you are outside the original
+   context but you want to maintain the lexical scope."  
   (let ((cached-time 0))
     (lambda (&optional command) 
       (setf cached-time (+ cached-time (funcall rel-time-source)))
