@@ -33,14 +33,14 @@
 ;; The entities used in this demo
 (defstruct entity 
   (stream nil)
-  (position #v(0.0 0.0 -20.0))
-  (rotation #v(0.0 0.0 0.0))
-  (scale #v(1.0 1.0 1.0)))
+  (position (v:make-vector 0.0 0.0 -20.0))
+  (rotation (v:make-vector 0.0 0.0 0.0))
+  (scale (v:make-vector 1.0 1.0 1.0)))
 
 (defstruct camera 
-  (position #v(0.0 0.0 0.0))
-  (look-direction #v(0.0 0.0 -1.0))
-  (up-direction #v(0.0 1.0 0.0)))
+  (position (v:make-vector 0.0 0.0 0.0))
+  (look-direction (v:make-vector 0.0 0.0 -1.0))
+  (up-direction (v:make-vector 0.0 1.0 0.0)))
 
 (defun point-camera-at (camera point)
   (setf (camera-look-direction camera)
@@ -56,10 +56,10 @@
 		      (m4::rotation-from-matrix3
 		       (m3:make-from-rows right-dir
 					  perp-up-dir
-					  (v:1- #v(0.0 0.0 0.0)
+					  (v:1- (v:make-vector 0.0 0.0 0.0)
 						look-dir)))))
 	 (trans-matrix (m4:translation 
-			(v:1- #v(0.0 0.0 0.0)
+			(v:1- (v:make-vector 0.0 0.0 0.0)
 			      (camera-position camera)))))
     (m4:m* rot-matrix trans-matrix)))
 
@@ -72,7 +72,7 @@
 	 (con-theta (cos theta))
 	 (sin-phi (sin phi))
 	 (cos-phi (cos phi))
-	 (dir-to-cam #v((* sin-theta cos-phi)
+	 (dir-to-cam (v:make-vector (* sin-theta cos-phi)
 			con-theta
 			(* sin-theta sin-phi))))
     (v:+ cam-target (v:* dir-to-cam (v-z sphere-cam-rel-pos)))))
@@ -80,7 +80,7 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *camera* (make-camera :position #v(0.0 0.0 0.0)))
+  (setf *camera* (make-camera :position (v:make-vector 0.0 0.0 0.0)))
   (setf *shaders* (mapcar #'cgl:make-shader `("7.vert" "7.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
@@ -135,8 +135,8 @@
   			      :element-type :unsigned-short)))
     (setf *entities* 
 	  (list 
-	   (make-entity :position #v(0.0 0.0 -15.0)
-			:rotation #v(-1.57079633 0.0 0.0)
+	   (make-entity :position (v:make-vector 0.0 0.0 -15.0)
+			:rotation (v:make-vector -1.57079633 0.0 0.0)
 			:stream stream))))
   
   ;;set options
@@ -170,7 +170,7 @@
   (let ((entity (first *entities*)))
     (setf (entity-rotation entity) 
 	  (v:+ (entity-rotation entity)
-		 #v(0.00 0.01 0.01))))
+		 (v:make-vector 0.00 0.01 0.01))))
   
   (loop for entity in *entities*
        do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 
@@ -235,11 +235,8 @@
     ;; I am currently experimenting with time in the protocode
     ;; folder, and as soon as I have nailed that down I will
     ;; and player controls to this (or prehaps another) example.
-    (let ((loops 0)
-	  (draw-timer (make-time-buffer))
+    (let ((draw-timer (make-time-buffer))
 	  (draw-stepper (make-stepper (/ 1000.0 60)))
-	  (fps-timer (make-time-buffer))
-	  (fps-stepper (make-stepper 1000))
 	  (running t))
       (do-until (not running)
 	(dolist (event (collect-sdl-events))

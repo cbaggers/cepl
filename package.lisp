@@ -14,7 +14,8 @@
   (:export :defmemo
 	   :once-only
 	   :continuable
-	   :do-until))
+	   :do-until
+	   :apply-across-elements))
 
 (defpackage :base-time
   (:use :cl)
@@ -100,11 +101,9 @@
 	   :set-program-uniforms
 	   :draw-streams))
 
-
-(defpackage :math-macros
+(defpackage :base-vectors
   (:use :cl)
-  (:export :apply-across-elements
-	   :v-x :v-y :v-z :v-w))
+  (:export :v-x :v-y :v-z :v-w))
 
 (defpackage :vector2
   (:use :cl)
@@ -118,8 +117,9 @@
   (:import-from :base-maths :float-zero
 		      :c-sqrt
 		      :c-inv-sqrt)
-  (:import-from :math-macros
-		:apply-across-elements :v-x :v-y))
+  (:import-from :base-macros
+		:apply-across-elements)
+  (:import-from :base-vectors :v-x :v-y))
 
 (defpackage :vector3
   (:use :cl)
@@ -133,8 +133,9 @@
   (:import-from :base-maths :float-zero
 		      :c-sqrt
 		      :c-inv-sqrt)
-  (:import-from :math-macros
-		:apply-across-elements :v-x :v-y :v-z))
+  (:import-from :base-macros
+		:apply-across-elements)
+  (:import-from :base-vectors :v-x :v-y :v-z))
 
 (defpackage :vector4
   (:use :cl)
@@ -148,8 +149,9 @@
   (:import-from :base-maths :float-zero
 		      :c-sqrt
 		      :c-inv-sqrt)
-  (:import-from :math-macros
-		:apply-across-elements :v-x :v-y :v-z :v-w))
+  (:import-from :base-macros
+		:apply-across-elements)
+  (:import-from :base-vectors :v-x :v-y :v-z :v-w))
 
 (defpackage :vectors
   (:use :cl)
@@ -183,8 +185,9 @@
 		      :c-sqrt)
   (:import-from :vector3 
 		:make-vector3)
-  (:import-from :math-macros
-		:apply-across-elements :v-x :v-y :v-z :v-w))
+  (:import-from :base-macros
+		:apply-across-elements)
+  (:import-from :base-vectors :v-x :v-y :v-z :v-w))
 
 (defpackage :matrix4
   (:use :cl)
@@ -205,8 +208,9 @@
 		:make-vector3)
   (:import-from :vector4
 		:make-vector4)
-  (:import-from :math-macros
-		:apply-across-elements :v-x :v-y :v-z :v-w))
+  (:import-from :base-macros
+		:apply-across-elements)
+  (:import-from :base-vectors :v-x :v-y :v-z :v-w))
 
 (defpackage :matrices
   (:use :cl)
@@ -233,19 +237,23 @@
   (:import-from :vector4
 		:make-vector4))
 
+
 (defpackage :cepl
-  (:use :cl)
+  (:use :cl
+	:base-vectors
+	:base-maths
+	:base-time
+	:base-macros))
+
+(defpackage :cepl-examples
+  (:use :cl
+	:base-vectors
+	:base-maths
+	:base-time
+	:base-macros)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 
 		:make-vector3)
   (:import-from :vector4
 		:make-vector4))
-
-(defpackage :cepl-examples
-  (:use :cl 
-	:base-macros
-	:base-maths
-	:base-time)
-  (:import-from :math-macros
-		:v-x :v-y :v-z :v-w))
