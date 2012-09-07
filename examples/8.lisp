@@ -1,3 +1,4 @@
+
 ;; In this file I'm looking at the main loop and thinking
 ;; about how I want to do event handling. I want to have the 
 ;; nuts and bolts of the main loop up front where I can see it
@@ -81,6 +82,117 @@
 			(* sin-theta sin-phi))))
     (v:+ cam-target (v:* dir-to-cam (v-z sphere-cam-rel-pos)))))
 
+
+
+;----------------------------------------------
+
+;; (defun gen-gs-terrain-model (&optional (depth 2)
+;; 			       (square-size 4.0))
+;;     (destructuring-bind (verts indicies) 
+;; 	(get-terrain-verts-and-indices (diamond-square :depth depth) square-size)
+;;       ()))
+
+(defun rgb (r g b)
+  `(,(/ r 255.0) ,(/ g 255.0) ,(/ b 255.0) 0.0))
+
+;; (defun pick-color (height)
+;;   (cond ((< height -0.0) (rgb 1.0 1.0 1.0))
+;; 	((< height 7.0) (rgb 61.0 128.0 65.0))
+;; 	(t (rgb 222.0 172.0 105.0))))
+
+(defun pick-color (x)
+  (declare (ignore x))
+  `(,(random 1.0) ,(random 1.0) ,(random 1.0) 0.0))
+
+(defun get-terrain-verts-and-indices (terrain square-size)
+  (labels ((gen-vert (data x y)
+	     `((,(* square-size x) 
+		 ,(* square-size y)
+		 ,(aref data x y))
+	       ,(pick-color (aref data x y)))))
+    (let* ((data terrain)
+	   (data-dimen (array-dimensions data)))
+      (list 
+       (loop for y below (first data-dimen)
+	  append (loop for x below (second data-dimen)
+		    collect (gen-vert data x y)))
+       (let ((size (first data-dimen)))
+	 (loop for y below (1- size)
+	    append
+	      (loop for x below (1- size)
+		 append `(,(+ x (* y size))
+			   ,(+ x (* (1+ y) size))
+			   ,(+ (1+ x) (* y size))
+			   
+			   ,(+ (1+ x) (* y size))
+			   ,(+ x (* (1+ y) size))
+			   ,(+ (1+ x) (* (1+ y) size))))))))))
+
+
+(defun diamond-square (&key
+                         (depth 2) 
+                         (corner-seed '(0.0 0.0 0.0 0.0))
+                         (random-start 1.0)
+                         (random-decay 0.5))
+  (let* ((size  (expt 2 depth))
+         (terrain (make-array `(,(1+ size) ,(1+ size)))))
+    ;;set corners
+    (setf (aref terrain 0 0) (first corner-seed)
+          (aref terrain size 0) (second corner-seed)
+          (aref terrain 0 size) (third corner-seed)
+          (aref terrain size size) (fourth corner-seed))
+    
+    (loop for i from depth downto 1
+       for x from 1
+       do 
+         (let ((step-size (expt 2 i))) 
+           (setf terrain
+                 (square-step size 
+                              step-size
+                              (* random-start random-decay x)
+                              (diamond-step size 
+                                            step-size 
+                                            (* random-start 
+                                               random-decay 
+                                               x)
+                                            terrain)))))
+    terrain))
+
+
+(defun diamond-step (size step random-range terrain)
+  (loop for x from 0 below size by step
+     do (loop for y from 0 below size by step
+           do (setf (aref terrain 
+                          (+ x (floor (/ step 2)))
+                          (+ y (floor (/ step 2))))
+                    (+ (- (random (* random-range 2.0)) 
+                          random-range)
+                       (/ (+ (aref terrain x y)
+                             (aref terrain (+ x step) y)
+                            (aref terrain x (+ y step))
+                            (aref terrain (+ x step) (+ y step)))
+                          4.0)))))
+  terrain)
+
+
+(defun square-step (size step random-range terrain)
+  (let* ((hstep (floor (/ step 2)))
+         (mod-val (+ size hstep)))
+    (loop for i from hstep by step
+       until (> (* hstep (floor (/ i mod-val))) size)
+       do (let ((x (mod i mod-val))
+                (y (* hstep (floor (/ i mod-val)))))
+            (setf (aref terrain x y)
+                  (+ (- (random (* random-range 2.0)) 
+                        random-range)
+                     (/ (+ (aref terrain (max 0 (- x hstep)) y)
+                           (aref terrain x (max 0 (- y hstep)))
+                           (aref terrain (min size (+ x hstep)) y)
+                           (aref terrain x (min size (+ y hstep))))
+                        4.0))))))
+  terrain)
+
+
 ;----------------------------------------------
 
 (defun init () 
@@ -94,19 +206,15 @@
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
 
   ;;setup data 
-  (let ((monkey-data 
-	 (first (model-parsers:parse-obj-file "7.obj"))))
-    (setf *vertex-data-list* (gethash :vertices monkey-data))
-    (setf *index-data-list* (gethash :faces monkey-data)))
-
-  (setf *vertex-data-list* (mapcar 
-			    #'(lambda (x) 
-				(list x (list (random 1.0) (random 1.0) (random 1.0) 1.0))) *vertex-data-list*))
-
-  (setf *index-data-list* 
-	(loop for face in *index-data-list*
-	   append (mapcar #'car (subseq face 0 3))))
-
+  
+  (destructuring-bind (verts indicies) 
+      (get-terrain-verts-and-indices (diamond-square :depth 5 
+						     :random-start 2.0
+						     :random-decay 0.9
+						     :corner-seed '(120.0 -130.0 0.0 50.0)) 20.0)
+    (setf *vertex-data-list* verts)
+    (setf *index-data-list* indicies))
+  
   ;; put in glarrays
   (setf *vertex-data-gl* 
 	(cgl:alloc-array-gl 'vert-data 
@@ -205,11 +313,11 @@
   (when (entity-forward entity)
     (setf (entity-position entity) 
 	  (v:+ (entity-position entity)
-	       (v:make-vector 0.00 0.00 -0.20))))
+	       (v:make-vector 0.00 0.00 -0.80))))
   (when (entity-backward entity)
     (setf (entity-position entity) 
 	  (v:+ (entity-position entity)
-	       (v:make-vector 0.00 0.00 0.20)))))
+	       (v:make-vector 0.00 0.00 0.80)))))
 
 ;----------------------------------------------
 
