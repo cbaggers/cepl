@@ -8,6 +8,8 @@
 
 (in-package :cepl-examples)
 
+(setf *random-state* (make-random-state t))
+
 ;; Globals - Too damn many of them, but its in keeping with
 ;;           the tutorials online
 (defparameter *prog-1* nil)
@@ -96,8 +98,8 @@
   `(,(/ r 255.0) ,(/ g 255.0) ,(/ b 255.0) 0.0))
 
 ;; (defun pick-color (height)
-;;   (cond ((< height -0.0) (rgb 1.0 1.0 1.0))
-;; 	((< height 7.0) (rgb 61.0 128.0 65.0))
+;;   (cond ((< height -4.0) (rgb 255.0 255.0 255.0))
+;; 	((< height 20.0) (rgb 61.0 128.0 65.0))
 ;; 	(t (rgb 222.0 172.0 105.0))))
 
 (defun pick-color (x)
@@ -155,7 +157,8 @@
                                             (* random-start 
                                                random-decay 
                                                x)
-                                            terrain)))))
+                                            terrain)))
+	   (setf random-start (* random-start random-decay))))
     terrain))
 
 
@@ -208,9 +211,9 @@
   ;;setup data 
   
   (destructuring-bind (verts indicies) 
-      (get-terrain-verts-and-indices (diamond-square :depth 5 
-						     :random-start 2.0
-						     :random-decay 0.9
+      (get-terrain-verts-and-indices (diamond-square :depth 6
+						     :random-start 50.0
+						     :random-decay 0.54
 						     :corner-seed '(120.0 -130.0 0.0 50.0)) 20.0)
     (setf *vertex-data-list* verts)
     (setf *index-data-list* indicies))
