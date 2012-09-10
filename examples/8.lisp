@@ -5,13 +5,16 @@
 ;; to allow quick changes and also just so you can really grasp
 ;; what is happening. It just feels like the main loop is too 
 ;; important to be left to magic!
+;; The result is pretty damn ugly but it is the first step at 
+;; an alternative method.
+;; I'm also playing around with the 'diamond square' algorithm
+;; for generating terrains.
+
 
 (in-package :cepl-examples)
 
 (setf *random-state* (make-random-state t))
 
-;; Globals - Too damn many of them, but its in keeping with
-;;           the tutorials online
 (defparameter *prog-1* nil)
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
@@ -88,11 +91,37 @@
 
 ;----------------------------------------------
 
-;; (defun gen-gs-terrain-model (&optional (depth 2)
-;; 			       (square-size 4.0))
-;;     (destructuring-bind (verts indicies) 
-;; 	(get-terrain-verts-and-indices (diamond-square :depth depth) square-size)
-;;       ()))
+(defun gen-gs-terrain-model (&optional (depth 6)
+			       (square-size 20.0))
+    (destructuring-bind (verts indicies) 
+      (get-terrain-verts-and-indices 
+       (diamond-square :depth depth
+		       :random-start 50.0
+		       :random-decay 0.54
+		       :corner-seed '(120.0 -130.0 0.0 50.0)) 
+       square-size)
+      (let ((vert-glarray (cgl:destructuring-allocate 'vert-data 
+						      verts))
+	    (indicies-glarray (cgl:destructuring-allocate 
+			       :short
+			       indicies))
+	    (v-buffer (cgl:gen-buffer))
+	    (i-buffer (cgl:gen-buffer)))
+
+	(let ((v-buff-layout (cgl:buffer-data v-buffer
+					      vert-glarray)))
+	  (cgl:buffer-data i-buffer indicies-glarray 
+			   :buffer-type :element-array-buffer)
+	  (let* ((vao (cgl:make-vao v-buff-layout i-buffer))
+		 (stream (cgl:make-gl-stream 
+			  :vao vao
+			  :length (length verts)
+			  :element-type :unsigned-short)))
+	    (make-entity 
+	     :position (v:make-vector 0.0 0.0 -15.0)
+	     :rotation (v:make-vector 0.0 0.0 0.0)
+	     :stream stream))))))
+
 
 (defun rgb (r g b)
   `(,(/ r 255.0) ,(/ g 255.0) ,(/ b 255.0) 0.0))
@@ -109,14 +138,14 @@
 (defun get-terrain-verts-and-indices (terrain square-size)
   (labels ((gen-vert (data x y)
 	     `((,(* square-size x) 
-		 ,(* square-size y)
-		 ,(aref data x y))
+		 ,(aref data x y)
+		 ,(* square-size y) -1.0)
 	       ,(pick-color (aref data x y)))))
     (let* ((data terrain)
 	   (data-dimen (array-dimensions data)))
       (list 
-       (loop for y below (first data-dimen)
-	  append (loop for x below (second data-dimen)
+       (loop for y below (second data-dimen)
+	  append (loop for x below (first data-dimen)
 		    collect (gen-vert data x y)))
        (let ((size (first data-dimen)))
 	 (loop for y below (1- size)
@@ -210,49 +239,7 @@
 
   ;;setup data 
   
-  (destructuring-bind (verts indicies) 
-      (get-terrain-verts-and-indices (diamond-square :depth 6
-						     :random-start 50.0
-						     :random-decay 0.54
-						     :corner-seed '(120.0 -130.0 0.0 50.0)) 20.0)
-    (setf *vertex-data-list* verts)
-    (setf *index-data-list* indicies))
-  
-  ;; put in glarrays
-  (setf *vertex-data-gl* 
-	(cgl:alloc-array-gl 'vert-data 
-			    (length *vertex-data-list*)))
-  (cgl:destructuring-populate *vertex-data-gl* 
-			      *vertex-data-list*)
-  (setf *index-data-gl* 
-	  (cgl:alloc-array-gl :short
-			      (length *index-data-list*)))
-  (loop for index in *index-data-list*
-       for i from 0
-       do (setf (cgl::aref-gl *index-data-gl* i) index))
-
-  ;;setup buffers
-  (setf *vert-buffer* (cgl:gen-buffer))
-  (setf *buffer-layout*
-  	(cgl:buffer-data *vert-buffer* *vertex-data-gl*))
-
-  (setf *index-buffer* (cgl:gen-buffer))
-  (cgl:buffer-data *index-buffer* *index-data-gl* 
-		   :buffer-type :element-array-buffer)
-
-  ;;setup vaos
-  (setf *vao-1* (cgl:make-vao *buffer-layout* *index-buffer*))
-
-  ;;create entities
-  (let ((stream (cgl:make-gl-stream 
-  			      :vao *vao-1*
-  			      :length (length *index-data-list*)
-  			      :element-type :unsigned-short)))
-    (setf *entities* 
-	  (list 
-	   (make-entity :position (v:make-vector 0.0 0.0 -15.0)
-			:rotation (v:make-vector -1.57079633 0.0 0.0)
-			:stream stream))))
+  (setf *entities* (list (gen-gs-terrain-model)))
   
   ;;set options
   (cgl::clear-color 0.0 0.0 0.0 0.0)
