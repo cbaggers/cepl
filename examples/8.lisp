@@ -1,4 +1,3 @@
-
 ;; In this file I'm looking at the main loop and thinking
 ;; about how I want to do event handling. I want to have the 
 ;; nuts and bolts of the main loop up front where I can see it
