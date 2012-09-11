@@ -229,7 +229,7 @@
 
    then you can create and populate it a new gl-array as so:
     (setf *new-gl-arrray*
-        (cgl:destructuring-alocate 'vert-data 
+        (cgl:destructuring-allocate 'vert-data 
      	               '((( 0.0     0.5  0.0)
 			  ( 1.0     0.0  0.0  1.0))
 
@@ -323,19 +323,22 @@ COMPONENT is returned."
 ;;; BUFFERS ;;;
 ;;;---------;;;
 
-;; [TODO] Make this a struct
+;; [TODO] Make this external
+;; [TODO] Type this
 (defstruct glbuffer
-  (buffer-id (gen-buffers 1) :type integer) 
-  (format nil :type list))
+  (buffer-id (car (gen-buffers 1))) 
+  (format nil))
 
 (base-macros:defmemo bind-buffer (target buffer-id)
   (gl:bind-buffer target (glbuffer-buffer-id buffer-id)))
 
 (defun gen-buffer (&key initial-contents (buffer-type :array-buffer) (draw-type :static-draw))
   "Generates a single opengl buffer"
-  (let (new-buffer (make-glbuffer))
+  (let ((new-buffer (make-glbuffer)))
     (if initial-contents
-        (buffer-data new-buffer initial-contents buffer-type draw-type)
+        (buffer-data new-buffer initial-contents 
+		     :buffer-type buffer-type 
+		     :draw-type draw-type)
         new-buffer)))
 
 (defun buffer-data (buffer array 
@@ -409,34 +412,41 @@ COMPONENT is returned."
 ;;       than :array-buffer ?
 ;;[TODO] is enable-vertex-attrib-array relevent here?
 ;;       it is superseded by later calls?
-(defun make-vao (buffer-formats &keys (element-buffer nil))
+(defun make-vao (buffer-formats &key (element-buffer nil))
   "This function takes a list of buffers formats and 
    optionaly an element buffer and returns a new vertex
    array object which can then be used in a stream."
-  (let ((vao-id (gl:gen-vertex-array)))
-    (bind-vao vao-id)
-    (loop for attr-format in formats
-       for attr-num from 0
-       do (let* ((buffer (if (listp attr-format)
-                             (car attr-format)
-                             attr-format))
-                 (format (if (listp attr-format)
-                             (cdr attr-format)
-                             (glbuffer-format buffer))))
-            (bind-buffer :array-buffer buffer)
-            (gl:enable-vertex-attrib-array attr-num)
-            (apply #'%gl:vertex-attrib-pointer
-                   (cons attr-num format))))
-    (when element-buffer
-      (bind-buffer :element-array-buffer element-buffer))
-    (bind-vao 0)
-    vao-id))
-
+  (labels ((bind-format (buffer format attr-num)
+	     (bind-buffer :array-buffer buffer)
+	     (gl:enable-vertex-attrib-array attr-num)
+	     (apply #'%gl:vertex-attrib-pointer
+		    (cons attr-num format))))
+    (let ((vao-id (gl:gen-vertex-array))
+	  (attr-num 0))
+      (bind-vao vao-id)
+      (loop for buffer-format in buffer-formats
+	 do (if (listp buffer-format)
+		(progn
+		  (bind-format (car buffer-format)
+			       (cdr buffer-format)
+			       attr-num)
+		  (incf attr-num))
+		(loop for format in (glbuffer-format buffer-format)
+		   do (bind-format buffer-format
+				   format
+				   attr-num)
+		     (incf attr-num))))
+      (when element-buffer
+	(bind-buffer :element-array-buffer element-buffer))
+      (bind-vao 0)
+      vao-id)))
 
 ;;;--------------------------------------------------------------
 ;;; STREAMS ;;;
 ;;;---------;;;
 
+;; [TODO] element-type should definately not be here
+;;        I'm not even sure whether draw-style should be either
 (defstruct gl-stream 
   vao
   (start 0 :type unsigned-byte)

@@ -7,11 +7,6 @@
 
 (defparameter *prog-1* nil)
 (defparameter *shaders* nil)
-(defparameter *vertex-array* nil)
-(defparameter *vertex-array-gl* nil)
-(defparameter *vertex-buffer* nil)
-(defparameter *buffer-layouts* nil)
-(defparameter *vao* nil)
 (defparameter *streams* nil)
 
 
@@ -24,26 +19,23 @@
 	(mapcar #'cgl:make-shader `("1.vert" "1.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
 
-  (setf *vertex-array* '((( 0.0     0.5  0.0  1.0)
-			  ( 1.0     0.0  0.0  1.0))
-
-			 (( 0.5  -0.366  0.0  1.0)
-			  ( 0.0     1.0  0.0  1.0))
-
-			 ((-0.5  -0.366  0.0  1.0)
-			  ( 0.0     0.0  1.0  1.0))))
-
-  (setf *vertex-array-gl* (cgl:alloc-array-gl 'vert-data (length *vertex-array*)))
-  (cgl:destructuring-populate *vertex-array-gl* *vertex-array*)
-
-  (setf *vertex-buffer* (cgl:gen-buffer))
-  (setf *buffer-layouts*
-  	(cgl:buffer-data *vertex-buffer* *vertex-array-gl*))
-  (setf *vao* (cgl:make-vao *buffer-layouts*))
-  (setf *streams* (list
-		   (cgl::make-gl-stream 
-		    :vao *vao*
-		    :length 3))))
+  (setf *streams* 
+	(list
+	 (cgl::make-gl-stream 
+	  :vao (cgl:make-vao 
+		`(,(cgl:gen-buffer 
+		    :initial-contents 
+		    (cgl:destructuring-allocate 
+		     'vert-data  
+		     '((( 0.0     0.5  0.0  1.0)
+			( 1.0     0.0  0.0  1.0))
+		       
+		       (( 0.5  -0.366  0.0  1.0)
+			( 0.0     1.0  0.0  1.0))
+		       
+		       ((-0.5  -0.366  0.0  1.0)
+			( 0.0     0.0  1.0  1.0)))))))
+	  :length 3))))
 
 
 ;------------------------------
@@ -56,12 +48,6 @@
   (cgl::clear-color 0.0 0.0 0.0 0.0)
   (cgl::clear :color-buffer-bit)
   
-  (cgl:bind-buffer :array-buffer *vertex-buffer*)
-
-
-  (gl:enable-vertex-attrib-array 0)
-  (gl:enable-vertex-attrib-array 1)
-
   (funcall *prog-1* *streams*)
   
   (gl:flush)

@@ -11,14 +11,6 @@
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *shaders* nil)
-(defparameter *vertex-data-list* nil)
-(defparameter *vertex-data-gl* nil)
-(defparameter *index-data-list* nil)
-(defparameter *index-data-gl* nil)
-(defparameter *vert-buffer* nil)
-(defparameter *index-buffer* nil)
-(defparameter *buffer-layout* nil)
-(defparameter *vao-1* nil)
 (defparameter *entities* nil)
 
 ;; Define data formats 
@@ -45,65 +37,42 @@
 			   *frustrum-scale*))
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
 
-  ;;setup data 
-  (setf *vertex-data-list* 
-  	'(((+1.0  +1.0  +1.0)  (0.0  1.0  0.0  1.0)) 
-  	  ((-1.0  -1.0  +1.0)  (0.0  0.0  1.0  1.0))
-  	  ((-1.0  +1.0  -1.0)  (1.0  0.0  0.0  1.0))
-  	  ((+1.0  -1.0  -1.0)  (0.5  0.5  0.0  1.0))
-  	  ((-1.0  -1.0  -1.0)  (0.0  1.0  0.0  1.0)) 
-  	  ((+1.0  +1.0  -1.0)  (0.0  0.0  1.0  1.0))
-  	  ((+1.0  -1.0  +1.0)  (1.0  0.0  0.0  1.0))
-  	  ((-1.0  +1.0  +1.0)  (0.5  0.5  0.0  1.0))))
-  (setf *vertex-data-gl* 
-  	(cgl:alloc-array-gl 'vert-data 
-  			    (length *vertex-data-list*)))
-  (cgl:destructuring-populate *vertex-data-gl* 
-  			      *vertex-data-list*)
-
-  (setf *index-data-list* 
-  	'(0  1  2 
-  	  1  0  3 
-  	  2  3  0 
-  	  3  2  1 
-	  
-  	  5  4  6 
-  	  4  5  7 
-  	  7  6  4 
-  	  6  7  5))
-  (setf *index-data-gl* 
-  	(cgl:alloc-array-gl :short
-  			    (length *index-data-list*)))
-  ;; (cgl:destructuring-populate *index-data-gl* 
-  ;; 			      *index-data-list*)
-  (loop for index in *index-data-list*
-       for i from 0
-       do (setf (cgl::aref-gl *index-data-gl* i) index))
-
-  ;;setup buffers
-  (setf *vert-buffer* (cgl:gen-buffer))
-  (setf *buffer-layout*
-  	(cgl:buffer-data *vert-buffer* *vertex-data-gl*))
-
-  (setf *index-buffer* (cgl:gen-buffer))
-  (cgl:buffer-data *index-buffer* *index-data-gl* 
-		   :buffer-type :element-array-buffer)
-
-  ;;setup vaos
-  (setf *vao-1* (cgl:make-vao *buffer-layout* *index-buffer*))
-
   ;;create entities
-  (setf *entities* 
-  	(list 
-  	 (make-entity :stream (cgl:make-gl-stream 
-  			      :vao *vao-1*
-  			      :length (length *index-data-list*)
-  			      :element-type :unsigned-short))
-	 (make-entity :loop-angle 180.0
-		      :stream (cgl:make-gl-stream 
-			       :vao *vao-1*
-			       :length (length *index-data-list*)
-			       :element-type :unsigned-short))))
+  (let* ((verts '(((+1.0  +1.0  +1.0)  (0.0  1.0  0.0  1.0)) 
+		  ((-1.0  -1.0  +1.0)  (0.0  0.0  1.0  1.0))
+		  ((-1.0  +1.0  -1.0)  (1.0  0.0  0.0  1.0))
+		  ((+1.0  -1.0  -1.0)  (0.5  0.5  0.0  1.0))
+		  ((-1.0  -1.0  -1.0)  (0.0  1.0  0.0  1.0)) 
+		  ((+1.0  +1.0  -1.0)  (0.0  0.0  1.0  1.0))
+		  ((+1.0  -1.0  +1.0)  (1.0  0.0  0.0  1.0))
+		  ((-1.0  +1.0  +1.0)  (0.5  0.5  0.0  1.0))))
+	 (indicies '(0  1  2 
+		     1  0  3 
+		     2  3  0 
+		     3  2  1 
+		     5  4  6 
+		     4  5  7 
+		     7  6  4 
+		     6  7  5))
+	 (stream (cgl:make-gl-stream 
+		  :vao (cgl:make-vao 
+			`(,(cgl:gen-buffer
+			    :initial-contents
+			    (cgl:destructuring-allocate
+			     'vert-data verts)))
+			:element-buffer 
+			(cgl:gen-buffer 
+			 :initial-contents 
+			 (cgl:destructuring-allocate :short
+						     indicies)
+			 :buffer-type :element-array-buffer))
+		  :length (length indicies)
+		  :element-type :unsigned-short)))
+    (setf *entities* 
+	  (list 
+	   (make-entity :stream stream)
+	   (make-entity :loop-angle 3.14
+			:stream stream))))
   
   ;;set options
   (cgl::clear-color 0.0 0.0 0.0 0.0)
