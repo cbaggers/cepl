@@ -13,14 +13,6 @@
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *shaders* nil)
-(defparameter *vertex-data-list* nil)
-(defparameter *vertex-data-gl* nil)
-(defparameter *index-data-list* nil)
-(defparameter *index-data-gl* nil)
-(defparameter *vert-buffer* nil)
-(defparameter *index-buffer* nil)
-(defparameter *buffer-layout* nil)
-(defparameter *vao-1* nil)
 (defparameter *entities* nil)
 (defparameter *camera* nil)
 
@@ -92,55 +84,35 @@
   (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix 
 			   *frustrum-scale*))
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
-
-  ;;setup data 
-  (let ((monkey-data 
-	 (first (model-parsers:parse-obj-file "7.obj"))))
-    (setf *vertex-data-list* (gethash :vertices monkey-data))
-    (setf *index-data-list* (gethash :faces monkey-data)))
-
-  (setf *vertex-data-list* (mapcar 
-			    #'(lambda (x) 
-				(list x (list (random 1.0) (random 1.0) (random 1.0) 1.0))) *vertex-data-list*))
-
-  (setf *index-data-list* 
-	(loop for face in *index-data-list*
-	   append (mapcar #'car (subseq face 0 3))))
-
-  ;; put in glarrays
-  (setf *vertex-data-gl* 
-	(cgl:alloc-array-gl 'vert-data 
-			    (length *vertex-data-list*)))
-  (cgl:destructuring-populate *vertex-data-gl* 
-			      *vertex-data-list*)
-  (setf *index-data-gl* 
-	  (cgl:alloc-array-gl :short
-			      (length *index-data-list*)))
-  (loop for index in *index-data-list*
-       for i from 0
-       do (setf (cgl::aref-gl *index-data-gl* i) index))
-
-  ;;setup buffers
-  (setf *vert-buffer* (cgl:gen-buffer))
-  (setf *buffer-layout*
-  	(cgl:buffer-data *vert-buffer* *vertex-data-gl*))
-
-  (setf *index-buffer* (cgl:gen-buffer))
-  (cgl:buffer-data *index-buffer* *index-data-gl* 
-		   :buffer-type :element-array-buffer)
-
-  ;;setup vaos
-  (setf *vao-1* (cgl:make-vao *buffer-layout* *index-buffer*))
-
   ;;create entities
-  (let ((stream (cgl:make-gl-stream 
-  			      :vao *vao-1*
-  			      :length (length *index-data-list*)
-  			      :element-type :unsigned-short)))
+  (let* ((monkey-data (first 
+		       (model-parsers:parse-obj-file "6.obj")))
+	 (verts (mapcar #'(lambda (x)
+			    (list x (list (random 1.0) 
+					  (random 1.0) 
+					  (random 1.0) 
+					  1.0))) 
+			(gethash :vertices monkey-data)))
+	 (indicies (loop for face in (gethash :faces monkey-data)
+		      append (mapcar #'car (subseq face 0 3))))
+	 (stream (cgl:make-gl-stream 
+		  :vao (cgl:make-vao 
+			`(,(cgl:gen-buffer
+			    :initial-contents
+			    (cgl:destructuring-allocate
+			     'vert-data verts)))
+			:element-buffer 
+			(cgl:gen-buffer 
+			 :initial-contents 
+			 (cgl:destructuring-allocate :short
+						     indicies)
+			 :buffer-type :element-array-buffer))
+		  :length (length indicies)
+		  :element-type :unsigned-short)))
     (setf *entities* 
 	  (list 
-	   (make-entity :position (v:make-vector 0.0 0.0 -15.0)
-			:rotation (v:make-vector -1.57079633 0.0 0.0)
+	   (make-entity :position (make-vector3 0.0 0.0 -15.0)
+			:rotation (make-vector3 -1.57079633 0.0 0.0)
 			:stream stream))))
   
   ;;set options

@@ -93,34 +93,31 @@
 
 (defun gen-gs-terrain-model (&optional (depth 6)
 			       (square-size 20.0))
-    (destructuring-bind (verts indicies) 
+  (destructuring-bind (verts indicies) 
       (get-terrain-verts-and-indices 
        (diamond-square :depth depth
 		       :random-start 50.0
 		       :random-decay 0.54
 		       :corner-seed '(120.0 -130.0 0.0 50.0)) 
        square-size)
-      (let ((vert-glarray (cgl:destructuring-allocate 'vert-data 
-						      verts))
-	    (indicies-glarray (cgl:destructuring-allocate 
-			       :short
-			       indicies))
-	    (v-buffer (cgl:gen-buffer))
-	    (i-buffer (cgl:gen-buffer)))
-
-	(let ((v-buff-layout (cgl:buffer-data v-buffer
-					      vert-glarray)))
-	  (cgl:buffer-data i-buffer indicies-glarray 
-			   :buffer-type :element-array-buffer)
-	  (let* ((vao (cgl:make-vao v-buff-layout i-buffer))
-		 (stream (cgl:make-gl-stream 
-			  :vao vao
-			  :length (length verts)
-			  :element-type :unsigned-short)))
-	    (make-entity 
-	     :position (v:make-vector 0.0 0.0 -15.0)
-	     :rotation (v:make-vector 0.0 0.0 0.0)
-	     :stream stream))))))
+    
+    (make-entity 
+     :position (v:make-vector 0.0 0.0 -15.0)
+     :rotation (v:make-vector 0.0 0.0 0.0)
+     :stream (cgl:make-gl-stream 
+	      :vao (cgl:make-vao 
+		    `(,(cgl:gen-buffer
+			:initial-contents 
+			(cgl:destructuring-allocate 'vert-data 
+						    verts)))
+		    :element-buffer 
+		    (cgl:gen-buffer 
+		     :initial-contents
+		     (cgl:destructuring-allocate :short
+						 indicies)
+		     :buffer-type :element-array-buffer))
+	      :length (length indicies)
+	      :element-type :unsigned-short))))
 
 
 (defun rgb (r g b)
@@ -139,7 +136,7 @@
   (labels ((gen-vert (data x y)
 	     `((,(* square-size x) 
 		 ,(aref data x y)
-		 ,(* square-size y) -1.0)
+		 ,(* square-size y))
 	       ,(pick-color (aref data x y)))))
     (let* ((data terrain)
 	   (data-dimen (array-dimensions data)))
