@@ -5,6 +5,15 @@
 
 (in-package :cepl-utils)
 
+(defun update-swank ()
+  "Called from within the main loop, this keep the lisp repl
+   working while cepl runs"
+  (base-macros:continuable
+    (let ((connection (or swank::*emacs-connection*
+			  (swank::default-connection))))
+      (when connection
+	(swank::handle-requests connection t)))))
+
 ;; This will be pretty inefficient, but shoudl be fine for code trees
 (defun walk-replace (to-replace replace-with form 
 		     &key (test #'eql))

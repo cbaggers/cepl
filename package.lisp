@@ -11,7 +11,8 @@
 
 (defpackage :base-macros
   (:use :cl)
-  (:export :defmemo
+  (:export :init-sdl
+	   :defmemo
 	   :once-only
 	   :continuable
 	   :do-until
@@ -40,7 +41,8 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :walk-replace
+  (:export :update-swank
+	   :walk-replace
 	   :file-to-string
 	   :flatten
 	   :mkstr

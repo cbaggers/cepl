@@ -2,11 +2,8 @@
 ;; rotation and scaling in a 3D scene. It is also a better 
 ;; test of the vao generation functions
 
-
 (in-package :cepl-examples)
 
-;; Globals - Too damn many of them, but its in keeping with
-;;           the tutorials online
 (defparameter *prog-1* nil)
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
@@ -56,10 +53,10 @@
 		     6  7  5))
 	 (stream (cgl:make-gl-stream 
 		  :vao (cgl:make-vao 
-			`(,(cgl:gen-buffer
-			    :initial-contents
-			    (cgl:destructuring-allocate
-			     'vert-data verts)))
+			(cgl:gen-buffer
+			 :initial-contents
+			 (cgl:destructuring-allocate
+			  'vert-data verts))
 			:element-buffer 
 			(cgl:gen-buffer 
 			 :initial-contents 
@@ -97,8 +94,6 @@
     (setf (entity-matrix ent) (matrix4:m*
     			       (matrix4:translation new-pos)
     				(matrix4:scale new-scale)))
-
-    ;; (setf (entity-matrix ent) (matrix4:translation new-pos))
 
     (setf (entity-scale ent) new-scale)
     (setf (entity-loop-angle ent) new-loop)
@@ -139,20 +134,9 @@
 ;; this is obviously unacceptable and will be fixed when I can
 ;; extract the sdl event handling from their loop system.
 (defun run-demo () 
-  (sdl:with-init ()
-    (sdl:window 
-     640 480 :opengl t
-     :resizable t
-     :opengl-attributes '((:sdl-gl-doublebuffer 1)
-			  (:sdl-gl-alpha-size 0)
-			  (:sdl-gl-depth-size 16) 
-			  (:sdl-gl-stencil-size 8)
-			  (:sdl-gl-red-size 8)
-			  (:sdl-gl-green-size 8)
-			  (:sdl-gl-blue-size 8)))
+  (init-sdl ()
     (init)
     (reshape 640 480)
-    (setf cl-opengl-bindings:*gl-get-proc-address* #'sdl-cffi::sdl-gl-get-proc-address)
     (sdl:with-events () 
       (:quit-event () t)
       (:VIDEO-RESIZE-EVENT (:w width :h height) 

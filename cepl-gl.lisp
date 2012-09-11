@@ -412,7 +412,7 @@ COMPONENT is returned."
 ;;       than :array-buffer ?
 ;;[TODO] is enable-vertex-attrib-array relevent here?
 ;;       it is superseded by later calls?
-(defun make-vao (buffer-formats &key (element-buffer nil))
+(defun make-vao (buffer/s/formats &key (element-buffer nil))
   "This function takes a list of buffers formats and 
    optionaly an element buffer and returns a new vertex
    array object which can then be used in a stream."
@@ -424,7 +424,10 @@ COMPONENT is returned."
     (let ((vao-id (gl:gen-vertex-array))
 	  (attr-num 0))
       (bind-vao vao-id)
-      (loop for buffer-format in buffer-formats
+      (loop for buffer-format in (if 
+				  (glbuffer-p buffer/s/formats)
+				  (list buffer/s/formats)
+				  buffer/s/formats)
 	 do (if (listp buffer-format)
 		(progn
 		  (bind-format (car buffer-format)
