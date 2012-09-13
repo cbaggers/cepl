@@ -4,3 +4,8 @@
 ;; rehomed.
 
 (in-package :cepl)
+
+(defun repl ()
+  (in-package :cepl)
+  (init-sdl)
+  (format t "-----------------~%    CEPL-REPL    ~%-----------------"))

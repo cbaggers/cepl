@@ -11,12 +11,17 @@
 
 (defpackage :base-macros
   (:use :cl)
-  (:export :init-sdl
-	   :defmemo
+  (:export :defmemo
 	   :once-only
 	   :continuable
 	   :do-until
 	   :apply-across-elements))
+
+(defpackage :base-sdl
+  (:use :cl)
+  (:export :init-sdl
+	   :quit-sdl
+	   :with-init-sdl))
 
 (defpackage :base-time
   (:use :cl)
@@ -98,6 +103,7 @@
 	   :use-program
 	   :shader-type-from-path
 	   :make-shader
+	   :make-shaders
 	   :link-shaders
 	   :make-program
 	   :set-program-uniforms
@@ -245,14 +251,17 @@
 	:base-vectors
 	:base-maths
 	:base-time
-	:base-macros))
+	:base-macros
+	:base-sdl)
+  (:export :repl))
 
 (defpackage :cepl-examples
   (:use :cl
 	:base-vectors
 	:base-maths
 	:base-time
-	:base-macros)
+	:base-macros
+	:base-sdl)
   (:import-from :vector2
 		:make-vector2)
   (:import-from :vector3 

@@ -101,6 +101,8 @@
    gl-arrays."
   `(define-interleaved-attribute-format ,name ,args))
 
+;; [TODO] Can we make the name a key symbol? it would be much
+;;        nicer in code than remebering to escape it.
 (defmacro define-interleaved-attribute-format (name &body clauses)
   "Defines a vertex attribute format. Each clause is as list 
    of parameters which are used to define the type, legnth, etc
@@ -715,6 +717,11 @@ COMPONENT is returned."
                                              shader-type
                                              shader-id)))
   shader-id)
+
+;; [TODO] Add a make-shaders function which takes a list of 
+;;        shader paths and returns a list of shaders
+(defun make-shaders (&rest shader-paths)
+  (mapcar #'cgl:make-shader shader-paths))
 
 (defun link-shaders (shaders)
   "Links all the shaders provided and returns an opengl program
