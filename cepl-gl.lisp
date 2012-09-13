@@ -66,260 +66,260 @@
 
 ;; (setf (gl:glaref array index 'x) 1.675)
 
-(defun simple-1d-populate (array data)
-  "Reads a flat list of data into a gl-array"
-  (loop for datum in data
-     for i from 0
-     do (setf (aref-gl array i) datum)))
+;; (defun simple-1d-populate (array data)
+;;   "Reads a flat list of data into a gl-array"
+;;   (loop for datum in data
+;;      for i from 0
+;;      do (setf (aref-gl array i) datum)))
 
-(defun simple-array-attrib-error (&rest args)
-  "This is just to kick off an error. There will be a better
-   way of doing this, but for now it does the job"
-  (declare (ignore args))
-  (error "Sorry, attribute-formats cannot be generated from primitive array types"))
+;; (defun simple-array-attrib-error (&rest args)
+;;   "This is just to kick off an error. There will be a better
+;;    way of doing this, but for now it does the job"
+;;   (declare (ignore args))
+;;   (error "Sorry, attribute-formats cannot be generated from primitive array types"))
 
-;;[TODO] What types do we need to support here?
-(loop for type-name in `(:float :short)
-   do (progn
-        (setf (get type-name 'cgl-destructuring-populate)
-              #'simple-1d-populate)
-        (setf (get type-name 'vertex-attrib-formats) nil)))
+;; ;;[TODO] What types do we need to support here?
+;; (loop for type-name in `(:float :short)
+;;    do (progn
+;;         (setf (get type-name 'cgl-destructuring-populate)
+;;               #'simple-1d-populate)
+;;         (setf (get type-name 'vertex-attrib-formats) nil)))
 
-(defmacro define-attribute-format (name &rest args)
-  "This allows the user to create a non interleaved 
-   attribute format. 
+;; (defmacro define-attribute-format (name &rest args)
+;;   "This allows the user to create a non interleaved 
+;;    attribute format. 
 
-   In actuality it is just a bit of syntatic sugar and itself
-   uses the define-interleaved-attribute-format macro.
+;;    In actuality it is just a bit of syntatic sugar and itself
+;;    uses the define-interleaved-attribute-format macro.
 
-   Attribute formats are the key to getting CEPL to do a lot 
-   of the ugly low level work of opengl for you. They are used
-   in defining the streams of vertex data you pass to the shader.
-   As we have these formats available we can also use them to 
-   tell cepl how to push data into opengl buffers.
-   Finally the attribute format also works as a 'type' for the
-   gl-arrays."
-  `(define-interleaved-attribute-format ,name ,args))
+;;    Attribute formats are the key to getting CEPL to do a lot 
+;;    of the ugly low level work of opengl for you. They are used
+;;    in defining the streams of vertex data you pass to the shader.
+;;    As we have these formats available we can also use them to 
+;;    tell cepl how to push data into opengl buffers.
+;;    Finally the attribute format also works as a 'type' for the
+;;    gl-arrays."
+;;   `(define-interleaved-attribute-format ,name ,args))
 
-;; [TODO] Can we make the name a key symbol? it would be much
-;;        nicer in code than remebering to escape it.
-(defmacro define-interleaved-attribute-format (name &body clauses)
-  "Defines a vertex attribute format. Each clause is as list 
-   of parameters which are used to define the type, legnth, etc
-   of the attributes themselves.
+;; ;; [TODO] Can we make the name a key symbol? it would be much
+;; ;;        nicer in code than remebering to escape it.
+;; (defmacro define-interleaved-attribute-format (name &body clauses)
+;;   "Defines a vertex attribute format. Each clause is as list 
+;;    of parameters which are used to define the type, legnth, etc
+;;    of the attributes themselves.
 
-   Parameters are keyword arguments for the corresponding array
-   type. The following parameters are supported:
+;;    Parameters are keyword arguments for the corresponding array
+;;    type. The following parameters are supported:
 
-    :TYPE -- array element type (all array types)
-    :COMPONENTS -- list of component (slot) names for this array
-                   (all types)
-    :STAGE -- active texture for the array (TEX-COORD type)
-    :NORMALIZED -- whether values should be normalized
+;;     :TYPE -- array element type (all array types)
+;;     :COMPONENTS -- list of component (slot) names for this array
+;;                    (all types)
+;;     :STAGE -- active texture for the array (TEX-COORD type)
+;;     :NORMALIZED -- whether values should be normalized
 
-   Attribute formats are the key to getting CEPL to do a lot 
-   of the ugly low level work of opengl for you. They are used
-   in defining the streams of vertex data you pass to the shader.
-   As we have these formats available we can also use them to 
-   tell cepl how to push data into opengl buffers.
-   Finally the attribute format also works as a 'type' for the
-   gl-arrays."
-  `(progn
-     (defcstruct ,name
-         ,@(mapcan #'emit-attrib-struct-clause clauses))
-     (setf (get ',name 'cgl-destructuring-populate)
-           (dpopulate ,@clauses))
-     (setf (get ',name 'vertex-attrib-formats)
-           (list ,@(loop with stride = (if (> (length clauses) 1)
-                                           `(foreign-type-size ',name)
-                                           0)
-                      for c in clauses
-                      for offset = `(foreign-slot-offset
-                                     ',name 
-                                     ',(caadr 
-                                        (member :components c)))
-                      collect `(lambda (x) 
-                                 (emit-attrib-format
-                                  ',c 
-                                  (cffi:make-pointer (+ ,offset x)) 
-                                  ,stride )))))
-     ',name))
+;;    Attribute formats are the key to getting CEPL to do a lot 
+;;    of the ugly low level work of opengl for you. They are used
+;;    in defining the streams of vertex data you pass to the shader.
+;;    As we have these formats available we can also use them to 
+;;    tell cepl how to push data into opengl buffers.
+;;    Finally the attribute format also works as a 'type' for the
+;;    gl-arrays."
+;;   `(progn
+;;      (defcstruct ,name
+;;          ,@(mapcan #'emit-attrib-struct-clause clauses))
+;;      (setf (get ',name 'cgl-destructuring-populate)
+;;            (dpopulate ,@clauses))
+;;      (setf (get ',name 'vertex-attrib-formats)
+;;            (list ,@(loop with stride = (if (> (length clauses) 1)
+;;                                            `(foreign-type-size ',name)
+;;                                            0)
+;;                       for c in clauses
+;;                       for offset = `(foreign-slot-offset
+;;                                      ',name 
+;;                                      ',(caadr 
+;;                                         (member :components c)))
+;;                       collect `(lambda (x) 
+;;                                  (emit-attrib-format
+;;                                   ',c 
+;;                                   (cffi:make-pointer (+ ,offset x)) 
+;;                                   ,stride )))))
+;;      ',name))
 
-(defun emit-attrib-format (clause offset stride)
-  "this is a helper function for define-interleaved-attribute-..
-   format that really only exists to remove a little of the 
-   complexity from the core loop of ...
-   define-interleaved-attribute-format"
-  (destructuring-bind (&key (normalized :false) type components
-                            &allow-other-keys)
-      clause
-    `(,(length components) ,type ,normalized ,stride ,offset)))
+;; (defun emit-attrib-format (clause offset stride)
+;;   "this is a helper function for define-interleaved-attribute-..
+;;    format that really only exists to remove a little of the 
+;;    complexity from the core loop of ...
+;;    define-interleaved-attribute-format"
+;;   (destructuring-bind (&key (normalized :false) type components
+;;                             &allow-other-keys)
+;;       clause
+;;     `(,(length components) ,type ,normalized ,stride ,offset)))
 
-(defun emit-attrib-struct-clause (clause)
-  "This is a helper function is used to flatten the clauses 
-   passed to define-interleaved-attribute-format into the format
-   expected by defcstruct."
-  (destructuring-bind (&key type components &allow-other-keys)
-      clause
-    (loop for c in components
-       collect `(,c ,type))))
+;; (defun emit-attrib-struct-clause (clause)
+;;   "This is a helper function is used to flatten the clauses 
+;;    passed to define-interleaved-attribute-format into the format
+;;    expected by defcstruct."
+;;   (destructuring-bind (&key type components &allow-other-keys)
+;;       clause
+;;     (loop for c in components
+;;        collect `(,c ,type))))
 
-(defun attrib-formats (array-type)
-  "Returns a list of the attribute formats for the specified 
-   gl-array type"
-  (get array-type 'vertex-attrib-formats))
+;; (defun attrib-formats (array-type)
+;;   "Returns a list of the attribute formats for the specified 
+;;    gl-array type"
+;;   (get array-type 'vertex-attrib-formats))
 
-(defun attrib-format (array-type &optional  (sub-attrib 0)
-                                   (offset 0))
-  "Returns the specified attribute format of the provided array
-   type. For interleaved types you can specify the attribute
-  you ar interested in and also provide an offset to be used."
-  (let ((formats (get array-type 'vertex-attrib-formats)))
-    (if (null formats)
-        (error "Sorry but attribute formats are not available for this array-type")
-        (funcall (nth sub-attrib formats) offset))))
+;; (defun attrib-format (array-type &optional  (sub-attrib 0)
+;;                                    (offset 0))
+;;   "Returns the specified attribute format of the provided array
+;;    type. For interleaved types you can specify the attribute
+;;   you ar interested in and also provide an offset to be used."
+;;   (let ((formats (get array-type 'vertex-attrib-formats)))
+;;     (if (null formats)
+;;         (error "Sorry but attribute formats are not available for this array-type")
+;;         (funcall (nth sub-attrib formats) offset))))
 
-(defun destructuring-populate (array data)
-  "This function takes a gl-array and a list of data and 
-   populates the gl-array using the data. 
-   The data must be a list of sublists. Each sublist must
-   be in the format expected by a destrucutring-bind with
-   the target format being that specified by the array-type.
+;; (defun destructuring-populate (array data)
+;;   "This function takes a gl-array and a list of data and 
+;;    populates the gl-array using the data. 
+;;    The data must be a list of sublists. Each sublist must
+;;    be in the format expected by a destrucutring-bind with
+;;    the target format being that specified by the array-type.
   
-   That sucks as an explanation so here is an example:
+;;    That sucks as an explanation so here is an example:
 
-   given a format as defined below:
-    (cgl:define-interleaved-attribute-format vert-data 
-      (:type :float :components (x y z))
-      (:type :float :components (r g b a)))
+;;    given a format as defined below:
+;;     (cgl:define-interleaved-attribute-format vert-data 
+;;       (:type :float :components (x y z))
+;;       (:type :float :components (r g b a)))
 
-   and an array made using this format
-    (setf *vertex-data-gl* (cgl:alloc-array-gl 'vert-data 3))
+;;    and an array made using this format
+;;     (setf *vertex-data-gl* (cgl:alloc-array-gl 'vert-data 3))
 
-   then you can populate it as so:
-    (cgl:destructuring-populate *vertex-data-gl* 
-     	               '((( 0.0     0.5  0.0)
-			  ( 1.0     0.0  0.0  1.0))
+;;    then you can populate it as so:
+;;     (cgl:destructuring-populate *vertex-data-gl* 
+;;      	               '((( 0.0     0.5  0.0)
+;; 			  ( 1.0     0.0  0.0  1.0))
 
-			 (( 0.5  -0.366  0.0)
-			  ( 0.0     1.0  0.0  1.0))
+;; 			 (( 0.5  -0.366  0.0)
+;; 			  ( 0.0     1.0  0.0  1.0))
 
-			 ((-0.5  -0.366  0.0)
-			  ( 0.0     0.0  1.0  1.0))))
+;; 			 ((-0.5  -0.366  0.0)
+;; 			  ( 0.0     0.0  1.0  1.0))))
 
-   Hopefully that makes sense."
-  (let ((func (get (gl::gl-array-type array) 
-                   'cgl-destructuring-populate)))
-    (funcall func array data)
-    array))
+;;    Hopefully that makes sense."
+;;   (let ((func (get (gl::gl-array-type array) 
+;;                    'cgl-destructuring-populate)))
+;;     (funcall func array data)
+;;     array))
 
-(defun destructuring-allocate (array-type data)
-  "This function will create a new gl-array with a length
-   equal to the length of the data provided, and then populate 
-   the gl-array.
+;; (defun destructuring-allocate (array-type data)
+;;   "This function will create a new gl-array with a length
+;;    equal to the length of the data provided, and then populate 
+;;    the gl-array.
 
-   The data must be a list of sublists. Each sublist must
-   be in the format expected by a destrucutring-bind with
-   the target format being that specified by the array-type.
+;;    The data must be a list of sublists. Each sublist must
+;;    be in the format expected by a destrucutring-bind with
+;;    the target format being that specified by the array-type.
   
-   That sucks as an explanation so here is an example:
+;;    That sucks as an explanation so here is an example:
 
-   given a format as defined below:
-    (cgl:define-interleaved-attribute-format vert-data 
-      (:type :float :components (x y z))
-      (:type :float :components (r g b a)))
+;;    given a format as defined below:
+;;     (cgl:define-interleaved-attribute-format vert-data 
+;;       (:type :float :components (x y z))
+;;       (:type :float :components (r g b a)))
 
-   then you can create and populate it a new gl-array as so:
-    (setf *new-gl-arrray*
-        (cgl:destructuring-allocate 'vert-data 
-     	               '((( 0.0     0.5  0.0)
-			  ( 1.0     0.0  0.0  1.0))
+;;    then you can create and populate it a new gl-array as so:
+;;     (setf *new-gl-arrray*
+;;         (cgl:destructuring-allocate 'vert-data 
+;;      	               '((( 0.0     0.5  0.0)
+;; 			  ( 1.0     0.0  0.0  1.0))
 
-			 (( 0.5  -0.366  0.0)
-			  ( 0.0     1.0  0.0  1.0))
+;; 			 (( 0.5  -0.366  0.0)
+;; 			  ( 0.0     1.0  0.0  1.0))
 
-			 ((-0.5  -0.366  0.0)
-			  ( 0.0     0.0  1.0  1.0)))))
+;; 			 ((-0.5  -0.366  0.0)
+;; 			  ( 0.0     0.0  1.0  1.0)))))
 
-   Hopefully that makes sense."
-  (let ((array (alloc-array-gl array-type (length data))))
-    (destructuring-populate array data)))
+;;    Hopefully that makes sense."
+;;   (let ((array (alloc-array-gl array-type (length data))))
+;;     (destructuring-populate array data)))
 
-(defmacro dpopulate (&body clauses)
-  "This is the macro that generates the code which is used
-   by the destructuring-populate function."
-  (let ((loop-token (gensym "LOOP")))
-    `(lambda (array data)
-       (loop for vert in data
-          for ,loop-token from 0
-          do (destructuring-bind ,(list-components
-                                   clauses) 
-                 (if (numberp vert)
-                     (list (list vert))
-                     vert)
-               ,@(loop for comp in (utils:flatten 
-                                    (list-components
-                                     clauses))
-                    collect (list 'setf 
-                                  `(aref-gl 
-                                    array
-                                    ,loop-token
-                                    ',comp) comp)))))))
+;; (defmacro dpopulate (&body clauses)
+;;   "This is the macro that generates the code which is used
+;;    by the destructuring-populate function."
+;;   (let ((loop-token (gensym "LOOP")))
+;;     `(lambda (array data)
+;;        (loop for vert in data
+;;           for ,loop-token from 0
+;;           do (destructuring-bind ,(list-components
+;;                                    clauses) 
+;;                  (if (numberp vert)
+;;                      (list (list vert))
+;;                      vert)
+;;                ,@(loop for comp in (utils:flatten 
+;;                                     (list-components
+;;                                      clauses))
+;;                     collect (list 'setf 
+;;                                   `(aref-gl 
+;;                                     array
+;;                                     ,loop-token
+;;                                     ',comp) comp)))))))
 
-(defun list-components (clauses)
-  "This is a helper function for dpopulate which returns
-   a list of component portions of the clauses"  
-  (loop for clause in clauses
-     collect (destructuring-bind (&rest rest &key components
-                                        &allow-other-keys)
-                 clause
-               (declare (ignore rest))
-               components)))
-
-
-;; needs to be here right now as I don't know how to set
-;; vertex-array-binder to be in cl-opengl
-(defun alloc-gl-array (type count)
-  "Creates a new gl-array of specified type and length"
-  (gl::make-gl-array :pointer (foreign-alloc type :count count)
-                     :size count :type type))
+;; (defun list-components (clauses)
+;;   "This is a helper function for dpopulate which returns
+;;    a list of component portions of the clauses"  
+;;   (loop for clause in clauses
+;;      collect (destructuring-bind (&rest rest &key components
+;;                                         &allow-other-keys)
+;;                  clause
+;;                (declare (ignore rest))
+;;                components)))
 
 
-(defun alloc-array-gl (type count)
-  "Creates a new gl-array of specified type and length"
-  (alloc-gl-array type count))
+;; ;; needs to be here right now as I don't know how to set
+;; ;; vertex-array-binder to be in cl-opengl
+;; (defun alloc-gl-array (type count)
+;;   "Creates a new gl-array of specified type and length"
+;;   (gl::make-gl-array :pointer (foreign-alloc type :count count)
+;;                      :size count :type type))
 
 
-;; Grr, wanted to use this but coudl work out how to do the 
-;; setf version
-;; (setf (symbol-function 'aref-gl) (symbol-function 'glaref))
-(declaim (inline aref-gl))
-(defun aref-gl (array index &optional (component nil c-p))
-  "Returns the INDEX-th component of gl-array. If COMPONENT is
-supplied and ARRAY is of a compound type the component named
-COMPONENT is returned."
-  (if c-p
-      (foreign-slot-value (mem-aref (gl::gl-array-pointer array
-                                                          )
-                                    (gl::gl-array-type array)
-                                    index)
-                          (gl::gl-array-type array)
-                          component)
-      (mem-aref (gl::gl-array-pointer array) (gl::gl-array-type array) index)))
+;; (defun alloc-array-gl (type count)
+;;   "Creates a new gl-array of specified type and length"
+;;   (alloc-gl-array type count))
 
 
-(declaim (inline (setf aref-gl)))
-(defun (setf aref-gl) (value array index &optional (component nil c-p))
-  "Sets the place (GLAREF ARRAY INDEX [COMPONENT]) to VALUE."
-  (if c-p
-      (setf (foreign-slot-value (mem-aref (gl::gl-array-pointer array)
-                                          (gl::gl-array-type array)
-                                          index)
-                                (gl::gl-array-type array)
-                                component)
-            value)
-      (setf (mem-aref (gl::gl-array-pointer array) (gl::gl-array-type array) index)
-            value)))
+;; ;; Grr, wanted to use this but coudl work out how to do the 
+;; ;; setf version
+;; ;; (setf (symbol-function 'aref-gl) (symbol-function 'glaref))
+;; (declaim (inline aref-gl))
+;; (defun aref-gl (array index &optional (component nil c-p))
+;;   "Returns the INDEX-th component of gl-array. If COMPONENT is
+;; supplied and ARRAY is of a compound type the component named
+;; COMPONENT is returned."
+;;   (if c-p
+;;       (foreign-slot-value (mem-aref (gl::gl-array-pointer array
+;;                                                           )
+;;                                     (gl::gl-array-type array)
+;;                                     index)
+;;                           (gl::gl-array-type array)
+;;                           component)
+;;       (mem-aref (gl::gl-array-pointer array) (gl::gl-array-type array) index)))
+
+
+;; (declaim (inline (setf aref-gl)))
+;; (defun (setf aref-gl) (value array index &optional (component nil c-p))
+;;   "Sets the place (GLAREF ARRAY INDEX [COMPONENT]) to VALUE."
+;;   (if c-p
+;;       (setf (foreign-slot-value (mem-aref (gl::gl-array-pointer array)
+;;                                           (gl::gl-array-type array)
+;;                                           index)
+;;                                 (gl::gl-array-type array)
+;;                                 component)
+;;             value)
+;;       (setf (mem-aref (gl::gl-array-pointer array) (gl::gl-array-type array) index)
+;;             value)))
 
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
@@ -452,12 +452,12 @@ COMPONENT is returned."
 
 ;; [TODO] element-type should definately not be here
 ;;        I'm not even sure whether draw-style should be either
-(defstruct gl-stream 
-  vao
-  (start 0 :type unsigned-byte)
-  (length 1 :type unsigned-byte)
-  (element-type nil)
-  (draw-style :triangles))
+;; (defstruct gl-stream 
+;;   vao
+;;   (start 0 :type unsigned-byte)
+;;   (length 1 :type unsigned-byte)
+;;   (element-type nil)
+;;   (draw-style :triangles))
 
 
 ;;;--------------------------------------------------------------

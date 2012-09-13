@@ -13,6 +13,7 @@
 	       (:file "cepl-utils")
 	       (:file "time/base-time")
 	       (:file "cepl-gl")
+	       (:file "cepl-gl-data-abstraction")
 	       (:file "vectors/base-vectors")
 	       (:file "vectors/vector2")
 	       (:file "vectors/vector3")
