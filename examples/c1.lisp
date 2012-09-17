@@ -8,22 +8,22 @@
   (colour :type :float :length 4))
 
 (defun init () 
-  (setf *prog-1* (cgl:make-program (cgl:make-shaders "1.vert" 
+  (cgl:clear-color 0.0 0.0 0.0 0.0)
+  (setf *prog-1* (cgl:make-program (cgl:make-shaders "1.vert"
 						     "1.frag")))
-  (setf *streams* 
-	(list (cgl:make-gpu-stream 
-	       :vao (cgl:make-vao 
-		     (cgl:gen-buffer 
-		      :initial-contents 
-		      (cgl:destructuring-allocate 
-		       'vert-data  
-		       '((( 0.0     0.5  0.0  1.0)
-			  ( 1.0     0.0  0.0  1.0))
-			 (( 0.5  -0.366  0.0  1.0)
-			  ( 0.0     1.0  0.0  1.0))
-			 ((-0.5  -0.366  0.0  1.0)
-			  ( 0.0     0.0  1.0  1.0))))))
-	       :length 3))))
+  (let* ((data '((( 0.0     0.5  0.0  1.0)
+		  ( 1.0     0.0  0.0  1.0))
+		 (( 0.5  -0.366  0.0  1.0)
+		  ( 0.0     1.0  0.0  1.0))
+		 ((-0.5  -0.366  0.0  1.0)
+		  ( 0.0     0.0  1.0  1.0))))
+	 (gl-array (cgl:make-gl-array :element-type 'vert-data
+				      :initial-contents data))
+	 (gpu-array (cgl:make-gpu-array 
+		     :initial-contents gl-array)))
+    (setf *streams* (list (cgl:make-gpu-stream-from-gpu-arrays
+			   :gpu-arrays (list gpu-array)  
+			   :length 3)))))
 
 (defun draw ()
   (gl:clear-color 0.0 0.0 0.0 0.0)

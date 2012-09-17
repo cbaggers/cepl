@@ -18,9 +18,9 @@
 (defparameter *stepper* (make-stepper 1000))
 
 ;; Define data formats 
-(cgl:define-interleaved-attribute-format vert-data 
-  (:type :float :components (x y z))
-  (:type :float :components (r g b a)))
+(cgl:defglstruct vert-data 
+  (position :type :float :length 3)
+  (colour :type :float :length 4))
 
 ;; The entities used in this demo
 (defstruct entity 
@@ -96,7 +96,7 @@
 			(gethash :vertices monkey-data)))
 	 (indicies (loop for face in (gethash :faces monkey-data)
 		      append (mapcar #'car (subseq face 0 3))))
-	 (stream (cgl:make-gl-stream 
+	 (stream (cgl:make-gpu-stream 
 		  :vao (cgl:make-vao 
 			(cgl:gen-buffer
 			 :initial-contents
@@ -108,8 +108,7 @@
 			 (cgl:destructuring-allocate :short
 						     indicies)
 			 :buffer-type :element-array-buffer))
-		  :length (length indicies)
-		  :element-type :unsigned-short)))
+		  :length (length indicies))))
     (setf *entities* 
 	  (list 
 	   (make-entity :position (make-vector3 0.0 0.0 -15.0)
@@ -117,7 +116,7 @@
 			:stream stream))))
   
   ;;set options
-  (cgl::clear-color 0.0 0.0 0.0 0.0)
+  (gl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
   (gl:front-face :ccw)
@@ -164,8 +163,8 @@
   ;; (on-step-call (*stepper* (funcall *timer*))
   ;;   (print *loops*)
   ;;   (setf *loops* 0))
-  (cgl::clear-depth 1.0)
-  (cgl::clear :color-buffer-bit :depth-buffer-bit)
+  (gl:clear-depth 1.0)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
 
   (cgl:set-program-uniforms *prog-1* :worldtocameramatrix 
 			    (calculate-cam-look-at-w2c-matrix
@@ -189,7 +188,7 @@
   	*frustrum-scale*)
   (cgl:set-program-uniforms *prog-1* 
 			    :cameratoclipmatrix *cam-clip-matrix*)
-  (cgl::viewport 0 0 width height))
+  (gl:viewport 0 0 width height))
 
 (defun update-swank ()
   (let ((connection (or swank::*emacs-connection*
@@ -203,14 +202,13 @@
 ;; this is obviously unacceptable and will be fixed when I can
 ;; extract the sdl event handling from their loop system.
 (defun run-demo () 
-  (init-sdl ()
-    (setf (sdl:frame-rate) 0)
-    (init)
-    (reshape 640 480)
-    (sdl:with-events () 
-      (:quit-event () t)
-      (:VIDEO-RESIZE-EVENT (:w width :h height) 
-			   (reshape width height))
-      (:idle ()
-	     (base-macros:continuable (update-swank))
-	     (base-macros:continuable (draw))))))
+  (setf (sdl:frame-rate) 0)
+  (init)
+  (reshape 640 480)
+  (sdl:with-events () 
+    (:quit-event () t)
+    (:VIDEO-RESIZE-EVENT (:w width :h height) 
+			 (reshape width height))
+    (:idle ()
+	   (base-macros:continuable (update-swank))
+	   (base-macros:continuable (draw)))))

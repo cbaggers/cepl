@@ -105,6 +105,10 @@
 		:size length 
 		:type type))
 
+(defun free-gl-array (array)
+  "Frees an array allocated by ALLOC-GL-ARRAY."
+  (foreign-free (gl-array-pointer array)))
+
 (declaim (inline aref-gl))
 (defun aref-gl (array index)
   "Returns the INDEX-th component of gl-array."
@@ -121,8 +125,8 @@
     (setf buffer-pool (cons buffer buffer-pool))
     buffer)
 
-  (defun kill-all-buffers-in-pool ()
-    (mapcar #'(lambda (x) (print "killing a buffer")) 
+  (defun free-all-buffers-in-pool ()
+    (mapcar #'(lambda (x) (print "freeing a buffer")) 
 	    buffer-pool)))
 
 (defstruct gpuarray 
@@ -137,7 +141,8 @@
 	 (1+ (length glbuffer-format buffer))))
     ))
 
-()
+(defun gpu-array-data (gpu-array)
+  ())
 
 ;;;--------------------------------------------------------------
 ;;; GPUSTREAMS ;;;
@@ -154,14 +159,14 @@
     (setf (gethash key vao-pool) vao)
     vao)
 
-  (defun kill-all-vaos-in-pool ()
-    (mapcar #'(lambda (x) (print "killing a vao")) 
+  (defun free-all-vaos-in-pool ()
+    (mapcar #'(lambda (x) (print "freeing a vao")) 
 	    vao-pool)))
 
 ;;;--------------------------------------------------------------
 ;;; HELPERS ;;;
 ;;;---------;;;
 
-(defun kill-managed-resources ()
-  (kill-all-vaos-in-pool)
-  (kill-all-buffers-in-pool))
+(defun free-managed-resources ()
+  (free-all-vaos-in-pool)
+  (free-all-buffers-in-pool))

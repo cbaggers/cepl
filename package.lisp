@@ -59,40 +59,57 @@
 	   :symbolicate-package))
 
 (defpackage :cepl-gl
-  (:use :cl :cl-opengl :cffi)
+  (:use :cl :cffi)
   (:nicknames :cgl)
-  (:shadow :buffer-data
+  (:import-from :cl-opengl
+		:clear-color
+		:enable
+		:cull-face
+		:front-face
+		:depth-mask
+		:depth-func
+		:depth-range
+		:clear
+		:flush)
+  (:export :clear-color
+	   :enable
+	   :cull-face
+	   :front-face
+	   :depth-mask
+	   :depth-func
+	   :depth-range
+	   :clear
+	   :flush
 	   :bind-buffer
-	   :enable-vertex-attrib-array
-	   :vertex-attrib-pointer
-	   :uniform-matrix
-	   :alloc-gl-array
-	   :bind-vertex-array
-	   :use-program
-	   :make-program
-	   :aref-gl
-	   :alloc-gl-array)
-  (:export :cgl-compile-shader-error 
-	   :draw-elements-base-vertex
-	   :enable-vertex-attrib-array
-	   :vertex-attrib-pointer
-	   :define-attribute-format
-	   :define-interleaved-attribute-format
-	   :attrib-formats
-	   :attrib-format
-	   :destructuring-populate
-	   :destructuring-allocate
-	   :alloc-gl-array
-	   :alloc-array-gl
-	   :aref-gl
-	   :uniform-matrix
 	   :gen-buffer
 	   :buffer-data
-	   :bind-buffer
-	   :multi-populate-buffer
+	   :buffer-sub-data
+	   :multi-buffer-data
+	   :gen-buffer-format
 	   :bind-vao
 	   :bind-vertex-array
 	   :make-vao
+	   :make-vao-from-gpu-arrays
+	   :defglstruct
+	   :make-gl-array
+	   :free-gl-array
+	   :aref-gl
+	   :destructuring-populate
+	   :destructuring-allocate
+	   :free-all-buffers-in-pool
+	   :make-gpu-array
+	   :make-gpu-arrays
+	   :glsubseq
+	   :populate-gpu-array
+	   :with-gpu-array-as-gl-array
+	   :free-all-vaos-in-pool
+	   :make-gpu-stream
+	   :gpu-stream-vao
+	   :gpu-stream-start
+	   :gpu-stream-length
+	   :gpu-stream-draw-type
+	   :make-gpu-stream-from-gpu-arrays
+	   :free-managed-resources
 	   :gl-stream
 	   :make-gl-stream
 	   :program-attrib-count
