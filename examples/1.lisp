@@ -12,17 +12,17 @@
 						     "1.frag")))
   (setf *streams* 
 	(list (cgl:make-gpu-stream 
-	       :vao (cgl:make-vao 
+	       :vao (cgl:make-vao-from-buffer
 		     (cgl:gen-buffer 
 		      :initial-contents 
 		      (cgl:destructuring-allocate 
 		       'vert-data  
-		       '((( 0.0     0.5  0.0  1.0)
-			  ( 1.0     0.0  0.0  1.0))
-			 (( 0.5  -0.366  0.0  1.0)
-			  ( 0.0     1.0  0.0  1.0))
-			 ((-0.5  -0.366  0.0  1.0)
-			  ( 0.0     0.0  1.0  1.0))))))
+		       `((,(v!  0.0     0.5  0.0  1.0)
+			  ,(v!  1.0     0.0  0.0  1.0))
+			 (,(v!  0.5  -0.366  0.0  1.0)
+			  ,(v!  0.0     1.0  0.0  1.0))
+			 (,(v! -0.5  -0.366  0.0  1.0)
+			  ,(v!  0.0     0.0  1.0  1.0))))))
 	       :length 3))))
 
 (defun draw ()

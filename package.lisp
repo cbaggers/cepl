@@ -85,12 +85,20 @@
 	   :buffer-data
 	   :buffer-sub-data
 	   :multi-buffer-data
-	   :gen-buffer-format
+	   :buffer-reserve-raw-block
+	   :buffer-reserve-block
+	   :buffer-reserve-blocks
+	   :gl-type-format
 	   :bind-vao
 	   :bind-vertex-array
 	   :make-vao
+	   :make-vao-from-formats
+	   :make-vao-from-buffer
 	   :make-vao-from-gpu-arrays
 	   :defglstruct
+	   :gl-pull
+	   :gl-push
+	   :foreign-type-index
 	   :make-gl-array
 	   :free-gl-array
 	   :aref-gl
@@ -99,8 +107,9 @@
 	   :free-all-buffers-in-pool
 	   :make-gpu-array
 	   :make-gpu-arrays
-	   :glsubseq
-	   :populate-gpu-array
+	   :gpu-sub-array
+	   :gpu-array-pull
+	   :gpu-array-push
 	   :with-gpu-array-as-gl-array
 	   :free-all-vaos-in-pool
 	   :make-gpu-stream
@@ -110,8 +119,6 @@
 	   :gpu-stream-draw-type
 	   :make-gpu-stream-from-gpu-arrays
 	   :free-managed-resources
-	   :gl-stream
-	   :make-gl-stream
 	   :program-attrib-count
 	   :program-attributes
 	   :program-uniform-count
@@ -128,7 +135,11 @@
 
 (defpackage :base-vectors
   (:use :cl)
-  (:export :v-x :v-y :v-z :v-w))
+  (:export :v! :v-x :v-y :v-z :v-w))
+
+(defpackage :base-matrices
+  (:use :cl)
+  (:export :m!))
 
 (defpackage :vector2
   (:use :cl)
@@ -181,7 +192,7 @@
 (defpackage :vectors
   (:use :cl)
   (:nicknames :v)
-  (:export :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
+  (:export :v :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
 	   :/ :length :length-squared :distance :distance-squared
 	   :dot :absolute-dot :perp-dot :normalize :cross :eq
 	   :swizzle :strict-swizzle) 
@@ -266,22 +277,9 @@
 (defpackage :cepl
   (:use :cl
 	:base-vectors
+    :base-matrices
 	:base-maths
 	:base-time
 	:base-macros
 	:base-sdl)
   (:export :repl))
-
-(defpackage :cepl-examples
-  (:use :cl
-	:base-vectors
-	:base-maths
-	:base-time
-	:base-macros
-	:base-sdl)
-  (:import-from :vector2
-		:make-vector2)
-  (:import-from :vector3 
-		:make-vector3)
-  (:import-from :vector4
-		:make-vector4))

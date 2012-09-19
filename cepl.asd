@@ -18,6 +18,7 @@
 	       (:file "vectors/vector3")
 	       (:file "vectors/vector4")
 	       (:file "vectors/vectors")
+	       (:file "matrices/base-matrices")
 	       (:file "matrices/matrix3")
 	       (:file "matrices/matrix4")
 	       (:file "matrices/matrices")
