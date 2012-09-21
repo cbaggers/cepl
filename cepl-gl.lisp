@@ -1,3 +1,11 @@
+;; This software is Copyright (c) 2012 Chris Bagley
+;; (techsnuffle<at>gmail<dot>com)
+;; Chris Bagley grants you the rights to
+;; distribute and use this software as governed
+;; by the terms of the Lisp Lesser GNU Public License
+;; (http://opensource.franz.com/preamble.html),
+;; known as the LLGPL.
+
 ;; This is to provide abstractions over the cl-opengl-bindings
 ;;
 ;; It is designed to be the 'thinnest' possible wrapper around
@@ -543,6 +551,12 @@ need." ))
   (length 0 :type unsigned-byte)
   (type nil :type symbol))
 
+(defmethod print-object ((object glarray) stream)
+  (format stream
+	  "#.<GL-ARRAY :type ~a :length ~a>"
+	  (glarray-type object)
+	  (glarray-length object)))
+
 (defun glarray-byte-size (gl-array)
   "This returns the size in bytes of the gl-array"
   (declare (glarray gl-array))
@@ -666,6 +680,15 @@ need." ))
   length
   index-array 
   (access-style :static-draw))
+
+(defmethod print-object ((object gpuarray) stream)
+  (format stream 
+	  "#.<~a :type ~a :length ~a>"
+	  (if (gpuarray-index-array object)
+	      "GPU-ARRAY"
+	      "GPU-INDEX-ARRAY")
+	  (gpuarray-type object)
+	  (gpuarray-length object)))
 
 (defun gpuarray-format (gpu-array)
   "Returns a list containing the element-type, the length of the

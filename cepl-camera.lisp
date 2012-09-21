@@ -1,3 +1,11 @@
+;; This software is Copyright (c) 2012 Chris Bagley
+;; (techsnuffle<at>gmail<dot>com)
+;; Chris Bagley grants you the rights to
+;; distribute and use this software as governed
+;; by the terms of the Lisp Lesser GNU Public License
+;; (http://opensource.franz.com/preamble.html),
+;; known as the LLGPL.
+
 ;; This is stub
 ;; I'm popping these function here as we will eventually need
 ;; some kind of abstraction aroudn the idea of 'cameras'

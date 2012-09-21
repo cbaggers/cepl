@@ -1,3 +1,11 @@
+;; This software is Copyright (c) 2012 Chris Bagley
+;; (techsnuffle<at>gmail<dot>com)
+;; Chris Bagley grants you the rights to
+;; distribute and use this software as governed
+;; by the terms of the Lisp Lesser GNU Public License
+;; (http://opensource.franz.com/preamble.html),
+;; known as the LLGPL.
+
 ;; This is the 4x4 matrix functionality. 
 ;; There will be a generic function-set to make this as easy
 ;; as possible for people writing the games but this will 

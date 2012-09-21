@@ -1,3 +1,11 @@
+;; This software is Copyright (c) 2012 Chris Bagley
+;; (techsnuffle<at>gmail<dot>com)
+;; Chris Bagley grants you the rights to
+;; distribute and use this software as governed
+;; by the terms of the Lisp Lesser GNU Public License
+;; (http://opensource.franz.com/preamble.html),
+;; known as the LLGPL.
+
 ;; a load of handy macros to use around the place
 ;; the base-* packages are meant to be 'used' so that 
 ;; there is no need to write the package name.
