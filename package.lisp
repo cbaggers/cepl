@@ -70,7 +70,9 @@
 		:depth-func
 		:depth-range
 		:clear
-		:flush)
+		:clear-depth
+		:flush
+		:viewport)
   (:export :clear-color
 	   :enable
 	   :cull-face
@@ -79,7 +81,9 @@
 	   :depth-func
 	   :depth-range
 	   :clear
+	   :clear-depth
 	   :flush
+	   :viewport
 	   :bind-buffer
 	   :gen-buffer
 	   :buffer-data

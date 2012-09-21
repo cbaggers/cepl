@@ -1,6 +1,7 @@
 ;; This is simply to get a colored triangle up on the screen
 
 (defparameter *prog-1* nil)
+(defparameter *data* nil)
 (defparameter *streams* nil)
 
 (cgl:defglstruct vert-data 
@@ -11,18 +12,17 @@
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (setf *prog-1* (cgl:make-program (cgl:make-shaders "1.vert"
 						     "1.frag")))
-  (let* ((data '((( 0.0     0.5  0.0  1.0)
-		  ( 1.0     0.0  0.0  1.0))
-		 (( 0.5  -0.366  0.0  1.0)
-		  ( 0.0     1.0  0.0  1.0))
-		 ((-0.5  -0.366  0.0  1.0)
-		  ( 0.0     0.0  1.0  1.0))))
-	 (gl-array (cgl:make-gl-array :element-type 'vert-data
-				      :initial-contents data))
-	 (gpu-array (cgl:make-gpu-array 
-		     :initial-contents gl-array)))
+  (let* ((data '((#( 0.0     0.5  0.0  1.0)
+		  #( 1.0     0.0  0.0  1.0))
+		 (#( 0.5  -0.366  0.0  1.0)
+		  #( 0.0     1.0  0.0  1.0))
+		 (#(-0.5  -0.366  0.0  1.0)
+		  #( 0.0     0.0  1.0  1.0))))
+	 (gl-array (cgl:make-gl-array 'vert-data
+				      :initial-contents data)))
+    (setf *data* (cgl:make-gpu-array :initial-contents gl-array))
     (setf *streams* (list (cgl:make-gpu-stream-from-gpu-arrays
-			   :gpu-arrays (list gpu-array)  
+			   :gpu-arrays (list *data*)  
 			   :length 3)))))
 
 (defun draw ()
@@ -44,4 +44,5 @@
 			 (gl:viewport 0 0 width height))
     (:idle ()
 	   (base-macros:continuable (cepl-utils:update-swank))
-	   (base-macros:continuable (draw)))))
+	   (base-macros:continuable (draw))))
+  (print "done"))

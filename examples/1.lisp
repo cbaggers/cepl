@@ -12,7 +12,7 @@
 						     "1.frag")))
   (setf *streams* 
 	(list (cgl:make-gpu-stream 
-	       :vao (cgl:make-vao-from-buffer
+	       :vao (cgl:make-vao
 		     (cgl:gen-buffer 
 		      :initial-contents 
 		      (cgl:destructuring-allocate 

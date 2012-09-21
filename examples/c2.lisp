@@ -14,10 +14,10 @@
   (setf *shaders* (cgl:make-shaders "2.vert" "2.frag"))
   (setf *prog-1* (cgl:make-program *shaders*))
 
-  (let* ((data '((( 0.0   0.2  0.0  1.0))
-		 ((-0.2  -0.2  0.0  1.0))
-		 (( 0.2  -0.2  0.0  1.0)))) 
-	 (gl-array (cgl:make-gl-array :element-type 'vert-data
+  (let* ((data '((#( 0.0   0.2  0.0  1.0))
+		 (#(-0.2  -0.2  0.0  1.0))
+		 (#( 0.2  -0.2  0.0  1.0)))) 
+	 (gl-array (cgl:make-gl-array 'vert-data
 				      :initial-contents data))
 	 (gpu-array (cgl:make-gpu-array 
 		     :initial-contents gl-array)))
@@ -47,5 +47,5 @@
     (:VIDEO-RESIZE-EVENT (:w width :h height) 
 			 (reshape width height))
     (:idle ()
-	   (base-macros:continuable (cepl-utils:update-swank))
+	   (cepl-utils:update-swank)
 	   (base-macros:continuable (draw)))))
