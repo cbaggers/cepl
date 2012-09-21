@@ -4,11 +4,16 @@
 ;; to allow quick changes and also just so you can really grasp
 ;; what is happening. It just feels like the main loop is too 
 ;; important to be left to magic!
+;; The result is pretty damn ugly but it is the first step at 
+;; an alternative method.
+;; I'm also playing around with the 'diamond square' algorithm
+;; for generating terrains.
+
 
 (in-package :cepl-examples)
 
-;; Globals - Too damn many of them, but its in keeping with
-;;           the tutorials online
+(setf *random-state* (make-random-state t))
+
 (defparameter *prog-1* nil)
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
@@ -73,6 +78,141 @@
 			(* sin-theta sin-phi))))
     (v:+ cam-target (v:* dir-to-cam (v-z sphere-cam-rel-pos)))))
 
+
+
+;----------------------------------------------
+
+(defun gen-gs-terrain-model (&optional (depth 6)
+			       (square-size 20.0))
+  (destructuring-bind (verts indicies) 
+      (get-terrain-verts-and-indices 
+       (diamond-square :depth depth
+		       :random-start 50.0
+		       :random-decay 0.54
+		       :corner-seed '(120.0 -130.0 0.0 50.0)) 
+       square-size)
+    
+    (make-entity 
+     :position (v:make-vector 0.0 0.0 -15.0)
+     :rotation (v:make-vector 0.0 0.0 0.0)
+     :stream (cgl:make-gl-stream 
+	      :vao (cgl:make-vao 
+		    (cgl:gen-buffer
+		     :initial-contents 
+		     (cgl:destructuring-allocate 'vert-data 
+						 verts))
+		    :element-buffer 
+		    (cgl:gen-buffer 
+		     :initial-contents
+		     (cgl:destructuring-allocate :short
+						 indicies)
+		     :buffer-type :element-array-buffer))
+	      :length (length indicies)
+	      :element-type :unsigned-short))))
+
+
+(defun rgb (r g b)
+  `(,(/ r 255.0) ,(/ g 255.0) ,(/ b 255.0) 0.0))
+
+;; (defun pick-color (height)
+;;   (cond ((< height -4.0) (rgb 255.0 255.0 255.0))
+;; 	((< height 20.0) (rgb 61.0 128.0 65.0))
+;; 	(t (rgb 222.0 172.0 105.0))))
+
+(defun pick-color (x)
+  (declare (ignore x))
+  `(,(random 1.0) ,(random 1.0) ,(random 1.0) 0.0))
+
+(defun get-terrain-verts-and-indices (terrain square-size)
+  (labels ((gen-vert (data x y)
+	     `((,(* square-size x) 
+		 ,(aref data x y)
+		 ,(* square-size y))
+	       ,(pick-color (aref data x y)))))
+    (let* ((data terrain)
+	   (data-dimen (array-dimensions data)))
+      (list 
+       (loop for y below (second data-dimen)
+	  append (loop for x below (first data-dimen)
+		    collect (gen-vert data x y)))
+       (let ((size (first data-dimen)))
+	 (loop for y below (1- size)
+	    append
+	      (loop for x below (1- size)
+		 append `(,(+ x (* y size))
+			   ,(+ x (* (1+ y) size))
+			   ,(+ (1+ x) (* y size))
+			   
+			   ,(+ (1+ x) (* y size))
+			   ,(+ x (* (1+ y) size))
+			   ,(+ (1+ x) (* (1+ y) size))))))))))
+
+
+(defun diamond-square (&key
+                         (depth 2) 
+                         (corner-seed '(0.0 0.0 0.0 0.0))
+                         (random-start 1.0)
+                         (random-decay 0.5))
+  (let* ((size  (expt 2 depth))
+         (terrain (make-array `(,(1+ size) ,(1+ size)))))
+    ;;set corners
+    (setf (aref terrain 0 0) (first corner-seed)
+          (aref terrain size 0) (second corner-seed)
+          (aref terrain 0 size) (third corner-seed)
+          (aref terrain size size) (fourth corner-seed))
+    
+    (loop for i from depth downto 1
+       for x from 1
+       do 
+         (let ((step-size (expt 2 i))) 
+           (setf terrain
+                 (square-step size 
+                              step-size
+                              (* random-start random-decay x)
+                              (diamond-step size 
+                                            step-size 
+                                            (* random-start 
+                                               random-decay 
+                                               x)
+                                            terrain)))
+	   (setf random-start (* random-start random-decay))))
+    terrain))
+
+
+(defun diamond-step (size step random-range terrain)
+  (loop for x from 0 below size by step
+     do (loop for y from 0 below size by step
+           do (setf (aref terrain 
+                          (+ x (floor (/ step 2)))
+                          (+ y (floor (/ step 2))))
+                    (+ (- (random (* random-range 2.0)) 
+                          random-range)
+                       (/ (+ (aref terrain x y)
+                             (aref terrain (+ x step) y)
+                            (aref terrain x (+ y step))
+                            (aref terrain (+ x step) (+ y step)))
+                          4.0)))))
+  terrain)
+
+
+(defun square-step (size step random-range terrain)
+  (let* ((hstep (floor (/ step 2)))
+         (mod-val (+ size hstep)))
+    (loop for i from hstep by step
+       until (> (* hstep (floor (/ i mod-val))) size)
+       do (let ((x (mod i mod-val))
+                (y (* hstep (floor (/ i mod-val)))))
+            (setf (aref terrain x y)
+                  (+ (- (random (* random-range 2.0)) 
+                        random-range)
+                     (/ (+ (aref terrain (max 0 (- x hstep)) y)
+                           (aref terrain x (max 0 (- y hstep)))
+                           (aref terrain (min size (+ x hstep)) y)
+                           (aref terrain x (min size (+ y hstep))))
+                        4.0))))))
+  terrain)
+
+
 ;----------------------------------------------
 
 (defun init () 
@@ -84,36 +224,10 @@
   (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix 
 			   *frustrum-scale*))
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
-  ;;create entities
-  (let* ((monkey-data (first 
-		       (model-parsers:parse-obj-file "6.obj")))
-	 (verts (mapcar #'(lambda (x)
-			    (list x (list (random 1.0) 
-					  (random 1.0) 
-					  (random 1.0) 
-					  1.0))) 
-			(gethash :vertices monkey-data)))
-	 (indicies (loop for face in (gethash :faces monkey-data)
-		      append (mapcar #'car (subseq face 0 3))))
-	 (stream (cgl:make-gl-stream 
-		  :vao (cgl:make-vao 
-			(cgl:gen-buffer
-			 :initial-contents
-			 (cgl:destructuring-allocate
-			  'vert-data verts))
-			:element-buffer 
-			(cgl:gen-buffer 
-			 :initial-contents 
-			 (cgl:destructuring-allocate :short
-						     indicies)
-			 :buffer-type :element-array-buffer))
-		  :length (length indicies)
-		  :element-type :unsigned-short)))
-    (setf *entities* 
-	  (list 
-	   (make-entity :position (make-vector3 0.0 0.0 -15.0)
-			:rotation (make-vector3 -1.57079633 0.0 0.0)
-			:stream stream))))
+
+  ;;setup data 
+  
+  (setf *entities* (list (gen-gs-terrain-model)))
   
   ;;set options
   (cgl::clear-color 0.0 0.0 0.0 0.0)
@@ -177,11 +291,11 @@
   (when (entity-forward entity)
     (setf (entity-position entity) 
 	  (v:+ (entity-position entity)
-	       (v:make-vector 0.00 0.00 -0.20))))
+	       (v:make-vector 0.00 0.00 -0.80))))
   (when (entity-backward entity)
     (setf (entity-position entity) 
 	  (v:+ (entity-position entity)
-	       (v:make-vector 0.00 0.00 0.20)))))
+	       (v:make-vector 0.00 0.00 0.80)))))
 
 ;----------------------------------------------
 
