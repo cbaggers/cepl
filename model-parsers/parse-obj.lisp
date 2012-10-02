@@ -8,93 +8,108 @@
 
 (in-package model-parsers)
 
+(defun get-stuff (filename)
+  (with-open-file (my-stream filename)
+    (loop for line = (read-line my-stream nil 
+				'my-eof-sym)
+       until (eq line 'my-eof-sym)
+       collect line)))
+
 (defun parse-obj-file (filename)
-  (let ((objects nil)
-	(current (make-hash-table))
-	(groups '(:group nil :smoothing-group nil :merging-group nil)))
-    (setf (gethash :name current) "cepl:no-name")
-    (with-open-file (my-stream filename)
-      (loop for line = (read-line my-stream nil 'my-eof-sym)
-	   until (eq line 'my-eof-sym)
-	 do (multiple-value-bind (obj new-obj new-groups)
-		(process-obj-line current groups line)
-	      (setf current obj)
-	      (setf groups new-groups)
-	      (when new-obj
-		(when (> (hash-table-count current) 1)
-		  (setf objects (cons current objects)))
-		(setf current new-obj)))))
-    (cons current objects)))
+  (proc-obj-lines  (with-open-file (my-stream filename)
+		     (loop for line = (read-line my-stream nil 
+						 'my-eof-sym)
+			until (eq line 'my-eof-sym)
+			collect line))))
 
-(defun process-obj-line (object groups raw-line)
-  (let* ((split-raw (cl-utilities:split-sequence 
-		    #\space raw-line :remove-empty-subseqs t))
-	 (type (first split-raw))
-	 (new-object nil))
-    (cond ((equal type "o") 
-	   (progn (setf new-object (make-hash-table))
-		  (setf (gethash :name new-object) 
-			(second split-raw))))
-	  ((equal type "v") 
-	   (setf (gethash :vertices object) 
-		 (append (gethash :vertices object)
-			 (list (string-list-to-native (cdr split-raw))))))
-	  ((equal type "vt") 
-	   (setf (gethash :vertex-tex-coords object) 
-		 (append (gethash :vertex-tex-coords object)
-			 (list (string-list-to-native (cdr split-raw))))))
-	  ((equal type "vn") 
-	   (setf (gethash :vertex-normals object) 
-		 (append (gethash :vertex-normals object)
-			 (list (string-list-to-native (cdr split-raw))))))
-	  ((equal type "g") 
-	   (setf groups
-		 (cepl-utils:sub-at-index groups 1 (string-list-to-native (cdr split-raw)))))
-	  ((equal type "s") 
-	   (setf groups
-		 (cepl-utils:sub-at-index groups 3 
-			       (let ((grp (string-list-to-native (cdr split-raw))))
-				 (if (equal grp "off")
-				     0
-				     (car grp))))))
-	  ((equal type "mg") 
-	   (setf groups
-		 (cepl-utils:sub-at-index groups 5
-			       (let ((grp (string-list-to-native (cdr split-raw))))
-				 (if (equal grp "off")
-				     0
-				     (car grp))))))
-	  ((equal type "p") 
-	   (setf 
-	    (gethash :points object) 
-	    (append (gethash :points object)
-		    (list 
-		     (append (relative-indices
-			      (string-list-to-native (cdr split-raw))
-			      (length (gethash :vertices object)))
-			     groups)))))
-	  ((equal type "l") 
-	   (setf 
-	    (gethash :lines object) 
-	    (append (gethash :lines object)
-		    (list 
-		     (append (relative-indices 
-			      (string-list-to-native (cdr split-raw))
-			      (length (gethash :vertices object)))
-			     groups)))))
-	  ((equal type "f") 
-	   (setf 
-	    (gethash :faces object) 
-	    (append (gethash :faces object)
-		    (list 
-		     (append (relative-indices 
-			      (handle-obj-face (cdr split-raw))
-			      (length (gethash :vertices object)))
-			     groups))))))
-    (values object new-object groups)))
 
-(defun string-list-to-native (split-line)
-  (mapcar #'cepl-utils:safe-read-from-string split-line))
+(defun proc-obj-lines (obj-lines &optional objects groups 
+				   smoothing-group
+				   merging-group vertices normals
+				   tex-coords points lines faces)
+  ;; the first item in the line idicates the type of the data 
+  ;; in the line
+  (if obj-lines
+   (let* ((line (cl-utilities:split-sequence
+		 #\space (first obj-lines) :remove-empty-subseqs t))
+	  (native-line (mapcar #'cepl-utils:safe-read-from-string line))
+	  (type (first native-line))
+	  (body (rest native-line)))
+     ;; first item in the list will specify the type of data in the line
+     (case type
+       (o  (proc-obj-lines (rest obj-lines) 
+			   (when vertices
+			     (cons (list (reverse vertices) 
+					 (reverse normals)
+					 (reverse tex-coords)
+					 (reverse points)
+					 (reverse lines)
+					 (reverse faces)) objects))
+			   groups smoothing-group merging-group nil 
+			   nil nil nil nil nil))
+       (v  (proc-obj-lines (rest obj-lines) objects groups 
+			  smoothing-group merging-group
+			  (cons (apply #'v:swizzle body) vertices)
+			  normals tex-coords points lines faces))
+       (vt (proc-obj-lines (rest obj-lines) objects groups
+			  smoothing-group merging-group vertices
+			  normals (cons (apply #'v:swizzle body) 
+					tex-coords) 
+			  points lines faces))
+       (vn (proc-obj-lines (rest obj-lines) objects groups 
+			  smoothing-group merging-group vertices 
+			  (cons (apply #'v:swizzle body) normals)
+			  tex-coords points lines faces))
+       (g  (proc-obj-lines (rest obj-lines) objects body
+			  smoothing-group merging-group vertices 
+			  normals tex-coords points lines faces))
+       (s  (proc-obj-lines (rest obj-lines) objects groups 
+			  (if (equal (car body) "off") 
+			      0 (car body))
+			  merging-group vertices normals tex-coords
+			  points lines faces))
+       (mg (proc-obj-lines (rest obj-lines) objects groups 
+			  smoothing-group
+			  (if (equal (car body) "off")
+			      0 (car body))
+			  vertices normals tex-coords points lines
+			  faces))
+       (p (proc-obj-lines (rest obj-lines) objects groups
+			 smoothing-group merging-group vertices
+			 normals
+			 (cons (list (relative-indices 
+				      body 
+				      (length vertices)) 
+				     groups smoothing-group 
+				     merging-group) points)
+			 lines faces))
+       (l (proc-obj-lines (rest obj-lines) objects groups 
+			  smoothing-group merging-group vertices
+			  normals tex-coords points
+			  (cons (list (relative-indices 
+				       body 
+				       (length vertices)) 
+				      groups smoothing-group 
+				      merging-group) lines) faces))
+       (f (proc-obj-lines (rest obj-lines) objects groups 
+			  smoothing-group merging-group vertices
+			  normals tex-coords points lines
+			  (cons (list (relative-indices 
+				       (handle-obj-face (rest line))
+				       (length vertices)) 
+				      groups smoothing-group 
+				      merging-group) faces)))
+       (otherwise (proc-obj-lines (rest obj-lines) objects groups 
+				  smoothing-group merging-group
+				  vertices normals tex-coords 
+				  points lines faces))))
+   (cons (list vertices 
+	       normals
+	       tex-coords
+	       points
+	       lines
+	       faces) objects)))
+
 
 (defun relative-indices (line current-len)
   (mapcar #'(lambda (x) (cond ((null x) nil)

@@ -673,7 +673,6 @@ need." ))
 	    buffer-pool)))
 
 (defstruct gpuarray 
-  ""
   buffer
   format-index
   (start 0)
@@ -685,8 +684,8 @@ need." ))
   (format stream 
 	  "#.<~a :type ~a :length ~a>"
 	  (if (gpuarray-index-array object)
-	      "GPU-ARRAY"
-	      "GPU-INDEX-ARRAY")
+	      "GPU-INDEX-ARRAY"
+	      "GPU-ARRAY")
 	  (gpuarray-type object)
 	  (gpuarray-length object)))
 

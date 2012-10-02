@@ -2,8 +2,6 @@
 ;; didnt seem to work
 ;; unlimited framerate does though
 
-(in-package :cepl-examples)
-
 ;; Globals - Too damn many of them, but its in keeping with
 ;;           the tutorials online
 (defparameter *prog-1* nil)
@@ -25,14 +23,14 @@
 ;; The entities used in this demo
 (defstruct entity 
   (stream nil)
-  (position (make-vector3 0.0 0.0 -20.0))
-  (rotation (make-vector3 0.0 0.0 0.0))
-  (scale (make-vector3 1.0 1.0 1.0)))
+  (position (v! 0.0 0.0 -20.0))
+  (rotation (v! 0.0 0.0 0.0))
+  (scale (v! 1.0 1.0 1.0)))
 
 (defstruct camera 
-  (position (make-vector3 0.0 0.0 0.0))
-  (look-direction (make-vector3 0.0 0.0 -1.0))
-  (up-direction (make-vector3 0.0 1.0 0.0)))
+  (position (v! 0.0 0.0 0.0))
+  (look-direction (v! 0.0 0.0 -1.0))
+  (up-direction (v! 0.0 1.0 0.0)))
 
 (defun point-camera-at (camera point)
   (setf (camera-look-direction camera)
@@ -49,11 +47,11 @@
 		      (m4::rotation-from-matrix3
 		       (m3:make-from-rows right-dir
 					  perp-up-dir
-					  (v3:v-1 (make-vector3 0.0
+					  (v3:v-1 (v! 0.0
 								0.0
 								0.0)
 						  look-dir)))))
-	 (trans-matrix (m4:translation (v3:v-1 (make-vector3 0.0
+	 (trans-matrix (m4:translation (v3:v-1 (v! 0.0
 							     0.0
 							     0.0)
 					       (camera-position camera)))))
@@ -68,7 +66,7 @@
 	 (con-theta (cos theta))
 	 (sin-phi (sin phi))
 	 (cos-phi (cos phi))
-	 (dir-to-cam (make-vector3 (* sin-theta cos-phi)
+	 (dir-to-cam (v! (* sin-theta cos-phi)
 				   con-theta
 				   (* sin-theta sin-phi))))
     (v3:v+ cam-target (v3:v* dir-to-cam (v-z sphere-cam-rel-pos)))))
@@ -76,7 +74,7 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *camera* (make-camera :position (make-vector3 0.0 0.0 0.0)))
+  (setf *camera* (make-camera :position (v! 0.0 0.0 0.0)))
   (setf *shaders* (mapcar #'cgl:make-shader `("6.vert" "6.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
@@ -93,8 +91,8 @@
 					  (random 1.0) 
 					  (random 1.0) 
 					  1.0))) 
-			(gethash :vertices monkey-data)))
-	 (indicies (loop for face in (gethash :faces monkey-data)
+			(first monkey-data)))
+	 (indicies (loop for face in (car (last monkey-data))
 		      append (mapcar #'car (subseq face 0 3))))
 	 (stream (cgl:make-gpu-stream 
 		  :vao (cgl:make-vao 
@@ -107,12 +105,12 @@
 			 :initial-contents 
 			 (cgl:destructuring-allocate :short
 						     indicies)
-			 :buffer-type :element-array-buffer))
+			 :buffer-target :element-array-buffer))
 		  :length (length indicies))))
     (setf *entities* 
 	  (list 
-	   (make-entity :position (make-vector3 0.0 0.0 -15.0)
-			:rotation (make-vector3 -1.57079633 0.0 0.0)
+	   (make-entity :position (v! 0.0 0.0 -15.0)
+			:rotation (v! -1.57079633 0.0 0.0)
 			:stream stream))))
   
   ;;set options
@@ -173,7 +171,7 @@
   (let ((entity (first *entities*)))
     (setf (entity-rotation entity) 
 	  (v3:v+ (entity-rotation entity)
-		 (make-vector3 0.00 0.01 0.02))))
+		 (v! 0.00 0.01 0.02))))
   
   (loop for entity in *entities*
        do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 
