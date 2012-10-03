@@ -10,8 +10,6 @@
 ;; for generating terrains.
 
 
-(in-package :cepl-examples)
-
 (setf *random-state* (make-random-state t))
 
 (defparameter *prog-1* nil)
@@ -23,25 +21,25 @@
 
 
 ;; Define data formats 
-(cgl:define-interleaved-attribute-format vert-data 
-  (:type :float :components (x y z))
-  (:type :float :components (r g b a)))
+(cgl:defglstruct vert-data 
+  (position :type :float :length 3)
+  (colour :type :float :length 4))
 
 ;; The entities used in this demo
 (defstruct entity 
   (stream nil)
-  (position (v:make-vector 0.0 0.0 -20.0))
-  (rotation (v:make-vector 0.0 0.0 0.0))
-  (scale (v:make-vector 1.0 1.0 1.0))
+  (position (v! 0.0 0.0 -20.0))
+  (rotation (v! 0.0 0.0 0.0))
+  (scale (v! 1.0 1.0 1.0))
   (left nil)
   (right nil)
   (forward nil)
   (backward nil))
 
 (defstruct camera 
-  (position (v:make-vector 0.0 0.0 0.0))
-  (look-direction (v:make-vector 0.0 0.0 -1.0))
-  (up-direction (v:make-vector 0.0 1.0 0.0)))
+  (position (v! 0.0 0.0 0.0))
+  (look-direction (v! 0.0 0.0 -1.0))
+  (up-direction (v! 0.0 1.0 0.0)))
 
 (defun point-camera-at (camera point)
   (setf (camera-look-direction camera)
@@ -57,10 +55,10 @@
 		      (m4::rotation-from-matrix3
 		       (m3:make-from-rows right-dir
 					  perp-up-dir
-					  (v:1- (v:make-vector 0.0 0.0 0.0)
+					  (v:1- (v! 0.0 0.0 0.0)
 						look-dir)))))
 	 (trans-matrix (m4:translation 
-			(v:1- (v:make-vector 0.0 0.0 0.0)
+			(v:1- (v! 0.0 0.0 0.0)
 			      (camera-position camera)))))
     (m4:m* rot-matrix trans-matrix)))
 
@@ -73,7 +71,7 @@
 	 (con-theta (cos theta))
 	 (sin-phi (sin phi))
 	 (cos-phi (cos phi))
-	 (dir-to-cam (v:make-vector (* sin-theta cos-phi)
+	 (dir-to-cam (v! (* sin-theta cos-phi)
 			con-theta
 			(* sin-theta sin-phi))))
     (v:+ cam-target (v:* dir-to-cam (v-z sphere-cam-rel-pos)))))
@@ -93,9 +91,9 @@
        square-size)
     
     (make-entity 
-     :position (v:make-vector 0.0 0.0 -15.0)
-     :rotation (v:make-vector 0.0 0.0 0.0)
-     :stream (cgl:make-gl-stream 
+     :position (v! 0.0 0.0 -15.0)
+     :rotation (v! 0.0 0.0 0.0)
+     :stream (cgl:make-gpu-stream 
 	      :vao (cgl:make-vao 
 		    (cgl:gen-buffer
 		     :initial-contents 
@@ -104,11 +102,11 @@
 		    :element-buffer 
 		    (cgl:gen-buffer 
 		     :initial-contents
-		     (cgl:destructuring-allocate :short
+		     (cgl:destructuring-allocate :unsigned-short
 						 indicies)
-		     :buffer-type :element-array-buffer))
+		     :buffer-target :element-array-buffer))
 	      :length (length indicies)
-	      :element-type :unsigned-short))))
+	      :index-type :unsigned-short))))
 
 
 (defun rgb (r g b)
@@ -121,14 +119,18 @@
 
 (defun pick-color (x)
   (declare (ignore x))
-  `(,(random 1.0) ,(random 1.0) ,(random 1.0) 0.0))
+  (make-array 4 :element-type 'single-float
+	      :initial-contents `(,(random 1.0) ,(random 1.0) 
+				   ,(random 1.0) 0.0)))
 
 (defun get-terrain-verts-and-indices (terrain square-size)
   (labels ((gen-vert (data x y)
-	     `((,(* square-size x) 
-		 ,(aref data x y)
-		 ,(* square-size y))
-	       ,(pick-color (aref data x y)))))
+	     (list 
+	      (make-array 3 :element-type 'single-float
+			  :initial-contents `(,(* square-size x) 
+					       ,(aref data x y)
+					       ,(* square-size y)))
+	      (pick-color (aref data x y)))))
     (let* ((data terrain)
 	   (data-dimen (array-dimensions data)))
       (list 
@@ -216,8 +218,8 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *camera* (make-camera :position (v:make-vector 0.0 0.0 0.0)))
-  (setf *shaders* (mapcar #'cgl:make-shader `("7.vert" "7.frag")))
+  (setf *camera* (make-camera :position (v! 0.0 0.0 0.0)))
+  (setf *shaders* (mapcar #'cgl:make-shader `("6.vert" "6.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
 	(cepl-camera:calculate-frustrum-scale 45.0))
@@ -283,19 +285,19 @@
   (when (entity-right entity)
     (setf (entity-rotation entity) 
 	  (v:+ (entity-rotation entity)
-	       (v:make-vector 0.00 -0.05 0.00))))
+	       (v! 0.00 -0.05 0.00))))
   (when (entity-left entity)
     (setf (entity-rotation entity) 
 	  (v:+ (entity-rotation entity)
-	       (v:make-vector 0.00 0.05 0.00))))
+	       (v! 0.00 0.05 0.00))))
   (when (entity-forward entity)
     (setf (entity-position entity) 
 	  (v:+ (entity-position entity)
-	       (v:make-vector 0.00 0.00 -0.80))))
+	       (v! 0.00 0.00 -0.80))))
   (when (entity-backward entity)
     (setf (entity-position entity) 
 	  (v:+ (entity-position entity)
-	       (v:make-vector 0.00 0.00 0.80)))))
+	       (v! 0.00 0.00 0.80)))))
 
 ;----------------------------------------------
 
@@ -396,67 +398,66 @@
 ;; this is obviously unacceptable and will be fixed when I can
 ;; extract the sdl event handling from their loop system.
 (defun run-demo ()
-  (init-sdl ()
-    (setf (sdl:frame-rate) 0)
-    (init)
-    (reshape 640 480)
-    ;; I've been tearing apart sdl's 'with-events' macro to see
-    ;; what they include in the main loop. I'm trying to make 
-    ;; as thin a layer between the user and the code as possible
-    ;; do I feel that the 'with-events' macro has a little too
-    ;; much magic.
-    ;; Below I have ripped out the parts I need to make this 
-    ;; function in the same way as 7.lisp.
-    ;; I am currently experimenting with time in the protocode
-    ;; folder, and as soon as I have nailed that down I will
-    ;; and player controls to this (or prehaps another) example.
-    (let ((draw-timer (make-time-buffer))
-	  (draw-stepper (make-stepper (/ 1000.0 60)))
-	  (running t)
-	  (event-emmiters `(,(make-event-emitter 
-			      :quit
-			      (event-type-tester :quit-event))
-			    ,(make-event-emitter
-			      :forward
-			      #'forwardp)
-			    ,(make-event-emitter
-			      :backward
-			      #'backwardp)
-			    ,(make-event-emitter
-			      :left
-			      #'leftp)
-			    ,(make-event-emitter
-			      :right
-			      #'rightp)
-			    ,(make-event-emitter
-			      :forward-up
-			      #'forward-upp)
-			    ,(make-event-emitter
-			      :backward-up
-			      #'backward-upp)
-			    ,(make-event-emitter
-			      :left-up
-			      #'left-upp)
-			    ,(make-event-emitter
-			      :right-up
-			      #'right-upp))))
-      (do-until (not running)
-	(dolist (event (get-events event-emmiters))
-	  (case event
-	    (:quit (setf running nil))
-	    (:forward (forward))
-	    (:backward (backward))
-	    (:left (left))
-	    (:right (right))
-	    (:forward-up (forward-up))
-	    (:backward-up (backward-up))
-	    (:left-up (left-up))
-	    (:right-up (right-up))))
-	(on-step-call (draw-stepper 
-		       (funcall draw-timer))
-	  (continuable (update-swank))
-	  (continuable (draw)))
-	(sdl::process-audio)))))
+  (setf (sdl:frame-rate) 0)
+  (init)
+  (reshape 640 480)
+  ;; I've been tearing apart sdl's 'with-events' macro to see
+  ;; what they include in the main loop. I'm trying to make 
+  ;; as thin a layer between the user and the code as possible
+  ;; do I feel that the 'with-events' macro has a little too
+  ;; much magic.
+  ;; Below I have ripped out the parts I need to make this 
+  ;; function in the same way as 7.lisp.
+  ;; I am currently experimenting with time in the protocode
+  ;; folder, and as soon as I have nailed that down I will
+  ;; and player controls to this (or prehaps another) example.
+  (let ((draw-timer (make-time-buffer))
+	(draw-stepper (make-stepper (/ 1000.0 60)))
+	(running t)
+	(event-emmiters `(,(make-event-emitter 
+			    :quit
+			    (event-type-tester :quit-event))
+			   ,(make-event-emitter
+			     :forward
+			     #'forwardp)
+			   ,(make-event-emitter
+			     :backward
+			     #'backwardp)
+			   ,(make-event-emitter
+			     :left
+			     #'leftp)
+			   ,(make-event-emitter
+			     :right
+			     #'rightp)
+			   ,(make-event-emitter
+			     :forward-up
+			     #'forward-upp)
+			   ,(make-event-emitter
+			     :backward-up
+			     #'backward-upp)
+			   ,(make-event-emitter
+			     :left-up
+			     #'left-upp)
+			   ,(make-event-emitter
+			     :right-up
+			     #'right-upp))))
+    (do-until (not running)
+      (dolist (event (get-events event-emmiters))
+	(case event
+	  (:quit (setf running nil))
+	  (:forward (forward))
+	  (:backward (backward))
+	  (:left (left))
+	  (:right (right))
+	  (:forward-up (forward-up))
+	  (:backward-up (backward-up))
+	  (:left-up (left-up))
+	  (:right-up (right-up))))
+      (on-step-call (draw-stepper 
+		     (funcall draw-timer))
+	(continuable (update-swank))
+	(continuable (draw)))
+      (sdl::process-audio))))
 
 (defun forward ()
   (let ((entity (first *entities*)))

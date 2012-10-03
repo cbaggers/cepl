@@ -8,13 +8,6 @@
 
 (in-package model-parsers)
 
-(defun get-stuff (filename)
-  (with-open-file (my-stream filename)
-    (loop for line = (read-line my-stream nil 
-				'my-eof-sym)
-       until (eq line 'my-eof-sym)
-       collect line)))
-
 (defun parse-obj-file (filename)
   (proc-obj-lines  (with-open-file (my-stream filename)
 		     (loop for line = (read-line my-stream nil 
@@ -33,11 +26,10 @@
    (let* ((line (cl-utilities:split-sequence
 		 #\space (first obj-lines) :remove-empty-subseqs t))
 	  (native-line (mapcar #'cepl-utils:safe-read-from-string line))
-	  (type (first native-line))
 	  (body (rest native-line)))
      ;; first item in the list will specify the type of data in the line
-     (case type
-       (o  (proc-obj-lines (rest obj-lines) 
+     (case (cepl-utils:make-keyword (first native-line))
+       (:o  (proc-obj-lines (rest obj-lines) 
 			   (when vertices
 			     (cons (list (reverse vertices) 
 					 (reverse normals)
@@ -47,34 +39,34 @@
 					 (reverse faces)) objects))
 			   groups smoothing-group merging-group nil 
 			   nil nil nil nil nil))
-       (v  (proc-obj-lines (rest obj-lines) objects groups 
+       (:v  (proc-obj-lines (rest obj-lines) objects groups 
 			  smoothing-group merging-group
 			  (cons (apply #'v:swizzle body) vertices)
 			  normals tex-coords points lines faces))
-       (vt (proc-obj-lines (rest obj-lines) objects groups
+       (:vt (proc-obj-lines (rest obj-lines) objects groups
 			  smoothing-group merging-group vertices
 			  normals (cons (apply #'v:swizzle body) 
 					tex-coords) 
 			  points lines faces))
-       (vn (proc-obj-lines (rest obj-lines) objects groups 
+       (:vn (proc-obj-lines (rest obj-lines) objects groups 
 			  smoothing-group merging-group vertices 
 			  (cons (apply #'v:swizzle body) normals)
 			  tex-coords points lines faces))
-       (g  (proc-obj-lines (rest obj-lines) objects body
+       (:g  (proc-obj-lines (rest obj-lines) objects body
 			  smoothing-group merging-group vertices 
 			  normals tex-coords points lines faces))
-       (s  (proc-obj-lines (rest obj-lines) objects groups 
+       (:s  (proc-obj-lines (rest obj-lines) objects groups 
 			  (if (equal (car body) "off") 
 			      0 (car body))
 			  merging-group vertices normals tex-coords
 			  points lines faces))
-       (mg (proc-obj-lines (rest obj-lines) objects groups 
+       (:mg (proc-obj-lines (rest obj-lines) objects groups 
 			  smoothing-group
 			  (if (equal (car body) "off")
 			      0 (car body))
 			  vertices normals tex-coords points lines
 			  faces))
-       (p (proc-obj-lines (rest obj-lines) objects groups
+       (:p (proc-obj-lines (rest obj-lines) objects groups
 			 smoothing-group merging-group vertices
 			 normals
 			 (cons (list (relative-indices 
@@ -83,7 +75,7 @@
 				     groups smoothing-group 
 				     merging-group) points)
 			 lines faces))
-       (l (proc-obj-lines (rest obj-lines) objects groups 
+       (:l (proc-obj-lines (rest obj-lines) objects groups 
 			  smoothing-group merging-group vertices
 			  normals tex-coords points
 			  (cons (list (relative-indices 
@@ -91,7 +83,7 @@
 				       (length vertices)) 
 				      groups smoothing-group 
 				      merging-group) lines) faces))
-       (f (proc-obj-lines (rest obj-lines) objects groups 
+       (:f (proc-obj-lines (rest obj-lines) objects groups 
 			  smoothing-group merging-group vertices
 			  normals tex-coords points lines
 			  (cons (list (relative-indices 
@@ -103,12 +95,12 @@
 				  smoothing-group merging-group
 				  vertices normals tex-coords 
 				  points lines faces))))
-   (cons (list vertices 
-	       normals
-	       tex-coords
-	       points
-	       lines
-	       faces) objects)))
+   (cons (list (reverse vertices) 
+	       (reverse normals)
+	       (reverse tex-coords)
+	       (reverse points)
+	       (reverse lines)
+	       (reverse faces)) objects)))
 
 
 (defun relative-indices (line current-len)

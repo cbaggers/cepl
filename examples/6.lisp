@@ -5,8 +5,6 @@
 ;; what is happening. It just feels like the main loop is too 
 ;; important to be left to magic!
 
-(in-package :cepl-examples)
-
 ;; Globals - Too damn many of them, but its in keeping with
 ;;           the tutorials online
 (defparameter *prog-1* nil)
@@ -18,9 +16,9 @@
 
 
 ;; Define data formats 
-(cgl:define-interleaved-attribute-format vert-data 
-  (:type :float :components (x y z))
-  (:type :float :components (r g b a)))
+(cgl:defglstruct vert-data 
+  (position :type :float :length 3)
+  (colour :type :float :length 4))
 
 ;; The entities used in this demo
 (defstruct entity 
@@ -76,43 +74,44 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *camera* (make-camera :position (v:make-vector 0.0 0.0 0.0)))
-  (setf *shaders* (mapcar #'cgl:make-shader `("7.vert" "7.frag")))
+  (setf *camera* (make-camera :position (v! 0.0 0.0 0.0)))
+  (setf *shaders* (mapcar #'cgl:make-shader `("6.vert" "6.frag")))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
 	(cepl-camera:calculate-frustrum-scale 45.0))
   (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix 
 			   *frustrum-scale*))
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
+
   ;;create entities
   (let* ((monkey-data (first 
-		       (model-parsers:parse-obj-file "6.obj")))
+		       (model-parsers:parse-obj-file "5.obj")))
 	 (verts (mapcar #'(lambda (x)
-			    (list x (list (random 1.0) 
-					  (random 1.0) 
-					  (random 1.0) 
-					  1.0))) 
-			(gethash :vertices monkey-data)))
-	 (indicies (loop for face in (gethash :faces monkey-data)
-		      append (mapcar #'car (subseq face 0 3))))
-	 (stream (cgl:make-gl-stream 
+			    (list x (make-array 4 :element-type 'single-float
+						:initial-contents 
+						(list (random 1.0) 
+						      (random 1.0) 
+						      (random 1.0)
+						      1.0)))) 
+			(first monkey-data)))
+	 (indicies (loop for face in (car (last monkey-data))
+		      append (mapcar #'car (first face))))
+	 (stream (cgl:make-gpu-stream 
 		  :vao (cgl:make-vao 
-			(cgl:gen-buffer
-			 :initial-contents
-			 (cgl:destructuring-allocate
-			  'vert-data verts))
+			(cgl:gen-buffer :initial-contents
+					(cgl:destructuring-allocate 
+					 'vert-data verts))
 			:element-buffer 
-			(cgl:gen-buffer 
+			(cgl:gen-buffer
 			 :initial-contents 
-			 (cgl:destructuring-allocate :short
-						     indicies)
-			 :buffer-type :element-array-buffer))
+			 (cgl:destructuring-allocate
+			  :unsigned-short indicies)
+			 :buffer-target :element-array-buffer))
 		  :length (length indicies)
-		  :element-type :unsigned-short)))
+		  :index-type :unsigned-short)))
     (setf *entities* 
 	  (list 
-	   (make-entity :position (make-vector3 0.0 0.0 -15.0)
-			:rotation (make-vector3 -1.57079633 0.0 0.0)
+	   (make-entity :rotation (v! -1.57079633 0.0 0.0)
 			:stream stream))))
   
   ;;set options
@@ -282,67 +281,66 @@
 ;; this is obviously unacceptable and will be fixed when I can
 ;; extract the sdl event handling from their loop system.
 (defun run-demo ()
-  (init-sdl ()
-    (setf (sdl:frame-rate) 0)
-    (init)
-    (reshape 640 480)
-    ;; I've been tearing apart sdl's 'with-events' macro to see
-    ;; what they include in the main loop. I'm trying to make 
-    ;; as thin a layer between the user and the code as possible
-    ;; do I feel that the 'with-events' macro has a little too
-    ;; much magic.
-    ;; Below I have ripped out the parts I need to make this 
-    ;; function in the same way as 7.lisp.
-    ;; I am currently experimenting with time in the protocode
-    ;; folder, and as soon as I have nailed that down I will
-    ;; and player controls to this (or prehaps another) example.
-    (let ((draw-timer (make-time-buffer))
-	  (draw-stepper (make-stepper (/ 1000.0 60)))
-	  (running t)
-	  (event-emmiters `(,(make-event-emitter 
-			      :quit
-			      (event-type-tester :quit-event))
-			    ,(make-event-emitter
-			      :forward
-			      #'forwardp)
-			    ,(make-event-emitter
-			      :backward
-			      #'backwardp)
-			    ,(make-event-emitter
-			      :left
-			      #'leftp)
-			    ,(make-event-emitter
-			      :right
-			      #'rightp)
-			    ,(make-event-emitter
-			      :forward-up
-			      #'forward-upp)
-			    ,(make-event-emitter
-			      :backward-up
-			      #'backward-upp)
-			    ,(make-event-emitter
-			      :left-up
-			      #'left-upp)
-			    ,(make-event-emitter
-			      :right-up
-			      #'right-upp))))
-      (do-until (not running)
-	(dolist (event (get-events event-emmiters))
-	  (case event
-	    (:quit (setf running nil))
-	    (:forward (forward))
-	    (:backward (backward))
-	    (:left (left))
-	    (:right (right))
-	    (:forward-up (forward-up))
-	    (:backward-up (backward-up))
-	    (:left-up (left-up))
-	    (:right-up (right-up))))
-	(on-step-call (draw-stepper 
-		       (funcall draw-timer))
-	  (continuable (update-swank))
-	  (continuable (draw)))
-	(sdl::process-audio)))))
+  (setf (sdl:frame-rate) 0)
+  (init)
+  (reshape 640 480)
+  ;; I've been tearing apart sdl's 'with-events' macro to see
+  ;; what they include in the main loop. I'm trying to make 
+  ;; as thin a layer between the user and the code as possible
+  ;; do I feel that the 'with-events' macro has a little too
+  ;; much magic.
+  ;; Below I have ripped out the parts I need to make this 
+  ;; function in the same way as 7.lisp.
+  ;; I am currently experimenting with time in the protocode
+  ;; folder, and as soon as I have nailed that down I will
+  ;; and player controls to this (or prehaps another) example.
+  (let ((draw-timer (make-time-buffer))
+	(draw-stepper (make-stepper (/ 1000.0 60)))
+	(running t)
+	(event-emmiters `(,(make-event-emitter 
+			    :quit
+			    (event-type-tester :quit-event))
+			   ,(make-event-emitter
+			     :forward
+			     #'forwardp)
+			   ,(make-event-emitter
+			     :backward
+			     #'backwardp)
+			   ,(make-event-emitter
+			     :left
+			     #'leftp)
+			   ,(make-event-emitter
+			     :right
+			     #'rightp)
+			   ,(make-event-emitter
+			     :forward-up
+			     #'forward-upp)
+			   ,(make-event-emitter
+			     :backward-up
+			     #'backward-upp)
+			   ,(make-event-emitter
+			     :left-up
+			     #'left-upp)
+			   ,(make-event-emitter
+			     :right-up
+			     #'right-upp))))
+    (do-until (not running)
+      (dolist (event (get-events event-emmiters))
+	(case event
+	  (:quit (setf running nil))
+	  (:forward (forward))
+	  (:backward (backward))
+	  (:left (left))
+	  (:right (right))
+	  (:forward-up (forward-up))
+	  (:backward-up (backward-up))
+	  (:left-up (left-up))
+	  (:right-up (right-up))))
+      (on-step-call (draw-stepper 
+		     (funcall draw-timer))
+	(continuable (update-swank))
+	(continuable (draw)))
+      (sdl::process-audio))))
 
 (defun forward ()
   (let ((entity (first *entities*)))

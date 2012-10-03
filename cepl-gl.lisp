@@ -30,17 +30,7 @@
 ;;   to simplify things to take any of that beauty away.
 ;;
 
-;;
-;; [TODO] Look at pretty printing for our new types
-;;        http://www.lysator.liu.se/~boris/ll/clm/node259.html
-;;
-;; [TODO] Write all the doco strings again
-;;
-;; [TODO] add appending arrays to make-gpu-array
-
 (in-package :cepl-gl)
-
-(defparameter *pprint-cgl-types* t)
 
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
@@ -279,6 +269,7 @@ need." ))
       
       (when element-buffer
 	(bind-buffer element-buffer :element-array-buffer))
+      (bind-vao 0)
       vao)))
 
 (defun make-vao-from-gpu-arrays (gpu-arrays 
@@ -423,7 +414,7 @@ need." ))
 			    `(,(cepl-utils:symb name '-	c)
 			       (aref-gl gl-array index)))))))
        ,(let ((stride (if (> (length clauses) 1)
-                          `(foreign-type-size ',name)
+                          `(cffi:foreign-type-size ',name)
                           0)))
              `(defmethod gl-type-format ((array-type (EQL ',name)) &optional (address-offset 0))
                 (list ,@(loop for slotd in slot-descriptions
@@ -538,7 +529,7 @@ need." ))
   gl-object)
 
 (defun foreign-type-index (type index)
-  (* (foreign-type-size type)
+  (* (cffi:foreign-type-size type)
      index))
 
 ;;;--------------------------------------------------------------
@@ -561,7 +552,7 @@ need." ))
   "This returns the size in bytes of the gl-array"
   (declare (glarray gl-array))
   (* (glarray-length gl-array) 
-     (foreign-type-size (glarray-type gl-array))))
+     (cffi:foreign-type-size (glarray-type gl-array))))
 
 ;; check for glstruct type existance
 (defun make-gl-array (element-type &key length initial-contents)

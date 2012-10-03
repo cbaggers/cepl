@@ -64,7 +64,7 @@
 			 (* sin-theta sin-phi))))
     (v3:v+ cam-target (v3:v* dir-to-cam (v-z sphere-cam-rel-pos)))))
 
-					;----------------------------------------------
+;----------------------------------------------
 
 (defun init () 
   (setf *camera* (make-camera :position (v! 0.0 9.0 0.0)))
@@ -94,11 +94,10 @@
 		     7  6  4 
 		     6  7  5))
 	 (stream (cgl:make-gpu-stream
-		  :vao (cgl:make-vao 
-			(cgl:gen-buffer
-			 :initial-contents
-			 (cgl:destructuring-allocate
-			  'vert-data verts))
+		  :vao (cgl:make-vao
+			(cgl:gen-buffer :initial-contents
+					(cgl:destructuring-allocate
+					 'vert-data verts))
 			:element-buffer 
 			(cgl:gen-buffer 
 			 :initial-contents 

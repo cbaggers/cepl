@@ -28,7 +28,6 @@
 				  (coerce x 'single-float))
 		       (apply #'concatenate 'list
 			      (mapcar #'seqify vectors)))))
-	(print combined)
 	(apply #'make-vector combined))))
 
 ;; doesnt restrict length and needs correctly typed vectors

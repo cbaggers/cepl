@@ -10,10 +10,6 @@
 (defparameter *shaders* nil)
 (defparameter *entities* nil)
 (defparameter *camera* nil)
-;; for fps
-(defparameter *loops* 0)
-(defparameter *timer* (make-time-buffer))
-(defparameter *stepper* (make-stepper 1000))
 
 ;; Define data formats 
 (cgl:defglstruct vert-data 
@@ -23,7 +19,7 @@
 ;; The entities used in this demo
 (defstruct entity 
   (stream nil)
-  (position (v! 0.0 0.0 -20.0))
+  (position (v! 0.0 0.0 -3.0))
   (rotation (v! 0.0 0.0 0.0))
   (scale (v! 1.0 1.0 1.0)))
 
@@ -48,12 +44,12 @@
 		       (m3:make-from-rows right-dir
 					  perp-up-dir
 					  (v3:v-1 (v! 0.0
-								0.0
-								0.0)
+						      0.0
+						      0.0)
 						  look-dir)))))
 	 (trans-matrix (m4:translation (v3:v-1 (v! 0.0
-							     0.0
-							     0.0)
+						   0.0
+						   0.0)
 					       (camera-position camera)))))
     (m4:m* rot-matrix trans-matrix)))
 
@@ -87,30 +83,31 @@
   (let* ((monkey-data (first 
 		       (model-parsers:parse-obj-file "5.obj")))
 	 (verts (mapcar #'(lambda (x)
-			    (list x (list (random 1.0) 
-					  (random 1.0) 
-					  (random 1.0) 
-					  1.0))) 
+			    (list x (make-array 4 :element-type 'single-float
+						  :initial-contents 
+						  (list (random 1.0) 
+							(random 1.0) 
+							(random 1.0)
+							1.0)))) 
 			(first monkey-data)))
 	 (indicies (loop for face in (car (last monkey-data))
-		      append (mapcar #'car (subseq face 0 3))))
+		      append (mapcar #'car (first face))))
 	 (stream (cgl:make-gpu-stream 
 		  :vao (cgl:make-vao 
-			(cgl:gen-buffer
-			 :initial-contents
-			 (cgl:destructuring-allocate
-			  'vert-data verts))
+			(cgl:gen-buffer :initial-contents
+					(cgl:destructuring-allocate 
+					 'vert-data verts))
 			:element-buffer 
-			(cgl:gen-buffer 
+			(cgl:gen-buffer
 			 :initial-contents 
-			 (cgl:destructuring-allocate :short
-						     indicies)
+			 (cgl:destructuring-allocate
+			  :unsigned-short indicies)
 			 :buffer-target :element-array-buffer))
-		  :length (length indicies))))
+		  :length (length indicies)
+		  :index-type :unsigned-short)))
     (setf *entities* 
 	  (list 
-	   (make-entity :position (v! 0.0 0.0 -15.0)
-			:rotation (v! -1.57079633 0.0 0.0)
+	   (make-entity :rotation (v! -1.57079633 0.0 0.0)
 			:stream stream))))
   
   ;;set options
@@ -124,28 +121,6 @@
   (gl:depth-range 0.0 1.0)
   (gl:enable :depth-clamp))  
 
-(defun opengl-context ()
-  (let ((wm-info (cffi:foreign-alloc 'sdl-cffi::SDL-Sys-WM-info)))
-    ;; Set the wm-info structure to the current SDL version.
-    (sdl-cffi::set-sdl-version 
-     (cffi:foreign-slot-value wm-info 
-			      'sdl-cffi::SDL-Sys-WM-info 
-			      'sdl-cffi::version))
-    (sdl-cffi::SDL-Get-WM-Info wm-info)
-    ;; For Windows
-    #+windows(cffi:foreign-slot-value wm-info 
-				      'sdl-cffi::SDL-Sys-WM-info 
-				      'sdl-cffi::hglrc)
-    ;; For X
-    #-windows(cffi:foreign-slot-pointer 
-	      (cffi:foreign-slot-pointer 
-	       (cffi:foreign-slot-pointer wm-info
-					  'sdl-cffi::SDL-Sys-WM-info
-					  'sdl-cffi::info)
-	       'sdl-cffi::SDL-Sys-WM-info-info
-	       'sdl-cffi::x11) ;pointer
-	      'sdl-cffi::SDL-Sys-WM-info-info-x11 ;type 
-	      'sdl-cffi::hglrc))) ;undefined slot name
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list
@@ -157,10 +132,6 @@
 ;----------------------------------------------
 
 (defun draw ()
-  ;; (setf *loops* (1+ *loops*))
-  ;; (on-step-call (*stepper* (funcall *timer*))
-  ;;   (print *loops*)
-  ;;   (setf *loops* 0))
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
@@ -188,19 +159,13 @@
 			    :cameratoclipmatrix *cam-clip-matrix*)
   (gl:viewport 0 0 width height))
 
-(defun update-swank ()
-  (let ((connection (or swank::*emacs-connection*
-			(swank::default-connection))))
-    (when connection
-      (swank::handle-requests connection t))))
-
 ;----------------------------------------------
 
 ;; currently anything changed in here is going to need a restart
 ;; this is obviously unacceptable and will be fixed when I can
 ;; extract the sdl event handling from their loop system.
 (defun run-demo () 
-  (setf (sdl:frame-rate) 0)
+;;  (setf (sdl:frame-rate) 0)
   (init)
   (reshape 640 480)
   (sdl:with-events () 
@@ -208,5 +173,5 @@
     (:VIDEO-RESIZE-EVENT (:w width :h height) 
 			 (reshape width height))
     (:idle ()
-	   (base-macros:continuable (update-swank))
+	   (cepl-utils:update-swank)
 	   (base-macros:continuable (draw)))))
