@@ -716,15 +716,8 @@ need." ))
 			    :length (second attr-format))))
 	     (gl-pull gl-array))))))
 
-;; http://www.opengl.org/wiki/GLAPI/glBufferData
-(defun make-gpu-array 
-    (&key (initial-contents nil)
-       (element-type (glarray-type initial-contents))
-       (length (glarray-length initial-contents))
-       (index-array nil)
-       (access-style :static-draw)
-       (location nil))
-  "This function creates a gpu-array which is very similar
+(defgeneric make-gpu-array (initinal-contents &key)
+  (:documentation "This function creates a gpu-array which is very similar
    to a gl-array except that it is located in the memory of the
    graphics card and so is accesable to shaders.
    You can either provide and type and length or you can 
@@ -745,34 +738,83 @@ need." ))
    append the new array into that buffer. This is VERY slow
    compared to other ways of creating arrays and should only
    really be used in non-production code or when just playing 
-   around in the REPL"
+   around in the REPL"))
+
+;; http://www.opengl.org/wiki/GLAPI/glBufferData
+
+;; [TODO] CHECK THIS ERROR
+;; CEPL> (cgl:make-gpu-array nil :element-type 'vert-data :length 4)
+;; #.<GPU-ARRAY :type VERT-DATA :length 0>
+(defmethod make-gpu-array 
+    ((initial-contents t) 
+     &key
+       element-type 
+       length
+       (index-array nil)
+       (access-style :static-draw)
+       (location nil))
+  (declare (ignore initial-contents))
   (if location
       (last (make-gpu-arrays
 	     (append (pull-gl-arrays-from-buffer location)
-		     (or initial-contents
-			 (make-gl-array element-type
-					:length length)))
+		     (make-gl-array element-type
+				    :length length))
 	     :index-array index-array
 	     :access-style access-style
 	     :location location))
       (let ((buffer (add-buffer-to-pool (gen-buffer))))
-        (make-gpuarray 
-         :buffer
-         (if initial-contents
-             (buffer-data buffer initial-contents
-			  (if index-array
-			      :element-array-buffer
-			      :array-buffer)
-			  access-style)
-             (buffer-reserve-block buffer element-type length
-                                   (if index-array
-				       :element-array-buffer
-				       :array-buffer)
-				   access-style))
-         :format-index 0
-         :length length
-	 :index-array index-array
-	 :access-style access-style))))
+        (make-gpuarray :buffer (buffer-reserve-block buffer 
+						     element-type
+						     length
+						     (if index-array
+							 :element-array-buffer
+							 :array-buffer)
+						     access-style)
+		       :format-index 0
+		       :length length
+		       :index-array index-array
+		       :access-style access-style))))
+
+(defmethod make-gpu-array 
+    ((initial-contents list) 
+     &key
+       element-type
+       (index-array nil)
+       (access-style :static-draw)
+       (location nil))
+  (cffi:with-foreign-object (ptr element-type (length initial-contents))
+    (make-gpu-array (destructuring-populate (make-glarray :pointer ptr 
+							  :length (length initial-contents) 
+							  :type element-type) 
+					    initial-contents)
+		    :index-array index-array
+		    :access-style access-style
+		    :location location)))
+
+(defmethod make-gpu-array ((initial-contents glarray) 
+			   &key
+			     (index-array nil)
+			     (access-style :static-draw)
+			     (location nil))
+  (if location
+      (last (make-gpu-arrays
+	     (append (pull-gl-arrays-from-buffer location)
+		     initial-contents)
+	     :index-array index-array
+	     :access-style access-style
+	     :location location))
+      (let ((buffer (add-buffer-to-pool (gen-buffer))))
+        (make-gpuarray :buffer (buffer-data buffer 
+					    initial-contents
+					    (if index-array
+						:element-array-buffer
+						:array-buffer)
+					    access-style)
+		       :format-index 0
+		       :length (glarray-length initial-contents)
+		       :index-array index-array
+		       :access-style access-style))))
+
 
 
 (defun make-gpu-arrays (gl-arrays &key index-array
@@ -965,13 +1007,16 @@ need." ))
                   ,(gpu-sub-array monster-col-data 1000 2000))
      :indicies-array monster-indicies-array
      :length 1000)"
-  (make-gpu-stream 
-   :vao (make-vao-from-gpu-arrays gpu-arrays indicies-array)
-   :start start
-   :length length
-   :draw-type draw-type
-   :index-type (unless (null indicies-array)
-		 (gpuarray-type indicies-array))))
+  (let ((gpu-arrays (if (gpuarray-p gpu-arrays)
+			(list gpu-arrays)
+			gpu-arrays)))
+   (make-gpu-stream 
+    :vao (make-vao-from-gpu-arrays gpu-arrays indicies-array)
+    :start start
+    :length length
+    :draw-type draw-type
+    :index-type (unless (null indicies-array)
+		  (gpuarray-type indicies-array)))))
 
 
 ;;;--------------------------------------------------------------
