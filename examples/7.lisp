@@ -219,7 +219,7 @@
 
 (defun init () 
   (setf *camera* (make-camera :position (v! 0.0 0.0 0.0)))
-  (setf *shaders* (mapcar #'cgl:make-shader `("6.vert" "6.frag")))
+  (setf *shaders* (cgl:load-shaders "6.vert" "6.frag"))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
 	(cepl-camera:calculate-frustrum-scale 45.0))

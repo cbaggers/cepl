@@ -14,6 +14,8 @@
 	   :+one-degree-in-radians+
 	   :+pi+
 	   :float-zero
+	   :float-less-than-zero
+	   :float-greater-than-zero
 	   :c-sqrt
 	   :c-inv-sqrt))
 
@@ -139,11 +141,13 @@
 	   :use-program
 	   :shader-type-from-path
 	   :make-shader
-	   :make-shaders
+	   :load-shader
+	   :load-shaders
 	   :link-shaders
 	   :make-program
 	   :set-program-uniforms
-	   :draw-streams))
+	   :draw-streams
+	   :draw-stream))
 
 (defpackage :base-vectors
   (:use :cl)
@@ -249,7 +253,8 @@
 	   :scale :rotation-x :rotation-y
 	   :rotation-z :get-fixed-angles :mtrace
 	   :get-axis-angle :m+ :m- :negate :m*scalar
-	   :mcol*vec4 :mrow*vec4 :m* :transform)
+	   :mcol*vec4 :mrow*vec4 :m* :transform
+	   :to-matrix3)
   (:import-from :base-maths :float-zero
 		      :c-sqrt)
   (:import-from :vector3 
@@ -259,10 +264,6 @@
   (:import-from :base-macros
 		:apply-across-elements)
   (:import-from :base-vectors :v-x :v-y :v-z :v-w))
-
-(defpackage :matrices
-  (:use :cl)
-  (:nicknames :m))
 
 (defpackage :cepl-camera
   (:use :cl)
@@ -289,7 +290,7 @@
 (defpackage :cepl
   (:use :cl
 	:base-vectors
-    :base-matrices
+	:base-matrices
 	:base-maths
 	:base-time
 	:base-macros

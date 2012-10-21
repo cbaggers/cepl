@@ -29,7 +29,6 @@
 	       (:file "matrices/base-matrices")
 	       (:file "matrices/matrix3")
 	       (:file "matrices/matrix4")
-	       (:file "matrices/matrices")
 	       (:file "cepl-camera")
 	       (:file "model-parsers/parse-obj")
 	       (:file "cepl")))

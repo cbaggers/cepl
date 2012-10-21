@@ -17,20 +17,18 @@
 ;; The entities used in this demo
 (defstruct entity 
   (stream nil)
-  (position (v! 0.0 0.0 -20.0))
-  (rotation (v! 0.0 0.0 0.0))
-  (scale (v! 1.0 1.0 1.0)))
+  (position (v! 0 0 -20))
+  (rotation (v! 0 0 0))
+  (scale (v! 1 1 1)))
 
 (defstruct camera 
-  (position (v! 0.0 0.0 0.0))
-  (look-direction (v! 0.0 0.0 -1.0))
-  (up-direction (v! 0.0 1.0 0.0)))
+  (position (v! 0 0 0))
+  (look-direction (v! 0 0 -1))
+  (up-direction (v! 0 1 0)))
 
 (defun point-camera-at (camera point)
   (setf (camera-look-direction camera)
-	(vector3:normalize (vector3:v- point 
-				       (camera-position camera))))
-  camera)
+	(v:normalize (v:- point (camera-position camera)))) camera)
 
 (defun calculate-cam-look-at-w2c-matrix (camera)
   (let* ((look-dir (v3:normalize (camera-look-direction camera)))
@@ -41,12 +39,10 @@
 		      (m4::rotation-from-matrix3
 		       (m3:make-from-rows right-dir
 					  perp-up-dir
-					  (v3:v-1 (v! 0.0
-						      0.0
-						      0.0)
+					  (v3:v-1 (v! 0 0 0)
 						  look-dir)))))
 	 (trans-matrix 
-	  (m4:translation (v3:v-1 (v! 0.0 0.0 0.0)
+	  (m4:translation (v3:v-1 (v! 0 0 0)
 				  (camera-position camera)))))
     (m4:m* rot-matrix trans-matrix)))
 
@@ -67,7 +63,7 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *camera* (make-camera :position (v! 0.0 9.0 0.0)))
+  (setf *camera* (make-camera :position (v! 0 9 0)))
   (setf *shaders* (cgl:load-shaders "4.vert" "4.frag"))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
@@ -76,51 +72,33 @@
 			   *frustrum-scale*))
   (cgl:set-program-uniforms *prog-1* :cameratoclipmatrix *cam-clip-matrix*)
 
-  ;;create entities
-  (let* ((verts `((,(v! +1.0  +1.0  +1.0)  ,(v! 0.0  1.0  0.0  1.0)) 
-		  (,(v! -1.0  -1.0  +1.0)  ,(v! 0.0  0.0  1.0  1.0))
-		  (,(v! -1.0  +1.0  -1.0)  ,(v! 1.0  0.0  0.0  1.0))
-		  (,(v! +1.0  -1.0  -1.0)  ,(v! 0.5  0.5  0.0  1.0))
-		  (,(v! -1.0  -1.0  -1.0)  ,(v! 0.0  1.0  0.0  1.0)) 
-		  (,(v! +1.0  +1.0  -1.0)  ,(v! 0.0  0.0  1.0  1.0))
-		  (,(v! +1.0  -1.0  +1.0)  ,(v! 1.0  0.0  0.0  1.0))
-		  (,(v! -1.0  +1.0  +1.0)  ,(v! 0.5  0.5  0.0  1.0))))
-	 (indicies '(0  1  2 
-		     1  0  3 
-		     2  3  0 
-		     3  2  1 
-		     5  4  6 
-		     4  5  7 
-		     7  6  4 
-		     6  7  5))
-	 (stream (cgl:make-gpu-stream
-		  :vao (cgl:make-vao
-			(cgl:gen-buffer :initial-contents
-					(cgl:destructuring-allocate
-					 'vert-data verts))
-			:element-buffer 
-			(cgl:gen-buffer 
-			 :initial-contents 
-			 (cgl:destructuring-allocate :unsigned-short
-						     indicies)
-			 :buffer-target :element-array-buffer))
+  (let* ((verts `((,(v! +1  +1  +1)  ,(v! 0  1  0  1)) 
+		  (,(v! -1  -1  +1)  ,(v! 0  0  1  1))
+		  (,(v! -1  +1  -1)  ,(v! 1  0  0  1))
+		  (,(v! +1  -1  -1)  ,(v! 0.5  0.5  0  1))
+		  (,(v! -1  -1  -1)  ,(v! 0  1  0  1)) 
+		  (,(v! +1  +1  -1)  ,(v! 0  0  1  1))
+		  (,(v! +1  -1  +1)  ,(v! 1  0  0  1))
+		  (,(v! -1  +1  +1)  ,(v! 0.5  0.5  0  1))))
+	 (indicies '(0 1 2   1 0 3   2 3 0   3 2 1   5 4 6 
+		     4 5 7   7 6 4   6 7 5))
+	 (stream (cgl:make-gpu-stream-from-gpu-arrays
 		  :length (length indicies)
-		  :index-type :unsigned-short)))
+		  :gpu-arrays (cgl:make-gpu-array 
+			       verts :element-type 'vert-data)
+		  :indicies-array (cgl:make-gpu-array 
+				   indicies
+				   :index-array t
+				   :element-type :unsigned-short))))
     (setf *entities* 
-	  (list 
-	   (make-entity :position (v! 0.0 0.0 -20.0)
-			:stream stream)
-	   (make-entity :position (v! 0.0 0.0 -25.0)
-			:stream stream)
-	   (make-entity :position (v! 5.0 0.0 -20.0)
-			:stream stream)
-	   (make-entity :position (v! 0.0 0.0 -15.0)
-			:stream stream)
-	   (make-entity :position (v! -5.0 0.0 -20.0)
-			:stream stream))))
+	  (list (make-entity :position (v!  0 0 -20) :stream stream)
+		(make-entity :position (v!  0 0 -25) :stream stream)
+		(make-entity :position (v!  5 0 -20) :stream stream)
+		(make-entity :position (v!  0 0 -15) :stream stream)
+		(make-entity :position (v! -5 0 -20) :stream stream))))
   
   ;;set options
-  (cgl::clear-color 0.0 0.0 0.0 0.0)
+  (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
   (gl:front-face :cw)
@@ -130,20 +108,11 @@
   (gl:depth-range 0.0 1.0)
   (gl:enable :depth-clamp))  
 
-;; (defun entity-matrix (entity)
-;;   (reduce #'m4:m* (list
-;; 		   (m4:scale (entity-scale entity))
-;; 		   (m4:rotation-from-euler (entity-rotation entity))
-;; 		   (m4:translation (entity-position entity)))))
-
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list
 		   (m4:translation (entity-position entity))
 		   (m4:rotation-from-euler (entity-rotation entity))
 		   (m4:scale (entity-scale entity)))))
-
-
-					;----------------------------------------------
 
 (defun draw ()
   (cgl::clear-depth 1.0)
@@ -155,8 +124,7 @@
 
   (let ((entity (first *entities*)))
     (setf (entity-rotation entity) 
-	  (v3:v+ (entity-rotation entity)
-		 (v! 0.1 0.2 0.0))))
+	  (v:+ (entity-rotation entity) (v! 0.1 0.2 0))))
   
   (loop for entity in *entities*
      do (cgl::draw-streams *prog-1* (list (entity-stream entity)) 
@@ -171,7 +139,7 @@
   	*frustrum-scale*)
   (cgl:set-program-uniforms *prog-1* 
 			    :cameratoclipmatrix *cam-clip-matrix*)
-  (cgl::viewport 0 0 width height))
+  (cgl:viewport 0 0 width height))
 
 ;----------------------------------------------
 
@@ -182,6 +150,5 @@
     (:quit-event () t)
     (:VIDEO-RESIZE-EVENT (:w width :h height) 
 			 (reshape width height))
-    (:idle ()
-	   (cepl-utils:update-swank)
-	   (base-macros:continuable (draw)))))
+    (:idle () (cepl-utils:update-swank)
+	      (base-macros:continuable (draw)))))

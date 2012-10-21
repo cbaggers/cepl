@@ -33,6 +33,26 @@
   (declare (single-float x))
   (< (abs x) +float-threshold+))
 
+(declaim (inline float-zero-or-less)
+	 (ftype (function ((single-float)) 
+			  (boolean)) 
+		float-zero-or-less))
+(defun float-less-than-zero (x)
+  "Returns t if float is equal or less than zero
+   This is to handle the fact that floats get less accurate the
+   closer they get to zero so we have to test that a float is 
+   within a range rather than being exacting equal to 0.0"
+  (declare (single-float x))
+  (<= x +float-threshold+))
+
+(defun float-greater-than-zero (x)
+  "Returns t if float is equal or less than zero
+   This is to handle the fact that floats get less accurate the
+   closer they get to zero so we have to test that a float is 
+   within a range rather than being exacting equal to 0.0"
+  (declare (single-float x))
+  (>= x +float-threshold+))
+
 ;----------------------------------------------------------------
 
 ;;Come back and implement the fast versions of these two

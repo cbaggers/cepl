@@ -716,7 +716,7 @@ need." ))
 			    :length (second attr-format))))
 	     (gl-pull gl-array))))))
 
-(defgeneric make-gpu-array (initinal-contents &key)
+(defgeneric make-gpu-array (initial-contents &key)
   (:documentation "This function creates a gpu-array which is very similar
    to a gl-array except that it is located in the memory of the
    graphics card and so is accesable to shaders.
@@ -740,13 +740,8 @@ need." ))
    really be used in non-production code or when just playing 
    around in the REPL"))
 
-;; http://www.opengl.org/wiki/GLAPI/glBufferData
-
-;; [TODO] CHECK THIS ERROR
-;; CEPL> (cgl:make-gpu-array nil :element-type 'vert-data :length 4)
-;; #.<GPU-ARRAY :type VERT-DATA :length 0>
 (defmethod make-gpu-array 
-    ((initial-contents t) 
+    ((initial-contents (eql nil)) 
      &key
        element-type 
        length
@@ -1259,36 +1254,36 @@ need." ))
           ((equal exten ".frag") :fragment-shader)
           (t (error "Could not extract shader type from shader file extension (must be .vert or .frag)")))))
 
-(defun make-shader (file-path 
+(defun make-shader (source-string 
                     &optional 
-                      (shader-type 
-                       (shader-type-from-path file-path))
-                      (shader-id 
-                       (gl:create-shader shader-type)))
+                      shader-type 		      
+                      (shader-id (gl:create-shader shader-type)))
   "This makes a new opengl shader object by compiling the text
    in the specified file and, unless specified, establishing the
    shader type from the file extension"
-  (restart-case  
-      (let ((source-string (utils:file-to-string file-path)))
-        (gl:shader-source shader-id source-string)
-        (gl:compile-shader shader-id)
-        ;;check for compile errors
-        (if (not (gl:get-shader shader-id :compile-status))
-            (error `cgl-compile-shader-error
-                   :text (format nil 
-                                 "Error compiling shader ~a~%~a" 
-                                 file-path
-                                 (gl:get-shader-info-log 
-                                  shader-id)))))
-    (reload-recompile-shader () (make-shader file-path
+  (restart-case
+      (progn
+	(gl:shader-source shader-id source-string)
+	(gl:compile-shader shader-id)
+	;;check for compile errors
+	(if (not (gl:get-shader shader-id :compile-status))
+	    (error `cgl-compile-shader-error
+		   :text (format nil 
+				 "Error compiling shader ~%~a" 
+				 (gl:get-shader-info-log 
+				  shader-id)))))
+    (reload-recompile-shader () (make-shader source-string
                                              shader-type
                                              shader-id)))
   shader-id)
 
-;; [TODO] Add a make-shaders function which takes a list of 
-;;        shader paths and returns a list of shaders
-(defun make-shaders (&rest shader-paths)
-  (mapcar #'make-shader shader-paths))
+(defun load-shader (file-path 
+		    &optional (shader-type 
+			       (shader-type-from-path file-path)))
+  (make-shader (utils:file-to-string file-path) shader-type))
+
+(defun load-shaders (&rest shader-paths)
+  (mapcar #'load-shader shader-paths))
 
 (defun link-shaders (shaders)
   "Links all the shaders provided and returns an opengl program
@@ -1361,7 +1356,7 @@ need." ))
    all underscores _ with minus symbols -"
   (string-upcase (substitute #\- #\_ name)))
 
-(defun make-program (shaders)
+(defun make-program (&rest shaders)
   "Takes a list of shader, links them into an opengl program
    object and wraps it in a lambda.
    The reasoning for this is that a shader program is essentially
@@ -1413,3 +1408,10 @@ need." ))
    the key is the name of the uniform and the value is the value
    you wish to set the uniform to."
   (apply program (cons streams uniforms)))
+
+(defun draw-stream (program stream &rest uniforms)
+  "This is a really syntactic sugar around funcall'ing a program.
+   It takes a program, a list of streams and &key arguments where
+   the key is the name of the uniform and the value is the value
+   you wish to set the uniform to."
+  (apply program (cons (list stream) uniforms)))

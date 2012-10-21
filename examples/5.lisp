@@ -71,7 +71,7 @@
 
 (defun init () 
   (setf *camera* (make-camera :position (v! 0.0 0.0 0.0)))
-  (setf *shaders* (mapcar #'cgl:make-shader `("6.vert" "6.frag")))
+  (setf *shaders* (cgl:load-shaders "6.vert" "6.frag"))
   (setf *prog-1* (cgl:make-program *shaders*))
   (setf *frustrum-scale* 
 	(cepl-camera:calculate-frustrum-scale 45.0))
@@ -93,16 +93,7 @@
 	 (indicies (loop for face in (car (last monkey-data))
 		      append (mapcar #'car (first face))))
 	 (stream (cgl:make-gpu-stream 
-		  :vao (cgl:make-vao 
-			(cgl:gen-buffer :initial-contents
-					(cgl:destructuring-allocate 
-					 'vert-data verts))
-			:element-buffer 
-			(cgl:gen-buffer
-			 :initial-contents 
-			 (cgl:destructuring-allocate
-			  :unsigned-short indicies)
-			 :buffer-target :element-array-buffer))
+		  :vao cgl:make-vao 
 		  :length (length indicies)
 		  :index-type :unsigned-short)))
     (setf *entities* 
@@ -161,11 +152,7 @@
 
 ;----------------------------------------------
 
-;; currently anything changed in here is going to need a restart
-;; this is obviously unacceptable and will be fixed when I can
-;; extract the sdl event handling from their loop system.
 (defun run-demo () 
-;;  (setf (sdl:frame-rate) 0)
   (init)
   (reshape 640 480)
   (sdl:with-events () 

@@ -71,6 +71,12 @@
     (setf (melm result 3 3) p)
     result))
 
+;----------------------------------------------------------------
+
+(defun to-matrix3 (mat4)
+  (m3:make-matrix3 (melm mat4 0 0) (melm mat4 0 1) (melm mat4 0 2)
+		   (melm mat4 1 0) (melm mat4 1 1) (melm mat4 1 2)
+		   (melm mat4 2 0) (melm mat4 2 1) (melm mat4 2 2)))
 
 ;----------------------------------------------------------------
 

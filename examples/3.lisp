@@ -119,9 +119,6 @@
 
 ;----------------------------------------------
 
-;; currently anything changed in here is going to need a restart
-;; this is obviously unacceptable and will be fixed when I can
-;; extract the sdl event handling from their loop system.
 (defun run-demo () 
   (init)
   (reshape 640 480)

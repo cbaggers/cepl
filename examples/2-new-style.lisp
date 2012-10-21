@@ -2,7 +2,6 @@
 ;; It is to test basic uniform handling
 
 (defparameter *prog-1* nil)
-(defparameter *shaders* nil)
 (defparameter *streams* nil)
 (defparameter *move-loop-length* 100)
 (defparameter *move-loop-pos* 0)
@@ -11,20 +10,15 @@
     (position :type :float :length 4))
 
 (defun init () 
-  (setf *shaders* (cgl:make-shaders "2.vert" "2.frag"))
-  (setf *prog-1* (cgl:make-program *shaders*))
-
-  (let* ((data '((#( 0.0   0.2  0.0  1.0))
-		 (#(-0.2  -0.2  0.0  1.0))
-		 (#( 0.2  -0.2  0.0  1.0)))) 
-	 (gl-array (cgl:make-gl-array 'vert-data
-				      :initial-contents data))
-	 (gpu-array (cgl:make-gpu-array 
-		     :initial-contents gl-array)))
-    (setf *streams* (list (cgl:make-gpu-stream-from-gpu-arrays
-			   :gpu-arrays (list gpu-array)  
-			   :length 3))))
-    (cgl:clear-color 0.0 0.0 0.0 0.0))
+  (cgl:clear-color 0.0 0.0 0.0 0.0)
+  (setf *prog-1* (cgl:make-program (cgl:load-shaders "2.vert" "2.frag")))
+  (setf *streams* `(,(cgl:make-gpu-stream-from-gpu-arrays
+		      :length 3
+		      :gpu-arrays (cgl:make-gpu-array 
+				   '((#( 0.0   0.2  0.0  1.0))
+				     (#(-0.2  -0.2  0.0  1.0))
+				     (#( 0.2  -0.2  0.0  1.0)))
+				   :element-type 'vert-data)))))
 
 (defun reshape (width height)  
   (gl:viewport 0 0 width height))
@@ -46,6 +40,5 @@
     (:quit-event () t)
     (:VIDEO-RESIZE-EVENT (:w width :h height) 
 			 (reshape width height))
-    (:idle ()
-	   (cepl-utils:update-swank)
-	   (base-macros:continuable (draw)))))
+    (:idle () (cepl-utils:update-swank)
+	      (base-macros:continuable (draw)))))

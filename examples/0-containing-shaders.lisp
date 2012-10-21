@@ -1,7 +1,6 @@
 ;; This is simply to get a colored triangle up on the screen
 
-(defvar vert 
-  "#version 330
+(defvar vert "#version 330
    layout (location = 0) in vec4 position;
    layout (location = 1) in vec4 color;
    smooth out vec4 theColor;
@@ -12,8 +11,7 @@
       theColor = color;
    }")
 
-(defvar frag 
-  "#version 330
+(defvar frag "#version 330
    smooth in vec4 theColor;
    out vec4 outputColor;
 
@@ -38,7 +36,9 @@
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:viewport 0 0 640 480)
-  (let* ((program (cgl:make-program (cgl:make-shaders "1.vert" "1.frag")))
+  (let* ((program (cgl:make-program
+		   `(,(cgl:make-shader vert :vertex-shader) 
+		     ,(cgl:make-shader frag :fragment-shader))))
          (data '((#( 0.0    0.5 0.0 1.0) #( 1.0 0.0 0.0 1.0))
                  (#( 0.5 -0.366 0.0 1.0) #( 0.0 1.0 0.0 1.0))
                  (#(-0.5 -0.366 0.0 1.0) #( 0.0 0.0 1.0 1.0))))
