@@ -8,8 +8,8 @@
   (colour :type :float :length 4))
 
 (defun init () 
-  (setf *prog-1* (cgl:make-program (cgl:make-shaders "1.vert" 
-						     "1.frag")))
+  (setf *prog-1* (apply #'cgl:make-program (cgl:make-shaders "1.vert" 
+							     "1.frag")))
   (setf *streams* 
 	(list (cgl:make-gpu-stream 
 	       :vao (cgl:make-vao

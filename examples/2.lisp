@@ -13,7 +13,7 @@
 (defun init () 
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (setf *shaders* (cgl:make-shaders "2.vert" "2.frag"))
-  (setf *prog-1* (cgl:make-program *shaders*))
+  (setf *prog-1* (apply #'cgl:make-program *shaders*))
   (setf *streams* 
 	(list
 	 (cgl::make-gpu-stream

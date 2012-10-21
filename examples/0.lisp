@@ -13,7 +13,7 @@
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:viewport 0 0 640 480)
-  (let* ((program (cgl:make-program (cgl:load-shaders "1.vert" "1.frag")))
+  (let* ((program (apply #'cgl:make-program (cgl:load-shaders "1.vert" "1.frag")))
          (data '((#( 0.0    0.5 0.0 1.0) #( 1.0 0.0 0.0 1.0))
                  (#( 0.5 -0.366 0.0 1.0) #( 0.0 1.0 0.0 1.0))
                  (#(-0.5 -0.366 0.0 1.0) #( 0.0 0.0 1.0 1.0))))

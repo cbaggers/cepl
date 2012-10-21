@@ -10,7 +10,8 @@
 
 (defun init () 
   (cgl:clear-color 0.0 0.0 0.0 0.0)
-  (setf *prog-1* (cgl:make-program (cgl:load-shaders "1.vert" "1.frag")))
+  (setf *prog-1* (apply #'cgl:make-program 
+			(cgl:load-shaders "1.vert" "1.frag")))
   (let* ((data '((#( 0.0     0.5  0.0  1.0)
 		  #( 1.0     0.0  0.0  1.0))
 		 (#( 0.5  -0.366  0.0  1.0)

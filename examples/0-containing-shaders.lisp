@@ -36,9 +36,8 @@
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:viewport 0 0 640 480)
-  (let* ((program (cgl:make-program
-		   `(,(cgl:make-shader vert :vertex-shader) 
-		     ,(cgl:make-shader frag :fragment-shader))))
+  (let* ((program (cgl:make-program (cgl:make-shader vert :vertex-shader) 
+				    (cgl:make-shader frag :fragment-shader)))
          (data '((#( 0.0    0.5 0.0 1.0) #( 1.0 0.0 0.0 1.0))
                  (#( 0.5 -0.366 0.0 1.0) #( 0.0 1.0 0.0 1.0))
                  (#(-0.5 -0.366 0.0 1.0) #( 0.0 0.0 1.0 1.0))))
