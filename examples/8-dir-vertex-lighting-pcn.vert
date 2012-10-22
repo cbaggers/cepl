@@ -13,6 +13,8 @@ uniform mat4 modelToCameraMatrix;
 uniform mat3 normalModelToCameraMatrix;
 uniform	mat4 cameraToClipMatrix;
 
+uniform float ambientintensity;
+
 void main()
 {
 	gl_Position = cameraToClipMatrix * (modelToCameraMatrix * vec4(position, 1.0));
@@ -22,5 +24,5 @@ void main()
 	float cosAngIncidence = dot(normCamSpace, dirToLight);
 	cosAngIncidence = clamp(cosAngIncidence, 0, 1);
 	
-	interpColor = lightIntensity * diffuseColor * cosAngIncidence;
+	interpColor = (lightIntensity * diffuseColor * cosAngIncidence) + (ambientintensity * diffuseColor);
 }

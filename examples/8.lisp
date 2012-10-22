@@ -50,7 +50,7 @@
 ;----------------------------------------------
 
 (defun init () 
-  (setf *camera* (make-camera :position (v! 0 0 6)))
+  (setf *camera* (make-camera :position (v! 0 3 6)))
   (let ((shaders (cgl:load-shaders "8-dir-vertex-lighting-pn.vert" 
 				   "8-dir-vertex-lighting-pcn.vert" 
 				   "8.frag")))
@@ -69,7 +69,7 @@
 				 (v:swizzle (second vert))
 				 (v:swizzle (third vert)))))
 	 (stream (cgl:make-gpu-stream-from-gpu-arrays
-		  :length (length indicies)
+		  :length (length (second monkey-data))
 		  :gpu-arrays (cgl:make-gpu-array verts :element-type 'vert-data)
 		  :indicies-array (cgl:make-gpu-array (second monkey-data)
 						      :element-type :unsigned-short
@@ -100,24 +100,24 @@
 (defun draw ()
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (setf *light-direction* (+ *light-direction* 0.05))
-  (let* ((horizontal_length 1.0)
-	 (vertical_length 2.0)
+  (setf *light-direction* (+ *light-direction* 0.01))
+  (let* ((horizontal-length 1.0)
+	 (vertical-length 2.0)
 	 (model-to-cam-matrix (calculate-cam-look-at-w2c-matrix *camera*))
 	 (normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
-	 (light-vec (v:normalize (v! (* (sin *light-direction*) horizontal_length) 
-				     (- vertical_length)
-				     (* (cos *light-direction*) horizontal_length) 
+	 (light-vec (v:normalize (v! (* (sin *light-direction*) horizontal-length) 
+				     vertical-length
+				     (* (cos *light-direction*) horizontal-length) 
 				     0.0)))
-	 (cam-light-vec (m4:mcol*vec4 model-to-cam-matrix light-vec))
-	 (light-intensity (v! 1 1 1 1)))
+	 (cam-light-vec (m4:mcol*vec4 model-to-cam-matrix light-vec)))
 
     (cgl:draw-stream *program-2* 
 		     (entity-stream *monkey*) 
 		      :dirtolight (v! (v-x cam-light-vec) (v-y cam-light-vec) (v-z cam-light-vec))
-		      :lightintensity light-intensity
+		      :lightintensity (v! 1 1 1 1)
 		      :modeltocameramatrix model-to-cam-matrix
-		      :normalmodeltocameramatrix normal-to-cam-matrix))
+		      :normalmodeltocameramatrix normal-to-cam-matrix
+		      :ambientintensity 0.4))
   (gl:flush)
   (sdl:update-display))
 
