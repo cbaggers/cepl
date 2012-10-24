@@ -57,9 +57,12 @@
   (destructuring-bind (local-vars local-functions uniforms in-vars)
       state
     (let ((fun-name (car sexp)))
-      (cond ((member fun-name *glsl-functions*) (do-thing))
-	    ((member fun-name local-functions) (do-other))
-	    (t (error "AAAAAAAAHHHHHH"))))))
+      (cond ((member fun-name *glsl-special-forms**) 
+	     (lookup-and-call-special-form))
+	    ((member fun-name (append *glsl-functions*
+				      local-functions)) 
+	     (function-handler))
+	    (t (error (format nil "Cannot find a function called '~s' in scope" fun-name)))))))
 
 (defun array-formatter (sexp state)
   (let* ((processed (process-multi-sexp (cadr sexp) state))
