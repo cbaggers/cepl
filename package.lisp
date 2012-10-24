@@ -66,7 +66,8 @@
 	   :group
 	   :safe-read-from-string
 	   :sub-at-index
-	   :symbolicate-package))
+	   :symbolicate-package
+	   :lispify-name))
 
 (defpackage :cepl-gl
   (:use :cl :cffi)
@@ -286,6 +287,10 @@
   (:import-from :vector4
 		:make-vector4))
 
+
+(defpackage :cglsl
+  (:use :cl :cffi)
+  (:nicknames :csl))
 
 (defpackage :cepl
   (:use :cl

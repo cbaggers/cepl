@@ -53,7 +53,7 @@
 (defun load-lisp-model (filename)
   (let* ((monkey-data (utils:safe-read-from-string (utils:file-to-string filename)))
 	 (verts (loop for vert in (first monkey-data)
-		   collect (list (v:swizzle (first vert)) 
+		   collect (list (v:* (v:swizzle (first vert)) (v! 1 1 1)) 
 				 (v:swizzle (second vert))
 				 (v:swizzle (third vert)))))
 	 (stream (cgl:make-gpu-stream-from-gpu-arrays
@@ -78,7 +78,7 @@
 			    (cepl-camera:make-cam-clip-matrix *frustrum-scale*))
   
   ;;create monkey
-  (setf *monkey* (load-lisp-model "monkey2.data"))
+  (setf *monkey* (load-lisp-model "monkey.data"))
   
   ;;set options
   (gl:clear-color 0.0 0.0 0.0 0.0)
@@ -92,11 +92,13 @@
   (gl:enable :depth-clamp))  
 
 
-;; (m4:scale (entity-scale entity))
+
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list
 		   (m4:translation (entity-position entity))
-		   (m4:rotation-from-euler (entity-rotation entity)))))
+		   (m4:rotation-from-euler (entity-rotation entity))
+		   (let ((scale-factor (entity-scale entity)))
+		     (m4:scale (v! scale-factor scale-factor scale-factor))))))
 
 
 ;----------------------------------------------
@@ -104,28 +106,26 @@
 (defun draw ()
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (setf *light-direction* (+ *light-direction* 0.1))
-  (let* ((horizontal-length 1.0)
-	 (vertical-length 0.0)
-	 (cam-w2c (calculate-cam-look-at-w2c-matrix *camera*))
-	 (model-to-cam-matrix (m4:m* cam-w2c
-				     (entity-matrix *monkey*)))
+  (setf *light-direction* (+ *light-direction* 0.03))
+  (let* ((world-to-cam-matrix (calculate-cam-look-at-w2c-matrix *camera*))
+	 (model-to-cam-matrix (m4:m* world-to-cam-matrix (entity-matrix *monkey*)))
 	 (normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
-	 (light-vec (v:normalize (v! (* (sin *light-direction*) horizontal-length) 
-				     vertical-length
-				     (* (cos *light-direction*) horizontal-length) 
+	 (light-vec (v:normalize (v! (* (sin *light-direction*) 1.0) 
+				     0.0
+				     (* (cos *light-direction*) 1.0) 
 				     0.0)))
-	 (cam-light-vec (m4:mcol*vec4 cam-w2c light-vec)))
-    (setf (entity-rotation *monkey*) (v! (v-x (entity-rotation *monkey*))
-    					 (+ 0.01 (v-y (entity-rotation *monkey*)))
-    					 (+ 0.02 (v-z (entity-rotation *monkey*)))))
-    (cgl:draw-stream *program-2* 
-		     (entity-stream *monkey*) 
-		      :dirtolight (v! (v-x cam-light-vec) (v-y cam-light-vec) (v-z cam-light-vec))
-		      :lightintensity (v! 1 1 1 1)
-		      :modeltocameramatrix model-to-cam-matrix
-		      :normalmodeltocameramatrix normal-to-cam-matrix
-		      :ambientintensity 0.2))
+	 (cam-light-vec (m4:mcol*vec4 world-to-cam-matrix light-vec)))
+    (setf (entity-rotation *monkey*) (v! (+ 0.02 (v-x (entity-rotation *monkey*)))
+					 (+ 0.01 (v-y (entity-rotation *monkey*)))
+					 (v-z (entity-rotation *monkey*))))
+    (funcall *program-2* (list (entity-stream *monkey*)) 
+	                 :dirtolight (v! (v-x cam-light-vec) 
+					 (v-y cam-light-vec)
+					 (v-z cam-light-vec))
+			 :lightintensity  (v! 1 1 1 1)
+			 :modeltocameramatrix model-to-cam-matrix
+			 :normalmodeltocameramatrix normal-to-cam-matrix
+			 :ambientintensity 0.3))
   (gl:flush)
   (sdl:update-display))
 
