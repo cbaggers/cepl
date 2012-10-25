@@ -13,7 +13,8 @@
   :depends-on (#:cl-opengl
 	       #:lispbuilder-sdl
 	       #:glop
-	       #:cl-utilities)
+	       #:cl-utilities
+	       #:cl-ppcre)
   :components ((:file "package")
 	       (:file "base-maths")
 	       (:file "base-macros")
@@ -31,4 +32,5 @@
 	       (:file "matrices/matrix4")
 	       (:file "cepl-camera")
 	       (:file "model-parsers/parse-obj")
+	       (:file "cglsl")
 	       (:file "cepl")))
