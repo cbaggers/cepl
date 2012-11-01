@@ -32,5 +32,5 @@
 	       (:file "matrices/matrix4")
 	       (:file "cepl-camera")
 	       (:file "model-parsers/parse-obj")
-	       (:file "cglsl")
+	       ;; (:file "cglsl")
 	       (:file "cepl")))
