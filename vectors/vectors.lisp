@@ -103,7 +103,7 @@
 ;----------------------------------------------------------------
 
 (defun = (&rest vecs)
-  "Returns either t if the two vectors are equal. 
+  "Returns either t if the vectors are equal. 
    Otherwise it returns nil."
   (let ((vec-a (first vecs)))
     (loop for vec in (cdr vecs)

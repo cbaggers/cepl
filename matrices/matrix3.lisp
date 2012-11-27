@@ -535,3 +535,11 @@
 		   (* (melm mat-a 2 2) (v-z vec-a))))))
 
 ;----------------------------------------------------------------
+
+(defun m*scalar (mat-a scalar)
+  "Multiplies the components of the matrix by the scalar 
+   provided"
+  (let ((result (zero-matrix3)))
+    (loop for i below 9
+	 do (setf (aref result i) (* scalar (aref mat-a i))))
+    result))

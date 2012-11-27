@@ -56,7 +56,8 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :update-swank
+  (:export :intersperse
+           :update-swank
 	   :walk-replace
 	   :file-to-string
 	   :flatten
@@ -233,7 +234,7 @@
 	   :rotation-from-axis-angle :scale
 	   :rotation-x :rotation-y :rotation-z
 	   :get-fixed-angles :get-axis-angle :m+ :m- :negate
-	   :m* :m*vec)
+	   :m* :m*vec :m*scalar)
   (:import-from :base-maths :float-zero
 		      :c-sqrt)
   (:import-from :vector3 
@@ -255,7 +256,8 @@
 	   :rotation-z :get-fixed-angles :mtrace
 	   :get-axis-angle :m+ :m- :negate :m*scalar
 	   :mcol*vec4 :mrow*vec4 :m* :transform
-	   :to-matrix3)
+	   :to-matrix3 :get-row :get-rows :get-column
+	   :get-columns)
   (:import-from :base-maths :float-zero
 		      :c-sqrt)
   (:import-from :vector3 
@@ -265,6 +267,17 @@
   (:import-from :base-macros
 		:apply-across-elements)
   (:import-from :base-vectors :v-x :v-y :v-z :v-w))
+
+
+(defpackage :matrices
+  (:use :cl)
+  (:nicknames :m)
+  (:export :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
+	   :identityp :elt :elm :get-rows :get-row
+	   :get-columns :get-column :determinant
+	   :inverse :transpose :trace :negate) 
+  (:shadow :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
+	   :elt :trace))
 
 (defpackage :cepl-camera
   (:use :cl)
@@ -290,7 +303,8 @@
 
 (defpackage :cglsl
   (:use :cl :cffi)
-  (:nicknames :csl))
+  (:nicknames :csl)
+  (:export :defshader))
 
 (defpackage :cepl
   (:use :cl

@@ -494,40 +494,6 @@ need." ))
 
 (make-dpopulates :unsigned-short :unsigned-byte)
 
-(defgeneric glpull-entry (array-type gl-array index)
-  (:documentation 
-   "Pull one entry from a glarray as a list of lisp objects"))
-
-(defgeneric gl-pull (gl-object)
-  (:documentation "Pulls data from the gl-array or gpu-array back into a native lisp list"))
-
-(defmethod gl-pull ((gl-object gpuarray))
-  (gpu-array-pull gl-object))
-
-(defmethod gl-pull ((gl-object glarray))
-  (let ((array-type (glarray-type gl-object)))
-    (loop for i below (glarray-length gl-object)
-       collect (glpull-entry array-type gl-object i))))
-
-(defgeneric gl-push (gl-object data)
-  (:documentation ""))
-
-(defmethod gl-push ((gl-object gpuarray) (data glarray))
-  (gpu-array-push gl-object data)
-  gl-object)
-
-(defmethod gl-push ((gl-object gpuarray) (data list))
-  (let ((gl-array (destructuring-allocate 
-		   (gpuarray-type gl-object)
-		   data)))
-    (gpu-array-push gl-object gl-array)
-    (free-gl-array gl-array))
-  gl-object)
-
-(defmethod gl-push ((gl-object glarray) (data list))
-  (destructuring-populate gl-object data)
-  gl-object)
-
 (defun foreign-type-index (type index)
   (* (cffi:foreign-type-size type)
      index))
@@ -1012,6 +978,45 @@ need." ))
     :draw-type draw-type
     :index-type (unless (null indicies-array)
 		  (gpuarray-type indicies-array)))))
+
+
+;;;--------------------------------------------------------------
+;;; PUSH AND PULL ;;;
+;;;---------------;;;
+
+(defgeneric glpull-entry (array-type gl-array index)
+  (:documentation 
+   "Pull one entry from a glarray as a list of lisp objects"))
+
+(defgeneric gl-pull (gl-object)
+  (:documentation "Pulls data from the gl-array or gpu-array back into a native lisp list"))
+
+(defmethod gl-pull ((gl-object gpuarray))
+  (gpu-array-pull gl-object))
+
+(defmethod gl-pull ((gl-object glarray))
+  (let ((array-type (glarray-type gl-object)))
+    (loop for i below (glarray-length gl-object)
+       collect (glpull-entry array-type gl-object i))))
+
+(defgeneric gl-push (gl-object data)
+  (:documentation ""))
+
+(defmethod gl-push ((gl-object gpuarray) (data glarray))
+  (gpu-array-push gl-object data)
+  gl-object)
+
+(defmethod gl-push ((gl-object gpuarray) (data list))
+  (let ((gl-array (destructuring-allocate 
+		   (gpuarray-type gl-object)
+		   data)))
+    (gpu-array-push gl-object gl-array)
+    (free-gl-array gl-array))
+  gl-object)
+
+(defmethod gl-push ((gl-object glarray) (data list))
+  (destructuring-populate gl-object data)
+  gl-object)
 
 
 ;;;--------------------------------------------------------------

@@ -41,6 +41,7 @@
   "Return a 4x4 zero matrix"
   (make-array 16 :element-type `single-float))
 
+;; [TODO] What?!
 (defun 2dclipspace-to-imagespace-matrix4 ()
   (make-array 16 :element-type `single-float :initial-contents
 	      #(0.5  0.0  0.0  0.5

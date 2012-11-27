@@ -5,6 +5,9 @@
 
 (in-package :cepl-utils)
 
+(defun intersperse (symb sequence)
+  (rest (mapcan #'(lambda (x) (list symb x)) sequence)))
+
 (defun update-swank ()
   "Called from within the main loop, this keep the lisp repl
    working while cepl runs"
