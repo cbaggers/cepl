@@ -142,26 +142,41 @@
 (defun glify-name (name)
   (cepl-utils:symb 'gl- name))
 
+(defun list-permutations (lists &optional accum)
+  (if lists
+      (loop for item in (first lists)
+	    append (list-permutations (rest lists)
+				      (cons item accum)))
+      (list (reverse accum))))
+
 (defmacro slquickdef (name args &key out-type 
 				  (documentation "") 
-				  shadow)
-  (let ((gl-name (glify-name name)))
+				  shadow
+				  dont-write-generic)
+  (let ((gl-name (glify-name name))
+	(type-perms (list-permutations (mapcar #'rest args))))
     `(progn
-       (defgeneric ,gl-name ,(mapcar #'first args)
-	 (:documentation ,documentation))
-       
-       (defmethod ,gl-name ,args
-	 (make-instance 
-	  ,(if out-type
-	       out-type
-	       `(class-name-sym ,(caar args)))
-	  :code (list ',name (comma ( code ,(caar args))))
-	  :percolate-to-block 
-	  (append ,@(loop for arg in args
-			  collect `(percolate-to-block ,(car arg))))
-	  :percolate-to-top 
-	  (append ,@(loop for arg in args
-			  collect `(percolate-to-top ,(car arg))))))
+       ,(when (not dont-write-generic)
+	  `(defgeneric ,gl-name ,(mapcar #'first args)
+	     (:documentation ,documentation)))
+       ,@(loop for types in type-perms
+	       collect 
+	       `(defmethod ,gl-name ,(mapcar #'list
+				      (mapcar #'first args)
+				      types)
+		 (make-instance 
+		  ,(if out-type
+		       out-type
+		       `(class-name-sym ,(caar args)))
+		  :code (list ',name (comma ( code ,(caar args))))
+		  :percolate-to-block 
+		  (append ,@(loop for arg in args
+				  collect `(percolate-to-block 
+					    ,(car arg))))
+		  :percolate-to-top 
+		  (append ,@(loop for arg in args
+				  collect `(percolate-to-top 
+					    ,(car arg)))))))
        ,(when shadow `(setf *symbol-map* (acons ,gl-name 
 						,shadow
 						*symbol-map*))))))

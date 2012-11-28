@@ -137,4 +137,61 @@
 
 (slquickdef inversesqrt ((x gl-gen)))
 
+(slquickdef abs ((x gl-gen gl-igen)))
+
+(slquickdef sign ((x gl-gen gl-igen)))
+
+(slquickdef floor ((x gl-gen)))
+
+(slquickdef trunc ((x gl-gen)))
+
+(slquickdef round ((x gl-gen)))
+
+(slquickdef roundeven ((x gl-gen)))
+
+(slquickdef ceil ((x gl-gen)))
+
+(slquickdef fract ((x gl-gen)))
+
+(slquickdef mod ((x gl-gen) (y gl-float gl-gen)))
+
+;; [TODO] Look into modf
+
+;; [TODO] Can we generalise these into the macro?
+(slquickdef min ((x gl-gen) (y gl-gen gl-float)))
+(slquickdef min ((x gl-igen) (y gl-igen gl-int)) 
+	    :dont-write-generic t)
+(slquickdef min ((x gl-ugen) (y gl-ugen gl-uint)) 
+	    :dont-write-generic t)
+
+(slquickdef max ((x gl-gen) (y gl-gen gl-float)))
+(slquickdef max ((x gl-igen) (y gl-igen gl-int)) 
+	    :dont-write-generic t)
+(slquickdef max ((x gl-ugen) (y gl-ugen gl-uint)) 
+	    :dont-write-generic t)
+
+(slquickdef clamp ((x gl-gen) (min-val gl-gen) (max-val gl-gen)))
+(slquickdef clamp ((x gl-gen) (min-val gl-float) (max-val gl-float))
+	    :dont-write-generic t)
+(slquickdef clamp ((x gl-igen) (min-val gl-igen) (max-val gl-igen))
+	    :dont-write-generic t)
+(slquickdef clamp ((x gl-igen) (min-val gl-int) (max-val gl-int))
+	    :dont-write-generic t)
+(slquickdef clamp ((x gl-ugen) (min-val gl-ugen) (max-val gl-ugen))
+	    :dont-write-generic t)
+(slquickdef clamp ((x gl-ugen) (min-val gl-uint) (max-val gl-uint))
+	    :dont-write-generic t)
+
+;; arghh
+(slquickdef mix ((x gl-gen) (y gl-gen) (a gl-gen gl-float gl-bvec)))
+
+(slquickdef step ((edge gl-gen gl-float) (x gl-gen)))
+
+(slquickdef smoothstep ((edge0 gl-gen) 
+			(edge1 gl-gen) 
+			(x gl-gen gl-float gl-bvec)))
+(slquickdef smoothstep ((edge0 gl-float) 
+			(edge1 gl-float) 
+			(x gl-gen gl-float gl-bvec)) 
+	    :dont-write-generic t)
 
