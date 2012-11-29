@@ -52,3 +52,9 @@
    :percolate-to-block (percolate-to-block x)
    :percolate-to-top (percolate-to-top x)))
 
+
+;; type converting constructors
+(slquickdef glint ((x gl-bool gl-float gl-uint)))
+(slquickdef glfloat ((x gl-bool gl-int gl-uint)))
+(slquickdef glbool ((x gl-float gl-int gl-uint)))
+(slquickdef glunit ((x gl-bool gl-float gl-int)))
