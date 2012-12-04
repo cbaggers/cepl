@@ -1,9 +1,7 @@
 ;; [TODO]
-;; - Add the last few operators
-;; - modify slquickdef to use the multi-type-arg key
-;; - modify definitions to use new slquickdef
-;; - add vector and matrix constructors
 
+;; - add vector and matrix constructors
+;; nedd to modify intersperse in some way so - can be negate
 (in-package :cglsl)
 
 (defparameter *symbol-map* `((cl:+ . gl+)
@@ -73,52 +71,48 @@
                              (gen-type type-tree parent)))
           ((listp (first type-tree))
            (loop for x in type-tree
-                append (gen-type-pairs x parent)))
+		 append (gen-type-pairs x parent)))
           ((atom (first type-tree))
            (cons (gen-type (first type-tree) parent)
                  (let ((new-parent (make-name 
                                     (first type-tree)))) 
                    (loop for x in (rest type-tree)
-                      append (gen-type-pairs 
-                               x
-                               new-parent))))))))
+			 append (gen-type-pairs 
+				 x
+				 new-parent))))))))
 
 (defmacro def-gl-types (types)
   `(progn
      ,@(gen-type-pairs types)))
 
-(def-gl-types ((gen float (vec vec2 vec3 vec4)) 
-               (igen int (ivec ivec2 ivec3 ivec4))
-               (ugen uint (uvec uvec2 uvec3 uvec4)) 
-               (bgen bool (bvec bvec2 bvec3 bvec4))))
-;; (def-gl-types ((gen float (vec vec2 vec3 vec4)) 
-;;                (igen int (ivec ivec2 ivec3 ivec4))
-;;                (ugen uint (uvec uvec2 uvec3 uvec4)) 
-;;                (bgen bool (bvec bvec2 bvec3 bvec4))
-;;                (mgen (mat2 mat2x2) (mat3 mat3x3) 
-;;                      (mat4 mat4x4) mat2x3 mat2x4
-;;                      mat3x2 mat3x4 mat4x2 mat4x3) 
-;;                (sampler
-;;                 (fsampler sampler1D sampler2D sampler3D
-;;                           samplerCube sampler2DRect
-;;                           sampler1DShadow sampler2DShadow 
-;;                           sampler2DRectShadow
-;;                           sampler1DArray sampler2DArray
-;;                           sampler1DArrayShadow 
-;;                           sampler2DArrayShadow
-;;                           samplerBuffer sampler2DMS
-;;                           sampler2DMSArray) 
-;;                 (isampler isampler1D isampler2D isampler3D
-;;                           isamplerCube isampler2DRect
-;;                           isampler1DArray isampler2DArray
-;;                           isamplerBuffer isampler2DMS
-;;                           isampler2DMSArray) 
-;;                 (usampler usampler1D usampler2D usampler3D
-;;                           usamplerCube usampler2DRect
-;;                           usampler1DArray usampler2DArray
-;;                           usamplerBuffer usampler2DMS
-;;                           usampler2DMSArray) )
-;;                number))
+(def-gl-types (((gen float (vec vec2 vec3 vec4)) 
+		(igen int (ivec ivec2 ivec3 ivec4))
+		(ugen uint (uvec uvec2 uvec3 uvec4)) 
+		(bgen bool (bvec bvec2 bvec3 bvec4))
+		(mgen (mat2 mat2x2) (mat3 mat3x3) 
+		       (mat4 mat4x4) mat2x3 mat2x4
+		       mat3x2 mat3x4 mat4x2 mat4x3) 
+		 (sampler
+		  (fsampler sampler1D sampler2D sampler3D
+			    samplerCube sampler2DRect
+			    sampler1DShadow sampler2DShadow 
+			    sampler2DRectShadow
+			    sampler1DArray sampler2DArray
+			    sampler1DArrayShadow 
+			    sampler2DArrayShadow
+			    samplerBuffer sampler2DMS
+			    sampler2DMSArray) 
+		  (isampler isampler1D isampler2D isampler3D
+			    isamplerCube isampler2DRect
+			    isampler1DArray isampler2DArray
+			    isamplerBuffer isampler2DMS
+			    isampler2DMSArray) 
+		  (usampler usampler1D usampler2D usampler3D
+			    usamplerCube usampler2DRect
+			    usampler1DArray usampler2DArray
+			    usamplerBuffer usampler2DMS
+			    usampler2DMSArray) )
+		 number)))
 
 
 (defun gl-type (obj)
@@ -190,7 +184,7 @@
 				      (cons item accum)))
       (list (reverse accum))))
 
-(defun gen-gl-form (name args out-type)
+(defun gen-gl-form (name string-name args out-type)
   (let ((gl-name (glify-name name))
 	(type-perms (list-permutations
 		     (mapcar #'rest args))))
@@ -203,7 +197,7 @@
 	      ,(if out-type
 		   out-type
 		   `(class-name-sym ,(caar args)))
-	      :code (list ',name (comma ( code ,(caar args))))
+	      :code (list ,string-name (comma (code ,(caar args))))
 	      :percolate-to-block 
 	      (append ,@(loop for arg in args
 			      collect `(percolate-to-block 
@@ -218,18 +212,20 @@
                                   shadow
                                   multi-type-arg
 				  dont-write-generic)
-  (let ((gl-name (glify-name name)))
+  (let ((string-name (if (stringp name) 
+			 name
+			 (string-downcase (utils:mkstr name))))
+	(name (utils:symb (string-upcase name))))
     `(progn       
-       ,(when dont-write-generic
-	  `(defgeneric ,gl-name ,(mapcar #'first args)
+       ,(when (not dont-write-generic)
+	  `(defgeneric ,name ,(mapcar #'first args)
 	     (:documentation ,documentation)))
        
        ,@(loop for type-template in (if multi-type-arg
 					args
 					(list args))
-	       append (gen-gl-form gl-name type-template out-type))
-       ,(when shadow `(setf *symbol-map* (acons ,gl-name 
+	       append (gen-gl-form name string-name 
+				   type-template out-type))
+       ,(when shadow `(setf *symbol-map* (acons ,name 
                                                 ,shadow
                                                 *symbol-map*))))))
-
-

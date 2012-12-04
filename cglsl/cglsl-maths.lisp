@@ -282,73 +282,67 @@
 (slquickdef isinf ((x gl-gen)) :out-type 'gl-bool)
 (slquickdef floatbitstoint ((x gl-gen)) :out-type 'gl-int)
 (slquickdef floatbitstouint ((x gl-gen)) :out-type 'gl-uint)
-;fuck these two need to be camelcase
-(slquickdef intbitstofloat ((x gl-gen)) :out-type 'gl-int)
-(slquickdef uintbitstofloat ((x gl-gen)) :out-type 'gl-uint)
+(slquickdef "intBitsToFloat" ((x gl-gen)) :out-type 'gl-int)
+(slquickdef "uintBitsToFloat" ((x gl-gen)) :out-type 'gl-uint)
 
 (slquickdef length ((x gl-gen)) :out-type 'gl-uint)
 (slquickdef distance ((x gl-gen) (y gl-gen)) :out-type 'gl-uint)
 (slquickdef dot ((x gl-gen) (y gl-gen)) :out-type 'gl-uint)
 (slquickdef cross ((x gl-vec3) (y gl-vec3)) :out-type 'gl-vec3)
 (slquickdef normalize ((x gl-gen)))
-(slquickdef dot ((n gl-gen) (i gl-gen) (nref gl-gen)))
+;;need to add frtransform and faceforward
 (slquickdef reflect ((i gl-gen) (n gl-gen)))
 (slquickdef refract ((i gl-gen) (n gl-gen) (eta gl-float)))
-;; arg these need camelcase aswell
-(slquickdef matrixcompmult ((x gl-mgen) (y gl-mgen)))
-;; and these
-(slquickdef outerproduct ((c gl-vec2) (r gl-vec2)) 
+(slquickdef "matrixCompMult" ((x gl-mgen) (y gl-mgen)))
+
+(slquickdef "outerProduct" ((c gl-vec2) (r gl-vec2)) 
 	    :out-type 'gl-mat2) 
-(slquickdef outerproduct ((c gl-vec3) (r gl-vec3)) 
+(slquickdef "outerProduct" ((c gl-vec3) (r gl-vec3)) 
 	    :out-type 'gl-mat3
 	    :dont-write-generic t)
-(slquickdef outerproduct ((c gl-vec4) (r gl-vec4)) 
+(slquickdef "outerProduct" ((c gl-vec4) (r gl-vec4)) 
 	    :out-type 'gl-mat4
 	    :dont-write-generic t)
-(slquickdef outerproduct ((c gl-vec3) (r gl-vec2)) 
+(slquickdef "outerProduct" ((c gl-vec3) (r gl-vec2)) 
 	    :out-type 'gl-mat2x3
 	    :dont-write-generic t)
-(slquickdef outerproduct ((c gl-vec2) (r gl-vec3)) 
+(slquickdef "outerProduct" ((c gl-vec2) (r gl-vec3)) 
 	    :out-type 'gl-mat3x2
 	    :dont-write-generic t)
-(slquickdef outerproduct ((c gl-vec4) (r gl-vec2)) 
+(slquickdef "outerProduct" ((c gl-vec4) (r gl-vec2)) 
 	    :out-type 'gl-mat4x2
 	    :dont-write-generic t)
-(slquickdef outerproduct ((c gl-vec2) (r gl-vec4)) 
+(slquickdef "outerProduct" ((c gl-vec2) (r gl-vec4)) 
 	    :out-type 'gl-mat2x4
 	    :dont-write-generic t)
-(slquickdef outerproduct ((c gl-vec4) (r gl-vec3)) 
+(slquickdef "outerProduct" ((c gl-vec4) (r gl-vec3)) 
 	    :out-type 'gl-mat3x4
 	    :dont-write-generic t)
-(slquickdef outerproduct ((c gl-vec3) (r gl-vec4)) 
+(slquickdef "outerProduct" ((c gl-vec3) (r gl-vec4)) 
 	    :out-type 'gl-mat4x3
 	    :dont-write-generic t)
 
 (slquickdef transpose ((m gl-mgen)))
-
 (slquickdef determinant (((a gl-mat2)) ((b gl-mat3)) ((c gl-mat4)))
 	    :out-type 'gl-float
 	    :multi-type-arg t)
-
 (slquickdef inverse ((m gl-mgen)))
-
-;; more that need camel case
-(slquickdef lessthan (((x gl-vec) (y gl-vec))
+(slquickdef "lessThan" (((x gl-vec) (y gl-vec))
 		      ((x gl-ivec) (y gl-ivec))
 		      ((x gl-uvec) (y gl-uvec)))
 	    :out-type 'gl-bvec
 	    :multi-type-arg t)
-(slquickdef greaterthan (((x gl-vec) (y gl-vec))
+(slquickdef "greaterThan" (((x gl-vec) (y gl-vec))
 			 ((x gl-ivec) (y gl-ivec))
 			 ((x gl-uvec) (y gl-uvec)))
 	    :out-type 'gl-bvec
 	    :multi-type-arg t)
-(slquickdef lessthanequal (((x gl-vec) (y gl-vec))
+(slquickdef "lessThanEqual" (((x gl-vec) (y gl-vec))
 			   ((x gl-ivec) (y gl-ivec))
 			   ((x gl-uvec) (y gl-uvec)))
 	    :out-type 'gl-bvec
 	    :multi-type-arg t)
-(slquickdef greaterthanequal (((x gl-vec) (y gl-vec))
+(slquickdef "greaterThanEqual" (((x gl-vec) (y gl-vec))
 			      ((x gl-ivec) (y gl-ivec))
 			      ((x gl-uvec) (y gl-uvec)))
 	    :out-type 'gl-bvec
@@ -359,7 +353,7 @@
 		   ((x gl-bvec) (y gl-bvec)))
 	    :out-type 'gl-bvec
 	    :multi-type-arg t)
-(slquickdef notequal (((x gl-vec) (y gl-vec))
+(slquickdef "notEqual" (((x gl-vec) (y gl-vec))
 		      ((x gl-ivec) (y gl-ivec))
 		      ((x gl-uvec) (y gl-uvec))
 		      ((x gl-bvec) (y gl-bvec)))
@@ -371,3 +365,18 @@
 	    :out-type 'gl-bool)
 (slquickdef not ((x gl-bvec))
 	    :out-type 'gl-bool)
+
+;;these are only for fragment shaders
+(slquickdef "dFdx" ((p gl-gen)))
+(slquickdef "dFdy" ((p gl-gen)))
+(slquickdef fwidth ((p gl-gen)))
+
+;;availabel to all
+(slquickdef noise1 ((x gl-gen))
+	    :out-type 'gl-float)
+(slquickdef noise2 ((x gl-gen))
+	    :out-type 'gl-vec2)
+(slquickdef noise3 ((x gl-gen))
+	    :out-type 'gl-vec2)
+(slquickdef noise4 ((x gl-gen))
+	    :out-type 'gl-vec2)

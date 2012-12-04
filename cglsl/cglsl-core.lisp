@@ -54,7 +54,7 @@
 
 
 ;; type converting constructors
-(slquickdef glint ((x gl-bool gl-float gl-uint)))
-(slquickdef glfloat ((x gl-bool gl-int gl-uint)))
-(slquickdef glbool ((x gl-float gl-int gl-uint)))
-(slquickdef glunit ((x gl-bool gl-float gl-int)))
+(slquickdef int ((x gl-bool gl-float gl-uint)))
+(slquickdef float ((x gl-bool gl-int gl-uint)))
+(slquickdef bool ((x gl-float gl-int gl-uint)))
+(slquickdef unit ((x gl-bool gl-float gl-int)))
