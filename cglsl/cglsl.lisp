@@ -7,6 +7,8 @@
 ;; - types are actually a bigger problem in cepl. We need to
 ;;   look at them in uniforms, shaders, lisp and foreign code.
 ;;   there will be a way to unify these approaches
+;; - add aref
+;; - add melm
 
 (in-package :cglsl)
 

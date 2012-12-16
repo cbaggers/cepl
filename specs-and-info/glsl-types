@@ -1,0 +1,147 @@
+;; Define data formats 
+(cgl:defglstruct :vert-data 
+  (position :type :float :length 3)
+  (color :type :float :length 4))
+;; should be changed to
+
+(cgl:defglstruct :vert-data 
+  (position :vec3)
+  (color :vec4))
+
+(defshader ((verts :vert-data) 
+	    &uniform (world-cam-matrix :mat4)
+	              (turbulence (array :vec4 10))
+		      (ref-poly (array :vert-data 3)))
+  (DO-THINGS 'STUFF)
+  (DO-THINGS 'MORE-STUFF)
+  (DO-THINGS 'FINAL-STUFF))
+
+(defprogram ((verts :vert-data) 
+	    &uniform (world-cam-matrix :mat4)
+	              (turbulence (array :vec4 10))
+		      (ref-poly (array :vert-data 3)))
+  (:vert ())
+  (:vert ())
+  (:frag ()))
+
+(eq (vector :float 3) :vec3)
+;; > t
+
+(eq (array :int 3) (simple-array :int 3))
+;; > t
+
+
+
+;; glsl types
+;; ==========
+
+:bool
+:bvec2
+:bvec3
+:bvec4
+:float
+:int
+:ivec2
+:ivec3
+:ivec4
+:mat2
+:mat2x2
+:mat2x3
+:mat2x4
+:mat3
+:mat3x2
+:mat3x3
+:mat3x4
+:mat4
+:mat4x2
+:mat4x3
+:mat4x4
+:uint
+:uvec2
+:uvec3
+:uvec4
+:vec2
+:vec3
+:vec4
+
+:sampler
+:sampler1D
+:sampler1DArray
+:sampler1DArrayShadow
+:sampler1DShadow
+:sampler2D
+:sampler2DArray
+:sampler2DArrayShadow
+:sampler2DMS
+:sampler2DMSArray
+:sampler2DRect
+:sampler2DRectShadow
+:sampler2DShadow
+:sampler3D
+:samplerBuffer
+:samplerCube
+:fsampler
+:isampler
+:isampler1D
+:isampler1DArray
+:isampler2D
+:isampler2DArray
+:isampler2DMS
+:isampler2DMSArray
+:isampler2DRect
+:isampler3D
+:isamplerBuffer
+:isamplerCube
+:usampler
+:usampler1D
+:usampler1DArray
+:usampler2D
+:usampler2DArray
+:usampler2DMS
+:usampler2DMSArray
+:usampler2DRect
+:usampler3D
+:usamplerBuffer
+:usamplerCube
+
+;; types that can be used for uniforms
+;; ===================================
+;; any type or struct of types of array of any of the previous..damn!
+
+;; Vertex Shader Inputs
+;; ====================
+;; float
+;; int
+;; uint
+;; vec2
+;; vec3
+;; vec4
+;; ivec2
+;; ivec3
+;; ivec4
+;; uvec2
+;; uvec3
+;; uvec4
+;; matrices
+;; (no structures or arrays)
+
+;; Vertex Shader Outputs
+;; =====================
+;; float
+;; vec2
+;; vec3
+;; vec4
+;; matrices
+;; arrays of the above
+
+;; When qualified flat out, then:
+;; int 
+;; uint 
+;; ivec2
+;; ivec3
+;; ivec4
+;; uvec2
+;; uvec3
+;; uvec4
+;; arrays of above 
+;; (no structures)

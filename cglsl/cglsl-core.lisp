@@ -92,3 +92,29 @@
 (slquickdef tofloat ((x gl-bool gl-int gl-uint)))
 (slquickdef tobool ((x gl-float gl-int gl-uint)))
 (slquickdef tounit ((x gl-bool gl-float gl-int)))
+
+;;------------------------------------------------------------------
+;; More type stuff ;;
+;;-----------------;;
+
+;; Figure 4-2. Standardized Atomic Type Specifiers
+
+;; If a type specifier is a list, the car of the list is a symbol, 
+;; and the rest of the list is subsidiary type information. Such a
+;; type specifier is called a compound type specifier. Except as
+;; explicitly stated otherwise, the subsidiary items can be
+;; unspecified. The unspecified subsidiary items are indicated by
+;; writing *. For example, to completely specify a vector, the type
+;; of the elements and the length of the vector must be present.
+;;
+;;  (vector double-float 100)
+;;
+;; The following leaves the length unspecified:
+;;
+;;  (vector double-float *)
+;;
+;; The following leaves the element type unspecified:
+;;
+;;  (vector * 100)                    
+;;
+;; (simple-array single-float (3))

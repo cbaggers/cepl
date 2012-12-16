@@ -85,6 +85,7 @@
 		:clear-depth
 		:flush
 		:viewport)
+  (:shadow :float)
   (:export :clear-color
 	   :enable
 	   :cull-face

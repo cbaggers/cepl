@@ -21,6 +21,7 @@
 	       (:file "base-sdl")
 	       (:file "cepl-utils")
 	       (:file "time/base-time")
+	       (:file "cepl-gl-types")
 	       (:file "cepl-gl")
 	       (:file "vectors/base-vectors")
 	       (:file "vectors/vector2")

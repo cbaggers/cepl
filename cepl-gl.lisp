@@ -33,6 +33,138 @@
 (in-package :cepl-gl)
 
 ;;;--------------------------------------------------------------
+;;; HOMELESS FUNCTIONS ;;;
+;;;--------------------;;;
+
+(defun simple-1d-populate (gl-array data)
+  "Reads a flat list of data into a gl-array"
+  (loop for datum in data
+     for i from 0
+     do (setf (aref-gl gl-array i) datum)))
+
+(defmacro make-dpopulates (&rest types)
+  `(progn
+     ,@(loop for type in types
+	    collect
+	    `(defmethod dpopulate 
+		 ((array-type (eql ,type)) gl-array
+		  data)
+	       (simple-1d-populate gl-array data))
+	    collect
+	    `(defmethod glpull-entry ((array-type (eql ',type))
+				      gl-array
+				      index)
+	       (aref-gl gl-array index)))))
+
+(make-dpopulates :unsigned-short :unsigned-byte)
+
+;;;--------------------------------------------------------------
+;;; SHADER & PROGRAMS ;;;
+;;;-------------------;;;
+
+;; 4.3 is the only one that allows layouts for uniforms 
+;; named uniforms are paired with uniform blocks. We need 
+;; a way to create these.
+;; we will use keyword args to handle default uniforms.
+;; The layout is only truly known at link time. The must create
+;; lexical variables to store all these. We can precode all the
+;; loading bits though and just use nth to pull them out... or
+;; .. we can create seperate lex-vars and place each one in the 
+;; code, no nth needed, likely to be better speed wise (no real 
+;; evildence for this but meh!)
+
+;; as for in-vars these need to be supported, as the layout can be 
+;; set we shall place these first and hard code as much as possible.
+;; No arrays or structs are allowed for in-vals
+
+(defmacro defprogram (name (stream-spec &rest uniform-spec) &body shader-pairs)
+  (declare (ignore stream-spec))
+  (let ((uniform-details (mapcar #'process-uniform uniform-spec)))
+    `(let ((program-id (link-shaders 
+			 ',(mapcar #'second shader-pairs)))) 
+       (defun ,name (stream/s &key ,@(mapcar #'first uniform-details))
+	 (use-program program-id)
+	 ,@(mapcar #'second uniform-details)
+	 (if (listp stream/s)
+	     (loop for stream in stream/s
+		   do (no-bind-draw-one stream))
+	     (no-bind-draw-one stream/s))
+	 t))))
+
+;; (defprogram test-prog (:vert-data (world-cam :mat4) (cam-pos :vec3))
+;;   (:vertex shader-1)
+;;   (:fragment shader-2))
+;;
+;;         v v v v v v v v v v v v v v v v v v v v
+;;
+;; (LET ((PROGRAM-ID (LINK-SHADERS '(SHADER-1 SHADER-2))))
+;;   (DEFUN TEST-PROG
+;;          (STREAM/S
+;;           &KEY (WORLD-CAM NIL WORLD-CAM-SET) (CAM-POS NIL CAM-POS-SET))
+;;     (USE-PROGRAM PROGRAM-ID)
+;;     (WHEN WORLD-CAM-SET (UNIFORM-PUSH-MAT4 WORLD-CAM))
+;;     (WHEN CAM-POS-SET (UNIFORM-PUSH-VEC3 CAM-POS))
+;;     (IF (LISTP STREAM/S)
+;;         (LOOP FOR STREAM IN STREAM/S
+;;               DO (NO-BIND-DRAW-ONE STREAM))
+;;         (NO-BIND-DRAW-ONE STREAM/S))
+;;     T))
+
+(defun process-uniform (arg)
+  (if (symbolp (second arg))
+      (let* ((name (car arg))
+	     (type (cadr arg))
+	     (set-name (utils:symb name '-set)))
+	(list `(,name nil ,set-name)
+	      `(when ,set-name 
+		 (,(utils:symb 'uniform-push- type) ,name))))
+      (let* ((name (car arg))
+	     (set-name (utils:symb name '-set))
+	     (structure (caadr arg))
+	     (type (cadadr arg))
+	     (length (third (second arg))))
+	(if (eq (utils:make-keyword structure) :vector)
+	    (process-uniform (list (car arg)
+				   (basic-type-to-vec-type type 
+							   length)))
+	    (list `(,name nil ,set-name)
+		  `(when ,set-name
+		     (,(utils:symb 'uniform-push- type '- 'v) ,name
+		      ,length)))))))
+
+(defun basic-type-to-vec-type (basic-type length)
+  (if (or (< length 2) (> length 4))
+      (error "invalid vector length")
+      (utils:make-keyword (case basic-type
+			    (:float 'vec)
+			    (:int 'ivec)
+			    (:uint 'uvec)
+			    (otherwise (error "unrecognised type")))
+			  length)))
+
+(defun get-layout-size (entry)
+  (let ((sizes
+	  '((:bool . 1)  (:bvec2 . 1)  (:bvec3 . 1)  (:bvec4 . 1) 
+	    (:float . 1) (:vec2 . 1)   (:vec3 . 1)   (:vec4 . 1)
+	    (:int . 1)   (:ivec2 . 1)  (:ivec3 . 1)  (:ivec4 . 1)
+	    (:mat2 . 2)  (:mat2x2 . 2) (:mat2x3 . 2) (:mat2x4 . 2)
+	    (:mat3 . 3)  (:mat3x2 . 3) (:mat3x3 . 3) (:mat3x4 . 3)
+	    (:mat4 . 4)  (:mat4x2 . 4) (:mat4x3 . 4) (:mat4x4 . 4) 
+	    (:uint . 1)  (:uvec2 . 1)  (:uvec3 . 1)  (:uvec4 . 1))))
+    (if (symbolp entry)
+	(let ((basic-type-size (cdr (assoc entry sizes))))
+	  (if basic-type-size
+	      basic-type-size
+	      `(,(utils:symb entry '-length))))
+	(destructuring-bind (structure type length)
+	    entry
+	  (declare (ignore structure))
+	  (let ((basic-type-size (cdr (assoc entry sizes))))
+	    (if basic-type-size
+		(* length basic-type-size)
+		`(* ,length (,(utils:symb entry '-length)))))))))
+
+;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
 ;;;---------;;;
 
@@ -46,6 +178,7 @@
    `((:float 10 0) ('vert-data 50 40))"
   (buffer-id (car (gl:gen-buffers 1)))
   (format nil))
+
 
 (base-macros:defmemo bind-buffer (buffer buffer-target)
   (gl:bind-buffer buffer-target (glbuffer-buffer-id buffer)))
@@ -294,209 +427,6 @@ need." ))
 				     (gpuarray-start gpu-array))))))
      :element-buffer element-buffer)))
 
-
-;;;--------------------------------------------------------------
-;;; GLSTRUCTS ;;;
-;;;-----------;;;
-
-(defun simple-1d-populate (gl-array data)
-  "Reads a flat list of data into a gl-array"
-  (loop for datum in data
-     for i from 0
-     do (setf (aref-gl gl-array i) datum)))
-
-(defmacro make-dpopulates (&rest types)
-  `(progn
-     ,@(loop for type in types
-	    collect
-	    `(defmethod dpopulate 
-		 ((array-type (eql ,type)) gl-array
-		  data)
-	       (simple-1d-populate gl-array data))
-	    collect
-	    `(defmethod glpull-entry ((array-type (eql ',type))
-				      gl-array
-				      index)
-	       (aref-gl gl-array index)))))
-
-
-(defmacro defglstruct (name &body slot-descriptions)
-  "This macro creates a foreign struct called name and
-   also creates a load of helper functions so that this 
-   struct can be used as if it were a native lisp struct.
-   To explain these helper functions lets take the following
-   glstruct defintion as an example.
-
-   (defglstruct vert-data
-     (position :type :float :length 3)
-     (color :type :float :length 4))
-
-   So along with the foreign struct vert-data you will also 
-   get the following functions:
-   - vert-data-position 
-   - vert-data-color 
-   These, just like lisp for structs, allow you to access 
-   the data in the slot. If the :length is greater than 1 then
-   the value is an array. These functions are also setf'able
-   so you can do the following:
-   
-   > (setf *test-array* (make-gl-array 'vert-data :length 10)
-     *test-array*
-   > (setf (vert-data-position (aref-gl *test-array* 0)) 
-                               #(1.0 2.0 3.0))
-     #(1.0 2.0 3.0)
-   > (vert-data-position (aref-gl *test-array* 0))
-     #(1.0 2.0 3.0)
-   
-   It also provides methods so that the following generic functions
-   will work with the new type.
-   - destructuring-populate
-   - destructuring-allocate
-   - gl-pull
-   - gl-push
-   You dont have to worry about these yourself.
-
-   So why use this at all? 
-   Well firstly it makes things more lispy, which really helps
-   when doing things from the REPL as you can focus on what you
-   are writing without thinking about some opengl specific 
-   methodology.
-   Secondly because you are using structs the data in the buffer
-   is interleaved for you. This can really help with performance
-   as graphics processing generally prefers blocks of ordered 
-   contiguous data. As an example if p=position and c=color then 
-   you could lay your buffer out as follows
-   >ppppppcccccc< but to read the position and color data for the 
-   first vertex means pulling values from two different places.
-   Using the glstruct means your data will be laid out like this:
-   >pcpcpcpcpcpc< Which is faster for the gpu to handle.
-   Obviously, nothing is for free and normally the cost is having
-   to specify all this stuff in your vaos when you come to rendering
-   but cepl-gl takes care of this for you if you have defined you 
-   use types defined using glstruct.
-
-   So all in all it's quite handy!"
-  (let ((clauses (glstruct-slot-descriptions-to-clauses
-		  slot-descriptions)))
-    `(progn 
-       ;; make the c-struct that will be used by the glarrays
-       (defcstruct ,name 
-         ,@(loop for clause in clauses append (rest clause)))
-       ;; make the getters for the foreign array
-       ;; [TODO] make this generic for gl-arrays and gpu-arrays
-       ,@(loop for clause in clauses
-            collect (gen-component-getters name clause))
-       ;; make the setters for the foreign array
-       ;; [TODO] make this generic for gl-arrays and gpu-arrays
-       ,@(loop for clause in clauses
-            collect (gen-component-setters name clause))
-       ;; make the generic destructuring-populate method for this
-       ;; type.
-       ,@(let ((loop-token (gensym "LOOP"))
-	       (clause-names (mapcar #'car clauses)))
-           (list
-	    `(defmethod dpopulate ((array-type (eql ',name))
-				   gl-array
-				   data)
-	       (loop for ,clause-names in data
-		  for ,loop-token from 0
-		  do ,@(loop for c in clause-names
-			  collect
-			    `(setf (,(cepl-utils:symb name '- c)
-				     (aref-gl gl-array
-					      ,loop-token))
-				   ,c))))
-	    `(defmethod glpull-entry ((array-type (eql ',name))
-				      gl-array
-				      index)
-	       (list ,@(loop for c in clause-names
-			  collect
-			    `(,(cepl-utils:symb name '-	c)
-			       (aref-gl gl-array index)))))))
-       ,(let ((stride (if (> (length clauses) 1)
-                          `(cffi:foreign-type-size ',name)
-                          0)))
-             `(defmethod gl-type-format ((array-type (EQL ',name)) &optional (address-offset 0))
-                (list ,@(loop for slotd in slot-descriptions
-                           collect 
-                             (destructuring-bind (slot-name &key type (length 1) (normalised nil) 
-                                                            &allow-other-keys)
-                                 slotd
-                               `(list ,length ,type ,normalised ,stride 
-                                      (cffi:make-pointer 
-                                       (+ (foreign-slot-offset ',name ',(cepl-utils:symb slot-name 0))
-                                          address-offset))))))))
-       ',name)))
-
-
-(defun gen-component-setters (type-name clause)
-  (let ((comp-name (first clause))
-	(slots (rest clause)))
-    (if (eq (length slots) 1)
-	(let ((slot (first slots)))
-	  `(defun 
-	       (setf ,(cepl-utils:symb type-name '- comp-name)) 
-	       (value instance)
-	     (setf (foreign-slot-value instance 
-				       ',type-name
-				       ',(first slot))
-		   value)))
-	`(defun 
-	     (setf ,(cepl-utils:symb type-name '- comp-name))
-	     (value instance)
-	   ,@(loop for slot in slots
-		for i from 0
-		collect 
-		  `(setf (foreign-slot-value instance
-					     ',type-name
-					     ',(first slot))
-			 (aref value ,i)))
-	   value))))
-
-;; [TODO] Type specifiers for returned arrays? YES DEFINITELY
-(defun gen-component-getters (type-name clause)
-  (let ((comp-name (first clause))
-	(slots (rest clause)))
-    `(defun ,(cepl-utils:symb type-name '- comp-name) (instance)
-       ,(if (eq (length slots) 1)
-	    (let ((slot (first slots)))
-	      `(foreign-slot-value instance 
-				   ',type-name
-				   ',(first slot)))
-	    `(make-array ,(length slots)
-			 ;; :element-type 
-			 ;; ',(gl::symbolic-type->real-type 
-			 ;;   (second (first slots)))
-			 :initial-contents
-			 (list ,@(loop for slot in slots
-				    collect
-				      `(foreign-slot-value 
-					instance 
-					',type-name
-					',(first slot)))))))))
-
-(defun glstruct-slot-descriptions-to-clauses (slot-descriptions)
-  (loop for clause in slot-descriptions
-     collect 
-       (destructuring-bind (name &key type (length 1) 
-                                 &allow-other-keys)
-	   clause
-	 (if (or (< length 1) (> length 4))
-	     (error "Invalid length of slot"))
-	 (cons name (loop for i below length
-		       collect `(,(cepl-utils:symb name i)
-				  ,type))))))
-
-(defgeneric dpopulate (array-type gl-array data)
-  (:documentation 
-   "This is the function that actually does the work in the 
-    destructuring populate"))
-
-(make-dpopulates :unsigned-short :unsigned-byte)
-
-(defun foreign-type-index (type index)
-  (* (cffi:foreign-type-size type)
-     index))
 
 ;;;--------------------------------------------------------------
 ;;; GLARRAYS ;;;
@@ -1322,82 +1252,10 @@ need." ))
                          (gpu-stream-start stream)
                          (gpu-stream-length stream)))))
 
-
-
-;; get uniforms
-;; turn names into lispy keyword names
-;; hash those against lambdas that will call the cl-opengl 
-;;   functions needed to modify that uniform with the details 
-;;   pre-populated
-;; make a lambda that takes a list of streams, a draw style
-;;   e.g triangles, and &keys the rest where the keys are 
-;;   the uniform names you will update.
-;;   if there are keys lookup the uniforms and call the lambdas
-;;   loop through the renderables and call draw on each 
-
-;; [TODO] Doesnt handle arrays yet
-(defun hash-uniform-handlers (program-id uniform-details)
-  "This function takes a list of uniforms details (as given 
-   by program-uniforms) and returns a hash table matching as
-   'lispified' version of the uniform name to a lambda which 
-   will update the specific uniform."
-  (let ((uni-hash (make-hash-table 
-                   :test `eq 
-                   :size (length uniform-details))))
-    (loop for detail in uniform-details
-       do (setf (gethash (utils:make-keyword
-                          (lispify-name (car detail))) uni-hash)
-                (let ((location (gl:get-uniform-location 
-                                 program-id
-                                 (car detail)))
-                      (uniform-updater (glsl-uniform-type-to-function 
-                                        (second detail))))
-                  (lambda (val)
-                    (funcall uniform-updater location val)))))
-    uni-hash))
-
 (defun lispify-name (name)
   "take a string and changes it to uppercase and replaces
    all underscores _ with minus symbols -"
   (string-upcase (substitute #\- #\_ name)))
-
-(defun make-program (&rest shaders)
-  "Takes a list of shader, links them into an opengl program
-   object and wraps it in a lambda.
-   The reasoning for this is that a shader program is essentially
-   a function in that it takes a values and produces an output
-   while escapsulating the inner workings from the rest of the
-   program. The fact that the program runs on the gpu rather than
-   the cpu is incidental.
-   So an opengl 'program' is a function. It is a function that
-   takes as it main argument a list of streams which it 's job is
-   to render. The other arguments are &key arguments where the
-   key is the name of the uniform and the value is the value
-   you wish to set the uniform to.
-   Opengl Uniforms maintain between calls to the program so you
-   only need to specify a uniform argument when you wish to 
-   change its value."
-  (let* ((program-id (link-shaders shaders))
-         (uniform-details (program-uniforms program-id))
-         (uniform-hash (hash-uniform-handlers program-id
-                                              uniform-details))
-         (uniform-lispy-names (loop for detail in uniform-details
-                                 collect (utils:make-keyword 
-                                          (lispify-name
-                                           (car detail))))))
-    (lambda (streams &rest uniforms)	     
-      (use-program program-id)
-      (when uniforms
-        (loop for i below (length uniforms) by 2
-           do (let ((uniform-updater (gethash (nth i uniforms) 
-                                              uniform-hash))) 
-                (if uniform-updater
-                    (funcall uniform-updater (nth (1+ i) uniforms))
-                    (error (format nil "Uniform not found, must be one of ~{~a~^, ~}" uniform-lispy-names))))))
-      (if (eq streams t)
-          program-id
-          (loop for stream in streams
-             do (no-bind-draw-one stream))))))
 
 
 (defun set-program-uniforms (program &rest uniforms)
@@ -1416,7 +1274,7 @@ need." ))
 
 (defun draw-stream (program stream &rest uniforms)
   "This is a really syntactic sugar around funcall'ing a program.
-   It takes a program, a list of streams and &key arguments where
+   It takes a program, a stream and &key arguments where
    the key is the name of the uniform and the value is the value
    you wish to set the uniform to."
   (apply program (cons (list stream) uniforms)))
