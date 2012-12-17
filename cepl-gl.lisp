@@ -77,92 +77,63 @@
 ;; set we shall place these first and hard code as much as possible.
 ;; No arrays or structs are allowed for in-vals
 
-(defmacro defprogram (name (stream-spec &rest uniform-spec) &body shader-pairs)
-  (declare (ignore stream-spec))
-  (let ((uniform-details (mapcar #'process-uniform uniform-spec)))
-    `(let ((program-id (link-shaders 
-			 ',(mapcar #'second shader-pairs)))) 
-       (defun ,name (stream/s &key ,@(mapcar #'first uniform-details))
+(defun program-manager (x)
+  (print x)
+  nil)
+
+(defmacro defprogram (name (stream-spec &rest uniform-specs) 
+		      &body shaders)
+  ;; if the first element of uniform list is &uniforms then remove
+  ;; it as we won't need it. It is optional as it can make the d
+  ;; definition clearer but doesnt really serve any other purpose.
+  (let ((uniforms (if (eq :&uniforms (utils:make-keyword
+				       (first uniform-specs)))
+		       (rest uniform-specs)
+		       uniform-specs)))
+    `(let ((p-shaders nil)
+	   (program-id 
+	     (link-shaders p-shaders 
+			   :program-id (program-manager :get ,name)))
+	   ,@(loop for (name type) in uniforms
+		   collect `(,(utils:symb name 'location)
+			     (gl:get-uniform-location 
+			      program-id
+			      ,(format nil "~s" name)))))
+       (defun ,name 
+	   ,(append (list (first stream-spec) '&key) 
+	     (mapcar #'first uniforms))
 	 (use-program program-id)
-	 ,@(mapcar #'second uniform-details)
-	 (if (listp stream/s)
-	     (loop for stream in stream/s
-		   do (no-bind-draw-one stream))
-	     (no-bind-draw-one stream/s))
-	 t))))
+	 ,@(loop for (name type) in uniforms
+		 collect 
+		 `(when ,name (,(utils:symbolicate-package 
+				 (package-name (symbol-package type))
+				 'uniform-push- type) 
+			       ,name
+			       ,(utils:symb name '-location)))))))))
 
-;; (defprogram test-prog (:vert-data (world-cam :mat4) (cam-pos :vec3))
-;;   (:vertex shader-1)
-;;   (:fragment shader-2))
-;;
-;;         v v v v v v v v v v v v v v v v v v v v
-;;
-;; (LET ((PROGRAM-ID (LINK-SHADERS '(SHADER-1 SHADER-2))))
-;;   (DEFUN TEST-PROG
-;;          (STREAM/S
-;;           &KEY (WORLD-CAM NIL WORLD-CAM-SET) (CAM-POS NIL CAM-POS-SET))
-;;     (USE-PROGRAM PROGRAM-ID)
-;;     (WHEN WORLD-CAM-SET (UNIFORM-PUSH-MAT4 WORLD-CAM))
-;;     (WHEN CAM-POS-SET (UNIFORM-PUSH-VEC3 CAM-POS))
-;;     (IF (LISTP STREAM/S)
-;;         (LOOP FOR STREAM IN STREAM/S
-;;               DO (NO-BIND-DRAW-ONE STREAM))
-;;         (NO-BIND-DRAW-ONE STREAM/S))
-;;     T))
-
-(defun process-uniform (arg)
-  (if (symbolp (second arg))
-      (let* ((name (car arg))
-	     (type (cadr arg))
-	     (set-name (utils:symb name '-set)))
-	(list `(,name nil ,set-name)
-	      `(when ,set-name 
-		 (,(utils:symb 'uniform-push- type) ,name))))
-      (let* ((name (car arg))
-	     (set-name (utils:symb name '-set))
-	     (structure (caadr arg))
-	     (type (cadadr arg))
-	     (length (third (second arg))))
-	(if (eq (utils:make-keyword structure) :vector)
-	    (process-uniform (list (car arg)
-				   (basic-type-to-vec-type type 
-							   length)))
-	    (list `(,name nil ,set-name)
-		  `(when ,set-name
-		     (,(utils:symb 'uniform-push- type '- 'v) ,name
-		      ,length)))))))
-
-(defun basic-type-to-vec-type (basic-type length)
-  (if (or (< length 2) (> length 4))
-      (error "invalid vector length")
-      (utils:make-keyword (case basic-type
-			    (:float 'vec)
-			    (:int 'ivec)
-			    (:uint 'uvec)
-			    (otherwise (error "unrecognised type")))
-			  length)))
-
-(defun get-layout-size (entry)
-  (let ((sizes
-	  '((:bool . 1)  (:bvec2 . 1)  (:bvec3 . 1)  (:bvec4 . 1) 
-	    (:float . 1) (:vec2 . 1)   (:vec3 . 1)   (:vec4 . 1)
-	    (:int . 1)   (:ivec2 . 1)  (:ivec3 . 1)  (:ivec4 . 1)
-	    (:mat2 . 2)  (:mat2x2 . 2) (:mat2x3 . 2) (:mat2x4 . 2)
-	    (:mat3 . 3)  (:mat3x2 . 3) (:mat3x3 . 3) (:mat3x4 . 3)
-	    (:mat4 . 4)  (:mat4x2 . 4) (:mat4x3 . 4) (:mat4x4 . 4) 
-	    (:uint . 1)  (:uvec2 . 1)  (:uvec3 . 1)  (:uvec4 . 1))))
-    (if (symbolp entry)
-	(let ((basic-type-size (cdr (assoc entry sizes))))
-	  (if basic-type-size
-	      basic-type-size
-	      `(,(utils:symb entry '-length))))
-	(destructuring-bind (structure type length)
-	    entry
-	  (declare (ignore structure))
-	  (let ((basic-type-size (cdr (assoc entry sizes))))
-	    (if basic-type-size
-		(* length basic-type-size)
-		`(* ,length (,(utils:symb entry '-length)))))))))
+(defprogram example-prog ((vert vert-data) 
+			  &uniforms (dirToLight cgl::vec3) 
+			  (lightIntensity cgl::vec4)
+			  (modelToCameraMatrix cgl::mat4)
+			  (normalModelToCameraMatrix cgl::mat3)
+			  (cameraToClipMatrix cgl::mat4)
+			  (ambientintensity cgl::float))
+    ;; vertex shader
+  (:vert (out :gl_Position 
+	      (m:* cameraToClipMatrix 
+		   (m:* modelToCameraMatrix 
+			(v:swizzle (vert-data-position vert) 1.0))))
+         (out (interpColor vec4 :smooth) 
+              (v:+ 
+	       (v:* lightIntensity 
+		    (vert-data-diffuseColor vert)
+		    (dot (normalize (m:* normalModelToCameraMatrix 
+					 (vert-data-normal vert))) 
+			 dirToLight)) 
+	       (v:* (vert-data-diffuseColor vert)
+		    ambientintensity))))
+  ;; fragment shader
+  (:frag (out :outputColor interpColor)))
 
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
@@ -1220,10 +1191,10 @@ need." ))
 (defun load-shaders (&rest shader-paths)
   (mapcar #'load-shader shader-paths))
 
-(defun link-shaders (shaders)
+(defun link-shaders (shaders &optional program_id)
   "Links all the shaders provided and returns an opengl program
-   object"
-  (let ((program (gl:create-program)))
+   object. Will recompile an existing program if ID is provided"
+  (let ((program (or program_id (gl:create-program))))
     (loop for shader in shaders
        do (gl:attach-shader program shader))
     (gl:link-program program)

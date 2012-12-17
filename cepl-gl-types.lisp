@@ -205,6 +205,10 @@
       `(setf *glsl-sizes*
 	     (acons ',type-name ,glsl-size cgl::*glsl-sizes*)))))
 
+;; (defun make-gl-struct-layout (type-name slot-descriptions)
+;;   `(defun)
+;;   (loop for slot in slot-descriptions))
+
 (defmacro defglstruct (name &body slot-descriptions)
   "Slots have: (name type &key (count 1) (normalised nil))"
   `(progn
