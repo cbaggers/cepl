@@ -90,7 +90,7 @@
 				       (first uniform-specs)))
 		       (rest uniform-specs)
 		       uniform-specs)))
-    `(let ((p-shaders nil)
+    `(let ((p-shaders nil) ;; call function here
 	   (program-id 
 	     (link-shaders p-shaders 
 			   :program-id (program-manager :get ,name)))
@@ -109,31 +109,32 @@
 				 (package-name (symbol-package type))
 				 'uniform-push- type) 
 			       ,name
-			       ,(utils:symb name '-location)))))))))
+			       ,(utils:symb name '-location))))
+	 (mapcar #'no-bind-draw-one ,(first stream-spec))))))
 
-(defprogram example-prog ((vert vert-data) 
-			  &uniforms (dirToLight cgl::vec3) 
-			  (lightIntensity cgl::vec4)
-			  (modelToCameraMatrix cgl::mat4)
-			  (normalModelToCameraMatrix cgl::mat3)
-			  (cameraToClipMatrix cgl::mat4)
-			  (ambientintensity cgl::float))
-    ;; vertex shader
-  (:vert (out :gl_Position 
-	      (m:* cameraToClipMatrix 
-		   (m:* modelToCameraMatrix 
-			(v:swizzle (vert-data-position vert) 1.0))))
-         (out (interpColor vec4 :smooth) 
-              (v:+ 
-	       (v:* lightIntensity 
-		    (vert-data-diffuseColor vert)
-		    (dot (normalize (m:* normalModelToCameraMatrix 
-					 (vert-data-normal vert))) 
-			 dirToLight)) 
-	       (v:* (vert-data-diffuseColor vert)
-		    ambientintensity))))
-  ;; fragment shader
-  (:frag (out :outputColor interpColor)))
+;; (defprogram example-prog ((vert vert-data) 
+;; 			  &uniforms (dirToLight cgl::vec3) 
+;; 			  (lightIntensity cgl::vec4)
+;; 			  (modelToCameraMatrix cgl::mat4)
+;; 			  (normalModelToCameraMatrix cgl::mat3)
+;; 			  (cameraToClipMatrix cgl::mat4)
+;; 			  (ambientintensity cgl::float))
+;;     ;; vertex shader
+;;   (:vert (out :gl_Position 
+;; 	      (m:* cameraToClipMatrix 
+;; 		   (m:* modelToCameraMatrix 
+;; 			(v:swizzle (vert-data-position vert) 1.0))))
+;;          (out (interpColor vec4 :smooth) 
+;;               (v:+ 
+;; 	       (v:* lightIntensity 
+;; 		    (vert-data-diffuseColor vert)
+;; 		    (dot (normalize (m:* normalModelToCameraMatrix 
+;; 					 (vert-data-normal vert))) 
+;; 			 dirToLight)) 
+;; 	       (v:* (vert-data-diffuseColor vert)
+;; 		    ambientintensity))))
+;;   ;; fragment shader
+;;   (:frag (out :outputColor interpColor)))
 
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
