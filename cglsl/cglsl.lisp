@@ -21,50 +21,55 @@
 ;; DEFSHADER -
 ;;------------
 
-;; defun ,name (,@args ,@(when uniforms-args '(&key)) ,@uniforms-args)
 
-(defmacro defshader (name (&rest args) &body body)
-  ;; The argument layout is pretty ugly so the handling of that
-  ;; if farmed off the the process-shader-args function
-  (destructuring-bind (args uniforms-args compiled-initialisers)
-      (process-shader-args args)
-    (declare (ignore args uniforms-args))
-    ;; we are creating a function which will return the shader
-    `(defun ,name (&rest ignored-args)
-       ;; This next bit is what creates the actual code
-       (let ((result (list ,@(walk-replace-numbers 
-			      (sublis *symbol-map* body)))))
-	 ;; the rest of this function pretty printing the result
-	 ;; into the correct layout
-	 ;; write header - for now we are only targeting 330
-	 (format t "#version 330~2%")
-	 (format t "~{~a~^~%~}~2%"',compiled-initialisers)
-	 ;; write anything that percolated to the top
-	 (format t "")
-	 ;; write main function
-	 (format t "void main()~%{~%")
-	 (loop for chunk in result
-	       do (loop for line in (append 
-				     (percolate-to-block chunk)
-				     (list (code chunk)))
-			do (format t "    ~{~a~^ ~};~%" line)))
-	 (format t "}~%")))))
+(defun lisp-to-glsl (version shader-type stream-spec uniform-specs 
+		     &rest lisp-shader-source)
+  (declare (ignore shader-type))
+  (let ((out-vals (pull-glsl-out-vals lisp-shader-source)))
+    (list (format nil "~A~%~A~%~A~%~A"
+		  (parse-version version)
+		  (if (stringp stream-spec)
+                      stream-spec
+                      (apply #'parse-stream-to-glsl stream-spec))
+                  (if (stringp uniform-specs)
+                      uniform-specs
+                      (parse-uniforms-to-glsl uniform-specs))
+                  (out-vals-to-glsl out-vals))
+          out-vals)))
 
-(defun process-shader-args (args)
-  (when args
-    (let* ((uniforms-pos (position '&uniforms args))
-	   (in-vals (subseq args 0 uniforms-pos))
-	   (uniforms (when uniforms-pos 
-		       (subseq args (1+ uniforms-pos)))))
-      (list
-       (mapcar #'first in-vals)
-       (mapcar #'first uniforms)
-       (append
-	(loop for in-spec in in-vals
-	      for i from 0
-	      collect (format nil "layout(location = ~s) in ~s ~s;" i (second in-spec) (first in-spec)))
-	(loop for unif-spec in uniforms
-	      collect (format nil "uniform ~s ~s" (second unif-spec) (first unif-spec))))))))
+;;       ;; write anything that percolated to the top
+;; 	 (format t "")
+;; 	 ;; write main function
+;; 	 (format t "void main()~%{~%")
+;; 	 (loop for chunk in result
+;; 	       do (loop for line in (append 
+;; 				     (percolate-to-block chunk)
+;; 				     (list (code chunk)))
+;; 			do (format t "    ~{~a~^ ~};~%" line)))
+;; 	 (format t "}~%")
+
+(defun parse-version (version)
+  (cond ((find version '(:330)) (format nil "#version ~A" version))
+	((null version) (error "A GLSL version is required to produce shader"))
+	(t (error (format nil "Conversion to version ~A of glsl is not currently supported." version)))))
+
+(defun parse-stream-to-glsl (stream-name &rest stream-types)
+  (let ((formats (mapcan #'cgl:gl-type-format stream-types)))
+    formats))
+
+(defun parse-uniforms-to-glsl (uniforms)
+  "")
+
+(defun pull-glsl-out-vals (glsl-code)
+  (when (listp glsl-code) 
+    (if (eq (car glsl-code) 'out)
+        (mapcar #'first (utils:group (rest glsl-code) 2))
+        (mapcan #'pull-glsl-out-vals glsl-code))))
+
+(defun out-vals-to-glsl (out-vals)
+  (let ((vals (remove-if #'keywordp out-vals)))
+    (format nil "~%~{~{~A~^ ~}~%~}" (mapcar #'reverse vals))))
+
 
 
 ;;----------------------------------------------------------

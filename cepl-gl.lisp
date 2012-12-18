@@ -84,7 +84,7 @@
 (defmacro defprogram (name (stream-spec &rest uniform-specs) 
 		      &body shaders)
   ;; if the first element of uniform list is &uniforms then remove
-  ;; it as we won't need it. It is optional as it can make the d
+  ;; it as we won't need it. It is optional as it can make the
   ;; definition clearer but doesnt really serve any other purpose.
   (let ((uniforms (if (eq :&uniforms (utils:make-keyword
 				       (first uniform-specs)))
@@ -291,24 +291,6 @@
                               buffer-target usage)
     buffer))
 
-(defgeneric gl-type-format (array-type &optional address-offset)
-  (:documentation "given an array type and an offset in bytes
-this command returns a list with the sublists being the 
-layout of the attributes of the type.
-Thats a pretty ugly description so here is what it could be used
-for!:
-When creating VAOs you often need to run vertex-attrib-pointer
-command to tell opengl where in the buffer the data is and how
-it is laid out. This command generates this info for you.
-The sublists returned contain the following:
-<num-of-components component-type normalized-flag stride pointer>
- The pointer is the reason that this has to be generated, as you
-may need to specify different offsets for the first components.
-So thats the logic behind it, run this command and cons the 
-vertex-attribute index to the start of each sublist and you
-have all the arguments for the vertex-attrib-pointer commands you
-need." ))
-
 ;;;--------------------------------------------------------------
 ;;; VAOS ;;;
 ;;;------;;;
@@ -333,8 +315,8 @@ need." ))
   (labels ((format-from-buffer (buffer)
              (cons buffer 
                    (loop for attrf in (glbuffer-format buffer)
-                      append (gl-type-format 
-                              (first attrf) (third attrf))))))
+			 append (rest (gl-type-format (first attrf)
+						      (third attrf)))))))
     (make-vao-from-formats
      (loop for item in (if 
 			(glbuffer-p buffer/s/formats)
@@ -394,9 +376,9 @@ need." ))
 				      gpu-array)
 				     (glbuffer-format buffer))))
 	    (cons buffer
-		  (gl-type-format (first buffer-format)
-				  (+ (third buffer-format)
-				     (gpuarray-start gpu-array))))))
+		  (rest (gl-type-format (first buffer-format)
+					(+ (third buffer-format)
+					   (gpuarray-start gpu-array)))))))
      :element-buffer element-buffer)))
 
 

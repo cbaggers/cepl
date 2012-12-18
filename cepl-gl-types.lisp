@@ -4,12 +4,34 @@
 			     (:int . 1) (:uint . 1)))
 
 ;;------------------------------------------------------------
-;; Simple Foreign Types
+;; Homeless functions
 
 (defgeneric dpopulate (array-type gl-array data)
   (:documentation 
    "This is the function that actually does the work in the 
     destructuring populate"))
+
+(defgeneric gl-type-format (array-type &optional address-offset)
+  (:documentation "given an array type and an offset in bytes
+this command returns a list with the sublists being the 
+layout of the attributes of the type.
+Thats a pretty ugly description so here is what it could be used
+for!:
+When creating VAOs you often need to run vertex-attrib-pointer
+command to tell opengl where in the buffer the data is and how
+it is laid out. This command generates this info for you.
+The sublists returned contain the following:
+<num-of-components component-type normalized-flag stride pointer>
+ The pointer is the reason that this has to be generated, as you
+may need to specify different offsets for the first components.
+So thats the logic behind it, run this command and cons the 
+vertex-attribute index to the start of each sublist and you
+have all the arguments for the vertex-attrib-pointer commands you
+need." ))
+
+(defmethod gl-type-format ((array-type t) &optional (address-offset 0))
+  (list (list nil 1 (utils:make-keyword array-type) nil 0 
+	      (cffi:make-pointer address-offset))))
 
 (defun foreign-type-index (type index)
   (* (cffi:foreign-type-size type)
@@ -19,7 +41,7 @@
 ;; Foreign Sequence Types
 
 ;; Thsi commented out line was for testing the macroexpansions
-;;(def-gl-seq-types ((vec2 :float 2 'single-float)))
+;;(def-gl-seq-types ((vec2 :float 2 'single-float 1)))
 (defmacro def-gl-seq-types (type-specs)
   `(progn
      ,@(loop for spec in type-specs
@@ -56,8 +78,15 @@
 		     (loop for i below length
 			   collect 
 			   `(cffi:mem-aref pointer ',type ,i)))))
+	       `(defmethod gl-type-format 
+		    ((array-type (EQL ',name))
+		     &optional (address-offset 0))
+		  (list
+		   (list nil ,length ,(utils:make-keyword type)
+			 nil 0 (cffi:make-pointer address-offset))))
 	       `(setf *glsl-sizes* 
 		      (acons ',name ,glsl-size *glsl-sizes*)))))))
+
 
 ;; And here is the code that does the work
 ;; [TODO] bools: is signed byte correct?
@@ -66,6 +95,15 @@
 (defctype int :int)
 (defctype uint :uint)
 (defctype float :float)
+(defctype short :short)
+(defctype unsigned-short :unsigned-short)
+(defctype ushort :unsigned-short)
+;; these types can mostly be changed to valid enums for opengl
+;; by just making them into a keyword, but not these ones
+(defcenum (%gl:enum :unsigned-int)
+  (:uint #x1405)
+  (:ushort #x1403))
+
 (def-gl-seq-types ((vec2 :float 2 'single-float 1)
                    (vec3 :float 3 'single-float 1)
                    (vec4 :float 4 'single-float 1)
@@ -174,22 +212,38 @@
   (let ((stride (if (> (length slot-descriptions) 1)
 		  `(cffi:foreign-type-size ',type-name)
 		  0)))
-  `(defmethod gl-type-format ((array-type (EQL ',type-name)) 
-			      &optional (address-offset 0))
-     (list 
-      ,@(loop for descrip in slot-descriptions
-	      collect 
-	      (destructuring-bind (slot-name  
-				   slot-type
-				   &key (count 1) 
-				         (normalised nil) 
-				   &allow-other-keys)
-		  descrip
-		`(list ,count ',slot-type ,normalised ,stride 
-		       (cffi:make-pointer 
-			(+ (foreign-slot-offset ',type-name
-						',slot-name)
-			   address-offset)))))))))
+    `(defmethod gl-type-format ((array-type (EQL ',type-name)) 
+				&optional (address-offset 0))
+       ,@(if 
+	  (mapcan #'first 
+		  (mapcan #'cgl::gl-type-format 
+			  (mapcar #'second slot-descriptions)))
+	  `((declare (ignore array-type address-offset))
+	    (list))
+	  `((list 
+	     ,@(loop for descrip in slot-descriptions
+		     collect 
+		     (destructuring-bind (slot-name  
+					 slot-type
+					  &key (count 1) 
+					    (normalised nil) 
+					  &allow-other-keys)
+			 descrip
+		       (if (keywordp slot-type)
+			  `(list ',slot-name ,count ',slot-type 
+				 ,normalised ,stride 
+				 (cffi:make-pointer 
+				  (+ (foreign-slot-offset ',type-name
+							  ',slot-name)
+				     address-offset)))
+			  (let ((sub-type (first (gl-type-format slot-type))))
+			    `(list ',slot-name ,(second sub-type)
+				   ',(third sub-type) ,normalised
+				   ,stride 
+				   (cffi:make-pointer 
+				    (+ (foreign-slot-offset ',type-name
+							    ',slot-name)
+				       address-offset)))))))))))))
 
 (defun calc-glsl-size (type-name slot-descriptions)
   (labels ((get-slot-size (slot)
@@ -223,3 +277,20 @@
      ,(make-gl-struct-format name slot-descriptions)
      ,(calc-glsl-size name slot-descriptions)
      ',name))
+
+;; glvertexattribpointer can take these enums
+;; --------------------------------
+;; GL_BYTE
+;; GL_UNSIGNED_BYTE
+;; GL_SHORT
+;; GL_UNSIGNED_SHORT
+;; GL_INT and
+;; GL_UNSIGNED_INT
+;; GL_HALF_FLOAT
+;; GL_FLOAT
+;; GL_DOUBLE
+;; GL_FIXED
+;; GL_INT_2_10_10_10_REV
+;; GL_UNSIGNED_INT_2_10_10_10_REV
+;; --------------------------------
+;; GL_DOUBLE
