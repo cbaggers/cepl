@@ -3,6 +3,20 @@
 (defparameter *glsl-sizes* '((:bool . 1) (:float . 1)
                              (:int . 1) (:uint . 1)))
 
+;; [TODO] We need to look into bool
+(defconstant *glsl-internal-types* 
+  '(:boolean :bool :int :float :int :uint
+    vec2 vec3 vec4 ivec2 ivec3 ivec4 uvec2 uvec3
+    uvec4 bvec2 bvec3 bvec4 mat2 mat3 mat4 mat2x2
+    mat2x3 mat2x4 mat3x2 mat3x3 mat3x4 mat4x2
+    mat4x3 mat4x4))
+
+(defconstant *glsl-aggregate-types* 
+  '(vec2 vec3 vec4 ivec2 ivec3 ivec4 uvec2 uvec3
+    uvec4 bvec2 bvec3 bvec4 mat2 mat3 mat4 mat2x2
+    mat2x3 mat2x4 mat3x2 mat3x3 mat3x4 mat4x2
+    mat4x3 mat4x4))
+
 ;;------------------------------------------------------------
 ;; Homeless functions
 
@@ -11,39 +25,28 @@
    "This is the function that actually does the work in the 
     destructuring populate"))
 
-(defgeneric gl-type-format (array-type &optional address-offset)
-  (:documentation "given an array type and an offset in bytes
-this command returns a list with the sublists being the 
-layout of the attributes of the type.
-Thats a pretty ugly description so here is what it could be used
-for!:
-When creating VAOs you often need to run vertex-attrib-pointer
-command to tell opengl where in the buffer the data is and how
-it is laid out. This command generates this info for you.
-The sublists returned contain the following:
-<num-of-components component-type normalized-flag stride pointer>
- The pointer is the reason that this has to be generated, as you
-may need to specify different offsets for the first components.
-So thats the logic behind it, run this command and cons the 
-vertex-attribute index to the start of each sublist and you
-have all the arguments for the vertex-attrib-pointer commands you
-need." ))
+(defgeneric gl-assign-attrib-pointers (type attrib-num &optional stride pointer-offset count))
 
-(defmethod gl-type-format ((array-type t) &optional (address-offset 0))
-  (when (and (keywordp array-type))
-    (list (list nil 1 (utils:make-keyword array-type) nil 0 
-                (cffi:make-pointer address-offset)))))
+(defgeneric stream-headers (array-type &optional offset))
 
-(defun gl-struct-p (type)
-  (let ((format (cgl::gl-type-format type)))     
-    (and format (caar format))))
+(defun glsl-aggregrate-type-p (type-symb)
+  (find type-symb *glsl-aggregate-types*))
+
+(defun glsl-type-p (type-symb)
+  (when (assoc type-symb *glsl-sizes*) t))
+
+(defun glsl-struct-p (type-symb)
+  (when (and (glsl-type-p type-symb)
+             (not (glsl-aggregrate-type-p type-symb))) 
+    t))
 
 (defun glsl-size (type)
   (cdr (assoc type cgl::*glsl-sizes*)))
 
-(defun valid-gpu-stream-type (type-name)
-  (when (gl-type-format type-name)
-    t))
+;; [TODO] gl-type-format is defunct, find a way to make this work
+;; (defun valid-gpu-stream-type (type-name)
+;;   (when (gl-type-format type-name)
+;;     t))
 
 (defun foreign-type-index (type index)
   (* (cffi:foreign-type-size type)
@@ -52,53 +55,50 @@ need." ))
 ;;------------------------------------------------------------
 ;; Foreign Sequence Types
 
-;; Thsi commented out line was for testing the macroexpansions
+;; This commented out line was for testing the macroexpansions
 ;;(def-gl-seq-types ((vec2 :float 2 'single-float 1)))
 (defmacro def-gl-seq-types (type-specs)
   `(progn
-     ,@(loop for spec in type-specs
-          append 
-            (destructuring-bind (name type length lisp-type 
-                                      glsl-size)
-                spec
-              (list
-               `(defcstruct ,(utils:symb name '-internal)
-                  (elements ,type :count ,length))
-               
-               `(define-foreign-type ,name ()
-                  ()
-                  (:actual-type ,(utils:symb name '-internal))
-                  (:simple-parser ,name))
-               
-               `(defun ,(utils:symb name '-setter) (pointer 
-                                                    lisp-value)
-                  (setf
-                   ,@(loop for i below length
-                        append `((cffi:mem-aref pointer
-                                                ',type
-                                                ,i) 
-                                 (aref lisp-value ,i))))
-                  lisp-value)
+     ,@(loop for (name type length lisp-type glsl-size)
+          in type-specs
+          :append 
+            (list
+             `(defcstruct ,name
+                (elements ,type :count ,length))
+             
+             
+             `(defun ,(utils:symb name '-setter) (pointer 
+                                                  lisp-value)
+                (setf
+                 ,@(loop for i below length
+                      append `((cffi:mem-aref pointer
+                                              ',type
+                                              ,i) 
+                               (aref lisp-value ,i))))
+                lisp-value)
 
-               `(defun ,(utils:symb name '-getter) (pointer)
-                  (make-array 
-                   ,length
-                   :element-type ,lisp-type
-                   :initial-contents 
-                   ,(cons 
-                     'list
-                     (loop for i below length
-                        collect 
-                          `(cffi:mem-aref pointer ',type ,i)))))
-               ;; Not sure this should be here at all
-               `(defmethod gl-type-format 
-                    ((array-type (EQL ',name))
-                     &optional (address-offset 0))
-                  (list
-                   (list nil ,length ,(utils:make-keyword type)
-                         nil 0 (cffi:make-pointer address-offset))))
-               `(setf *glsl-sizes* 
-                      (acons ',name ,glsl-size *glsl-sizes*)))))))
+             `(defun ,(utils:symb name '-getter) (pointer)
+                (make-array 
+                 ,length
+                 :element-type ,lisp-type
+                 :initial-contents 
+                 ,(cons 
+                   'list
+                   (loop for i below length
+                      collect 
+                        `(cffi:mem-aref pointer ',type ,i)))))
+             ;; [TODO] this is different from other method of same name
+             `(defmethod gl-assign-attrib-pointers ((type (EQL ',name))
+                                                    attrib-num &optional
+                                                      (stride 0)
+                                                      (pointer-offset 0)
+                                                                 (count 1))
+                (declare (ignore type))
+                (%gl:vertex-attrib-pointer 
+                 attrib-num (* count ,length) ,type nil stride
+                 (cffi:make-pointer pointer-offset)))
+             `(setf *glsl-sizes* 
+                    (acons ',name ,glsl-size *glsl-sizes*))))))
 
 
 ;; And here is the code that does the work
@@ -138,175 +138,151 @@ need." ))
                    (mat4x3 :float 12 'single-float 4)
                    (mat4x4 :float 16 'single-float 4)))
 
-(defun make-gl-struct-slot-getters (type-name slot-descriptions) 
-  (loop for descrip in slot-descriptions
-     collect 
-       (destructuring-bind (slot-name slot-type 
-                                      &key (count 1))
-           descrip
-         `(defun ,(utils:symb type-name '- slot-name) (pointer)
-            ,(if (> count 1)
-                 (if (keywordp slot-type) 
-                     `(foreign-slot-pointer pointer
-                                            ',type-name
-                                            ',slot-name)
-                     `(foreign-slot-pointer pointer 
-                                            ',type-name
-                                            ',slot-name))
-                 (if (keywordp slot-type)
-                     `(foreign-slot-value pointer
-                                          ',type-name
-                                          ',slot-name)
-                     `(,(utils::symbolicate-package 'cgl 
-                                                    slot-type 
-                                                    '-getter)
-                        (foreign-slot-pointer pointer
-                                              ',type-name
-                                              ',slot-name))))))))
-
-(defun make-gl-struct-getter (type-name slot-descriptions)
-  (declare (ignore slot-descriptions))
-  `(defun ,(utils:symb type-name '-getter) (pointer)
-     pointer))
-
-(defun make-gl-struct-slot-setters (type-name slot-descriptions) 
-  (loop for descrip in slot-descriptions
-     collect 
-       (destructuring-bind (slot-name slot-type &key (count 1))
-           descrip
-         `(defun (setf ,(utils:symb type-name '- slot-name)) 
-              (value pointer)
-            ,(if (> count 1)
-                 `(error "GLSTRUCT SETTER ERROR: Sorry, you cannot directly set a foreign array slot: ~s ~s" value pointer)
-                 (if (keywordp slot-type)
-                     `(setf (foreign-slot-value pointer
+(defun make-gl-struct-slot-getters (type-name slots) 
+  (loop for (slot-name slot-type count) in slots
+     collect `(defun ,(utils:symb type-name '- slot-name) (pointer)
+                ,(if (> count 1)
+                     (if (keywordp slot-type) 
+                         `(foreign-slot-pointer pointer
                                                 ',type-name
                                                 ',slot-name)
-                            value)
-                     `(,(utils::symbolicate-package 
-                         (package-name (symbol-package slot-type))
-                         slot-type '-setter)
-                        (foreign-slot-pointer pointer
+                         `(foreign-slot-pointer pointer 
+                                                ',type-name
+                                                ',slot-name))
+                     (if (keywordp slot-type)
+                         `(foreign-slot-value pointer
                                               ',type-name
                                               ',slot-name)
-                        value)))))))
+                         `(,(utils::symbolicate-package 'cgl 
+                                                        slot-type 
+                                                        '-getter)
+                            (foreign-slot-pointer pointer
+                                                  ',type-name
+                                                  ',slot-name)))))))
 
-(defun make-gl-struct-setter (type-name slot-descriptions)
-  `(defun ,(utils:symb type-name '-setter) (pointer lisp-values)
-     (if (eq ,(length slot-descriptions) (length lisp-values))
-         (destructuring-bind ,(mapcar #'first slot-descriptions)
-             lisp-values
-           ,@(loop for descrip in slot-descriptions
-                collect 
-                  (destructuring-bind (slot-name slot-type 
-                                                 &key (count 1))
-                      descrip
-                    (declare (ignore slot-type count))
-                    `(setf (,(utils:symb type-name '- slot-name) 
-                             pointer) ,slot-name))))
-         (error ,(format nil "To set a glstruct directly you must pass a list of exactly ~s values. One for each of the slots." (length slot-descriptions))))))
 
-(defun make-gl-struct-dpop (type-name slot-descriptions)
-  (let ((slot-names (mapcar #'first slot-descriptions))
-        (loop-token (gensym "LOOP")))
+(defun make-gl-struct-slot-setters (type-name slots) 
+  (loop for (slot-name slot-type count) in slots
+     collect 
+       `(defun (setf ,(utils:symb type-name '- slot-name)) 
+            (value pointer)
+          ,(if (> count 1)
+               `(error "GLSTRUCT SETTER ERROR: Sorry, you cannot directly set a foreign array slot: ~s ~s" value pointer)
+               (if (keywordp slot-type)
+                   `(setf (foreign-slot-value pointer
+                                              ',type-name
+                                              ',slot-name)
+                          value)
+                   `(,(utils::symbolicate-package 
+                       (package-name (symbol-package slot-type))
+                       slot-type '-setter)
+                      (foreign-slot-pointer pointer
+                                            ',type-name
+                                            ',slot-name)
+                      value))))))
+
+
+(defun make-gl-struct-dpop (type-name slots)
+  (let ((loop-token (gensym "LOOP"))
+        (slot-names (mapcar #'first slots)))
     `(defmethod dpopulate ((array-type (eql ',type-name))
                            gl-array
                            data)
        (loop for ,slot-names in data
           for ,loop-token from 0
-          do ,@(loop for slot-name in slot-names
+          do ,@(loop for (slot-name) in slots
                   collect
                     `(setf (,(utils:symb type-name '- slot-name)
                              (aref-gl gl-array ,loop-token))
                            ,slot-name))))))
 
-(defun make-gl-struct-glpull (type-name slot-descriptions)
-  (let ((slot-names (mapcar #'first slot-descriptions)))
-    `(defmethod glpull-entry ((array-type (eql ',type-name))
-                              gl-array
-                              index)
-       (list ,@(loop for slot-name in slot-names
-                  collect
-                    `(,(utils:symb type-name '- slot-name)
-                       (aref-gl gl-array index)))))))
+(defun make-gl-struct-glpull (type-name slots)
+  `(defmethod glpull-entry ((array-type (eql ',type-name))
+                            gl-array
+                            index)
+     (list ,@(loop for (slot-name) in slots
+                collect
+                  `(,(utils:symb type-name '- slot-name)
+                     (aref-gl gl-array index))))))
 
-(defun format-slot-name (format)
-  (caar format))
+(defun make-gl-struct-attrib-assigner (type-name slots)
+  (when (notany #'glsl-struct-p (mapcar #'second slots))
+    (let* ((stride (if (> (length slots) 1)
+                       `(cffi:foreign-type-size ',type-name)
+                       0))
+           (definitions (loop for (slot-name slot-type count normalised) in slots
+                             for i from 0
+                           :if (glsl-aggregrate-type-p slot-type) :collect 
+                             `(gl-assign-attrib-pointers ',slot-type (+ attrib-num ,i)
+                                                         ,stride 
+                                                         (+ (foreign-slot-offset ',type-name
+                                                                          ',slot-name)
+                                                            pointer-offset) 
+                                                         ,count)
+                           :else :collect
+                             `(%gl:vertex-attrib-pointer 
+                               (+ attrib-num ,i) ,count ,slot-type ,normalised ,stride
+                               (cffi:make-pointer (+ (foreign-slot-offset ',type-name
+                                                                          ',slot-name)
+                                                     pointer-offset))))))
+      (when definitions
+        `(defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name))
+                                               attrib-num
+                                               &optional stride pointer-offset count)
+           (declare (ignore array-type stride count))
+           ,@definitions)))))
 
-(defun format-slot-type (format)
-  (cadar format))
+(defun make-gl-struct-stream-layout (type-name slots)
+  ;; Note that the second 'format' runs at macro expansion time
+  ;; to make the template for the method's runtime call of 
+  ;; format (hence the ~~s)
+  `(defmethod stream-headers ((array-type (eql ',type-name)) &optional (offset 0))
+     (declare (ignore array-type))
+     ,(if (notany #'(lambda (x) (glsl-struct-p (second x))) slots)
+          (destructuring-bind (layouts sizes)
+              (loop for (slot-name slot-type count normalised) in slots
+                 :with total = 0
+                 :collecting
+                   (format nil "layout(location = ~~s) in ~A ~s~@[[~A]~];~%"
+                           slot-type 
+                           (utils:symb type-name '- slot-name)
+                           (when (> count 1) count)) :into layouts
+                 :collecting total :into totals 
+                 :do (setf total (+ total (* (cgl::glsl-size slot-type) count)))
+                 :finally (return (list layouts totals)))
+            `(format nil ,(format nil "~{~A~}" layouts)
+                     ,@(loop for i in sizes collect `(+ offset ,i))))
+          `(error ,(format nil "Structs of type ~s cannot be used for streams" type-name)))))
 
-;; [TODO] this is slow and ugly. This MUST be revised
-;; [TODO] Also does it check if the slots are arrays?
-(defun make-gl-struct-format (type-name slot-descriptions)
-  (let ((stride (if (> (length slot-descriptions) 1)
-                    `(cffi:foreign-type-size ',type-name)
-                    0)))
-    `(defmethod gl-type-format ((array-type (EQL ',type-name)) 
-                                &optional (address-offset 0))
-       ,@(if 
-          (remove-if #'(lambda (x) (null (first x)))
-                     (mapcan #'cgl::gl-type-format 
-                             (mapcar #'second slot-descriptions)))
-          `((declare (ignore array-type address-offset))
-            (list))
-          `((list 
-             ,@(loop for descrip in slot-descriptions
-                  collect 
-                    (destructuring-bind (slot-name  
-                                         slot-type
-                                         &key (count 1) 
-                                         (normalised nil) 
-                                         &allow-other-keys)
-                        descrip
-                      (if (keywordp slot-type)
-                          `(list '(,slot-name ,slot-type) ,count ',slot-type 
-                                 ,normalised ,stride 
-                                 (cffi:make-pointer 
-                                  (+ (foreign-slot-offset ',type-name
-                                                          ',slot-name)
-                                     address-offset)))
-                          (let ((sub-type (first (gl-type-format slot-type))))
-                            `(list '(,slot-name ,slot-type) ,(second sub-type)
-                                   ',(third sub-type) ,normalised
-                                   ,stride 
-                                   (cffi:make-pointer 
-                                    (+ (foreign-slot-offset ',type-name
-                                                            ',slot-name)
-                                       address-offset)))))))))))))
 
-(defun make-gl-struct-stream-layout (type-name slot-descriptions)
-  `(defmethod stream-headers ((array-type (eql ',type-name)))))
-
-(defun calc-glsl-size (type-name slot-descriptions)
-  (labels ((get-slot-size (slot)
-             (destructuring-bind 
-                   (slot-name slot-type 
-                              &key (count 1) (normalised nil) 
-                              &allow-other-keys)
-                 slot
-               (declare (ignore slot-name normalised))
-               (* count (cdr (assoc slot-type *glsl-sizes*))))))
-    (let ((glsl-size (apply #'+ (mapcar #'get-slot-size 
-                                        slot-descriptions))))
-      `(setf *glsl-sizes*
-             (acons ',type-name ,glsl-size cgl::*glsl-sizes*)))))
+(defun calc-glsl-size (type-name slots)
+  (let ((glsl-size (loop for (slot-name slot-type count normalised) in slots
+                      sum (* count (cdr (assoc slot-type *glsl-sizes*))))))
+    `(setf *glsl-sizes*
+            (acons ',type-name ,glsl-size cgl::*glsl-sizes*))))
 
 
 (defmacro defglstruct (name &body slot-descriptions)
-  "Slots have: (name type &key (count 1) (normalised nil))"
-  `(progn
-     (defcstruct ,name ,@slot-descriptions)
-     ,@(make-gl-struct-slot-getters name slot-descriptions)
-     ,@(make-gl-struct-slot-setters name slot-descriptions)
-     ,(make-gl-struct-getter name slot-descriptions)
-     ,(make-gl-struct-setter name slot-descriptions)
-     ,(make-gl-struct-dpop name slot-descriptions)
-     ,(make-gl-struct-glpull name slot-descriptions)
-     ,(make-gl-struct-format name slot-descriptions)
-     
-     ,(calc-glsl-size name slot-descriptions)
-     ',name))
+  ;; tidy up the slot definintions
+  (let ((slots (loop for slot in slot-descriptions
+                  collect (destructuring-bind 
+                                (slot-name 
+                                 slot-type 
+                                 &key (count 1) (normalised nil) 
+                                 &allow-other-keys)
+                              slot
+                            (list slot-name slot-type count normalised)))))
+    ;; write the code
+    `(progn
+       (defcstruct ,name ,@slot-descriptions)
+       ,@(make-gl-struct-slot-getters name slots)
+       ,@(make-gl-struct-slot-setters name slots)
+       ,(make-gl-struct-dpop name slots)
+       ,(make-gl-struct-glpull name slots)
+       ,(make-gl-struct-attrib-assigner name slots)
+       ,(make-gl-struct-stream-layout name slots)
+       ,(calc-glsl-size name slots)
+       ',name)))
 
 ;; glvertexattribpointer can take these enums
 ;; --------------------------------
