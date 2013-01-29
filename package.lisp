@@ -302,11 +302,6 @@
 		:make-vector4))
 
 
-(defpackage :cglsl
-  (:use :cl :cffi)
-  (:nicknames :csl)
-  (:export :defshader))
-
 (defpackage :cepl
   (:use :cl
 	:base-vectors

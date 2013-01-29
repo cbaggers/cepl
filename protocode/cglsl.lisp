@@ -112,6 +112,8 @@
   code
   percolate)
 
+
+
 ;; (let (((vec4 temp) (m* world-to-camera-matrix (m*v model-to-world-matrix position))))
 ;;   (out ((:gl gl-position) (* camera-to-clip-matrix temp))
 ;;        ((vec4 interpColor :smooth) color)))

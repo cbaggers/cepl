@@ -359,27 +359,48 @@
       (bind-vao 0)
       vao)))
 
-(defun make-vao-from-gpu-arrays (gpu-arrays 
-				 &optional indicies-array)
-  "Makes a vao using a list of gpu-arrays as the source data
+(defun make-vao-from-gpu-arrays
+    (gpu-arrays &optional indicies-array)
+  "makes a vao using a list of gpu-arrays as the source data
    (remember that you can also use gpu-sub-array here if you
    need a subsection of a gpu-array).
    You can also specify an indicies-array which will be used as
    the indicies when rendering"
-  (let ((element-buffer (when indicies-array
-			  (gpuarray-buffer indicies-array))))
-    (make-vao-from-formats
-     (loop for gpu-array in gpu-arrays
-	collect
-	  (let* ((buffer (gpuarray-buffer gpu-array))
-		 (buffer-format (nth (gpuarray-format-index 
-				      gpu-array)
-				     (glbuffer-format buffer))))
-	    (cons buffer
-		  (rest (gl-type-format (first buffer-format)
-					(+ (third buffer-format)
-					   (gpuarray-start gpu-array)))))))
-     :element-buffer element-buffer)))
+  (labels ((bind-format (buffer format attr-num)
+	     (bind-buffer buffer :array-buffer)
+	     (gl:enable-vertex-attrib-array attr-num)
+	     (apply #'%gl:vertex-attrib-pointer
+		    (cons attr-num format))))
+    (let ((vao (gl:gen-vertex-array))
+	  (attr-num 0))
+      (bind-vao vao)
+      (loop :for format :in formats
+	 :do (let ((buffer (car format)))
+	       (loop :for attr-details :in (rest format)
+		     :do (bind-format buffer attr-details attr-num)
+			 (incf attr-num))))
+      
+      (when element-buffer
+	(bind-buffer element-buffer :element-array-buffer))
+      (bind-vao 0)
+      vao)))
+
+;; (defun make-vao-from-gpu-arrays (gpu-arrays 
+;; 				 &optional indicies-array)
+;;   (let ((element-buffer (when indicies-array
+;; 			  (gpuarray-buffer indicies-array))))
+;;     (make-vao-from-formats
+;;      (loop for gpu-array in gpu-arrays
+;; 	collect
+;; 	  (let* ((buffer (gpuarray-buffer gpu-array))
+;; 		 (buffer-format (nth (gpuarray-format-index 
+;; 				      gpu-array)
+;; 				     (glbuffer-format buffer))))
+;; 	    (cons buffer
+;; 		  (rest (gl-type-format (first buffer-format)
+;; 					(+ (third buffer-format)
+;; 					   (gpuarray-start gpu-array)))))))
+;;      :element-buffer element-buffer)))
 
 
 ;;;--------------------------------------------------------------

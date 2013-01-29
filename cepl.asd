@@ -12,7 +12,7 @@
   :serial t
   :depends-on (#:cl-opengl
 	       #:lispbuilder-sdl
-	       #:glop
+	       #:varjo
 	       #:cl-utilities
 	       #:cl-ppcre)
   :components ((:file "package")
@@ -34,9 +34,4 @@
 	       (:file "matrices/matrices")
 	       (:file "cepl-camera")
 	       (:file "model-parsers/parse-obj")
-	       (:file "cglsl/cglsl")
-	       (:file "cglsl/cglsl-core")
-	       (:file "cglsl/cglsl-maths")
-	       ;; (:file "cglsl/cglsl-vectors")
-	       ;; (:file "cglsl/cglsl-matrices")
 	       (:file "cepl")))
