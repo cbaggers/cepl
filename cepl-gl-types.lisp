@@ -1,24 +1,5 @@
 (in-package :cepl-gl)
 
-
-;; ARGHHHHHHHHHHHHHHHHHHHHHHHHH
-;; GOD DAMN ARRAY OF VEC3
-;; mem-aref will be wrong god damnit
-;; ARGHHHHHHHHhhhhh GRRRR aRGRRRG 
-
-;; Ok so we do need foreign helper types
-;; create structs automatically from
-;; varjo::*glsl-component-counts* 
-;; Use in returning arrays of slot types 
-;; in combination with gl-arrays, this 
-;; gives us easy access and correct indexing
-
-;; (defglstruct new-type
-;;   (position :vec3)
-;;   (color :vec4)
-;;   (depth (:float 3))
-;;   (test :int :normalised t ))
-
 (defun agg-type-helper-name (type)
   (utils:symb 'cgl- (varjo:type-principle type)))
 
@@ -44,7 +25,7 @@
    "This is the function that actually does the work in the 
     destructuring populate"))
 
-(defgeneric gl-assign-attrib-pointers (type attrib-num &optional pointer-offset))
+(defgeneric gl-assign-attrib-pointers (type &optional attrib-num pointer-offset))
 
 (defun glsl-struct-p (type-symb)
   (when (and (glsl-type-p type-symb)
@@ -148,48 +129,58 @@
                   `(,(utils:symb type-name '- slot-name)
                      (aref-gl gl-array index))))))
 
-;; This is wrong!
+(defun expand-slot-to-layout (slot)
+  (destructuring-bind (name type normalise)
+      slot
+    (let ((type (varjo:flesh-out-type type)))
+      (cond 
+        ((varjo:type-arrayp type) 
+	 (loop for i below (varjo:type-array-length type)
+	       :append (expand-slot-to-layout 
+			(list name (varjo:flesh-out-type 
+				    (varjo:type-principle type))
+			      normalise))))
+        ((varjo:mat-typep type) 
+	 (loop for i below (varjo:mat/vec-length type)
+	       :append (expand-slot-to-layout 
+			(list name 
+			      (varjo:type-mat-col-to-vec type)
+			      normalise))))
+        ((varjo:vec-typep type) 
+	 `((,(varjo:mat/vec-length type) 
+	    ,(varjo:type-vec-core-type type) 
+	    ,normalise)))
+        (t `((1 ,(varjo:type-principle type) ,normalise)))))))
+
+
 (defun make-gl-struct-attrib-assigner (type-name slots)
   (when (every #'varjo:type-built-inp (mapcar #'slot-type slots))
     (let* ((stride (if (> (length slots) 1)
                        `(cffi:foreign-type-size ',type-name)
                        0))
+	   (stride-sym (gensym "stride"))
            (definitions 
-	     (loop for (slot-name slot-type normalised) in slots
-		   for i from 0
-		   :if (varjo:type-aggregate-p
-			(varjo:type-principle slot-type)) 
-		     :collect 
-		   `(%gl:vertex-attrib-pointer
-		     (+ attrib-num ,i)
-		     ,(* (varjo:type-component-count slot-type)
-			 (if (varjo:type-arrayp slot-type)
-			     (varjo:type-array-length slot-type)
-			     1))
-		     ',(varjo:type-component-type slot-type) 
-		     ,normalised
-		     ,stride
-		     (+ (foreign-slot-offset ',type-name
-					     ',slot-name)
-			pointer-offset))
-		   :else :collect
-		   `(%gl:vertex-attrib-pointer
-		     (+ attrib-num ,i) 
-		     ,(if (varjo:type-arrayp slot-type)
-			  (varjo:type-array-length slot-type)
-			  1)
-		     ,(varjo:type-principle slot-type) 
-		     ,normalised ,stride
-		     (cffi:make-pointer 
-		      (+ (foreign-slot-offset ',type-name
-					      ',slot-name)
-			 pointer-offset))))))
+	     (loop :for attr :in (mapcan #'expand-slot-to-layout 
+					 slots)
+		   :for i :from 0
+		   :with offset = 0
+		   :collect (append `(%gl:vertex-attrib-pointer 
+				      (+ attrib-offset ,i))
+				    attr
+				    `(,stride-sym 
+				      (+ ,offset pointer-offset)))
+		   :do (setf offset (+ offset 
+				       (* (first attr) 
+					  (cffi:foreign-type-size 
+					   (second attr))))))))
       (when definitions
-        `(defmethod gl-assign-attrib-pointers 
-	     ((array-type (EQL ',type-name)) attrib-num
-	      &optional pointer-offset)
-           (declare (ignore array-type))
-           ,@definitions)))))
+	`(defmethod gl-assign-attrib-pointers 
+	     ((array-type (EQL ',type-name)) 
+	      &optional (attrib-offset 0) (pointer-offset 0))
+	   (declare (ignore array-type))
+	   (let ((,stride-sym ,stride))
+	     ,@definitions
+	     ,(length definitions)))))))
 
 (defun make-cstruct-def (name slots)
   `(defcstruct ,name
