@@ -85,6 +85,14 @@
    a :|keyword like this|"
   (values (intern (apply #'mkstr args) "KEYWORD")))
 
+(defun kwd (&rest args)
+  "This takes a list of symbols (or strings) and outputs one 
+   keyword symbol.
+   If the input is symbol/s then the output is a regular keyword
+   If the input is string/s, then the output is
+   a :|keyword like this|"
+  (values (intern (apply #'mkstr args) "KEYWORD")))
+
 (defun group (source n)
   "This takes a  flat list and emit a list of lists, each n long
    containing the elements of the original list"

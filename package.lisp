@@ -65,6 +65,7 @@
 	   :symb
        :symb-package
 	   :make-keyword
+       :kwd
 	   :group
 	   :safe-read-from-string
 	   :sub-at-index

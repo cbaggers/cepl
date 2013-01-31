@@ -51,61 +51,64 @@
 ;; set we shall place these first and hard code as much as possible.
 ;; No arrays or structs are allowed for in-vals
 
-(defun program-manager (x)
-  (print x)
-  nil)
+(let ((programs (make-hash-table)))
+  (defun program-manager (name)
+    (let ((prog-id (gethash name programs)))
+      (if prog-id
+          prog-id
+          (let ((prog-id (gl:create-program)))
+            (setf (gethash name programs) prog-id)))))
+  (defun program-manager-delete (name)
+    (print "delete not yet implemented")))
 
-(defun rolling-translate (in-vars uniforms sources 
-			  &optional version accum)
-  (let ((source (first sources)))
-    (if source
-	(let ((type (first source))
-	      (code (rest source)))
-	  (destructuring-bind (glsl out-vars)
-	      (varjo:translate (append in-vars uniforms
-				       `(&context :version ,version
-						  :type ,type)) 
-			       code)
-	    (rolling-translate out-vars uniforms (rest sources)
-			       version (cons glsl accum))))
-	(reverse accum))))
-
+;; [TODO] Need a lambda version of this, how would we 
+;;        make uniforms fast in that?
 (defmacro defprogram (name (&rest args) &body shaders)
-  (let* ((uni-pos (varjo::symbol-name-position '&uniform args))
-	 (context-pos (varjo::symbol-name-position '&context args))
-	 (in-vars (subseq args 0 (or uni-pos context-pos)))
-	 (uniforms-raw (when uni-pos (subseq args uni-pos
-					     context-pos)))
-	 (context (when context-pos (subseq args 
-					    (1+ context-pos)))))
-    (destructuring-bind (&key (version :330) &allow-other-keys)
-	context
-      `(let ((shader-sources
-	       (rolling-translate ',in-vars ',uniforms-raw ',shaders
-				  ',version)))
-	 (defun ,name ()
-	   shader-sources)))))
+  ;; If the first shader form is a keyword telling it to compile 
+  ;; then compile the lisp to glsl at macro expansion time.
+  (destructuring-bind (in-vars uniforms uniform-defaults type-ignore
+		       version)
+      (varjo:split-shader-args args :330)
+    (declare (ignore type-ignore uniform-defaults))
+    (let* ((compile-glsl (find (first shaders) 
+			       '(:macro :compile :compile-in-macro
+				 :in-macro :compile-macro)))
+           (shaders (if compile-glsl (rest shaders) shaders)))
+      `(let* ((shaders 
+		(mapcar #'make-shader
+			,(if compile-glsl
+			     `',(varjo:rolling-translate 
+				 in-vars uniforms shaders version)
+			     `(varjo:rolling-translate 
+			       ',in-vars ',uniforms ',shaders
+			       ',version))
+			',(mapcar 
+			   #'(lambda (x) 
+			       (utils:kwd (first x) '-shader))
+			   shaders)))
+              (program-id (link-shaders shaders (program-manager
+						 ',name)))
+              ;;(uniform-locations nil)
+              )
+         (defun ,name 
+	     (stream ,@(when uniforms `(&key ,@(mapcar #'first
+						       uniforms))))
+           (use-program program-id)
+           ,@(loop :for uniform :in uniforms
+		   :collect `(when ,(first uniform)
+			       ;; dummy code below
+			       (print ',(first uniform))))
+           (no-bind-draw-one stream))))))
 
-(defprogram example-prog ((vert vert-data) 
-			  &uniforms (dirToLight :vec3) 
-			  (lightIntensity :vec4)
-			  (modelToCameraMatrix :mat4)
-			  (normalModelToCameraMatrix :mat3)
-			  (cameraToClipMatrix :mat4)
-			  (ambientintensity :float))
-  (:vertex (out position 
-		(* cameraToClipMatrix 
-		   (* modelToCameraMatrix 
-		      (vec4 (vert-data-position vert) 1.0))))
-	   (out interpColor 
-		(+ (* lightIntensity (vert-data-diffuseColor vert)
-		      (dot (normalize (* normalModelToCameraMatrix 
-				       (vert-data-normal vert))) 
-			   dirToLight)) 
-		   (* (vert-data-diffuseColor vert)
-		      ambientintensity))
-		:smooth))
-  (:fragment (out :outputColor interpColor)))
+(defmacro defprogram? (name (&rest args) &body shaders)
+  (declare (ignore name))
+  (destructuring-bind (in-vars uniforms uniform-defaults type-ignore version)   
+      (varjo:split-shader-args args :330)
+    (declare (ignore type-ignore uniform-defaults))
+    `(let* ((shaders (varjo:rolling-translate ',in-vars ',uniforms 
+					      ',shaders ',version)))
+       (format t "~{~a~^-----------~^~%~^~%~}" shaders)
+       nil)))
 
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
@@ -310,16 +313,16 @@
              (cons buffer 
                    (loop for attrf in (glbuffer-format buffer)
                       append (rest 
-			      (gl-type-format (first attrf) 
-					      (third attrf)))))))
+                              (gl-type-format (first attrf) 
+                                              (third attrf)))))))
     (make-vao-from-formats
      (loop for item in (if (glbuffer-p buffer/s/formats)
-			   (list
-			    (format-from-buffer buffer/s/formats))
-			   buffer/s/formats)
-	   :collect 
-	   (cond ((listp item) item)
-		 ((glbuffer-p item) (format-from-buffer item))))
+                           (list
+                            (format-from-buffer buffer/s/formats))
+                           buffer/s/formats)
+        :collect 
+          (cond ((listp item) item)
+                ((glbuffer-p item) (format-from-buffer item))))
      :element-buffer element-buffer)))
 
 ;; For element-array-buffer the indices can be unsigned bytes, 
@@ -336,17 +339,17 @@
    by using the function gl-type-format.
    You can also specify an element buffer to be used in the vao"
   (let ((vao (gl:gen-vertex-array))
-	(attr-num 0))
+        (attr-num 0))
     (bind-vao vao)
     (loop for format in formats
-	  :do (let ((buffer (first format)))
-		(bind-buffer buffer :array-buffer)
-		(loop :for (type normalized stride pointer) 
-		      :in (rest format)
-		      :do (setf attr-num
-				(+ attr-num
-				   (gl-assign-attrib-pointers
-				    type pointer stride))))))
+       :do (let ((buffer (first format)))
+             (bind-buffer buffer :array-buffer)
+             (loop :for (type normalized stride pointer) 
+                :in (rest format)
+                :do (setf attr-num
+                          (+ attr-num
+                             (gl-assign-attrib-pointers
+                              type pointer stride))))))
     (when element-buffer
       (bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
@@ -364,16 +367,16 @@
    You can also specify an indicies-array which will be used as
    the indicies when rendering"
   (let ((vao (gl:gen-vertex-array))
-	(attr 0))
+        (attr 0))
     (bind-vao vao)
     (loop for gpu-array in gpu-arrays
-	  :do (let* ((buffer (gpuarray-buffer gpu-array))
-		     (format (nth (gpuarray-format-index gpu-array)
-				  (glbuffer-format buffer))))
-		(setf attr (+ attr (gl-assign-attrib-pointers
-				    (first format) 
-				    attr
-				    (third format))))))
+       :do (let* ((buffer (gpuarray-buffer gpu-array))
+                  (format (nth (gpuarray-format-index gpu-array)
+                               (glbuffer-format buffer))))
+             (setf attr (+ attr (gl-assign-attrib-pointers
+                                 (first format) 
+                                 attr
+                                 (third format))))))
     (when element-buffer 
       (bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
@@ -1112,15 +1115,6 @@
      collect (multiple-value-bind (size type name)
                  (gl:get-active-uniform program-id i)
                (list name type size))))
-
-(defun get-uniforms (program)
-  "Takes a program and returns a list of uniforms"
-  (let ((program-id (funcall program t)))
-    (loop for detail in (program-uniforms program-id)
-       collect (list (utils:make-keyword
-                      (lispify-name (car detail)))
-                     (second detail)
-                     (third detail)))))
 
 (base-macros:defmemo use-program (program-id)
   (gl:use-program program-id))
