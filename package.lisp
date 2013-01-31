@@ -63,6 +63,7 @@
 	   :flatten
 	   :mkstr
 	   :symb
+       :symb-package
 	   :make-keyword
 	   :group
 	   :safe-read-from-string

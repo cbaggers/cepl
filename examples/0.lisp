@@ -1,8 +1,8 @@
 ;; This is simply to get a colored triangle up on the screen
 
 (cgl:defglstruct vert-data
-  (position :type :float :length 4)
-  (colour :type :float :length 4))
+  (position :vec4)
+  (colour :vec4))
 
 (defun draw (program streams)
   (gl:clear :color-buffer-bit)

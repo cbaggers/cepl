@@ -33,32 +33,6 @@
 (in-package :cepl-gl)
 
 ;;;--------------------------------------------------------------
-;;; HOMELESS FUNCTIONS ;;;
-;;;--------------------;;;
-
-(defun simple-1d-populate (gl-array data)
-  "Reads a flat list of data into a gl-array"
-  (loop for datum in data
-     for i from 0
-     do (setf (aref-gl gl-array i) datum)))
-
-(defmacro make-dpopulates (&rest types)
-  `(progn
-     ,@(loop for type in types
-	    collect
-	    `(defmethod dpopulate 
-		 ((array-type (eql ,type)) gl-array
-		  data)
-	       (simple-1d-populate gl-array data))
-	    collect
-	    `(defmethod glpull-entry ((array-type (eql ',type))
-				      gl-array
-				      index)
-	       (aref-gl gl-array index)))))
-
-(make-dpopulates :unsigned-short :unsigned-byte)
-
-;;;--------------------------------------------------------------
 ;;; SHADER & PROGRAMS ;;;
 ;;;-------------------;;;
 
@@ -81,60 +55,57 @@
   (print x)
   nil)
 
-(defmacro defprogram (name (stream-spec &rest uniform-specs) 
-		      &body shaders)
-  ;; if the first element of uniform list is &uniforms then remove
-  ;; it as we won't need it. It is optional as it can make the
-  ;; definition clearer but doesnt really serve any other purpose.
-  (let ((uniforms (if (eq :&uniforms (utils:make-keyword
-				       (first uniform-specs)))
-		       (rest uniform-specs)
-		       uniform-specs)))
-    `(let ((p-shaders nil) ;; call function here
-	   (program-id 
-	     (link-shaders p-shaders 
-			   :program-id (program-manager :get ,name)))
-	   ,@(loop for (name type) in uniforms
-		   collect `(,(utils:symb name 'location)
-			     (gl:get-uniform-location 
-			      program-id
-			      ,(format nil "~s" name)))))
-       (defun ,name 
-	   ,(append (list (first stream-spec) '&key) 
-	     (mapcar #'first uniforms))
-	 (use-program program-id)
-	 ,@(loop for (name type) in uniforms
-		 collect 
-		 `(when ,name (,(utils:symbolicate-package 
-				 (package-name (symbol-package type))
-				 'uniform-push- type) 
-			       ,name
-			       ,(utils:symb name '-location))))
-	 (mapcar #'no-bind-draw-one ,(first stream-spec))))))
+(defun rolling-translate (in-vars uniforms sources 
+			  &optional version accum)
+  (let ((source (first sources)))
+    (if source
+	(let ((type (first source))
+	      (code (rest source)))
+	  (destructuring-bind (glsl out-vars)
+	      (varjo:translate (append in-vars uniforms
+				       `(&context :version ,version
+						  :type ,type)) 
+			       code)
+	    (rolling-translate out-vars uniforms (rest sources)
+			       version (cons glsl accum))))
+	(reverse accum))))
 
-;; (defprogram example-prog ((vert vert-data) 
-;; 			  &uniforms (dirToLight cgl::vec3) 
-;; 			  (lightIntensity cgl::vec4)
-;; 			  (modelToCameraMatrix cgl::mat4)
-;; 			  (normalModelToCameraMatrix cgl::mat3)
-;; 			  (cameraToClipMatrix cgl::mat4)
-;; 			  (ambientintensity cgl::float))
-;;     ;; vertex shader
-;;   (:vert (out :gl_Position 
-;; 	      (m:* cameraToClipMatrix 
-;; 		   (m:* modelToCameraMatrix 
-;; 			(v:swizzle (vert-data-position vert) 1.0))))
-;;          (out (interpColor vec4 :smooth) 
-;;               (v:+ 
-;; 	       (v:* lightIntensity 
-;; 		    (vert-data-diffuseColor vert)
-;; 		    (dot (normalize (m:* normalModelToCameraMatrix 
-;; 					 (vert-data-normal vert))) 
-;; 			 dirToLight)) 
-;; 	       (v:* (vert-data-diffuseColor vert)
-;; 		    ambientintensity))))
-;;   ;; fragment shader
-;;   (:frag (out :outputColor interpColor)))
+(defmacro defprogram (name (&rest args) &body shaders)
+  (let* ((uni-pos (varjo::symbol-name-position '&uniform args))
+	 (context-pos (varjo::symbol-name-position '&context args))
+	 (in-vars (subseq args 0 (or uni-pos context-pos)))
+	 (uniforms-raw (when uni-pos (subseq args uni-pos
+					     context-pos)))
+	 (context (when context-pos (subseq args 
+					    (1+ context-pos)))))
+    (destructuring-bind (&key (version :330) &allow-other-keys)
+	context
+      `(let ((shader-sources
+	       (rolling-translate ',in-vars ',uniforms-raw ',shaders
+				  ',version)))
+	 (defun ,name ()
+	   shader-sources)))))
+
+(defprogram example-prog ((vert vert-data) 
+			  &uniforms (dirToLight :vec3) 
+			  (lightIntensity :vec4)
+			  (modelToCameraMatrix :mat4)
+			  (normalModelToCameraMatrix :mat3)
+			  (cameraToClipMatrix :mat4)
+			  (ambientintensity :float))
+  (:vertex (out position 
+		(* cameraToClipMatrix 
+		   (* modelToCameraMatrix 
+		      (vec4 (vert-data-position vert) 1.0))))
+	   (out interpColor 
+		(+ (* lightIntensity (vert-data-diffuseColor vert)
+		      (dot (normalize (* normalModelToCameraMatrix 
+				       (vert-data-normal vert))) 
+			   dirToLight)) 
+		   (* (vert-data-diffuseColor vert)
+		      ambientintensity))
+		:smooth))
+  (:fragment (out :outputColor interpColor)))
 
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
@@ -159,8 +130,8 @@
       "Binds the specified opengl buffer to the target")
 
 (defun gen-buffer (&key initial-contents 
-		     (buffer-target :array-buffer) 
-		     (usage :static-draw))
+                     (buffer-target :array-buffer) 
+                     (usage :static-draw))
   (declare (symbol buffer-target usage))
   "Creates a new opengl buffer object. 
    Optionally you can provide a gl-array as the :initial-contents
@@ -176,7 +147,7 @@
 
 (defun buffer-data (buffer gl-array buffer-target usage
                     &key (offset 0)
-		      (size (glarray-byte-size gl-array)))
+                      (size (glarray-byte-size gl-array)))
   "This function populates an opengl buffer with the contents 
    of the array. You also pass in the buffer type and the 
    draw type this buffer is to be used for.
@@ -187,19 +158,19 @@
   (%gl:buffer-data buffer-target
                    size 
                    (cffi:inc-pointer 
-		    (glarray-pointer gl-array)
-		    (foreign-type-index (glarray-type gl-array)
-					offset))
+                    (glarray-pointer gl-array)
+                    (foreign-type-index (glarray-type gl-array)
+                                        offset))
                    usage)
   (setf (glbuffer-format buffer) 
-	(list `(,(glarray-type gl-array)
-		 ,(glarray-length gl-array)
-		 0)))
+        (list `(,(glarray-type gl-array)
+                 ,(glarray-length gl-array)
+                 0)))
   buffer)
 
 
 (defun buffer-sub-data (buffer gl-array byte-offset buffer-target
-			&key (safe t))
+                        &key (safe t))
   (declare (glarray gl-array))
   "This function replaces a subsection of the data in the 
    specified buffer with the data in the gl-array.
@@ -211,10 +182,10 @@
    an error if you are."
   (let ((byte-size (glarray-byte-size gl-array)))
     (when (and safe (loop for format in (glbuffer-format buffer)
-		       when (and (< byte-offset (third format))
-				 (> (+ byte-offset byte-size)
-				    (third format)))
-		       return t))
+                       when (and (< byte-offset (third format))
+                                 (> (+ byte-offset byte-size)
+                                    (third format)))
+                       return t))
       (error "The data you are trying to sub into the buffer crosses the boundaries specified format. If you want to do this anyway you should set :safe to nil, though it is not advised as your buffer format would be invalid"))
     (bind-buffer buffer buffer-target)
     (%gl:buffer-sub-data buffer-target
@@ -240,11 +211,11 @@
              for size in array-byte-sizes
              with offset = 0
              collect `(,(glarray-type gl-array)
-			,(glarray-length gl-array)
-			,offset)
+                        ,(glarray-length gl-array)
+                        ,offset)
              do (buffer-sub-data buffer gl-array offset
-				 buffer-target)
-	       (setf offset (+ offset size)))))
+                                 buffer-target)
+               (setf offset (+ offset size)))))
   buffer)
 
 (defun buffer-reserve-raw-block (buffer size-in-bytes buffer-target 
@@ -284,8 +255,8 @@
     (setf (glbuffer-format buffer) 
           (loop for (type length)
              in types-and-lengths
-	     do (incf size-in-bytes 
-		      (foreign-type-index type length))
+             do (incf size-in-bytes 
+                      (foreign-type-index type length))
              collect `(,type ,length ,size-in-bytes)))
     (buffer-reserve-raw-block buffer size-in-bytes
                               buffer-target usage)
@@ -304,7 +275,30 @@
 
 (setf (symbol-function 'bind-vertex-array) #'bind-vao)
 
-;; [TODO] Should this be generic?
+(defgeneric make-vao2 (inputs &key element-buffer))
+
+;; glVertexAttribPointer
+;; ---------------------
+;; GL_BYTE
+;; GL_UNSIGNED_BYTE
+;; GL_SHORT
+;; GL_UNSIGNED_SHORT
+;; GL_INT
+;; GL_UNSIGNED_INT 
+;; GL_HALF_FLOAT
+;; GL_FLOAT
+;; GL_DOUBLE
+;; GL_FIXED
+;; GL_INT_2_10_10_10_REV
+;; GL_UNSIGNED_INT_2_10_10_10_REV
+
+;; glVertexAttribLPointer 
+;; ----------------------
+;; GL_DOUBLE 
+
+;; buffer format is a list whose sublists are of the format
+;; type, length, byte-offset-from-start-of-buffer
+
 (defun make-vao (buffer/s/formats &key element-buffer)
   "Make a vao from any of the following:
     - a single buffer object
@@ -315,49 +309,52 @@
   (labels ((format-from-buffer (buffer)
              (cons buffer 
                    (loop for attrf in (glbuffer-format buffer)
-			 append (rest (gl-type-format (first attrf)
-						      (third attrf)))))))
+                      append (rest 
+			      (gl-type-format (first attrf) 
+					      (third attrf)))))))
     (make-vao-from-formats
-     (loop for item in (if 
-			(glbuffer-p buffer/s/formats)
-			(list
-			 (format-from-buffer buffer/s/formats))
-			buffer/s/formats)
-	collect 
-	  (cond 
-	    ((listp item) item)
-	    ((glbuffer-p item) (format-from-buffer item))))
+     (loop for item in (if (glbuffer-p buffer/s/formats)
+			   (list
+			    (format-from-buffer buffer/s/formats))
+			   buffer/s/formats)
+	   :collect 
+	   (cond ((listp item) item)
+		 ((glbuffer-p item) (format-from-buffer item))))
      :element-buffer element-buffer)))
 
-;; 
+;; For element-array-buffer the indices can be unsigned bytes, 
+;; unsigned shorts, or unsigned ints. 
+
 (defun make-vao-from-formats (formats &key element-buffer)
   "Makes a vao from a list of buffer formats.
    The formats list should be laid out as follows:
    `((buffer1 (attr-format1) (attr-format2))
      (buffer2 (attr-format3) (attr-format4)))
    with each attr-format laid out as follows:
-   `(num-of-components component-type normalized-flag stride pointer)
+   `(component-type normalized-flag stride pointer)
    if you have the type and offset of the data this can be generated
    by using the function gl-type-format.
    You can also specify an element buffer to be used in the vao"
-  (labels ((bind-format (buffer format attr-num)
-	     (bind-buffer buffer :array-buffer)
-	     (gl:enable-vertex-attrib-array attr-num)
-	     (apply #'%gl:vertex-attrib-pointer
-		    (cons attr-num format))))
-    (let ((vao (gl:gen-vertex-array))
-	  (attr-num 0))
-      (bind-vao vao)
-      (loop for format in formats
-	 do (let ((buffer (car format)))
-	      (loop for attr-details in (rest format)
-		 do (bind-format buffer attr-details attr-num)
-		   (incf attr-num))))
-      
-      (when element-buffer
-	(bind-buffer element-buffer :element-array-buffer))
-      (bind-vao 0)
-      vao)))
+  (let ((vao (gl:gen-vertex-array))
+	(attr-num 0))
+    (bind-vao vao)
+    (loop for format in formats
+	  :do (let ((buffer (first format)))
+		(bind-buffer buffer :array-buffer)
+		(loop :for (type normalized stride pointer) 
+		      :in (rest format)
+		      :do (setf attr-num
+				(+ attr-num
+				   (gl-assign-attrib-pointers
+				    type pointer stride))))))
+    (when element-buffer
+      (bind-buffer element-buffer :element-array-buffer))
+    (bind-vao 0)
+    vao))
+
+
+;; buffer format is a list whose sublists are of the format
+;; type, length, byte-offset-from-start-of-buffer
 
 (defun make-vao-from-gpu-arrays
     (gpu-arrays &optional indicies-array)
@@ -366,41 +363,21 @@
    need a subsection of a gpu-array).
    You can also specify an indicies-array which will be used as
    the indicies when rendering"
-  (labels ((bind-format (buffer format attr-num)
-	     (bind-buffer buffer :array-buffer)
-	     (gl:enable-vertex-attrib-array attr-num)
-	     (apply #'%gl:vertex-attrib-pointer
-		    (cons attr-num format))))
-    (let ((vao (gl:gen-vertex-array))
-	  (attr-num 0))
-      (bind-vao vao)
-      (loop :for format :in formats
-	 :do (let ((buffer (car format)))
-	       (loop :for attr-details :in (rest format)
-		     :do (bind-format buffer attr-details attr-num)
-			 (incf attr-num))))
-      
-      (when element-buffer
-	(bind-buffer element-buffer :element-array-buffer))
-      (bind-vao 0)
-      vao)))
-
-;; (defun make-vao-from-gpu-arrays (gpu-arrays 
-;; 				 &optional indicies-array)
-;;   (let ((element-buffer (when indicies-array
-;; 			  (gpuarray-buffer indicies-array))))
-;;     (make-vao-from-formats
-;;      (loop for gpu-array in gpu-arrays
-;; 	collect
-;; 	  (let* ((buffer (gpuarray-buffer gpu-array))
-;; 		 (buffer-format (nth (gpuarray-format-index 
-;; 				      gpu-array)
-;; 				     (glbuffer-format buffer))))
-;; 	    (cons buffer
-;; 		  (rest (gl-type-format (first buffer-format)
-;; 					(+ (third buffer-format)
-;; 					   (gpuarray-start gpu-array)))))))
-;;      :element-buffer element-buffer)))
+  (let ((vao (gl:gen-vertex-array))
+	(attr 0))
+    (bind-vao vao)
+    (loop for gpu-array in gpu-arrays
+	  :do (let* ((buffer (gpuarray-buffer gpu-array))
+		     (format (nth (gpuarray-format-index gpu-array)
+				  (glbuffer-format buffer))))
+		(setf attr (+ attr (gl-assign-attrib-pointers
+				    (first format) 
+				    attr
+				    (third format))))))
+    (when element-buffer 
+      (bind-buffer element-buffer :element-array-buffer))
+    (bind-vao 0)
+    vao))
 
 
 ;;;--------------------------------------------------------------
@@ -415,9 +392,9 @@
 
 (defmethod print-object ((object glarray) stream)
   (format stream
-	  "#.<GL-ARRAY :type ~a :length ~a>"
-	  (glarray-type object)
-	  (glarray-length object)))
+          "#.<GL-ARRAY :type ~a :length ~a>"
+          (glarray-type object)
+          (glarray-length object)))
 
 (defun glarray-byte-size (gl-array)
   "This returns the size in bytes of the gl-array"
@@ -433,9 +410,9 @@
   (if initial-contents
       (destructuring-allocate element-type initial-contents)
       (make-glarray :pointer (foreign-alloc element-type 
-					    :count length)
-		    :length length 
-		    :type element-type)))
+                                            :count length)
+                    :length length 
+                    :type element-type)))
 
 (defun free-gl-array (gl-array)
   "Frees the specified gl-array."
@@ -531,8 +508,8 @@
 
   (defun free-all-buffers-in-pool ()
     (mapcar #'(lambda (x) (declare (ignore x))
-		      (print "freeing a buffer")) 
-	    buffer-pool)))
+                      (print "freeing a buffer")) 
+            buffer-pool)))
 
 (defstruct gpuarray 
   buffer
@@ -544,12 +521,12 @@
 
 (defmethod print-object ((object gpuarray) stream)
   (format stream 
-	  "#.<~a :type ~a :length ~a>"
-	  (if (gpuarray-index-array object)
-	      "GPU-INDEX-ARRAY"
-	      "GPU-ARRAY")
-	  (gpuarray-type object)
-	  (gpuarray-length object)))
+          "#.<~a :type ~a :length ~a>"
+          (if (gpuarray-index-array object)
+              "GPU-INDEX-ARRAY"
+              "GPU-ARRAY")
+          (gpuarray-type object)
+          (gpuarray-length object)))
 
 (defun gpuarray-format (gpu-array)
   "Returns a list containing the element-type, the length of the
@@ -573,19 +550,19 @@
 
 (defun pull-gl-arrays-from-buffer (buffer)
   (loop for attr-format in (glbuffer-format (gpuarray-buffer
-					   buffer))
-   collect 
+                                             buffer))
+     collect 
        (progn 
-	 (bind-buffer buffer :array-buffer)
-	 (gl:with-mapped-buffer (pointer :array-buffer 
-					 :read-only)
-	   (let ((gl-array (make-glarray 
-			    :pointer (cffi:inc-pointer
-				      pointer (third 
-					       attr-format))
-			    :type (first attr-format)
-			    :length (second attr-format))))
-	     (gl-pull gl-array))))))
+         (bind-buffer buffer :array-buffer)
+         (gl:with-mapped-buffer (pointer :array-buffer 
+                                         :read-only)
+           (let ((gl-array (make-glarray 
+                            :pointer (cffi:inc-pointer
+                                      pointer (third 
+                                               attr-format))
+                            :type (first attr-format)
+                            :length (second attr-format))))
+             (gl-pull gl-array))))))
 
 (defgeneric make-gpu-array (initial-contents &key)
   (:documentation "This function creates a gpu-array which is very similar
@@ -622,24 +599,24 @@
   (declare (ignore initial-contents))
   (if location
       (last (make-gpu-arrays
-	     (append (pull-gl-arrays-from-buffer location)
-		     (make-gl-array element-type
-				    :length length))
-	     :index-array index-array
-	     :access-style access-style
-	     :location location))
+             (append (pull-gl-arrays-from-buffer location)
+                     (make-gl-array element-type
+                                    :length length))
+             :index-array index-array
+             :access-style access-style
+             :location location))
       (let ((buffer (add-buffer-to-pool (gen-buffer))))
         (make-gpuarray :buffer (buffer-reserve-block buffer 
-						     element-type
-						     length
-						     (if index-array
-							 :element-array-buffer
-							 :array-buffer)
-						     access-style)
-		       :format-index 0
-		       :length length
-		       :index-array index-array
-		       :access-style access-style))))
+                                                     element-type
+                                                     length
+                                                     (if index-array
+                                                         :element-array-buffer
+                                                         :array-buffer)
+                                                     access-style)
+                       :format-index 0
+                       :length length
+                       :index-array index-array
+                       :access-style access-style))))
 
 (defmethod make-gpu-array 
     ((initial-contents list) 
@@ -650,42 +627,42 @@
        (location nil))
   (cffi:with-foreign-object (ptr element-type (length initial-contents))
     (make-gpu-array (destructuring-populate (make-glarray :pointer ptr 
-							  :length (length initial-contents) 
-							  :type element-type) 
-					    initial-contents)
-		    :index-array index-array
-		    :access-style access-style
-		    :location location)))
+                                                          :length (length initial-contents) 
+                                                          :type element-type) 
+                                            initial-contents)
+                    :index-array index-array
+                    :access-style access-style
+                    :location location)))
 
 (defmethod make-gpu-array ((initial-contents glarray) 
-			   &key
-			     (index-array nil)
-			     (access-style :static-draw)
-			     (location nil))
+                           &key
+                             (index-array nil)
+                             (access-style :static-draw)
+                             (location nil))
   (if location
       (last (make-gpu-arrays
-	     (append (pull-gl-arrays-from-buffer location)
-		     initial-contents)
-	     :index-array index-array
-	     :access-style access-style
-	     :location location))
+             (append (pull-gl-arrays-from-buffer location)
+                     initial-contents)
+             :index-array index-array
+             :access-style access-style
+             :location location))
       (let ((buffer (add-buffer-to-pool (gen-buffer))))
         (make-gpuarray :buffer (buffer-data buffer 
-					    initial-contents
-					    (if index-array
-						:element-array-buffer
-						:array-buffer)
-					    access-style)
-		       :format-index 0
-		       :length (glarray-length initial-contents)
-		       :index-array index-array
-		       :access-style access-style))))
+                                            initial-contents
+                                            (if index-array
+                                                :element-array-buffer
+                                                :array-buffer)
+                                            access-style)
+                       :format-index 0
+                       :length (glarray-length initial-contents)
+                       :index-array index-array
+                       :access-style access-style))))
 
 
 
 (defun make-gpu-arrays (gl-arrays &key index-array
-				    (access-style :static-draw)
-				    (location nil))
+                                    (access-style :static-draw)
+                                    (location nil))
   "This function creates a list of gpu-arrays residing in a
    single buffer in opengl. It create one gpu-array for each 
    gl-array in the list passed in.
@@ -704,20 +681,20 @@
    use it rather than creating a new buffer. Note that all 
    existing data in the buffer will be destroyed in the process"
   (let ((buffer (or location
-		    (add-buffer-to-pool
-		     (multi-buffer-data (gen-buffer) 
-					gl-arrays 
-					(if index-array
-					    :element-array-buffer
-					    :array-buffer)
-					access-style)))))
+                    (add-buffer-to-pool
+                     (multi-buffer-data (gen-buffer) 
+                                        gl-arrays 
+                                        (if index-array
+                                            :element-array-buffer
+                                            :array-buffer)
+                                        access-style)))))
     (loop for gl-array in gl-arrays
        for i from 0 collect 
          (make-gpuarray :buffer buffer
                         :format-index i
                         :length (glarray-length gl-array)
-			:index-array index-array
-			:access-style access-style))))
+                        :index-array index-array
+                        :access-style access-style))))
 
 
 (defun gpu-sub-array (gpu-array start end)
@@ -774,23 +751,23 @@
    :read-write"
   (let ((glarray-pointer (gensym "POINTER"))
         (buffer-sym (gensym "BUFFER"))
-	(target (gensym "target")))
+        (target (gensym "target")))
     `(let ((,buffer-sym (gpuarray-buffer ,gpu-array))
-	   (,target (if (gpuarray-index-array ,gpu-array)
-			:element-array-buffer
-			:array-buffer)))
+           (,target (if (gpuarray-index-array ,gpu-array)
+                        :element-array-buffer
+                        :array-buffer)))
        (bind-buffer ,buffer-sym ,target)
        (gl:with-mapped-buffer (,glarray-pointer 
                                ,target
                                ,access)
-	 (let ((,temp-array-name 
-		(make-glarray 
-		 :pointer (cffi:inc-pointer 
-			   ,glarray-pointer
-			   (gpuarray-offset ,gpu-array))
-		 :type (gpuarray-type ,gpu-array)
-		 :length (gpuarray-length ,gpu-array))))
-	   ,@body)))))
+         (let ((,temp-array-name 
+                (make-glarray 
+                 :pointer (cffi:inc-pointer 
+                           ,glarray-pointer
+                           (gpuarray-offset ,gpu-array))
+                 :type (gpuarray-type ,gpu-array)
+                 :length (gpuarray-length ,gpu-array))))
+           ,@body)))))
 
 (defun gpu-array-pull (gpu-array)
   "This function returns the contents of the array as lisp list 
@@ -800,7 +777,7 @@
   (let ((type (gpuarray-type gpu-array)))
     (with-gpu-array-as-gl-array (tmp gpu-array :read-only)
       (loop for i below (gpuarray-length gpu-array)
-	 collect (glpull-entry type tmp i)))))
+         collect (glpull-entry type tmp i)))))
 
 
 (defun gpu-array-push (gpu-array gl-array)
@@ -819,10 +796,10 @@
               (buffer-sub-data buffer 
                                gl-array
                                (gpuarray-offset gpu-array)
-			       (if (gpuarray-index-array 
-				    gpu-array)
-				   :element-array-buffer
-				   :array-buffer)))
+                               (if (gpuarray-index-array 
+                                    gpu-array)
+                                   :element-array-buffer
+                                   :array-buffer)))
         (error "The gl-array must of the same type as the target gpu-array and not have a length exceeding that of the gpu-array."))
     gpu-array))
 
@@ -856,8 +833,8 @@
 
   (defun free-all-vaos-in-pool ()
     (mapcar #'(lambda (x) (declare (ignore x)) 
-		      (print "freeing a vao")) 
-	    vao-pool)))
+                      (print "freeing a vao")) 
+            vao-pool)))
 
 (defun make-gpu-stream-from-gpu-arrays 
     (&key gpu-arrays indicies-array
@@ -874,24 +851,20 @@
      :indicies-array monster-indicies-array
      :length 1000)"
   (let ((gpu-arrays (if (gpuarray-p gpu-arrays)
-			(list gpu-arrays)
-			gpu-arrays)))
-   (make-gpu-stream 
-    :vao (make-vao-from-gpu-arrays gpu-arrays indicies-array)
-    :start start
-    :length length
-    :draw-type draw-type
-    :index-type (unless (null indicies-array)
-		  (gpuarray-type indicies-array)))))
+                        (list gpu-arrays)
+                        gpu-arrays)))
+    (make-gpu-stream 
+     :vao (make-vao-from-gpu-arrays gpu-arrays indicies-array)
+     :start start
+     :length length
+     :draw-type draw-type
+     :index-type (unless (null indicies-array)
+                   (gpuarray-type indicies-array)))))
 
 
 ;;;--------------------------------------------------------------
 ;;; PUSH AND PULL ;;;
 ;;;---------------;;;
-
-(defgeneric glpull-entry (array-type gl-array index)
-  (:documentation 
-   "Pull one entry from a glarray as a list of lisp objects"))
 
 (defgeneric gl-pull (gl-object)
   (:documentation "Pulls data from the gl-array or gpu-array back into a native lisp list"))
@@ -913,8 +886,8 @@
 
 (defmethod gl-push ((gl-object gpuarray) (data list))
   (let ((gl-array (destructuring-allocate 
-		   (gpuarray-type gl-object)
-		   data)))
+                   (gpuarray-type gl-object)
+                   data)))
     (gpu-array-push gl-object gl-array)
     (free-gl-array gl-array))
   gl-object)
@@ -1173,23 +1146,23 @@
    shader type from the file extension"
   (restart-case
       (progn
-	(gl:shader-source shader-id source-string)
-	(gl:compile-shader shader-id)
-	;;check for compile errors
-	(if (not (gl:get-shader shader-id :compile-status))
-	    (error `cgl-compile-shader-error
-		   :text (format nil 
-				 "Error compiling shader ~%~a" 
-				 (gl:get-shader-info-log 
-				  shader-id)))))
+        (gl:shader-source shader-id source-string)
+        (gl:compile-shader shader-id)
+        ;;check for compile errors
+        (if (not (gl:get-shader shader-id :compile-status))
+            (Error `cgl-compile-shader-error
+                   :text (format nil 
+                                 "Error compiling shader ~%~a" 
+                                 (gl:get-shader-info-log 
+                                  shader-id)))))
     (reload-recompile-shader () (make-shader source-string
                                              shader-type
                                              shader-id)))
   shader-id)
 
 (defun load-shader (file-path 
-		    &optional (shader-type 
-			       (shader-type-from-path file-path)))
+                    &optional (shader-type 
+                               (shader-type-from-path file-path)))
   (make-shader (utils:file-to-string file-path) shader-type))
 
 (defun load-shaders (&rest shader-paths)
@@ -1219,10 +1192,10 @@
   (let ((index-type (gpu-stream-index-type stream)))
     (bind-vao (gpu-stream-vao stream))
     (if index-type
-	(%gl:draw-elements (gpu-stream-draw-type stream)
-			   (gpu-stream-length stream)
-			   (gl::cffi-type-to-gl index-type)
-			   (cffi:make-pointer 0))
+        (%gl:draw-elements (gpu-stream-draw-type stream)
+                           (gpu-stream-length stream)
+                           (gl::cffi-type-to-gl index-type)
+                           (cffi:make-pointer 0))
         (%gl:draw-arrays (gpu-stream-draw-type stream)
                          (gpu-stream-start stream)
                          (gpu-stream-length stream)))))
