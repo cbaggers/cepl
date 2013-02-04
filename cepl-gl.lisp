@@ -100,6 +100,44 @@
 			       (print ',(first uniform))))
            (no-bind-draw-one stream))))))
 
+;; GL_FLOAT GL_FLOAT_VEC2 GL_FLOAT_VEC3 GL_FLOAT_VEC4
+;; GL_INT   GL_INT_VEC2   GL_INT_VEC3   GL_INT_VEC4 
+;; GL_BOOL  GL_BOOL_VEC2  GL_BOOL_VEC3  GL_BOOL_VEC4
+;; GL_FLOAT_MAT2 GL_FLOAT_MAT3 GL_FLOAT_MAT4
+;; GL_SAMPLER_1D GL_SAMPLER_2D GL_SAMPLER_3D
+;; GL_SAMPLER_CUBE GL_SAMPLER_1D_SHADOW GL_SAMPLER_2D_SHADOW
+
+
+(defun glsl-uniform-type-to-function (type)
+  (case type
+    ((:float :float-arb) #'uniform-1f)
+    ((:float-vec2 :float-vec2-arb) #'uniform-2f)
+    ((:float-vec3 :float-vec3-arb) #'uniform-3f)
+    ((:float-vec4 :float-vec4-arb) #'uniform-4f)
+    ((:int :int-arb :bool :bool-arb) #'uniform-1i)
+    ((:int-vec2 :int-vec2-arb
+                :bool-vec2 :bool-vec2-arb) #'uniform-2i)
+    ((:int-vec3 :int-vec3-arb
+                :bool-vec3 :bool-vec3-arb) #'uniform-3i)
+    ((:int-vec4 :int-vec4-arb
+                :bool-vec4 :bool-vec4-arb) #'uniform-4i)
+    ((:float-mat2 :float-mat2-arb) #'uniform-matrix2)
+    ((:float-mat3 :float-mat3-arb) #'uniform-matrix3)
+    ((:float-mat4 :float-mat4-arb) #'uniform-matrix4)
+    (t (error "Sorry cepl doesnt handle that type yet"))))
+
+;; CEPL> (cgl:program-uniforms prog-id)
+;; (("ambientintensity" :FLOAT 1)
+;;  ("cameraToClipMatrix" :FLOAT-MAT4-ARB 1)
+;;  ("dirToLight" :FLOAT-VEC3-ARB 1)
+;;  ("lightIntensity" :FLOAT-VEC4-ARB 1)
+;;  ("modelToCameraMatrix" :FLOAT-MAT4-ARB 1)
+;;  ("normalModelToCameraMatrix" :FLOAT-MAT3-ARB 1)
+
+;;  ("jam[0].position" :FLOAT 1)
+;;  ("jam[1].intensity[0]" :FLOAT 20)
+;;  ("jam[2].intensity[0]" :FLOAT 20))
+
 (defmacro defprogram? (name (&rest args) &body shaders)
   (declare (ignore name))
   (destructuring-bind (in-vars uniforms uniform-defaults type-ignore version)   
@@ -1068,24 +1106,6 @@
     (%gl:uniform-matrix-4fv location 1 nil array))
   mat4)
 
-(defun glsl-uniform-type-to-function (type)
-  (case type
-    ((:float :float-arb) #'uniform-1f)
-    ((:float-vec2 :float-vec2-arb) #'uniform-2f)
-    ((:float-vec3 :float-vec3-arb) #'uniform-3f)
-    ((:float-vec4 :float-vec4-arb) #'uniform-4f)
-    ((:int :int-arb :bool :bool-arb) #'uniform-1i)
-    ((:int-vec2 :int-vec2-arb
-                :bool-vec2 :bool-vec2-arb) #'uniform-2i)
-    ((:int-vec3 :int-vec3-arb
-                :bool-vec3 :bool-vec3-arb) #'uniform-3i)
-    ((:int-vec4 :int-vec4-arb
-                :bool-vec4 :bool-vec4-arb) #'uniform-4i)
-    ((:float-mat2 :float-mat2-arb) #'uniform-matrix2)
-    ((:float-mat3 :float-mat3-arb) #'uniform-matrix3)
-    ((:float-mat4 :float-mat4-arb) #'uniform-matrix4)
-    (t (error "Sorry cepl doesnt handle that type yet"))))
-
 ;;;--------------------------------------------------------------
 ;;; PROGRAMS ;;;
 ;;;----------;;;
@@ -1138,26 +1158,22 @@
   "This makes a new opengl shader object by compiling the text
    in the specified file and, unless specified, establishing the
    shader type from the file extension"
-  (restart-case
-      (progn
-        (gl:shader-source shader-id source-string)
-        (gl:compile-shader shader-id)
-        ;;check for compile errors
-        (if (not (gl:get-shader shader-id :compile-status))
-            (Error `cgl-compile-shader-error
-                   :text (format nil 
-                                 "Error compiling shader ~%~a" 
-                                 (gl:get-shader-info-log 
-                                  shader-id)))))
-    (reload-recompile-shader () (make-shader source-string
-                                             shader-type
-                                             shader-id)))
+  (gl:shader-source shader-id source-string)
+  (gl:compile-shader shader-id)
+  ;;check for compile errors
+  (if (not (gl:get-shader shader-id :compile-status))
+      (error "Error compiling shader ~%~a" 
+	     (gl:get-shader-info-log shader-id)))
+  
   shader-id)
 
 (defun load-shader (file-path 
                     &optional (shader-type 
                                (shader-type-from-path file-path)))
-  (make-shader (utils:file-to-string file-path) shader-type))
+  (restart-case
+      (make-shader (utils:file-to-string file-path) shader-type)
+    (reload-recompile-shader () (load-shader file-path
+                                             shader-type))))
 
 (defun load-shaders (&rest shader-paths)
   (mapcar #'load-shader shader-paths))
