@@ -13,18 +13,18 @@
 ;; away any of the functionality.
 ;;
 ;; The key design axioms are:
-;; * OpenGl is 2 paradigms in one API with totally different 
+;; * OpenGl is 2 paradigms in one API with totally different
 ;;   methodologies and approaches to development. It is better
-;;   to make 2 wrappers that seperate and abstract these 
-;;   methodologies well, rather than to try and cram both 
-;;   together. 
+;;   to make 2 wrappers that seperate and abstract these
+;;   methodologies well, rather than to try and cram both
+;;   together.
 ;;   To this end cepl-gl will only support modern opengl (2.1+).
 ;;
-;; * It should be possible to write a 'hello world' opengl 
-;;   example from a tutorial online without abstractions getting 
+;; * It should be possible to write a 'hello world' opengl
+;;   example from a tutorial online without abstractions getting
 ;;   in the way.
 ;;   Abstractions, in their effort to simplify complex code, can
-;;   balloon simple code. This is unacceptable. 
+;;   balloon simple code. This is unacceptable.
 ;;   Part of the beauty of lisp is being able to blast out a
 ;;   quick example in the repl and we must not allow our attempts
 ;;   to simplify things to take any of that beauty away.
@@ -63,90 +63,167 @@
 
 ;; [TODO] Need a lambda version of this, how would we 
 ;;        make uniforms fast in that?
+;; [TODO] Shit...if this runs before we make the gl-context
+;;        (most likely) then this falls over. 
+;;        Worked fine in tests as we had already
+;;        cepl:repl'd. Hmmmmm. Ok we should change this into
+;;        slambda and use it in some way to implement
+;;        defprogram. Mayeb defprogram creates a stub and holds
+;;        a slambda def until gl context is up.
 (defmacro defprogram (name (&rest args) &body shaders)
   ;; If the first shader form is a keyword telling it to compile 
   ;; then compile the lisp to glsl at macro expansion time.
-  (destructuring-bind (in-vars uniforms uniform-defaults type-ignore
-		       version)
+  (destructuring-bind (in-vars in-var-qualifiers uniforms
+		       uniform-defaults type-ignore version)
       (varjo:split-shader-args args :330)
-    (declare (ignore type-ignore uniform-defaults))
+    (declare (ignore type-ignore uniform-defaults 
+		     in-var-qualifiers))
     (let* ((compile-glsl (find (first shaders) 
-			       '(:macro :compile :compile-in-macro
-				 :in-macro :compile-macro)))
-           (shaders (if compile-glsl (rest shaders) shaders)))
+                               '(:macro :compile :compile-in-macro
+                                 :in-macro :compile-macro)))
+           (shaders (if compile-glsl (rest shaders) shaders))
+           (uniform-names (mapcar #'first uniforms)))
       `(let* ((shaders 
-		(mapcar #'make-shader
-			,(if compile-glsl
-			     `',(varjo:rolling-translate 
-				 in-vars uniforms shaders version)
-			     `(varjo:rolling-translate 
-			       ',in-vars ',uniforms ',shaders
-			       ',version))
-			',(mapcar 
-			   #'(lambda (x) 
-			       (utils:kwd (first x) '-shader))
-			   shaders)))
-              (program-id (link-shaders shaders (program-manager
-						 ',name)))
-              ;;(uniform-locations nil)
-              )
-         (defun ,name 
-	     (stream ,@(when uniforms `(&key ,@(mapcar #'first
-						       uniforms))))
-           (use-program program-id)
-           ,@(loop :for uniform :in uniforms
-		   :collect `(when ,(first uniform)
-			       ;; dummy code below
-			       (print ',(first uniform))))
-           (no-bind-draw-one stream))))))
+               (mapcar #'make-shader
+                       ,(if compile-glsl
+                            `',(varjo:rolling-translate 
+                                in-vars uniforms shaders version)
+                            `(varjo:rolling-translate 
+                              ',in-vars ',uniforms ',shaders
+                              ',version))
+                       ',(mapcar 
+                          #'(lambda (x) 
+                              (utils:kwd (first x) '-shader))
+                          shaders)))
+              (program-id (link-shaders shaders 
+                                        (program-manager ',name))))
+         (mapcar #'%gl:delete-shader shaders)
+         (destructuring-bind ,(mapcar #'(lambda (x) 
+                                          (utils:symb x '-assigner)) 
+                                      uniform-names)
+             (create-uniform-assigners program-id ,uniforms)
+           (defun ,name 
+               (stream ,@(when uniforms `(&key ,@(mapcar #'first
+                                                         uniforms))))
+             (use-program program-id)
+             ,@(loop :for uniform-name :in uniform-names
+                  :collect `(when ,uniform-name
+                              (dolist (fun ,(utils:symb uniform-name
+                                                        '-assigner))
+                                (funcall fun ,uniform-name))))
+             (no-bind-draw-one stream)))))))
 
-;; GL_FLOAT GL_FLOAT_VEC2 GL_FLOAT_VEC3 GL_FLOAT_VEC4
-;; GL_INT   GL_INT_VEC2   GL_INT_VEC3   GL_INT_VEC4 
-;; GL_BOOL  GL_BOOL_VEC2  GL_BOOL_VEC3  GL_BOOL_VEC4
-;; GL_FLOAT_MAT2 GL_FLOAT_MAT3 GL_FLOAT_MAT4
-;; GL_SAMPLER_1D GL_SAMPLER_2D GL_SAMPLER_3D
-;; GL_SAMPLER_CUBE GL_SAMPLER_1D_SHADOW GL_SAMPLER_2D_SHADOW
+;; make this return list of funcs or nil for each uni-var
+(defun create-uniform-assigners (program-id uniform-vars)
+  (let* ((uniform-details (program-uniforms program-id))
+         (active-uniform-details (process-uniform-details 
+                                  uniform-details
+                                  uniform-vars)))
+    (loop for a-uniform in active-uniform-details
+       :collect
+         (when a-uniform
+           (let ((location (gl:get-attrib-location program-id 
+                                                   (second a-uniform))))
+             (loop for part in (subseq a-uniform 2)
+                :collect 
+                  (destructuring-bind (offset type length) part
+                    (let ((uni-fun (get-foreign-uniform-function type))
+                          (lisp-uni-fun (get-uniform-function type)))
+                      (if (eq length 1)
+                          (lambda (pointer)
+                            (funcall uni-fun location length
+                                     (cffi-sys:inc-pointer pointer offset)))
+                          (lambda (pointer-or-val)
+                            (funcall (if (cffi:pointerp pointer-or-val)
+                                         uni-fun
+                                         lisp-uni-fun)
+                                     location length
+                                     (cffi-sys:inc-pointer pointer-or-val
+                                                           offset))))))))))))
 
-
-(defun glsl-uniform-type-to-function (type)
-  (case type
-    ((:float :float-arb) #'uniform-1f)
-    ((:float-vec2 :float-vec2-arb) #'uniform-2f)
-    ((:float-vec3 :float-vec3-arb) #'uniform-3f)
-    ((:float-vec4 :float-vec4-arb) #'uniform-4f)
-    ((:int :int-arb :bool :bool-arb) #'uniform-1i)
-    ((:int-vec2 :int-vec2-arb
-                :bool-vec2 :bool-vec2-arb) #'uniform-2i)
-    ((:int-vec3 :int-vec3-arb
-                :bool-vec3 :bool-vec3-arb) #'uniform-3i)
-    ((:int-vec4 :int-vec4-arb
-                :bool-vec4 :bool-vec4-arb) #'uniform-4i)
-    ((:float-mat2 :float-mat2-arb) #'uniform-matrix2)
-    ((:float-mat3 :float-mat3-arb) #'uniform-matrix3)
-    ((:float-mat4 :float-mat4-arb) #'uniform-matrix4)
-    (t (error "Sorry cepl doesnt handle that type yet"))))
-
-;; CEPL> (cgl:program-uniforms prog-id)
-;; (("ambientintensity" :FLOAT 1)
-;;  ("cameraToClipMatrix" :FLOAT-MAT4-ARB 1)
-;;  ("dirToLight" :FLOAT-VEC3-ARB 1)
-;;  ("lightIntensity" :FLOAT-VEC4-ARB 1)
-;;  ("modelToCameraMatrix" :FLOAT-MAT4-ARB 1)
-;;  ("normalModelToCameraMatrix" :FLOAT-MAT3-ARB 1)
-
-;;  ("jam[0].position" :FLOAT 1)
-;;  ("jam[1].intensity[0]" :FLOAT 20)
-;;  ("jam[2].intensity[0]" :FLOAT 20))
+;; [TODO] Got to be a quicker and tidier way
+(defun process-uniform-details (uniform-details uniform-vars)
+  ;; returns '(byte-offset principle-type length)
+  (let ((result nil)
+        (paths (mapcar #'parse-uniform-path uniform-details)))
+    (loop for detail in uniform-details
+       for path in paths
+       :do (setf result 
+                 (acons (caar path) 
+                        (cons (first detail)
+                              (cons (list (get-path-offset 
+                                           path
+                                           uniform-vars)
+                                          (second detail)
+                                          (third detail))
+                                    (rest (rest 
+                                           (assoc (caar path)
+                                                  result)))))
+                        result)))
+    (loop for var in uniform-vars
+       :collect (assoc (first var) result))))
 
 (defmacro defprogram? (name (&rest args) &body shaders)
   (declare (ignore name))
-  (destructuring-bind (in-vars uniforms uniform-defaults type-ignore version)   
+  (destructuring-bind (in-vars  uniforms uniform-defaults
+		       type-ignore version)   
       (varjo:split-shader-args args :330)
     (declare (ignore type-ignore uniform-defaults))
-    `(let* ((shaders (varjo:rolling-translate ',in-vars ',uniforms 
-					      ',shaders ',version)))
+    `(let* ((shaders (varjo:rolling-translate
+		      ',in-vars ',uniforms ',shaders ',version)))
        (format t "~{~a~^-----------~^~%~^~%~}" shaders)
        nil)))
+
+(defmacro compile-program ((&rest args) &body shaders)
+  (destructuring-bind (in-vars in-var-qualifiers uniforms
+		       uniform-defaults type-ignore version)   
+      (varjo:split-shader-args args :330)
+    (declare (ignore type-ignore uniform-defaults 
+		     in-var-qualifiers))
+    `(let* ((shaders (varjo:rolling-translate ',in-vars ',uniforms 
+                                              ',shaders ',version)))
+       (list shaders 
+             (active-uniform-details 
+              (process-uniform-details (uniform-details
+                                        (program-uniforms program-id))
+                                       uniforms))))))
+
+;; [TODO] If we load shaders from files the names will clash
+(defun parse-uniform-path (uniform-detail)
+  (labels ((s-dot (x) (split-sequence:split-sequence #\. x))
+           (s-square (x) (split-sequence:split-sequence #\[ x)))
+    (loop for path in (s-dot (first uniform-detail))
+       :collect (let ((part (s-square (remove #\] path))))
+                  (list (intern (string-upcase 
+                                 (first part)))
+                        (if (second part)
+                            (parse-integer (second part))
+                            0))))))
+
+(defun get-slot-type (parent-type slot-name)
+  (second (assoc slot-name (varjo:struct-definition parent-type))))
+
+(defun get-path-offset (path uniform-vars)
+  (labels ((path-offset (type path &optional (sum 0))
+             (if path
+                 (let* ((path-part (first path))
+                        (slot-name (first path-part))
+                        (child-type (varjo:type-principle
+                                     (get-slot-type type
+                                                    slot-name))))
+                   (path-offset 
+                    child-type
+                    (rest path)
+                    (+ sum
+                       (+ (cffi:foreign-slot-offset type slot-name) 
+                          (* (cffi:foreign-type-size child-type)
+                             (second path-part))))))
+                 sum)))
+    (let* ((first-part (first path))
+           (type (second (assoc (first first-part) uniform-vars)))
+           (index (second first-part)))
+      (+ (* (cffi:foreign-type-size type) index)
+         (path-offset type (rest path))))))
 
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
@@ -404,7 +481,9 @@
    need a subsection of a gpu-array).
    You can also specify an indicies-array which will be used as
    the indicies when rendering"
-  (let ((vao (gl:gen-vertex-array))
+  (let ((element-buffer (when indicies-array
+			  (gpuarray-buffer indicies-array)))
+	(vao (gl:gen-vertex-array))
         (attr 0))
     (bind-vao vao)
     (loop for gpu-array in gpu-arrays
@@ -1106,6 +1185,41 @@
     (%gl:uniform-matrix-4fv location 1 nil array))
   mat4)
 
+;; [TODO] HANDLE DOUBLES
+(defun get-foreign-uniform-function (type)
+  (case type
+    ((:int :int-arb :bool :bool-arb :sampler_1d :sampler_1d_shadow 
+           :sampler_2d :sampler_3d :sampler_cube 
+           :sampler_2d_shadow) #'%gl:uniform-1iv)
+    ((:float :float-arb) #'%gl:uniform-1fv)
+    ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) #'%gl:uniform-2iv)
+    ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) #'%gl:uniform-3iv)
+    ((:int-vec4 :int-vec4-arb :bool-vec4 :bool-vec4-arb) #'%gl:uniform-4iv)
+    ((:float-vec2 :float-vec2-arb) #'%gl:uniform-2fv)
+    ((:float-vec3 :float-vec3-arb) #'%gl:uniform-3fv)
+    ((:float-vec4 :float-vec4-arb) #'%gl:uniform-4fv)
+    ((:float-mat2 :float-mat2-arb) #'%gl:uniform-matrix-2fv)
+    ((:float-mat3 :float-mat3-arb) #'%gl:uniform-matrix-3fv)
+    ((:float-mat4 :float-mat4-arb) #'%gl:uniform-matrix-4fv)
+    (t (error "Sorry cepl doesnt handle that type yet"))))
+
+(defun get-uniform-function (type)
+  (case type
+    ((:int :int-arb :bool :bool-arb :sampler_1d :sampler_1d_shadow 
+           :sampler_2d :sampler_3d :sampler_cube 
+           :sampler_2d_shadow) #'uniform-1i)
+    ((:float :float-arb) #'uniform-1f)
+    ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) #'uniform-2i)
+    ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) #'uniform-3i)
+    ((:int-vec4 :int-vec4-arb :bool-vec4 :bool-vec4-arb) #'uniform-4i)
+    ((:float-vec2 :float-vec2-arb) #'uniform-2f)
+    ((:float-vec3 :float-vec3-arb) #'uniform-3f)
+    ((:float-vec4 :float-vec4-arb) #'uniform-4f)
+    ((:float-mat2 :float-mat2-arb) #'uniform-matrix2)
+    ((:float-mat3 :float-mat3-arb) #'uniform-matrix3)
+    ((:float-mat4 :float-mat4-arb) #'uniform-matrix4)
+    (t (error "Sorry cepl doesnt handle that type yet: ~a" type))))
+
 ;;;--------------------------------------------------------------
 ;;; PROGRAMS ;;;
 ;;;----------;;;
@@ -1161,10 +1275,11 @@
   (gl:shader-source shader-id source-string)
   (gl:compile-shader shader-id)
   ;;check for compile errors
-  (if (not (gl:get-shader shader-id :compile-status))
-      (error "Error compiling shader ~%~a" 
-	     (gl:get-shader-info-log shader-id)))
-  
+  (when (not (gl:get-shader shader-id :compile-status))
+    (error "Error compiling ~(~a~): ~%~a~%~%~a" 
+	   shader-type
+	   (gl:get-shader-info-log shader-id)
+	   source-string))
   shader-id)
 
 (defun load-shader (file-path 

@@ -89,6 +89,8 @@
 		:viewport)
   (:shadow :float)
   (:export :clear-color
+       :defprogram
+       :defprogram?
 	   :enable
 	   :cull-face
 	   :front-face

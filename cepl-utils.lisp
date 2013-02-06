@@ -75,7 +75,7 @@
   (values (intern (apply #'mkstr args))))
 
 (defun symb-package (package &rest args)
-           (values (intern (apply #'cepl-utils:mkstr args) package)))
+  (values (intern (apply #'cepl-utils:mkstr args) package)))
 
 (defun make-keyword (&rest args)
   "This takes a list of symbols (or strings) and outputs one 
@@ -159,3 +159,6 @@ producing a symbol in the current package."
 		  (mkstr name)
 		  name)))
     (string-upcase (substitute #\- #\_ name))))
+
+(defun symbol-name-equal (a b)
+  (equal (symbol-name a) (symbol-name b)))
