@@ -2,6 +2,13 @@
 ;; rotation and scaling in a 3D scene. It is also a better 
 ;; test of the vao generation functions
 
+;; (defprogram test ((position :vec4) (color :vec4)
+;;                   &uniform (cam-to-clip :mat4) (model-to-cam :mat4))
+;;   (:vertex (out (the-color :smooth) color)
+;;            (let ((cam-pos (* model-to-cam position)))
+;;              (setf gl-position (* cam-to-clip cam-pos))))
+;;   (:fragment (out output-color the-color)))
+
 (defparameter *prog-1* nil)
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)

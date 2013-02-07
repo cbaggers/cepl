@@ -36,21 +36,6 @@
 ;;; SHADER & PROGRAMS ;;;
 ;;;-------------------;;;
 
-;; 4.3 is the only one that allows layouts for uniforms 
-;; named uniforms are paired with uniform blocks. We need 
-;; a way to create these.
-;; we will use keyword args to handle default uniforms.
-;; The layout is only truly known at link time. The must create
-;; lexical variables to store all these. We can precode all the
-;; loading bits though and just use nth to pull them out... or
-;; .. we can create seperate lex-vars and place each one in the 
-;; code, no nth needed, likely to be better speed wise (no real 
-;; evildence for this but meh!)
-
-;; as for in-vars these need to be supported, as the layout can be 
-;; set we shall place these first and hard code as much as possible.
-;; No arrays or structs are allowed for in-vals
-
 (let ((programs (make-hash-table)))
   (defun program-manager (name)
     (let ((prog-id (gethash name programs)))
@@ -61,56 +46,44 @@
   (defun program-manager-delete (name)
     (print "delete not yet implemented")))
 
-;; [TODO] Need a lambda version of this, how would we 
-;;        make uniforms fast in that?
-;; [TODO] Shit...if this runs before we make the gl-context
-;;        (most likely) then this falls over. 
-;;        Worked fine in tests as we had already
-;;        cepl:repl'd. Hmmmmm. Ok we should change this into
-;;        slambda and use it in some way to implement
-;;        defprogram. Mayeb defprogram creates a stub and holds
-;;        a slambda def until gl context is up.
+;; [TODO] We need to make this fast, this 'if not prog' won't do
 (defmacro defprogram (name (&rest args) &body shaders)
-  ;; If the first shader form is a keyword telling it to compile 
-  ;; then compile the lisp to glsl at macro expansion time.
-  (destructuring-bind (in-vars uniforms uniform-defaults
-		       type-ignore version)
-      (varjo:split-shader-args args :330)
-    (declare (ignore type-ignore uniform-defaults))
-    (let* ((compile-glsl (find (first shaders) 
-                               '(:macro :compile :compile-in-macro
-                                 :in-macro :compile-macro)))
-           (shaders (if compile-glsl (rest shaders) shaders))
-           (uniform-names (mapcar #'first uniforms)))
-      `(let* ((shaders 
-               (mapcar #'make-shader
-                       ,(if compile-glsl
-                            `',(varjo:rolling-translate 
-                                in-vars uniforms shaders version)
-                            `(varjo:rolling-translate 
-                              ',in-vars ',uniforms ',shaders
-                              ',version))
-                       ',(mapcar 
-                          #'(lambda (x) 
-                              (utils:kwd (first x) '-shader))
-                          shaders)))
-              (program-id (link-shaders shaders 
-                                        (program-manager ',name))))
-         (mapcar #'%gl:delete-shader shaders)
-         (destructuring-bind ,(mapcar #'(lambda (x) 
-                                          (utils:symb x '-assigner)) 
-                                      uniform-names)
-             (create-uniform-assigners program-id ',uniforms)
-           (defun ,name 
-               (stream ,@(when uniforms `(&key ,@(mapcar #'first
-                                                         uniforms))))
-             (use-program program-id)
-             ,@(loop :for uniform-name :in uniform-names
-                  :collect `(when ,uniform-name
-                              (dolist (fun ,(utils:symb uniform-name
-                                                        '-assigner))
-                                (funcall fun ,uniform-name))))
-             (no-bind-draw-one stream)))))))
+  (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
+    `(let ((program nil))
+       (defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
+         (when (not program) (setf program (glambda ,args ,@shaders)))
+         (funcall program stream ,@(loop for name in uniform-names 
+					 :append `(,(utils:kwd name)
+						   ,name)))))))
+
+(defmacro defprogram? (name (&rest args) &body shaders)
+  (declare (ignore name))
+  `(let* ((shaders (varjo:rolling-translate ',args ',shaders)))
+     (format t "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" shaders)
+     nil))
+
+;; [TODO] Make glambda handle strings
+(defmacro glambda ((&rest args) &body shaders)  
+  (let* ((uniforms (varjo:extract-uniforms args))
+         (uniform-names (mapcar #'first uniforms)))
+
+    `(let* ((shaders (loop for (type code) in (varjo:rolling-translate 
+                                               ',args ',shaders)
+                        :collect (make-shader type code)))
+            (program-id (link-shaders shaders (gl:create-program)))
+            (assigners (create-uniform-assigners program-id ',uniforms))
+            ,@(loop :for name :in uniform-names :for i :from 0
+                 :collect `(,(utils:symb name '-assigner)
+                             (nth ,i assigners))))
+       (mapcar #'%gl:delete-shader shaders)
+       (lambda (stream ,@(when uniforms `(&key ,@uniform-names)))
+         (use-program program-id)
+         ,@(loop :for uniform-name :in uniform-names
+              :collect `(when ,uniform-name
+                          (dolist (fun ,(utils:symb uniform-name
+                                                    '-assigner))
+                            (funcall fun ,uniform-name))))
+         (no-bind-draw-one stream)))))
 
 ;; make this return list of funcs or nil for each uni-var
 (defun create-uniform-assigners (program-id uniform-vars)
@@ -161,31 +134,6 @@
                         result)))
     (loop for var in uniform-vars
        :collect (assoc (first var) result))))
-
-(defmacro defprogram? (name (&rest args) &body shaders)
-  (declare (ignore name))
-  (destructuring-bind (in-vars  uniforms uniform-defaults
-		       type-ignore version)   
-      (varjo:split-shader-args args :330)
-    (declare (ignore type-ignore uniform-defaults))
-    `(let* ((shaders (varjo:rolling-translate
-		      ',in-vars ',uniforms ',shaders ',version)))
-       (format t "~{~a~^-----------~^~%~^~%~}" shaders)
-       nil)))
-
-(defmacro compile-program ((&rest args) &body shaders)
-  (destructuring-bind (in-vars in-var-qualifiers uniforms
-		       uniform-defaults type-ignore version)   
-      (varjo:split-shader-args args :330)
-    (declare (ignore type-ignore uniform-defaults 
-		     in-var-qualifiers))
-    `(let* ((shaders (varjo:rolling-translate ',in-vars ',uniforms 
-                                              ',shaders ',version)))
-       (list shaders 
-             (active-uniform-details 
-              (process-uniform-details (uniform-details
-                                        (program-uniforms program-id))
-                                       uniforms))))))
 
 ;; [TODO] If we load shaders from files the names will clash
 (defun parse-uniform-path (uniform-detail)
@@ -481,8 +429,8 @@
    You can also specify an indicies-array which will be used as
    the indicies when rendering"
   (let ((element-buffer (when indicies-array
-			  (gpuarray-buffer indicies-array)))
-	(vao (gl:gen-vertex-array))
+                          (gpuarray-buffer indicies-array)))
+        (vao (gl:gen-vertex-array))
         (attr 0))
     (bind-vao vao)
     (loop for gpu-array in gpu-arrays
@@ -957,7 +905,7 @@
 
 (defun make-gpu-stream-from-gpu-arrays 
     (&key gpu-arrays indicies-array
-       (start 0) (length 1) (draw-type :triangles))
+       (start 0) length (draw-type :triangles))
   "This function simplifies making the gpu-stream if you are 
    storing the data in gpu-arrays.
 
@@ -975,7 +923,9 @@
     (make-gpu-stream 
      :vao (make-vao-from-gpu-arrays gpu-arrays indicies-array)
      :start start
-     :length length
+     :length (or length (min (gpuarray-length indicies-array)
+                             (apply #'min (mapcar #'gpuarray-length 
+                                                  gpu-arrays))))
      :draw-type draw-type
      :index-type (unless (null indicies-array)
                    (gpuarray-type indicies-array)))))
@@ -1264,10 +1214,9 @@
           ((equal exten ".frag") :fragment-shader)
           (t (error "Could not extract shader type from shader file extension (must be .vert or .frag)")))))
 
-(defun make-shader (source-string 
-                    &optional 
-                      shader-type 		      
-                      (shader-id (gl:create-shader shader-type)))
+(defun make-shader 
+    (shader-type source-string &optional (shader-id (gl:create-shader 
+                                                     shader-type)))
   "This makes a new opengl shader object by compiling the text
    in the specified file and, unless specified, establishing the
    shader type from the file extension"
@@ -1276,9 +1225,9 @@
   ;;check for compile errors
   (when (not (gl:get-shader shader-id :compile-status))
     (error "Error compiling ~(~a~): ~%~a~%~%~a" 
-	   shader-type
-	   (gl:get-shader-info-log shader-id)
-	   source-string))
+           shader-type
+           (gl:get-shader-info-log shader-id)
+           source-string))
   shader-id)
 
 (defun load-shader (file-path 
