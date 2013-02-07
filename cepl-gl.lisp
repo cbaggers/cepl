@@ -73,11 +73,10 @@
 (defmacro defprogram (name (&rest args) &body shaders)
   ;; If the first shader form is a keyword telling it to compile 
   ;; then compile the lisp to glsl at macro expansion time.
-  (destructuring-bind (in-vars in-var-qualifiers uniforms
-		       uniform-defaults type-ignore version)
+  (destructuring-bind (in-vars uniforms uniform-defaults
+		       type-ignore version)
       (varjo:split-shader-args args :330)
-    (declare (ignore type-ignore uniform-defaults 
-		     in-var-qualifiers))
+    (declare (ignore type-ignore uniform-defaults))
     (let* ((compile-glsl (find (first shaders) 
                                '(:macro :compile :compile-in-macro
                                  :in-macro :compile-macro)))
@@ -101,7 +100,7 @@
          (destructuring-bind ,(mapcar #'(lambda (x) 
                                           (utils:symb x '-assigner)) 
                                       uniform-names)
-             (create-uniform-assigners program-id ,uniforms)
+             (create-uniform-assigners program-id ',uniforms)
            (defun ,name 
                (stream ,@(when uniforms `(&key ,@(mapcar #'first
                                                          uniforms))))
