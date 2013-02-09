@@ -31,7 +31,9 @@
   (:use :cl)
   (:export :init-sdl
 	   :quit-sdl
-	   :with-init-sdl))
+	   :with-init-sdl
+	   :collect-sdl-events
+	   :collect-sdl-event-types))
 
 (defpackage :base-time
   (:use :cl)
@@ -94,6 +96,7 @@
 	   :enable
 	   :cull-face
 	   :front-face
+	   :glambda
 	   :depth-mask
 	   :depth-func
 	   :depth-range

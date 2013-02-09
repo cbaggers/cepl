@@ -1,19 +1,42 @@
 (in-package :cepl-gl)
 
+(defmacro dangerous-defctype (name base-type &optional documentation)
+  "Utility macro for simple C-like typedefs."
+  (declare (ignore documentation))
+  (let* ((btype (cffi::parse-type base-type))
+         (dtype (if (typep btype 'cffi::enhanced-foreign-type)
+                    'cffi::enhanced-typedef
+                    'cffi::foreign-typedef)))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (cffi::notice-foreign-type 
+        ',name (make-instance ',dtype :name ',name :actual-type ,btype)))))
+
 (defun agg-type-helper-name (type)
   (utils:symb-package 'cepl-gl 'cgl- (varjo:type-principle type)))
 
 (defmacro make-foreign-helper-types ()
   `(progn 
-     ,@(loop for (type . len) in 
-          varjo::*glsl-component-counts*
-          collect 
-            (let ((ftype (varjo:flesh-out-type type))) 
-              `(defcstruct ,(utils:symb 'cgl- type)
-                 (components ,(varjo:type-component-type
-                               ftype)
-                             :count ,(varjo:type-component-count
-                                      ftype)))))))
+     ,@(loop :for (type . len) :in varjo::*glsl-component-counts*
+	     :collect 
+	     (let* ((ftype (varjo:flesh-out-type type))
+		    (comp-len (varjo:type-component-count type))
+		    (comp-type (varjo:type-component-type ftype))) 
+	       `(progn
+		  (defcstruct ,(utils:symb 'cgl- type)
+		    (components ,comp-type :count ,len))
+		  (dangerous-defctype ,type ,(utils:symb 'cgl- type))
+		  (defmethod dpopulate ((array-type (eql ,type)) gl-array
+					data)
+		    (let ((a-ptr (glarray-pointer gl-array)))
+		      (loop :for datum :in data
+			    :for i :from 0
+			    :do (let ((v-ptr (mem-aref a-ptr ,type i)))
+				  ,@(loop :for j :below comp-len
+					  :collect  
+					  `(setf (mem-aref v-ptr
+							   ,comp-type ,j)
+						 (aref datum ,j))))))))))))
+
 
 (make-foreign-helper-types)
 

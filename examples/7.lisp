@@ -390,7 +390,7 @@
 ;; [TODO] Should look for quit event and just return that if found.
 (defun collect-sdl-events ()
   (let ((x (sdl:new-event)))
-    (LOOP UNTIL (= 0 (LISPBUILDER-SDL-CFFI::SDL-POLL-EVENT x))
+    (loop until (= 0 (lispbuilder-sdl-cffi::sdl-poll-event x))
        collect x)))
 
 

@@ -9,7 +9,7 @@
            (out (the-color :smooth) (vert-data-colour vert)))
   (:fragment (let ((lerp-value (/ (y gl-frag-coord) 500.0)))
                (out outputColor (mix the-color 
-                                     (vec4 0.0 0.2 0.2 1.0)
+                                     (vec4 0.2 0.2 0.2 1.0)
                                      lerp-value)))))
 
 (defun run-demo ()
@@ -21,11 +21,9 @@
          (gstream (cgl:make-gpu-stream-from-gpu-arrays
                    :gpu-arrays (cgl:make-gpu-array 
                                 data :element-type 'vert-data))))
-    (sdl:with-events ()
-      (:quit-event () t)
-      (:VIDEO-RESIZE-EVENT (:w width :h height) (gl:viewport 0 0 width height))
-      (:idle () (cepl-utils:update-swank)
-             (base-macros:continuable (progn (gl:clear :color-buffer-bit)
-                                             (prog-1 gstream)
-                                             (gl:flush)
-                                             (sdl:update-display)))))))
+    (do-until (find :quit-event (collect-sdl-event-types))
+      (cepl-utils:update-swank)
+      (base-macros:continuable (progn (gl:clear :color-buffer-bit)
+				      (prog-1 gstream)
+				      (gl:flush)
+				      (sdl:update-display))))))

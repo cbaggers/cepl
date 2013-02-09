@@ -39,11 +39,10 @@
 (let ((programs (make-hash-table)))
   (defun program-manager (name)
     (let ((prog-id (gethash name programs)))
-      (if prog-id
-          prog-id
-          (let ((prog-id (gl:create-program)))
-            (setf (gethash name programs) prog-id)))))
+      (if prog-id prog-id
+	  (setf (gethash name programs) (gl:create-program)))))
   (defun program-manager-delete (name)
+    (declare (ignore name))
     (print "delete not yet implemented")))
 
 ;; [TODO] We need to make this fast, this 'if not prog' won't do
@@ -51,7 +50,8 @@
   (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
     `(let ((program nil))
        (defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
-         (when (not program) (setf program (glambda ,args ,@shaders)))
+         (when (not program) 
+	   (setf program (make-program ,name ,args ,shaders)))
          (funcall program stream ,@(loop for name in uniform-names 
 					 :append `(,(utils:kwd name)
 						   ,name)))))))
@@ -62,19 +62,26 @@
      (format t "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" shaders)
      nil))
 
+(defmacro glambda ((&rest args) &body shaders)
+  `(make-program nil ,args ,shaders))
+
 ;; [TODO] Make glambda handle strings
-(defmacro glambda ((&rest args) &body shaders)  
+(defmacro make-program (name args shaders)  
   (let* ((uniforms (varjo:extract-uniforms args))
          (uniform-names (mapcar #'first uniforms)))
 
     `(let* ((shaders (loop for (type code) in (varjo:rolling-translate 
                                                ',args ',shaders)
                         :collect (make-shader type code)))
-            (program-id (link-shaders shaders (gl:create-program)))
+            (program-id (link-shaders shaders 
+				      ,(if name
+					   `(program-manager ',name)
+					   `(gl:create-program))))
             (assigners (create-uniform-assigners program-id ',uniforms))
             ,@(loop :for name :in uniform-names :for i :from 0
                  :collect `(,(utils:symb name '-assigner)
                              (nth ,i assigners))))
+       (declare (ignorable assigners))
        (mapcar #'%gl:delete-shader shaders)
        (lambda (stream ,@(when uniforms `(&key ,@uniform-names)))
          (use-program program-id)
@@ -94,24 +101,27 @@
     (loop for a-uniform in active-uniform-details
        :collect
          (when a-uniform
-           (let ((location (gl:get-attrib-location program-id 
-                                                   (second a-uniform))))
-             (loop for part in (subseq a-uniform 2)
-                :collect 
-                  (destructuring-bind (offset type length) part
-                    (let ((uni-fun (get-foreign-uniform-function type))
-                          (lisp-uni-fun (get-uniform-function type)))
-                      (if (eq length 1)
-                          (lambda (pointer)
-                            (funcall uni-fun location length
-                                     (cffi-sys:inc-pointer pointer offset)))
-                          (lambda (pointer-or-val)
-                            (funcall (if (cffi:pointerp pointer-or-val)
-                                         uni-fun
-                                         lisp-uni-fun)
-                                     location length
-                                     (cffi-sys:inc-pointer pointer-or-val
-                                                           offset))))))))))))
+           (let ((location (gl:get-uniform-location program-id 
+						    (second a-uniform))))
+	     (if (< location 0)
+		 (error "uniform ~a not found, this is a bug"
+			(second a-uniform))
+		 (loop for part in (subseq a-uniform 2)
+		       :collect 
+		       (destructuring-bind (offset type length) part
+			 (let ((uni-fun (get-foreign-uniform-function type))
+			       (lisp-uni-fun (get-uniform-function type)))
+			   (if (eq length 1)
+			       (lambda (pointer)
+				 (funcall uni-fun location length
+					  (cffi-sys:inc-pointer pointer offset)))
+			       (lambda (pointer-or-val)
+				 (funcall (if (cffi:pointerp pointer-or-val)
+					      uni-fun
+					      lisp-uni-fun)
+					  location length
+					  (cffi-sys:inc-pointer pointer-or-val
+								offset)))))))))))))
 
 ;; [TODO] Got to be a quicker and tidier way
 (defun process-uniform-details (uniform-details uniform-vars)
@@ -477,9 +487,9 @@
   (if initial-contents
       (destructuring-allocate element-type initial-contents)
       (make-glarray :pointer (foreign-alloc element-type 
-                                            :count length)
-                    :length length 
-                    :type element-type)))
+					    :count length)
+		    :length length 
+		    :type element-type)))
 
 (defun free-gl-array (gl-array)
   "Frees the specified gl-array."
@@ -685,6 +695,7 @@
                        :index-array index-array
                        :access-style access-style))))
 
+
 (defmethod make-gpu-array 
     ((initial-contents list) 
      &key
@@ -693,10 +704,11 @@
        (access-style :static-draw)
        (location nil))
   (cffi:with-foreign-object (ptr element-type (length initial-contents))
-    (make-gpu-array (destructuring-populate (make-glarray :pointer ptr 
-                                                          :length (length initial-contents) 
-                                                          :type element-type) 
-                                            initial-contents)
+    (make-gpu-array (destructuring-populate
+		     (make-glarray :pointer ptr 
+				   :length (length initial-contents) 
+				   :type element-type) 
+		     initial-contents)
                     :index-array index-array
                     :access-style access-style
                     :location location)))
@@ -917,15 +929,18 @@
                   ,(gpu-sub-array monster-col-data 1000 2000))
      :indicies-array monster-indicies-array
      :length 1000)"
-  (let ((gpu-arrays (if (gpuarray-p gpu-arrays)
-                        (list gpu-arrays)
-                        gpu-arrays)))
+  (let* ((gpu-arrays (if (gpuarray-p gpu-arrays)
+			 (list gpu-arrays)
+			 gpu-arrays))
+	 (length (or length (apply #'min (mapcar #'gpuarray-length 
+						 gpu-arrays)))))
+    
     (make-gpu-stream 
      :vao (make-vao-from-gpu-arrays gpu-arrays indicies-array)
      :start start
-     :length (or length (min (gpuarray-length indicies-array)
-                             (apply #'min (mapcar #'gpuarray-length 
-                                                  gpu-arrays))))
+     :length (if indicies-array
+		 (min (gpuarray-length indicies-array) length)
+		 length)
      :draw-type draw-type
      :index-type (unless (null indicies-array)
                    (gpuarray-type indicies-array)))))

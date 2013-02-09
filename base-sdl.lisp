@@ -81,3 +81,13 @@ of options available."
                           :blue-size ,blue-size)
             ,@body)
        (quit-sdl))))
+
+(defun collect-sdl-events ()
+  (let ((x (sdl:new-event)))
+    (LOOP UNTIL (= 0 (LISPBUILDER-SDL-CFFI::SDL-POLL-EVENT x))
+       collect x)))
+
+(defun collect-sdl-event-types ()
+  (let ((x (sdl:new-event)))
+    (LOOP UNTIL (= 0 (LISPBUILDER-SDL-CFFI::SDL-POLL-EVENT x))
+	  collect (sdl:event-type x))))
