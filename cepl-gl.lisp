@@ -45,22 +45,29 @@
     (declare (ignore name))
     (print "delete not yet implemented")))
 
+(defun valid-shader-typep (shader)
+  (find (first shader) '(:vertex :fragment :geometry)))
+
 ;; [TODO] We need to make this fast, this 'if not prog' won't do
 (defmacro defprogram (name (&rest args) &body shaders)
-  (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
-    `(let ((program nil))
-       (defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
-         (when (not program) 
-	   (setf program (make-program ,name ,args ,shaders)))
-         (funcall program stream ,@(loop for name in uniform-names 
-					 :append `(,(utils:kwd name)
-						   ,name)))))))
+  (if (every #'valid-shader-typep shaders)
+      (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
+        `(let ((program nil))
+           (defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
+             (when (not program) 
+               (setf program (make-program ,name ,args ,shaders)))
+             (funcall program stream ,@(loop for name in uniform-names 
+                                          :append `(,(utils:kwd name)
+                                                     ,name))))))
+      (error "Some shaders have invalid types ~a" (mapcar #'first shaders))))
 
 (defmacro defprogram? (name (&rest args) &body shaders)
   (declare (ignore name))
-  `(let* ((shaders (varjo:rolling-translate ',args ',shaders)))
-     (format t "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" shaders)
-     nil))
+  (if (every #'valid-shader-typep shaders)
+       `(let* ((shaders (varjo:rolling-translate ',args ',shaders)))
+          (format t "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" shaders)
+          nil)
+       (error "Some shaders have invalid types ~a" (mapcar #'first shaders))))
 
 (defmacro glambda ((&rest args) &body shaders)
   `(make-program nil ,args ,shaders))
