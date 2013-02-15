@@ -24,7 +24,6 @@
   (:export :defmemo
 	   :once-only
 	   :continuable
-	   :do-until
 	   :apply-across-elements))
 
 (defpackage :base-sdl
@@ -131,7 +130,7 @@
 	   :free-all-buffers-in-pool
 	   :make-gpu-array
 	   :make-gpu-arrays
-	   :gpu-sub-array
+	   :gpu-subseq
 	   :gpu-array-pull
 	   :gpu-array-push
 	   :with-gpu-array-as-gl-array

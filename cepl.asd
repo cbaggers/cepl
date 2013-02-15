@@ -11,10 +11,11 @@
 (asdf:defsystem #:cepl
   :serial t
   :depends-on (#:cl-opengl
-	       #:lispbuilder-sdl
-	       #:varjo
-	       #:cl-utilities
-	       #:cl-ppcre)
+               #:lispbuilder-sdl
+               #:varjo
+               #:cl-utilities
+               #:cl-ppcre
+               #:symbol-munger)
   :components ((:file "package")
 	       (:file "base-maths")
 	       (:file "base-macros")

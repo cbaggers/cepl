@@ -1,4 +1,4 @@
-;; This software is Copyright (c) 2012 Chris Bagley
+ ;; This software is Copyright (c) 2012 Chris Bagley
 ;; (techsnuffle<at>gmail<dot>com)
 ;; Chris Bagley grants you the rights to
 ;; distribute and use this software as governed
@@ -81,9 +81,9 @@
                                                ',args ',shaders)
                         :collect (make-shader type code)))
             (program-id (link-shaders shaders 
-				      ,(if name
-					   `(program-manager ',name)
-					   `(gl:create-program))))
+                                      ,(if name
+                                           `(program-manager ',name)
+                                           `(gl:create-program))))
             (assigners (create-uniform-assigners program-id ',uniforms))
             ,@(loop :for name :in uniform-names :for i :from 0
                  :collect `(,(utils:symb name '-assigner)
@@ -109,26 +109,26 @@
        :collect
          (when a-uniform
            (let ((location (gl:get-uniform-location program-id 
-						    (second a-uniform))))
-	     (if (< location 0)
-		 (error "uniform ~a not found, this is a bug"
-			(second a-uniform))
-		 (loop for part in (subseq a-uniform 2)
-		       :collect 
-		       (destructuring-bind (offset type length) part
-			 (let ((uni-fun (get-foreign-uniform-function type))
-			       (lisp-uni-fun (get-uniform-function type)))
-			   (if (eq length 1)
-			       (lambda (pointer)
-				 (funcall uni-fun location length
-					  (cffi-sys:inc-pointer pointer offset)))
-			       (lambda (pointer-or-val)
-				 (funcall (if (cffi:pointerp pointer-or-val)
-					      uni-fun
-					      lisp-uni-fun)
-					  location length
-					  (cffi-sys:inc-pointer pointer-or-val
-								offset)))))))))))))
+                                                    (second a-uniform))))
+             (if (< location 0)
+                 (error "uniform ~a not found, this is a bug in cepl"
+                        (second a-uniform))
+                 (loop for part in (subseq a-uniform 2)
+                    :collect 
+                      (destructuring-bind (offset type length) part
+                        (let ((uni-fun (get-foreign-uniform-function type)))
+                          (if (> length 1)
+                              (lambda (pointer)
+                                (funcall uni-fun location length
+                                         (cffi-sys:inc-pointer pointer offset)))
+                              (lambda (pointer-or-val)
+                                (if (cffi:pointerp pointer-or-val)
+                                    (funcall uni-fun location length
+                                         (cffi-sys:inc-pointer pointer-or-val offset))
+                                    (cffi-sys:with-pointer-to-vector-data
+                                        (ptr pointer-or-val)
+                                      (funcall uni-fun location length
+                                               (cffi-sys:inc-pointer ptr offset)))))))))))))))
 
 ;; [TODO] Got to be a quicker and tidier way
 (defun process-uniform-details (uniform-details uniform-vars)
@@ -158,8 +158,7 @@
            (s-square (x) (split-sequence:split-sequence #\[ x)))
     (loop for path in (s-dot (first uniform-detail))
        :collect (let ((part (s-square (remove #\] path))))
-                  (list (intern (string-upcase 
-                                 (first part)))
+                  (list (symbol-munger:camel-case->lisp-symbol (first part))
                         (if (second part)
                             (parse-integer (second part))
                             0))))))
@@ -186,8 +185,11 @@
     (let* ((first-part (first path))
            (type (second (assoc (first first-part) uniform-vars)))
            (index (second first-part)))
-      (+ (* (cffi:foreign-type-size type) index)
-         (path-offset type (rest path))))))
+      (if type
+          (+ (* (cffi:foreign-type-size type) index)
+             (path-offset type (rest path)))
+          (error "Could not find the uniform variable named '~a'" 
+                 (first first-part))))))
 
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
@@ -783,7 +785,7 @@
                         :access-style access-style))))
 
 
-(defun gpu-sub-array (gpu-array start end)
+(defun gpu-subseq (gpu-array start end)
   (let* ((parent-start (gpuarray-start gpu-array))
          (parent-end (+ parent-start 
                         (gpuarray-length gpu-array)))
@@ -1000,162 +1002,6 @@
 ;;; UNIFORMS ;;;
 ;;;----------;;;
 
-;; FLOATS
-
-(declaim (inline uniform-1f)
-         (ftype (function ((integer)
-                           (single-float)) 
-                          (single-float)) 
-                uniform-1f))
-(defun uniform-1f (location val-f)
-  (declare (type integer location)
-           (type single-float val-f))
-  (%gl:uniform-1f location val-f)
-  val-f)
-
-
-(declaim (inline uniform-2f)
-         (ftype (function ((integer)
-                           (simple-array single-float (2))) 
-                          (simple-array single-float (2))) 
-                uniform-2f))
-(defun uniform-2f (location vec2)
-  (declare (type integer location)
-           (type (simple-array single-float (2)) vec2))
-  (%gl:uniform-2f location 
-                  (aref vec2 0) (aref vec2 1))
-  vec2)
-
-
-(declaim (inline uniform-3f)
-         (ftype (function ((integer)
-                           (simple-array single-float (3))) 
-                          (simple-array single-float (3))) 
-                uniform-3f))
-(defun uniform-3f (location vec3)
-  (declare (type integer location)
-           (type (simple-array single-float (3)) vec3))
-  (%gl:uniform-3f location 
-                  (aref vec3 0) (aref vec3 1) (aref vec3 2))
-  vec3)
-
-
-(declaim (inline uniform-4f)
-         (ftype (function ((integer)
-                           (simple-array single-float (4))) 
-                          (simple-array single-float (4))) 
-                uniform-4f))
-(defun uniform-4f (location vec4)
-  (declare (type integer location)
-           (type (simple-array single-float (4)) vec4))
-  (%gl:uniform-4f location 
-                  (aref vec4 0) (aref vec4 1) 
-                  (aref vec4 2) (aref vec4 3))
-  vec4)
-
-;; INTEGERS
-
-(declaim (inline uniform-1i)
-         (ftype (function ((integer)
-                           (integer)) 
-                          (integer)) 
-                uniform-1i))
-(defun uniform-1i (location val-i)
-  (declare (type integer location)
-           (type integer val-i))
-  (%gl:uniform-1i location val-i)
-  val-i)
-
-
-(declaim (inline uniform-2i)
-         (ftype (function ((integer)
-                           (simple-array integer (2))) 
-                          (simple-array integer (2))) 
-                uniform-2i))
-(defun uniform-2i (location vec2)
-  (declare (type integer location)
-           (type (simple-array integer (2)) vec2))
-  (%gl:uniform-2i location 
-                  (aref vec2 0) (aref vec2 1))
-  vec2)
-
-
-(declaim (inline uniform-3i)
-         (ftype (function ((integer)
-                           (simple-array integer (3))) 
-                          (simple-array integer (3))) 
-                uniform-3i))
-(defun uniform-3i (location vec3)
-  (declare (type integer location)
-           (type (simple-array integer (3)) vec3))
-  (%gl:uniform-3i location 
-                  (aref vec3 0) (aref vec3 1) (aref vec3 2))
-  vec3)
-
-
-(declaim (inline uniform-4i)
-         (ftype (function ((integer)
-                           (simple-array integer (4))) 
-                          (simple-array integer (4))) 
-                uniform-4i))
-(defun uniform-4i (location vec4)
-  (declare (type integer location)
-           (type (simple-array integer (4)) vec4))
-  (%gl:uniform-4i location 
-                  (aref vec4 0) (aref vec4 1) 
-                  (aref vec4 2) (aref vec4 3))
-  vec4)
-
-
-;; Matrices
-
-(declaim (inline uniform-matrix2)
-         (ftype (function ((integer)
-                           (simple-array single-float (4))) 
-                          (simple-array single-float (4))) 
-                uniform-matrix2))
-(defun uniform-matrix2 (location mat2)
-  (declare (type integer location)
-           (type (simple-array single-float (4)) mat2))
-  (with-foreign-object (array '%gl:float 4)
-    (dotimes (j 4)
-      (setf (mem-aref array '%gl:float j)
-            (aref mat2 j)))
-    (%gl:uniform-matrix-2fv location 1 nil array))
-  mat2)
-
-
-(declaim (inline uniform-matrix3)
-         (ftype (function ((integer)
-                           (simple-array single-float (9))) 
-                          (simple-array single-float (9))) 
-                uniform-matrix3))
-(defun uniform-matrix3 (location mat3)
-  (declare (type integer location)
-           (type (simple-array single-float (9)) mat3))
-  (with-foreign-object (array '%gl:float 9)
-    (dotimes (j 9)
-      (setf (mem-aref array '%gl:float j)
-            (aref mat3 j)))
-    (%gl:uniform-matrix-3fv location 1 nil array))
-  mat3)
-
-
-(declaim (inline uniform-matrix4)
-         (ftype (function ((integer)
-                           (simple-array single-float (16))) 
-                          (simple-array single-float (16))) 
-                uniform-matrix4))
-(defun uniform-matrix4 (location mat4)
-  (declare (type integer location)
-           (type (simple-array single-float (16)) mat4))
-  (with-foreign-object (array '%gl:float 16)
-    (dotimes (j 16)
-      (setf (mem-aref array '%gl:float j)
-            (aref mat4 j)))
-    (%gl:uniform-matrix-4fv location 1 nil array))
-  mat4)
-
 ;; [TODO] HANDLE DOUBLES
 (defun get-foreign-uniform-function (type)
   (case type
@@ -1173,23 +1019,6 @@
     ((:float-mat3 :float-mat3-arb) #'%gl:uniform-matrix-3fv)
     ((:float-mat4 :float-mat4-arb) #'%gl:uniform-matrix-4fv)
     (t (error "Sorry cepl doesnt handle that type yet"))))
-
-(defun get-uniform-function (type)
-  (case type
-    ((:int :int-arb :bool :bool-arb :sampler_1d :sampler_1d_shadow 
-           :sampler_2d :sampler_3d :sampler_cube 
-           :sampler_2d_shadow) #'uniform-1i)
-    ((:float :float-arb) #'uniform-1f)
-    ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) #'uniform-2i)
-    ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) #'uniform-3i)
-    ((:int-vec4 :int-vec4-arb :bool-vec4 :bool-vec4-arb) #'uniform-4i)
-    ((:float-vec2 :float-vec2-arb) #'uniform-2f)
-    ((:float-vec3 :float-vec3-arb) #'uniform-3f)
-    ((:float-vec4 :float-vec4-arb) #'uniform-4f)
-    ((:float-mat2 :float-mat2-arb) #'uniform-matrix2)
-    ((:float-mat3 :float-mat3-arb) #'uniform-matrix3)
-    ((:float-mat4 :float-mat4-arb) #'uniform-matrix4)
-    (t (error "Sorry cepl doesnt handle that type yet: ~a" type))))
 
 ;;;--------------------------------------------------------------
 ;;; PROGRAMS ;;;
