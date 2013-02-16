@@ -5,8 +5,6 @@
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *entities* nil)
-(defparameter *v* nil)
-(defparameter *i* nil)
 
 ;; Define data formats 
 (cgl:defglstruct vert-data 
@@ -29,10 +27,9 @@
   (matrix nil))
 
 (defun init () 
-  (setf *frustrum-scale*
-	(cepl-camera:calculate-frustrum-scale 45.0))
-  (setf *cam-clip-matrix* 
-	(cepl-camera:make-cam-clip-matrix *frustrum-scale*))
+  (setf *frustrum-scale* (ccam:calculate-frustrum-scale 45.0))
+  (setf *cam-clip-matrix* (ccam:make-cam-clip-matrix
+			   *frustrum-scale*))
   (prog-1 nil :cam-to-clip *cam-clip-matrix*)
   (let* ((verts (cgl:make-gpu-array 
 		 '((#(+1.0  +1.0  +1.0) #(0.0  1.0  0.0  1.0)) 
@@ -52,11 +49,9 @@
 	 (stream (cgl:make-gpu-stream-from-gpu-arrays
 		  :gpu-arrays verts
 		  :indicies-array indicies)))
-    (setf *i* indicies
-	  *v* verts) 
     (setf *entities* (list (make-entity :stream stream)
-			   (make-entity :loop-angle 3.14
-					:stream stream))))
+			   (make-entity :stream stream
+					:loop-angle 3.14))))
   (cgl::clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
@@ -86,7 +81,6 @@
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (loop :for entity :in *entities*
 	:do (move-entity entity)
-	    (print 'moo)
 	    (prog-1 (entity-stream entity)
 		    :model-to-cam (entity-matrix entity)))
   (gl:flush)
@@ -105,6 +99,4 @@
   (reshape 640 480)
   (loop :until (find :quit-event (collect-sdl-event-types)) :do
     (cepl-utils:update-swank)
-    (base-macros:continuable (draw)))
-  (print "Main loop finished") 
-  nil)
+    (base-macros:continuable (draw))))

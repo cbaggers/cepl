@@ -286,6 +286,7 @@
 	   :elt :trace))
 
 (defpackage :cepl-camera
+  (:nicknames :ccam)
   (:use :cl)
   (:export :calculate-frustrum-scale
 	   :make-cam-clip-matrix)

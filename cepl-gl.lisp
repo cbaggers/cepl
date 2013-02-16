@@ -211,8 +211,11 @@
   (buffer-id (car (gl:gen-buffers 1)))
   (format nil))
 
-
+;; [TODO] is eq right here? (answer is no)
 (defmemo bind-buffer (buffer buffer-target)
+  (gl:bind-buffer buffer-target (glbuffer-buffer-id buffer)))
+
+(defun force-bind-buffer (buffer buffer-target)
   (gl:bind-buffer buffer-target (glbuffer-buffer-id buffer)))
 
 (setf (documentation 'bind-buffer 'function) 
@@ -428,7 +431,7 @@
     (bind-vao vao)
     (loop for format in formats
        :do (let ((buffer (first format)))
-             (bind-buffer buffer :array-buffer)
+             (force-bind-buffer buffer :array-buffer)
              (loop :for (type normalized stride pointer) 
                 :in (rest format)
                 :do (setf attr-num
@@ -436,7 +439,7 @@
                              (gl-assign-attrib-pointers
                               type pointer stride))))))   
     (when element-buffer
-      (bind-buffer element-buffer :element-array-buffer))
+      (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
     vao))
 
@@ -460,13 +463,13 @@
        :do (let* ((buffer (gpuarray-buffer gpu-array))
                   (format (nth (gpuarray-format-index gpu-array)
                                (glbuffer-format buffer))))
+	     (force-bind-buffer buffer :array-buffer)
              (setf attr (+ attr (gl-assign-attrib-pointers
                                  (first format) 
                                  attr
                                  (third format))))))
     (when element-buffer
-      (print `(bind-buffer ,element-buffer :element-array-buffer))
-      (bind-buffer element-buffer :element-array-buffer))
+      (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
     vao))
 
@@ -1171,7 +1174,7 @@
 	(%gl:draw-elements (gpu-stream-draw-type stream)
 			   (gpu-stream-length stream)
 			   (gl::cffi-type-to-gl index-type)
-			   (cffi-sys:null-pointer))
+			   (make-pointer 0))
         (%gl:draw-arrays (gpu-stream-draw-type stream)
                          (gpu-stream-start stream)
                          (gpu-stream-length stream)))))
