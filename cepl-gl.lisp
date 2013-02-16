@@ -32,6 +32,11 @@
 
 (in-package :cepl-gl)
 
+(defcfun ("memcpy" memcpy) :pointer
+  (destination-pointer :pointer)
+  (source-pointer :pointer)
+  (byte-length :long))
+
 ;;;--------------------------------------------------------------
 ;;; SHADER & PROGRAMS ;;;
 ;;;-------------------;;;
@@ -97,7 +102,7 @@
                           (dolist (fun ,(utils:symb uniform-name
                                                     '-assigner))
                             (funcall fun ,uniform-name))))
-         (no-bind-draw-one stream)))))
+         (when stream (no-bind-draw-one stream))))))
 
 ;; make this return list of funcs or nil for each uni-var
 (defun create-uniform-assigners (program-id uniform-vars)
@@ -359,8 +364,6 @@
 
 (setf (symbol-function 'bind-vertex-array) #'bind-vao)
 
-(defgeneric make-vao2 (inputs &key element-buffer))
-
 ;; glVertexAttribPointer
 ;; ---------------------
 ;; GL_BYTE
@@ -371,7 +374,6 @@
 ;; GL_UNSIGNED_INT 
 ;; GL_HALF_FLOAT
 ;; GL_FLOAT
-
 
 ;; GL_DOUBLE
 ;; GL_FIXED
@@ -432,7 +434,7 @@
                 :do (setf attr-num
                           (+ attr-num
                              (gl-assign-attrib-pointers
-                              type pointer stride))))))
+                              type pointer stride))))))   
     (when element-buffer
       (bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
@@ -462,7 +464,8 @@
                                  (first format) 
                                  attr
                                  (third format))))))
-    (when element-buffer 
+    (when element-buffer
+      (print `(bind-buffer ,element-buffer :element-array-buffer))
       (bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
     vao))
@@ -677,7 +680,7 @@
    around in the REPL"))
 
 (defmethod make-gpu-array 
-    ((initial-contents (eql nil)) 
+    ((initial-contents null) 
      &key
        element-type 
        length
@@ -943,18 +946,22 @@
   (let* ((gpu-arrays (if (gpuarray-p gpu-arrays)
 			 (list gpu-arrays)
 			 gpu-arrays))
-	 (length (or length (apply #'min (mapcar #'gpuarray-length 
-						 gpu-arrays)))))
+	 ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
+	 ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
+	 ;; OF TRIANGLES
+	 (length (or length 
+		     (when indicies-array (gpuarray-length
+					   indicies-array))
+		     (apply #'min (mapcar #'gpuarray-length 
+					  gpu-arrays)))))
     
     (make-gpu-stream 
      :vao (make-vao-from-gpu-arrays gpu-arrays indicies-array)
      :start start
-     :length (if indicies-array
-		 (min (gpuarray-length indicies-array) length)
-		 length)
+     :length length
      :draw-type draw-type
-     :index-type (unless (null indicies-array)
-                   (gpuarray-type indicies-array)))))
+     :index-type (when indicies-array 
+		   (gpuarray-type indicies-array)))))
 
 
 ;;;--------------------------------------------------------------
@@ -968,6 +975,22 @@
   (gpu-array-pull gl-object))
 
 (defmethod gl-pull ((gl-object glarray))
+  (let ((array-type (glarray-type gl-object)))
+    (loop for i below (glarray-length gl-object)
+       collect (glpull-entry array-type gl-object i))))
+
+(defgeneric gl-pull-1 (gl-object &optional destination)
+  (:documentation "Pulls data from the gl-array or gpu-array back one layer. This means that a gpu-array gets pulled into a gl-array, and a gl-array to a lisp list"))
+
+;; [TODO] This is bloody AWFUL! so lazy and slow. and doesnt use
+;;        destination          
+(defmethod gl-pull-1 ((gl-object gpuarray) &optional destination)
+  (declare (ignore destination))
+  (make-gl-array (gpuarray-type gl-object) 
+		 :initial-contents (gl-pull gl-object)))
+
+(defmethod gl-pull-1 ((gl-object glarray) &optional destination)
+  (declare (ignore destination))
   (let ((array-type (glarray-type gl-object)))
     (loop for i below (glarray-length gl-object)
        collect (glpull-entry array-type gl-object i))))
@@ -991,6 +1014,22 @@
   (destructuring-populate gl-object data)
   gl-object)
 
+(defgeneric gl-push-1 (gl-object data)
+  (:documentation ""))
+
+(defmethod gl-push-1 ((gl-object symbol) (data list))
+  (make-gl-array gl-object :initial-contents data))
+
+(defmethod gl-push-1 ((gl-object glarray) (data list))
+  (destructuring-populate gl-object data)
+  gl-object)
+
+(defmethod gl-push-1 ((gl-object gpuarray) (data glarray))
+  (gpu-array-push gl-object data)
+  gl-object)
+
+(defmethod gl-push-1 ((gl-object null) (data glarray))
+  (make-gpu-array data))
 
 ;;;--------------------------------------------------------------
 ;;; HELPERS ;;;
@@ -1003,6 +1042,16 @@
 ;;;--------------------------------------------------------------
 ;;; UNIFORMS ;;;
 ;;;----------;;;
+
+(defun uniform-matrix-2fvt (location count value)
+  (%gl:uniform-matrix-2fv location count nil value))
+
+(defun uniform-matrix-3fvt (location count value)
+  (%gl:uniform-matrix-3fv location count nil value))
+
+(defun uniform-matrix-4fvt (location count value)
+  (%gl:uniform-matrix-4fv location count nil value))
+
 
 ;; [TODO] HANDLE DOUBLES
 (defun get-foreign-uniform-function (type)
@@ -1017,9 +1066,9 @@
     ((:float-vec2 :float-vec2-arb) #'%gl:uniform-2fv)
     ((:float-vec3 :float-vec3-arb) #'%gl:uniform-3fv)
     ((:float-vec4 :float-vec4-arb) #'%gl:uniform-4fv)
-    ((:float-mat2 :float-mat2-arb) #'%gl:uniform-matrix-2fv)
-    ((:float-mat3 :float-mat3-arb) #'%gl:uniform-matrix-3fv)
-    ((:float-mat4 :float-mat4-arb) #'%gl:uniform-matrix-4fv)
+    ((:float-mat2 :float-mat2-arb) #'uniform-matrix-2fvt)
+    ((:float-mat3 :float-mat3-arb) #'uniform-matrix-3fvt)
+    ((:float-mat4 :float-mat4-arb) #'uniform-matrix-4fvt)
     (t (error "Sorry cepl doesnt handle that type yet"))))
 
 ;;;--------------------------------------------------------------
@@ -1119,10 +1168,10 @@
   (let ((index-type (gpu-stream-index-type stream)))
     (bind-vao (gpu-stream-vao stream))
     (if index-type
-        (%gl:draw-elements (gpu-stream-draw-type stream)
-                           (gpu-stream-length stream)
-                           (gl::cffi-type-to-gl index-type)
-                           (cffi:make-pointer 0))
+	(%gl:draw-elements (gpu-stream-draw-type stream)
+			   (gpu-stream-length stream)
+			   (gl::cffi-type-to-gl index-type)
+			   (cffi-sys:null-pointer))
         (%gl:draw-arrays (gpu-stream-draw-type stream)
                          (gpu-stream-start stream)
                          (gpu-stream-length stream)))))

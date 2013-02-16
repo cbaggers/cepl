@@ -5,17 +5,19 @@
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *entities* nil)
+(defparameter *v* nil)
+(defparameter *i* nil)
 
 ;; Define data formats 
 (cgl:defglstruct vert-data 
-  (position :vec4)
+  (position :vec3)
   (color :vec4))
 
 (cgl:defprogram prog-1 ((vert vert-data) &uniform 
 		    (cam-to-clip :mat4) (model-to-cam :mat4))
   (:vertex (out (the-color :smooth) (vert-data-color vert))
            (let ((cam-pos (* model-to-cam 
-			     (vert-data-position vert))))
+			     (vec4 (vert-data-position vert) 1.0))))
              (setf gl-position (* cam-to-clip cam-pos))))
   (:fragment (out output-color the-color)))
 
@@ -27,28 +29,31 @@
   (matrix nil))
 
 (defun init () 
-  (setf *frustrum-scale* 
+  (setf *frustrum-scale*
 	(cepl-camera:calculate-frustrum-scale 45.0))
   (setf *cam-clip-matrix* 
 	(cepl-camera:make-cam-clip-matrix *frustrum-scale*))
   (prog-1 nil :cam-to-clip *cam-clip-matrix*)
-  (let* ((verts '((#(+1.0  +1.0  +1.0)  #(0.0  1.0  0.0  1.0)) 
-		  (#(-1.0  -1.0  +1.0)  #(0.0  0.0  1.0  1.0))
-		  (#(-1.0  +1.0  -1.0)  #(1.0  0.0  0.0  1.0))
-		  (#(+1.0  -1.0  -1.0)  #(0.5  0.5  0.0  1.0))
-		  (#(-1.0  -1.0  -1.0)  #(0.0  1.0  0.0  1.0)) 
-		  (#(+1.0  +1.0  -1.0)  #(0.0  0.0  1.0  1.0))
-		  (#(+1.0  -1.0  +1.0)  #(1.0  0.0  0.0  1.0))
-		  (#(-1.0  +1.0  +1.0)  #(0.5  0.5  0.0  1.0))))
-	 (indicies '(0  1  2    1  0  3    2  3  0    3  2  1 
-		     5  4  6    4  5  7    7  6  4    6  7  5))
+  (let* ((verts (cgl:make-gpu-array 
+		 '((#(+1.0  +1.0  +1.0) #(0.0  1.0  0.0  1.0)) 
+		  (#(-1.0  -1.0  +1.0) #(0.0  0.0  1.0  1.0))
+		  (#(-1.0  +1.0  -1.0) #(1.0  0.0  0.0  1.0))
+		  (#(+1.0  -1.0  -1.0) #(0.5  0.5  0.0  1.0))
+		  (#(-1.0  -1.0  -1.0) #(0.0  1.0  0.0  1.0)) 
+		  (#(+1.0  +1.0  -1.0) #(0.0  0.0  1.0  1.0))
+		  (#(+1.0  -1.0  +1.0) #(1.0  0.0  0.0  1.0))
+		  (#(-1.0  +1.0  +1.0) #(0.5  0.5  0.0  1.0)))
+		 :element-type 'vert-data))
+	 (indicies (cgl:make-gpu-array 
+		    '(0  1  2    1  0  3    2  3  0    3  2  1 
+		      5  4  6    4  5  7    7  6  4    6  7  5)
+		    :element-type :unsigned-short
+		    :index-array t))
 	 (stream (cgl:make-gpu-stream-from-gpu-arrays
-		  :gpu-arrays (cgl:make-gpu-array 
-			       verts :element-type 'vert-data)
-		  :indicies-array (cgl:make-gpu-array 
-				   indicies 
-				   :element-type :unsigned-short
-				   :index-array t))))
+		  :gpu-arrays verts
+		  :indicies-array indicies)))
+    (setf *i* indicies
+	  *v* verts) 
     (setf *entities* (list (make-entity :stream stream)
 			   (make-entity :loop-angle 3.14
 					:stream stream))))
@@ -62,7 +67,7 @@
   (gl:depth-range 0.0 1.0))  
 
 (defun move-entity (ent)
-  (let* ((new-loop (mod (+ (entity-loop-angle ent) 0.05) 6.284))
+  (let* ((new-loop (+ (entity-loop-angle ent) 0.01))
 	 (new-pos (v! (* 8.0 (sin new-loop)) 
 		      0.0
 		      (+ -20.0 (* 8.0 (cos new-loop)))))
@@ -81,7 +86,8 @@
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (loop :for entity :in *entities*
 	:do (move-entity entity)
-	    (prog-1 (entity-stream entity) 
+	    (print 'moo)
+	    (prog-1 (entity-stream entity)
 		    :model-to-cam (entity-matrix entity)))
   (gl:flush)
   (sdl:update-display))
@@ -94,9 +100,11 @@
   (prog-1 nil :cam-to-clip *cam-clip-matrix*)
   (cgl:viewport 0 0 width height))
 
-(defun run-demo () 
+(defun run-demo ()
   (init)
   (reshape 640 480)
-  (do-until (find :quit-event (collect-sdl-event-types))
+  (loop :until (find :quit-event (collect-sdl-event-types)) :do
     (cepl-utils:update-swank)
-    (base-macros:continuable (draw))))
+    (base-macros:continuable (draw)))
+  (print "Main loop finished") 
+  nil)

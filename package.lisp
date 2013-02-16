@@ -120,7 +120,9 @@
 	   :make-vao-from-gpu-arrays
 	   :defglstruct
 	   :gl-pull
+	   :gl-pull-1
 	   :gl-push
+	   :gl-push-1
 	   :foreign-type-index
 	   :make-gl-array
 	   :free-gl-array
