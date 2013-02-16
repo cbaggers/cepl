@@ -75,7 +75,8 @@
   (prog-2 nil :cam-to-clip *cam-clip-matrix*)
 
   ;;create entities
-  (let* ((monkey-data (first (model-parsers:parse-obj-file "5.obj")))
+  (let* ((monkey-data (first (model-parsers:parse-obj-file 
+			      "monkey.obj")))
 	 (verts (mapcar #'(lambda (x) 
 			    (list x (make-array 4 :element-type
 						'single-float
