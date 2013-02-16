@@ -6,7 +6,6 @@
 (defparameter *cam-clip-matrix* nil)
 (defparameter *entities* nil)
 
-;; Define data formats 
 (cgl:defglstruct vert-data 
   (position :vec3)
   (color :vec4))
