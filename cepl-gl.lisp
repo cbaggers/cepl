@@ -207,7 +207,7 @@
   (format nil))
 
 
-(base-macros:defmemo bind-buffer (buffer buffer-target)
+(defmemo bind-buffer (buffer buffer-target)
   (gl:bind-buffer buffer-target (glbuffer-buffer-id buffer)))
 
 (setf (documentation 'bind-buffer 'function) 
@@ -351,7 +351,7 @@
 ;;;------;;;
 
 
-(base-macros:defmemo bind-vao (vao)
+(defmemo bind-vao (vao)
   (gl:bind-vertex-array vao))
 
 (setf (documentation 'bind-vao 'function) 
@@ -371,6 +371,8 @@
 ;; GL_UNSIGNED_INT 
 ;; GL_HALF_FLOAT
 ;; GL_FLOAT
+
+
 ;; GL_DOUBLE
 ;; GL_FIXED
 ;; GL_INT_2_10_10_10_REV
@@ -1050,7 +1052,8 @@
                  (gl:get-active-uniform program-id i)
                (list name type size))))
 
-(base-macros:defmemo use-program (program-id)
+
+(defmemo use-program (program-id)
   (gl:use-program program-id))
 (setf (documentation 'use-program 'function) 
       "Installs a program object as part of current rendering state")
@@ -1124,29 +1127,9 @@
                          (gpu-stream-start stream)
                          (gpu-stream-length stream)))))
 
+;; [TODO] There can be only one!!
 (defun lispify-name (name)
   "take a string and changes it to uppercase and replaces
    all underscores _ with minus symbols -"
   (string-upcase (substitute #\- #\_ name)))
 
-
-(defun set-program-uniforms (program &rest uniforms)
-  "This is a really syntactic sugar around setting uniforms
-   of a program. It takes a program and &key arguments where
-   the key is the name of the uniform and the value is the value
-   you wish to set the uniform to."
-  (apply program (cons nil uniforms)))
-
-(defun draw-streams (program streams &rest uniforms)
-  "This is a really syntactic sugar around funcall'ing a program.
-   It takes a program, a list of streams and &key arguments where
-   the key is the name of the uniform and the value is the value
-   you wish to set the uniform to."
-  (apply program (cons streams uniforms)))
-
-(defun draw-stream (program stream &rest uniforms)
-  "This is a really syntactic sugar around funcall'ing a program.
-   It takes a program, a stream and &key arguments where
-   the key is the name of the uniform and the value is the value
-   you wish to set the uniform to."
-  (apply program (cons (list stream) uniforms)))

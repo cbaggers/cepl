@@ -74,7 +74,7 @@
 	   :lispify-name))
 
 (defpackage :cepl-gl
-  (:use :cl :cffi)
+  (:use :cl :cffi :base-macros)
   (:nicknames :cgl)
   (:import-from :cl-opengl
 		:clear-color
@@ -153,10 +153,7 @@
 	   :load-shader
 	   :load-shaders
 	   :link-shaders
-	   :make-program
-	   :set-program-uniforms
-	   :draw-streams
-	   :draw-stream))
+	   :make-program))
 
 (defpackage :base-vectors
   (:use :cl)
