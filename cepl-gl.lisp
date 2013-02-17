@@ -121,19 +121,13 @@
                  (loop for part in (subseq a-uniform 2)
                     :collect 
                       (destructuring-bind (offset type length) part
-                        (let ((uni-fun (get-foreign-uniform-function type)))
-                          (if (> length 1)
-                              (lambda (pointer)
-                                (funcall uni-fun location length
-                                         (cffi-sys:inc-pointer pointer offset)))
-                              (lambda (pointer-or-val)
-                                (if (cffi:pointerp pointer-or-val)
-                                    (funcall uni-fun location length
-                                         (cffi-sys:inc-pointer pointer-or-val offset))
-                                    (cffi-sys:with-pointer-to-vector-data
-                                        (ptr pointer-or-val)
-                                      (funcall uni-fun location length
-                                               (cffi-sys:inc-pointer ptr offset)))))))))))))))
+                        (let ((uni-fun (get-foreign-uniform-function type))
+			      (uni-fun2 (get-uniform-function type)))
+			  (if (or (> length 1) (varjo:type-struct-p type))
+			      (lambda (pointer)
+				(funcall uni-fun location length
+					 (cffi-sys:inc-pointer pointer offset)))
+			      (lambda (value) (funcall uni-fun2 location value))))))))))))
 
 ;; [TODO] Got to be a quicker and tidier way
 (defun process-uniform-details (uniform-details uniform-vars)
@@ -389,29 +383,6 @@
 
 ;; buffer format is a list whose sublists are of the format
 ;; type, length, byte-offset-from-start-of-buffer
-
-(defun make-vao (buffer/s/formats &key element-buffer)
-  "Make a vao from any of the following:
-    - a single buffer object
-    - a list of buffer objects
-    - a list of formats in the format expected by the function
-      make-vao-from-formats
-   You can also specify an element buffer to be used in the vao"
-  (labels ((format-from-buffer (buffer)
-             (cons buffer 
-                   (loop for attrf in (glbuffer-format buffer)
-                      append (rest 
-                              (gl-type-format (first attrf) 
-                                              (third attrf)))))))
-    (make-vao-from-formats
-     (loop for item in (if (glbuffer-p buffer/s/formats)
-                           (list
-                            (format-from-buffer buffer/s/formats))
-                           buffer/s/formats)
-        :collect 
-          (cond ((listp item) item)
-                ((glbuffer-p item) (format-from-buffer item))))
-     :element-buffer element-buffer)))
 
 ;; For element-array-buffer the indices can be unsigned bytes, 
 ;; unsigned shorts, or unsigned ints. 
@@ -1046,6 +1017,48 @@
 ;;; UNIFORMS ;;;
 ;;;----------;;;
 
+(defun uniform-1i (location value)
+  (gl:uniformi location value))
+
+(defun uniform-2i (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-2iv location 1 ptr)))
+
+(defun uniform-3i (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-3iv location 1 ptr)))
+
+(defun uniform-4i (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-4iv location 1 ptr)))
+
+(defun uniform-1f (location value)
+  (gl:uniformf location value))
+
+(defun uniform-2f (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-2fv location 1 ptr)))
+
+(defun uniform-3f (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-3fv location 1 ptr)))
+
+(defun uniform-4f (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-4fv location 1 ptr)))
+
+(defun uniform-matrix-2ft (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-matrix-2fv location 1 nil ptr)))
+
+(defun uniform-matrix-3ft (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-matrix-3fv location 1 nil ptr)))
+
+(defun uniform-matrix-4ft (location value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    (%gl:uniform-matrix-4fv location 1 nil ptr)))
+
 (defun uniform-matrix-2fvt (location count value)
   (%gl:uniform-matrix-2fv location count nil value))
 
@@ -1054,7 +1067,6 @@
 
 (defun uniform-matrix-4fvt (location count value)
   (%gl:uniform-matrix-4fv location count nil value))
-
 
 ;; [TODO] HANDLE DOUBLES
 (defun get-foreign-uniform-function (type)
@@ -1072,6 +1084,23 @@
     ((:float-mat2 :float-mat2-arb) #'uniform-matrix-2fvt)
     ((:float-mat3 :float-mat3-arb) #'uniform-matrix-3fvt)
     ((:float-mat4 :float-mat4-arb) #'uniform-matrix-4fvt)
+    (t (error "Sorry cepl doesnt handle that type yet"))))
+
+(defun get-uniform-function (type)
+  (case type
+    ((:int :int-arb :bool :bool-arb :sampler_1d :sampler_1d_shadow 
+           :sampler_2d :sampler_3d :sampler_cube 
+           :sampler_2d_shadow) #'uniform-1i)
+    ((:float :float-arb) #'uniform-1f)
+    ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) #'uniform-2i)
+    ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) #'uniform-3i)
+    ((:int-vec4 :int-vec4-arb :bool-vec4 :bool-vec4-arb) #'uniform-4i)
+    ((:float-vec2 :float-vec2-arb) #'uniform-2f)
+    ((:float-vec3 :float-vec3-arb) #'uniform-3f)
+    ((:float-vec4 :float-vec4-arb) #'uniform-4f)
+    ((:float-mat2 :float-mat2-arb) #'uniform-matrix-2ft)
+    ((:float-mat3 :float-mat3-arb) #'uniform-matrix-3ft)
+    ((:float-mat4 :float-mat4-arb) #'uniform-matrix-4ft)
     (t (error "Sorry cepl doesnt handle that type yet"))))
 
 ;;;--------------------------------------------------------------
