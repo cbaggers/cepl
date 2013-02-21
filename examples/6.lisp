@@ -14,7 +14,8 @@
 				      (vec4 (vert-data-position vert)
 					    1.0)))))
 	   (out (interp-color :smooth) (vert-data-color vert)))
-  (:fragment (out output-color interp-color)))
+  (:fragment (out output-color interp-color))
+  (:post-compile (reshape 640 480)))
 
 
 (setf *random-state* (make-random-state t))
@@ -229,6 +230,8 @@
 ;----------------------------------------------
 
 (defun draw ()
+  (setf (camera-position *camera*) (v:+ (camera-position *camera*)
+                                        (v:* (camera-look-direction *camera*) 0.2)))
   (cgl::clear-depth 1.0)
   (cgl::clear :color-buffer-bit :depth-buffer-bit)
   (prog-1 (entity-stream *terrain*)

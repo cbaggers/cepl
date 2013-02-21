@@ -16,7 +16,8 @@
            (let ((cam-pos (* model-to-cam 
 			     (vec4 (vert-data-position vert) 1.0))))
              (setf gl-position (* cam-to-clip cam-pos))))
-  (:fragment (out output-color the-color)))
+  (:fragment (out output-color the-color))
+  (:post-compile (reshape 640 480)))
 
 (defstruct entity 
   (stream nil)

@@ -4,21 +4,21 @@
   (position :vec3)
   (color :vec4))
 
-(cgl:defprogram prog-1
+(cgl:defprogram prog-2
     ((vert vert-data) &uniform (cam-to-clip :mat4)
-		      (world-to-cam :mat4) (model-to-world :mat4))
+     (world-to-cam :mat4) (model-to-world :mat4))
   (:vertex (setf gl-position (* cam-to-clip
 				(* world-to-cam 
 				   (* model-to-world
-				      (vec4 (vert-data-position vert)
-					    1.0)))))
-	   (out (interp-color :smooth) (vert-data-color vert)))
-  (:fragment (out output-color interp-color)))
+				      (vec4 (vert-data-position vert) 1.0)))))
+           (out (interp-color :smooth) (vert-data-color vert)))
+  (:fragment (out output-color interp-color))
+  (:post-compile (reshape 640 480)))
 
 
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
-(defparameter *entities* nil)
+(defparameter *monkey* nil)
 (defparameter *camera* nil)
 
 (defstruct entity 
@@ -72,7 +72,7 @@
 	(cepl-camera:calculate-frustrum-scale 45.0))
   (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix 
 			   *frustrum-scale*))
-  (prog-1 nil :cam-to-clip *cam-clip-matrix*)
+  (prog-2 nil :cam-to-clip *cam-clip-matrix*)
 
   ;;create entities
   (let* ((monkey-data (first (model-parsers:parse-obj-file 
@@ -97,8 +97,8 @@
 				   indicies
 				   :element-type :unsigned-short
 				   :index-array t))))
-    (setf *entities* `(,(make-entity :rotation (v! -1.57079633 0 0)
-				     :stream stream))))
+    (setf *monkey* (make-entity :rotation (v! -1.57079633 0 0)
+                                :stream stream)))
   
   ;;set options
   (gl:clear-color 0.0 0.0 0.0 0.0)
@@ -121,16 +121,14 @@
   (cgl::clear-depth 1.0)
   (cgl::clear :color-buffer-bit :depth-buffer-bit)
 
-  (prog-1 nil :world-to-cam (calculate-cam-look-at-w2c-matrix
+  (prog-2 nil :world-to-cam (calculate-cam-look-at-w2c-matrix
 			     *camera*))
 
-  (loop :for entity :in *entities* :do
-    (setf (entity-rotation entity) 
-	  (v:+ (entity-rotation entity) (v! 0.01 0.02 0))))
+  (setf (entity-rotation *monkey*) 
+        (v:+ (entity-rotation *monkey*) (v! 0.01 0.02 0)))
   
-  (loop for entity in *entities*
-	do (prog-1 (entity-stream entity) 
-		   :model-to-world (entity-matrix entity)))
+  
+  (prog-2 (entity-stream *monkey*) :model-to-world (entity-matrix *monkey*))
   (gl:flush)
   (sdl:update-display))
 
@@ -139,7 +137,7 @@
   	(* *frustrum-scale* (/ height width)))
   (setf (matrix4:melm *cam-clip-matrix* 1 1)
   	*frustrum-scale*)
-  (prog-1 nil  :cam-to-clip *cam-clip-matrix*)
+  (prog-2 nil :cam-to-clip *cam-clip-matrix*)
   (cgl:viewport 0 0 width height))
 
 (defun run-demo () 

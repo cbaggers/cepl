@@ -1,0 +1,7 @@
+How to run the examples
+=======================
+
+* Load slime
+* Load cepl with: (ql:quickload :cepl)
+* Create a opengl context with (cepl:repl)
+* Compile the example and then in the repl evaluate (run-demo)

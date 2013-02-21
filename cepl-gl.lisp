@@ -55,16 +55,21 @@
 
 ;; [TODO] We need to make this fast, this 'if not prog' won't do
 (defmacro defprogram (name (&rest args) &body shaders)
-  (if (every #'valid-shader-typep shaders)
-      (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
-        `(let ((program nil))
-           (defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
-             (when (not program) 
-               (setf program (make-program ,name ,args ,shaders)))
-             (funcall program stream ,@(loop for name in uniform-names 
-                                          :append `(,(utils:kwd name)
-                                                     ,name))))))
-      (error "Some shaders have invalid types ~a" (mapcar #'first shaders))))
+  (if (> (count :post-compile shaders :key #'first) 1)
+      (error "Cannot not have more than one :post-compile section")
+      (let ((post (rest (find :post-compile shaders :key #'first)))
+            (shaders (remove :post-compile shaders :key #'first)))
+        (if (every #'valid-shader-typep shaders)
+            (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
+              `(let ((program nil))
+                 (defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
+                   (when (not program) 
+                     (setf program (make-program ,name ,args ,shaders))
+                     ,@post)
+                   (funcall program stream ,@(loop for name in uniform-names 
+                                                :append `(,(utils:kwd name)
+                                                           ,name))))))
+            (error "Some shaders have invalid types ~a" (mapcar #'first shaders))))))
 
 (defmacro defprogram? (name (&rest args) &body shaders)
   (declare (ignore name))
@@ -79,22 +84,29 @@
 
 ;; [TODO] Make glambda handle strings
 (defmacro make-program (name args shaders)  
+
   (let* ((uniforms (varjo:extract-uniforms args))
          (uniform-names (mapcar #'first uniforms)))
-
+    
     `(let* ((shaders (loop for (type code) in (varjo:rolling-translate 
                                                ',args ',shaders)
                         :collect (make-shader type code)))
-            (program-id (link-shaders shaders 
-                                      ,(if name
-                                           `(program-manager ',name)
-                                           `(gl:create-program))))
+            (program-id (link-shaders 
+                         shaders
+                         ,(if name
+                              `(program-manager ',name)
+                              `(gl:create-program))))
+
+                                      
             (assigners (create-uniform-assigners program-id ',uniforms))
             ,@(loop :for name :in uniform-names :for i :from 0
                  :collect `(,(utils:symb name '-assigner)
                              (nth ,i assigners))))
        (declare (ignorable assigners))
        (mapcar #'%gl:delete-shader shaders)
+       (unbind-buffer)
+       (force-bind-vao 0)
+       (force-use-program 0)
        (lambda (stream ,@(when uniforms `(&key ,@uniform-names)))
          (use-program program-id)
          ,@(loop :for uniform-name :in uniform-names
@@ -205,12 +217,24 @@
   (buffer-id (car (gl:gen-buffers 1)))
   (format nil))
 
-;; [TODO] is eq right here? (answer is no)
-(defmemo bind-buffer (buffer buffer-target)
-  (gl:bind-buffer buffer-target (glbuffer-buffer-id buffer)))
-
-(defun force-bind-buffer (buffer buffer-target)
-  (gl:bind-buffer buffer-target (glbuffer-buffer-id buffer)))
+(let ((buffer-id-cache nil)
+      (buffer-target-cache nil))
+  (defun bind-buffer (buffer buffer-target)
+    (let ((id (glbuffer-buffer-id buffer)))
+      (unless (and (eq id buffer-id-cache) 
+                   (eq buffer-target buffer-target-cache))
+        (cl-opengl-bindings:bind-buffer buffer-target id)
+        (setf buffer-target-cache id)
+        (setf buffer-target-cache buffer-target))))
+  (defun force-bind-buffer (buffer buffer-target)
+    (let ((id (glbuffer-buffer-id buffer)))
+      (cl-opengl-bindings:bind-buffer buffer-target id)
+      (setf buffer-id-cache id)
+      (setf buffer-target-cache buffer-target)))
+  (defun unbind-buffer ()
+    (cl-opengl-bindings:bind-buffer :array-buffer 0)
+    (setf buffer-id-cache 0)
+    (setf buffer-target-cache :array-buffer)))
 
 (setf (documentation 'bind-buffer 'function) 
       "Binds the specified opengl buffer to the target")
@@ -353,8 +377,14 @@
 ;;;------;;;
 
 
-(defmemo bind-vao (vao)
-  (gl:bind-vertex-array vao))
+(let ((vao-cache nil))
+  (defun bind-vao (vao)
+    (unless (eq vao vao-cache)
+      (gl:bind-vertex-array vao)
+      (setf vao-cache vao)))
+  (defun force-bind-vao (vao)
+    (gl:bind-vertex-array vao)
+    (setf vao-cache vao)))
 
 (setf (documentation 'bind-vao 'function) 
       "Binds the vao specfied")
@@ -399,7 +429,7 @@
    You can also specify an element buffer to be used in the vao"
   (let ((vao (gl:gen-vertex-array))
         (attr-num 0))
-    (bind-vao vao)
+    (force-bind-vao vao)
     (loop for format in formats
        :do (let ((buffer (first format)))
              (force-bind-buffer buffer :array-buffer)
@@ -429,7 +459,7 @@
                           (gpuarray-buffer indicies-array)))
         (vao (gl:gen-vertex-array))
         (attr 0))
-    (bind-vao vao)
+    (force-bind-vao vao)
     (loop for gpu-array in gpu-arrays
        :do (let* ((buffer (gpuarray-buffer gpu-array))
                   (format (nth (gpuarray-format-index gpu-array)
@@ -1134,11 +1164,16 @@
                (list name type size))))
 
 
-(defmemo use-program (program-id)
-  (gl:use-program program-id))
+(let ((program-cache nil))
+  (defun use-program (program-id)
+    (unless (eq program-id program-cache)
+      (gl:use-program program-id)
+      (setf program-cache program-id)))
+  (defun force-use-program (program-id)
+    (gl:use-program program-id)
+    (setf program-cache program-id)))
 (setf (documentation 'use-program 'function) 
       "Installs a program object as part of current rendering state")
-
 
 (defun shader-type-from-path (path)
   "This uses the extension to return the type of the shader.
@@ -1213,4 +1248,3 @@
   "take a string and changes it to uppercase and replaces
    all underscores _ with minus symbols -"
   (string-upcase (substitute #\- #\_ name)))
-

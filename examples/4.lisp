@@ -111,9 +111,9 @@
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list
-		   (m4:translation (entity-position entity))
-		   (m4:rotation-from-euler (entity-rotation entity))
-		   (m4:scale (entity-scale entity)))))
+                   (m4:translation (entity-position entity))
+                   (m4:rotation-from-euler (entity-rotation entity))
+                   (m4:scale (entity-scale entity)))))
 
 (defun draw ()
   (cgl::clear-depth 1.0)
@@ -124,7 +124,7 @@
 
   (loop :for entity :in *entities* :do
     (setf (entity-rotation entity) 
-	  (v:+ (entity-rotation entity) (v! 0.1 0.2 0))))
+	  (v:+ (entity-rotation entity) (v! 0.01 0.02 0))))
   
   (loop for entity in *entities*
 	do (prog-2 (entity-stream entity) 
