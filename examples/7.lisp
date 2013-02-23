@@ -13,14 +13,15 @@
   (diffuse-color :vec4)
   (normal :vec3))
 
-(cgl:defprogram prog-2
+(cgl:defprogram prog-1
     ((vert vert-data) &uniform (dir-to-light :vec3)
      (light-intensity :vec4) (norm-model-to-cam :mat3)
      (cam-to-clip :mat4) (model-to-cam :mat4)
      (ambient-intensity :float))
   (:vertex (setf gl-position (* cam-to-clip
                                 (* model-to-cam				   
-                                   (vec4 (vert-data-position vert) 1.0))))
+                                   (vec4 (vert-data-position
+                                          vert) 1.0))))
            (out (interp-color :smooth) 
                 (+ (* light-intensity 
                      (clamp (dot (normalize
@@ -28,7 +29,8 @@
                                      (vert-data-normal vert)))
                                  dir-to-light) 
                             0.0 1.0))
-                   (* (vec4 1.0 1.0 1.0 0.0) ambient-intensity))))
+                   (* (vec4 1.0 1.0 1.0 0.0) 
+                      ambient-intensity))))
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480 *near* *far*)))
 
@@ -166,7 +168,14 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480 *near* *far*)
-  (loop :until (find :quit-event (collect-sdl-event-types)) 
-     :do (cepl-utils:update-swank)     
-     (base-macros:continuable (draw))))
+  (reshape 640 480 *near* *far*)  
+  (let ((running t))
+    (loop :while running :do
+       (case-events (event)
+         (:quit-event (setf running nil))
+         (:video-resize-event 
+          (reshape (sdl::video-resize-w event)
+                   (sdl::video-resize-h event)
+                   *near* *far*)))
+       (cepl-utils:update-swank)
+       (continuable (draw)))))

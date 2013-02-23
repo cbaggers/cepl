@@ -31,8 +31,9 @@
   (:export :init-sdl
 	   :quit-sdl
 	   :with-init-sdl
-	   :collect-sdl-events
-	   :collect-sdl-event-types))
+	   :collect-sdl-event-types
+       :get-sdl-event
+       :case-events))
 
 (defpackage :base-time
   (:use :cl)

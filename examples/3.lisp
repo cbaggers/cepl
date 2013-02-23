@@ -94,9 +94,15 @@
   (prog-1 nil :cam-to-clip *cam-clip-matrix*)
   (cgl:viewport 0 0 width height))
 
-(defun run-demo ()
+(defun run-demo () 
   (init)
-  (reshape 640 480)
-  (loop :until (find :quit-event (collect-sdl-event-types)) :do
-    (cepl-utils:update-swank)
-    (base-macros:continuable (draw))))
+  (reshape 640 480)  
+  (let ((running t))
+    (loop :while running :do
+       (case-events (event)
+         (:quit-event (setf running nil))
+         (:video-resize-event 
+          (reshape (sdl::video-resize-w event)
+                   (sdl::video-resize-h event))))
+       (cepl-utils:update-swank)
+       (continuable (draw))))) 

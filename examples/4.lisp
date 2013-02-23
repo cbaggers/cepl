@@ -142,10 +142,13 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480)
-  (sdl:with-events () 
-    (:quit-event () t)
-    (:VIDEO-RESIZE-EVENT (:w width :h height) 
-			 (reshape width height))
-    (:idle () (cepl-utils:update-swank)
-	      (base-macros:continuable (draw)))))
+  (reshape 640 480)  
+  (let ((running t))
+    (loop :while running :do
+       (case-events (event)
+         (:quit-event (setf running nil))
+         (:video-resize-event 
+          (reshape (sdl::video-resize-w event)
+                   (sdl::video-resize-h event))))
+       (cepl-utils:update-swank)
+       (continuable (draw)))))

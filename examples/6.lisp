@@ -247,13 +247,19 @@
   (prog-1 nil :cam-to-clip *cam-clip-matrix*)
   (cgl:viewport 0 0 width height))
 
-(defun run-demo ()
+(defun run-demo () 
   (setf (sdl:frame-rate) 0)
   (init)
-  (reshape 640 480)
+  (reshape 640 480)  
   (let ((draw-timer (make-time-buffer))
-	(draw-stepper (make-stepper (/ 1000.0 60))))
-    (loop :until (find :quit-event (collect-sdl-event-types)) :do
-      (on-step-call (draw-stepper (funcall draw-timer))
-	(cepl-utils:update-swank)
-	(continuable (draw))))))
+        (draw-stepper (make-stepper (/ 1000.0 60))))
+    (let ((running t))
+      (loop :while running :do
+         (case-events (event)
+           (:quit-event (setf running nil))
+           (:video-resize-event 
+            (reshape (sdl::video-resize-w event)
+                     (sdl::video-resize-h event))))
+         (on-step-call (draw-stepper (funcall draw-timer))
+           (cepl-utils:update-swank)
+           (continuable (draw)))))))
