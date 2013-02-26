@@ -15,5 +15,7 @@
 
 (defun repl ()
   (in-package :cepl)
-  (init-sdl)
+  (if (sdl:init-sdl)
+      (sdl:window 640 480 :icon-caption "CEPL REPL" :title-caption "CEPL REPL")
+      (error "Failed to initialise SDL"))
   (format t "-----------------~%    CEPL-REPL    ~%-----------------"))

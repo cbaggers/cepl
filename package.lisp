@@ -26,14 +26,16 @@
 	   :continuable
 	   :apply-across-elements))
 
-(defpackage :base-sdl
-  (:use :cl)
-  (:export :init-sdl
-	   :quit-sdl
-	   :with-init-sdl
-	   :collect-sdl-event-types
-       :get-sdl-event
-       :case-events))
+;; uncomment when using lispbuilder instead of lispbuilder-mini
+;; (defpackage :lbm-sdl
+;;   (:use :cl)
+;;   (:nicknames :sdl
+;;   (:export :init-sdl
+;;            :quit-sdl
+;;            :with-init-sdl
+;;            :collect-sdl-event-types
+;;            :get-sdl-event
+;;            :case-events))
 
 (defpackage :base-time
   (:use :cl)
@@ -316,5 +318,6 @@
 	:base-maths
 	:base-time
 	:base-macros
-	:base-sdl)
+	;; :base-lispbuilder
+    )
   (:export :repl))

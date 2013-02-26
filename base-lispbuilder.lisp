@@ -6,12 +6,12 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-;; Here is the code that is used to manage SDL
-;; Generally these are tweaks upon lispbuilder-sdl
-;; The initializing stuff is VERY subject to change as 
-;; I havent really learnt that much about SDL yet
+;; This is here if the user of this library wishes to use 
+;; it with lispbuilder rather than lispbuilder-mini.
+;; lispbuilder is brilliant and so this is just to smooth 
+;; the patches where there are differences.
 
-(in-package :base-sdl)
+(in-package :lbm-sdl)
 
 (defun init-sdl (&key (width 640) (height 480) 
                    (resizable t)
@@ -20,7 +20,7 @@
                    (alpha-size 0) (depth-size 16)
                    (stencil-size 8) (red-size 8)
                    (green-size 8) (blue-size 8))
-  (if (sdl:init-sdl :flags nil)
+  (if (sdl:init-sdl)
       (progn      
         (sdl:window width height
                     :opengl t
@@ -28,7 +28,6 @@
                     :fullscreen fullscreen
                     :icon-caption title
                     :title-caption title
-                    :hw t
                     :opengl-attributes 
                     `((:sdl-gl-doublebuffer 1)
                       (:sdl-gl-alpha-size
@@ -103,4 +102,3 @@ of options available."
                   ,@cases))
          (sdl:free-event ,event-var))
       (error "event-var must be a symbol")))
-

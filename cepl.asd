@@ -19,7 +19,7 @@
   :components ((:file "package")
 	       (:file "base-maths")
 	       (:file "base-macros")
-	       (:file "base-sdl")
+           ;; (:file "base-lispbuilder")
 	       (:file "cepl-utils")
 	       (:file "time/base-time")
 	       (:file "cepl-gl-types")
