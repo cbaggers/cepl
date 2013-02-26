@@ -24,7 +24,7 @@
                 :element-type 'vert-data))
          (gstream (cgl:make-gpu-stream-from-gpu-arrays :gpu-arrays data)))
     (setf *things* data)
-    (loop :until (find :quit-event (collect-sdl-event-types)) :do
+    (loop :until (find :quit-event (sdl:collect-sdl-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable (progn (gl:clear :color-buffer-bit)
                                        (prog-1 gstream)

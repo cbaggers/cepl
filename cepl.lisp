@@ -20,27 +20,3 @@
       (error "Failed to initialise SDL"))
   (format t "-----------------~%    CEPL-REPL    ~%-----------------"))
 
-(defun collect-sdl-event-types ()
-  (let ((x (sdl:new-event)))
-    (loop until (= 0 (lbm-sdl-cffi::sdl-poll-event x))
-	  collect (sdl:event-type x))
-    (sdl:free-event x)))
-
-(defun get-sdl-event (&optional event)
-  (let ((event (or event (sdl:new-event))))
-    (if (= (sdl-cffi::SDL-Poll-Event event) 0)
-        (progn (sdl:free-event event)
-               nil)
-        event)))
-
-(defmacro case-events ((event-var) &body cases)
-  (if (symbolp event-var)
-      `(let ((,event-var (sdl:new-event)))
-         (loop :while (not (eq (sdl-cffi::SDL-Poll-Event 
-                                ,event-var) 0))
-            :do (case (sdl:event-type ,event-var)
-                  ,@cases))
-         (sdl:free-event ,event-var))
-      (error "event-var must be a symbol")))
-
-
