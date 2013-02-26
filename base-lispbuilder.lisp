@@ -53,33 +53,6 @@
   (sdl:quit-sdl :flags flags))
 
 
-(defmacro with-init-sdl ((&key (width 640) (height 480) 
-                               (resizable t)
-                               (fullscreen nil) 
-                               (title "cepl window")
-                               (alpha-size 0) (depth-size 16)
-                               (stencil-size 8) (red-size 8)
-                               (green-size 8) (blue-size 8)) 
-                         &body body)
-  "This initializes SDL with the assumption that you are writing
-a modern shader-based opengl program.
-To this end it makes some opionated choices (like that your
-program will be double buffered) and makes a reduced set
-of options available."
-  `(block nil
-     (unwind-protect
-          (when (init-sdl :width ,width :height ,height
-                          :resizable ,resizable 
-                          :fullscreen ,fullscreen
-                          :title ,title :alpha-size ,alpha-size
-                          :depth-size ,depth-size 
-                          :stencil-size ,stencil-size
-                          :red-size ,red-size
-                          :green-size ,green-size
-                          :blue-size ,blue-size)
-            ,@body)
-       (quit-sdl))))
-
 (defun collect-sdl-event-types ()
   (let ((x (sdl:new-event)))
     (loop until (= 0 (lbm-sdl-cffi::sdl-poll-event x))
