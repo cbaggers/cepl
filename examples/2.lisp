@@ -4,13 +4,11 @@
 
 (cgl:defprogram prog-1 ((position :vec4) &uniform (offset :vec2))
   (:vertex (setf gl-position (+ (* (vec4 0.3 0.3 0.3 1.0) position)
-                                (vec4 (x offset) 
-                                      (y offset)
-                                      0.0
-                                      0.0))))
+                                (vec4 (x offset) (y offset) 0.0 0.0))))
   (:fragment (out output-color (vec4 (tan (x offset))
                                      (sin (y offset))
-                                     (cos (* (y offset) (x offset)))
+                                     (cos (* (y offset) 
+                                             (x offset)))
                                      1.0))))
 
 (defun draw (gstream)
@@ -30,8 +28,7 @@
                       (v! -0.2  -0.2  0.0  1.0)
                       (v!  0.2  -0.2  0.0  1.0))
                 :element-type :vec4))
-         (gstream (cgl:make-gpu-stream-from-gpu-arrays
-                   :gpu-arrays data)))
+         (gstream (cgl:make-gpu-stream-from-gpu-arrays :gpu-arrays data)))
     (loop :until (find :quit-event (collect-sdl-event-types)) :do
        (cepl-utils:update-swank)
        (continuable (draw gstream)))))

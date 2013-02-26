@@ -10,7 +10,7 @@ My first lisp project, a chance to play about and get something up in opengl.
 **Requirements**
 
 * cl-opengl
-* lispbuilder-sdl
+* lispbuilder-mini
 * varjo
 * cl-utilities
 * cl-ppcre

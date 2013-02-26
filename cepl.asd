@@ -11,7 +11,7 @@
 (asdf:defsystem #:cepl
   :serial t
   :depends-on (#:cl-opengl
-               #:lispbuilder-sdl
+               #:lbm-sdl
                #:varjo
                #:cl-utilities
                #:cl-ppcre

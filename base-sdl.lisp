@@ -26,7 +26,6 @@
                     :opengl t
                     :resizable resizable
                     :fullscreen fullscreen
-                    :double-buffer t
                     :icon-caption title
                     :title-caption title
                     :hw t
@@ -42,7 +41,7 @@
                       (:sdl-gl-green-size
                        ,green-size)
                       (:sdl-gl-blue-size ,blue-size)
-                      (:SDL-GL-SWAP-CONTROL 1)))
+                      (:sdl-gl-swap-control 1)))
         (setf cl-opengl-bindings:*gl-get-proc-address* 
               #'sdl-cffi::sdl-gl-get-proc-address)
         t)
@@ -84,7 +83,7 @@ of options available."
 
 (defun collect-sdl-event-types ()
   (let ((x (sdl:new-event)))
-    (loop until (= 0 (lispbuilder-sdl-cffi::sdl-poll-event x))
+    (loop until (= 0 (lbm-sdl-cffi::sdl-poll-event x))
 	  collect (sdl:event-type x))
     (sdl:free-event x)))
 
