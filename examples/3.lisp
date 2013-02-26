@@ -52,7 +52,7 @@
     (setf *entities* (list (make-entity :stream stream)
 			   (make-entity :stream stream
 					:loop-angle 3.14))))
-  (cgl::clear-color 0.0 0.0 0.0 0.0)
+  (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
   (gl:front-face :cw)
@@ -99,10 +99,10 @@
   (reshape 640 480)  
   (let ((running t))
     (loop :while running :do
-       (case-events (event)
+       (sdl:case-events (event)
          (:quit-event (setf running nil))
          (:video-resize-event 
-          (reshape (sdl::video-resize-w event)
-                   (sdl::video-resize-h event))))
+          (reshape (sdl:video-resize-w event)
+                   (sdl:video-resize-h event))))
        (cepl-utils:update-swank)
        (continuable (draw))))) 

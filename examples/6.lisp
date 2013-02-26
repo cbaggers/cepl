@@ -45,7 +45,7 @@
 	 (right-dir (v3:normalize (v3:cross look-dir up-dir)))
 	 (perp-up-dir (v3:cross right-dir look-dir))
 	 (rot-matrix (m4:transpose
-		      (m4::rotation-from-matrix3
+		      (m4:rotation-from-matrix3
 		       (m3:make-from-rows right-dir
 					  perp-up-dir
 					  (v3:v-1 (v! 0 0 0)
@@ -210,7 +210,7 @@
   (setf *terrain* (gen-gs-terrain-model))
   
   ;;set options
-  (cgl::clear-color 0.0 0.0 0.0 0.0)
+  (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
   (gl:front-face :ccw)
@@ -232,8 +232,8 @@
 (defun draw ()
   (setf (camera-position *camera*) (v:+ (camera-position *camera*)
                                         (v:* (camera-look-direction *camera*) 0.2)))
-  (cgl::clear-depth 1.0)
-  (cgl::clear :color-buffer-bit :depth-buffer-bit)
+  (cgl:clear-depth 1.0)
+  (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (prog-1 (entity-stream *terrain*)
 	  :model-to-world (entity-matrix *terrain*)
 	  :world-to-cam (calculate-cam-look-at-w2c-matrix *camera*))
@@ -255,11 +255,11 @@
         (draw-stepper (make-stepper (/ 1000.0 60))))
     (let ((running t))
       (loop :while running :do
-         (case-events (event)
+         (sdl:case-events (event)
            (:quit-event (setf running nil))
            (:video-resize-event 
-            (reshape (sdl::video-resize-w event)
-                     (sdl::video-resize-h event))))
+            (reshape (sdl:video-resize-w event)
+                     (sdl:video-resize-h event))))
          (on-step-call (draw-stepper (funcall draw-timer))
            (cepl-utils:update-swank)
            (continuable (draw)))))))

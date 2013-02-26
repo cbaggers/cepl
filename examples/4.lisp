@@ -15,7 +15,8 @@
 				      (vec4 (vert-data-position vert)
 					    1.0)))))
 	   (out (interp-color :smooth) (vert-data-color vert)))
-  (:fragment (out output-color interp-color)))
+  (:fragment (out output-color interp-color))
+  (:post-compile (reshape 640 480)))
 
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
@@ -43,7 +44,7 @@
 	 (right-dir (v3:normalize (v3:cross look-dir up-dir)))
 	 (perp-up-dir (v3:cross right-dir look-dir))
 	 (rot-matrix (m4:transpose
-		      (m4::rotation-from-matrix3
+		      (m4:rotation-from-matrix3
 		       (m3:make-from-rows right-dir
 					  perp-up-dir
 					  (v3:v-1 (v! 0 0 0)
@@ -116,8 +117,8 @@
                    (m4:scale (entity-scale entity)))))
 
 (defun draw ()
-  (cgl::clear-depth 1.0)
-  (cgl::clear :color-buffer-bit :depth-buffer-bit)
+  (cgl:clear-depth 1.0)
+  (cgl:clear :color-buffer-bit :depth-buffer-bit)
 
   (prog-2 nil :world-to-cam (calculate-cam-look-at-w2c-matrix
 			     *camera*))
@@ -145,10 +146,10 @@
   (reshape 640 480)  
   (let ((running t))
     (loop :while running :do
-       (case-events (event)
+       (sdl:case-events (event)
          (:quit-event (setf running nil))
          (:video-resize-event 
-          (reshape (sdl::video-resize-w event)
-                   (sdl::video-resize-h event))))
+          (reshape (sdl:video-resize-w event)
+                   (sdl:video-resize-h event))))
        (cepl-utils:update-swank)
        (continuable (draw)))))

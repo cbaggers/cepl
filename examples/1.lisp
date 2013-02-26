@@ -1,7 +1,5 @@
 ;; This is simply to get a colored triangle up on the screen
 
-(defparameter *things* nil)
-
 (cgl:defglstruct vert-data
   (position :vec4)
   (colour :vec4))
@@ -23,8 +21,7 @@
                       (list (v! -0.5 -0.366 0.0 1.0) (v! 0.0 0.0 1.0 1.0)))
                 :element-type 'vert-data))
          (gstream (cgl:make-gpu-stream-from-gpu-arrays :gpu-arrays data)))
-    (setf *things* data)
-    (loop :until (find :quit-event (sdl:collect-sdl-event-types)) :do
+    (loop :until (find :quit-event (sdl:collect-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable (progn (gl:clear :color-buffer-bit)
                                        (prog-1 gstream)

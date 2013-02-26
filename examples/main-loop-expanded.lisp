@@ -46,11 +46,11 @@
                   (case (sdl:event-type event)
                     (:quit-event (in :main-loop (finish)))
                     (:video-resize-event 
-                     (reshape (sdl::video-resize-w event)
-                              (sdl::video-resize-h event))))
+                     (reshape (sdl:video-resize-w event)
+                              (sdl:video-resize-h event))))
                   (sdl:free-event event))
                 (finish))))
-        (sdl::process-audio)
+        (sdl:process-audio)
         (cepl-utils:update-swank)
         (base-macros:continuable (draw))))
 ;; Ok so this one is much busier but you can see where we loop
@@ -70,8 +70,8 @@
        (case-events (event)
          (:quit-event (setf running nil))
          (:video-resize-event 
-          (reshape (sdl::video-resize-w event)
-                   (sdl::video-resize-h event))))
+          (reshape (sdl:video-resize-w event)
+                   (sdl:video-resize-h event))))
        (cepl-utils:update-swank)
        (continuable (draw)))))
 

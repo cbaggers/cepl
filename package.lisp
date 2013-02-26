@@ -259,7 +259,7 @@
 	   :2dclipspace-to-imagespace-matrix4 :make-matrix4
 	   :mzerop :identityp :meql :minor :adjoint 
 	   :determinant :affine-inverse :transpose 
-	   :translation :rotation-from-matrix
+	   :translation :rotation-from-matrix3
 	   :rotation-from-euler :rotation-from-axis-angle
 	   :scale :rotation-x :rotation-y
 	   :rotation-z :get-fixed-angles :mtrace
