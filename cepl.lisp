@@ -13,10 +13,10 @@
 
 (in-package :cepl)
 
-(defun repl ()
+(defun repl (&optional (width 640) (height 480))
   (in-package :cepl)
   (if (sdl:init-sdl)
-      (sdl:window 640 480 :icon-caption "CEPL REPL" :title-caption "CEPL REPL")
+      (sdl:window width height :icon-caption "CEPL REPL" :title-caption "CEPL REPL")
       (error "Failed to initialise SDL"))
   (format t "-----------------~%    CEPL-REPL    ~%-----------------"))
 

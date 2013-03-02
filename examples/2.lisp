@@ -3,14 +3,19 @@
 (defparameter *loop-pos* 0.0)
 
 (cgl:defprogram prog-1 ((position :vec4) &uniform (offset :vec2))
-  (:vertex (setf gl-position (vec4 (x offset) (y offset) 0.0 1.0)))
-  (:fragment (out output-color (vec4 1.0 1.0 1.0 1.0))))
+  (:vertex (setf gl-position (+ position
+                                (vec4 (x offset) (y offset) 0.0 1.0))))
+  (:fragment (out output-color (vec4 (+ 0.5 (x offset))
+                                     0.2 
+                                     (+ 0.5 (y offset))
+                                     1.0))))
 
 (defun draw (gstream)
   (setf *loop-pos* (+ 0.01 *loop-pos*))
   (gl:clear :color-buffer-bit)
-  (prog-1 gstream :offset (v! (sin *loop-pos*) 
-                              (cos *loop-pos*)))
+  (loop for i below 21 :do
+       (prog-1 gstream :offset (v! (sin (+ (* 0.3 (tan i)) *loop-pos*)) 
+                                   (cos (+ (* 0.3 i) *loop-pos*)))))
   (gl:flush)
   (sdl:update-display))
 

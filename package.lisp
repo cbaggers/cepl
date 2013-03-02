@@ -93,6 +93,7 @@
 		:viewport)
   (:shadow :float)
   (:export :clear-color
+       :cls
        :defprogram
        :defprogram?
 	   :enable

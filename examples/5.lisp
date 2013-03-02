@@ -125,10 +125,11 @@
 			     *camera*))
 
   (setf (entity-rotation *monkey*) 
-        (v:+ (entity-rotation *monkey*) (v! 0.01 0.02 0)))
+        (v:+ (entity-rotation *monkey*) (v! 0.02 0.01 0)))
   
   
-  (prog-2 (entity-stream *monkey*) :model-to-world (entity-matrix *monkey*))
+  (prog-2 (entity-stream *monkey*) 
+          :model-to-world (entity-matrix *monkey*))
   (gl:flush)
   (sdl:update-display))
 

@@ -73,11 +73,12 @@
 
 (defmacro defprogram? (name (&rest args) &body shaders)
   (declare (ignore name))
-  (if (every #'valid-shader-typep shaders)
-       `(let* ((shaders (varjo:rolling-translate ',args ',shaders)))
-          (format t "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" shaders)
-          nil)
-       (error "Some shaders have invalid types ~a" (mapcar #'first shaders))))
+  (let ((shaders (remove :post-compile shaders :key #'first)))
+    (if (every #'valid-shader-typep shaders)
+        `(let* ((shaders (varjo:rolling-translate ',args ',shaders)))
+           (format t "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" shaders)
+           nil)
+        (error "Some shaders have invalid types ~a" (mapcar #'first shaders)))))
 
 (defmacro glambda ((&rest args) &body shaders)
   `(make-program nil ,args ,shaders))
@@ -1242,6 +1243,10 @@
         (%gl:draw-arrays (gpu-stream-draw-type stream)
                          (gpu-stream-start stream)
                          (gpu-stream-length stream)))))
+
+(defun cls (&optional (flags '(:color-buffer-bit)))
+  (apply #'cgl:clear flags)
+  (sdl:update-display))
 
 ;; [TODO] There can be only one!!
 (defun lispify-name (name)

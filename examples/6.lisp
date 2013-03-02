@@ -248,7 +248,6 @@
   (cgl:viewport 0 0 width height))
 
 (defun run-demo () 
-  (setf (sdl:frame-rate) 0)
   (init)
   (reshape 640 480)  
   (let ((draw-timer (make-time-buffer))
