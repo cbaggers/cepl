@@ -289,6 +289,10 @@
   (:shadow :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
 	   :elt :trace))
 
+(defpackage :quaternions
+ (:use :cl :base-maths)
+ (:nicknames :q))
+
 (defpackage :cepl-camera
   (:nicknames :ccam)
   (:use :cl)
