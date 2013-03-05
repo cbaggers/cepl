@@ -33,6 +33,7 @@
 	       (:file "matrices/matrix3")
 	       (:file "matrices/matrix4")
 	       (:file "matrices/matrices")
+           (:file "quaternions")
 	       (:file "cepl-camera")
 	       (:file "model-parsers/parse-obj")
 	       (:file "cepl")))

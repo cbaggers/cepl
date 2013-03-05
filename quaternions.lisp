@@ -17,19 +17,19 @@
 
 (defun w (quat)
   "Returns the w component of the quaternion"  
-  `(aref ,quat 0))
+  (aref quat 0))
 
 (defun x (quat)
   "Returns the x component of the quaternion"
-  `(aref ,quat 1))
+  (aref quat 1))
 
 (defun y (quat)
   "Returns the y component of the quaternion"
-  `(aref ,quat 2))
+  (aref quat 2))
 
 (defun z (quat)
   "Returns the z component of the quaternion"
-  `(aref ,quat 3))
+  (aref quat 3))
 
 ;;----------------------------------------------------------------;;
 
@@ -103,8 +103,8 @@
                 (aref quat k) (* (+ (m3:melm mat3 k i) (m3:melm mat3 i k))
                                  recip))))))
 
-(defun make-quat-from-axis-angle (axis angle)
-  (let ((length (v4:vlength-squared axis)))
+(defun make-quat-from-axis-angle (axis-vec3 angle)
+  (let ((length (v3:vlength-squared axis-vec3)))
     (if (float-zero length)
         (identity-quat)
         (let* ((half-angle (/ angle 2.0))
@@ -112,9 +112,9 @@
                (cos-half-angle (cos half-angle))
                (scale-factor (/ sin-half-angle (c-sqrt length))))
           (v4:make-vector4 cos-half-angle
-                           (* scale-factor (aref axis 0))
-                           (* scale-factor (aref axis 1))
-                           (* scale-factor (aref axis 2)))))))
+                           (* scale-factor (aref axis-vec3 0))
+                           (* scale-factor (aref axis-vec3 1))
+                           (* scale-factor (aref axis-vec3 2)))))))
 
 ;;[TODO] Need to use destructive operations in here to stop multiple quats 
 ;;       being created
@@ -240,28 +240,28 @@
   (v4:dot quat-a quat-b))
 
 ;; [TODO] Look into assets (this should be a unit quaternion
-(defun rotate (vector quat)
-  "Rotate vector by quaternion. Assumes quaternion is normalized."
-  (let* ((v-mult (* 2.0 (+ (* (x quat) (aref vector 0))
-                           (* (y quat) (aref vector 1))
-                           (* (z quat) (aref vector 2)))))
+(defun rotate (vec3 quat)
+  "Rotate vec3 by quaternion. Assumes quaternion is normalized."
+  (let* ((v-mult (* 2.0 (+ (* (x quat) (aref vec3 0))
+                           (* (y quat) (aref vec3 1))
+                           (* (z quat) (aref vec3 2)))))
          (cross-mult (* 2.0 (w quat)))
          (p-mult (- (* cross-mult (w quat)) 1.0)))
-    (v3:make-vector3 (+ (* p-mult (aref vector 0))
+    (v3:make-vector3 (+ (* p-mult (aref vec3 0))
                         (* v-mult (x quat))
                         (* cross-mult 
-                           (- (* (y quat) (aref vector 2))
-                              (* (z quat) (aref vector 1)))))
-                     (+ (* p-mult (aref vector 1))
+                           (- (* (y quat) (aref vec3 2))
+                              (* (z quat) (aref vec3 1)))))
+                     (+ (* p-mult (aref vec3 1))
                         (* v-mult (y quat))
                         (* cross-mult 
-                           (- (* (z quat) (aref vector 0))
-                              (* (x quat) (aref vector 2)))))
-                     (+ (* p-mult (aref vector 2))
+                           (- (* (z quat) (aref vec3 0))
+                              (* (x quat) (aref vec3 2)))))
+                     (+ (* p-mult (aref vec3 2))
                         (* v-mult (z quat))
                         (* cross-mult 
-                           (- (* (x quat) (aref vector 1))
-                              (* (y quat) (aref vector 0))))))))
+                           (- (* (x quat) (aref vec3 1))
+                              (* (y quat) (aref vec3 0))))))))
 
 ;; [TODO] Could be faster (see q+1 area)
 (defun lerp (start-quat end-quat pos)
@@ -323,5 +323,3 @@
         ;; take shorter path
         (q+1 (q* end-quat pos)
              (q* start-quat (- pos 1.0))))))
-
-
