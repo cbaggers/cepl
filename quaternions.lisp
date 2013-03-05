@@ -33,6 +33,26 @@
 
 ;;----------------------------------------------------------------;;
 
+(defun zero-quat ()
+  (make-quat 0.0 0.0 0.0 0.0))
+
+(defun zero-quatp (quat)
+  (let ((w (w quat)) (x (x quat)) (y (y quat)) (z (z quat)))
+    (float-zero (+ (* w w) (* x x) (* y y) (* z z)))))
+
+(defun unit-quatp (quat)
+  (let ((w (w quat)) (x (x quat)) (y (y quat)) (z (z quat)))
+    (float-zero (- 1.0 (* w w) (* x x) (* y y) (* z z)))))
+
+(defun identity-quat ()
+  (make-quat 1.0 0.0 0.0 0.0))
+
+(defun identity-p (quat)
+  (and (float-zero (- 1.0 (w quat)))
+       (float-zero (x quat))
+       (float-zero (y quat))
+       (float-zero (z quat))))
+
 (declaim (inline make-quat)
          (ftype (function ((single-float) 
                            (single-float) 
@@ -91,7 +111,7 @@
                (sin-half-angle (sin half-angle))
                (cos-half-angle (cos half-angle))
                (scale-factor (/ sin-half-angle (c-sqrt length))))
-          (v4:make-vector4 (cos-half-angle)
+          (v4:make-vector4 cos-half-angle
                            (* scale-factor (aref axis 0))
                            (* scale-factor (aref axis 1))
                            (* scale-factor (aref axis 2)))))))
@@ -99,20 +119,20 @@
 ;;[TODO] Need to use destructive operations in here to stop multiple quats 
 ;;       being created
 (defun make-quat-from-vectors (from3 to3)
-  (let ((axis (v3:cross from3 to3))
-        (quat (normalize (make-quat (v3:dot from to) (aref axis 0) (aref axis 1)
-                                    (aref axis 2))))
-        (w (+ 1.0 (aref quat 0))))    
-    (if (w <= +float-threshold+)
-        (if (> (* (aref from 2) (aref from 2))
-               (* (aref from 0) (aref from 0)))
+  (let* ((axis (v3:cross from3 to3))
+         (quat (normalize (make-quat (v3:dot from3 to3) (aref axis 0) (aref axis 1)
+                                     (aref axis 2))))
+         (w (+ 1.0 (aref quat 0))))    
+    (if (<= w +float-threshold+)
+        (if (> (* (aref from3 2) (aref from3 2))
+               (* (aref from3 0) (aref from3 0)))
             (setf (aref quat 0) 0.0
                   (aref quat 1) 0.0
-                  (aref quat 2) (aref from 2)
-                  (aref quat 3) (- (aref from 1)))
+                  (aref quat 2) (aref from3 2)
+                  (aref quat 3) (- (aref from3 1)))
             (setf (aref quat 0) 0.0
-                  (aref quat 1) (aref from 1)
-                  (aref quat 2) (- (aref from 0))
+                  (aref quat 1) (aref from3 1)
+                  (aref quat 2) (- (aref from3 0))
                   (aref quat 3) 0.0))
         (setf (aref quat 0) w))
     (normalize quat)))
@@ -121,9 +141,9 @@
   (let ((x-rot (/ x-rot 2.0))
         (y-rot (/ y-rot 2.0))
         (z-rot (/ z-rot 2.0)))
-    (let (((cos-x (cos x-rot)) (sin-x (sin x-rot)))
-          ((cos-y (cos y-rot)) (sin-y (sin y-rot)))
-          ((cos-z (cos z-rot)) (sin-z (sin z-rot))))
+    (let ((cos-x (cos x-rot)) (sin-x (sin x-rot))
+          (cos-y (cos y-rot)) (sin-y (sin y-rot))
+          (cos-z (cos z-rot)) (sin-z (sin z-rot)))
       (make-quat (- (* cos-x cos-y cos-z) (* sin-x sin-y sin-z))
                  (- (* sin-x cos-y cos-z) (* cos-x sin-y sin-z))
                  (- (* cos-x sin-y cos-z) (* sin-x cos-y sin-z))
@@ -149,26 +169,6 @@
 (defun copy (quat)
   (make-quat (w quat) (x quat) (y quat) (z quat)))
 
-(defun zero-quat ()
-  (make-quat 0.0 0.0 0.0 0.0))
-
-(defun zero-quatp (quat)
-  (let ((w (w quat)) (x (x quat)) (y (y quat)) (z (z quat)))
-    (float-zero (+ (* w w) (* x x) (* y y) (* z z)))))
-
-(defun unit-quatp (quat)
-  (let ((w (w quat)) (x (x quat)) (y (y quat)) (z (z quat)))
-    (float-zero (- 1.0 (* w w) (* x x) (* y y) (* z z)))))
-
-(defun identity-quat ()
-  (make-quat 1.0 0.0 0.0 0.0)))
-
-(defun identity-p (quat)
-  (and (float-zero (- 1.0 (w quat)))
-       (float-zero (x quat))
-       (float-zero (y quat))
-       (float-zero (z quat))))
-
 (defun get-axis-angle (quat)
   (list 
    (let ((length (c-sqrt (- 1.0 (* (w quat) (w quat))))))
@@ -190,20 +190,18 @@
                      (* (y quat) factor)
                      (* (z quat) factor))))))
 
-(defun conjugate (quat)
+(defun qconjugate (quat)
   (make-quat (w quat) (- (x quat)) (- (y quat)) (- (z quat))))
 
-;;&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-
 (defun inverse (quat)
-  (let ((norm (v4:dot quat quat)))
+  (let ((norm (norm quat)))
     (if (float-zero norm)
         (identity-quat)
         (let ((norm-recip (/ 1.0 norm)))
-          (make-quat (* norm-recip (q:w quat))
-                     (- (* norm-recip (q:x quat)))
-                     (- (* norm-recip (q:y quat)))
-                     (- (* norm-recip (q:z quat))))))))
+          (make-quat (* norm-recip (w quat))
+                     (- (* norm-recip (x quat)))
+                     (- (* norm-recip (y quat)))
+                     (- (* norm-recip (z quat))))))))
 
 (defun q+1 (quat-a quat-b)
   (v4:v+1 quat-a quat-b))
@@ -221,22 +219,22 @@
   (v4:v* quat-a scalar))
 
 (defun q*quat (quat-a quat-b)
-  (make-quat (- (* (q:w quat-a) (q:w quat-b))
-                (* (q:x quat-a) (q:x quat-b))
-                (* (q:y quat-a) (q:y quat-b))
-                (* (q:z quat-a) (q:z quat-b)))
-             (- (+ (* (q:w quat-a) (q:x quat-b))
-                   (* (q:x quat-a) (q:w quat-b))
-                   (* (q:y quat-a) (q:z quat-b)))
-                (* (q:z quat-a) (q:y quat-b)))
-             (- (+ (* (q:w quat-a) (q:y quat-b))
-                   (* (q:y quat-a) (q:w quat-b))
-                   (* (q:z quat-a) (q:x quat-b)))
-                (* (q:x quat-a) (q:z quat-b)))
-             (- (+ (* (q:w quat-a) (q:z quat-b))
-                   (* (q:z quat-a) (q:w quat-b))
-                   (* (q:x quat-a) (q:y quat-b)))
-                (* (q:y quat-a) (q:x quat-b)))))
+  (make-quat (- (* (w quat-a) (w quat-b))
+                (* (x quat-a) (x quat-b))
+                (* (y quat-a) (y quat-b))
+                (* (z quat-a) (z quat-b)))
+             (- (+ (* (w quat-a) (x quat-b))
+                   (* (x quat-a) (w quat-b))
+                   (* (y quat-a) (z quat-b)))
+                (* (z quat-a) (y quat-b)))
+             (- (+ (* (w quat-a) (y quat-b))
+                   (* (y quat-a) (w quat-b))
+                   (* (z quat-a) (x quat-b)))
+                (* (x quat-a) (z quat-b)))
+             (- (+ (* (w quat-a) (z quat-b))
+                   (* (z quat-a) (w quat-b))
+                   (* (x quat-a) (y quat-b)))
+                (* (y quat-a) (x quat-b)))))
 
 (defun dot (quat-a quat-b)
   (v4:dot quat-a quat-b))
@@ -244,34 +242,34 @@
 ;; [TODO] Look into assets (this should be a unit quaternion
 (defun rotate (vector quat)
   "Rotate vector by quaternion. Assumes quaternion is normalized."
-  (let* ((v-mult (* 2.0 (+ (* (q:x quat) (v-x vector))
-                           (* (q:y quat) (v-y vector))
-                           (* (q:z quat) (v-z vector)))))
-         (cross-mult (* 2.0 (q:w quat)))
-         (p-mult (- (* cross-mult (q:w quat)) 1.0)))
-    (v3:make-vector3 (+ (* p-mult (v-x vector))
-                        (* v-mult (q:x quat))
+  (let* ((v-mult (* 2.0 (+ (* (x quat) (aref vector 0))
+                           (* (y quat) (aref vector 1))
+                           (* (z quat) (aref vector 2)))))
+         (cross-mult (* 2.0 (w quat)))
+         (p-mult (- (* cross-mult (w quat)) 1.0)))
+    (v3:make-vector3 (+ (* p-mult (aref vector 0))
+                        (* v-mult (x quat))
                         (* cross-mult 
-                           (- (* (q:y quat) (v-z vector))
-                              (* (q:z quat) (v-y vector)))))
-                     (+ (* p-mult (v-y vector))
-                        (* v-mult (q:y quat))
+                           (- (* (y quat) (aref vector 2))
+                              (* (z quat) (aref vector 1)))))
+                     (+ (* p-mult (aref vector 1))
+                        (* v-mult (y quat))
                         (* cross-mult 
-                           (- (* (q:z quat) (v-x vector))
-                              (* (q:x quat) (v-z vector)))))
-                     (+ (* p-mult (v-z vector))
-                        (* v-mult (q:z quat))
+                           (- (* (z quat) (aref vector 0))
+                              (* (x quat) (aref vector 2)))))
+                     (+ (* p-mult (aref vector 2))
+                        (* v-mult (z quat))
                         (* cross-mult 
-                           (- (* (q:x quat) (v-y vector))
-                              (* (q:y quat) (v-x vector))))))))
+                           (- (* (x quat) (aref vector 1))
+                              (* (y quat) (aref vector 0))))))))
 
 ;; [TODO] Could be faster (see q+1 area)
 (defun lerp (start-quat end-quat pos)
   "Linearaly interpolate between two quaternions. Note that this
    will always take the shortest path."
   ;; get cos of 'angle' between quaternions
-  (let ((cos-angle (dot start-quat end-quat)))
-    (if (float-greater-than-zero cos-angle)
+  (let ((cos-angle (v4:dot start-quat end-quat)))
+    (if (float>=0 cos-angle)
         (q+1 (q* end-quat pos)
              (q* start-quat (- 1.0 pos)))
         (q+1 (q* end-quat pos)
@@ -282,13 +280,13 @@
    will always take the shortest path."
   ;; get cos of 'angle' between quaternions
   (destructuring-bind (start-mult end-mult)
-      (let ((cos-angle (dot start-quat end-quat)))
+      (let ((cos-angle (v4:dot start-quat end-quat)))
         ;; if angle between quaternions is less than 90 degrees
         (if (float-greater-than-zero cos-angle)
             ;; if angle is greater than zero
             (if (float-greater-than-zero (- 1.0 cos-angle))
-                (let ((angle (acos cos-angle))
-                      (recip-sin-angle (/ 1.0 (sin angle))))
+                (let* ((angle (acos cos-angle))
+                       (recip-sin-angle (/ 1.0 (sin angle))))
                   (list (* (sin (* (- 1.0 pos) angle)) 
                            recip-sin-angle)
                         (* (sin (* pos angle))
@@ -298,8 +296,8 @@
             ;; we take the shorter route
             ;; if angle is less that 180 degrees
             (if (float-greater-than-zero (+ 1.0 cos-angle))
-                (let ((angle (acos (- cos-angle)))
-                      (recip-sin-angle (/ 1.0 (sin angle))))
+                (let* ((angle (acos (- cos-angle)))
+                       (recip-sin-angle (/ 1.0 (sin angle))))
                   (list (* (sin (* (- pos 1.0) angle)) 
                            recip-sin-angle)
                         (* (sin (* pos angle))
@@ -310,7 +308,7 @@
          (q* end-quat end-mult))))
 
 (defun approx-slerp (start-quat end-quat pos)
-  (let* ((cos-angle (dot start-quat end-quat))
+  (let* ((cos-angle (v4:dot start-quat end-quat))
          (factor (expt (- 1.0 (* 0.7878088 cos-angle)) 2.0))
          (k (* 0.5069269 factor))
          (b (* 2.0 k))

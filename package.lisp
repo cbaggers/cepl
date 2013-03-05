@@ -14,7 +14,10 @@
 	   :+one-degree-in-radians+
 	   :+pi+
 	   :float-zero
-	   :float-less-than-zero
+	   :float>=0
+       :float<=0
+	   :float>0
+       :float<0
 	   :float-greater-than-zero
 	   :c-sqrt
 	   :c-inv-sqrt))
