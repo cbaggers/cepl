@@ -23,6 +23,7 @@
 (defparameter *cam-clip-matrix* nil)
 (defparameter *terrain* nil)
 (defparameter *camera* nil)
+(defparameter *running* t)
 
 (defstruct entity 
   (stream nil)
@@ -69,7 +70,7 @@
 			 (* sin-theta sin-phi))))
     (v3:v+ cam-target (v3:v* dir-to-cam (v-z sphere-cam-rel-pos)))))
 
-					;----------------------------------------------
+;;----------------------------------------------
 
 (defun gen-gs-terrain-model (&optional (depth 6)
 			       (square-size 20.0))
@@ -230,8 +231,6 @@
 ;----------------------------------------------
 
 (defun draw ()
-  (setf (camera-position *camera*) (v:+ (camera-position *camera*)
-                                        (v:* (camera-look-direction *camera*) 0.2)))
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (prog-1 (entity-stream *terrain*)
@@ -247,18 +246,26 @@
   (prog-1 nil :cam-to-clip *cam-clip-matrix*)
   (cgl:viewport 0 0 width height))
 
+(defun step-game (draw-timer draw-stepper )
+  (sdl:case-events (event)
+           (:quit-event (setf *running* nil))
+           (:video-resize-event 1
+            (reshape (sdl:video-resize-w event)
+                     (sdl:video-resize-h event)))
+           (:key-down-event 
+            (when (eq (sdl:key-key event) :sdl-key-up)
+              (setf (camera-position *camera*) 
+                    (v:+ (camera-position *camera*)
+                         (v:* (camera-look-direction *camera*)
+                              1.0))))))
+  (on-step-call (draw-stepper (funcall draw-timer))
+           (cepl-utils:update-swank)
+           (continuable (draw))))
+
 (defun run-demo () 
   (init)
   (reshape 640 480)  
   (let ((draw-timer (make-time-buffer))
         (draw-stepper (make-stepper (/ 1000.0 60))))
-    (let ((running t))
-      (loop :while running :do
-         (sdl:case-events (event)
-           (:quit-event (setf running nil))
-           (:video-resize-event 
-            (reshape (sdl:video-resize-w event)
-                     (sdl:video-resize-h event))))
-         (on-step-call (draw-stepper (funcall draw-timer))
-           (cepl-utils:update-swank)
-           (continuable (draw)))))))
+    (loop :while running :do
+       (step-game draw-timer draw-stepper))))

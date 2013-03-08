@@ -17,26 +17,36 @@
 (defmacro make-foreign-helper-types ()
   `(progn 
      ,@(loop :for (type . len) :in varjo::*glsl-component-counts*
-	     :collect 
-	     (let* ((ftype (varjo:flesh-out-type type))
-		    (comp-len (varjo:type-component-count type))
-		    (comp-type (varjo:type-component-type ftype))) 
-	       `(progn
-		  (defcstruct ,(utils:symb 'cgl- type)
-		    (components ,comp-type :count ,len))
-		  (dangerous-defctype ,type ,(utils:symb 'cgl- type))
-		  (defmethod dpopulate ((array-type (eql ,type)) gl-array
-					data)
-		    (let ((a-ptr (glarray-pointer gl-array)))
-		      (loop :for datum :in data
-			    :for i :from 0
-			    :do (let ((v-ptr (mem-aref a-ptr ,type i)))
-				  ,@(loop :for j :below comp-len
-					  :collect  
-					  `(setf (mem-aref v-ptr
-							   ,comp-type ,j)
-						 (aref datum ,j))))))))))))
-
+          :collect 
+          (let* ((ftype (varjo:flesh-out-type type))
+                 (comp-len (varjo:type-component-count type))
+                 (comp-type (varjo:type-component-type ftype))) 
+            `(progn
+               (defcstruct ,(utils:symb 'cgl- type)
+                 (components ,comp-type :count ,len))
+               (dangerous-defctype ,type ,(utils:symb 'cgl- type))
+               (defmethod dpopulate ((array-type (eql ,type)) gl-array
+                                     data)
+                 (let ((a-ptr (glarray-pointer gl-array)))
+                   (loop :for datum :in data
+                      :for i :from 0
+                      :do (let ((v-ptr (mem-aref a-ptr ,type i)))
+                            ,@(loop :for j :below comp-len
+                                 :collect  
+                                 `(setf (mem-aref v-ptr ,comp-type ,j)
+                                        (aref datum ,j)))))))
+               (defmethod glpull-entry ((array-type (eql ,type)) 
+                                        gl-array index)  
+                 (let ((ptr (mem-aref (glarray-pointer gl-array)
+                                      ,type index)))
+                   (make-array 
+                    ,comp-len
+                    :element-type ,comp-type
+                    :initial-contents 
+                    (list ,@(loop :for j :below comp-len
+                               :collect  
+                               `(mem-aref ptr ,comp-type
+                                          ,j)))))))))))
 
 (make-foreign-helper-types)
 

@@ -1,4 +1,4 @@
- ;; This software is Copyright (c) 2012 Chris Bagley
+;; This software is Copyright (c) 2012 Chris Bagley
 ;; (techsnuffle<at>gmail<dot>com)
 ;; Chris Bagley grants you the rights to
 ;; distribute and use this software as governed
