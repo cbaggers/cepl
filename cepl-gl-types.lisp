@@ -1,5 +1,41 @@
 (in-package :cepl-gl)
 
+;;----------------------
+
+(defclass gl-array ()
+  ((pointer :initform nil :initarg :pointer :reader pointer)
+   (len :initform nil :initarg :len :reader array-length)
+   (type :initform nil :initarg :type :reader array-type)))
+
+(defclass gl-struct-array (gl-array) nil)
+(defclass gl-value (gl-array) nil)
+
+(defmethod print-object ((object gl-array) stream)
+  (format stream "#.<GL-ARRAY :type ~s :length ~a>"
+          (slot-value object 'type)
+          (slot-value object 'len)))
+
+(defmethod print-object ((object gl-value) stream)
+  (format stream "#.<GL-VALUE :type ~s>"
+          (slot-value object 'type)
+          (slot-value object 'len)))
+
+(defgeneric make-gl-array (element-type length 
+                           &optional initial-contents pointer))
+
+(defmethod make-gl-array ((element-type t) length 
+                          &optional initial-contents pointer)
+  (let ((array (make-instance 'gl-array
+                              :type element-type
+                              :pointer (or pointer
+                                           (foreign-alloc element-type
+                                                          :count length))
+                              :len length)))
+    (when initial-contents (destructuring-populate array initial-contents))
+    array))
+
+;;----------------------
+
 (defmacro dangerous-defctype (name base-type &optional documentation)
   "Utility macro for simple C-like typedefs."
   (declare (ignore documentation))
@@ -25,23 +61,34 @@
                (defcstruct ,(utils:symb 'cgl- type)
                  (components ,comp-type :count ,len))
                (dangerous-defctype ,type ,(utils:symb 'cgl- type))
-               (defmethod dpopulate ((array-type (eql ,type)) gl-array
-                                     data)
-                 (let ((a-ptr (glarray-pointer gl-array)))
+               (defclass ,(utils:symb type) (gl-array) 
+                 ((type :initform ,type)))
+               (defmethod make-gl-array ((element-type (eql ,type)) length
+                                         &optional initial-contents pointer)
+                 (let ((array (make-instance 
+                               ',(utils:symb type) 
+                               :pointer (or pointer 
+                                            (foreign-alloc ,type
+                                                       :count length))
+                               :len length)))
+                   (when initial-contents (destructuring-populate array initial-contents))
+                   array))
+               (defmethod destructuring-populate ((gl-array ,(utils:symb type)) data)
+                 (let ((a-ptr (pointer gl-array)))
                    (loop :for datum :in data
                       :for i :from 0
                       :do (let ((v-ptr (mem-aref a-ptr ,type i)))
                             ,@(loop :for j :below comp-len
                                  :collect  
                                  `(setf (mem-aref v-ptr ,comp-type ,j)
-                                        (aref datum ,j)))))))
-               (defmethod glpull-entry ((array-type (eql ,type)) 
-                                        gl-array index)  
-                 (let ((ptr (mem-aref (glarray-pointer gl-array)
+                                        (aref datum ,j))))))
+                 gl-array)
+               (defmethod glpull-entry ((gl-array ,(utils:symb type)) index)  
+                 (let ((ptr (mem-aref (pointer gl-array)
                                       ,type index)))
                    (make-array 
                     ,comp-len
-                    :element-type ,comp-type
+                    ;; :element-type 'need-to-fix-this
                     :initial-contents 
                     (list ,@(loop :for j :below comp-len
                                :collect  
@@ -53,51 +100,76 @@
 ;;------------------------------------------------------------
 ;; Homeless functions
 
-(defgeneric dpopulate (array-type gl-array data)
+(defgeneric destructuring-populate (gl-array data)
   (:documentation 
-   "This is the function that actually does the work in the 
-    destructuring populate"))
+     "This function takes a gl-array and a list of data and 
+   populates the gl-array using the data. 
+   The data must be a list of sublists. Each sublist must
+   contain the data for the attributes of the gl-array's type.  
+   That sucks as an explanation so here is an example:
 
-(defmethod dpopulate ((array-type t) gl-array data)
-   (loop for datum in data
+   given a format as defined below:
+    (cgl:define-interleaved-attribute-format vert-data 
+      (:type :float :components (x y z))
+      (:type :float :components (r g b a)))
+
+   and an array made using this format
+    (setf *vertex-data-gl* (cgl:make-gl-array 'vert-data :length 3))
+
+   then you can populate it as so:
+    (cgl:destructuring-populate *vertex-data-gl*
+     	   '((#( 0.0     0.5  0.0)
+		      #( 1.0     0.0  0.0  1.0))
+
+			 (#( 0.5  -0.366  0.0)
+			  #( 0.0     1.0  0.0  1.0))
+
+			 (#(-0.5  -0.366  0.0)
+			  #( 0.0     0.0  1.0  1.0))))
+
+   Hopefully that makes sense."))
+
+(defmethod destructuring-populate ((gl-array gl-array) data)
+  (loop for datum in data
 	 for i from 0
-	 :do (setf (aref-gl gl-array i) datum)))
+	 :do (setf (aref-gl gl-array i) datum))
+  gl-array)
 
 (defgeneric gl-assign-attrib-pointers (type &optional attrib-num 
-					      pointer-offset
+                                              pointer-offset
                                               stride-override
-					      normalised))
+                                              normalised))
 
 (defmethod gl-assign-attrib-pointers ((type t) &optional (attrib-num 0)
-						 (pointer-offset 0)
-						 stride-override
-						 normalised)
+                                                 (pointer-offset 0)
+                                                 stride-override
+                                                 normalised)
   (let ((type (varjo:flesh-out-type type)))
     (if (varjo:type-built-inp type)
         (let ((slot-layout (expand-slot-to-layout 
-			    (list type normalised)))
+                            (list type normalised)))
               (stride 0))
           (loop :for attr :in slot-layout
              :for i :from 0
              :with offset = 0
              :do (progn 
-		   (gl:enable-vertex-attrib-array (+ attrib-num i))
-		   (%gl:vertex-attrib-pointer 
-		    (+ attrib-num i) (first attr) (second attr)
-		    (third attr) (or stride-override stride)
-		    (cffi:make-pointer (+ offset pointer-offset))))
+                   (gl:enable-vertex-attrib-array (+ attrib-num i))
+                   (%gl:vertex-attrib-pointer 
+                    (+ attrib-num i) (first attr) (second attr)
+                    (third attr) (or stride-override stride)
+                    (cffi:make-pointer (+ offset pointer-offset))))
              :do (setf offset (+ offset (* (first attr) 
-					   (cffi:foreign-type-size 
-					    (second attr))))))
+                                           (cffi:foreign-type-size 
+                                            (second attr))))))
           (length slot-layout))
         (error "Type ~a is not known to cepl" type))))
 
-(defgeneric glpull-entry (array-type gl-array index)
+(defgeneric glpull-entry (gl-array index)
   (:documentation 
    "Pull one entry from a glarray as a list of lisp objects"))
 
-(defmethod glpull-entry ((array-type t) gl-array index)  
-  (aref-gl gl-array index))
+(defmethod glpull-entry ((gl-array t) index) 
+  (mem-aref (pointer gl-array) (array-type gl-array) index))
 
 (defun foreign-type-index (type index)
   (* (cffi:foreign-type-size type)
@@ -124,16 +196,16 @@
      :collect
      `(defun ,(utils:symb type-name '- slot-name) (pointer)
         ,(cond ((varjo:type-arrayp slot-type) 
-                `(make-glarray 
-                  :pointer (foreign-slot-pointer 
-                            pointer ',type-name ',slot-name)
-                  :length ,(varjo:type-array-length slot-type)
-                  :type ',(if (varjo:type-aggregate-p 
+                `(make-gl-array 
+                  ',(if (varjo:type-aggregate-p 
                                (varjo:type-principle 
                                 slot-type))
                               (agg-type-helper-name slot-type)
                               (varjo:type-principle
-                               slot-type))))
+                               slot-type))
+                  ,(varjo:type-array-length slot-type)
+                  nil
+                  (foreign-slot-pointer pointer ',type-name ',slot-name)))
                ((not (varjo:type-built-inp slot-type)) 
                 `(foreign-slot-pointer pointer
                                        ',type-name
@@ -176,25 +248,24 @@
 (defun make-gl-struct-dpop (type-name slots)
   (let ((loop-token (gensym "LOOP"))
         (slot-names (mapcar #'slot-name slots)))
-    `(defmethod dpopulate ((array-type (eql ',type-name))
-                           gl-array
-                           data)
+    `(defmethod destructuring-populate ((gl-array ,type-name) data)
        (loop for ,slot-names in data
           for ,loop-token from 0
           do ,@(loop for (slot-name) in slots
                   collect
                     `(setf (,(utils:symb type-name '- slot-name)
                              (aref-gl gl-array ,loop-token))
-                           ,slot-name))))))
+                           ,slot-name)))
+       gl-array)))
 
 (defun make-gl-struct-glpull (type-name slots)
-  `(defmethod glpull-entry ((array-type (eql ',type-name))
-                            gl-array
+  `(defmethod glpull-entry ((gl-array ,type-name)
                             index)
-     (list ,@(loop for (slot-name) in slots
-                collect
-                  `(,(utils:symb type-name '- slot-name)
-                     (aref-gl gl-array index))))))
+     (let ((entry (aref-gl gl-array index)))
+       (list ,@(loop for (slot-name) in slots
+                  collect
+                    `(,(utils:symb type-name '- slot-name)
+                       entry))))))
 
 (defun expand-slot-to-layout (slot)
   (destructuring-bind (type normalise)
@@ -284,6 +355,18 @@
          ,@(loop for slot in slots
               collect (subseq slot 0 2)))
        ,(make-cstruct-def name slots)
+       (defclass ,(utils:symb name) (gl-array) 
+                 ((type :initform ',name)))
+       (defmethod make-gl-array ((element-type (eql ',name)) length
+                                 &optional initial-contents pointer)
+         (let ((array (make-instance 
+                       ',name 
+                       :type ',name
+                       :pointer (or pointer
+                                    (foreign-alloc ',name :count length))
+                       :len length)))
+           (when initial-contents (destructuring-populate array initial-contents))
+           array))
        ,@(make-gl-struct-slot-getters name slots)
        ,@(make-gl-struct-slot-setters name slots)
        ,(make-gl-struct-dpop name slots)
