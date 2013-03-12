@@ -407,7 +407,9 @@
     `(progn
        (varjo:vdefstruct ,name
          ,@(loop for slot in slots
-              collect (append (subseq slot 0 2) (cons :name (last slot)))))
+              collect (append (subseq slot 0 2) 
+                              (list nil nil)
+                              (last slot))))
        ,(make-cstruct-def name slots)
        (defclass ,(utils:symb name) (gl-struct-array) 
          ((type :initform ',name)))

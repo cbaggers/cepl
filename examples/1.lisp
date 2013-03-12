@@ -1,12 +1,12 @@
 ;; This is simply to get a colored triangle up on the screen
 
 (cgl:defglstruct vert-data
-  (position :vec4)
-  (colour :vec4))
+  (position :vec4 :accessor pos)
+  (colour :vec4 :accessor col))
 
 (cgl:defprogram prog-1 ((vert vert-data))
-  (:vertex (setf gl-position (vert-data-position vert))
-           (out (the-color :smooth) (vert-data-colour vert)))
+  (:vertex (setf gl-position (pos vert))
+           (out (the-color :smooth) (col vert)))
   (:fragment (let ((lerp-value (/ (y gl-frag-coord) 500.0)))
                (out outputColor (mix the-color 
                                      (vec4 0.2 0.2 0.2 1.0)
