@@ -1,0 +1,23 @@
+* make-gpu-array with list is failing 
+  ok at really odd  times so is from gl-array... this is odd
+  seems to be when created using defparameter...so it doesnt like
+  top level for some reason?
+
+* (defpipeline? draw-ortho ((data vdata) &uniform (offset :vec2))
+   (:vertex (setf gl-position (+ (pos data) (vec4 offset 0.0 0.0)))
+            (out (the-color :smooth) (color data)))
+   (:fragment (out final-color the-color)))
+
+  as you can see above, the type of 'data' is vdata. But we dont 
+  have to quote it... is that lispy? Yes, that is inline withg 
+  defamethod.
+
+* We need a representation of frame buffers...or whatever those 
+   things are! I kind of feel that running a shader should return
+   one. At the very least we will need it later for targets and
+   for defining feedback within pipelines.
+
+* add set culling? combined enabling, setting winding-order and
+  cull-face in one move.
+
+* swizzle is named incorrectly, its really a generic make-vector4

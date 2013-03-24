@@ -10,7 +10,7 @@
   (position :vec3)
   (color :vec4))
 
-(cgl:defprogram prog-1 ((vert vert-data) &uniform 
+(cgl:defpipeline prog-1 ((vert vert-data) &uniform 
 		    (cam-to-clip :mat4) (model-to-cam :mat4))
   (:vertex (out (the-color :smooth) (vert-data-color vert))
            (let ((cam-pos (* model-to-cam 

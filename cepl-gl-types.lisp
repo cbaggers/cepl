@@ -73,6 +73,13 @@
                                :len length)))
                    (when initial-contents (destructuring-populate array initial-contents))
                    array))
+               (defmethod glpush-entry ((gl-array ,(utils:symb type))
+                                        index value)
+                 (let ((v-ptr (mem-aref (pointer gl-array) ,type index)))
+                   ,@(loop :for j :below comp-len
+                        :collect `(setf (mem-aref v-ptr ,comp-type ,j) 
+                                        (aref value ,j)))
+                   value))
                (defmethod destructuring-populate ((gl-array ,(utils:symb type)) data)
                  (let ((a-ptr (pointer gl-array)))
                    (loop :for datum :in data
@@ -166,10 +173,18 @@
 
 (defgeneric glpull-entry (gl-array index)
   (:documentation 
-   "Pull one entry from a glarray as a list of lisp objects"))
+   "Pull one entry from a glarray"))
+
+(defgeneric glpush-entry (gl-array index value)
+  (:documentation 
+   "Push one entry to a glarray"))
 
 (defmethod glpull-entry ((gl-array t) index) 
   (mem-aref (pointer gl-array) (array-type gl-array) index))
+
+(defmethod glpush-entry ((gl-array t) index value) 
+  (setf (mem-aref (pointer gl-array) (array-type gl-array) index)
+        value))
 
 (defun foreign-type-index (type index)
   (* (cffi:foreign-type-size type)

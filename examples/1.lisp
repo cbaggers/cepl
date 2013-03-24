@@ -4,7 +4,7 @@
   (position :vec4 :accessor pos)
   (colour :vec4 :accessor col))
 
-(cgl:defprogram prog-1 ((vert vert-data))
+(cgl:defpipeline prog-1 ((vert vert-data))
   (:vertex (setf gl-position (pos vert))
            (out (the-color :smooth) (col vert)))
   (:fragment (let ((lerp-value (/ (y gl-frag-coord) 500.0)))

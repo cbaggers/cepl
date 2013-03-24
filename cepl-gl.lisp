@@ -71,16 +71,22 @@
   "Frees the specified gl-array."
   (foreign-free (pointer gl-array)))
 
-(declaim (inline aref-gl))
+(declaim (inline aref-gl-ptr))
 (defun aref-gl-ptr (gl-array index)
   "Returns the INDEX-th component of gl-array."
   (mem-aref (pointer gl-array) (array-type gl-array) index))
 
-(declaim (inline (setf aref-gl)))
+(declaim (inline (setf aref-gl-ptr)))
 (defun (setf aref-gl-ptr) (value array index)
   "Sets the INDEX-th component of gl-array. to value"
   (setf (mem-aref (pointer array) (array-type array) index) 
         value))
+
+(defgeneric aref-gl (gl-array index)
+  (:documentation ""))
+
+(defgeneric (setf aref-gl) (value gl-array index)
+  (:documentation ""))
 
 (defmethod aref-gl ((gl-array gl-array) index)
   (glpull-entry gl-array index))
@@ -92,7 +98,8 @@
                  :pointer (mem-aref (pointer gl-array) (array-type gl-array)
                                     index)))
 
-
+(defmethod (setf aref-gl) (value (gl-array gl-array) index)
+  (glpush-entry gl-array index value))
 
 (defun destructuring-allocate (array-type data)
   "This function will create a new gl-array with a length
@@ -123,7 +130,7 @@
 			  #( 0.0     0.0  1.0  1.0))))
 
    Hopefully that makes sense."
-  (let ((array (make-gl-array array-type :length (length data))))
+  (let ((array (make-gl-array array-type (length data))))
     (destructuring-populate array data)
     array))
 
@@ -728,9 +735,9 @@
                       (print "freeing a vao")) 
             vao-pool)))
 
-(defun make-gpu-stream-from-gpu-arrays 
-    (&key gpu-arrays indicies-array
-       (start 0) length (draw-type :triangles))
+(defun make-gpu-stream-from-gpu-arrays (gpu-arrays &key indicies-array (start 0)
+                                                     length
+                                                     (draw-type :triangles))
   "This function simplifies making the gpu-stream if you are 
    storing the data in gpu-arrays.
 
@@ -950,7 +957,7 @@
   (find (first shader) '(:vertex :fragment :geometry)))
 
 ;; [TODO] We need to make this fast, this 'if not prog' won't do
-(defmacro defprogram (name (&rest args) &body shaders)
+(defmacro defpipeline (name (&rest args) &body shaders)
   (if (> (count :post-compile shaders :key #'first) 1)
       (error "Cannot not have more than one :post-compile section")
       (let ((post (rest (find :post-compile shaders :key #'first)))
@@ -967,7 +974,7 @@
                                                            ,name))))))
             (error "Some shaders have invalid types ~a" (mapcar #'first shaders))))))
 
-(defmacro defprogram? (name (&rest args) &body shaders)
+(defmacro defpipeline? (name (&rest args) &body shaders)
   (declare (ignore name))
   (let ((shaders (remove :post-compile shaders :key #'first)))
     (if (every #'valid-shader-typep shaders)

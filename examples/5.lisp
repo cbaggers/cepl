@@ -4,7 +4,7 @@
   (position :vec3)
   (color :vec4))
 
-(cgl:defprogram prog-2
+(cgl:defpipeline prog-2
     ((vert vert-data) &uniform (cam-to-clip :mat4)
      (world-to-cam :mat4) (model-to-world :mat4))
   (:vertex (setf gl-position (* cam-to-clip

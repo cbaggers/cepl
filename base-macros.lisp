@@ -18,7 +18,9 @@
 
 ;; [TODO] This won't handle complex argument lists well. 
 ;;        Probably not something I care about yet, but 
-;;        it'll bite me another day for sure.
+;;        it'll bite me another day for sure...<some time later>
+;;                    oh yeah it bit me...this is being used
+;;                    less now!
 
 (defmacro defmemo (name (&rest args) &body body)
   "This creates a function called 'name' which when called

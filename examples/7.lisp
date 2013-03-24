@@ -13,7 +13,7 @@
   (diffuse-color :vec4)
   (normal :vec3))
 
-(cgl:defprogram prog-1
+(cgl:defpipeline prog-1
     ((vert vert-data) &uniform (dir-to-light :vec3)
      (light-intensity :vec4) (norm-model-to-cam :mat3)
      (cam-to-clip :mat4) (model-to-cam :mat4)
@@ -34,7 +34,7 @@
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480 *near* *far*)))
 
-(cgl:defprogram prog-2
+(cgl:defpipeline prog-2
     ((vert vert-data) &uniform (dir-to-light :vec3) 
      (light-intensity :vec4) (norm-model-to-cam :mat3)
      (cam-to-clip :mat4) (model-to-cam :mat4)
@@ -131,7 +131,7 @@
 (defun draw ()
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (setf *light-direction* (+ *light-direction* 0.03))
+  (setf *light-direction* (+ *light-direction* 0.01))
   (let* ((world-to-cam-matrix (calculate-cam-look-at-w2c-matrix
                                *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix 
