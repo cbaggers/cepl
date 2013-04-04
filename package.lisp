@@ -87,6 +87,7 @@
   (:import-from :cl-opengl
                 :clear-color
                 :enable
+                :disable
                 :cull-face
                 :front-face
                 :depth-mask
@@ -102,6 +103,7 @@
            :defpipeline
            :defpipeline?
            :enable
+           :disable
            :cull-face
            :front-face
            :glambda
@@ -141,7 +143,7 @@
            :free-all-buffers-in-pool
            :make-gpu-array
            :make-gpu-arrays
-           :gpu-subseq
+           :gl-subseq
            :gpu-array-pull
            :gpu-array-push
            :with-gpu-array-as-gl-array
@@ -307,7 +309,8 @@
            :magnitude :norm :quat-eql :quat-!eql
            :copy :get-axis-angle :normalize :qconjugate
            :inverse :q+1 :q+ :q-1 :q- :q* :q*quat
-           :dot :rotate :lerp :slerp :approx-slerp))
+           :dot :rotate :lerp :slerp :approx-slerp
+           :to-matrix3 :to-matrix4))
 
 (defpackage :cepl-camera
   (:nicknames :ccam)
@@ -323,7 +326,9 @@
 
 (defpackage :model-parsers
   (:use :cl)
-  (:export :parse-obj-file)
+  (:export :parse-obj-file
+           :parse-lisp-model
+           :load-lisp-model)
   (:import-from :vector2
                 :make-vector2)
   (:import-from :vector3 
@@ -357,7 +362,7 @@
                 :destructuring-allocate
                 :make-gpu-array
                 :make-gpu-arrays
-                :gpu-subseq
+                :gl-subseq
                 :with-gpu-array-as-gl-array
                 :make-gpu-stream
                 :make-gpu-stream-from-gpu-arrays)

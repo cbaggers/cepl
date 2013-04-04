@@ -236,6 +236,31 @@
                    (* (x quat-a) (y quat-b)))
                 (* (y quat-a) (x quat-b)))))
 
+(defun to-matrix3 (quat)
+  (let ((w (w quat)) (x (x quat)) (y (y quat)) (z (z quat)))
+    (let ((x2 (+ x x)) (y2 (+ y y)) (z2 (+ z z)))
+      (let ((wx (* w x2))  (wy (* w y2))  (wz (* w z2))
+            (xx (* x x2))  (xy (* x y2))  (xz (* x z2))
+            (yy (* y y2))  (yz (* y z2))
+            (zz (* z z2)))
+        (m3:make-matrix3 
+         (- 1.0 (+ yy zz)) (- xy wz)         (+ xz wy)
+         (+ xy wz)         (- 1.0 (+ xx zz)) (- yz wx)
+         (- xz wy)         (+ yz wx)         (- 1.0 (+ xx yy)))))))
+
+(defun to-matrix4 (quat)
+  (let ((w (w quat))  (x (x quat))  (y (y quat))  (z (z quat)))
+    (let ((x2 (+ x x)) (y2 (+ y y)) (z2 (+ z z)))
+      (let ((wx (* w x2))  (wy (* w y2))  (wz (* w z2))
+            (xx (* x x2))  (xy (* x y2))  (xz (* x z2))
+            (yy (* y y2))  (yz (* y z2))
+            (zz (* z z2)))
+        (m4:make-matrix4
+         (- 1.0 (+ yy zz)) (- xy wz) (+ xz wy) 0.0
+         (+ xy wz) (- 1.0 (+ xx zz)) (- yz wx) 0.0
+         (- xz wy) (+ yz wx) (- 1.0 (+ xx yy)) 0.0
+         0.0 0.0 0.0 1.0)))))
+
 (defun dot (quat-a quat-b)
   (v4:dot quat-a quat-b))
 

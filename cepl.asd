@@ -36,4 +36,5 @@
            (:file "quaternions")
 	       (:file "cepl-camera")
 	       (:file "model-parsers/parse-obj")
+	       (:file "model-parsers/parse-lisp")
 	       (:file "cepl")))

@@ -95,8 +95,8 @@
                                  (v:swizzle (second vert))
                                  (v:swizzle (third vert)))))
          (stream (cgl:make-gpu-stream-from-gpu-arrays
+                  (cgl:make-gpu-array verts :element-type 'vert-data)
                   :length (length (second monkey-data))
-                  :gpu-arrays (cgl:make-gpu-array verts :element-type 'vert-data)
                   :indicies-array (cgl:make-gpu-array (second monkey-data)
                                                       :element-type :unsigned-short
                                                       :index-array t))))
@@ -137,22 +137,18 @@
          (model-to-cam-matrix (m4:m* world-to-cam-matrix 
                                      (entity-matrix *monkey*)))
          (normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
-         (light-vec (v:normalize 
-                     (v! (* (sin *light-direction*) 1.0) 
-                         0.0
-                         (* (cos *light-direction*) 1.0) 
-                         0.0)))
+         (light-vec (v! 0 1 0 0))
          (cam-light-vec (m4:mcol*vec4 world-to-cam-matrix
                                       light-vec)))
     (setf (entity-rotation *monkey*) 
           (v! (+ 0.002 (v-x (entity-rotation *monkey*)))
               (+ 0.001 (v-y (entity-rotation *monkey*)))
               (v-z (entity-rotation *monkey*))))
-    (prog-2 (entity-stream *monkey*) 
+    (prog-1 (entity-stream *monkey*) 
             :dir-to-light (v! (v-x cam-light-vec) 
                               (v-y cam-light-vec)
                               (v-z cam-light-vec))
-            :light-intensity  (v! 1 1 1 1)
+            :light-intensity  (v! 0 1 0 1)
             :model-to-cam model-to-cam-matrix
             :norm-model-to-cam normal-to-cam-matrix
             :ambient-intensity 0.2))

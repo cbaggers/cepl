@@ -21,3 +21,20 @@
   cull-face in one move.
 
 * swizzle is named incorrectly, its really a generic make-vector4
+
+* stream could have base offset so draw-element-base thingy works
+
+* enable is odd.... can things be made better by spinning out 
+  it's functionality to other functions?
+
+* uniform buffer objects
+
+* deletion of things in pools in cepl-gl
+
+* :triangle, :lines, etc are called the render-mode or primitive
+   do our arg names reflect this?
+
+* bindbufferrange - read about it
+
+* work through the glossaries of arc-synth and check args names
+   in cepl-gl for conformance

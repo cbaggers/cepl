@@ -46,8 +46,8 @@
    Otherwise it returns nil."
   (let ((matrix-a (first matrices)))
     (loop for matrix in (cdr matrices)
-	  when (not (eq matrix-a matrix)) do (return nil)
-	    finally (return t))))
+       when (not (eq matrix-a matrix)) do (return nil)
+       finally (return t))))
 
 ;----------------------------------------------------------------
 
@@ -56,8 +56,8 @@
    Otherwise it returns nil."
   (let ((matrix-a (first matrices)))
     (loop for matrix in (cdr matrices)
-	  when (eq matrix-a matrix) do (return nil)
-	    finally (return t))))
+       when (eq matrix-a matrix) do (return nil)
+       finally (return t))))
 
 ;----------------------------------------------------------------
 
@@ -78,13 +78,13 @@
 
 (defun + (&rest matrices)
   (let* ((len (length (first matrices)))
-	 (matrix-a (make-array len :element-type 'single-float
-				   :initial-element 0.0)))
+         (matrix-a (make-array len :element-type 'single-float
+                               :initial-element 0.0)))
     (loop for matrix in matrices
-	  do (loop for i below len
-		   do (cl:setf (cl:aref matrix-a i) 
-			       (cl:+ (cl:aref matrix-a i)
-				     (cl:aref matrix i)))))))
+       do (loop for i below len
+             do (cl:setf (cl:aref matrix-a i) 
+                         (cl:+ (cl:aref matrix-a i)
+                               (cl:aref matrix i)))))))
 
 ;----------------------------------------------------------------
 
@@ -105,13 +105,13 @@
 
 (defun - (&rest matrices)
   (let* ((len (length (first matrices)))
-	 (matrix-a (make-array len :element-type 'single-float
-				   :initial-element 0.0)))
+         (matrix-a (make-array len :element-type 'single-float
+                               :initial-element 0.0)))
     (loop for matrix in matrices
-	  do (loop for i below len
-		   do (cl:setf (cl:aref matrix-a i) 
-			       (cl:- (cl:aref matrix-a i)
-				     (cl:aref matrix i)))))))
+       do (loop for i below len
+             do (cl:setf (cl:aref matrix-a i) 
+                         (cl:- (cl:aref matrix-a i)
+                               (cl:aref matrix i)))))))
 
 ;----------------------------------------------------------------
 
@@ -266,24 +266,24 @@
 (defgeneric m* (size-a matrix-a mat-vec-or-scalar)
   (:documentation "Returns t if the vector is the identity matrix"))
 
-(defmethod m* ((size (cl:eql 9)) matrix-a 
-	       (mat-vec-or-scalar simple-array))
-  (if (< (length mat-vec-or-scalar) 5)
-      (matrix3:m* matrix-a mat-vec-or-scalar)
-      (matrix3:m*vec matrix-a mat-vec-or-scalar)))
+;; (defmethod m* ((size (cl:eql 9)) matrix-a 
+;;                (mat-vec-or-scalar simple-array))
+;;   (if (< (cl:length mat-vec-or-scalar) 5)
+;;       (matrix3:m*vec matrix-a mat-vec-or-scalar)
+;;       (matrix3:m* matrix-a mat-vec-or-scalar)))
 
 (defmethod m* ((size (cl:eql 16)) matrix-a 
-	       (mat-vec-or-scalar simple-array))
-    (if (< (length mat-vec-or-scalar) 5)
-      (matrix4:m* matrix-a mat-vec-or-scalar)
-      (matrix4:mcol*vec4 matrix-a mat-vec-or-scalar)))
+               (mat-vec-or-scalar simple-array))
+  (if (< (cl:length mat-vec-or-scalar) 5)
+      (matrix4:mcol*vec4 matrix-a mat-vec-or-scalar)
+      (matrix4:m* matrix-a mat-vec-or-scalar)))
 
 (defmethod m* ((size (cl:eql 9)) matrix-a 
-	       (mat-vec-or-scalar number))
+               (mat-vec-or-scalar number))
   (matrix3:m*scalar matrix-a mat-vec-or-scalar))
 
 (defmethod m* ((size (cl:eql 16)) matrix-a 
-	       (mat-vec-or-scalar number))
+               (mat-vec-or-scalar number))
   (matrix4:m*scalar matrix-a mat-vec-or-scalar))
 
 (defmacro * (matrix-a mat-vec-or-scalar)

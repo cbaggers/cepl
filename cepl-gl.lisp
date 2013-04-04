@@ -697,7 +697,11 @@
              (setf attr (+ attr (gl-assign-attrib-pointers
                                  (first format) 
                                  attr
-                                 (third format))))))
+                                 (+ (third format)
+                                    (cgl:foreign-type-index 
+                                     (first format) 
+                                     (gpuarray-start gpu-array)))))))) 
+    ;; the line above needs start to be taken into account ^^^
     (when element-buffer
       (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)

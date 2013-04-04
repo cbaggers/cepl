@@ -20,7 +20,7 @@
                       (list (v!  0.5 -0.366 0.0 1.0) (v! 0.0 1.0 0.0 1.0))
                       (list (v! -0.5 -0.366 0.0 1.0) (v! 0.0 0.0 1.0 1.0)))
                 :element-type 'vert-data))
-         (gstream (cgl:make-gpu-stream-from-gpu-arrays :gpu-arrays data)))
+         (gstream (cgl:make-gpu-stream-from-gpu-arrays data)))
     (loop :until (find :quit-event (sdl:collect-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable (progn (gl:clear :color-buffer-bit)
