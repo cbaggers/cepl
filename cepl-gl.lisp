@@ -95,7 +95,7 @@
   (make-instance 'gl-value
                  :type (array-type gl-array)
                  :len 1
-                 :pointer (mem-aref (pointer gl-array) (array-type gl-array)
+                 :pointer (mem-aptr (pointer gl-array) (array-type gl-array)
                                     index)))
 
 (defmethod (setf aref-gl) (value (gl-array gl-array) index)
@@ -695,7 +695,8 @@
                                (glbuffer-format buffer))))
              (force-bind-buffer buffer :array-buffer)
              (setf attr (+ attr (gl-assign-attrib-pointers
-                                 (first format) 
+                                 (let ((type (first format)))
+                                   (if (listp type) (second type) type))
                                  attr
                                  (+ (third format)
                                     (cgl:foreign-type-index 
