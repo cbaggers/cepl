@@ -1,20 +1,35 @@
-cepl
-====
+CEPL (Code Evaluate Play Loop)
+==============================
 
-Code Evaluate Play Loop
+*"Lisp isn't a language, it's a building material." - Alan Kay*
 
-My first lisp project, a chance to play about and get something up in opengl.
+The goal of CEPL it to provide building materials for realtime graphics demos and games.
+
+CEPL will not be an engine for a certain class of games but will provide primitives to aid
+in building game engines.
+
+CEPL aims to provide or extend wrappers around core technologies (opengl, sdl, etc) and make
+them lispy and REPL friendly. The second point is worth noting as too often an attempt
+to abstract complex ideas can produce tools which are great for handling the complex situation
+- but they can end up ballooning simple examples and intimidating beginners.
+
+CEPL is in pre-alpha. Everything is subject to change and *many* bugs are present in the code. Have fun!
+
+See the ./examples folder for experiments with opengl which is the current focus of the devlopment.
+
+Videos: https://www.youtube.com/user/CBaggers/videos
 
 -----
 
 **Requirements**
 
 * cl-opengl
-* lispbuilder-mini (or lispbuilder <see end for note>)
-* varjo
+* lispbuilder-mini *(or lispbuilder <see end for note>)*
+* varjo *used to transalate common-lisp into glsl*
 * cl-utilities
 * cl-ppcre
 * symbol-munger
+* classimp *(requires assimp3)*
 
 If you are using quicklisp then drop this in your local-projects directory and run the following in your repl:
     (ql:quickload :cepl)
@@ -25,3 +40,6 @@ Lispbuilder is awesome but compatibilty is not complete yet as
 lispbuilder-mini is changing so fast. As soon as possible though
 I will make sure that you can just uncomment a couple of lines
 in the package.lisp file and be under way using lispbuilder.
+
+**Driving Ideas**
+(making (making a game) a game)

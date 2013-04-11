@@ -336,6 +336,8 @@
   (:import-from :vector4
                 :make-vector4))
 
+(defpackage :3dstub
+  (:use :cl))
 
 (defpackage :cepl
   (:use :cl

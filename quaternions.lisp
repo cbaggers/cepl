@@ -53,6 +53,20 @@
        (float-zero (y quat))
        (float-zero (z quat))))
 
+;;[TODO] base quaternions? what about q:* like v:*
+(declaim (inline q!)
+         (ftype (function ((single-float) (single-float) 
+                           (single-float) (single-float)) 
+                          (simple-array single-float (4))) 
+                q!))
+(defun q! (w x y z)
+  "This takes 4 floats and give back a vector4, this is just an
+   array but it specifies the array type and populates it. 
+   For speed reasons it will not accept integers so make sure 
+   you hand it floats."
+  (declare (single-float x y z w))
+  (make-quat w x y z))
+
 (declaim (inline make-quat)
          (ftype (function ((single-float) 
                            (single-float) 

@@ -258,7 +258,7 @@
                                     :pointer (foreign-slot-pointer 
                                               pointer '(:struct ,type-name)
                                               ',slot-name)
-                                    :length 1))
+                                    :len 1))
                    (t (if (varjo:type-aggregate-p slot-type)
                           (make-aggregate-getter type-name slot-name
                                                  slot-type)
@@ -409,6 +409,15 @@
 (defun slot-type (slot) (second slot))
 (defun slot-normalisedp (slot) (third slot))
 
+
+;; need options for:
+;; * varjo-struct
+;; * ptr-accessors 
+;; * generic-accessors
+;; * per slot choice, no accessor
+;; * if cant have a setter then error at macro-time
+;; * if one slot cant be set then no destructuring-populate
+;; * special case for pointer types
 (defmacro defglstruct (name &body slot-descriptions)
   ;; tidy up the slot definintions
   (let ((slots (loop for slot in slot-descriptions
