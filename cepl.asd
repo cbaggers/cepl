@@ -40,4 +40,5 @@
                (:file "model-parsers/parse-obj")
                (:file "model-parsers/parse-lisp")
                (:file "model-parsers/classimp-cepl-extras")
+               (:file "model-parsers/3dstub")
                (:file "cepl")))

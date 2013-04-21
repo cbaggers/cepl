@@ -1007,7 +1007,9 @@
                               `(gl:create-program))))
 
             
-            (assigners (create-uniform-assigners program-id ',uniforms))
+            (assigners (create-uniform-assigners 
+                        program-id ',uniforms 
+                        ,(utils:kwd (package-name (symbol-package name)))))
             ,@(loop :for name :in uniform-names :for i :from 0
                  :collect `(,(utils:symb name '-assigner)
                              (nth ,i assigners))))
@@ -1026,11 +1028,11 @@
          (when stream (no-bind-draw-one stream))))))
 
 ;; make this return list of funcs or nil for each uni-var
-(defun create-uniform-assigners (program-id uniform-vars)
+(defun create-uniform-assigners (program-id uniform-vars package)
   (let* ((uniform-details (program-uniforms program-id))
-         (active-uniform-details (process-uniform-details 
-                                  uniform-details
-                                  uniform-vars)))
+         (active-uniform-details (process-uniform-details uniform-details
+                                                          uniform-vars
+                                                          package)))
     (loop for a-uniform in active-uniform-details
        :collect
          (when a-uniform
@@ -1051,18 +1053,17 @@
                               (lambda (value) (funcall uni-fun2 location value))))))))))))
 
 ;; [TODO] Got to be a quicker and tidier way
-(defun process-uniform-details (uniform-details uniform-vars)
+(defun process-uniform-details (uniform-details uniform-vars package)
   ;; returns '(byte-offset principle-type length)
   (let ((result nil)
-        (paths (mapcar #'parse-uniform-path uniform-details)))
+        (paths (loop for det in uniform-details
+                  collect (parse-uniform-path det package))))
     (loop for detail in uniform-details
        for path in paths
        :do (setf result 
                  (acons (caar path) 
                         (cons (first detail)
-                              (cons (list (get-path-offset 
-                                           path
-                                           uniform-vars)
+                              (cons (list (get-path-offset path uniform-vars)
                                           (second detail)
                                           (third detail))
                                     (rest (rest 
@@ -1073,12 +1074,13 @@
        :collect (assoc (first var) result))))
 
 ;; [TODO] If we load shaders from files the names will clash
-(defun parse-uniform-path (uniform-detail)
+(defun parse-uniform-path (uniform-detail package)
   (labels ((s-dot (x) (split-sequence:split-sequence #\. x))
            (s-square (x) (split-sequence:split-sequence #\[ x)))
     (loop for path in (s-dot (first uniform-detail))
        :collect (let ((part (s-square (remove #\] path))))
-                  (list (symbol-munger:camel-case->lisp-symbol (first part))
+                  (list (symbol-munger:camel-case->lisp-symbol (first part) 
+                                                               package)
                         (if (second part)
                             (parse-integer (second part))
                             0))))))
@@ -1103,7 +1105,8 @@
                              (second path-part))))))
                  sum)))
     (let* ((first-part (first path))
-           (type (second (assoc (first first-part) uniform-vars)))
+           (type (second (assoc (symbol-name (first first-part)) uniform-vars
+                                :key #'symbol-name :test #'equal)))
            (index (second first-part)))
       (if type
           (+ (* (cffi:foreign-type-size type) index)

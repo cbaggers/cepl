@@ -131,7 +131,6 @@
 (defun draw ()
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (setf *light-direction* (+ *light-direction* 0.01))
   (let* ((world-to-cam-matrix (calculate-cam-look-at-w2c-matrix
                                *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix 

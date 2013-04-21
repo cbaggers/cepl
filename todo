@@ -40,4 +40,7 @@
    in cepl-gl for conformance
 
 * index gpu-arrays could be populated using vectors...as long as each
-   is kept in order things will work e.g. '(1 2 3 4) == '(#(1 2) #(3 4))
+   is kept in order things will work e.g. '(1 2 3 4) == '(#(1 2) #(3
+   4))
+
+* cepl - defmemo is broken as an idea

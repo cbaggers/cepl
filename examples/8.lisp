@@ -1,0 +1,25 @@
+(defparameter *model* nil)
+
+(defun run-demo () 
+  (stub:initialize)
+  (stub:update-view 640 480)
+  (setf *model* (stub:load-model "/home/baggers/Code/models/MD2/faerie.md2" 
+                                 '(:ai-process-gen-normals)))
+  (setf (pos *model*) (v! 0 0 -100))
+  (let ((running t))
+    (loop :while running :do
+       (gl:clear-depth 1.0)
+       (gl:clear :color-buffer-bit :depth-buffer-bit)
+       (sdl:case-events (event)
+         (:quit-event (setf running nil))
+         (:video-resize-event (stub:update-view (sdl:video-resize-w event)
+                                                (sdl:video-resize-h event))))
+       (update-scene)
+       (utils:update-swank)
+       (cepl::continuable (stub:draw *model*))
+       (gl:flush)
+       (sdl:update-display)))
+  (print "done"))
+
+(defun update-scene ()
+  (setf (rot *model*) (v:+ (rot *model*) (v! 0 0.003 0))))

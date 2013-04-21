@@ -337,7 +337,15 @@
                 :make-vector4))
 
 (defpackage :3dstub
-  (:use :cl))
+  (:nicknames :stub)
+  (:use :cl
+        :base-vectors
+        :base-matrices
+        :base-maths)
+  (:export :vc :vcn :initialize :point-camera-at
+           :update-view :draw :primitive-model 
+           :load-model :camera-position :pos :rot :color
+           :scale))
 
 (defpackage :cepl
   (:use :cl
@@ -368,4 +376,5 @@
                 :with-gpu-array-as-gl-array
                 :make-gpu-stream
                 :make-gpu-stream-from-gpu-arrays)
+  (:import-from :3dstub :pos :rot :color :scale)
   (:export :repl))
