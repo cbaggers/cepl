@@ -166,7 +166,9 @@
            :load-shader
            :load-shaders
            :link-shaders
-           :make-program))
+           :make-program
+           :gl!
+           :gpu!))
 
 (defpackage :base-vectors
   (:use :cl)
@@ -230,7 +232,7 @@
   (:export :v :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
            :/ :length :length-squared :distance :distance-squared
            :dot :absolute-dot :perp-dot :normalize :cross :eq
-           :swizzle :strict-swizzle) 
+           :swizzle :merge-into-vector) 
   (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
@@ -375,6 +377,8 @@
                 :gl-subseq
                 :with-gpu-array-as-gl-array
                 :make-gpu-stream
-                :make-gpu-stream-from-gpu-arrays)
+                :make-gpu-stream-from-gpu-arrays
+                :gl! 
+                :gpu!)
   (:import-from :3dstub :pos :rot :color :scale)
   (:export :repl))

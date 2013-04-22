@@ -550,11 +550,13 @@
    :read-write"
   (let ((glarray-pointer (gensym "POINTER"))
         (buffer-sym (gensym "BUFFER"))
-        (target (gensym "target")))
+        (target (gensym "target"))
+        (ggpu-array (gensym "gpu-array")))
     `(let ((,buffer-sym (gpuarray-buffer ,gpu-array))
            (,target (if (gpuarray-index-array ,gpu-array)
                         :element-array-buffer
-                        :array-buffer)))
+                        :array-buffer))
+           (,ggpu-array ,gpu-array))
        (force-bind-buffer ,buffer-sym ,target)
        (gl:with-mapped-buffer (,glarray-pointer 
                                ,target
@@ -564,10 +566,14 @@
                     ,glarray-pointer)
              (let ((,temp-array-name 
                     (make-gl-array-from-pointer 
-                     (cffi:inc-pointer ,glarray-pointer (gpuarray-offset ,gpu-array))
-                     (gpuarray-type ,gpu-array)
-                     (gpuarray-length ,gpu-array))))
+                     (cffi:inc-pointer ,glarray-pointer (gglpuarray-offset ,ggpu-array))
+                     (gpuarray-type ,ggpu-array)
+                     (gpuarray-length ,ggpu-array))))
                ,@body))))))
+;; (if (and (listp ,ggpu-array)
+;;          (keywordp (first ,ggpu-array)))
+;;     (second ,ggpu-array)
+;;     ,ggpu-array)
 
 (defun gpu-array-pull (gpu-array)
   "This function returns the contents of the array as lisp list 
@@ -791,12 +797,6 @@
 
 (defgeneric gl-pull-1 (array &optional destination)
   (:documentation "Pulls data from the gl-array or gpu-array back one layer. This means that a gpu-array gets pulled into a gl-array, and a gl-array to a lisp list"))
-
-;; this is terrible!
-;; (defmethod gl-pull-1 ((array gpuarray) &optional destination)
-;;   (declare (ignore destination))
-;;   (with-gpu-array-as-gl-array (tmp array :read-only)
-;;     (make-gl-array (array-type tmp) (array-length tmp) (gl-pull tmp))))
 
 (defmethod gl-pull-1 ((array gpuarray) &optional destination)
   (declare (ignore destination))
@@ -1229,3 +1229,12 @@
   "take a string and changes it to uppercase and replaces
    all underscores _ with minus symbols -"
   (string-upcase (substitute #\- #\_ name)))
+
+
+(defun gpu! (type &rest values)
+  (if (and (not values) (eql (type-of type) 'gl-array))
+      (make-gpu-array type)
+      (make-gpu-array values :element-type type)))
+
+(defun gl! (type &rest values)
+  (make-gl-array type (length values) values))

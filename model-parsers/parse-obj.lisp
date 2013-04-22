@@ -41,16 +41,16 @@
 			   nil nil nil nil nil))
        (:v  (proc-obj-lines (rest obj-lines) objects groups 
 			  smoothing-group merging-group
-			  (cons (apply #'v:swizzle body) vertices)
+			  (cons (apply #'v:merge-into-vector body) vertices)
 			  normals tex-coords points lines faces))
        (:vt (proc-obj-lines (rest obj-lines) objects groups
 			  smoothing-group merging-group vertices
-			  normals (cons (apply #'v:swizzle body) 
+			  normals (cons (apply #'v:merge-into-vector body) 
 					tex-coords) 
 			  points lines faces))
        (:vn (proc-obj-lines (rest obj-lines) objects groups 
 			  smoothing-group merging-group vertices 
-			  (cons (apply #'v:swizzle body) normals)
+			  (cons (apply #'v:merge-into-vector body) normals)
 			  tex-coords points lines faces))
        (:g  (proc-obj-lines (rest obj-lines) objects body
 			  smoothing-group merging-group vertices 

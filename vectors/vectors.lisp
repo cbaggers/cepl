@@ -18,24 +18,19 @@
 
 ;----------------------------------------------------------------
 
-(defun swizzle (&rest vectors)
-    "Takes a list of vectors and combines them into a new vector"
-    (labels ((seqify (x) 
-	       (if (or (listp x) (arrayp x))
-		   x
-		   (list x))))
-      (let ((combined (mapcar #'(lambda (x) 
-				  (coerce x 'single-float))
-		       (apply #'concatenate 'list
-			      (mapcar #'seqify vectors)))))
-	(apply #'make-vector combined))))
+(defmacro swizzle (vec pattern)
+  (let* ((name (cl:symbol-name (if (listp pattern)
+                                   (second pattern)
+                                   pattern)))
+         (len (cl:length name)))
+    (if (or (> len 4) (< len 2))
+        (error "Vectors: swizzle: Cepl vectors cannot have a length less that 2 or greater than 4")
+        `(cl:make-array
+          ,len :element-type 'single-float :initial-contents
+          (list ,@(loop :for char :being :the :elements :of name
+                     :collect `(aref ,vec ,(or (position char '(#\X #\Y #\Z #\W))
+                                               (error "Vectors: swizzle: Pattern component was not X, Y, Z or W: ~a" char)))))))))
 
-;; doesnt restrict length and needs correctly typed vectors
-(defun strict-swizzle (&rest vectors)
-  (apply #'concatenate 
-         `(SIMPLE-ARRAY SINGLE-FLOAT 
-                        (,(apply #'cl:+ (mapcar #'cl:length vectors)))) 
-         vectors))
 
 ;----------------------------------------------------------------
 
@@ -43,8 +38,21 @@
   "This takes floats and give back a vector, this is just an
    array but it specifies the array type and populates it. "
   (cond (w (vector4:make-vector4 x y z w))
-	(z (vector3:make-vector3 x y z))
-	(t (vector2:make-vector2 x y))))
+        (z (vector3:make-vector3 x y z))
+        (t (vector2:make-vector2 x y))))
+
+;; 
+(defun merge-into-vector (&rest vectors)
+  "Takes a list of vectors and combines them into a new vector"
+  (labels ((seqify (x) 
+             (if (or (listp x) (arrayp x))
+                 x
+                 (list x))))
+    (let ((combined (mapcar #'(lambda (x) 
+                                (coerce x 'single-float))
+                            (apply #'concatenate 'list
+                                   (mapcar #'seqify vectors)))))
+      (apply #'make-vector combined))))
 
 ;----------------------------------------------------------------
 
@@ -108,7 +116,7 @@
   (let ((vec-a (first vecs)))
     (loop for vec in (cdr vecs)
        when (not (eq vec-a vec)) do (return nil)
-	 finally (return t))))
+       finally (return t))))
 
 ;----------------------------------------------------------------
 
@@ -118,7 +126,7 @@
   (let ((vec-a (first vecs)))
     (loop for vec in (cdr vecs)
        when (eq vec-a vec) do (return nil)
-	 finally (return t))))
+       finally (return t))))
 
 ;----------------------------------------------------------------
 
@@ -211,24 +219,24 @@
   (v4:v* vec-a (coerce multiple 'single-float)))
 
 (defmethod vec* ((size (cl:eql 2))
-		 vec-a 
-		 (multiple #.(class-of 
-			     (make-array 0 :element-type 
-					 'single-float))))
+                 vec-a 
+                 (multiple #.(class-of 
+                              (make-array 0 :element-type 
+                                          'single-float))))
   (v2:v*vec vec-a multiple))
 
 (defmethod vec* ((size (cl:eql 3))
-		 vec-a 
-		 (multiple #.(class-of 
-			     (make-array 0 :element-type 
-					 'single-float))))
+                 vec-a 
+                 (multiple #.(class-of 
+                              (make-array 0 :element-type 
+                                          'single-float))))
   (v3:v*vec vec-a multiple))
 
 (defmethod vec* ((size (cl:eql 4))
-		 vec-a 
-		 (multiple #.(class-of 
-			     (make-array 0 :element-type 
-					 'single-float))))
+                 vec-a 
+                 (multiple #.(class-of 
+                              (make-array 0 :element-type 
+                                          'single-float))))
   (v4:v*vec vec-a multiple))
 
 (defmacro * (vec-a scalar-or-vec)
@@ -250,24 +258,24 @@
   (v4:v/ vec-a (coerce multiple 'single-float)))
 
 (defmethod vec/ ((size (cl:eql 2))
-		 vec-a 
-		 (multiple #.(class-of 
-			     (make-array 0 :element-type 
-					 'single-float))))
+                 vec-a 
+                 (multiple #.(class-of 
+                              (make-array 0 :element-type 
+                                          'single-float))))
   (v2:v/vec vec-a multiple))
 
 (defmethod vec/ ((size (cl:eql 3))
-		 vec-a 
-		 (multiple #.(class-of 
-			     (make-array 0 :element-type 
-					 'single-float))))
+                 vec-a 
+                 (multiple #.(class-of 
+                              (make-array 0 :element-type 
+                                          'single-float))))
   (v3:v/vec vec-a multiple))
 
 (defmethod vec/ ((size (cl:eql 4))
-		 vec-a 
-		 (multiple #.(class-of 
-			     (make-array 0 :element-type 
-					 'single-float))))
+                 vec-a 
+                 (multiple #.(class-of 
+                              (make-array 0 :element-type 
+                                          'single-float))))
   (v4:v/vec vec-a multiple))
 
 (defmacro / (vec-a scalar-or-vec)
