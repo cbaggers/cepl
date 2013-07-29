@@ -22,4 +22,4 @@
   (print "done"))
 
 (defun update-scene ()
-  (setf (rot *model*) (v:+ (rot *model*) (v! 0 0.003 0))))
+  (setf (rot *model*) (v:+ (rot *model*) (v! 0.00 0.005 0))))

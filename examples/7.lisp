@@ -91,9 +91,9 @@
 (defun load-lisp-model (filename)
   (let* ((monkey-data (utils:safe-read-from-string (utils:file-to-string filename)))
          (verts (loop for vert in (first monkey-data)
-                   collect (list (v:* (v:swizzle (first vert)) (v! 1 1 1)) 
-                                 (v:swizzle (second vert))
-                                 (v:swizzle (third vert)))))
+                   collect (list (v:* (v:merge-into-vector (first vert)) (v! 1 1 1)) 
+                                 (v:merge-into-vector (second vert))
+                                 (v:merge-into-vector (third vert)))))
          (stream (cgl:make-gpu-stream-from-gpu-arrays
                   (cgl:make-gpu-array verts :element-type 'vert-data)
                   :length (length (second monkey-data))

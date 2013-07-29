@@ -214,28 +214,6 @@
   (loop :for (slot-name slot-type norm accessor-name) :in slots
      :collect
      `(progn
-        (defun ,(utils:symb type-name '- slot-name '-ptr)
-            (pointer)
-          ,(cond ((varjo:type-arrayp slot-type) ; [TODO] this is *-ptr do we return gl-array?
-                  `(make-gl-array 
-                    ',(if (varjo:type-aggregate-p (varjo:type-principle slot-type))
-                          `(:struct ,(agg-type-helper-name slot-type))
-                          (let ((stype (varjo:type-principle slot-type)))
-                            (if (keywordp stype) stype `(:struct ,stype))))
-                    ,(varjo:type-array-length slot-type)
-                    nil
-                    (foreign-slot-pointer pointer '(:struct ,type-name) 
-                                          ',slot-name)))
-                 ((not (varjo:type-built-inp slot-type)) 
-                  `(foreign-slot-pointer pointer
-                                         '(:struct ,type-name)
-                                         ',slot-name))
-                 (t (if (varjo:type-aggregate-p slot-type)
-                        (make-aggregate-getter type-name slot-name
-                                               slot-type)
-                        `(foreign-slot-value pointer
-                                             '(:struct ,type-name)
-                                             ',slot-name)))))
         (defgeneric ,(or accessor-name (utils:symb type-name '- slot-name)) 
             (object))
         (defmethod ,(or accessor-name (utils:symb type-name '- slot-name)) 
@@ -283,18 +261,6 @@
   (loop :for (slot-name slot-type norm accessor-name) :in slots
      :collect
      `(progn
-        (defun (setf ,(utils:symb type-name '- slot-name '-ptr)) 
-            (value pointer)
-          ,(if (or (varjo:type-arrayp slot-type)
-                   (not (varjo:type-built-inp slot-type)))
-               `(error "GLSTRUCT SETTER ERROR: Sorry, you cannot directly set a foreign slot of type array or struct: ~s ~s" value pointer)
-               (if (varjo:type-aggregate-p slot-type)
-                   (make-aggregate-setter type-name slot-name
-                                          slot-type 'value)
-                   `(setf (foreign-slot-value
-                           pointer '(:struct ,type-name) ',slot-name)
-                          value)))
-          value)
         (defgeneric (setf ,(or accessor-name (utils:symb type-name '- slot-name))) 
             (value object))
         (defmethod (setf ,(or accessor-name (utils:symb type-name '- slot-name))) 
@@ -459,3 +425,27 @@
        ,(make-gl-struct-glpull name slots)
        ,(make-gl-struct-attrib-assigner name slots)
        ',name)))
+
+
+;; ;;---------------------------------------------------------
+
+;; (defmethod make-gl-array ((element-type t) length 
+;;                           &optional initial-contents pointer)
+;;   (let ((array (make-instance
+;;                 'gl-array
+;;                 :type element-type
+;;                 :pointer (or pointer (foreign-alloc element-type :count length))
+;;                 :len length)))
+;;     (when initial-contents (destructuring-populate array initial-contents))
+;;     array))
+
+;; (defmethod make-gl-array ((element-type (eql ',name)) length
+;;                           &optional initial-contents pointer)
+;;   (let ((array (make-instance 
+;;                 ',name 
+;;                 :type '(:struct ,name)
+;;                 :pointer (or pointer
+;;                              (foreign-alloc '(:struct ,name) :count length))
+;;                 :len length)))
+;;     (when initial-contents (destructuring-populate array initial-contents))
+;;     array))

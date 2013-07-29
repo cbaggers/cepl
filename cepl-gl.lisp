@@ -324,7 +324,7 @@
 
 (defmethod print-object ((object gpuarray) stream)
   (format stream 
-          "#.<~a :type ~a :length ~a>"
+          "#.<~a :type ~s :length ~a>"
           (if (gpuarray-index-array object)
               "GPU-INDEX-ARRAY"
               "GPU-ARRAY")
@@ -361,7 +361,12 @@
        (bind-buffer buffer :array-buffer)
        (gl:with-mapped-buffer (b-pointer :array-buffer :read-only)
          
-         (let ((gl-array (make-gl-array (first attr-format)
+         (let* ((array-type (first attr-format))
+                (gl-array (make-gl-array (if (listp array-type)
+                                             (if (eq :struct (first array-type))
+                                                 (second array-type)
+                                                 (error "we dont handle arrays of pointers yet"))
+                                             array-type)
                                         (second attr-format))))
            (%memcpy (pointer gl-array) 
                     (cffi:inc-pointer b-pointer (third attr-format))
@@ -513,7 +518,11 @@
     (if (and (< start end) (< start length) (<= end length))
         (make-gl-array-from-pointer 
          (cffi:inc-pointer (pointer array) (foreign-type-index type start))
-         type
+         (if (listp type)
+             (if (eq :struct (first type))
+                 (second type)
+                 (error "we dont handle arrays of pointers yet"))
+             type)
          (- end start)))
     (error "Invalid subseq start or end for gl-array")))
 
@@ -566,14 +575,15 @@
                     ,glarray-pointer)
              (let ((,temp-array-name 
                     (make-gl-array-from-pointer 
-                     (cffi:inc-pointer ,glarray-pointer (gglpuarray-offset ,ggpu-array))
-                     (gpuarray-type ,ggpu-array)
+                     (cffi:inc-pointer ,glarray-pointer (gpuarray-offset ,ggpu-array))
+                     (let ((array-type (gpuarray-type ,ggpu-array)))
+                       (if (listp array-type)
+                           (if (eq :struct (first array-type))
+                               (second array-type)
+                               (error "we dont handle arrays of pointers yet"))
+                           array-type))
                      (gpuarray-length ,ggpu-array))))
                ,@body))))))
-;; (if (and (listp ,ggpu-array)
-;;          (keywordp (first ,ggpu-array)))
-;;     (second ,ggpu-array)
-;;     ,ggpu-array)
 
 (defun gpu-array-pull (gpu-array)
   "This function returns the contents of the array as lisp list 
@@ -803,7 +813,13 @@
   (let* ((buffer (gpuarray-buffer array))
          (format (nth (gpuarray-format-index array)
                       (glbuffer-format buffer)))
-         (new-array (make-gl-array (first format) (second format))))
+         (new-array (make-gl-array (let ((array-type (first format)))
+                                     (if (listp array-type)
+                                         (if (eq :struct (first array-type))
+                                             (second array-type)
+                                             (error "we dont handle arrays of pointers yet"))
+                                         array-type)) 
+                                   (second format))))
     (bind-buffer buffer :array-buffer)
     (gl:with-mapped-buffer (b-pointer :array-buffer :read-only)
       (%memcpy (pointer new-array)
@@ -1232,7 +1248,7 @@
 
 
 (defun gpu! (type &rest values)
-  (if (and (not values) (eql (type-of type) 'gl-array))
+  (if (and (not values) (typep type 'cgl::gl-array))
       (make-gpu-array type)
       (make-gpu-array values :element-type type)))
 

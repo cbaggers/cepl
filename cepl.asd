@@ -26,6 +26,7 @@
                (:file "time/base-time")
                (:file "cepl-gl-types")
                (:file "cepl-gl")
+               (:file "cepl-gl-textures")
                (:file "vectors/base-vectors")
                (:file "vectors/vector2")
                (:file "vectors/vector3")
