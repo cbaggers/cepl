@@ -59,14 +59,14 @@
 ;; [TODO] should fail on layer-count=0?
 (defun make-texture (dimensions &key (mipmap nil) (layer-count 1) (cubes nil)
                                   (rectangle nil) (multisample nil)
-                                  (immutable t) (backed-by :texture-storage))
-  (if (and immutable (eq backed-by :texture-storage))
+                                  (immutable t) (buffer-storage nil))
+  (if (and immutable (not buffer-storage))
       ;; check for power of two - handle or warn
       (let ((array-type (establish-texture-type 
                          (if (listp dimensions) (length dimensions) 1)
                          mipmap (> layer-count 1) cubes 
                          (every #'potp dimensions) multisample 
-                         (eq backed-by :buffer-storage) rectangle)))
+                         buffer-storage rectangle)))
         (if array-type
             (if (and cubes (not (apply #'= dimensions)))
                 (error "Cube textures must be square")
@@ -110,12 +110,33 @@
    (cubes :initarg :cubes)
    (allocated :initform nil :reader allocatedp)))
 
+;; this is the datastructure that will represent images
+;; Once this is working this will be merged into gpu-arrays
+;; at that point you will create gpu-arrays and set their backing
+;; to be buffer or texture. Well to be fair you'll create a texture
+;; and use it's index to browse to the t-array. But still, you will
+;; be able to glpull and glpush and expect to have cepl work out what
+;; to do.
+(defclass t-array ()
+  ((texture-id :initarg :texture-id)
+   (level-num :initarg :level-num)
+   (layer-num :initarg :layer-num)
+   (face-num :initarg :face-num)
+   width
+   height
+   depth
+   format))
+
+(defun texref (texture &key mipmap-level layer cube-face)
+  )
+
 (defmethod aref-gl ((texture texture-backed-immutable-texture) index)
   (with-slots ((mip-levels mipmap-levels)
                (layers layer-count)
                (cubes? cubes))
       texture
-    (cond ((> mip-levels 1) (if (and (> index 0) (< index mip-levels))
+    (cond ((eql mip-levels 1) (print 'here-is-a-t-array))
+          ((> mip-levels 1) (if (and (> index 0) (< index mip-levels))
                                 (make-instance 'texture-mipmap-level
                                                :texture texture
                                                :level-num index)
