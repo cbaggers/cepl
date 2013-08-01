@@ -13,10 +13,32 @@
 
 (in-package :cepl)
 
+(defun get-gl-extensions ()
+  (loop for i below (gl:get-integer :num-extensions)
+     collect (%gl:get-string-i :extensions i)))
+
+(defun cepl-post-context-initialize ()
+  (let ((required-extensions '("GL_ARB_texture_storage"))
+        (available-extensions (get-gl-extensions)))
+    (loop :for ext :in required-extensions :do
+       (when (not (find ext available-extensions :test #'equal))
+         (error "Required OpenGL Extension '~a' not found"
+                ext)))
+    t))
+
 (defun repl (&optional (width 640) (height 480))
   (in-package :cepl)
   (if (sdl:init-sdl)
-      (sdl:window width height :icon-caption "CEPL REPL" :title-caption "CEPL REPL")
-      (error "Failed to initialise SDL"))
-  (format t "-----------------~%    CEPL-REPL    ~%-----------------"))
+      (progn
+        (sdl:window width height 
+                    :icon-caption "CEPL REPL"
+                    :title-caption "CEPL REPL")
+        (if (cepl-post-context-initialize)
+            (format t "-----------------~%    CEPL-REPL    ~%-----------------")
+            (progn (sdl:quit)
+                   (error "Failed to initialise CEPL"))))
+      (error "Failed to initialise SDL")))
+
+(defun quit ()
+  (sdl:quit))
 

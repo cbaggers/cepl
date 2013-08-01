@@ -6,66 +6,176 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-;; This is a file for me to experiment with textures in
-;; I'm really not sure of the best interface for this yet so 
-;; we shall play!
-
 (in-package :cepl-gl)
+
+(defparameter *valid-texture-storage-options* 
+  '(((t nil nil 1 nil nil nil) :texture-1d)
+    ((t nil nil 2 nil nil nil) :texture-2d)
+    ((t nil nil 3 nil nil nil) :texture-3d)
+    ((t t nil 1 nil nil nil) :texture-1d-array)
+    ((t t nil 2 nil nil nil) :texture-2d-array)
+    ((t nil t 2 nil nil nil) :texture-cube-map)
+    ((t t t 2 nil nil nil) :texture-cube-map-array)
+    ((nil nil nil 2 nil nil t) :texture-rectangle)
+    ((nil nil nil 1 nil t nil) :texture-buffer)
+    ((nil nil nil 2 t nil nil) :texture-2d-multisample)
+    ((nil t nil 2 t nil nil) :texture-2d-multisample-array)))
+
+;; [todo] this needs setting
+(defparameter *mipmap-max-levels* 20)
+
+;; (tex-storage-2d target 1 :rgba 16 16)
+
+(defun tex-storage-2d (target levels internal-format width height)
+  (%gl:tex-storage-2d target levels (gl::internal-format->int internal-format)
+                      width height))
 
 ;; dont export this
 (defun gen-texture ()
   (first (gl:gen-textures 1)))
 
-;; [TODO] mutable or immutable?
+;; Textures are complex custom structures which can have:
+;; mipmaps, layers(arrays), and cubes 
+;; The leaves of these structures are (texture backed)gpu-arrays
+;; of up to three dimensions.
 
-;; Textures are objects that store one or more arrays of
-;; data of some dimensionality.
-;; Shaders can reference them with sampler type
-(defclass texture () 
-  ((id :initform (gen-texture) :accessor id)
-   (type :initform :none :accessor texture-type)))
+(defun potp (x) (eql 0 (logand x (- x 1))))
 
-(defclass mutable-texture (texture) ())
-(defclass immutable-texture (texture) ())
+(defun establish-texture-type (dimensions mipmap layers cubes pot multisample 
+                               buffer rectangle)
+  (declare (ignore pot))
+  (cadr (assoc (list mipmap layers cubes dimensions multisample buffer rectangle)
+               *valid-texture-storage-options*
+               :test #'(lambda (a b)
+                         (destructuring-bind
+                               (a1 a2 a3 a4 a5 a6 a7 b1 b2 b3 b4 b5 b6 b7)
+                             (append a b)
+                           (and (if b1 t (not a1)) (if b2 t (not a2))
+                                (if b3 t (not a3)) (eql b4 a4)
+                                (eql b5 a5) (eql b6 a6) (eql b7 a7)))))))
+
+;; [TODO] how does mipmap-max affect this
+;; [TODO] si the max layercount?
+;; [TODO] should fail on layer-count=0?
+(defun make-texture (dimensions &key (mipmap nil) (layer-count 1) (cubes nil)
+                                  (rectangle nil) (multisample nil)
+                                  (immutable t) (backed-by :texture-storage))
+  (if (and immutable (eq backed-by :texture-storage))
+      ;; check for power of two - handle or warn
+      (let ((array-type (establish-texture-type 
+                         (if (listp dimensions) (length dimensions) 1)
+                         mipmap (> layer-count 1) cubes 
+                         (every #'potp dimensions) multisample 
+                         (eq backed-by :buffer-storage) rectangle)))
+        (if array-type
+            (if (and cubes (not (apply #'= dimensions)))
+                (error "Cube textures must be square")
+                (let ((texture (make-instance 
+                                'texture-backed-immutable-texture
+                                :texture-id (gen-texture)
+                                :base-dimensions dimensions
+                                :array-type array-type
+                                :mipmap-levels 
+                                (if mipmap
+                                    (floor (log (apply #'max dimensions) 2))
+                                    1)
+                                :layer-count layer-count
+                                :cubes cubes)))
+                  (with-texture-bound (texture)
+                    (allocate-texture texture))
+                  texture))
+            (error "This combination of texture features is invalid")))
+      (error "Textures with mutable storage and buffer backed 
+              textures are not yet implemented")))
+
+(defun allocate-texture (texture)
+  (if (allocatedp texture)
+      (error "Attempting to reallocate a previously allocated texture")
+      (let ((base-dimensions (base-dimensions texture)))
+        (case (slot-value texture 'array-type)
+          ((:texture-2d) (tex-storage-2d (slot-value texture 'array-type)
+                                         (slot-value texture 'mipmap-levels)
+                                         :rgb8
+                                         (first base-dimensions)
+                                         (second base-dimensions))))
+        (setf (slot-value texture 'allocated) t))))
+
+;;allocatedp bad for writer an texture-id
+(defclass texture-backed-immutable-texture ()
+  ((texture-id :initarg :texture-id :reader texture-id)
+   (base-dimensions :initarg :base-dimensions :accessor base-dimensions)
+   (array-type :initarg :array-type)
+   (mipmap-levels :initarg :mipmap-levels)
+   (layer-count :initarg :layer-count)
+   (cubes :initarg :cubes)
+   (allocated :initform nil :reader allocatedp)))
+
+(defmethod aref-gl ((texture texture-backed-immutable-texture) index)
+  (with-slots ((mip-levels mipmap-levels)
+               (layers layer-count)
+               (cubes? cubes))
+      texture
+    (cond ((> mip-levels 1) (if (and (> index 0) (< index mip-levels))
+                                (make-instance 'texture-mipmap-level
+                                               :texture texture
+                                               :level-num index)
+                                (error "Index out of range. Mipmap-levels: ~a"
+                                       mip-levels)))
+          ((> layers 1) (if (and (> index 0) (< index mip-levels))
+                                (make-instance 'texture-mipmap-level
+                                               :texture texture
+                                               :level-num index)
+                                (error "Index out of range. Mipmap-levels: ~a"
+                                       mip-levels)))
+          (cubes? (print 'cubes))
+          (t (error "This texture does not have any aref'able elements")))))
+
+(defmethod print-object ((object texture-backed-immutable-texture) stream)
+  (let ((m (slot-value object 'mipmap-levels))
+        (l (slot-value object 'layer-count))
+        (c (slot-value object 'cubes)))
+    (format stream 
+            "#.<GL-~a (~{~a~^x~})~:[~; mip-levels:~a~]~:[~; layers:~a~]>"
+            (slot-value object 'array-type)
+            (slot-value object 'base-dimensions)
+            (when (> m 1) m) (when (> l 1) l) c)))
+
+(defclass texture-mipmap-level ()
+  ((texture :initarg :texture)
+   (level-num :initarg :level-num)))
+
+(defclass texture-array-layer ()
+  ((texture :initarg :texture)
+   (level-num :initarg :level-num)
+   (layer-num :initarg :layer-num)))
+
+(defclass texture-cube ()
+  ((texture :initarg :texture)
+   (level-num :initarg :level-num)
+   (layer-num :initarg :layer-num)
+   (face-num :initarg :face-num)))
+
+
+
+(defun unbind-texture (type)
+  (gl:bind-texture type 0))
 
 (defun bind-texture (texture &optional type)
-  (if (or (null type) (eq type (texture-type texture)))
-      (gl:bind-texture (texture-type texture) (id texture))
-      (if (eq :none (texture-type texture))
-          (progn (gl:bind-texture type (id texture))
-                 (setf (texture-type texture) type))
-          (error "Texture has already been bound")))
+  (let ((array-type (slot-value texture 'array-type)))
+    (if (or (null type) (eq type array-type))
+        (gl:bind-texture array-type (texture-id texture))
+        (if (eq :none array-type)
+            (progn (gl:bind-texture type (texture-id texture))
+                   (setf (slot-value texture 'array-type) type))
+            (error "Texture has already been bound"))))
   texture)
 
 ;;use with safe-exit thingy?
-(defmacro with-bind-texture ((texture &optional type) &body body)
+(defmacro with-texture-bound ((texture &optional type) &body body)
   (let ((tex (gensym "texture"))
         (res (gensym "result")))
     `(let ((,tex ,texture)) 
        (bind-texture ,tex ,type)
        (let ((,res (progn ,@body)))
-         (bind-texture 0 (texture-type ,tex))
+         (unbind-texture (slot-value ,tex 'array-type))
          ,res))))
-
-;; is storage a seperate entity?
-
-(defgeneric tex-push (texture data internal-format width 
-                      height pixel-data-format pixel-data-type
-                      &optional level))
-
-(defmethod tex-push ((texture mutable-texture) data 
-                     internal-format width height
-                     pixel-data-format pixel-data-type
-                     &optional (level 0))
-  (let ((tex-type (texture-type texture)))
-    (case tex-type
-      ((:texture-1d :proxy-texture-1d)
-       (gl:tex-image-1d tex-type level internal-format width 0
-                        pixel-data-format pixel-data-type data))
-      ((:texture-2d :proxy-texture-2d)
-       (gl:tex-image-2d tex-type level internal-format width 
-                        height 0 pixel-data-format pixel-data-type data)))))
-
-;; texture unit
-;; (gl:active-texture )
-
