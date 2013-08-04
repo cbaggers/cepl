@@ -5,7 +5,10 @@
 (defclass gl-array ()
   ((pointer :initform nil :initarg :pointer :reader pointer)
    (len :initform nil :initarg :len :reader array-length)
-   (type :initform nil :initarg :type :reader array-type)))
+   (type :initform nil :initarg :type :reader array-type)
+   (row-byte-size :initarg :row-byte-size :reader row-byte-size)
+   (row-alignment :initarg :row-alignment :reader row-alignment)
+   (dimensions :initarg :dimensions :reader dimensions)))
 
 (defclass gl-struct-array (gl-array) nil)
 (defclass gl-value (gl-array) nil)
@@ -13,23 +16,45 @@
 (defmethod print-object ((object gl-array) stream)
   (format stream "#.<GL-ARRAY :type ~s :length ~a>"
           (slot-value object 'type)
-          (slot-value object 'len)))
+          (slot-value object 'dimensions)))
 
 (defmethod print-object ((object gl-value) stream)
   (format stream "#.<GL-VALUE :type ~s>"
-          (slot-value object 'type)
-          (slot-value object 'len)))
+          (slot-value object 'type)))
 
-(defgeneric make-gl-array (element-type length 
-                           &optional initial-contents pointer))
+;; [TODO] The :struct assumtion is incorrect
+(defun gl-calc-byte-size (type dimensions &optional (alignment 1))
+  (if (loop for i in '(1 2 3 4) never (eql i 0))
+      (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
+             (x-size (or (first dimensions) 1))
+             (y-size (or (second dimensions) 1))
+             (z-size (or (third dimensions) 1))
+             (w-size (or (fourth dimensions) 1)))
+        (let* ((type-byte-size (cffi:foreign-type-size type))
+               (row-raw-size (* x-size type-byte-size))
+               (row-mod (mod row-raw-size alignment))
+               (row-byte-size (if (eql row-mod 0) row-raw-size
+                                  (+ row-raw-size row-mod))))
+          (* row-byte-size y-size z-size w-size)))
+      (error "no dimensions can be 0")))
 
-(defmethod make-gl-array ((element-type t) length 
-                          &optional initial-contents pointer)
-  (let ((array (make-instance
-                'gl-array
-                :type element-type
-                :pointer (or pointer (foreign-alloc element-type :count length))
-                :len length)))
+(defgeneric make-gl-array (element-type dimensions 
+                           &optional initial-contents pointer
+                             alignment))
+
+(defmethod make-gl-array ((element-type t) dimensions
+                          &optional initial-contents pointer
+                            (alignment 1))
+  (let* ((byte-length (gl-calc-byte-size element-type dimensions alignment))
+         (array (make-instance
+                 'gl-array
+                 :type element-type
+                 :pointer (or pointer (foreign-alloc :char 
+                                                     :count byte-length))
+                 :len (apply #'* dimensions)
+                 :row-byte-size byte-length
+                 :row-alignment alignment
+                 :dimensions dimensions)))
     (when initial-contents (destructuring-populate array initial-contents))
     array))
 
@@ -62,15 +87,20 @@
                (dangerous-defctype ,type (:struct ,(utils:symb 'cgl- type)))
                (defclass ,(utils:symb type) (gl-array)
                  ((type :initform ,type)))
-               (defmethod make-gl-array ((element-type (eql ,type)) length
-                                         &optional initial-contents pointer)
-                 (let ((array (make-instance
+               (defmethod make-gl-array ((element-type (eql 'type)) dimensions
+                                         &optional initial-contents pointer
+                                           (alignment 1))
+                 (let* ((byte-length (gl-calc-byte-size element-type dimensions 
+                                                        alignment))
+                        (array (make-instance
                                ',(utils:symb type) 
-                               :pointer (or pointer 
-                                            (foreign-alloc ,type
-                                                           :count length))
-                               :type ,type
-                               :len length)))
+                                :type element-type
+                                :pointer (or pointer (foreign-alloc :char 
+                                                                    :count byte-length))
+                                :len (apply #'* dimensions)
+                                :row-byte-size byte-length
+                                :row-alignment alignment
+                                :dimensions dimensions)))
                    (when initial-contents (destructuring-populate array initial-contents))
                    array))
                (defmethod glpush-entry ((gl-array ,(utils:symb type))
@@ -209,7 +239,7 @@
                               `(mem-aref ,slot-pointer 
                                          ,core-type ,i)))))))
 
-
+;; [TODO] This will have problems when making values
 (defun make-gl-struct-slot-getters (type-name slots) 
   (loop :for (slot-name slot-type norm accessor-name) :in slots
      :collect
@@ -220,7 +250,7 @@
             ((object gl-value))
           (let ((pointer (pointer object)))
             ,(cond ((varjo:type-arrayp slot-type) 
-                    `(make-gl-array 
+                    `(make-gl-array
                       ',(if (varjo:type-aggregate-p
                              (varjo:type-principle slot-type))
                             `(:struct ,(agg-type-helper-name slot-type))
@@ -397,7 +427,8 @@
                             (list slot-name 
                                   (varjo:flesh-out-type slot-type) 
                                   normalised
-                                  accessor)))))
+                                  accessor))))
+        (e-type `(:struct ,name)))
     
     ;; write the code
     `(progn
@@ -409,14 +440,20 @@
        ,(make-cstruct-def name slots)
        (defclass ,(utils:symb name) (gl-struct-array) 
          ((type :initform ',name)))
-       (defmethod make-gl-array ((element-type (eql ',name)) length
-                                 &optional initial-contents pointer)
-         (let ((array (make-instance 
-                       ',name 
-                       :type '(:struct ,name)
-                       :pointer (or pointer
-                                    (foreign-alloc '(:struct ,name) :count length))
-                       :len length)))
+       (defmethod make-gl-array ((element-type (eql 'name)) dimensions
+                                 &optional initial-contents pointer
+                                   (alignment 1))
+         (let* ((byte-length (gl-calc-byte-size ',e-type dimensions
+                                                alignment))
+                (array (make-instance
+                        ',name 
+                        :type ',e-type
+                        :pointer (or pointer (foreign-alloc :char 
+                                                            :count byte-length))
+                        :len (apply #'* dimensions)
+                        :row-byte-size byte-length
+                        :row-alignment alignment
+                        :dimensions dimensions)))
            (when initial-contents (destructuring-populate array initial-contents))
            array))
        ,@(make-gl-struct-slot-getters name slots)
@@ -425,27 +462,3 @@
        ,(make-gl-struct-glpull name slots)
        ,(make-gl-struct-attrib-assigner name slots)
        ',name)))
-
-
-;; ;;---------------------------------------------------------
-
-;; (defmethod make-gl-array ((element-type t) length 
-;;                           &optional initial-contents pointer)
-;;   (let ((array (make-instance
-;;                 'gl-array
-;;                 :type element-type
-;;                 :pointer (or pointer (foreign-alloc element-type :count length))
-;;                 :len length)))
-;;     (when initial-contents (destructuring-populate array initial-contents))
-;;     array))
-
-;; (defmethod make-gl-array ((element-type (eql ',name)) length
-;;                           &optional initial-contents pointer)
-;;   (let ((array (make-instance 
-;;                 ',name 
-;;                 :type '(:struct ,name)
-;;                 :pointer (or pointer
-;;                              (foreign-alloc '(:struct ,name) :count length))
-;;                 :len length)))
-;;     (when initial-contents (destructuring-populate array initial-contents))
-;;     array))
