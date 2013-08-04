@@ -5,7 +5,7 @@
 ;; by the terms of the Lisp Lesser GNU Public License
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
-
+;;
 (in-package :cepl-gl)
 
 (defparameter *valid-texture-storage-options* 
