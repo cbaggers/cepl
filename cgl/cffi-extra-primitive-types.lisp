@@ -16,7 +16,7 @@
                  (:actual-type :struct ,name)
                  (:simple-parser ,type))
                (defmethod translate-from-foreign (ptr (type ,type-name))
-                 (make-array 3 :initial-contents
+                 (make-array ,comp-len :initial-contents
                              (list ,@(loop :for j :below comp-len :collect 
                                         `(mem-aref ptr ,comp-type ,j)))))
                (defmethod translate-into-foreign-memory

@@ -33,7 +33,7 @@
           (slot-value object 'dimensions)))
 
 (defmethod print-object ((object gl-value) stream)
-  (format stream "#GLS<~a :SLOT NIL>"
+  (format stream "#<GL-VALUE type: ~a :SLOT NIL>"
           (slot-value object 'element-type)))
 
 (defgeneric dpop1 (type gl-object pos data))
@@ -79,8 +79,9 @@
                         :element-type element-type
                         :row-byte-size row-byte-size
                         :row-alignment alignment)))
-        (cond ((listp initial-contents) 
-               (destructuring-populate new-array initial-contents)))
+        (when (not (null initial-contents))
+          (cond ((listp initial-contents)
+                 (destructuring-populate new-array initial-contents))))
         new-array))))
 
 (defun calc-gl-index (gl-object subscripts)

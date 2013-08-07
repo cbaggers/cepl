@@ -5,6 +5,14 @@
 (defun slot-type (slot) (second slot))
 (defun slot-normalisedp (slot) (third slot))
 
+(defun make-translators (name type-name value-name)
+  `((defmethod translate-from-foreign (ptr (type ,type-name))
+      (make-instance ',value-name :element-type ',name :pointer ptr))
+    (defmethod translate-into-foreign-memory
+        (value (type ,type-name) pointer)
+      (print "NO EFFECT: Setting of c structs not yet implemented") 
+      nil)))
+
 (defun make-cstruct-def (name slots)
   `(defcstruct ,name
      ,@(loop for slot in slots :collect 
@@ -17,23 +25,25 @@
                                (varjo:type-array-length (slot-type slot))
                                1))))))
 
-(defun make-translators (name type-name)
-  `((defmethod translate-from-foreign (ptr (type ,type-name))
-      (make-instance 'gl-value :element-type ',name :pointer ptr))
-    (defmethod translate-into-foreign-memory
-        (value (type ,type-name) pointer)
-      (print "NO EFFECT: Setting of c structs not yet implemented") 
-      nil)))
-
 ;; [TODO] remove all ignores
-(defun make-getters-and-setters (name value-name slots)
-  (loop for slot-definition in slots collecting
+;; [TODO] the setter seems ugly, gotta be a better way
+;; [TODO] got to handle aggregate and complex types
+(defun make-getters-and-setters (name value-name struct-name slots)
+  (loop for slot-definition in slots appending
        (destructuring-bind (slot-name vslot-type normalised accessor)
            slot-definition
-         (declare (ignore vslot-type normalised))
-         `(defmethod ,(or accessor (utils:symb name '- slot-name)) 
-              ((gl-object ,value-name))
-            nil))))
+         (declare (ignore normalised))
+         `((defmethod ,(or accessor (utils:symb name '- slot-name)) 
+               ((gl-object ,value-name))
+             (foreign-slot-value (pointer gl-object) 
+                                 '(:struct ,struct-name)
+                                 ',slot-name))
+           (defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
+               (value (gl-object ,value-name))
+             (setf (mem-ref (foreign-slot-pointer (pointer gl-object) 
+                                                  '(:struct ,struct-name) 
+                                                  ',slot-name) 
+                            ',(varjo:type-principle vslot-type)) value))))))
 
 (defun make-dpop ()
   ;; (defmethod dpop1 ((type t) gl-object pos data)
@@ -65,11 +75,13 @@
          (:actual-type :struct ,struct-name)
          (:simple-parser ,name))
        (defclass ,value-name (gl-value) ())
-       ,@(make-translators name type-name)
-       ,@(make-getters-and-setters name value-name slots)
+       ,@(make-translators name type-name value-name)
+       ,@(make-getters-and-setters name value-name struct-name slots)
        ,(make-dpop)
        ,(make-gl-struct-attrib-assigner name slots)
        ',name)))
+
+                                        ;(defglstruct mystruct (a :vec3) (b :vec4))
 
 (defun expand-slot-to-layout (slot)
   (destructuring-bind (type normalise &rest ign)
