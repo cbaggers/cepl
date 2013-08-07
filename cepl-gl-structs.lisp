@@ -16,6 +16,7 @@
                     :count (if (varjo:type-arrayp (slot-type slot))
                                (varjo:type-array-length (slot-type slot))
                                1))))))
+
 (defun make-translators (name type-name)
   `((defmethod translate-from-foreign (ptr (type ,type-name))
       (make-instance 'gl-value :element-type ',name :pointer ptr))
@@ -30,7 +31,7 @@
        (destructuring-bind (slot-name vslot-type normalised accessor)
            slot-definition
          (declare (ignore vslot-type normalised))
-         `(defmethod ,(or accessor (utils:symb name '- slot-name )) 
+         `(defmethod ,(or accessor (utils:symb name '- slot-name)) 
               ((gl-object ,value-name))
             nil))))
 
@@ -67,4 +68,58 @@
        ,@(make-translators name type-name)
        ,@(make-getters-and-setters name value-name slots)
        ,(make-dpop)
+       ,(make-gl-struct-attrib-assigner name slots)
        ',name)))
+
+(defun expand-slot-to-layout (slot)
+  (destructuring-bind (type normalise &rest ign)
+      slot
+    (declare (ignore ign))
+    (let ((type (varjo:flesh-out-type type)))
+      (cond 
+        ((varjo:type-arrayp type) 
+         (loop for i below (varjo:type-array-length type)
+            :append (expand-slot-to-layout 
+                     (list (varjo:flesh-out-type 
+                            (varjo:type-principle type))
+                           normalise))))
+        ((varjo:mat-typep type) 
+         (loop for i below (varjo:mat/vec-length type)
+            :append (expand-slot-to-layout 
+                     (list (varjo:type-mat-col-to-vec type)
+                           normalise))))
+        ((varjo:vec-typep type) 
+         `((,(varjo:mat/vec-length type) 
+             ,(varjo:type-vec-core-type type) 
+             ,normalise)))
+        (t `((1 ,(varjo:type-principle type) ,normalise)))))))
+
+(defun make-gl-struct-attrib-assigner (type-name slots)
+  (when (every #'varjo:type-built-inp (mapcar #'slot-type slots))
+    (let* ((stride (if (> (length slots) 1)
+                       `(cffi:foreign-type-size ',type-name)
+                       0))
+           (stride-sym (gensym "stride"))
+           (definitions 
+            (loop :for attr :in 
+               (mapcan #'(lambda (x) (expand-slot-to-layout (subseq x 1))) 
+                       slots)
+               :for i :from 0
+               :with offset = 0
+               :append `((gl:enable-vertex-attrib-array (+ attrib-offset ,i))
+                         (%gl:vertex-attrib-pointer 
+                          (+ attrib-offset ,i) ,@attr ,stride-sym 
+                          (cffi:make-pointer (+ ,offset pointer-offset))))
+               :do (setf offset (+ offset 
+                                   (* (first attr) 
+                                      (cffi:foreign-type-size 
+                                       (second attr))))))))
+      (when definitions
+        `(defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name)) 
+                                               &optional (attrib-offset 0)
+                                                 (pointer-offset 0)
+                                                 stride-override normalised)
+           (declare (ignore array-type normalised))
+           (let ((,stride-sym (or stride-override ,stride)))
+             ,@definitions
+             ,(length definitions)))))))
