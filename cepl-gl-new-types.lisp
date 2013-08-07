@@ -15,6 +15,14 @@
                     :count (if (varjo:type-arrayp (slot-type slot))
                                (varjo:type-array-length (slot-type slot))
                                1))))))
+(defun make-translators (name type-name)
+  `((defmethod translate-from-foreign (ptr (type ,type-name))
+      (make-instance 'gl-value :element-type ',name :pointer ptr))
+    ;(defmethod translate-into-foreign-memory)
+    ))
+
+(defun make-getters-and-setters ())
+
 ;; [TODO] generate a dpop1 for this type
 (defmacro defglstruct (name &body slot-descriptions)
   (let ((slots (loop for slot in slot-descriptions collect
@@ -37,6 +45,8 @@
          ()
          (:actual-type :struct ,struct-name)
          (:simple-parser ,name))
+       ,@(make-translators name type-name)
+       ,@(make-getters-and-setters)
        ',name)))
 
 (defclass gl-array ()
@@ -46,10 +56,25 @@
    (row-byte-size :initarg :row-byte-size :reader row-byte-size)
    (row-alignment :initarg :row-alignment :reader row-alignment)))
 
+;; [TODO] should be baseclass each glstruct will inherit from this
+;; [TODO] payload is an uncommited value, so if you have no pointer and
+;;        you set the object you will populate the payload.
+;;        if you then (setf (aref-gl a 0) gl-val) you would apply the 
+;;        payload. If there is a pointer you set and get straight from
+;;        the foreign data.
+(defclass gl-value ()
+  ((pointer :initform nil :initarg :pointer :reader pointer)
+   (element-type :initarg :element-type :reader element-type)
+   (lisp-payload :initform nil)))
+
 (defmethod print-object ((object gl-array) stream)
   (format stream "#<GL-ARRAY :element-type ~s :dimensions ~a>"
           (slot-value object 'element-type)
           (slot-value object 'dimensions)))
+
+(defmethod print-object ((object gl-value) stream)
+  (format stream "#<GL-VALUE :element-type ~s>"
+          (slot-value object 'element-type)))
 
 (defun gl-calc-byte-size (type dimensions &optional (alignment 1))  
   (let* ((x-size (first dimensions)) (rest (rest dimensions)))

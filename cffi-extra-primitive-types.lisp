@@ -15,10 +15,10 @@
                  ()
                  (:actual-type :struct ,name)
                  (:simple-parser ,type))
-               (defmethod translate-from-foreign (value (type ,type-name))
+               (defmethod translate-from-foreign (ptr (type ,type-name))
                  (make-array 3 :initial-contents
                              (list ,@(loop :for j :below comp-len :collect 
-                                        `(mem-aref value ,comp-type ,j)))))
+                                        `(mem-aref ptr ,comp-type ,j)))))
                (defmethod translate-into-foreign-memory
                    (value (type ,type-name) pointer)
                  ,@(loop :for j :below comp-len :collect 
