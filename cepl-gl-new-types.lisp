@@ -1,53 +1,11 @@
 (in-package :cgl)
 
-(defun slot-name (slot) (first slot))
-(defun slot-type (slot) (second slot))
-(defun slot-normalisedp (slot) (third slot))
-
-(defun make-cstruct-def (name slots)
-  `(defcstruct ,name
-     ,@(loop for slot in slots :collect 
-            (let ((ptype (varjo:type-principle (slot-type slot))))
-              (list (slot-name slot)
-                    (if (varjo:type-aggregate-p ptype)
-                        (varjo:type-principle (slot-type slot))
-                        ptype)
-                    :count (if (varjo:type-arrayp (slot-type slot))
-                               (varjo:type-array-length (slot-type slot))
-                               1))))))
-(defun make-translators (name type-name)
-  `((defmethod translate-from-foreign (ptr (type ,type-name))
-      (make-instance 'gl-value :element-type ',name :pointer ptr))
-    ;(defmethod translate-into-foreign-memory)
-    ))
-
-(defun make-getters-and-setters ())
-
-;; [TODO] generate a dpop1 for this type
-(defmacro defglstruct (name &body slot-descriptions)
-  (let ((slots (loop for slot in slot-descriptions collect
-                    (destructuring-bind 
-                          (slot-name slot-type &key (normalised nil) 
-                                     (accessor nil) &allow-other-keys)
-                        slot
-                      (list slot-name (varjo:flesh-out-type slot-type) 
-                            normalised accessor))))
-        (struct-name (utils:symb name '-struct))
-        (type-name (utils:symb name '-type)))
-    `(progn
-       (varjo:vdefstruct ,name
-         ,@(loop for slot in slots
-              collect (append (subseq slot 0 2) 
-                              (list nil nil)
-                              (last slot))))
-       ,(make-cstruct-def struct-name slots)
-       (define-foreign-type ,type-name () 
-         ()
-         (:actual-type :struct ,struct-name)
-         (:simple-parser ,name))
-       ,@(make-translators name type-name)
-       ,@(make-getters-and-setters)
-       ',name)))
+;;------------------------------------------------------------
+;; [TODO] We have gl-arrays...Is this a good name? They are gl 
+;;        friendly bu have nothing to do with gl really.
+;;        What would a better name be?
+;;        c-array garray g-array f-array foreign-array
+;;        carray ceplarray
 
 (defclass gl-array ()
   ((pointer :initarg :pointer :reader pointer)
@@ -75,8 +33,12 @@
           (slot-value object 'dimensions)))
 
 (defmethod print-object ((object gl-value) stream)
-  (format stream "#<GL-VALUE :element-type ~s>"
+  (format stream "#GLS<~a :SLOT NIL>"
           (slot-value object 'element-type)))
+
+(defgeneric dpop1 (type gl-object pos data))
+
+;;------------------------------------------------------------
 
 (defun gl-calc-byte-size (type dimensions &optional (alignment 1))  
   (let* ((x-size (first dimensions)) (rest (rest dimensions)))
@@ -168,12 +130,10 @@
                  (calc-gl-index gl-object subscripts))
         value))
 
-(defgeneric dpop1 (type gl-object pos data))
-
 (defmethod dpop1 ((type t) gl-object pos data)
   (setf (aref-gl* gl-object pos) data))
 
-;; can the common of the two subfuncs be spun off (almost certainly)
+;; [TODO] can the common of the two subfuncs be spun off? (almost certainly)
 (defun destructuring-populate (gl-object data &optional (check-sizes t))
   (labels ((walk-to-dpop (data dimensions &optional pos)
              (let ((still-to-walk (rest dimensions)))

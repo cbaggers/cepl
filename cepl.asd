@@ -26,6 +26,7 @@
                (:file "time/base-time")
                (:file "cffi-extra-primitive-types")
                (:file "cepl-gl-new-types")
+               (:file "cepl-gl-structs")
                ;; (:file "cepl-gl-types")
                ;; (:file "cepl-gl")
                ;; (:file "cepl-gl-textures")
