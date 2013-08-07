@@ -62,6 +62,8 @@
 ;;        if you then (setf (aref-gl a 0) gl-val) you would apply the 
 ;;        payload. If there is a pointer you set and get straight from
 ;;        the foreign data.
+;; [TODO] remove element-type...no wait... this provides a super easy check
+;;        against gl-arrays for compatibility
 (defclass gl-value ()
   ((pointer :initform nil :initarg :pointer :reader pointer)
    (element-type :initarg :element-type :reader element-type)
@@ -86,7 +88,6 @@
 
 (defun make-gl-array (dimensions element-type 
                       &key initial-contents displaced-by (alignment 1))
-  (declare (ignore initial-contents))
   (let ((dimensions (if (listp dimensions) dimensions (list dimensions))))
     (when (> (length dimensions) 4) 
       (error "gl-arrays have a maximum of 4 dimensions: (attempted ~a)"
@@ -105,12 +106,17 @@
             (error "Byte size and type of arrays must match and alignment must be 1"))))
     (multiple-value-bind (byte-size row-byte-size)
         (gl-calc-byte-size element-type dimensions alignment)
-      (make-instance 'gl-array
-                     :pointer (or displaced-by (cffi::%foreign-alloc byte-size))
-                     :dimensions dimensions
-                     :element-type element-type
-                     :row-byte-size row-byte-size
-                     :row-alignment alignment))))
+      (let ((new-array (make-instance 
+                        'gl-array
+                        :pointer (or displaced-by 
+                                     (cffi::%foreign-alloc byte-size))
+                        :dimensions dimensions
+                        :element-type element-type
+                        :row-byte-size row-byte-size
+                        :row-alignment alignment)))
+        (cond ((listp initial-contents) 
+               (destructuring-populate new-array initial-contents)))
+        new-array))))
 
 (defun calc-gl-index (gl-object subscripts)
   (with-slots (dimensions row-byte-size element-type) gl-object
