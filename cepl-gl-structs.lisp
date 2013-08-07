@@ -24,10 +24,24 @@
       (print "NO EFFECT: Setting of c structs not yet implemented") 
       nil)))
 
-(defun make-getters-and-setters ())
+;; [TODO] remove all ignores
+(defun make-getters-and-setters (name value-name slots)
+  (loop for slot-definition in slots collecting
+       (destructuring-bind (slot-name vslot-type normalised accessor)
+           slot-definition
+         (declare (ignore vslot-type normalised))
+         `(defmethod ,(or accessor (utils:symb name '- slot-name )) 
+              ((gl-object ,value-name))
+            nil))))
+
+(defun make-dpop ()
+  ;; (defmethod dpop1 ((type t) gl-object pos data)
+  ;;   (setf (aref-gl* gl-object pos) data))
+  )
 
 ;; [TODO] generate a dpop1 for this type
 (defmacro defglstruct (name &body slot-descriptions)
+  (when (keywordp name) (error "Keyword name are now allowed for glstructs"))
   (let ((slots (loop for slot in slot-descriptions collect
                     (destructuring-bind 
                           (slot-name slot-type &key (normalised nil) 
@@ -36,7 +50,8 @@
                       (list slot-name (varjo:flesh-out-type slot-type) 
                             normalised accessor))))
         (struct-name (utils:symb name '-struct))
-        (type-name (utils:symb name '-type)))
+        (type-name (utils:symb name '-type))
+        (value-name (utils:symb name '-value)))
     `(progn
        (varjo:vdefstruct ,name
          ,@(loop for slot in slots
@@ -48,6 +63,8 @@
          ()
          (:actual-type :struct ,struct-name)
          (:simple-parser ,name))
+       (defclass ,value-name (gl-value) ())
        ,@(make-translators name type-name)
-       ,@(make-getters-and-setters)
+       ,@(make-getters-and-setters name value-name slots)
+       ,(make-dpop)
        ',name)))
