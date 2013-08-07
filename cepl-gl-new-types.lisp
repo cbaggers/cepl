@@ -15,7 +15,7 @@
                     :count (if (varjo:type-arrayp (slot-type slot))
                                (varjo:type-array-length (slot-type slot))
                                1))))))
-
+;; [TODO] generate a dpop1 for this type
 (defmacro defglstruct (name &body slot-descriptions)
   (let ((slots (loop for slot in slot-descriptions collect
                     (destructuring-bind 
@@ -45,6 +45,11 @@
    (element-type :initarg :element-type :reader element-type)
    (row-byte-size :initarg :row-byte-size :reader row-byte-size)
    (row-alignment :initarg :row-alignment :reader row-alignment)))
+
+(defmethod print-object ((object gl-array) stream)
+  (format stream "#<GL-ARRAY :element-type ~s :dimensions ~a>"
+          (slot-value object 'element-type)
+          (slot-value object 'dimensions)))
 
 (defun gl-calc-byte-size (type dimensions &optional (alignment 1))  
   (let* ((x-size (first dimensions)) (rest (rest dimensions)))
@@ -123,20 +128,35 @@
                  (calc-gl-index gl-object subscripts))
         value))
 
-;; haha this is totally wrong, need to take list of lists
-(defun destructuring-populate (gl-object data)
-  (if (every #'eql (array-dimensions data) (dimensions gl-object))
-      (let ((data (make-array (reduce #'* (array-dimensions data)) 
-                              :displaced-to data)))
-        (loop :for datum :across data :for i :from 0 :do
-           (setf (mem-ref (pointer gl-object) (element-type gl-object)
-                          (calc-1d-gl-index gl-object i))
-                 datum)))
-      (error "Source data has different dimensions to gl-array: ~a ~a"
-             (array-dimensions *) (dimensions gl-object))))
+(defun aref-gl* (gl-object subscripts)    
+  (mem-ref (pointer gl-object) (element-type gl-object)
+           (calc-gl-index gl-object subscripts)))
 
-;; this had errors
-;; (defmethod print-object ((object gl-array) stream)
-;;   (format stream "#.<GL-ARRAY :element-type ~s :dimensions ~a>"
-;;           (slot-value object 'type)
-;;           (slot-value object 'dimensions)))
+(defun (setf aref-gl*) (value gl-object subscripts)  
+  (setf (mem-ref (pointer gl-object) (element-type gl-object)
+                 (calc-gl-index gl-object subscripts))
+        value))
+
+(defgeneric dpop1 (type gl-object pos data))
+
+(defmethod dpop1 ((type t) gl-object pos data)
+  (setf (aref-gl* gl-object pos) data))
+
+;; can the common of the two subfuncs be spun off (almost certainly)
+(defun destructuring-populate (gl-object data &optional (check-sizes t))
+  (labels ((walk-to-dpop (data dimensions &optional pos)
+             (let ((still-to-walk (rest dimensions)))
+               (loop for sublist in data for i from 0 do
+                    (if still-to-walk
+                        (walk-to-dpop sublist still-to-walk (cons i pos))
+                        (dpop1 (element-type gl-object) gl-object
+                               (reverse (cons i pos)) sublist)))))
+           (check-sizes (data dimensions)
+             (if (null dimensions) t
+                 (if (eql (first dimensions) (length data))
+                     (loop for sublist in data always
+                          (check-sizes sublist (rest dimensions)))
+                     (error "Dimensions of data and gl-object do not match")))))
+    (when check-sizes (check-sizes data (dimensions gl-object)))
+    (walk-to-dpop data (dimensions gl-object))
+    gl-object))
