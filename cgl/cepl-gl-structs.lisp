@@ -29,6 +29,8 @@
 ;; [TODO] the setter seems ugly, gotta be a better way
 ;; [TODO] got to handle aggregate and complex types
 ;; [TODO] can glsl and thus varjo have multidimensional arrays?
+;; [TODO] If slot struct type return a gl-value
+;;        (make-instance ',value-name :element-type ',name :pointer ptr)
 (defun make-getters-and-setters (name value-name struct-name slots)
   (loop for slot-definition in slots appending
        (destructuring-bind (slot-name vslot-type normalised accessor)
