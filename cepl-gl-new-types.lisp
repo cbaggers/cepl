@@ -37,7 +37,10 @@
           (slot-value object 'element-type)))
 
 (defgeneric dpop1 (type gl-object pos data))
-
+(defgeneric gl-assign-attrib-pointers (array-type &optional attrib-num
+                                                    pointer-offset
+                                                    stride-override
+                                                    normalised))
 ;;------------------------------------------------------------
 
 (defun gl-calc-byte-size (type dimensions &optional (alignment 1))  
@@ -151,3 +154,28 @@
     (when check-sizes (check-sizes data (dimensions gl-object)))
     (walk-to-dpop data (dimensions gl-object))
     gl-object))
+
+
+(defmethod gl-assign-attrib-pointers ((array-type t) &optional (attrib-num 0)
+                                                       (pointer-offset 0)
+                                                       stride-override
+                                                       normalised)
+  (let ((type (varjo:flesh-out-type array-type)))
+    (if (varjo:type-built-inp type)
+        (let ((slot-layout (expand-slot-to-layout 
+                            (list type normalised)))
+              (stride 0))
+          (loop :for attr :in slot-layout
+             :for i :from 0
+             :with offset = 0
+             :do (progn 
+                   (gl:enable-vertex-attrib-array (+ attrib-num i))
+                   (%gl:vertex-attrib-pointer 
+                    (+ attrib-num i) (first attr) (second attr)
+                    (third attr) (or stride-override stride)
+                    (cffi:make-pointer (+ offset pointer-offset))))
+             :do (setf offset (+ offset (* (first attr) 
+                                           (cffi:foreign-type-size
+                                            (second attr))))))
+          (length slot-layout))
+        (error "Type ~a is not known to cepl" type))))
