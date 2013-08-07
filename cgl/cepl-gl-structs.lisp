@@ -25,9 +25,10 @@
                                (varjo:type-array-length (slot-type slot))
                                1))))))
 
-;; [TODO] remove all ignores
+;; [TODO] Use 'normalize' 
 ;; [TODO] the setter seems ugly, gotta be a better way
 ;; [TODO] got to handle aggregate and complex types
+;; [TODO] can glsl and thus varjo have multidimensional arrays?
 (defun make-getters-and-setters (name value-name struct-name slots)
   (loop for slot-definition in slots appending
        (destructuring-bind (slot-name vslot-type normalised accessor)
@@ -35,15 +36,25 @@
          (declare (ignore normalised))
          `((defmethod ,(or accessor (utils:symb name '- slot-name)) 
                ((gl-object ,value-name))
-             (foreign-slot-value (pointer gl-object) 
-                                 '(:struct ,struct-name)
-                                 ',slot-name))
+             ,(if (varjo:type-arrayp vslot-type)
+                  `(make-gl-array-from-pointer 
+                    ',(let ((len (varjo:type-array-length vslot-type)))
+                           (if (listp len) len (list len)))
+                    ,(varjo:type-principle vslot-type)
+                    (foreign-slot-pointer (pointer gl-object)
+                                          '(:struct ,struct-name)
+                                          ',slot-name))
+                  `(foreign-slot-value (pointer gl-object) 
+                                       '(:struct ,struct-name)
+                                       ',slot-name)))
            (defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
                (value (gl-object ,value-name))
-             (setf (mem-ref (foreign-slot-pointer (pointer gl-object) 
-                                                  '(:struct ,struct-name) 
-                                                  ',slot-name) 
-                            ',(varjo:type-principle vslot-type)) value))))))
+             ,(if (varjo:type-arrayp vslot-type)
+                  `(error "Cannot yet set array slots")
+                  `(setf (mem-ref (foreign-slot-pointer (pointer gl-object) 
+                                                        '(:struct ,struct-name) 
+                                                        ',slot-name) 
+                                  ',(varjo:type-principle vslot-type)) value)))))))
 
 (defun make-dpop ()
   ;; (defmethod dpop1 ((type t) gl-object pos data)

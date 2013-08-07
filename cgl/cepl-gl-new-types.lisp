@@ -51,6 +51,18 @@
       (values (* row-byte-size (max (reduce #'* rest) 1))
               row-byte-size))))
 
+(defun make-gl-array-from-pointer (dimensions element-type pointer 
+                                   &optional (alignment 1))
+  (multiple-value-bind (byte-size row-byte-size)
+      (gl-calc-byte-size element-type dimensions alignment)
+    (declare (ignore byte-size))
+    (make-instance 'gl-array
+                   :pointer pointer
+                   :dimensions dimensions
+                   :element-type element-type
+                   :row-byte-size row-byte-size
+                   :row-alignment alignment)))
+
 (defun make-gl-array (dimensions element-type 
                       &key initial-contents displaced-by (alignment 1))
   (let ((dimensions (if (listp dimensions) dimensions (list dimensions))))
