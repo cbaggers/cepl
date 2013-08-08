@@ -10,7 +10,7 @@
 (defstruct gpuarray 
   buffer
   format-index
-  start
+  (start '(0))
   dimensions
   (access-style :static-draw))
 
@@ -210,10 +210,8 @@
 ;;        this makes it feel more magical to me and also it is 
 ;;        in-line with things like with-slots
 ;; [TODO] Need to unmap if something goes wrong
-(defmacro with-gpu-array-as-c-array ((temp-array-name
-                                       gpu-array
-                                       access) 
-                                      &body body)
+(defmacro with-gpu-array-as-c-array ((temp-array-name gpu-array access) 
+                                     &body body)
   "This macro is really handy if you need to have random access
    to the data on the gpu. It takes a gpu-array and binds it
    to a c-array which allows you to run any of the c-array
@@ -241,15 +239,10 @@
              (error "with-gpu-array-as-c-array: buffer mapped to null pointer~%Have you defintely got a opengl context?~%~s"
                     ,glarray-pointer)
              (let ((,temp-array-name 
-                    (make-c-array-from-pointer 
-                     (cffi:inc-pointer ,glarray-pointer (gpuarray-offset ,ggpu-array))
-                     (let ((element-type (element-type ,ggpu-array)))
-                       (if (listp element-type)
-                           (if (eq :struct (first element-type))
-                               (second element-type)
-                               (error "we dont handle arrays of pointers yet"))
-                           element-type))
-                     (gpuarray-dimensions ,ggpu-array))))
+                    (make-c-array-from-pointer
+                     (gpuarray-dimensions ,ggpu-array)
+                     (element-type ,ggpu-array)
+                     (cffi:inc-pointer ,glarray-pointer (gpuarray-offset ,ggpu-array)))))
                ,@body))))))
 
 ;; (defun gpu-array-pull (gpu-array)

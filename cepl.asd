@@ -28,6 +28,7 @@
                (:file "cgl/c-arrays")
                (:file "cgl/structs")
                (:file "cgl/buffers")
+               (:file "cgl/buffer-gpu-arrays")
                ;; (:file "cgl/textures")
                (:file "maths/vectors/base-vectors")
                (:file "maths/vectors/vector2")
