@@ -7,18 +7,20 @@
 (defstruct gpuarray 
   buffer
   format-index
-  (start 0)
-  length
+  start
+  dimensions
   index-array 
   (access-style :static-draw))
 
 (defmethod print-object ((object gpuarray) stream)
-  (format stream "#.<~a :type ~s :length ~a>"
+  (format stream "#.<~a :element-type ~s :dimensions ~a :backed :BUFFER>"
           (if (gpuarray-index-array object)
               "GPU-INDEX-ARRAY"
               "GPU-ARRAY")
           (gpuarray-type object)
           (gpuarray-length object)))
+
+;;---------------------------------------------------------------
 
 (defun gpuarray-format (gpu-array)
   "Returns a list containing the element-type, the length of the
@@ -26,8 +28,6 @@
    this gpu-array lives in."
   (nth (gpuarray-format-index gpu-array)
        (glbuffer-format (gpuarray-buffer gpu-array))))
-
-;;---------------------------------------------------------------
 
 (defun gpuarray-type (gpu-array)
   "Returns the type of the gpuarray"
@@ -69,61 +69,45 @@
 
 (defmethod make-gpu-array ((initial-contents null) 
                            &key element-type length (index-array nil)
-                             (access-style :static-draw) (location nil))
+                             (access-style :static-draw))
   (declare (ignore initial-contents))
-  (if location
-      (with-c-arrays (arrays (append (pull-c-arrays-from-buffer location)
-                                      (list (make-c-array element-type 
-                                                           :length length))))
-        (car (last (make-gpu-arrays arrays :index-array index-array
-                                    :access-style access-style
-                                    :location location))))      
-      (let ((buffer (add-buffer-to-pool (gen-buffer))))
-        (make-gpuarray :buffer (buffer-reserve-block buffer 
-                                                     element-type
-                                                     length
-                                                     (if index-array
-                                                         :element-array-buffer
-                                                         :array-buffer)
-                                                     access-style)
-                       :format-index 0
-                       :length length
-                       :index-array index-array
-                       :access-style access-style))))
+  (let ((buffer (add-buffer-to-pool (gen-buffer))))
+    (make-gpuarray :buffer (buffer-reserve-block buffer 
+                                                 element-type
+                                                 length
+                                                 (if index-array
+                                                     :element-array-buffer
+                                                     :array-buffer)
+                                                 access-style)
+                   :format-index 0
+                   :length length
+                   :index-array index-array
+                   :access-style access-style)))
 
-;;[TODO] what if location non nil
-;;[TODO] this is broken
+;; [TODO] broken? I had left a note saying it was...but not how
 (defmethod make-gpu-array ((initial-contents list) 
                            &key element-type (index-array nil)
-                             (access-style :static-draw) (location nil))
-  (with-c-array (c-array element-type (length initial-contents) 
-                           initial-contents)
-    (make-gpu-array c-array :index-array index-array :access-style access-style
-                    :location location)))
+                             (access-style :static-draw))
+  (with-c-array (c-array element-type
+                         (length initial-contents) 
+                         initial-contents)
+    (make-gpu-array c-array :index-array index-array :access-style access-style)))
 
 (defmethod make-gpu-array ((initial-contents c-array) &key (index-array nil)
-                             (access-style :static-draw) (location nil))
-  (if location
-      (with-c-arrays (arrays (append (pull-c-arrays-from-buffer location)
-                                      (list initial-contents)))
-        (car (last (make-gpu-arrays arrays :index-array index-array
-                                    :access-style access-style
-                                    :location location))))
-      (let ((buffer (add-buffer-to-pool (gen-buffer))))
-        (make-gpuarray :buffer (buffer-data buffer 
-                                            initial-contents
-                                            (if index-array
-                                                :element-array-buffer
-                                                :array-buffer)
-                                            access-style)
-                       :format-index 0
-                       :length (array-length initial-contents)
-                       :index-array index-array
-                       :access-style access-style))))
+                             (access-style :static-draw))
+  (let ((buffer (add-buffer-to-pool (gen-buffer))))
+    (make-gpuarray :buffer (buffer-data buffer 
+                                        initial-contents
+                                        (if index-array
+                                            :element-array-buffer
+                                            :array-buffer)
+                                        access-style)
+                   :format-index 0
+                   :length (array-length initial-contents)
+                   :index-array index-array
+                   :access-style access-style)))
 
-(defun make-gpu-arrays (c-arrays &key index-array
-                                    (access-style :static-draw)
-                                    (location nil))
+(defun make-gpu-arrays (c-arrays &key index-array (access-style :static-draw))
   "This function creates a list of gpu-arrays residing in a
    single buffer in opengl. It create one gpu-array for each 
    c-array in the list passed in.
@@ -141,14 +125,12 @@
    Finally you can provide an existing buffer if you want to
    use it rather than creating a new buffer. Note that all 
    existing data in the buffer will be destroyed in the process"
-  (let ((buffer (or location
-                    (add-buffer-to-pool
-                     (multi-buffer-data (gen-buffer) 
-                                        c-arrays 
-                                        (if index-array
-                                            :element-array-buffer
-                                            :array-buffer)
-                                        access-style)))))
+  (let ((buffer (add-buffer-to-pool
+                 (multi-buffer-data (gen-buffer) c-arrays 
+                                    (if index-array
+                                        :element-array-buffer
+                                        :array-buffer)
+                                    access-style))))
     (loop for c-array in c-arrays
        for i from 0 collect 
          (make-gpuarray :buffer buffer

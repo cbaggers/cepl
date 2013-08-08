@@ -125,7 +125,7 @@
           (loop :for c-array :in c-arrays
              :for size :in c-array-byte-sizes
              :with offset = 0
-             :collect (list (array-type c-array) size offset)
+             :collect (list (element-type c-array) size offset)
              :do (buffer-sub-data buffer c-array offset
                                   buffer-target :safe nil)
              (setf offset (+ offset size)))))
@@ -158,7 +158,7 @@
     (setf (glbuffer-format buffer) `((,type ,byte-size ,0))))
   buffer)
 
-(defun buffer-reserve-blocks (buffer types-and-lengths
+(defun buffer-reserve-blocks (buffer types-and-dimensions
                               buffer-target usage)
   "This function creates an empty block of data in the opengl buffer
    equal in size to the sum of all of the 
@@ -166,10 +166,11 @@
    types-and-lengths should be of the format:
    `((type length) (type length) ...etc)
    It will remove ALL data currently in the buffer"
-  (let ((size-in-bytes 0))
+  (let ((total-size-in-bytes 0))
     (setf (glbuffer-format buffer) 
-          (loop :for (type length) :in types-and-lengths
-             :do (incf size-in-bytes (gl-calc-byte-size type dimensions))
-             :collect `(,type ,length ,size-in-bytes)))
-    (buffer-reserve-raw-block buffer size-in-bytes buffer-target usage)
-    buffer))
+          (loop :for (type dimensions) :in types-and-dimensions :collect
+             (progn (let ((size-in-bytes (gl-calc-byte-size type dimensions)))
+                      (incf total-size-in-bytes size-in-bytes)
+                      `(,type ,size-in-bytes ,total-size-in-bytes)))))
+    (buffer-reserve-block-raw buffer total-size-in-bytes buffer-target usage))
+  buffer)
