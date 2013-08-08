@@ -9,16 +9,12 @@
   format-index
   start
   dimensions
-  index-array 
   (access-style :static-draw))
 
 (defmethod print-object ((object gpuarray) stream)
-  (format stream "#.<~a :element-type ~s :dimensions ~a :backed :BUFFER>"
-          (if (gpuarray-index-array object)
-              "GPU-INDEX-ARRAY"
-              "GPU-ARRAY")
-          (gpuarray-type object)
-          (gpuarray-length object)))
+  (format stream "#.<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :BUFFER>"
+          (gpuelement-type object)
+          (gpuarray-dimensions object)))
 
 ;;---------------------------------------------------------------
 
@@ -29,10 +25,11 @@
   (nth (gpuarray-format-index gpu-array)
        (glbuffer-format (gpuarray-buffer gpu-array))))
 
-(defun gpuarray-type (gpu-array)
+(defun gpuelement-type (gpu-array)
   "Returns the type of the gpuarray"
   (first (gpuarray-format gpu-array)))
 
+;; [TODO] This looks wrong, the beggining right?
 (defun gpuarray-offset (gpu-array)
   "Returns the offset in bytes from the beggining of the buffer
    that this gpuarray is stored at"
@@ -51,9 +48,6 @@
    provide a c-array and the data from that will be used to 
    populate the gpu-array with.
 
-   If this array is to be used as an index array then set the 
-   :index-array key to t
-
    Access style is optional but if you are comfortable with 
    opengl, and know what type of usage pattern thsi array will
    have, you can set this to any of the following:
@@ -61,53 +55,54 @@
     :static-read​ :static-copy​ :dynamic-draw​ :dynamic-read
    ​ :dynamic-copy)"))
 
+;; c-array (dimensions element-type &key initial-contents displaced-by (alignment 1))
+;; old-gpu (initial-contents &key element-type length access-style)
+;; ??????? (initial-contents &key element-type dimensions access-style)
+;; [TODO] Should element-array-buffer to part of the gpu array? is it not better
+;;        to complain if someone tries to use one as a element-array-buffer and
+;;        it is of invalid type? Buffers are buffers, vaos should be handling 
+;;        their usage in terms of state
+;; [TODO] Check to see we have all the data we need
+;; [TODO] all make-gpu-array need the start argument specified
+;; [TODO] all dimensions need checking for sanity..some clearly dont have any :D
+(defun valid-as-element-arrayp (gl-object)
+  (declare (ignore gl-object))
+  (error "IMPLEMENT ME! GIVE ME PURPOSE! PLEASE.... ARGHHHHHHHHHHHHHHH"))
+
 (defmethod make-gpu-array ((initial-contents null) 
-                           &key element-type length (index-array nil)
+                           &key element-type dimensions
                              (access-style :static-draw))
   (declare (ignore initial-contents))
   (let ((buffer (add-buffer-to-pool (gen-buffer))))
-    (make-gpuarray :buffer (buffer-reserve-block buffer 
-                                                 element-type
-                                                 length
-                                                 (if index-array
-                                                     :element-array-buffer
-                                                     :array-buffer)
-                                                 access-style)
+    (make-gpuarray :buffer (buffer-reserve-block
+                            buffer element-type dimensions
+                            :array-buffer access-style)
                    :format-index 0
                    :length length
-                   :index-array index-array
                    :access-style access-style)))
 
 ;; [TODO] broken? I had left a note saying it was...but not how
 (defmethod make-gpu-array ((initial-contents list) 
-                           &key element-type (index-array nil)
-                             (access-style :static-draw))
-  (with-c-array (c-array element-type
-                         (length initial-contents) 
+                           &key element-type (access-style :static-draw))
+  (with-c-array (c-array element-type (length initial-contents) 
                          initial-contents)
-    (make-gpu-array c-array :index-array index-array :access-style access-style)))
+    (make-gpu-array c-array :access-style access-style)))
 
-(defmethod make-gpu-array ((initial-contents c-array) &key (index-array nil)
-                             (access-style :static-draw))
+(defmethod make-gpu-array ((initial-contents c-array) 
+                           &key (access-style :static-draw))
   (let ((buffer (add-buffer-to-pool (gen-buffer))))
     (make-gpuarray :buffer (buffer-data buffer 
                                         initial-contents
-                                        (if index-array
-                                            :element-array-buffer
-                                            :array-buffer)
+                                        :array-buffer
                                         access-style)
                    :format-index 0
-                   :length (array-length initial-contents)
-                   :index-array index-array
+                   :dimensions (dimensions initial-contents)
                    :access-style access-style)))
 
-(defun make-gpu-arrays (c-arrays &key index-array (access-style :static-draw))
+(defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
   "This function creates a list of gpu-arrays residing in a
    single buffer in opengl. It create one gpu-array for each 
    c-array in the list passed in.
-
-   If these arrays are to be used as an index arrays then set the
-   :index-array key to t
 
    Access style is optional but if you are comfortable with 
    opengl, and know what type of usage pattern thsi array will
@@ -121,16 +116,13 @@
    existing data in the buffer will be destroyed in the process"
   (let ((buffer (add-buffer-to-pool
                  (multi-buffer-data (gen-buffer) c-arrays 
-                                    (if index-array
-                                        :element-array-buffer
-                                        :array-buffer)
+                                    :array-buffer
                                     access-style))))
     (loop for c-array in c-arrays
        for i from 0 collect 
          (make-gpuarray :buffer buffer
                         :format-index i
-                        :length (glarray-length c-array)
-                        :index-array index-array
+                        :dimensions (dimensions c-array)
                         :access-style access-style))))
 
 (defgeneric gl-subseq (array start &optional end)
@@ -158,8 +150,8 @@
    laid out."))
 
 (defmethod gl-subseq ((array c-array) start &optional end)
-  (let* ((length (array-length array))
-         (type (array-type array))
+  (let* ((length (dimensions array))
+         (type (element-type array))
          (end (or end length)))
     (if (and (< start end) (< start length) (<= end length))
         (make-c-array-from-pointer 
@@ -173,7 +165,7 @@
     (error "Invalid subseq start or end for c-array")))
 
 (defmethod gl-subseq ((array gpuarray) start &optional end)
-  (let* ((length (gpuarray-length array))
+  (let* ((length (gpuarray-dimensions array))
          (parent-start (gpuarray-start array))
          (new-start (+ parent-start (max 0 start)))
          (end (or end length)))
@@ -182,8 +174,7 @@
          :buffer (gpuarray-buffer array)
          :format-index (gpuarray-format-index array)
          :start new-start
-         :length (- end start)
-         :index-array (gpuarray-index-array array)
+         :dimensions (- end start)
          :access-style (gpuarray-access-style array))
         (error "Invalid subseq start or end for c-array"))))
 
@@ -194,14 +185,14 @@
        (bind-buffer buffer :array-buffer)
        (gl:with-mapped-buffer (b-pointer :array-buffer :read-only)
          
-         (let* ((array-type (first attr-format))
-                (c-array (make-c-array (if (listp array-type)
-                                             (if (eq :struct (first array-type))
-                                                 (second array-type)
+         (let* ((element-type (first attr-format))
+                (c-array (make-c-array (if (listp element-type)
+                                             (if (eq :struct (first element-type))
+                                                 (second element-type)
                                                  (error "we dont handle arrays of pointers yet"))
-                                             array-type)
+                                             element-type)
                                         (second attr-format))))
-           (%memcpy (pointer c-array) 
+           (cffi::%memcpy (pointer c-array) 
                     (cffi:inc-pointer b-pointer (third attr-format))
                     (c-array-byte-size c-array))
            c-array)))))
@@ -227,9 +218,7 @@
         (target (gensym "target"))
         (ggpu-array (gensym "gpu-array")))
     `(let ((,buffer-sym (gpuarray-buffer ,gpu-array))
-           (,target (if (gpuarray-index-array ,gpu-array)
-                        :element-array-buffer
-                        :array-buffer))
+           (,target :array-buffer)
            (,ggpu-array ,gpu-array))
        (force-bind-buffer ,buffer-sym ,target)
        (gl:with-mapped-buffer (,glarray-pointer 
@@ -241,13 +230,13 @@
              (let ((,temp-array-name 
                     (make-c-array-from-pointer 
                      (cffi:inc-pointer ,glarray-pointer (gpuarray-offset ,ggpu-array))
-                     (let ((array-type (gpuarray-type ,ggpu-array)))
-                       (if (listp array-type)
-                           (if (eq :struct (first array-type))
-                               (second array-type)
+                     (let ((element-type (gpuelement-type ,ggpu-array)))
+                       (if (listp element-type)
+                           (if (eq :struct (first element-type))
+                               (second element-type)
                                (error "we dont handle arrays of pointers yet"))
-                           array-type))
-                     (gpuarray-length ,ggpu-array))))
+                           element-type))
+                     (gpuarray-dimensions ,ggpu-array))))
                ,@body))))))
 
 (defun gpu-array-pull (gpu-array)
@@ -256,7 +245,7 @@
    Note that you often dont need to use this as the generic
    function gl-pull will call this function if given a gpu-array"
   (with-gpu-array-as-c-array (tmp gpu-array :read-only)
-    (loop for i below (gpuarray-length gpu-array)
+    (loop for i below (gpuarray-dimensions gpu-array)
        collect (glpull-entry tmp i))))
 
 
@@ -269,16 +258,11 @@
          (format (nth (gpuarray-format-index gpu-array)
                       (glbuffer-format buffer)))
          (type (first format)))
-    (if (and (eq (array-type c-array) type)
-             (<= (array-length c-array) 
-                 (gpuarray-length gpu-array)))
+    (if (and (eq (element-type c-array) type)
+             (<= (dimensions c-array) 
+                 (gpuarray-dimensions gpu-array)))
         (setf (gpuarray-buffer gpu-array)
-              (buffer-sub-data buffer 
-                               c-array
-                               (gpuarray-offset gpu-array)
-                               (if (gpuarray-index-array 
-                                    gpu-array)
-                                   :element-array-buffer
-                                   :array-buffer)))
+              (buffer-sub-data buffer c-array (gpuarray-offset gpu-array)
+                               :array-buffer))
         (error "The c-array must of the same type as the target gpu-array and not have a length exceeding that of the gpu-array."))
     gpu-array))

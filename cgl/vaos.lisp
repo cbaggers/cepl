@@ -4,6 +4,8 @@
 ;;; VAOS ;;;
 ;;;------;;;
 
+;; [TODO] Vao changes the inhabitants of :vertex-array etc
+;;        this should be undone
 (let ((vao-cache nil))
   (defun bind-vao (vao)
     (unless (eq vao vao-cache)

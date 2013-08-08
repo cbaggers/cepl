@@ -24,3 +24,10 @@
                  ,@(loop :for j :below comp-len :collect 
                       `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j)))))))))
 (make-new-prims)
+
+
+;; Extra functions, these probably need to live somewhere else
+(defcfun (%memcpy "memcpy") :pointer
+  (destination-pointer :pointer)
+  (source-pointer :pointer)
+  (byte-length :long))
