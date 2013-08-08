@@ -7,7 +7,7 @@
    buffer name (buffer-id) we also store the layout of the data
    within the buffer.
    This layout is as follows:
-   `((data-type data-index-length offset-in-bytes-into-buffer)
+   `((data-type data-index-length offset-in-bytes-into-buffer))
    for example:
    `((:float 10 0) ('vert-data 50 40))"
   (buffer-id (car (gl:gen-buffers 1)))
