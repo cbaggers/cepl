@@ -1,12 +1,6 @@
 (in-package :cgl)
 
 ;;------------------------------------------------------------
-;; [TODO] We have gl-arrays...Is this a good name? They are gl 
-;;        friendly bu have nothing to do with gl really.
-;;        What would a better name be?
-;;        c-array garray g-array f-array foreign-array
-;;        carray ceplarray
-
 (defclass c-array ()
   ((pointer :initarg :pointer :reader pointer)
    (dimensions :initarg :dimensions :reader dimensions)
@@ -69,14 +63,21 @@
                    :row-alignment alignment)))
 
 (defmacro with-c-array ((var-name dimensions element-type
-                                  &key initial-contents)
+                                  &key initial-contents displaced-by 
+                                  (alignment 1))
                         &body body)
   `(let* ((,var-name (make-c-array ,dimensions ,element-type
                                    :initial-contents ,initial-contents
                                    :displaced-by ,displaced-by
-                                   :alignment )))
-     (unwind-protect (progn ,@body) (free-gl-array ,var-name))))
+                                   :alignment ,alignment)))
+     (unwind-protect (progn ,@body) (free-c-array ,var-name))))
 
+
+(defun free-c-array (c-array)
+  "Frees the specified c-array."
+  (foreign-free (pointer c-array)))
+
+; [TODO] Bad error message
 (defun make-c-array (dimensions element-type 
                       &key initial-contents displaced-by (alignment 1))
   (let ((dimensions (if (listp dimensions) dimensions (list dimensions))))
@@ -107,7 +108,8 @@
                         :row-alignment alignment)))
         (when (not (null initial-contents))
           (cond ((listp initial-contents)
-                 (destructuring-populate new-array initial-contents))))
+                 (destructuring-populate new-array initial-contents))
+                (t (error "cannot populate with that... will fix error when I have drunk less"))))
         new-array))))
 
 (defun calc-gl-index (gl-object subscripts)

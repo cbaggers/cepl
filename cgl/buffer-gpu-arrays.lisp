@@ -1,5 +1,8 @@
 (in-package :cgl)
 
+;; [TODO] alignment, what the hell do we do with that? I'm a bit 
+;;        drunk to make these choices right now
+
 ;;;--------------------------------------------------------------
 ;;; GPUARRAYS ;;;
 ;;;-----------;;;
@@ -29,16 +32,17 @@
   (gpuarray-dimensions object))
 
 (defmethod element-type ((object gpuarray))
-  (first (gpuarray-format gpu-array)))
+  (first (gpuarray-format object)))
 
-;; [TODO] This looks wrong, the beggining right?
+;; [TODO] This looks wrong, the beggining right? NO!
+;;        remember that the gpu-array could be a sub-array
+;;        in that case the
 (defun gpuarray-offset (gpu-array)
   "Returns the offset in bytes from the beggining of the buffer
    that this gpuarray is stored at"
   (let ((format (gpuarray-format gpu-array)))
-    (+ (third format)
-       (foreign-type-index (first format)
-                           (gpuarray-start gpu-array)))))
+   (+ (third format) (gl-calc-byte-size (first format) 
+                                        (gpuarray-start gpu-array)))))
 
 ;;---------------------------------------------------------------
 
@@ -80,23 +84,23 @@
                             buffer element-type dimensions
                             :array-buffer access-style)
                    :format-index 0
-                   :dimensions length
+                   :dimensions dimensions
                    :access-style access-style)))
 
 ;; [TODO] broken? I had left a note saying it was...but not how
 (defmethod make-gpu-array ((initial-contents list) 
-                           &key element-type (access-style :static-draw))
-  (with-c-array (c-array element-type (length initial-contents) 
-                         initial-contents)
+                           &key element-type (access-style :static-draw) 
+                             (alignment 1))
+  (with-c-array (c-array (length initial-contents) element-type 
+                         :initial-contents initial-contents
+                         :alignment alignment)
     (make-gpu-array c-array :access-style access-style)))
 
 (defmethod make-gpu-array ((initial-contents c-array) 
                            &key (access-style :static-draw))
   (let ((buffer (add-buffer-to-pool (gen-buffer))))
-    (make-gpuarray :buffer (buffer-data buffer 
-                                        initial-contents
-                                        :array-buffer
-                                        access-style)
+    (make-gpuarray :buffer (buffer-data buffer initial-contents
+                                        :array-buffer access-style)
                    :format-index 0
                    :dimensions (dimensions initial-contents)
                    :access-style access-style)))
@@ -118,14 +122,12 @@
    existing data in the buffer will be destroyed in the process"
   (let ((buffer (add-buffer-to-pool
                  (multi-buffer-data (gen-buffer) c-arrays 
-                                    :array-buffer
-                                    access-style))))
-    (loop for c-array in c-arrays
-       for i from 0 collect 
-         (make-gpuarray :buffer buffer
-                        :format-index i
-                        :dimensions (dimensions c-array)
-                        :access-style access-style))))
+                                    :array-buffer access-style))))
+    (loop :for c-array :in c-arrays :for i :from 0 :collecting 
+       (make-gpuarray :buffer buffer
+                      :format-index i
+                      :dimensions (dimensions c-array)
+                      :access-style access-style))))
 
 (defgeneric gl-subseq (array start &optional end)
   (:documentation
@@ -162,8 +164,8 @@
          (end (or end length)))
     (if (and (< start end) (< start length) (<= end length))
         (make-c-array-from-pointer 
-         (cffi:inc-pointer (pointer array) (foreign-type-index type start))
-         (if (listp type)
+         (cffi:inc-pointer (pointer array) (gl-calc-byte-size type start))
+         (if (listp type) 
              (if (eq :struct (first type))
                  (second type)
                  (error "we dont handle arrays of pointers yet"))
@@ -250,30 +252,30 @@
                      (gpuarray-dimensions ,ggpu-array))))
                ,@body))))))
 
-(defun gpu-array-pull (gpu-array)
-  "This function returns the contents of the array as lisp list 
-   of the data. 
-   Note that you often dont need to use this as the generic
-   function gl-pull will call this function if given a gpu-array"
-  (with-gpu-array-as-c-array (tmp gpu-array :read-only)
-    (loop for i below (gpuarray-dimensions gpu-array)
-       collect (glpull-entry tmp i))))
+;; (defun gpu-array-pull (gpu-array)
+;;   "This function returns the contents of the array as lisp list 
+;;    of the data. 
+;;    Note that you often dont need to use this as the generic
+;;    function gl-pull will call this function if given a gpu-array"
+;;   (with-gpu-array-as-c-array (tmp gpu-array :read-only)
+;;     (loop for i below (gpuarray-dimensions gpu-array)
+;;        collect (glpull-entry tmp i))))
 
 
-(defun gpu-array-push (gpu-array c-array)
-  "This function pushes the contents of the specified c-array
-   into the gpu-array.
-   Note that you often dont need to use this as the generic
-   function gl-push will call this function if given a gpu-array"
-  (let* ((buffer (gpuarray-buffer gpu-array))
-         (format (nth (gpuarray-format-index gpu-array)
-                      (glbuffer-format buffer)))
-         (type (first format)))
-    (if (and (eq (element-type c-array) type)
-             (<= (dimensions c-array) 
-                 (gpuarray-dimensions gpu-array)))
-        (setf (gpuarray-buffer gpu-array)
-              (buffer-sub-data buffer c-array (gpuarray-offset gpu-array)
-                               :array-buffer))
-        (error "The c-array must of the same type as the target gpu-array and not have a length exceeding that of the gpu-array."))
-    gpu-array))
+;; (defun gpu-array-push (gpu-array c-array)
+;;   "This function pushes the contents of the specified c-array
+;;    into the gpu-array.
+;;    Note that you often dont need to use this as the generic
+;;    function gl-push will call this function if given a gpu-array"
+;;   (let* ((buffer (gpuarray-buffer gpu-array))
+;;          (format (nth (gpuarray-format-index gpu-array)
+;;                       (glbuffer-format buffer)))
+;;          (type (first format)))
+;;     (if (and (eq (element-type c-array) type)
+;;              (<= (dimensions c-array) 
+;;                  (gpuarray-dimensions gpu-array)))
+;;         (setf (gpuarray-buffer gpu-array)
+;;               (buffer-sub-data buffer c-array (gpuarray-offset gpu-array)
+;;                                :array-buffer))
+;;         (error "The c-array must of the same type as the target gpu-array and not have a length exceeding that of the gpu-array."))
+;;     gpu-array))
