@@ -59,13 +59,7 @@
    have, you can set this to any of the following:
    (:stream-draw​ :stream-read​ :stream-copy​ :static-draw​ 
     :static-read​ :static-copy​ :dynamic-draw​ :dynamic-read
-   ​ :dynamic-copy)
-
-   Finally you can provide an existing buffer if you want to
-   append the new array into that buffer. This is VERY slow
-   compared to other ways of creating arrays and should only
-   really be used in non-production code or when just playing 
-   around in the REPL"))
+   ​ :dynamic-copy)"))
 
 (defmethod make-gpu-array ((initial-contents null) 
                            &key element-type length (index-array nil)
