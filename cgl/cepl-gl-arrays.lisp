@@ -7,7 +7,7 @@
 ;;        c-array garray g-array f-array foreign-array
 ;;        carray ceplarray
 
-(defclass gl-array ()
+(defclass c-array ()
   ((pointer :initarg :pointer :reader pointer)
    (dimensions :initarg :dimensions :reader dimensions)
    (element-type :initarg :element-type :reader element-type)
@@ -21,19 +21,19 @@
 ;;        payload. If there is a pointer you set and get straight from
 ;;        the foreign data.
 ;; [TODO] remove element-type...no wait... this provides a super easy check
-;;        against gl-arrays for compatibility
-(defclass gl-value ()
+;;        against c-arrays for compatibility
+(defclass c-value ()
   ((pointer :initform nil :initarg :pointer :reader pointer)
    (element-type :initarg :element-type :reader element-type)
    (lisp-payload :initform nil)))
 
-(defmethod print-object ((object gl-array) stream)
-  (format stream "#<GL-ARRAY :element-type ~s :dimensions ~a>"
+(defmethod print-object ((object c-array) stream)
+  (format stream "#<C-ARRAY :element-type ~s :dimensions ~a>"
           (slot-value object 'element-type)
           (slot-value object 'dimensions)))
 
-(defmethod print-object ((object gl-value) stream)
-  (format stream "#<GL-VALUE type: ~a :SLOT NIL>"
+(defmethod print-object ((object c-value) stream)
+  (format stream "#<C-VALUE type: ~a :SLOT NIL>"
           (slot-value object 'element-type)))
 
 (defgeneric dpop1 (type gl-object pos data))
@@ -43,6 +43,11 @@
                                                     normalised))
 ;;------------------------------------------------------------
 
+(defun c-array-byte-size (c-array)
+  (gl-calc-byte-size (element-type c-array) 
+                     (dimensions c-array)
+                     (row-alignment c-array)))
+
 (defun gl-calc-byte-size (type dimensions &optional (alignment 1))  
   (let* ((x-size (first dimensions)) (rest (rest dimensions)))
     (let* ((row-raw-size (* x-size (cffi:foreign-type-size type)))
@@ -51,23 +56,23 @@
       (values (* row-byte-size (max (reduce #'* rest) 1))
               row-byte-size))))
 
-(defun make-gl-array-from-pointer (dimensions element-type pointer 
+(defun make-c-array-from-pointer (dimensions element-type pointer 
                                    &optional (alignment 1))
   (multiple-value-bind (byte-size row-byte-size)
       (gl-calc-byte-size element-type dimensions alignment)
     (declare (ignore byte-size))
-    (make-instance 'gl-array
+    (make-instance 'c-array
                    :pointer pointer
                    :dimensions dimensions
                    :element-type element-type
                    :row-byte-size row-byte-size
                    :row-alignment alignment)))
 
-(defun make-gl-array (dimensions element-type 
+(defun make-c-array (dimensions element-type 
                       &key initial-contents displaced-by (alignment 1))
   (let ((dimensions (if (listp dimensions) dimensions (list dimensions))))
     (when (> (length dimensions) 4) 
-      (error "gl-arrays have a maximum of 4 dimensions: (attempted ~a)"
+      (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))
     (when (not (find alignment '(1 2 4 8)))
       (error "alignment can only be 1, 2, 4 or 8"))
@@ -84,7 +89,7 @@
     (multiple-value-bind (byte-size row-byte-size)
         (gl-calc-byte-size element-type dimensions alignment)
       (let ((new-array (make-instance 
-                        'gl-array
+                        'c-array
                         :pointer (or displaced-by 
                                      (cffi::%foreign-alloc byte-size))
                         :dimensions dimensions
@@ -107,7 +112,7 @@
               row-byte-size)
            (* (or (fourth subscripts) 0) (or (third dimensions) 0) 
               (or (second dimensions) 0) row-byte-size))
-        (error "The subscripts ~a are outside of the gl-array range ~a"
+        (error "The subscripts ~a are outside of the c-array range ~a"
                subscripts dimensions))))
 
 (defun calc-1d-gl-index (gl-object subscript)

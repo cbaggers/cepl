@@ -3,10 +3,10 @@ CEPL (Code Evaluate Play Loop)
 
 *"Lisp isn't a language, it's a building material." - Alan Kay*
 
-The goal of CEPL it to provide building materials for realtime graphics demos and games.
+The goal of CEPL is to provide building materials for realtime graphics demos and games.
 
 CEPL will not be an engine for a certain class of games but will provide primitives to aid
-in building game engines.
+in building game/graphical engines.
 
 CEPL aims to provide or extend wrappers around core technologies (opengl, sdl, etc) and make
 them lispy and REPL friendly. The second point is worth noting as too often an attempt
@@ -17,7 +17,7 @@ CEPL is in pre-alpha. Everything is subject to change and *many* bugs are presen
 
 See the ./examples folder for experiments with opengl which is the current focus of the devlopment.
 
-Videos: https://www.youtube.com/user/CBaggers/videos
+Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 
 -----
 

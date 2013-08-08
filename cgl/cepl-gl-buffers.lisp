@@ -9,7 +9,7 @@
    This layout is as follows:
    `((data-type data-index-length offset-in-bytes-into-buffer))
    for example:
-   `((:float 10 0) ('vert-data 50 40))"
+   `((:float 12 0) ('vert-data 140 12))"
   (buffer-id (car (gl:gen-buffers 1)))
   (format nil))
 
@@ -50,7 +50,7 @@
                      (usage :static-draw))
   (declare (symbol buffer-target usage))
   "Creates a new opengl buffer object. 
-   Optionally you can provide a gl-array as the :initial-contents
+   Optionally you can provide a c-array as the :initial-contents
    to have the buffer populated with the contents of the array"
   (let ((new-buffer (make-glbuffer)))
     (if initial-contents
@@ -59,11 +59,9 @@
         new-buffer)))
 
 ;; buffer format is a list whose sublists are of the format
-;; type, index-length, byte-offset-from-start-of-buffer
-
-(defun buffer-data (buffer gl-array buffer-target usage
-                    &key (offset 0)
-                      (size (gl-array-byte-size gl-array)))
+;; type, byte-length, byte-offset-from-start-of-buffer
+(defun buffer-data-raw (data-pointer data-type data-byte-size
+                        buffer buffer-target usage &optional (byte-offset 0))
   "This function populates an opengl buffer with the contents 
    of the array. You also pass in the buffer type and the 
    draw type this buffer is to be used for.
@@ -71,28 +69,35 @@
    The function returns a buffer object with its format slot
    populated with the details of the data stored within the buffer"
   (bind-buffer buffer buffer-target)
-  (%gl:buffer-data buffer-target 
-                   size
-                   (cffi:inc-pointer (pointer gl-array)
-                                     (foreign-type-index (array-type gl-array)
-                                                         offset))
+  (%gl:buffer-data buffer-target data-byte-size
+                   (cffi:inc-pointer data-pointer byte-offset)
                    usage)
-  (setf (glbuffer-format buffer) 
-        (list (list (array-type gl-array) (array-length gl-array) 0)))
+  (setf (glbuffer-format buffer) `((,data-type ,data-byte-size 0)))
   buffer)
 
+(defun buffer-data (buffer c-array buffer-target usage
+                    &key (offset 0) (size (c-array-byte-size c-array)))
+  "This function populates an opengl buffer with the contents 
+   of the array. You also pass in the buffer type and the 
+   draw type this buffer is to be used for.
+   
+   The function returns a buffer object with its format slot
+   populated with the details of the data stored within the buffer"
+  (let ((data-type (element-type c-array)))
+    (buffer-data-raw (pointer c-array) data-type size buffer buffer-target usage
+                     (* offset (cffi:foreign-type-size data-type)))))
 
-(defun buffer-sub-data (buffer gl-array byte-offset buffer-target
+(defun buffer-sub-data (buffer c-array byte-offset buffer-target
                         &key (safe t))  
   "This function replaces a subsection of the data in the 
-   specified buffer with the data in the gl-array.
+   specified buffer with the data in the c-array.
    The byte offset specified where you wish to start overwriting 
    data from. 
    When the :safe option is t, the function checks to see if the 
    data you are about to write into the buffer will cross the 
    boundaries between data already in the buffer and will emit 
    an error if you are."
-  (let ((byte-size (gl-array-byte-size gl-array)))
+  (let ((byte-size (c-array-byte-size c-array)))
     (when (and safe (loop for format in (glbuffer-format buffer)
                        when (and (< byte-offset (third format))
                                  (> (+ byte-offset byte-size)
@@ -103,7 +108,7 @@
     (%gl:buffer-sub-data buffer-target
                          byte-offset
                          byte-size
-                         (pointer gl-array)))
+                         (pointer c-array)))
   buffer)
 
 
@@ -113,19 +118,19 @@
    and sequencial data and handling all the offsets."
   (let* ((array-byte-sizes (loop for array in arrays
                               collect 
-                                (gl-array-byte-size array)))
+                                (c-array-byte-size array)))
          (total-size (apply #'+ array-byte-sizes)))
     (bind-buffer buffer buffer-target)
     (buffer-data buffer (first arrays) buffer-target usage
                  :size total-size)
     (setf (glbuffer-format buffer) 
-          (loop for gl-array in arrays
+          (loop for c-array in arrays
              for size in array-byte-sizes
              with offset = 0
-             collect (list (array-type gl-array)
-                           (array-length gl-array)
+             collect (list (array-type c-array)
+                           (array-length c-array)
                            offset)
-             do (buffer-sub-data buffer gl-array offset
+             do (buffer-sub-data buffer c-array offset
                                  buffer-target)
                (setf offset (+ offset size)))))
   buffer)

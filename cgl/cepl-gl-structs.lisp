@@ -29,7 +29,7 @@
 ;; [TODO] the setter seems ugly, gotta be a better way
 ;; [TODO] got to handle aggregate and complex types
 ;; [TODO] can glsl and thus varjo have multidimensional arrays?
-;; [TODO] If slot struct type return a gl-value
+;; [TODO] If slot struct type return a c-value
 ;;        (make-instance ',value-name :element-type ',name :pointer ptr)
 (defun make-getters-and-setters (name value-name struct-name slots)
   (loop for slot-definition in slots appending
@@ -39,7 +39,7 @@
          `((defmethod ,(or accessor (utils:symb name '- slot-name)) 
                ((gl-object ,value-name))
              ,(if (varjo:type-arrayp vslot-type)
-                  `(make-gl-array-from-pointer 
+                  `(make-c-array-from-pointer 
                     ',(let ((len (varjo:type-array-length vslot-type)))
                            (if (listp len) len (list len)))
                     ,(varjo:type-principle vslot-type)
@@ -87,7 +87,7 @@
          ()
          (:actual-type :struct ,struct-name)
          (:simple-parser ,name))
-       (defclass ,value-name (gl-value) ())
+       (defclass ,value-name (c-value) ())
        ,@(make-translators name type-name value-name)
        ,@(make-getters-and-setters name value-name struct-name slots)
        ,(make-dpop)

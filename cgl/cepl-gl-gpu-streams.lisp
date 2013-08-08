@@ -13,7 +13,7 @@
    vao but are needed to draw, namely the range of data to draw
    and the style of drawing.
 
-   If you are using gl-arrays then be sure to use the 
+   If you are using c-arrays then be sure to use the 
    make-gpu-stream-from-gpu-arrays function as it does all the
    work for you."
   vao

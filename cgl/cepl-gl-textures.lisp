@@ -155,10 +155,10 @@
 
 (defmethod gl-pull-1 ((gl-object t-array) &optional destination)
   (declare (ignore destination))
-  (print "Should now pull the t-array to a gl-array"))
+  (print "Should now pull the t-array to a c-array"))
 
-(defmethod gl-push-1 ((gl-object t-array) (data gl-array))
-  (print "Should now push the gl-array to the t-array"))
+(defmethod gl-push-1 ((gl-object t-array) (data c-array))
+  (print "Should now push the c-array to the t-array"))
 
 (defun texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
   (when 'ranges-are-valid
