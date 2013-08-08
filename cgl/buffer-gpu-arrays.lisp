@@ -4,17 +4,6 @@
 ;;; GPUARRAYS ;;;
 ;;;-----------;;;
 
-;; [TODO] Implement buffer freeing properly
-(let ((buffer-pool nil))
-  (defun add-buffer-to-pool (buffer)
-    (setf buffer-pool (cons buffer buffer-pool))
-    buffer)
-
-  (defun free-all-buffers-in-pool ()
-    (mapcar #'(lambda (x) (declare (ignore x))
-                      (print "freeing a buffer")) 
-            buffer-pool)))
-
 (defstruct gpuarray 
   buffer
   format-index
@@ -24,8 +13,7 @@
   (access-style :static-draw))
 
 (defmethod print-object ((object gpuarray) stream)
-  (format stream 
-          "#.<~a :type ~s :length ~a>"
+  (format stream "#.<~a :type ~s :length ~a>"
           (if (gpuarray-index-array object)
               "GPU-INDEX-ARRAY"
               "GPU-ARRAY")
@@ -39,9 +27,7 @@
   (nth (gpuarray-format-index gpu-array)
        (glbuffer-format (gpuarray-buffer gpu-array))))
 
-;; (defmethod array-type (gpu-array gpuarray)
-;;   "Returns the type of the gpuarray"
-;;   (first (gpuarray-format gpu-array)))
+;;---------------------------------------------------------------
 
 (defun gpuarray-type (gpu-array)
   "Returns the type of the gpuarray"
@@ -55,29 +41,12 @@
        (foreign-type-index (first format)
                            (gpuarray-start gpu-array)))))
 
-(defun pull-c-arrays-from-buffer (buffer)
-  (loop :for attr-format :in (glbuffer-format buffer)
-     :collect 
-     (progn 
-       (bind-buffer buffer :array-buffer)
-       (gl:with-mapped-buffer (b-pointer :array-buffer :read-only)
-         
-         (let* ((array-type (first attr-format))
-                (c-array (make-c-array (if (listp array-type)
-                                             (if (eq :struct (first array-type))
-                                                 (second array-type)
-                                                 (error "we dont handle arrays of pointers yet"))
-                                             array-type)
-                                        (second attr-format))))
-           (%memcpy (pointer c-array) 
-                    (cffi:inc-pointer b-pointer (third attr-format))
-                    (c-array-byte-size c-array))
-           c-array)))))
+;;---------------------------------------------------------------
 
 (defgeneric make-gpu-array (initial-contents &key)
   (:documentation "This function creates a gpu-array which is very similar
-   to a c-array except that it is located in the memory of the
-   graphics card and so is accesable to shaders.
+   to a c-array except that the data is located in the memory 
+   of the graphics card and so is accessible to shaders.
    You can either provide and type and length or you can 
    provide a c-array and the data from that will be used to 
    populate the gpu-array with.
@@ -241,6 +210,25 @@
          :index-array (gpuarray-index-array array)
          :access-style (gpuarray-access-style array))
         (error "Invalid subseq start or end for c-array"))))
+
+(defun pull-c-arrays-from-buffer (buffer)
+  (loop :for attr-format :in (glbuffer-format buffer)
+     :collect 
+     (progn 
+       (bind-buffer buffer :array-buffer)
+       (gl:with-mapped-buffer (b-pointer :array-buffer :read-only)
+         
+         (let* ((array-type (first attr-format))
+                (c-array (make-c-array (if (listp array-type)
+                                             (if (eq :struct (first array-type))
+                                                 (second array-type)
+                                                 (error "we dont handle arrays of pointers yet"))
+                                             array-type)
+                                        (second attr-format))))
+           (%memcpy (pointer c-array) 
+                    (cffi:inc-pointer b-pointer (third attr-format))
+                    (c-array-byte-size c-array))
+           c-array)))))
 
 (defmacro with-gpu-array-as-c-array ((temp-array-name
                                        gpu-array

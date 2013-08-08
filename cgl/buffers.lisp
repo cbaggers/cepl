@@ -58,8 +58,6 @@
                      usage)
         new-buffer)))
 
-;; buffer format is a list whose sublists are of the format
-;; type, byte-length, byte-offset-from-start-of-buffer
 (defun buffer-data-raw (data-pointer data-type data-byte-size
                         buffer buffer-target usage &optional (byte-offset 0))
   "This function populates an opengl buffer with the contents 
@@ -87,11 +85,12 @@
     (buffer-data-raw (pointer c-array) data-type size buffer buffer-target usage
                      (* offset (cffi:foreign-type-size data-type)))))
 
+;; [TODO] doesnt check for overflow off end of buffer
 (defun buffer-sub-data (buffer c-array byte-offset buffer-target
                         &key (safe t))  
   "This function replaces a subsection of the data in the 
    specified buffer with the data in the c-array.
-   The byte offset specified where you wish to start overwriting 
+   The byte offset specifies where you wish to start overwriting 
    data from. 
    When the :safe option is t, the function checks to see if the 
    data you are about to write into the buffer will cross the 
@@ -111,31 +110,28 @@
                          (pointer c-array)))
   buffer)
 
-
-(defun multi-buffer-data (buffer arrays buffer-target usage)
-  "This beast will take a list of arrays and auto-magically
+(defun multi-buffer-data (buffer c-arrays buffer-target usage)
+  "This beast will take a list of c-arrays and auto-magically
    push them into a buffer taking care of both interleaving 
    and sequencial data and handling all the offsets."
-  (let* ((array-byte-sizes (loop for array in arrays
+  (let* ((c-array-byte-sizes (loop for c-array in c-arrays
                               collect 
-                                (c-array-byte-size array)))
-         (total-size (apply #'+ array-byte-sizes)))
+                                (c-array-byte-size c-array)))
+         (total-size (apply #'+ c-array-byte-sizes)))
     (bind-buffer buffer buffer-target)
-    (buffer-data buffer (first arrays) buffer-target usage
+    (buffer-data buffer (first c-arrays) buffer-target usage
                  :size total-size)
     (setf (glbuffer-format buffer) 
-          (loop for c-array in arrays
-             for size in array-byte-sizes
-             with offset = 0
-             collect (list (array-type c-array)
-                           (array-length c-array)
-                           offset)
-             do (buffer-sub-data buffer c-array offset
-                                 buffer-target)
-               (setf offset (+ offset size)))))
+          (loop :for c-array :in c-arrays
+             :for size :in c-array-byte-sizes
+             :with offset = 0
+             :collect (list (array-type c-array) size offset)
+             :do (buffer-sub-data buffer c-array offset
+                                  buffer-target :safe nil)
+             (setf offset (+ offset size)))))
   buffer)
 
-(defun buffer-reserve-raw-block (buffer size-in-bytes buffer-target 
+(defun buffer-reserve-block-raw (buffer size-in-bytes buffer-target 
                                  usage)
   "This function creates an empty block of data in the opengl buffer.
    It will remove ALL data currently in the buffer. It also will not
@@ -147,17 +143,19 @@
                    (cffi:null-pointer) usage)
   buffer)
 
-(defun buffer-reserve-block (buffer type length buffer-target usage)
+;; [TODO] Handle alignment?
+(defun buffer-reserve-block (buffer type dimensions buffer-target usage)
   "This function creates an empty block of data in the opengl buffer
    equal in size to (* length size-in-bytes-of-type).
    It will remove ALL data currently in the buffer"
   (bind-buffer buffer buffer-target)
-  (buffer-reserve-raw-block buffer
-                            (foreign-type-index type length)
-                            buffer-target
-                            usage)
-  ;; make format
-  (setf (glbuffer-format buffer) `((,type ,length ,0)))
+  (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
+         (byte-size (gl-calc-byte-size type dimensions)))
+    (buffer-reserve-block-raw buffer
+                              byte-size
+                              buffer-target
+                              usage)
+    (setf (glbuffer-format buffer) `((,type ,byte-size ,0))))
   buffer)
 
 (defun buffer-reserve-blocks (buffer types-and-lengths
@@ -170,11 +168,8 @@
    It will remove ALL data currently in the buffer"
   (let ((size-in-bytes 0))
     (setf (glbuffer-format buffer) 
-          (loop for (type length)
-             in types-and-lengths
-             do (incf size-in-bytes 
-                      (foreign-type-index type length))
-             collect `(,type ,length ,size-in-bytes)))
-    (buffer-reserve-raw-block buffer size-in-bytes
-                              buffer-target usage)
+          (loop :for (type length) :in types-and-lengths
+             :do (incf size-in-bytes (gl-calc-byte-size type dimensions))
+             :collect `(,type ,length ,size-in-bytes)))
+    (buffer-reserve-raw-block buffer size-in-bytes buffer-target usage)
     buffer))

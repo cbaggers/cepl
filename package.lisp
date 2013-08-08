@@ -135,8 +135,8 @@
            :gl-push
            :gl-push-1
            :foreign-type-index
-           :make-gl-array
-           :free-gl-array
+           :make-c-array
+           :free-c-array
            :aref-gl
            :destructuring-populate
            :destructuring-allocate
@@ -146,7 +146,7 @@
            :gl-subseq
            :gpu-array-pull
            :gpu-array-push
-           :with-gpu-array-as-gl-array
+           :with-gpu-array-as-c-array
            :free-all-vaos-in-pool
            :make-gpu-stream
            :gpu-stream-vao
@@ -367,15 +367,15 @@
                 :gl-pull-1
                 :gl-push
                 :gl-push-1
-                :make-gl-array
-                :free-gl-array
+                :make-c-array
+                :free-c-array
                 :aref-gl
                 :destructuring-populate
                 :destructuring-allocate
                 :make-gpu-array
                 :make-gpu-arrays
                 :gl-subseq
-                :with-gpu-array-as-gl-array
+                :with-gpu-array-as-c-array
                 :make-gpu-stream
                 :make-gpu-stream-from-gpu-arrays
                 :gl! 
