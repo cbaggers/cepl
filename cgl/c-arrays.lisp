@@ -68,6 +68,15 @@
                    :row-byte-size row-byte-size
                    :row-alignment alignment)))
 
+(defmacro with-c-array ((var-name dimensions element-type
+                                  &key initial-contents)
+                        &body body)
+  `(let* ((,var-name (make-c-array ,dimensions ,element-type
+                                   :initial-contents ,initial-contents
+                                   :displaced-by ,displaced-by
+                                   :alignment )))
+     (unwind-protect (progn ,@body) (free-gl-array ,var-name))))
+
 (defun make-c-array (dimensions element-type 
                       &key initial-contents displaced-by (alignment 1))
   (let ((dimensions (if (listp dimensions) dimensions (list dimensions))))

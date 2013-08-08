@@ -13,7 +13,7 @@
 
 (defmethod print-object ((object gpuarray) stream)
   (format stream "#.<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :BUFFER>"
-          (gpuelement-type object)
+          (element-type object)
           (gpuarray-dimensions object)))
 
 ;;---------------------------------------------------------------
@@ -25,8 +25,10 @@
   (nth (gpuarray-format-index gpu-array)
        (glbuffer-format (gpuarray-buffer gpu-array))))
 
-(defun gpuelement-type (gpu-array)
-  "Returns the type of the gpuarray"
+(defmethod dimensions ((object gpuarray))
+  (gpuarray-dimensions object))
+
+(defmethod element-type ((object gpuarray))
   (first (gpuarray-format gpu-array)))
 
 ;; [TODO] This looks wrong, the beggining right?
@@ -78,7 +80,7 @@
                             buffer element-type dimensions
                             :array-buffer access-style)
                    :format-index 0
-                   :length length
+                   :dimensions length
                    :access-style access-style)))
 
 ;; [TODO] broken? I had left a note saying it was...but not how
@@ -149,6 +151,11 @@
    in the backside if you change how the data in the array is 
    laid out."))
 
+;; [TODO] This needs to accept 1D arrays only
+;;        The generic case of this should be available to c-arrays 
+;;        as well I think...otherwise the name is a bit odd..maybe
+;;        not now it is c-array rather than gl-array...hmmm.
+;; [TODO] Move this definition to c-arrays
 (defmethod gl-subseq ((array c-array) start &optional end)
   (let* ((length (dimensions array))
          (type (element-type array))
@@ -197,6 +204,10 @@
                     (c-array-byte-size c-array))
            c-array)))))
 
+;; [TODO] Dont require a temporary name, just use the one it has
+;;        this makes it feel more magical to me and also it is 
+;;        in-line with things like with-slots
+;; [TODO] Need to unmap if something goes wrong
 (defmacro with-gpu-array-as-c-array ((temp-array-name
                                        gpu-array
                                        access) 
@@ -230,7 +241,7 @@
              (let ((,temp-array-name 
                     (make-c-array-from-pointer 
                      (cffi:inc-pointer ,glarray-pointer (gpuarray-offset ,ggpu-array))
-                     (let ((element-type (gpuelement-type ,ggpu-array)))
+                     (let ((element-type (element-type ,ggpu-array)))
                        (if (listp element-type)
                            (if (eq :struct (first element-type))
                                (second element-type)

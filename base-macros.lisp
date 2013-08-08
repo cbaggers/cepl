@@ -84,7 +84,7 @@
    errors don't kill the app."
   `(restart-case 
        (progn ,@body)
-     (continue () :report "Continue")))
+     (continue () :report "CEPL Continue")))
 
 ;----------------------------------------------------------------
 ;; 
