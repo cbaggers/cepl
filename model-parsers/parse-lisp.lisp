@@ -30,7 +30,7 @@
           (index-gpu (cgl:make-gpu-array 
                       indicies
                       :element-type index-type
-                      :index-array t)))
+                      :dimensions (length indicies))))
       (values (cgl:make-gpu-stream-from-gpu-arrays 
                vert-gpu :indicies-array index-gpu)
               vert-gpu index-gpu))))

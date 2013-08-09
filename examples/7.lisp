@@ -95,11 +95,13 @@
                                  (v:merge-into-vector (second vert))
                                  (v:merge-into-vector (third vert)))))
          (stream (cgl:make-gpu-stream-from-gpu-arrays
-                  (cgl:make-gpu-array verts :element-type 'vert-data)
+                  (cgl:make-gpu-array verts :element-type 'vert-data
+                                      :dimensions (length verts))
                   :length (length (second monkey-data))
-                  :indicies-array (cgl:make-gpu-array (second monkey-data)
-                                                      :element-type :unsigned-short
-                                                      :index-array t))))
+                  :indicies-array (cgl:make-gpu-array
+                                   (second monkey-data)
+                                   :element-type :unsigned-short
+                                   :dimensions (length (second monkey-data))))))
     (make-entity :rotation (v! -1.57079633 1 0) :stream stream)))
 
 (defun init () 

@@ -1,8 +1,11 @@
 (in-package :cgl)
 
-;;;--------------------------------------------------------------
-;;; VAOS ;;;
-;;;------;;;
+;; [TODO] The terminology in here seems inconsistant, need to 
+;; nail this down
+
+;;--------------------------------------------------------------
+;; VAOS ;;
+;;------;;
 
 ;; [TODO] Vao changes the inhabitants of :vertex-array etc
 ;;        this should be undone
@@ -77,32 +80,40 @@
 ;; buffer format is a list whose sublists are of the format
 ;; type, length, byte-offset-from-start-of-buffer
 
-(defun make-vao-from-gpu-arrays
-    (gpu-arrays &optional indicies-array)
+(defun suitable-array-for-index-p (array)
+  (and (eql (length (glbuffer-format (gpuarray-buffer array))) 1)
+       (1d-p array)
+       (find (element-type array) '(:ubyte :ushort :uint :unsigned-short
+                                    :unsigned-byte :unsigned-int))))
+
+(defmethod make-vao ((gpu-arrays gpuarray) &optional indicies-array)
+  (make-vao (list gpuarray) indicies-array))
+
+(defmethod make-vao ((gpu-arrays list) &optional indicies-array)
   "makes a vao using a list of gpu-arrays as the source data
    (remember that you can also use gpu-sub-array here if you
    need a subsection of a gpu-array).
    You can also specify an indicies-array which will be used as
    the indicies when rendering"
-  (let ((element-buffer (when indicies-array
-                          (gpuarray-buffer indicies-array)))
+  (unless (and (every #'1d-p gpu-arrays) 
+               (or (null indicies-array) (suitable-array-for-index-p
+                                          indicies-array))))
+  (let ((element-buffer (when indicies-array (gpuarray-buffer indicies-array)))
         (vao (gl:gen-vertex-array))
         (attr 0))
     (force-bind-vao vao)
-    (loop for gpu-array in gpu-arrays
-       :do (let* ((buffer (gpuarray-buffer gpu-array))
-                  (format (nth (gpuarray-format-index gpu-array)
-                               (glbuffer-format buffer))))
-             (force-bind-buffer buffer :array-buffer)
-             (setf attr (+ attr (gl-assign-attrib-pointers
-                                 (let ((type (first format)))
-                                   (if (listp type) (second type) type))
-                                 attr
-                                 (+ (third format)
-                                    (cgl:foreign-type-index 
-                                     (first format) 
-                                     (gpuarray-start gpu-array)))))))) 
-    ;; the line above needs start to be taken into account ^^^
+    (loop :for gpu-array :in gpu-arrays :do
+       (let* ((buffer (gpuarray-buffer gpu-array))
+              (format (gpuarray-format gpu-array)))
+         (force-bind-buffer buffer :array-buffer)
+         (setf attr (+ attr (gl-assign-attrib-pointers
+                             (let ((type (first format)))
+                               (if (listp type) (second type) type))
+                             attr
+                             (+ (third format)
+                                (gl-calc-byte-size (first format) 
+                                                   (list (gpuarray-start
+                                                          gpu-array))))))))) 
     (when element-buffer
       (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)

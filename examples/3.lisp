@@ -40,12 +40,13 @@
                    (#(+1.0  +1.0  -1.0) #(0.0  0.0  1.0  1.0))
                    (#(+1.0  -1.0  +1.0) #(1.0  0.0  0.0  1.0))
                    (#(-1.0  +1.0  +1.0) #(0.5  0.5  0.0  1.0)))
-                 :element-type 'vert-data))
+                 :element-type 'vert-data
+                 :dimensions 8))
          (indicies (cgl:make-gpu-array 
                     '(0  1  2    1  0  3    2  3  0    3  2  1 
                       5  4  6    4  5  7    7  6  4    6  7  5)
                     :element-type :unsigned-short
-                    :index-array t))
+                    :dimensions 24))
          (stream (cgl:make-gpu-stream-from-gpu-arrays
                   verts
                   :indicies-array indicies)))

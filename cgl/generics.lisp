@@ -3,6 +3,11 @@
 (defgeneric gl-push (object destination))
 (defgeneric gl-pull (object))
 (defgeneric gl-pull-1 (object))
+(defgeneric dimensions (object))
+(defgeneric make-vao (gpu-arrays &optional indicies-array))
+
+(defun 1d-p (object)
+  (= 1 (length (dimensions object))))
 
 (defgeneric gl-subseq (array start &optional end)
   (:documentation
@@ -27,3 +32,48 @@
    array affect the child sub-array. This can really bite you
    in the backside if you change how the data in the array is 
    laid out."))
+
+(defgeneric gl-assign-attrib-pointers (array-type &optional attrib-num
+                                              pointer-offset
+                                              stride-override
+                                              normalised))
+
+(defmethod gl-assign-attrib-pointers ((array-type t) &optional (attrib-num 0)
+                                                       (pointer-offset 0)
+                                                       stride-override
+                                                       normalised)
+  (let ((type (varjo:flesh-out-type array-type)))
+    (if (varjo:type-built-inp type)
+        (let ((slot-layout (expand-slot-to-layout (list type normalised)))
+              (stride 0))
+          (loop :for attr :in slot-layout
+             :for i :from 0
+             :with offset = 0
+             :do (progn
+                   (gl:enable-vertex-attrib-array (+ attrib-num i))
+                   (%gl:vertex-attrib-pointer
+                    (+ attrib-num i) (first attr) (second attr)
+                    (third attr) (or stride-override stride)
+                    (cffi:make-pointer (+ offset pointer-offset))))
+             :do (setf offset (+ offset (* (first attr)
+                                           (cffi:foreign-type-size
+                                            (second attr))))))
+          (length slot-layout))
+        (error "Type ~a is not known to cepl" type))))
+
+(defgeneric make-gpu-array (initial-contents &key)
+  (:documentation "This function creates a gpu-array which is very similar
+   to a c-array except that the data is located in the memory 
+   of the graphics card and so is accessible to shaders.
+   You can either provide and type and length or you can 
+   provide a c-array and the data from that will be used to 
+   populate the gpu-array with.
+
+   Access style is optional but if you are comfortable with 
+   opengl, and know what type of usage pattern thsi array will
+   have, you can set this to any of the following:
+   (:stream-draw​ :stream-read​ :stream-copy​ :static-draw​ 
+    :static-read​ :static-copy​ :dynamic-draw​ :dynamic-read
+   ​ :dynamic-copy)"))
+
+

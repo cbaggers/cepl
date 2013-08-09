@@ -29,7 +29,8 @@
                      (list (v!  0.0   0.2  0.0  1.0)
                            (v! -0.2  -0.2  0.0  1.0)
                            (v!  0.2  -0.2  0.0  1.0))
-                     :element-type :vec4))
+                     :element-type :vec4
+                     :dimensions 3))
   (setf *gpu-stream* (cgl:make-gpu-stream-from-gpu-arrays
                       *gpu-array*))
   (loop :until (find :quit-event (sdl:collect-event-types)) :do

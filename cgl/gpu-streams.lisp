@@ -24,12 +24,10 @@
 
 (let ((vao-pool (make-hash-table)))
   (defun add-vao-to-pool (vao key)
-    (setf (gethash key vao-pool) vao)
-    vao)
+    (setf (gethash key vao-pool) vao)  vao)
 
   (defun free-all-vaos-in-pool ()
-    (mapcar #'(lambda (x) (declare (ignore x)) 
-                      (print "freeing a vao")) 
+    (mapcar #'(lambda (x) (declare (ignore x)) (print "freeing a vao")) 
             vao-pool)))
 
 (defun make-gpu-stream-from-gpu-arrays (gpu-arrays &key indicies-array (start 0)
@@ -46,22 +44,17 @@
                   ,(gpu-sub-array monster-col-data 1000 2000))
      :indicies-array monster-indicies-array
      :length 1000)"
-  (let* ((gpu-arrays (if (gpuarray-p gpu-arrays)
-                         (list gpu-arrays)
-                         gpu-arrays))
+  (let* ((gpu-arrays (if (gpuarray-p gpu-arrays) (list gpu-arrays) gpu-arrays))
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
          ;; OF TRIANGLES
          (length (or length 
-                     (when indicies-array (gpuarray-length
-                                           indicies-array))
-                     (apply #'min (mapcar #'gpuarray-length 
+                     (when indicies-array (first (dimensions indicies-array)))
+                     (apply #'min (mapcar #'(lambda (x) (first (dimensions x)))
                                           gpu-arrays)))))
-    
-    (make-gpu-stream 
-     :vao (make-vao-from-gpu-arrays gpu-arrays indicies-array)
-     :start start
-     :length length
-     :draw-type draw-type
-     :index-type (when indicies-array 
-                   (gpuarray-type indicies-array)))))
+    (make-gpu-stream :vao (make-vao gpu-arrays indicies-array)
+                     :start start
+                     :length length
+                     :draw-type draw-type
+                     :index-type (when indicies-array 
+                                   (element-type indicies-array)))))

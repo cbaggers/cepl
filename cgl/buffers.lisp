@@ -150,6 +150,7 @@
    equal in size to (* length size-in-bytes-of-type).
    It will remove ALL data currently in the buffer"
   (bind-buffer buffer buffer-target)
+  (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
   (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
          (byte-size (gl-calc-byte-size type dimensions)))
     (buffer-reserve-block-raw buffer

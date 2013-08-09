@@ -1,5 +1,7 @@
 (in-package :3dstub)
 
+(defparameter *camera* nil)
+
 (defun initialize ()
   (setf *camera* (make-instance 'camera :pos (v! 0 3 6)))
   (setf *frustrum-scale*
@@ -186,10 +188,11 @@
                                     :collect color)
                                  (coerce (ai:colors mesh) 'list))
                   collect (list v c n))))
-    (let* ((array (cgl:make-gpu-array data :element-type 'vcn))
+    (let* ((array (cgl:make-gpu-array data :element-type 'vcn
+                                      :dimensions (length data)))
            (index (cgl:make-gpu-array 
                    faces :element-type :unsigned-short
-                   :index-array t))
+                   :dimensions (length faces)))
            (stream (cgl:make-gpu-stream-from-gpu-arrays 
                     array :indicies-array index)))
       (make-instance 'stub-object :pipeline #'prog-1 
@@ -217,9 +220,11 @@
                   :for c :in (loop :for i :below (length (ai:vertices mesh))
                                 :collect color)
                   collect (list v c n))))
-    (let* ((array (cgl:make-gpu-array data :element-type 'vcn))
+    (let* ((array (cgl:make-gpu-array data :element-type 'vcn
+                                      :dimensions (length data)))
            (index (when faces 
-                    (cgl:make-gpu-array faces :element-type :unsigned-short)))
+                    (cgl:make-gpu-array faces :element-type :unsigned-short
+                                        :dimensions (length faces))))
            (stream (cgl:make-gpu-stream-from-gpu-arrays 
                     array :indicies-array index)))
       (make-instance 'stub-object :pipeline #'prog-1 

@@ -77,11 +77,13 @@
                                  (v:merge-into-vector (second vert))
                                  (v:merge-into-vector (third vert)))))
          (gstream (cgl:make-gpu-stream-from-gpu-arrays
-                   (cgl:make-gpu-array verts :element-type 'vcn)
+                   (cgl:make-gpu-array verts :element-type 'vcn
+                                       :dimensions (length verts))
                    :length (length (second monkey-data))
-                   :indicies-array (cgl:make-gpu-array (second monkey-data)
-                                                       :element-type :unsigned-short
-                                                       :index-array t))))
+                   :indicies-array (cgl:make-gpu-array 
+                                    (second monkey-data)
+                                    :dimensions (length (second monkey-data))
+                                    :element-type :unsigned-short))))
     (make-instance 'entity :rot (v! -1.57079633 1 0) :gstream gstream)))
 
 (defun init () 

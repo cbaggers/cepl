@@ -47,21 +47,6 @@
 
 ;;---------------------------------------------------------------
 
-(defgeneric make-gpu-array (initial-contents &key)
-  (:documentation "This function creates a gpu-array which is very similar
-   to a c-array except that the data is located in the memory 
-   of the graphics card and so is accessible to shaders.
-   You can either provide and type and length or you can 
-   provide a c-array and the data from that will be used to 
-   populate the gpu-array with.
-
-   Access style is optional but if you are comfortable with 
-   opengl, and know what type of usage pattern thsi array will
-   have, you can set this to any of the following:
-   (:stream-draw​ :stream-read​ :stream-copy​ :static-draw​ 
-    :static-read​ :static-copy​ :dynamic-draw​ :dynamic-read
-   ​ :dynamic-copy)"))
-
 ;; c-array (dimensions element-type &key initial-contents displaced-by (alignment 1))
 ;; old-gpu (initial-contents &key element-type length access-style)
 ;; ??????? (initial-contents &key element-type dimensions access-style)
@@ -88,10 +73,11 @@
                    :dimensions dimensions
                    :access-style access-style)))
 
-;; [TODO] broken? I had left a note saying it was...but not how
 (defmethod make-gpu-array ((initial-contents list) 
                            &key dimensions element-type (access-style :static-draw) 
                              (alignment 1))
+  (unless dimensions (error "dimensions are not optional when making a gpu-array from a list"))
+  (unless element-type (error "element-type is not optional when making a gpu-array from a list"))
   (with-c-array (c-array dimensions element-type 
                          :initial-contents initial-contents
                          :alignment alignment)

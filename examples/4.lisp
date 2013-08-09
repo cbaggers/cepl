@@ -84,14 +84,14 @@
 		  (,(v! +1  +1  -1)  ,(v! 0  0  1  1))
 		  (,(v! +1  -1  +1)  ,(v! 1  0  0  1))
 		  (,(v! -1  +1  +1)  ,(v! 0.5  0.5  0  1)))
-		 :element-type 'vert-data))
+		 :element-type 'vert-data
+         :dimensions 8))
 	 (indicies (cgl:make-gpu-array 
 		    '(0 1 2   1 0 3   2 3 0   3 2 1
 		      5 4 6   4 5 7   7 6 4   6 7 5)
-		    :index-array t :element-type :unsigned-short))
+            :dimensions 24 :element-type :unsigned-short))
 	 (stream (cgl:make-gpu-stream-from-gpu-arrays
-		  :gpu-arrays verts
-		  :indicies-array indicies)))
+              verts :indicies-array indicies)))
     (setf *entities* 
 	  `(,(make-entity :position (v!  0 0 -20) :stream stream)
 	    ,(make-entity :position (v!  0 0 -25) :stream stream)

@@ -73,10 +73,12 @@
          :position (v! 0.0 -130.0 -15.0)
          :rotation (v! 0.0 -2.3 0.0)
          :stream (cgl:make-gpu-stream-from-gpu-arrays
-                  (cgl:make-gpu-array verts :element-type 'vert-data)
+                  (cgl:make-gpu-array verts :element-type 'vert-data
+                                      :dimensions (length verts))
                   :indicies-array (cgl:make-gpu-array 
-                                   indicies :element-type :unsigned-short
-                                   :index-array t))))))
+                                   indicies 
+                                   :element-type :unsigned-short
+                                   :dimensions (length indicies)))))))
 
 
 (defun rgb (r g b)
