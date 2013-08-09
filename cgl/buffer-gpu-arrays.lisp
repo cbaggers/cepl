@@ -210,20 +210,26 @@
 ;;        this makes it feel more magical to me and also it is 
 ;;        in-line with things like with-slots
 ;; [TODO] Need to unmap if something goes wrong
-(defmacro with-gpu-array-as-c-array ((temp-array-name gpu-array access) 
+(defmacro with-gpu-array-as-c-array ((gpu-array 
+                                      &key (access-type :read-write) 
+                                      temp-name) 
                                      &body body)
   "This macro is really handy if you need to have random access
-   to the data on the gpu. It takes a gpu-array and binds it
-   to a c-array which allows you to run any of the c-array
+   to the data on the gpu. It takes a gpu-array and maps it
+   as a c-array which allows you to run any of the c-array
    commands on it.
 
    A simple example would be if we wanted to set the 3rd element
    in a gpu array to 5.0 we could do the following:
-   (with-gpu-array-as-c-array (tmp mygpuarray :write-only)
-     (setf (aref-gl tmp 2) 5.0))
+   (with-gpu-array-as-c-array (mygpuarray)
+     (setf (aref-gl mygpuarray 2) 5.0))
 
    The valid values for access are :read-only :write-only & 
    :read-write"
+  (unless (find access-type '(:read-write :read-only :write-only))
+    (error "The access argument must be set to :read-write :read-only or :write-only"))
+  (when (and (not temp-name) (not (symbolp gpu-array)))
+    (error "The gpu array argument must be a symbol naming a gpu-array unless you specify a temp-name"))
   (let ((glarray-pointer (gensym "POINTER"))
         (buffer-sym (gensym "BUFFER"))
         (target (gensym "target"))
@@ -234,11 +240,11 @@
        (force-bind-buffer ,buffer-sym ,target)
        (gl:with-mapped-buffer (,glarray-pointer 
                                ,target
-                               ,access)
+                               ,access-type)
          (if (pointer-eq ,glarray-pointer (null-pointer))
-             (error "with-gpu-array-as-c-array: buffer mapped to null pointer~%Have you defintely got a opengl context?~%~s"
+             (error "with-gpu-array-as-c-array: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
                     ,glarray-pointer)
-             (let ((,temp-array-name 
+             (let ((,(or temp-name gpu-array)
                     (make-c-array-from-pointer
                      (gpuarray-dimensions ,ggpu-array)
                      (element-type ,ggpu-array)
