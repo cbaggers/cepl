@@ -1,5 +1,6 @@
 (in-package :cgl)
 
+;; [TODO] Justify your use of the gl- prefix everywhere.
 ;; [TODO] alignment, what the hell do we do with that? I'm a bit 
 ;;        drunk to make these choices right now
 
@@ -89,9 +90,9 @@
 
 ;; [TODO] broken? I had left a note saying it was...but not how
 (defmethod make-gpu-array ((initial-contents list) 
-                           &key element-type (access-style :static-draw) 
+                           &key dimensions element-type (access-style :static-draw) 
                              (alignment 1))
-  (with-c-array (c-array (length initial-contents) element-type 
+  (with-c-array (c-array dimensions element-type 
                          :initial-contents initial-contents
                          :alignment alignment)
     (make-gpu-array c-array :access-style access-style)))
@@ -251,30 +252,16 @@
                      (cffi:inc-pointer ,glarray-pointer (gpuarray-offset ,ggpu-array)))))
                ,@body))))))
 
-;; (defun gpu-array-pull (gpu-array)
-;;   "This function returns the contents of the array as lisp list 
-;;    of the data. 
-;;    Note that you often dont need to use this as the generic
-;;    function gl-pull will call this function if given a gpu-array"
-;;   (with-gpu-array-as-c-array (tmp gpu-array :read-only)
-;;     (loop for i below (gpuarray-dimensions gpu-array)
-;;        collect (glpull-entry tmp i))))
+(defun gpu-array-pull-1 (gpu-array)
+  "This function returns the contents of the gpu array as a c-array
+   Note that you often dont need to use this as the generic
+   function gl-pull will call this function if given a gpu-array"
+  (with-gpu-array-as-c-array (gpu-array :access-type :read-only)
+    (clone-c-array gpu-array)))
 
+(defmethod gl-pull-1 ((object gpuarray)) 
+  (gpu-array-pull-1 object))
 
-;; (defun gpu-array-push (gpu-array c-array)
-;;   "This function pushes the contents of the specified c-array
-;;    into the gpu-array.
-;;    Note that you often dont need to use this as the generic
-;;    function gl-push will call this function if given a gpu-array"
-;;   (let* ((buffer (gpuarray-buffer gpu-array))
-;;          (format (nth (gpuarray-format-index gpu-array)
-;;                       (glbuffer-format buffer)))
-;;          (type (first format)))
-;;     (if (and (eq (element-type c-array) type)
-;;              (<= (dimensions c-array) 
-;;                  (gpuarray-dimensions gpu-array)))
-;;         (setf (gpuarray-buffer gpu-array)
-;;               (buffer-sub-data buffer c-array (gpuarray-offset gpu-array)
-;;                                :array-buffer))
-;;         (error "The c-array must of the same type as the target gpu-array and not have a length exceeding that of the gpu-array."))
-;;     gpu-array))
+(defmethod gl-pull ((object gpuarray))
+  (with-gpu-array-as-c-array (object :access-type :read-only)
+    (gl-pull-1 object)))

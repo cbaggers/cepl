@@ -24,6 +24,7 @@
                ;; (:file "base-lispbuilder")
                (:file "cepl-utils")
                (:file "time/base-time")
+               (:file "cgl/generics")
                (:file "cgl/cffi-extra-primitive-types")
                (:file "cgl/c-arrays")
                (:file "cgl/structs")

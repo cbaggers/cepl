@@ -1,5 +1,8 @@
 (in-package :cgl)
 
+;; [TODO] Find anything that uses hidden symbols (::) and justify that usage or 
+;;        fix it
+
 ;;------------------------------------------------------------
 (defclass c-array ()
   ((pointer :initarg :pointer :reader pointer)
@@ -76,6 +79,17 @@
 (defun free-c-array (c-array)
   "Frees the specified c-array."
   (foreign-free (pointer c-array)))
+
+(defun clone-c-array (c-array)
+  (let* ((size (c-array-byte-size c-array))
+         (new-pointer (cffi::%foreign-alloc size)))
+    (cffi::%memcpy new-pointer (pointer c-array) size)
+    (make-instance 'c-array
+                   :pointer new-pointer
+                   :dimensions (dimensions c-array)
+                   :element-type (element-type c-array)
+                   :row-byte-size (row-byte-size c-array)
+                   :row-alignment (row-alignment c-array ))))
 
 ; [TODO] Bad error message
 (defun make-c-array (dimensions element-type 
@@ -158,6 +172,15 @@
            (calc-gl-index gl-object subscripts)))
 
 (defun (setf aref-gl*) (value gl-object subscripts)  
+  (setf (mem-ref (pointer gl-object) (element-type gl-object)
+                 (calc-gl-index gl-object subscripts))
+        value))
+
+(defun c-aref (gl-object &rest subscripts)    
+  (mem-ref (pointer gl-object) (element-type gl-object)
+           (calc-gl-index gl-object subscripts)))
+
+(defun (setf c-aref) (value gl-object &rest subscripts)  
   (setf (mem-ref (pointer gl-object) (element-type gl-object)
                  (calc-gl-index gl-object subscripts))
         value))
