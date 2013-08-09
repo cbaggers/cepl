@@ -14,7 +14,7 @@
 ;; [TODO] should be baseclass each glstruct will inherit from this
 ;; [TODO] payload is an uncommited value, so if you have no pointer and
 ;;        you set the object you will populate the payload.
-;;        if you then (setf (aref-gl a 0) gl-val) you would apply the 
+;;        if you then (setf (aref-c a 0) gl-val) you would apply the 
 ;;        payload. If there is a pointer you set and get straight from
 ;;        the foreign data.
 ;; [TODO] remove element-type...no wait... this provides a super easy check
@@ -30,10 +30,9 @@
           (slot-value object 'dimensions)))
 
 (defmethod print-object ((object c-value) stream)
-  (format stream "#<C-VALUE type: ~a :SLOT NIL>"
+  (format stream "#<C-VALUE type: ~a>"
           (slot-value object 'element-type)))
 
-(defgeneric dpop1 (type gl-object pos data))
 (defgeneric gl-assign-attrib-pointers (array-type &optional attrib-num
                                                     pointer-offset
                                                     stride-override
@@ -158,35 +157,23 @@
              (w (floor (/ z z-size))))
         (subseq (list (mod subscript x-size) y z w) 0 (length dimensions))))))
 
-(defun aref-gl (gl-object &rest subscripts)    
+(defun aref-c (gl-object &rest subscripts)    
   (mem-ref (pointer gl-object) (element-type gl-object)
            (calc-gl-index gl-object subscripts)))
 
-(defun (setf aref-gl) (value gl-object &rest subscripts)  
+(defun (setf aref-c) (value gl-object &rest subscripts)  
   (setf (mem-ref (pointer gl-object) (element-type gl-object)
                  (calc-gl-index gl-object subscripts))
         value))
 
-(defun aref-gl* (gl-object subscripts)    
+(defun aref-c* (gl-object subscripts)    
   (mem-ref (pointer gl-object) (element-type gl-object)
            (calc-gl-index gl-object subscripts)))
 
-(defun (setf aref-gl*) (value gl-object subscripts)  
+(defun (setf aref-c*) (value gl-object subscripts)  
   (setf (mem-ref (pointer gl-object) (element-type gl-object)
                  (calc-gl-index gl-object subscripts))
         value))
-
-(defun c-aref (gl-object &rest subscripts)    
-  (mem-ref (pointer gl-object) (element-type gl-object)
-           (calc-gl-index gl-object subscripts)))
-
-(defun (setf c-aref) (value gl-object &rest subscripts)  
-  (setf (mem-ref (pointer gl-object) (element-type gl-object)
-                 (calc-gl-index gl-object subscripts))
-        value))
-
-(defmethod dpop1 ((type t) gl-object pos data)
-  (setf (aref-gl* gl-object pos) data))
 
 ;; [TODO] can the common of the two subfuncs be spun off? (almost certainly)
 (defun destructuring-populate (gl-object data &optional (check-sizes t))
@@ -195,8 +182,8 @@
                (loop for sublist in data for i from 0 do
                     (if still-to-walk
                         (walk-to-dpop sublist still-to-walk (cons i pos))
-                        (dpop1 (element-type gl-object) gl-object
-                               (reverse (cons i pos)) sublist)))))
+                        (setf (aref-c* gl-object (reverse (cons i pos))) 
+                              sublist)))))
            (check-sizes (data dimensions)
              (if (null dimensions) t
                  (if (eql (first dimensions) (length data))
@@ -240,7 +227,7 @@
                (loop for j below (nth n dimensions)
                      do (setf (nth n indices) j)
                      collect (if (= n depth)
-                                 (aref-gl* object indices)
+                                 (aref-c* object indices)
                                (recurse (1+ n))))))
       (recurse 0))))
 

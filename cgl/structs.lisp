@@ -5,14 +5,6 @@
 (defun slot-type (slot) (second slot))
 (defun slot-normalisedp (slot) (third slot))
 
-(defun make-translators (name type-name value-name)
-  `((defmethod translate-from-foreign (ptr (type ,type-name))
-      (make-instance ',value-name :element-type ',name :pointer ptr))
-    (defmethod translate-into-foreign-memory
-        (value (type ,type-name) pointer)
-      (print "NO EFFECT: Setting of c structs not yet implemented") 
-      nil)))
-
 (defun make-cstruct-def (name slots)
   `(defcstruct ,name
      ,@(loop for slot in slots :collect 
@@ -24,6 +16,38 @@
                     :count (if (varjo:type-arrayp (slot-type slot))
                                (varjo:type-array-length (slot-type slot))
                                1))))))
+
+(defun make-translators (name type-name value-name slots struct-name)
+  (let ((slot-names (mapcar #'first slots)))
+    `((defmethod translate-from-foreign (ptr (type ,type-name))
+        (make-instance ',value-name :element-type ',name :pointer ptr))
+      (defmethod translate-into-foreign-memory
+          ((value t) (type ,type-name) pointer)
+        (print "NO EFFECT: This style of setting c structs not yet implemented")
+        nil)
+      (defmethod translate-into-foreign-memory
+          ((value list) (type ,type-name) pointer)
+        (destructuring-bind ,slot-names value
+          ,@(loop :for slot-definition :in slots :collecting
+               (destructuring-bind (slot-name vslot-type normalised accessor)
+                   slot-definition
+                 (declare (ignore normalised accessor))
+                 (if (varjo:type-arrayp vslot-type)
+                     ;;if array
+                     `(let ((array-ptr (foreign-slot-pointer 
+                                        pointer '(:struct ,struct-name)
+                                        ',slot-name)))
+                        (loop for datum in ,slot-name for i from 0 do
+                             (setf (mem-aref array-ptr 
+                                            ',(varjo:type-principle vslot-type)
+                                            i)
+                                   datum)))
+                     ;;if value
+                     `(setf (mem-ref (foreign-slot-pointer
+                                      pointer '(:struct ,struct-name)
+                                      ',slot-name) 
+                                     ',(varjo:type-principle vslot-type))
+                            ,slot-name)))))))))
 
 ;; [TODO] Use 'normalize' 
 ;; [TODO] the setter seems ugly, gotta be a better way
@@ -49,21 +73,26 @@
                   `(foreign-slot-value (pointer gl-object) 
                                        '(:struct ,struct-name)
                                        ',slot-name)))
-           (defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
-               (value (gl-object ,value-name))
-             ,(if (varjo:type-arrayp vslot-type)
-                  `(error "Cannot yet set array slots")
-                  `(setf (mem-ref (foreign-slot-pointer (pointer gl-object) 
-                                                        '(:struct ,struct-name) 
+           ,(if (varjo:type-arrayp vslot-type)
+                `(defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
+                     ((value list) (gl-object ,value-name))
+                   (let ((array-ptr (foreign-slot-pointer
+                                     (pointer gl-object) '(:struct ,struct-name)
+                                     ',slot-name)))
+                     (loop for datum in value for i from 0 do
+                          (setf (mem-aref array-ptr 
+                                          ',(varjo:type-principle vslot-type) i)
+                                datum))
+                     value))
+                `(defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
+                     ((value t) (gl-object ,value-name))             
+                   (setf (mem-ref (foreign-slot-pointer (pointer gl-object) 
+                                                        '(:struct ,struct-name)
                                                         ',slot-name) 
-                                  ',(varjo:type-principle vslot-type)) value)))))))
+                                  ',(varjo:type-principle vslot-type))
+                         value)))))))
 
-(defun make-dpop ()
-  ;; (defmethod dpop1 ((type t) gl-object pos data)
-  ;;   (setf (aref-gl* gl-object pos) data))
-  )
 
-;; [TODO] generate a dpop1 for this type
 (defmacro defglstruct (name &body slot-descriptions)
   (when (keywordp name) (error "Keyword name are now allowed for glstructs"))
   (let ((slots (loop for slot in slot-descriptions collect
@@ -88,9 +117,8 @@
          (:actual-type :struct ,struct-name)
          (:simple-parser ,name))
        (defclass ,value-name (c-value) ())
-       ,@(make-translators name type-name value-name)
+       ,@(make-translators name type-name value-name slots struct-name)
        ,@(make-getters-and-setters name value-name struct-name slots)
-       ,(make-dpop)
        ,(make-gl-struct-attrib-assigner name slots)
        ',name)))
 

@@ -167,7 +167,7 @@
                    :layer-num layer
                    :face-num cube-face)))
 
-(defmethod aref-gl ((texture immutable-texture) index)
+(defmethod aref-c ((texture immutable-texture) index)
   (with-slots ((mip-levels mipmap-levels)
                (layers layer-count)
                (cubes? cubes))
@@ -255,6 +255,7 @@
 ;; copy data (from cpu to gpu) - texsubimage1d texsubimage2d texsubimage3d
 ;; copy data (from gpu to cpu) - get-tex-image
 ;; copy data (from frame-buffer to texture image) - leave for now
+;; copy from buffer to texture glCopyTexSubImage2D
 ;; set texture params
 ;; get texture params
 

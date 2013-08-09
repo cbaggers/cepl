@@ -225,7 +225,7 @@
    A simple example would be if we wanted to set the 3rd element
    in a gpu array to 5.0 we could do the following:
    (with-gpu-array-as-c-array (mygpuarray)
-     (setf (aref-gl mygpuarray 2) 5.0))
+     (setf (aref-c mygpuarray 2) 5.0))
 
    The valid values for access are :read-only :write-only & 
    :read-write"
@@ -267,3 +267,6 @@
 (defmethod gl-pull ((object gpuarray))
   (with-gpu-array-as-c-array (object :access-type :read-only)
     (gl-pull-1 object)))
+
+;; copy buffer to buffer: glCopyBufferSubData
+;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData
