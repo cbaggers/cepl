@@ -159,53 +159,55 @@
 ;;        as well I think...otherwise the name is a bit odd..maybe
 ;;        not now it is c-array rather than gl-array...hmmm.
 ;; [TODO] Move this definition to c-arrays
-(defmethod gl-subseq ((array c-array) start &optional end)
-  (let* ((length (dimensions array))
-         (type (element-type array))
-         (end (or end length)))
-    (if (and (< start end) (< start length) (<= end length))
-        (make-c-array-from-pointer 
-         (cffi:inc-pointer (pointer array) (gl-calc-byte-size type start))
-         (if (listp type) 
-             (if (eq :struct (first type))
-                 (second type)
-                 (error "we dont handle arrays of pointers yet"))
-             type)
-         (- end start)))
-    (error "Invalid subseq start or end for c-array")))
+;; [TODO] FIX ME!
+;; (defmethod gl-subseq ((array c-array) start &optional end)
+;;   (let* ((length (dimensions array))
+;;          (type (element-type array))
+;;          (end (or end length)))
+;;     (if (and (< start end) (< start length) (<= end length))
+;;         (make-c-array-from-pointer 
+;;          (cffi:inc-pointer (pointer array) (gl-calc-byte-size type start))
+;;          (if (listp type) 
+;;              (if (eq :struct (first type))
+;;                  (second type)
+;;                  (error "we dont handle arrays of pointers yet"))
+;;              type)
+;;          (- end start)))
+;;     (error "Invalid subseq start or end for c-array")))
 
-(defmethod gl-subseq ((array gpuarray) start &optional end)
-  (let* ((length (gpuarray-dimensions array))
-         (parent-start (gpuarray-start array))
-         (new-start (+ parent-start (max 0 start)))
-         (end (or end length)))
-    (if (and (< start end) (< start length) (<= end length))
-        (make-gpuarray 
-         :buffer (gpuarray-buffer array)
-         :format-index (gpuarray-format-index array)
-         :start new-start
-         :dimensions (- end start)
-         :access-style (gpuarray-access-style array))
-        (error "Invalid subseq start or end for c-array"))))
+;; (defmethod gl-subseq ((array gpuarray) start &optional end)
+;;   (let* ((length (gpuarray-dimensions array))
+;;          (parent-start (gpuarray-start array))
+;;          (new-start (+ parent-start (max 0 start)))
+;;          (end (or end length)))
+;;     (if (and (< start end) (< start length) (<= end length))
+;;         (make-gpuarray 
+;;          :buffer (gpuarray-buffer array)
+;;          :format-index (gpuarray-format-index array)
+;;          :start new-start
+;;          :dimensions (- end start)
+;;          :access-style (gpuarray-access-style array))
+;;         (error "Invalid subseq start or end for c-array"))))
 
-(defun pull-c-arrays-from-buffer (buffer)
-  (loop :for attr-format :in (glbuffer-format buffer)
-     :collect 
-     (progn 
-       (bind-buffer buffer :array-buffer)
-       (gl:with-mapped-buffer (b-pointer :array-buffer :read-only)
+;; [TODO] FIX ME!
+;; (defun pull-c-arrays-from-buffer (buffer)
+;;   (loop :for attr-format :in (glbuffer-format buffer)
+;;      :collect 
+;;      (progn 
+;;        (bind-buffer buffer :array-buffer)
+;;        (gl:with-mapped-buffer (b-pointer :array-buffer :read-only)
          
-         (let* ((element-type (first attr-format))
-                (c-array (make-c-array (if (listp element-type)
-                                             (if (eq :struct (first element-type))
-                                                 (second element-type)
-                                                 (error "we dont handle arrays of pointers yet"))
-                                             element-type)
-                                        (second attr-format))))
-           (cffi::%memcpy (pointer c-array) 
-                    (cffi:inc-pointer b-pointer (third attr-format))
-                    (c-array-byte-size c-array))
-           c-array)))))
+;;          (let* ((element-type (first attr-format))
+;;                 (c-array (make-c-array (if (listp element-type)
+;;                                              (if (eq :struct (first element-type))
+;;                                                  (second element-type)
+;;                                                  (error "we dont handle arrays of pointers yet"))
+;;                                              element-type)
+;;                                         (second attr-format))))
+;;            (cffi::%memcpy (pointer c-array) 
+;;                     (cffi:inc-pointer b-pointer (third attr-format))
+;;                     (c-array-byte-size c-array))
+;;            c-array)))))
 
 ;; [TODO] Dont require a temporary name, just use the one it has
 ;;        this makes it feel more magical to me and also it is 

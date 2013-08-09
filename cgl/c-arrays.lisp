@@ -231,3 +231,21 @@
                                             (second attr))))))
           (length slot-layout))
         (error "Type ~a is not known to cepl" type))))
+
+(defmethod gl-pull-1 ((object c-array))
+  (let* ((dimensions (dimensions object))
+         (depth      (1- (length dimensions)))
+         (indices    (make-list (1+ depth))))
+    (labels ((recurse (n)
+               (loop for j below (nth n dimensions)
+                     do (setf (nth n indices) j)
+                     collect (if (= n depth)
+                                 (aref-gl* object indices)
+                               (recurse (1+ n))))))
+      (recurse 0))))
+
+(defmethod gl-pull ((object c-array))
+  (gl-pull-1 object))
+
+(defmethod gl-push ((object list) (destination c-array))
+  (destructuring-populate destination object))
