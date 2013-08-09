@@ -219,6 +219,20 @@
           (length slot-layout))
         (error "Type ~a is not known to cepl" type))))
 
+(defmethod gl-subseq ((array c-array) start &optional end)
+  (let ((dimensions (dimensions array)))
+    (if (> (length dimensions) 1)
+        (error "Cannot take subseq of multidimensional array")
+        (let* ((length (first dimensions))
+               (type (element-type array))
+               (end (or end length)))
+          (if (and (< start end) (< start length) (<= end length))
+              (make-c-array-from-pointer
+               (list (- end start)) type
+               (cffi:inc-pointer (pointer array) 
+                                 (gl-calc-byte-size type (list start))))
+              (error "Invalid subseq start or end for c-array"))))))
+
 (defmethod gl-pull-1 ((object c-array))
   (let* ((dimensions (dimensions object))
          (depth      (1- (length dimensions)))

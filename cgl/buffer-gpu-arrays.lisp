@@ -11,7 +11,7 @@
 (defstruct gpuarray 
   buffer
   format-index
-  (start '(0))
+  (start 0)
   dimensions
   (access-style :static-draw))
 
@@ -43,7 +43,7 @@
    that this gpuarray is stored at"
   (let ((format (gpuarray-format gpu-array)))
    (+ (third format) (gl-calc-byte-size (first format) 
-                                        (gpuarray-start gpu-array)))))
+                                        (list (gpuarray-start gpu-array))))))
 
 ;;---------------------------------------------------------------
 
@@ -130,84 +130,21 @@
                       :dimensions (dimensions c-array)
                       :access-style access-style))))
 
-(defgeneric gl-subseq (array start &optional end)
-  (:documentation
-   "This function returns a gpu-array or c-array which contains
-   a subset of the array passed into this function.
-   Right this will make more sense with a use case:
-
-   Imagine we have one gpu-array with the vertex data for 10
-   different monsters inside it and each monster is made of 100
-   vertices. The first mosters vertex data will be in the 
-   sub-array (gpu-sub-array bigarray 0 1000) and the vertex 
-   data for the second monster would be at 
-   (gpu-sub-array bigarray 1000 2000)
-
-   This *view* (for lack of a better term) into our array can
-   be really damn handy. Prehaps, for example, we want to 
-   replace the vertex data of monster 2 with the data in my
-   c-array newmonster. We can simply do the following:
-   (gl-push (gpu-sub-array bigarray 1000 2000) newmonster)
-
-   Obviously be aware that any changes you make to the parent
-   array affect the child sub-array. This can really bite you
-   in the backside if you change how the data in the array is 
-   laid out."))
-
-;; [TODO] This needs to accept 1D arrays only
-;;        The generic case of this should be available to c-arrays 
-;;        as well I think...otherwise the name is a bit odd..maybe
-;;        not now it is c-array rather than gl-array...hmmm.
-;; [TODO] Move this definition to c-arrays
-;; [TODO] FIX ME!
-;; (defmethod gl-subseq ((array c-array) start &optional end)
-;;   (let* ((length (dimensions array))
-;;          (type (element-type array))
-;;          (end (or end length)))
-;;     (if (and (< start end) (< start length) (<= end length))
-;;         (make-c-array-from-pointer 
-;;          (cffi:inc-pointer (pointer array) (gl-calc-byte-size type start))
-;;          (if (listp type) 
-;;              (if (eq :struct (first type))
-;;                  (second type)
-;;                  (error "we dont handle arrays of pointers yet"))
-;;              type)
-;;          (- end start)))
-;;     (error "Invalid subseq start or end for c-array")))
-
-;; (defmethod gl-subseq ((array gpuarray) start &optional end)
-;;   (let* ((length (gpuarray-dimensions array))
-;;          (parent-start (gpuarray-start array))
-;;          (new-start (+ parent-start (max 0 start)))
-;;          (end (or end length)))
-;;     (if (and (< start end) (< start length) (<= end length))
-;;         (make-gpuarray 
-;;          :buffer (gpuarray-buffer array)
-;;          :format-index (gpuarray-format-index array)
-;;          :start new-start
-;;          :dimensions (- end start)
-;;          :access-style (gpuarray-access-style array))
-;;         (error "Invalid subseq start or end for c-array"))))
-
-;; [TODO] FIX ME!
-;; (defun pull-c-arrays-from-buffer (buffer)
-;;   (loop :for attr-format :in (glbuffer-format buffer)
-;;      :collect 
-;;      (progn 
-;;        (bind-buffer buffer :array-buffer)
-;;        (gl:with-mapped-buffer (b-pointer :array-buffer :read-only)
-         
-;;          (let* ((element-type (first attr-format))
-;;                 (c-array (make-c-array (if (listp element-type)
-;;                                              (if (eq :struct (first element-type))
-;;                                                  (second element-type)
-;;                                                  (error "we dont handle arrays of pointers yet"))
-;;                                              element-type)
-;;                                         (second attr-format))))
-;;            (cffi::%memcpy (pointer c-array) 
-;;                     (cffi:inc-pointer b-pointer (third attr-format))
-;;                     (c-array-byte-size c-array))
-;;            c-array)))))
+(defmethod gl-subseq ((array gpuarray) start &optional end)
+  (let ((dimensions (dimensions array)))
+    (if (> (length dimensions) 1)
+        (error "Cannot take subseq of multidimensional array")
+        (let* ((length (first dimensions))
+               (parent-start (gpuarray-start array))
+               (new-start (+ parent-start (max 0 start)))
+               (end (or end length)))
+          (if (and (< start end) (< start length) (<= end length))
+              (make-gpuarray :buffer (gpuarray-buffer array)
+                             :format-index (gpuarray-format-index array)
+                             :start new-start
+                             :dimensions (list (- end start))
+                             :access-style (gpuarray-access-style array))
+              (error "Invalid subseq start or end for c-array"))))))
 
 ;; [TODO] Dont require a temporary name, just use the one it has
 ;;        this makes it feel more magical to me and also it is 
@@ -260,6 +197,24 @@
    function gl-pull will call this function if given a gpu-array"
   (with-gpu-array-as-c-array (gpu-array :access-type :read-only)
     (clone-c-array gpu-array)))
+
+(defmethod gl-push ((object c-array) (destination gpuarray))
+  (let* ((buffer (gpuarray-buffer destination))
+         (format (gpuarray-format destination))
+         (type (first format))
+         (ob-dimen (dimensions object))
+         (des-dimen (dimensions object)))
+    (if (and (eq (element-type object) type)
+             (if (= 1 (length des-dimen) (length ob-dimen))
+                 (<= (first ob-dimen) (first des-dimen))
+                 (equal ob-dimen des-dimen)))
+        (setf (gpuarray-buffer destination)
+              (buffer-sub-data buffer object (gpuarray-offset destination)
+                               :array-buffer))
+        (error "If the arrays are 1D then the length of the source array must
+be <= length of the destination array. If the arrays have more than 1 
+dimension then their sizes must match exactly"))
+    destination))
 
 (defmethod gl-pull-1 ((object gpuarray)) 
   (gpu-array-pull-1 object))
