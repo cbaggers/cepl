@@ -16,9 +16,12 @@
   (access-style :static-draw))
 
 (defmethod print-object ((object gpuarray) stream)
-  (format stream "#.<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :BUFFER>"
+  (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :BUFFER>"
           (element-type object)
           (gpuarray-dimensions object)))
+
+(defmethod backed-by ((object gpuarray))
+  :buffer)
 
 ;;---------------------------------------------------------------
 

@@ -1,11 +1,43 @@
 (in-package :cgl)
 
+(defparameter *sampler-types*
+  '(:isampler-1D :isampler-1d-Array :isampler-2D :isampler-2d-Array
+    :isampler-2d-MS :isampler-2d-MS-Array :isampler-2d-Rect
+    :isampler-3d :isampler-Buffer :isampler-Cube
+    :isampler-Cube-Array :sampler-1D :sampler-1d-Array
+    :sampler-1d-Array-Shadow :sampler-1d-Shadow :sampler-2D
+    :sampler-2d-Array :sampler-2d-Array-Shadow :sampler-2d-MS
+    :sampler-2d-MS-Array :sampler-2d-Rect :sampler-2d-Rect-Shadow
+    :sampler-2d-Shadow :sampler-3d :sampler-Buffer :sampler-Cube
+    :sampler-Cube-Array :sampler-Cube-Array-Shadow 
+    :sampler-Cube-Shadow :usampler-1D :usampler-1d-Array
+    :usampler-2D :usampler-2d-Array :usampler-2d-MS
+    :usampler-2d-MS-Array :usampler-2d-Rect :usampler-3d 
+    :usampler-Buffer :usampler-Cube :usampler-Cube-Array
+    :isampler-1D-arb :isampler-1d-Array-arb :isampler-2D-arb 
+    :isampler-2d-Array-arb
+    :isampler-2d-MS-arb :isampler-2d-MS-Array-arb :isampler-2d-Rect-arb
+    :isampler-3d-arb :isampler-Buffer-arb :isampler-Cube-arb
+    :isampler-Cube-Array-arb :sampler-1D-arb :sampler-1d-Array-arb
+    :sampler-1d-Array-Shadow-arb :sampler-1d-Shadow-arb :sampler-2D-arb
+    :sampler-2d-Array-arb :sampler-2d-Array-Shadow-arb :sampler-2d-MS-arb
+    :sampler-2d-MS-Array-arb :sampler-2d-Rect-arb :sampler-2d-Rect-Shadow-arb
+    :sampler-2d-Shadow-arb :sampler-3d-arb :sampler-Buffer-arb :sampler-Cube-arb
+    :sampler-Cube-Array-arb :sampler-Cube-Array-Shadow-arb
+    :sampler-Cube-Shadow-arb :usampler-1D-arb :usampler-1d-Array-arb
+    :usampler-2D-arb :usampler-2d-Array-arb :usampler-2d-MS-arb
+    :usampler-2d-MS-Array-arb :usampler-2d-Rect-arb :usampler-3d-arb
+    :usampler-Buffer-arb :usampler-Cube-arb :usampler-Cube-Array-arb))
+
 ;;;--------------------------------------------------------------
 ;;; UNIFORMS ;;;
 ;;;----------;;;
 
 (defun uniform-1i (location value)
   (gl:uniformi location value))
+
+(defun uniform-sampler (location image-unit)
+  (gl:uniformi location image-unit))
 
 (defun uniform-2i (location value)
   (cffi-sys:with-pointer-to-vector-data (ptr value)
@@ -58,9 +90,7 @@
 ;; [TODO] HANDLE DOUBLES
 (defun get-foreign-uniform-function (type)
   (case type
-    ((:int :int-arb :bool :bool-arb :sampler_1d :sampler_1d_shadow 
-           :sampler_2d :sampler_3d :sampler_cube 
-           :sampler_2d_shadow) #'%gl:uniform-1iv)
+    ((:int :int-arb :bool :bool-arb) #'%gl:uniform-1iv)
     ((:float :float-arb) #'%gl:uniform-1fv)
     ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) #'%gl:uniform-2iv)
     ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) #'%gl:uniform-3iv)
@@ -71,13 +101,12 @@
     ((:float-mat2 :float-mat2-arb) #'uniform-matrix-2fvt)
     ((:float-mat3 :float-mat3-arb) #'uniform-matrix-3fvt)
     ((:float-mat4 :float-mat4-arb) #'uniform-matrix-4fvt)
-    (t (error "Sorry cepl doesnt handle that type yet"))))
+    (t (if (sampler-typep type) nil
+           (error "Sorry cepl doesnt handle that type yet")))))
 
 (defun get-uniform-function (type)
   (case type
-    ((:int :int-arb :bool :bool-arb :sampler_1d :sampler_1d_shadow 
-           :sampler_2d :sampler_3d :sampler_cube 
-           :sampler_2d_shadow) #'uniform-1i)
+    ((:int :int-arb :bool :bool-arb) #'uniform-1i)
     ((:float :float-arb) #'uniform-1f)
     ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) #'uniform-2i)
     ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) #'uniform-3i)
@@ -87,12 +116,16 @@
     ((:float-vec4 :float-vec4-arb) #'uniform-4f)
     ((:float-mat2 :float-mat2-arb) #'uniform-matrix-2ft)
     ((:float-mat3 :float-mat3-arb) #'uniform-matrix-3ft)
-    ((:float-mat4 :float-mat4-arb) #'uniform-matrix-4ft)
-    (t (error "Sorry cepl doesnt handle that type yet"))))
+    ((:float-mat4 :float-mat4-arb) #'uniform-matrix-4ft)    
+    (t (if (sampler-typep type) #'uniform-sampler
+           (error "Sorry cepl doesnt handle that type yet")))))
 
 ;;;--------------------------------------------------------------
 ;;; SHADER & PROGRAMS ;;;
 ;;;-------------------;;;
+
+(defun sampler-typep (type)
+  (find type *sampler-types*))
 
 (let ((programs (make-hash-table)))
   (defun program-manager (name)
@@ -133,15 +166,16 @@
            nil)
         (error "Some shaders have invalid types ~a" (mapcar #'first shaders)))))
 
-(defmacro glambda ((&rest args) &body shaders)
-  `(make-program nil ,args ,shaders))
+(defun extract-textures (uniforms)
+  (loop for (name type) in uniforms 
+       :if (sampler-typep type)
+       :collect name))
 
-;; [TODO] Make glambda handle strings
 (defmacro make-program (name args shaders)  
-
   (let* ((uniforms (varjo:extract-uniforms args))
-         (uniform-names (mapcar #'first uniforms)))
-    
+         (textures (extract-textures uniforms))
+         (uniform-names (mapcar #'first uniforms))
+         (image-unit -1))
     `(let* ((shaders (loop for (type code) in (varjo:rolling-translate 
                                                ',args ',shaders)
                         :collect (make-shader type code)))
@@ -150,8 +184,6 @@
                          ,(if name
                               `(program-manager ',name)
                               `(gl:create-program))))
-
-            
             (assigners (create-uniform-assigners 
                         program-id ',uniforms 
                         ,(utils:kwd (package-name (symbol-package name)))))
@@ -166,10 +198,25 @@
        (lambda (stream ,@(when uniforms `(&key ,@uniform-names)))
          (use-program program-id)
          ,@(loop :for uniform-name :in uniform-names
-              :collect `(when ,uniform-name
-                          (dolist (fun ,(utils:symb uniform-name
-                                                    '-assigner))
-                            (funcall fun ,uniform-name))))
+              :for uspec :in uniforms
+              :collect
+              (if (find uniform-name textures)
+                  (progn 
+                    (incf image-unit)
+                    `(if ,uniform-name
+                         (if (eq (sampler-type ,uniform-name)
+                                 ,(second uspec))
+                             (progn
+                               (active-texture-num ,image-unit)
+                               (bind-texture ,uniform-name)
+                               (dolist (fun ,(utils:symb uniform-name '-assigner))
+                                 (funcall fun ,image-unit)))
+                             (error "incorrect texture type passed to shader"))
+                         (error "Texture uniforms must be populated"))) ;really? - for now yeah
+                  `(when ,uniform-name
+                     (dolist (fun ,(utils:symb uniform-name
+                                               '-assigner))
+                       (funcall fun ,uniform-name)))))
          (when stream (no-bind-draw-one stream))))))
 
 ;; make this return list of funcs or nil for each uni-var
@@ -233,7 +280,9 @@
 (defun get-slot-type (parent-type slot-name)
   (second (assoc slot-name (varjo:struct-definition parent-type))))
 
+;;path: ((TEX 0)) uniform-vars: ((JAM VEC4) (TEX SAMPLER-2D))
 (defun get-path-offset (path uniform-vars)
+  (format t "path: ~a uniform-vars: ~a" path uniform-vars)
   (labels ((path-offset (type path &optional (sum 0))
              (if path
                  (let* ((path-part (first path))
@@ -254,8 +303,13 @@
                                 :key #'symbol-name :test #'equal)))
            (index (second first-part)))
       (if type
-          (+ (* (cffi:foreign-type-size type) index)
-             (path-offset type (rest path)))
+          ;; this bit was taken from tw olevels up to kill the chance of 
+          ;; cffi being asked the size of a sampler..it's an ugly hack though
+          (if (or (> index 1) (varjo:type-struct-p type))
+              (+ (* (cffi:foreign-type-size type) index) ;; [TODO] What if type non 
+                 ;; cffi
+                 (path-offset type (rest path)))
+              0)
           (error "Could not find the uniform variable named '~a'" 
                  (first first-part))))))
 

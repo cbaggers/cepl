@@ -4,6 +4,7 @@
 (defgeneric gl-pull (object))
 (defgeneric gl-pull-1 (object))
 (defgeneric dimensions (object))
+(defgeneric backed-by (object))
 (defgeneric make-vao (gpu-arrays &optional indicies-array))
 
 (defun 1d-p (object)
