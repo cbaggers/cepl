@@ -37,3 +37,23 @@ type
 :ushort_1_5_5_5_rev
 :uint_8_8_8_8_rev
 :uint_2_10_10_10_rev
+
+----------------------------------------------------------------------
+
+When uploading pixel data from an array with would be nice not to have
+to specify the format at all unless it is non-trivial.
+
+pixels may be of a simple type like a :vec4 or a complex one like a gl-struct.
+There should be a concept of a standard format. Given a known size an order
+the possible formats can be whittled down fairly easily. A byte-vec4 would be
+ideal for :rgba or :bgra for example. 
+
+A defglstruct could be given a :pixel-hint of :bgr to establish that this:
+(defglstruct pformat (x :ushort) (y :ushort) (z:ushort) :pixel-hint :bgr) 
+should be considered as a :bgr with :unsigned-short-4-4-4-4.
+
+So we will have a generic function (pixel-format) which will:
+(defmethod pixel-format ((type t)) nil)
+
+What peterbs me is the idea of a c-array of type :byte-vec4 as where do you
+give the pixel hint? make-c-array?
