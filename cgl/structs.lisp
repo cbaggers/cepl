@@ -92,38 +92,6 @@
                                   ',(varjo:type-principle vslot-type))
                          value)))))))
 
-
-(defmacro defglstruct (name &body slot-descriptions)
-  (when (keywordp name) (error "Keyword name are now allowed for glstructs"))
-  (let ((slots (loop for slot in slot-descriptions collect
-                    (destructuring-bind 
-                          (slot-name slot-type &key (normalised nil) 
-                                     (accessor nil) &allow-other-keys)
-                        slot
-                      (list slot-name (varjo:flesh-out-type slot-type) 
-                            normalised accessor))))
-        (struct-name (utils:symb name '-struct))
-        (type-name (utils:symb name '-type))
-        (value-name (utils:symb name '-value)))
-    `(progn
-       (varjo:vdefstruct ,name
-         ,@(loop for slot in slots
-              collect (append (subseq slot 0 2) 
-                              (list nil nil)
-                              (last slot))))
-       ,(make-cstruct-def struct-name slots)
-       (define-foreign-type ,type-name () 
-         ()
-         (:actual-type :struct ,struct-name)
-         (:simple-parser ,name))
-       (defclass ,value-name (c-value) ())
-       ,@(make-translators name type-name value-name slots struct-name)
-       ,@(make-getters-and-setters name value-name struct-name slots)
-       ,(make-gl-struct-attrib-assigner name slots)
-       ',name)))
-
-                                        ;(defglstruct mystruct (a :vec3) (b :vec4))
-
 (defun expand-slot-to-layout (slot)
   (destructuring-bind (type normalise &rest ign)
       slot
@@ -176,3 +144,34 @@
            (let ((,stride-sym (or stride-override ,stride)))
              ,@definitions
              ,(length definitions)))))))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+(defmacro defglstruct (name &body slot-descriptions)
+  (when (keywordp name) (error "Keyword name are now allowed for glstructs"))
+  (let ((slots (loop for slot in slot-descriptions collect
+                    (destructuring-bind 
+                          (slot-name slot-type &key (normalised nil) 
+                                     (accessor nil) &allow-other-keys)
+                        slot
+                      (list slot-name (varjo:flesh-out-type slot-type) 
+                            normalised accessor))))
+        (struct-name (utils:symb name '-struct))
+        (type-name (utils:symb name '-type))
+        (value-name (utils:symb name '-value)))
+    `(progn
+       (varjo:vdefstruct ,name
+         ,@(loop for slot in slots
+              collect (append (subseq slot 0 2) 
+                              (list nil nil)
+                              (last slot))))
+       ,(make-cstruct-def struct-name slots)
+       (define-foreign-type ,type-name () 
+         ()
+         (:actual-type :struct ,struct-name)
+         (:simple-parser ,name))
+       (defclass ,value-name (c-value) ())
+       ,@(make-translators name type-name value-name slots struct-name)
+       ,@(make-getters-and-setters name value-name struct-name slots)
+       ,(make-gl-struct-attrib-assigner name slots)
+       ',name)))

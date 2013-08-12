@@ -118,10 +118,11 @@
                         :row-alignment alignment)))
         (when (not (null initial-contents))
           (cond ((listp initial-contents)
-                 (destructuring-populate new-array initial-contents))
+                 (c-populate new-array initial-contents))
                 (t (error "cannot populate with that... will fix error when I have drunk less"))))
         new-array))))
 
+;; [TODO] this is damn chunky.. can this be better
 (defun calc-gl-index (gl-object subscripts)
   (with-slots (dimensions row-byte-size element-type) gl-object
     (if (and (eql (length dimensions) (length subscripts))
@@ -137,13 +138,12 @@
                subscripts dimensions))))
 
 (defun calc-1d-gl-index (gl-object subscript)
-  ;; only really for use with destructuring populate
+  ;; only really for use with c-populate
   ;; it does take alignment into account
   (calc-gl-index gl-object (1d-to-2d-subscript gl-object subscript)))
 
-
 (defun 1d-to-2d-subscript (gl-object subscript)
-  ;; only really for use with destructuring populate
+  ;; only really for use with c-populate
   ;; it does take alignment into account
   (with-slots (dimensions) gl-object
     (let ((x-size (or (first dimensions) 1))
@@ -173,7 +173,7 @@
         value))
 
 ;; [TODO] can the common of the two subfuncs be spun off? (almost certainly)
-(defun destructuring-populate (gl-object data &optional (check-sizes t))
+(defun c-populate (gl-object data &optional (check-sizes t))
   (labels ((walk-to-dpop (data dimensions &optional pos)
              (let ((still-to-walk (rest dimensions)))
                (loop for sublist in data for i from 0 do
@@ -190,7 +190,6 @@
     (when check-sizes (check-sizes data (dimensions gl-object)))
     (walk-to-dpop data (dimensions gl-object))
     gl-object))
-
 
 (defmethod gl-subseq ((array c-array) start &optional end)
   (let ((dimensions (dimensions array)))
@@ -222,4 +221,4 @@
   (gl-pull-1 object))
 
 (defmethod gl-push ((object list) (destination c-array))
-  (destructuring-populate destination object))
+  (c-populate destination object))

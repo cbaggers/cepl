@@ -31,8 +31,8 @@
             vao-pool)))
 
 (defun make-gpu-stream-from-gpu-arrays (gpu-arrays &key indicies-array (start 0)
-                                                     length
-                                                     (draw-type :triangles))
+                                     length
+                                     (draw-type :triangles))
   "This function simplifies making the gpu-stream if you are 
    storing the data in gpu-arrays.
 

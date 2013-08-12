@@ -53,17 +53,9 @@
 ;; c-array (dimensions element-type &key initial-contents displaced-by (alignment 1))
 ;; old-gpu (initial-contents &key element-type length access-style)
 ;; ??????? (initial-contents &key element-type dimensions access-style)
-;; [TODO] Should element-array-buffer to part of the gpu array? is it not better
-;;        to complain if someone tries to use one as a element-array-buffer and
-;;        it is of invalid type? Buffers are buffers, vaos should be handling 
-;;        their usage in terms of state
 ;; [TODO] Check to see we have all the data we need
 ;; [TODO] all make-gpu-array need the start argument specified
 ;; [TODO] all dimensions need checking for sanity..some clearly dont have any :D
-(defun valid-as-element-arrayp (gl-object)
-  (declare (ignore gl-object))
-  (error "IMPLEMENT ME! GIVE ME PURPOSE! PLEASE.... ARGHHHHHHHHHHHHHHH"))
-
 (defmethod make-gpu-array ((initial-contents null) 
                            &key element-type dimensions
                              (access-style :static-draw))

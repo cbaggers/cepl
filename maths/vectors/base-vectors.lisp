@@ -1,24 +1,37 @@
 (in-package :base-vectors)
 
-(defmacro v! (&rest components)
+(defun v!make (type components)
   (let ((dimen (length components)))
     (if (or (> dimen 4)
             (< dimen 2))
         (error "Incorrect number of components for a vector")
         `(make-array 
           ,dimen
-          :element-type 'single-float
+          :element-type ',type
           :initial-contents (list 
                              ,@(loop for i in components
                                   collect
                                     (if (numberp i)
-                                        (coerce i 'single-float)
-                                        `(coerce ,i 'single-float))))))))
+                                        (coerce i type)
+                                        `(coerce ,i ',type))))))))
+
+(defmacro v! (&rest components)
+  (v!make 'single-float components))
+
+(defmacro v!int (&rest components)
+  (v!make 'fixnum components))
+
+(defmacro v!ubyte (&rest components)
+  (v!make '(unsigned-byte 8) components))
+
+(defmacro v!byte (&rest components)
+  (v!make '(signed-byte 8) components))
 
 ;----------------------------------------------------------------
 
 ;; These have been defined as macros as it want to guarantee they
-;; are 'inlined' 
+;; are 'inlined' [TODO] This is a crap idea, trust the compiler 
+;;                      and inline them properly. 
 (defmacro v-x (vec)
   "Returns the x component of the vector"
   `(aref ,vec 0))

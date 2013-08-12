@@ -10,11 +10,3 @@
    all underscores _ with minus symbols -"
   (string-upcase (substitute #\- #\_ name)))
 
-
-(defun gpu! (type &rest values)
-  (if (and (not values) (typep type 'cgl::c-array))
-      (make-gpu-array type)
-      (make-gpu-array values :element-type type)))
-
-(defun gl! (type &rest values)
-  (make-c-array type (length values) values))

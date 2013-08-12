@@ -98,81 +98,78 @@
                 :flush
                 :viewport)
   (:shadow :float)
-  (:export :clear-color
-           :cls
+  (:export :defglstruct
+           :c-array-byte-size
+           :gl-calc-byte-size
+           :make-c-array-from-pointer
+           :with-c-array
+           :free-c-array
+           :clone-c-array
+           :make-c-array
+           :aref-c
+           :aref-c*
+           :c-populate
+           :gl-subseq
+           :gl-pull
+           :gl-pull-1
+           :gl-push
+           :dimensions ; [TODO] this isnt really inline with array-dimensions
+           :backed-by ; [TODO] is this the right name for the job?
+           :element-type
+           :1d-p
+           :bind-buffer
+           :force-bind-buffer
+           :unbind-buffer
+           :gen-buffer
+           :buffer-data-raw
+           :buffer-data
+           :buffer-sub-data
+           :multi-buffer-data
+           :buffer-reserve-block-raw
+           :buffer-reserve-block
+           :buffer-reserve-blocks
+           :make-gpu-array
+           :make-gpu-arrays
+           :with-gpu-array-as-c-array
+           :suitable-array-for-index-p
+           :bind-vao
+           :bind-vertex-array
+           :make-vao-from-formats
+           :make-vao
+           :add-vao-to-pool
+           :free-all-vaos-in-pool
+           :make-gpu-stream
+           :make-gpu-stream-from-gpu-arrays
+           :make-texture
+           :bind-texture
+           :with-texture-bound
+           :upload-c-array-to-gpuarray-t ; this is a crap name
+           :calc-sampler-type
+           :dimensions-at-mipmap-level
+           :establish-texture-type
+           :texref
            :defpipeline
            :defpipeline?
+           :free-managed-resources
+           ;----------
+           :clear-color
+           :cls
            :enable
            :disable
            :cull-face
            :front-face
-           :glambda
            :depth-mask
            :depth-func
            :depth-range
            :clear
            :clear-depth
            :flush
-           :viewport
-           :bind-buffer
-           :gen-buffer
-           :buffer-data
-           :buffer-sub-data
-           :multi-buffer-data
-           :buffer-reserve-raw-block
-           :buffer-reserve-block
-           :buffer-reserve-blocks
-           :gl-type-format
-           :bind-vao
-           :bind-vertex-array
-           :make-vao
-           :make-vao-from-formats
-           :make-vao-from-buffer
-           :make-vao-from-gpu-arrays
-           :defglstruct
-           :gl-pull
-           :gl-pull-1
-           :gl-push
-           :gl-push-1
-           :foreign-type-index
-           :make-c-array
-           :free-c-array
-           :aref-gl
-           :destructuring-populate
-           :destructuring-allocate
-           :free-all-buffers-in-pool
-           :make-gpu-array
-           :make-gpu-arrays
-           :gl-subseq
-           :gpu-array-pull
-           :gpu-array-push
-           :with-gpu-array-as-c-array
-           :free-all-vaos-in-pool
-           :make-gpu-stream
-           :gpu-stream-vao
-           :gpu-stream-start
-           :gpu-stream-length
-           :gpu-stream-draw-type
-           :make-gpu-stream-from-gpu-arrays
-           :free-managed-resources
-           :program-attrib-count
-           :program-attributes
-           :program-uniform-count
-           :program-uniforms
-           :get-uniforms
-           :use-program
-           :shader-type-from-path
-           :make-shader
-           :load-shader
-           :load-shaders
-           :link-shaders
-           :make-program
-           :gl!
-           :gpu!))
+           :viewport))
 
 (defpackage :base-vectors
   (:use :cl)
-  (:export :v! :v-x :v-y :v-z :v-w))
+  (:export :v! :v-x :v-y :v-z :v-w
+           :v!byte :v!ubyte :v!int))
 
 (defpackage :base-matrices
   (:use :cl)
@@ -361,24 +358,19 @@
   (:import-from :cepl-gl
                 :defpipeline
                 :defpipeline?
-                :glambda
                 :defglstruct
                 :gl-pull
                 :gl-pull-1
                 :gl-push
-                :gl-push-1
                 :make-c-array
                 :free-c-array
-                :aref-gl
-                :destructuring-populate
-                :destructuring-allocate
+                :aref-c
+                :c-populate
                 :make-gpu-array
                 :make-gpu-arrays
                 :gl-subseq
                 :with-gpu-array-as-c-array
                 :make-gpu-stream
-                :make-gpu-stream-from-gpu-arrays
-                :gl! 
-                :gpu!)
+                :make-gpu-stream-from-gpu-arrays)
   (:import-from :3dstub :pos :rot :color :scale)
   (:export :repl))

@@ -351,6 +351,8 @@
 (setf (documentation 'use-program 'function) 
       "Installs a program object as part of current rendering state")
 
+;; [TODO] Expand on this and allow loading on strings/text files for making 
+;;        shaders
 (defun shader-type-from-path (path)
   "This uses the extension to return the type of the shader.
    Currently it only recognises .vert or .frag files"

@@ -253,21 +253,6 @@
 (defmethod backed-by ((object gpu-array-t))
   :texture)
 
-(defclass texture-mipmap-level ()
-  ((texture :initarg :texture)
-   (level-num :initarg :level-num)))
-
-(defclass texture-array-layer ()
-  ((texture :initarg :texture)
-   (level-num :initarg :level-num)
-   (layer-num :initarg :layer-num)))
-
-(defclass texture-cube ()
-  ((texture :initarg :texture)
-   (level-num :initarg :level-num)
-   (layer-num :initarg :layer-num)
-   (face-num :initarg :face-num)))
-
 (defun unbind-texture (type)
   (gl:bind-texture type 0))
 
@@ -281,31 +266,14 @@
             (error "Texture has already been bound"))))
   texture)
 
-;; bind works on any
-;; (gl:bind-texture)
-;; create
-
-;; copy data to image
-;; (case type
-;;   (:texture-1d (gl:tex-sub-image-1d))
-;;   ((:texture-cube-map-positive-x :texture-cube-map-negative-x
-;;     :texture-cube-map-positive-y :texture-cube-map-negative-y
-;;     :texture-cube-map-positive-z :texture-cube-map-negative-z
-;;     :texture-1d-array :texture-2d) (gl:tex-sub-image-2d))
-;;   ((:texture-3d :texture-2d-array) (gl:tex-sub-image-3d)))
-
-;; create textures
 ;; copy data (from cpu to gpu) - texsubimage1d texsubimage2d texsubimage3d
 ;; copy data (from gpu to cpu) - get-tex-image
 ;; copy data (from frame-buffer to texture image) - leave for now
 ;; copy from buffer to texture glCopyTexSubImage2D
 ;; set texture params
 ;; get texture params
-
 ;; texture views
 ;; generate-mipmaps
-
 ;; texsubimage*d - pushing data
-;; push data from current gl_read_buffer (gpu rather than from ram)
 ;; glPixelStore — set pixel storage modes
 

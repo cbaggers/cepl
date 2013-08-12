@@ -16,7 +16,7 @@
   (gl:viewport 0 0 640 480)
   (let* ((data (cgl:make-gpu-array 
                 (list (list (v!  0.0    0.5 0.0 1.0) (v! 1.0 0.0 0.0 1.0) 
-                            (v! 0.0 0.0))
+                            (v! 0.0 -1.0))
                       (list (v!  0.5 -0.366 0.0 1.0) (v! 0.0 1.0 0.0 1.0)
                             (v! 1.0 1.0))
                       (list (v! -0.5 -0.366 0.0 1.0) (v! 0.0 0.0 1.0 1.0)
@@ -25,13 +25,11 @@
                 :element-type 'vert-data))
          (gstream (cgl:make-gpu-stream-from-gpu-arrays data))
          (texture (cgl::make-texture '(64 64)))
-         (tex-data (make-c-array '(64 64) :vec4 
-                                 :initial-contents 
-                                 (loop for i below 64 collect
-                                      (loop for j below 64 
-                                         collect (v! (random 254) 0 0 0))))))
-    (cgl::upload-c-array-to-gpuarray-t (cgl::texref texture) tex-data
-                                       :rgba :byte)
+         (tex-data (make-c-array '(64 64) :byte-vec4 :initial-contents 
+                                 (loop :for i :below 64 :collect
+                                    (loop :for j :below 64 
+                                       :collect (v! (random 254) 0 0 0))))))
+    (cgl::upload-c-array-to-gpuarray-t (cgl::texref texture) tex-data :rgba :byte)
     (loop :until (find :quit-event (sdl:collect-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable (progn (gl:clear :color-buffer-bit)
