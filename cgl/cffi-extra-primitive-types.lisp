@@ -1,5 +1,14 @@
-
 (in-package :cffi)
+
+(define-foreign-type cgl-byte () 
+  ()
+  (:actual-type :char)
+  (:simple-parser :byte))
+
+(define-foreign-type cgl-ubyte () 
+  ()
+  (:actual-type :uchar)
+  (:simple-parser :ubyte))
 
 (defmacro make-new-types ()
   (let* ((new-user-types '((:ubyte-vec2 2 :uchar)
