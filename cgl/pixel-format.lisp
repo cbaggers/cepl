@@ -10,7 +10,7 @@
 ;;--------------
 ;; [TODO] Add guaranteed flags to formats
 ;; [TODO] add half float
-;; [TODO] add stencil-only
+;; [TODO] add :stencil-only
 (defparameter *valid-pixel-components*
   '(:r :g :b :rg :rgb :rgba :bgr :bgra :depth :depth-stencil))
 (defparameter *valid-pixel-types* 
@@ -28,6 +28,61 @@
 (defparameter *expanded-gl-type-names* 
   '((:uint :unsigned-int) (:ubyte :unsigned-byte)
     (:ubyte :unsigned-byte) (:ushort :unsigned-short)))
+(defparameter *gl-pixel-to-internal-map*
+  '(((:DEPTH t :short nil) :DEPTH-COMPONENT16)
+    ((:DEPTH t :int nil) :DEPTH-COMPONENT32)
+    ((:DEPTH t :float nil) :DEPTH-COMPONENT32F)
+    ((:STENCIL-ONLY t :int nil) :STENCIL-INDEX8)
+    ((:R t :ubyte nil) :R8)
+    ((:R t byte nil) :R8-SNORM)
+    ((:R t :ushort nil) :R16)
+    ((:R t :short nil) :R16-SNORM)
+    ((:RG t :ubyte nil) :RG8)
+    ((:RG t :byte nil) :RG8-SNORM)
+    ((:RG t :ushort nil) :RG16)
+    ((:RG t :short nil) :RG16-SNORM)
+    ((:RGB t :ubyte nil) :RGB8)
+    ((:RGB t :byte nil) :RGB8-SNORM)
+    ((:RGB t :short nil) :RGB16-SNORM)
+    ((:RGBA t :ubyte nil) :RGBA8)
+    ((:RGBA t :byte nil) :RGBA8-SNORM)
+    ((:RGBA t :ushort nil) :RGBA16)
+    ((:R nil :float nil) :R32F)
+    ((:RG nil :float nil) :RG32F)
+    ((:RGB nil :float nil) :RGB32F)
+    ((:RGBA nil :float nil) :RGBA32F)
+    ((:R nil :byte nil) :R8I)
+    ((:R nil :ubyte nil) :R8UI)
+    ((:R nil :short nil) :R16I)
+    ((:R nil :ushort nil) :R16UI)
+    ((:R nil :int nil) :R32I)
+    ((:R nil :uint nil) :R32UI)
+    ((:RG nil :byte nil) :RG8I)
+    ((:RG nil :ubyte nil) :RG8UI)
+    ((:RG nil :short nil) :RG16I)
+    ((:RG nil :ushort nil) :RG16UI)
+    ((:RG nil :int nil) :RG32I)
+    ((:RG nil :uint nil) :RG32UI)
+    ((:RGB nil :byte nil) :RGB8I)
+    ((:RGB nil :ubyte nil) :RGB8UI)
+    ((:RGB nil :short nil) :RGB16I)
+    ((:RGB nil :ushort nil) :RGB16UI)
+    ((:RGB nil :int nil) :RGB32I)
+    ((:RGB nil :uint nil) :RGB32UI)
+    ((:RGBA nil :byte nil) :RGBA8I)
+    ((:RGBA nil :ubyte nil) :RGBA8UI)
+    ((:RGBA nil :short nil) :RGBA16I)
+    ((:RGBA nil :ushort nil) :RGBA16UI)
+    ((:RGBA nil :int nil) :RGBA32I)
+    ((:RGBA nil :uint nil) :RGBA32UI)
+    ((:RGB t :ubyte (8 8 8)) :SRGB8)
+    ((:RGBA t :ubyte (8 8 8 8)) :SRGB8-ALPHA8)
+    ((:RGBA t :uint (10 10 10 2)) :RGB10-A2)
+    ((:RGBA nil :uint (10 10 10 2)) :RGB10-A2UI)
+    ((:RGB t :ubyte (2 2 2 2)) :RGBA2)
+    ((:RGB t :ushort (4 4 4 4)) :RGBA4)
+    ((:RGBA t :short (5 5 5 1)) :RGB5-A1)
+    ((:RGB t :ubyte (3 3 2)) :R3-G3-B2)))
 
 ;; [TODO] Does this need to be a structure? could it be a list with the 
 ;;        we could have a compiler macro to eval this at compile time,
@@ -37,13 +92,17 @@
   components type normalise sizes reversed comp-length)
 
 ;; [TODO] byte and ubyte to cffi 
+
+(defun get-component-length (components)
+  (case components 
+    (:depth 1) (:depth-stencil 2) 
+    (t (length (symbol-name components)))))
+
 (defun pixel-format (components &optional (type :ubyte) (normalise t) reversed)
   (unless (find components *valid-pixel-components*)
     (error "Not a valid pixel component layout.~%~s not found in '~s"
            components *valid-pixel-components*))
-  (let ((component-length (case components 
-                            (:depth 1) (:depth-stencil 2) 
-                            (t (length (symbol-name components))))))
+  (let ((component-length (get-component-length components)))
     (when (listp type) (unless (eql component-length (length type))
                          (error "Number of sizes and components do not match")))
     (destructuring-bind (sizes type)
@@ -94,27 +153,23 @@
                     type)))))
 
 ;;--------------------------------------------------------------
+;; INTERNAL-FORMATS
+;;------------------
 
+(defun internal-format-from-pixel-format (pixel-format)
+  (second (assoc (list (pixel-format-components pixel-format)
+                       (pixel-format-normalise pixel-format)
+                       (pixel-format-type pixel-format)
+                       (pixel-format-sizes pixel-format)) 
+                 *gl-pixel-to-internal-map*
+                 :test #'equal)))
 
-;; [NOTE] This is damn interesting
-;; The format​ parameter of a pixel transfer function defines the following:
-;; The basic type of data that is being read/written from/to: 
-;; Color, depth, stencil, or depth/stencil. 
-;; This must match the image format of the image being read/written from/to.
-
-;;; 
-;; (defun pixel-image-formats-compatible-p (pixel-format image-format)
-;;   (when (eq image-format :depth-component)
-;;     (unless (find pixel-format '(:depth-component :depth-component16
-;;                                  :depth-component24 :depth-component32f))
-;;       (error "If the pixel data is of type :depth-component then the destination
-;; must also be a depth type instead of ~a" pixel-format)))
-;;   (when (find pixel-format '(:depth-component :depth-component16
-;;                                  :depth-component24 :depth-component32f))
-;;     (unless (eq image-format :depth-component)
-;;       (error "If the destination is a depth gpu-array then the pixel data
-;; must have a type of :depth-component instead of ~a" image-format)))
-;;   (when (find image-format '())
-;;     (unless (find pixel-format '())
-;;       (error )))
-;;   t)
+;; [TODO] REVERSED??
+(defun pixel-format-from-internal-format (internal-format)
+  (destructuring-bind (components normalise type sizes)
+      (first (rassoc internal-format *gl-pixel-to-internal-map*
+                     :key #'car :test #'eq))
+    (make-pixel-format
+     :components components :type type :normalise normalise
+     :sizes sizes :reversed nil
+     :comp-length (get-component-length components))))
