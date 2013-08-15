@@ -1,10 +1,10 @@
 ;; This is simply to get a colored triangle up on the screen
 
-(cgl:defglstruct vert-data
+(defglstruct vert-data
   (position :vec4 :accessor pos)
   (colour :vec4 :accessor col))
 
-(cgl:defpipeline prog-1 ((vert vert-data))
+(defpipeline prog-1 ((vert vert-data))
   (:vertex (setf gl-position (pos vert))
            (out (the-color :smooth) (col vert)))
   (:fragment (let ((lerp-value (/ (y gl-frag-coord) 500.0)))
@@ -15,13 +15,13 @@
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:viewport 0 0 640 480)
-  (let* ((data (cgl:make-gpu-array 
+  (let* ((data (make-gpu-array 
                 (list (list (v!  0.0    0.5 0.0 1.0) (v! 1.0 0.0 0.0 1.0))
                       (list (v!  0.5 -0.366 0.0 1.0) (v! 0.0 1.0 0.0 1.0))
                       (list (v! -0.5 -0.366 0.0 1.0) (v! 0.0 0.0 1.0 1.0)))
                 :dimensions 3
                 :element-type 'vert-data))
-         (gstream (cgl:make-gpu-stream-from-gpu-arrays data)))
+         (gstream (make-gpu-stream-from-gpu-arrays data)))
     (loop :until (find :quit-event (sdl:collect-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable (progn (gl:clear :color-buffer-bit)

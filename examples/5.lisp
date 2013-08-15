@@ -1,12 +1,11 @@
 ;; Loading a monkey head :D
 
-(cgl:defglstruct vert-data 
+(defglstruct vert-data 
   (position :vec3)
   (color :vec4))
 
-(cgl:defpipeline prog-2
-    ((vert vert-data) &uniform (cam-to-clip :mat4)
-     (world-to-cam :mat4) (model-to-world :mat4))
+(defpipeline prog-2 ((vert vert-data) &uniform (cam-to-clip :mat4)
+                     (world-to-cam :mat4) (model-to-world :mat4))
   (:vertex (setf gl-position (* cam-to-clip
                                 (* world-to-cam 
                                    (* model-to-world
@@ -68,38 +67,25 @@
 
 (defun init () 
   (setf *camera* (make-camera :position (v! 0.0 0.0 0.0)))
-  (setf *frustrum-scale* 
-        (cepl-camera:calculate-frustrum-scale 45.0))
-  (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix 
-                           *frustrum-scale*))
+  (setf *frustrum-scale* (cepl-camera:calculate-frustrum-scale 45.0))
+  (setf *cam-clip-matrix* (cepl-camera:make-cam-clip-matrix *frustrum-scale*))
   (prog-2 nil :cam-to-clip *cam-clip-matrix*)
-
   ;;create entities
-  (let* ((monkey-data (first (model-parsers:parse-obj-file 
-                              "monkey.obj")))
-         (verts (mapcar #'(lambda (x) 
-                            (list x (make-array 4 :element-type
-                                                'single-float
-                                                :initial-contents 
-                                                (list (random 1.0) 
-                                                      (random 1.0) 
-                                                      (random 1.0)
-                                                      1.0)))) 
+  (let* ((monkey-data (first (model-parsers:parse-obj-file "monkey.obj")))
+         (verts (mapcar #'(lambda (x) (list x (v! (random 1.0) (random 1.0)
+                                                  (random 1.0) 1.0))) 
                         (first monkey-data)))
          (indicies (loop for face in (car (last monkey-data))
-                      append (mapcar #'car (first face))))
-         (stream (cgl:make-gpu-stream-from-gpu-arrays
-                  (cgl:make-gpu-array verts
-                                      :dimensions (length verts)
-                                      :element-type 'vert-data)
+                      :append (mapcar #'car (first face))))
+         (stream (make-gpu-stream-from-gpu-arrays
+                  (make-gpu-array verts :dimensions (length verts)
+                                  :element-type 'vert-data)
                   :length (length indicies)
-                  :indicies-array (cgl:make-gpu-array 
+                  :indicies-array (make-gpu-array 
                                    indicies
                                    :dimensions (length indicies)
                                    :element-type :unsigned-short))))
-    (setf *monkey* (make-entity :rotation (v! -1.57079633 0 0)
-                                :stream stream)))
-  
+    (setf *monkey* (make-entity :rotation (v! -1.57079633 0 0) :stream stream)))
   ;;set options
   (gl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
@@ -112,32 +98,24 @@
   (gl:enable :depth-clamp))
 
 (defun entity-matrix (entity)
-  (reduce #'m4:m* (list
-                   (m4:translation (entity-position entity))
-                   (m4:rotation-from-euler (entity-rotation entity))
-                   (m4:scale (entity-scale entity)))))
+  (reduce #'m4:m* (list (m4:translation (entity-position entity))
+                        (m4:rotation-from-euler (entity-rotation entity))
+                        (m4:scale (entity-scale entity)))))
 
 (defun draw ()
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
-
-  (prog-2 nil :world-to-cam (calculate-cam-look-at-w2c-matrix
-                             *camera*))
-
-  (setf (entity-rotation *monkey*) 
-        (v:+ (entity-rotation *monkey*) (v! 0.02 0.01 0)))
-  
-  
-  (prog-2 (entity-stream *monkey*) 
-          :model-to-world (entity-matrix *monkey*))
+  (prog-2 nil :world-to-cam (calculate-cam-look-at-w2c-matrix *camera*))
+  (setf (entity-rotation *monkey*) (v:+ (entity-rotation *monkey*)
+                                        (v! 0.02 0.01 0)))
+  (prog-2 (entity-stream *monkey*) :model-to-world (entity-matrix *monkey*))
   (gl:flush)
   (sdl:update-display))
 
 (defun reshape (width height)  
-  (setf (matrix4:melm *cam-clip-matrix* 0 0)
-        (* *frustrum-scale* (/ height width)))
-  (setf (matrix4:melm *cam-clip-matrix* 1 1)
-        *frustrum-scale*)
+  (setf (matrix4:melm *cam-clip-matrix* 0 0) (* *frustrum-scale*
+                                                (/ height width)))
+  (setf (matrix4:melm *cam-clip-matrix* 1 1) *frustrum-scale*)
   (prog-2 nil :cam-to-clip *cam-clip-matrix*)
   (cgl:viewport 0 0 width height))
 
@@ -148,9 +126,7 @@
     (loop :while running :do
        (sdl:case-events (event)
          (:quit-event (setf running nil))
-         (:video-resize-event 
-          (reshape (sdl:video-resize-w event)
-                   (sdl:video-resize-h event))))
+         (:video-resize-event (reshape (sdl:video-resize-w event)
+                                       (sdl:video-resize-h event))))
        (cepl-utils:update-swank)
        (continuable (draw)))))
-

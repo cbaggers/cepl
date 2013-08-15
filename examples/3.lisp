@@ -1,17 +1,15 @@
-;; This is to expand on using uniforms. Testing translation,
-;; rotation and scaling in a 3D scene. It is also a better 
-;; test of the vao generation functions
+;; Basic 3D
 
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *entities* nil)
 
-(cgl:defglstruct vert-data 
+(defglstruct vert-data 
   (position :vec3)
   (color :vec4))
 
-(cgl:defpipeline prog-1 ((vert vert-data) &uniform 
-                         (cam-to-clip :mat4) (model-to-cam :mat4))
+(defpipeline prog-1 ((vert vert-data) &uniform 
+                     (cam-to-clip :mat4) (model-to-cam :mat4))
   (:vertex (out (the-color :smooth) (vert-data-color vert))
            (let ((cam-pos (* model-to-cam 
                              (vec4 (vert-data-position vert) 1.0))))
@@ -31,7 +29,7 @@
   (setf *cam-clip-matrix* (ccam:make-cam-clip-matrix
                            *frustrum-scale*))
   (prog-1 nil :cam-to-clip *cam-clip-matrix*)
-  (let* ((verts (cgl:make-gpu-array 
+  (let* ((verts (make-gpu-array 
                  '((#(+1.0  +1.0  +1.0) #(0.0  1.0  0.0  1.0)) 
                    (#(-1.0  -1.0  +1.0) #(0.0  0.0  1.0  1.0))
                    (#(-1.0  +1.0  -1.0) #(1.0  0.0  0.0  1.0))
@@ -42,12 +40,12 @@
                    (#(-1.0  +1.0  +1.0) #(0.5  0.5  0.0  1.0)))
                  :element-type 'vert-data
                  :dimensions 8))
-         (indicies (cgl:make-gpu-array 
+         (indicies (make-gpu-array 
                     '(0  1  2    1  0  3    2  3  0    3  2  1 
                       5  4  6    4  5  7    7  6  4    6  7  5)
                     :element-type :unsigned-short
                     :dimensions 24))
-         (stream (cgl:make-gpu-stream-from-gpu-arrays
+         (stream (make-gpu-stream-from-gpu-arrays
                   verts
                   :indicies-array indicies)))
     (setf *entities* (list (make-entity :stream stream)

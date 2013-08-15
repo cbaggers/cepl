@@ -1,4 +1,4 @@
-;; loading a monkey head :D
+;; Basic Lighting
 
 (defparameter *near* 1.0)
 (defparameter *far* 1000.0)
@@ -8,12 +8,12 @@
 (defparameter *camera* nil)
 (defparameter *light-direction* 0.0)
 
-(cgl:defglstruct vert-data 
+(defglstruct vert-data 
   (position :vec3)
   (diffuse-color :vec4)
   (normal :vec3))
 
-(cgl:defpipeline prog-1
+(defpipeline prog-1
     ((vert vert-data) &uniform (dir-to-light :vec3)
      (light-intensity :vec4) (norm-model-to-cam :mat3)
      (cam-to-clip :mat4) (model-to-cam :mat4)
@@ -34,7 +34,7 @@
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480 *near* *far*)))
 
-(cgl:defpipeline prog-2
+(defpipeline prog-2
     ((vert vert-data) &uniform (dir-to-light :vec3) 
      (light-intensity :vec4) (norm-model-to-cam :mat3)
      (cam-to-clip :mat4) (model-to-cam :mat4)
@@ -94,11 +94,11 @@
                    collect (list (v:* (v:merge-into-vector (first vert)) (v! 1 1 1)) 
                                  (v:merge-into-vector (second vert))
                                  (v:merge-into-vector (third vert)))))
-         (stream (cgl:make-gpu-stream-from-gpu-arrays
-                  (cgl:make-gpu-array verts :element-type 'vert-data
+         (stream (make-gpu-stream-from-gpu-arrays
+                  (make-gpu-array verts :element-type 'vert-data
                                       :dimensions (length verts))
                   :length (length (second monkey-data))
-                  :indicies-array (cgl:make-gpu-array
+                  :indicies-array (make-gpu-array
                                    (second monkey-data)
                                    :element-type :unsigned-short
                                    :dimensions (length (second monkey-data))))))

@@ -1,4 +1,5 @@
 ;; vertex point light
+
 (defparameter *near* 1.0)
 (defparameter *far* 1000.0)
 (defparameter *frustrum-scale* nil)
@@ -7,7 +8,7 @@
 (defparameter *light* nil)
 (defparameter *loop-pos* 0.0)
 
-(cgl:defglstruct vcn
+(defglstruct vcn
   (position :vec3 :accessor pos)
   (diffuse-color :vec4 :accessor color)
   (normal :vec3 :accessor normal))
@@ -16,22 +17,20 @@
     ((data vcn) &uniform (model-to-cam :mat4) 
      (cam-to-clip :mat4) (model-space-light-pos :vec3)
      (light-intensity :vec4) (ambient-intensity :vec4))
-  (:vertex
-   (setf gl-position (* cam-to-clip (* model-to-cam 
-                                       (vec4 (pos data) 1.0))))
-   (out model-space-pos (pos data))
-   (out vertex-normal (normal data))
-   (out diffuse-color (color data)))
-  (:fragment
-   (let* ((light-dir (normalize (- model-space-light-pos 
-                                   model-space-pos)))
-          (cos-ang-incidence 
-           (clamp (dot (normalize vertex-normal) light-dir)
-                  0.0 1.0)))
-     (out output-color (+ (* diffuse-color light-intensity 
-                             cos-ang-incidence)
-                          (* diffuse-color
-                             ambient-intensity))))))
+  (:vertex (setf gl-position (* cam-to-clip (* model-to-cam 
+                                               (vec4 (pos data) 1.0))))
+           (out model-space-pos (pos data))
+           (out vertex-normal (normal data))
+           (out diffuse-color (color data)))
+  (:fragment (let* ((light-dir (normalize (- model-space-light-pos 
+                                             model-space-pos)))
+                    (cos-ang-incidence
+                     (clamp (dot (normalize vertex-normal) light-dir)
+                            0.0 1.0)))
+               (out output-color (+ (* diffuse-color light-intensity 
+                                       cos-ang-incidence)
+                                    (* diffuse-color
+                                       ambient-intensity))))))
 
 (defclass entity ()
   ((gstream :initform nil :initarg :gstream :accessor gstream)
@@ -74,11 +73,11 @@
                    collect (list (v:* (v:merge-into-vector (first vert)) (v! 1 1 1)) 
                                  (v:merge-into-vector (second vert))
                                  (v:merge-into-vector (third vert)))))
-         (gstream (cgl:make-gpu-stream-from-gpu-arrays
-                   (cgl:make-gpu-array verts :element-type 'vcn
+         (gstream (make-gpu-stream-from-gpu-arrays
+                   (make-gpu-array verts :element-type 'vcn
                                        :dimensions (length verts))
                    :length (length (second monkey-data))
-                   :indicies-array (cgl:make-gpu-array 
+                   :indicies-array (make-gpu-array 
                                     (second monkey-data)
                                     :element-type :unsigned-short
                                     :dimensions (length (second monkey-data))))))
