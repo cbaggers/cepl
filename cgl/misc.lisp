@@ -10,3 +10,5 @@
    all underscores _ with minus symbols -"
   (string-upcase (substitute #\- #\_ name)))
 
+(defun cls ()
+  (clear :color-buffer-bit))

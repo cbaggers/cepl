@@ -27,6 +27,12 @@
 (defmacro v!byte (&rest components)
   (v!make '(signed-byte 8) components))
 
+(defmacro v!ushort (&rest components)
+  (v!make '(unsigned-byte 16) components))
+
+(defmacro v!short (&rest components)
+  (v!make '(signed-byte 16) components))
+
 ;----------------------------------------------------------------
 
 ;; These have been defined as macros as it want to guarantee they

@@ -362,6 +362,7 @@
         ;; :base-lispbuilder
         )
   (:import-from :cepl-gl
+                :cls
                 :pixel-format
                 :pixel-format-of
                 :describe-pixel-format
