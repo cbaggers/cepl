@@ -145,10 +145,21 @@
              ,@definitions
              ,(length definitions)))))))
 
+(defun make-struct-pixel-format (name slots)
+  (let* ((type (slot-type (first slots)))
+         (len (length slots))
+         (components (utils:kwd (subseq "RGBA" 0 len))))
+    (when (and (< len 5) (loop for i in slots always (eql (slot-type i) type))
+               (valid-pixel-format-p components type t nil))
+      `(defmethod pixel-format-of ((type (eql ',name)))
+         (pixel-format ,components ',type)))))
+
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defmacro defglstruct (name &body slot-descriptions)
   (when (keywordp name) (error "Keyword name are now allowed for glstructs"))
+  (unless (> (length slot-descriptions) 0) 
+    (error "Cannot have a glstruct with no slots"))
   (let ((slots (loop for slot in slot-descriptions collect
                     (destructuring-bind 
                           (slot-name slot-type &key (normalised nil) 
@@ -174,4 +185,5 @@
        ,@(make-translators name type-name value-name slots struct-name)
        ,@(make-getters-and-setters name value-name struct-name slots)
        ,(make-gl-struct-attrib-assigner name slots)
+       ,(make-struct-pixel-format name slot-descriptions)
        ',name)))

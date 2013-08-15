@@ -34,7 +34,7 @@
     ((:DEPTH t :float nil) :DEPTH-COMPONENT32F)
     ((:STENCIL-ONLY t :int nil) :STENCIL-INDEX8)
     ((:R t :ubyte nil) :R8)
-    ((:R t byte nil) :R8-SNORM)
+    ((:R t :byte nil) :R8-SNORM)
     ((:R t :ushort nil) :R16)
     ((:R t :short nil) :R16-SNORM)
     ((:RG t :ubyte nil) :RG8)
@@ -98,7 +98,23 @@
     (:depth 1) (:depth-stencil 2) 
     (t (length (symbol-name components)))))
 
-(defun pixel-format (components &optional (type :ubyte) (normalise t) reversed)
+(defun valid-pixel-format-p (components type normalise reversed)
+  (let ((component-length (get-component-length components)))
+    (when (and (find components *valid-pixel-components*)
+               (if (listp type) (eql component-length (length type)) t)) 
+      (destructuring-bind (sizes type)
+          (if (keywordp type)
+              (list nil (find type *valid-pixel-types*))
+              (and (eql component-length (length type))
+                   (or (assoc (if reversed (cons :r type) type)
+                              *valid-pixel-packed-sizes* :test #'equal)
+                       '(nil nil))))
+        (when (and type (not (and (not normalise) 
+                                  (not (find type *gl-integral-pixel-types*)))))
+          (list components type (if reversed (rest sizes) sizes)
+                normalise reversed component-length))))))
+
+(defun process-pixel-format (components type normalise reversed)
   (unless (find components *valid-pixel-components*)
     (error "Not a valid pixel component layout.~%~s not found in '~s"
            components *valid-pixel-components*))
@@ -112,18 +128,26 @@
                  (or (assoc (if reversed (cons :r type) type)
                             *valid-pixel-packed-sizes* :test #'equal)
                      '(nil nil))))
-      (unless type (error "Not a know pixel type: <components:~a type:~a>"
+      (unless type (error "Not a known pixel type: <components:~a type:~a>"
                           components type))
       (when (and (not normalise) (not (find type *gl-integral-pixel-types*)))
         (error "The type ~a cannot hold un-normalised integers" type))
-      (make-pixel-format :components components :type type 
-                         :sizes (if reversed (rest sizes) sizes)
-                         :normalise normalise :reversed reversed
-                         :comp-length component-length))))
+      (list components type (if reversed (rest sizes) sizes)
+            normalise reversed component-length))))
+
+(defun pixel-format (components &optional (type :ubyte) (normalise t) reversed)
+  (destructuring-bind 
+        (components type sizes normalise reversed component-length)
+      (process-pixel-format components type normalise reversed)
+    (make-pixel-format :components components :type type 
+                       :sizes (if reversed (rest sizes) sizes)
+                       :normalise normalise :reversed reversed
+                       :comp-length component-length)))
 
 ;; [TODO] swap intern for utils:kwd
 (defun compile-pixel-format (pixel-format)
   (let* ((components (pixel-format-components pixel-format))
+         (components (if (eq components :depth) :depth-component components))
          (gl-comps (or (rest (assoc components '((:r . :red) (:g . :green) 
                                                  (:b . :blue))))
                        components))
@@ -173,3 +197,14 @@
      :components components :type type :normalise normalise
      :sizes sizes :reversed nil
      :comp-length (get-component-length components))))
+
+
+;;--------------------------------------------------------------
+;; LOOKUPS
+;;---------
+
+(defmethod pixel-format-of ((type t))
+  (when (find type *valid-pixel-types*)
+    (if (or (eq type :int) (eq type :uint))
+        (pixel-format :r type nil)
+        (pixel-format :r type))))

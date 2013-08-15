@@ -6,6 +6,8 @@
 (defgeneric dimensions (object))
 (defgeneric backed-by (object))
 (defgeneric make-vao (gpu-arrays &optional indicies-array))
+(defgeneric pixel-format-of (type))
+
 
 (defun 1d-p (object)
   (= 1 (length (dimensions object))))

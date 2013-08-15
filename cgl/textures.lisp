@@ -45,10 +45,6 @@
           (internal-format object)
           (dimensions object)))
 
-(defun valid-upload-formatp (gpu-array format type)
-  (declare (ignore gpu-array format type))
-  t)
-
 ;;use with safe-exit thingy?
 (defmacro with-texture-bound ((texture &optional type) &body body)
   (let ((tex (gensym "texture"))
@@ -59,19 +55,59 @@
          (unbind-texture (slot-value ,tex 'texture-type))
          ,res))))
 
-(defun upload-c-array-to-gpuarray-t (gpu-array c-array format type)
-  ;; image
-  (unless (valid-upload-formatp gpu-array nil nil)
-    (error "Invalid upload format"))
-  (with-texture-bound ((texture gpu-array))
+(defun error-on-invalid-upload-formats (target internal-format pixel-format pixel-type)
+  (unless (and internal-format pixel-type pixel-format)
+    (error "Could not establish all the required formats for the pixel transfer"))
+  (when (and (find internal-format '(:depth-component :depth-component16
+                                        :depth-component24 :depth-component32f))
+               (not (find target '(:texture_2d :proxy_texture_2d
+                                   :texture_rectangle
+                                   :proxy_texture_rectangle))))
+    (error "Texture type is ~a. Cannot populate with ~a"
+           target internal-format))
+  (when (and (eq pixel-format :depth-component)
+             (not (find internal-format 
+                        '(:depth-component :depth-component16
+                          :depth-component24 :depth-component32f))))
+    (error "Pixel data is a depth format however the texture is not"))
+  (when (and (not (eq pixel-format :depth-component))
+             (find internal-format 
+                   '(:depth-component :depth-component16
+                     :depth-component24 :depth-component32f)))
+    (error "Pixel data is a depth format however the texture is not"))
+  t)
+
+(defun upload-c-array-to-gpuarray-t (gpu-array c-array 
+                                     &optional format type)
+  ;; if no format or type
+  (when (or (and format (not type)) (and type (not format)))
+    (error "cannot only specify either format or type, must be both or neither"))
+  (let* ((element-pf (pixel-format-of c-array))
+         (compiled-pf (compile-pixel-format element-pf))
+         (pix-format (or format (first compiled-pf)))
+         (pix-type (or type (second compiled-pf))))
     (with-slots (texture dimensions level-num layer-num face-num 
-                         internal-format texture-type) gpu-array
-      (case (length dimensions)
-        (2 (gl:tex-sub-image-2d texture-type level-num 0 0
-                                (first (dimensions c-array))
-                                (second (dimensions c-array))
-                                format type (pointer c-array)))
-        (t (error "ARGGHHHHHHH")))))
+                         internal-format texture-type) 
+        gpu-array
+      (error-on-invalid-upload-formats texture-type internal-format
+                                       pix-format pix-type)
+      (unless (equal (dimensions c-array) dimensions)
+        (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
+      (with-texture-bound ((texture gpu-array))
+        (case (length dimensions)
+          (1 (gl:tex-sub-image-1d texture-type level-num 0
+                                  (first (dimensions c-array))
+                                  format type (pointer c-array)))
+          (2 (gl:tex-sub-image-2d texture-type level-num 0 0
+                                  (first (dimensions c-array))
+                                  (second (dimensions c-array))
+                                  format type (pointer c-array)))
+          (3 (gl:tex-sub-image-3d texture-type level-num 0 0 0
+                                  (first (dimensions c-array))
+                                  (second (dimensions c-array))
+                                  (third (dimensions c-array))
+                                  format type (pointer c-array)))
+          (t (error "Cannot currently upload a c-array with more than 3 dimensions"))))))
   gpu-array)
 
 (defun upload-from-buffer-to-gpuarray-t (&rest args)
@@ -153,40 +189,61 @@
 ;; [TODO] how does mipmap-max affect this
 ;; [TODO] si the max layercount?
 ;; [TODO] should fail on layer-count=0?
-(defun make-texture (dimensions &key (internal-format :rgba8) (mipmap nil) 
-                                  (layer-count 1) (cubes nil)
-                                  (rectangle nil) (multisample nil)
-                                  (immutable t) (buffer-storage nil))
-  (if (and immutable (not buffer-storage))
-      ;; check for power of two - handle or warn
-      (let ((texture-type (establish-texture-type 
-                         (if (listp dimensions) (length dimensions) 1)
-                         mipmap (> layer-count 1) cubes 
-                         (every #'po2p dimensions) multisample 
-                         buffer-storage rectangle)))
-        (if texture-type
-            (if (and cubes (not (apply #'= dimensions)))
-                (error "Cube textures must be square")
-                (let ((texture (make-instance 
-                                'immutable-texture
-                                :texture-id (gen-texture)
-                                :base-dimensions dimensions
-                                :texture-type texture-type
-                                :mipmap-levels 
-                                (if mipmap
-                                    (floor (log (apply #'max dimensions) 2))
-                                    1)
-                                :layer-count layer-count
-                                :cubes cubes
-                                :internal-format internal-format
-                                :sampler-type (calc-sampler-type texture-type 
-                                                                 internal-format))))
-                  (with-texture-bound (texture)
-                    (allocate-texture texture))
-                  texture))
-            (error "This combination of texture features is invalid")))
-      (error "Textures with mutable storage and buffer backed 
-              textures are not yet implemented")))
+(defun make-texture (&key dimensions internal-format (mipmap nil) 
+                       (layer-count 1) (cubes nil) (rectangle nil)
+                       (multisample nil) (immutable t) (buffer-storage nil)
+                       initial-contents)
+  (let* ((pixel-format (when initial-contents 
+                         (pixel-format-of initial-contents)))
+         (internal-format 
+         (if internal-format
+             (if (pixel-format-p internal-format)
+                 (internal-format-from-pixel-format internal-format)
+                 internal-format)
+             (when initial-contents
+               (or (internal-format-from-pixel-format pixel-format)
+                   (error "Could not infer the internal-format")))))
+         (dimensions (if initial-contents
+                         (if dimensions
+                             (error "Cannot specify dimensions and have non nil initial-contents")
+                             (dimensions initial-contents))
+                         (if dimensions dimensions (error "must specify dimensions if no initial-contents provided")))))
+    (if (and immutable (not buffer-storage))
+        ;; check for power of two - handle or warn
+        (let ((texture-type (establish-texture-type 
+                             (if (listp dimensions) (length dimensions) 1)
+                             mipmap (> layer-count 1) cubes 
+                             (every #'po2p dimensions) multisample 
+                             buffer-storage rectangle)))
+          (if texture-type
+              (if (and cubes (not (apply #'= dimensions)))
+                  (error "Cube textures must be square")
+                  (let ((texture (make-instance 
+                                  'immutable-texture
+                                  :texture-id (gen-texture)
+                                  :base-dimensions dimensions
+                                  :texture-type texture-type
+                                  :mipmap-levels 
+                                  (if mipmap
+                                      (floor (log (apply #'max dimensions) 2))
+                                      1)
+                                  :layer-count layer-count
+                                  :cubes cubes
+                                  :internal-format internal-format
+                                  :sampler-type (calc-sampler-type texture-type 
+                                                                   internal-format))))
+                    (with-texture-bound (texture)
+                      (allocate-texture texture)
+                      (when initial-contents
+                        (destructuring-bind (pformat ptype)
+                            (compile-pixel-format pixel-format)
+                          (upload-c-array-to-gpuarray-t
+                           (texref texture) initial-contents
+                           pformat ptype))))
+                    texture))
+              (error "This combination of texture features is invalid")))
+        (error "Textures with mutable storage and buffer backed 
+              textures are not yet implemented"))))
 
 (defun allocate-texture (texture)
   (if (allocatedp texture)
@@ -243,12 +300,12 @@
 ;;------------------------------------------------------------
 
 
+(defmethod gl-push ((object c-array) (destination gpu-array-t))
+  (upload-c-array-to-gpuarray-t destination object))
+
 (defmethod gl-pull-1 ((object gpu-array-t))
   (declare (ignore object))
   (print "Should now pull the gpu-array-t to a c-array"))
-
-(defmethod gl-push ((object c-array) (destination gpu-array-t))
-  (print "Should now push the c-array to the gpu-array-t"))
 
 (defmethod backed-by ((object gpu-array-t))
   :texture)

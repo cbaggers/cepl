@@ -98,7 +98,12 @@
                 :flush
                 :viewport)
   (:shadow :float)
-  (:export :defglstruct
+  (:export :valid-pixel-format-p
+           :pixel-format
+           :internal-format-from-pixel-format
+           :pixel-format-from-internal-format
+           :pixel-format-of
+           :defglstruct
            :c-array-byte-size
            :gl-calc-byte-size
            :make-c-array-from-pointer
@@ -356,6 +361,8 @@
         ;; :base-lispbuilder
         )
   (:import-from :cepl-gl
+                :pixel-format
+                :pixel-format-of
                 :defpipeline
                 :defpipeline?
                 :defglstruct
@@ -363,6 +370,7 @@
                 :gl-pull-1
                 :gl-push
                 :make-c-array
+                :with-c-array                
                 :free-c-array
                 :aref-c
                 :c-populate
@@ -371,6 +379,8 @@
                 :gl-subseq
                 :with-gpu-array-as-c-array
                 :make-gpu-stream
-                :make-gpu-stream-from-gpu-arrays)
+                :make-gpu-stream-from-gpu-arrays
+                :make-texture                
+                :with-texture-bound)
   (:import-from :3dstub :pos :rot :color :scale)
   (:export :repl))

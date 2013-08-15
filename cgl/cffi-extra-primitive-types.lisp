@@ -11,12 +11,12 @@
   (:simple-parser :ubyte))
 
 (defmacro make-new-types ()
-  (let* ((new-user-types '((:ubyte-vec2 2 :uchar)
-                           (:ubyte-vec3 3 :uchar)
-                           (:ubyte-vec4 4 :uchar)
-                           (:byte-vec2 2 :char)
-                           (:byte-vec3 3 :char)
-                           (:byte-vec4 4 :char)))
+  (let* ((new-user-types '((:ubyte-vec2 2 :ubyte)
+                           (:ubyte-vec3 3 :ubyte)
+                           (:ubyte-vec4 4 :ubyte)
+                           (:byte-vec2 2 :byte)
+                           (:byte-vec3 3 :byte)
+                           (:byte-vec4 4 :byte)))
          (varjo-types (loop :for (type . len) :in varjo::*glsl-component-counts*
                          :collecting (list type len 
                                            (varjo:type-component-type 
@@ -39,9 +39,14 @@
                  (defmethod translate-into-foreign-memory
                      (value (type ,type-name) pointer)
                    ,@(loop :for j :below len :collect 
-                        `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))))))))
+                        `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))
+                 ,(when (< len 5)
+                        (let ((components (utils:kwd (subseq "RGBA" 0 len))))
+                          (when (cgl::valid-pixel-format-p components comp-type t nil)
+                            `(defmethod cgl::pixel-format-of ((comp-type (eql ,type)))
+                               (cgl::pixel-format ,components ',comp-type)))))
+                 ))))))
 (make-new-types)
-
 
 ;; Extra functions, these probably need to live somewhere else
 (defcfun (%memcpy "memcpy") :pointer

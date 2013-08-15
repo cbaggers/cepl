@@ -9,7 +9,9 @@
    (dimensions :initarg :dimensions :reader dimensions)
    (element-type :initarg :element-type :reader element-type)
    (row-byte-size :initarg :row-byte-size :reader row-byte-size)
-   (row-alignment :initarg :row-alignment :reader row-alignment)))
+   (row-alignment :initarg :row-alignment :reader row-alignment)
+   (element-pixel-format :initform nil :initarg :element-pixel-format
+                         :reader element-pixel-format)))
 
 ;; [TODO] should be baseclass each glstruct will inherit from this
 ;; [TODO] payload is an uncommited value, so if you have no pointer and
@@ -50,16 +52,22 @@
 
 (defun make-c-array-from-pointer (dimensions element-type pointer 
                                    &optional (alignment 1))
-  (unless dimensions (error "dimensions are not optional when making an array from a list"))
-  (multiple-value-bind (byte-size row-byte-size)
-      (gl-calc-byte-size element-type dimensions alignment)
-    (declare (ignore byte-size))
-    (make-instance 'c-array
-                   :pointer pointer
-                   :dimensions dimensions
-                   :element-type element-type
-                   :row-byte-size row-byte-size
-                   :row-alignment alignment)))
+  (unless dimensions 
+    (error "dimensions are not optional when making an array from a pointer"))
+  (let* ((p-format (pixel-format-p element-type))
+         (element-type2 (if p-format
+                            (pixel-format-element-type element-type)
+                            element-type)))
+    (multiple-value-bind (byte-size row-byte-size)
+        (gl-calc-byte-size element-type dimensions alignment)
+      (declare (ignore byte-size))
+      (make-instance 'c-array
+                     :pointer pointer
+                     :dimensions dimensions
+                     :element-type element-type2
+                     :row-byte-size row-byte-size
+                     :row-alignment alignment
+                     :element-pixel-format (when p-format element-type)))))
 
 (defmacro with-c-array ((var-name dimensions element-type
                                   &key initial-contents displaced-by 
@@ -90,7 +98,11 @@
 ; [TODO] Bad error message
 (defun make-c-array (dimensions element-type 
                       &key initial-contents displaced-by (alignment 1))
-  (let ((dimensions (if (listp dimensions) dimensions (list dimensions))))
+  (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
+         (p-format (pixel-format-p element-type))
+         (element-type2 (if p-format
+                          (pixel-format-element-type element-type)
+                          element-type)))
     (when (> (length dimensions) 4) 
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))
@@ -103,19 +115,20 @@
           (error "Cannot displace and populate array at the same time")
           (when (or (not (eql (reduce #'* dimensions) 
                               (reduce #'* (dimensions displaced-by))))
-                    (not (eq (element-type displaced-by) element-type))
+                    (not (eq (element-type displaced-by) element-type2))
                     (> (row-alignment displaced-by) 1))
             (error "Byte size and type of arrays must match and alignment must be 1"))))
     (multiple-value-bind (byte-size row-byte-size)
-        (gl-calc-byte-size element-type dimensions alignment)
+        (gl-calc-byte-size element-type2 dimensions alignment)
       (let ((new-array (make-instance 
                         'c-array
                         :pointer (or displaced-by 
                                      (cffi::%foreign-alloc byte-size))
                         :dimensions dimensions
-                        :element-type element-type
+                        :element-type element-type2
                         :row-byte-size row-byte-size
-                        :row-alignment alignment)))
+                        :row-alignment alignment
+                        :element-pixel-format (when p-format element-type))))
         (when (not (null initial-contents))
           (cond ((listp initial-contents)
                  (c-populate new-array initial-contents))
@@ -222,3 +235,7 @@
 
 (defmethod gl-push ((object list) (destination c-array))
   (c-populate destination object))
+
+(defmethod pixel-format-of ((type c-array))
+  (or (element-pixel-format type)
+      (pixel-format-of (element-type type))))
