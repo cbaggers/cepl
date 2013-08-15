@@ -215,6 +215,4 @@
 
 (defmethod pixel-format-of ((type t))
   (when (find type *valid-pixel-types*)
-    (if (or (find type '(:int :uint)))
-        (pixel-format :r type nil)
-        (pixel-format :r type))))
+    (pixel-format :r type)))
