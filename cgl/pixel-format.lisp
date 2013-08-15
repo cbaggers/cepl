@@ -8,6 +8,7 @@
 ;;--------------------------------------------------------------
 ;; PIXEL FORMAT
 ;;--------------
+;; [TODO] Need 3rd option for normalised?..:na for floats
 ;; [TODO] Add guaranteed flags to formats
 ;; [TODO] add half float
 ;; [TODO] add :stencil-only
@@ -47,10 +48,10 @@
     ((:RGBA t :ubyte nil) :RGBA8)
     ((:RGBA t :byte nil) :RGBA8-SNORM)
     ((:RGBA t :ushort nil) :RGBA16)
-    ((:R nil :float nil) :R32F)
-    ((:RG nil :float nil) :RG32F)
-    ((:RGB nil :float nil) :RGB32F)
-    ((:RGBA nil :float nil) :RGBA32F)
+    ((:R t :float nil) :R32F)
+    ((:RG t :float nil) :RG32F)
+    ((:RGB t :float nil) :RGB32F)
+    ((:RGBA t :float nil) :RGBA32F)
     ((:R nil :byte nil) :R8I)
     ((:R nil :ubyte nil) :R8UI)
     ((:R nil :short nil) :R16I)
@@ -91,7 +92,16 @@
 (defstruct pixel-format
   components type normalise sizes reversed comp-length)
 
-;; [TODO] byte and ubyte to cffi 
+(defun describe-pixel-format (object)
+  (let ((pf (if (cgl::pixel-format-p object) object (pixel-format-of object))))
+    (print "---------------")
+    (when pf
+      (print pf)
+      (let ((cf (cgl::compile-pixel-format pf)))
+        (format t "~%format: ~s~%type: ~s" (first cf) (second cf)))
+      (format t "~%internalFormat: ~s" (cgl:internal-format-from-pixel-format pf)))
+    (print "---------------"))
+  t)
 
 (defun get-component-length (components)
   (case components 
@@ -205,6 +215,6 @@
 
 (defmethod pixel-format-of ((type t))
   (when (find type *valid-pixel-types*)
-    (if (or (eq type :int) (eq type :uint))
+    (if (or (find type '(:int :uint)))
         (pixel-format :r type nil)
         (pixel-format :r type))))

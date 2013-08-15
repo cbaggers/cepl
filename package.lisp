@@ -103,6 +103,7 @@
            :internal-format-from-pixel-format
            :pixel-format-from-internal-format
            :pixel-format-of
+           :describe-pixel-format
            :defglstruct
            :c-array-byte-size
            :gl-calc-byte-size
@@ -363,6 +364,7 @@
   (:import-from :cepl-gl
                 :pixel-format
                 :pixel-format-of
+                :describe-pixel-format
                 :defpipeline
                 :defpipeline?
                 :defglstruct
