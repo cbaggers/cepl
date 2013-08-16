@@ -99,8 +99,7 @@
                 :viewport
                 :delete-shader)
   (:shadow :float)
-  (:export :p-n-t
-           :gl-free
+  (:export :gl-free
            :valid-pixel-format-p
            :pixel-format
            :internal-format-from-pixel-format
@@ -167,6 +166,7 @@
            :free-textures
            :free-gpu-array
            :free-vao
+           :p-n-t
            ;----------
            :delete-shader
            :clear-color
@@ -383,7 +383,6 @@
         ;; :base-lispbuilder
         )
   (:import-from :cepl-gl
-                :p-n-t
                 :cls
                 :pixel-format
                 :pixel-format-of
@@ -406,6 +405,7 @@
                 :make-gpu-stream
                 :make-gpu-stream-from-gpu-arrays
                 :make-texture                
-                :with-texture-bound)
+                :with-texture-bound
+                :p-n-t)
   (:import-from :3dstub :pos :rot :color :scale)
   (:export :repl))
