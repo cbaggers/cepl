@@ -10,7 +10,9 @@
 
 ;;------------------------------------------------------------
 
-(defclass immutable-texture ()
+(defclass gl-texture () ())
+
+(defclass immutable-texture (gl-texture)
   ((texture-id :initarg :texture-id :reader texture-id)
    (base-dimensions :initarg :base-dimensions :accessor base-dimensions)
    (texture-type :initarg :texture-type :reader texture-type) ;the structure

@@ -153,6 +153,8 @@
            :calc-sampler-type
            :dimensions-at-mipmap-level
            :establish-texture-type
+           :gl-texture
+           :gpu-array-t
            :texref
            :defpipeline
            :defpipeline?
