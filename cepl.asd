@@ -27,6 +27,7 @@
                (:file "cgl/generics")
                (:file "cgl/pixel-format")
                (:file "cgl/cffi-extra-primitive-types")
+               (:file "cgl/types")
                (:file "cgl/gl-extras")
                (:file "cgl/c-arrays")
                (:file "cgl/structs")

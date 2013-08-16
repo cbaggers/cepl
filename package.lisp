@@ -99,7 +99,8 @@
                 :viewport
                 :delete-shader)
   (:shadow :float)
-  (:export :gl-free
+  (:export :p-n-t
+           :gl-free
            :valid-pixel-format-p
            :pixel-format
            :internal-format-from-pixel-format
@@ -372,6 +373,7 @@
         ;; :base-lispbuilder
         )
   (:import-from :cepl-gl
+                :p-n-t
                 :cls
                 :pixel-format
                 :pixel-format-of
