@@ -81,7 +81,7 @@
                   (make-gpu-array verts :dimensions (length verts)
                                   :element-type 'vert-data)
                   :length (length indicies)
-                  :indicies-array (make-gpu-array 
+                  :index-array (make-gpu-array 
                                    indicies
                                    :dimensions (length indicies)
                                    :element-type :unsigned-short))))

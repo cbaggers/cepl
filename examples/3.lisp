@@ -47,7 +47,7 @@
                     :dimensions 24))
          (stream (make-gpu-stream-from-gpu-arrays
                   verts
-                  :indicies-array indicies)))
+                  :index-array indicies)))
     (setf *entities* (list (make-entity :stream stream)
                            (make-entity :stream stream
                                         :loop-angle 3.14))))

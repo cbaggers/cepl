@@ -7,7 +7,7 @@
 (defgeneric gl-pull-1 (object))
 (defgeneric dimensions (object))
 (defgeneric backed-by (object))
-(defgeneric make-vao (gpu-arrays &optional indicies-array))
+(defgeneric make-vao (gpu-arrays &optional index-array))
 (defgeneric pixel-format-of (type))
 
 

@@ -352,6 +352,16 @@
   (:import-from :vector4
                 :make-vector4))
 
+(defpackage :primitives
+  (:use :cl
+        :base-vectors
+        :base-matrices
+        :base-maths)
+  (:export :primitive-data
+           :plain-data
+           :box-data
+           :sphere-data))
+
 (defpackage :3dstub
   (:nicknames :stub)
   (:use :cl

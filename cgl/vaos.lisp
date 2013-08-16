@@ -73,19 +73,19 @@
        (find (element-type array) '(:ubyte :ushort :uint :unsigned-short
                                     :unsigned-byte :unsigned-int))))
 
-(defmethod make-vao ((gpu-arrays gpuarray) &optional indicies-array)
-  (make-vao (list gpuarray) indicies-array))
+(defmethod make-vao ((gpu-arrays gpuarray) &optional index-array)
+  (make-vao (list gpuarray) index-array))
 
-(defmethod make-vao ((gpu-arrays list) &optional indicies-array)
+(defmethod make-vao ((gpu-arrays list) &optional index-array)
   "makes a vao using a list of gpu-arrays as the source data
    (remember that you can also use gpu-sub-array here if you
    need a subsection of a gpu-array).
-   You can also specify an indicies-array which will be used as
+   You can also specify an index-array which will be used as
    the indicies when rendering"
   (unless (and (every #'1d-p gpu-arrays) 
-               (or (null indicies-array) (suitable-array-for-index-p
-                                          indicies-array))))
-  (let ((element-buffer (when indicies-array (gpuarray-buffer indicies-array)))
+               (or (null index-array) (suitable-array-for-index-p
+                                          index-array))))
+  (let ((element-buffer (when index-array (gpuarray-buffer index-array)))
         (vao (gl:gen-vertex-array))
         (attr 0))
     (force-bind-vao vao)

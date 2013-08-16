@@ -98,7 +98,7 @@
                   (make-gpu-array verts :element-type 'vert-data
                                       :dimensions (length verts))
                   :length (length (second monkey-data))
-                  :indicies-array (make-gpu-array
+                  :index-array (make-gpu-array
                                    (second monkey-data)
                                    :element-type :unsigned-short
                                    :dimensions (length (second monkey-data))))))

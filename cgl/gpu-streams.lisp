@@ -39,7 +39,7 @@
     (free-vao (gpu-stream-vao gpu-stream)))
   (blank-gpu-stream gpu-stream))
 
-(defun make-gpu-stream-from-gpu-arrays (gpu-arrays &key indicies-array (start 0)
+(defun make-gpu-stream-from-gpu-arrays (gpu-arrays &key index-array (start 0)
                                      length
                                      (draw-type :triangles))
   "This function simplifies making the gpu-stream if you are 
@@ -51,20 +51,19 @@
    (make-gpu-stream-from-gpu-arrays 
      :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
                   ,(gpu-sub-array monster-col-data 1000 2000))
-     :indicies-array monster-indicies-array
+     :index-array monster-index-array
      :length 1000)"
   (let* ((gpu-arrays (if (gpuarray-p gpu-arrays) (list gpu-arrays) gpu-arrays))
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
          ;; OF TRIANGLES
          (length (or length 
-                     (when indicies-array (first (dimensions indicies-array)))
+                     (when index-array (first (dimensions index-array)))
                      (apply #'min (mapcar #'(lambda (x) (first (dimensions x)))
                                           gpu-arrays)))))
-    (make-gpu-stream :vao (make-vao gpu-arrays indicies-array)
+    (make-gpu-stream :vao (make-vao gpu-arrays index-array)
                      :start start
                      :length length
                      :draw-type draw-type
-                     :index-type (when indicies-array 
-                                   (element-type indicies-array))
+                     :index-type (when index-array (element-type index-array))
                      :managed t)))

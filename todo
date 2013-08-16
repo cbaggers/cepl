@@ -3,6 +3,7 @@
 * Research safe foreign data initialisation so an error does cause a memrory leak 
   look at with-foreign-object for hints
 * read http://www.opengl.org/wiki/Buffer_Object and look at the buffer corruption section
+* base-macros....what is in here and why
 
 -----
 

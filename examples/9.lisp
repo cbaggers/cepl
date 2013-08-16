@@ -80,7 +80,7 @@
                    (make-gpu-array verts :element-type 'vcn
                                        :dimensions (length verts))
                    :length (length (second monkey-data))
-                   :indicies-array (make-gpu-array 
+                   :index-array (make-gpu-array 
                                     (second monkey-data)
                                     :dimensions (length (second monkey-data))
                                     :element-type :unsigned-short))))

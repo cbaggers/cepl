@@ -49,6 +49,7 @@
                (:file "maths/matrices/matrices")
                (:file "maths/quaternions")
                (:file "cepl-camera")
+               (:file "primitives")
                (:file "model-parsers/parse-obj")
                (:file "model-parsers/parse-lisp")
                (:file "model-parsers/classimp-cepl-extras")

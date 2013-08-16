@@ -1,11 +1,12 @@
-(in-package :cepl)
+(in-package :primitives)
 
-(defun primitive-data (type)
+;; [TODO] Add Cone & Cylinder
+
+(defun primitive-data (type &optional (size 1.0))
   (case type
-    (:plain (plain-data))
-    (:cube (box-data))
-    (:box (box-data 2.0 1.5 3.0))
-    (:sphere (sphere-data))
+    (:plain (plain-data size))
+    ((:box :cube) (box-data size size size))
+    (:sphere (sphere-data size))
     (t (error "Do not have data for that primitive"))))
 
 (defun plain-data (&optional (size 1.0))

@@ -71,7 +71,7 @@
          :stream (make-gpu-stream-from-gpu-arrays
                   (make-gpu-array verts :element-type 'vert-data
                                       :dimensions (length verts))
-                  :indicies-array (make-gpu-array 
+                  :index-array (make-gpu-array 
                                    indicies 
                                    :element-type :unsigned-short
                                    :dimensions (length indicies)))))))
