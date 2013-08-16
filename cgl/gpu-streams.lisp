@@ -36,8 +36,8 @@
 
 (defun free-gpu-stream (gpu-stream)
   (when (gpu-stream-managed gpu-stream)
-    (free-vao (gpu-stream-vao gpu-stream))
-    (blank-gpu-stream gpu-stream)))
+    (free-vao (gpu-stream-vao gpu-stream)))
+  (blank-gpu-stream gpu-stream))
 
 (defun make-gpu-stream-from-gpu-arrays (gpu-arrays &key indicies-array (start 0)
                                      length

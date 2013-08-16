@@ -76,12 +76,13 @@
 
 (defun gen-buffer (&key initial-contents 
                      (buffer-target :array-buffer) 
-                     (usage :static-draw))
+                     (usage :static-draw)
+                     (managed nil))
   (declare (symbol buffer-target usage))
   "Creates a new opengl buffer object. 
    Optionally you can provide a c-array as the :initial-contents
    to have the buffer populated with the contents of the array"
-  (let ((new-buffer (make-glbuffer)))
+  (let ((new-buffer (make-glbuffer :managed managed)))
     (if initial-contents
         (buffer-data new-buffer initial-contents buffer-target
                      usage)
