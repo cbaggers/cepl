@@ -33,6 +33,36 @@
             (slot-value object 'base-dimensions)
             (when (> m 1) m) (when (> l 1) l) c)))
 
+(defmethod gl-free ((object gl-texture))
+  (free-texture object))
+
+(defun blank-texture-object (texture)
+  (with-slots (texture-id base-dimensions texture-type internal-format 
+                          sampler-type mipmap-levels layer-count cubes
+                          allocated) texture
+    (setf texture-id -1
+          base-dimensions nil
+          texture-type nil
+          internal-format nil
+          sampler-type nil
+          mipmap-levels nil
+          layer-count nil
+          cubes nil
+          allocated nil)))
+
+(defun free-texture (texture)
+  (with-foreign-object (id :uint) 
+    (setf (mem-ref id :uint) (texture-id texture))
+    (setf (texture-id texture) -1)
+    (%gl:delete-textures 1 id)))
+
+;; [TODO] would a unboxed lisp array be faster?
+(defun free-textures (textures)
+  (with-foreign-object (id :uint (length textures))
+    (loop :for texture :in textures :for i :from 0 :do
+       (setf (mem-aref id :uint i) (texture-id texture)))
+    (%gl:delete-textures 1 id)))
+
 (defclass gpu-array-t ()
   ((texture :initarg :texture :reader texture)
    (texture-type :initarg :texture-type :reader texture-type)
@@ -46,6 +76,17 @@
   (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :TEXTURE>"
           (internal-format object)
           (dimensions object)))
+
+(defmethod gl-free ((object gpu-array-t))
+  (free-gpu-array-t object))
+
+(defmethod free-gpu-array ((gpu-array gpu-array-t))
+  (free-gpu-array-t gpu-array))
+
+(defun free-gpu-array-t (texture)
+  (if (typep texture 'immutable-texture)
+      (error "Cannot free gpu-arrays that live inside an immutable texture")
+      (error "Mutable textures not yet implmented...How did you get this error?")))
 
 ;;use with safe-exit thingy?
 (defmacro with-texture-bound ((texture &optional type) &body body)

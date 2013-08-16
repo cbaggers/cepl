@@ -96,9 +96,11 @@
                 :clear
                 :clear-depth
                 :flush
-                :viewport)
+                :viewport
+                :delete-shader)
   (:shadow :float)
-  (:export :valid-pixel-format-p
+  (:export :gl-free
+           :valid-pixel-format-p
            :pixel-format
            :internal-format-from-pixel-format
            :pixel-format-from-internal-format
@@ -142,8 +144,6 @@
            :bind-vertex-array
            :make-vao-from-formats
            :make-vao
-           :add-vao-to-pool
-           :free-all-vaos-in-pool
            :make-gpu-stream
            :make-gpu-stream-from-gpu-arrays
            :make-texture
@@ -159,7 +159,15 @@
            :defpipeline
            :defpipeline?
            :free-managed-resources
+           :free-buffer
+           :free-buffers
+           :free-gpu-stream
+           :free-texture
+           :free-textures
+           :free-gpu-array
+           :free-vao
            ;----------
+           :delete-shader
            :clear-color
            :cls
            :enable

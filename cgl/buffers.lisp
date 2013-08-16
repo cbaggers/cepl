@@ -3,6 +3,8 @@
 ;;; BUFFERS ;;;
 ;;;---------;;;
 
+;; [TODO] Should buffers have gl-pull and gl-push?
+
 (defstruct glbuffer
   "This is our opengl buffer object. Along with the opengl
    buffer name (buffer-id) we also store the layout of the data
@@ -12,17 +14,43 @@
    for example:
    `((:float 12 0) ('vert-data 140 12))"
   (buffer-id (car (gl:gen-buffers 1)))
-  (format nil))
+  (format nil)
+  (managed nil))
+
+(defmethod gl-free ((object glbuffer))
+  (free-buffer object))
+
+(defun blank-buffer-object (buffer)
+  (setf (glbuffer-buffer-id buffer) -1)
+  (setf (glbuffer-format buffer) nil)
+  (setf (glbuffer-managed buffer) nil)
+  buffer)
+
+(defun free-buffer (buffer)
+  (with-foreign-object (id :uint) 
+    (setf (mem-ref id :uint) (glbuffer-buffer-id buffer))
+    (blank-buffer-object buffer)
+    (%gl:delete-buffers 1 id)))
+
+;; [TODO] would a unboxed lisp array be faster?
+(defun free-buffers (buffers)
+  (with-foreign-object (id :uint (length buffers))
+    (loop :for buffer :in buffers :for i :from 0 :do
+       (setf (mem-aref id :uint i) (glbuffer-buffer-id buffer))
+       (blank-buffer-object buffer))    
+    (%gl:delete-buffers 1 id)))
 
 ;; [TODO] Implement buffer freeing properly
 (let ((buffer-pool nil))
   (defun add-buffer-to-pool (buffer)
-    (setf buffer-pool (cons buffer buffer-pool))
-    buffer)
+    (setf (glbuffer-managed buffer) t)
+    (setf buffer-pool (cons buffer buffer-pool)) buffer)
+  (defun free-buffer-from-pool (buffer)
+    (setf buffer-pool (remove buffer buffer-pool))
+    (free-buffer buffer))
   (defun free-all-buffers-in-pool ()
-    (mapcar #'(lambda (x) (declare (ignore x))
-                      (print "freeing a buffer")) 
-            buffer-pool)))
+    (print "Freeing Buffers")
+    (free-buffers buffer-pool)))
 
 ;; [TODO] This needs a rework given how gl targets operate
 (let ((buffer-id-cache nil)

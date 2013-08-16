@@ -1,16 +1,15 @@
+* Object that represents the opengl state machine. Directly address slots etc
+* Copy between buffer (gpu-arrays)
+* Research safe foreign data initialisation so an error does cause a memrory leak 
+  look at with-foreign-object for hints
+* read http://www.opengl.org/wiki/Buffer_Object and look at the buffer corruption section
+
+-----
+
 * make-gpu-array with list is failing 
   ok at really odd  times so is from gl-array... this is odd
   seems to be when created using defparameter...so it doesnt like
   top level for some reason?
-
-* (defpipeline? draw-ortho ((data vdata) &uniform (offset :vec2))
-   (:vertex (setf gl-position (+ (pos data) (vec4 offset 0.0 0.0)))
-            (out (the-color :smooth) (color data)))
-   (:fragment (out final-color the-color)))
-
-  as you can see above, the type of 'data' is vdata. But we dont 
-  have to quote it... is that lispy? Yes, that is inline withg 
-  defamethod.
 
 * We need a representation of frame buffers...or whatever those 
    things are! I kind of feel that running a shader should return
@@ -19,8 +18,6 @@
 
 * add set culling? combined enabling, setting winding-order and
   cull-face in one move.
-
-* swizzle is named incorrectly, its really a generic make-vector4
 
 * stream could have base offset so draw-element-base thingy works
 
@@ -38,9 +35,5 @@
 
 * work through the glossaries of arc-synth and check args names
    in cepl-gl for conformance
-
-* index gpu-arrays could be populated using vectors...as long as each
-   is kept in order things will work e.g. '(1 2 3 4) == '(#(1 2) #(3
-   4))
 
 * cepl - defmemo is broken as an idea

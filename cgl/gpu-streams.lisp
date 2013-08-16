@@ -20,15 +20,24 @@
   (start 0 :type unsigned-byte)
   (length 1 :type unsigned-byte)
   (draw-type :triangles :type symbol)
-  (index-type nil))
+  (index-type nil)
+  (managed nil))
 
-(let ((vao-pool (make-hash-table)))
-  (defun add-vao-to-pool (vao key)
-    (setf (gethash key vao-pool) vao)  vao)
+(defmethod gl-free ((object gpu-stream))
+  (free-gpu-stream object))
 
-  (defun free-all-vaos-in-pool ()
-    (mapcar #'(lambda (x) (declare (ignore x)) (print "freeing a vao")) 
-            vao-pool)))
+(defun blank-gpu-stream (gpu-stream)
+  (setf (gpu-stream-vao gpu-stream) nil)
+  (setf (gpu-stream-start gpu-stream) 0)
+  (setf (gpu-stream-length gpu-stream) 0)
+  (setf (gpu-stream-draw-type gpu-stream) nil)
+  (setf (gpu-stream-index-type gpu-stream) nil)
+  (setf (gpu-stream-managed gpu-stream) nil))
+
+(defun free-gpu-stream (gpu-stream)
+  (when (gpu-stream-managed gpu-stream)
+    (free-vao (gpu-stream-vao gpu-stream))
+    (blank-gpu-stream gpu-stream)))
 
 (defun make-gpu-stream-from-gpu-arrays (gpu-arrays &key indicies-array (start 0)
                                      length
@@ -57,4 +66,5 @@
                      :length length
                      :draw-type draw-type
                      :index-type (when indicies-array 
-                                   (element-type indicies-array)))))
+                                   (element-type indicies-array))
+                     :managed t)))

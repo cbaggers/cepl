@@ -13,6 +13,25 @@
    (element-pixel-format :initform nil :initarg :element-pixel-format
                          :reader element-pixel-format)))
 
+;; [TODO] Expand this
+(defun blank-c-array-object (c-array)
+  (with-slots (pointer dimensions element-type row-byte-size 
+                       row-alignment element-pixel-format) c-array
+    (setf pointer nil
+          dimensions nil
+          element-type nil
+          row-byte-size nil
+          row-alignment nil
+          element-pixel-format nil)))
+
+(defmethod gl-free ((object c-array))
+  (free-c-array object))
+
+(defun free-c-array (c-array)
+  "Frees the specified c-array."
+  (foreign-free (pointer c-array))
+  (blank-c-array-object c-array))
+
 ;; [TODO] should be baseclass each glstruct will inherit from this
 ;; [TODO] payload is an uncommited value, so if you have no pointer and
 ;;        you set the object you will populate the payload.
@@ -78,11 +97,6 @@
                                    :displaced-by ,displaced-by
                                    :alignment ,alignment)))
      (unwind-protect (progn ,@body) (free-c-array ,var-name))))
-
-
-(defun free-c-array (c-array)
-  "Frees the specified c-array."
-  (foreign-free (pointer c-array)))
 
 (defun clone-c-array (c-array)
   (let* ((size (c-array-byte-size c-array))

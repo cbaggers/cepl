@@ -1,7 +1,6 @@
 (in-package :cgl)
 
 (defun free-managed-resources ()
-  (free-all-vaos-in-pool)
   (free-all-buffers-in-pool))
 
 ;; [TODO] There can be only one!!

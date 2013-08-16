@@ -1,5 +1,7 @@
 (in-package :cgl)
 
+;; [TODO] Need to be able to delete programs...How does this fit in lisp?
+
 (defparameter *sampler-types*
   '(:isampler-1D :isampler-1d-Array :isampler-2D :isampler-2d-Array
     :isampler-2d-MS :isampler-2d-MS-Array :isampler-2d-Rect
@@ -400,8 +402,8 @@
     (if (not (gl:get-program program :link-status))
         (error (format nil "Error Linking Program~%~a" 
                        (gl:get-program-info-log program))))
-    (loop for shader in shaders
-       do (gl:detach-shader program shader))
+    (loop :for shader :in shaders :do
+       (gl:detach-shader program shader))
     program))
 
 ;; [TODO] Need to sort gpustream indicies thing

@@ -1,5 +1,7 @@
 (in-package :cgl)
 
+(defgeneric gl-free (object))
+(defgeneric free-gpu-array (gpu-array))
 (defgeneric gl-push (object destination))
 (defgeneric gl-pull (object))
 (defgeneric gl-pull-1 (object))

@@ -3,6 +3,7 @@
 ;; [TODO] Justify your use of the gl- prefix everywhere.
 ;; [TODO] alignment, what the hell do we do with that? I'm a bit 
 ;;        drunk to make these choices right now
+;; [TODO] How do we free these? Tag buffer format type as :free and handle?
 
 ;;;--------------------------------------------------------------
 ;;; GPUARRAYS ;;;
@@ -23,6 +24,34 @@
 (defmethod backed-by ((object gpuarray))
   :buffer)
 
+(defmethod gl-free ((object gpuarray))
+  (free-gpu-array-b object))
+
+(defmethod free-gpu-array ((gpu-array gpuarray))
+  (free-gpu-array-b gpu-array))
+
+(defun blank-gpu-array-b-object (gpu-array)
+  (setf (gpuarray-buffer gpu-array) nil
+        (gpuarray-format-index gpu-array) nil
+        (gpuarray-start gpu-array) nil
+        (gpuarray-dimensions gpu-array) nil
+        (gpuarray-access-style gpu-array) nil))
+
+;; we only set the buffer slot type as undefined as the size and
+;; offset dont change
+;; If the buffer lives in the pool and all formats are undefined
+;; then free it.
+(defun free-gpu-array-b (gpu-array)
+  (let* ((buffer (gpuarray-buffer gpu-array))
+         (buffer-formats (glbuffer-format buffer)))
+    (setf (first (nth (gpuarray-format-index gpu-array) buffer-formats))
+          :UNDEFINED)
+    (when (and (glbuffer-managed buffer)
+               (loop :for format :in buffer-formats :always 
+                  (eq (car format) :UNDEFINED)))
+      (free-buffer-from-pool buffer)))
+  (blank-gpu-array-b-object gpu-array))
+
 ;;---------------------------------------------------------------
 
 (defun gpuarray-format (gpu-array)
@@ -38,11 +67,11 @@
 (defmethod element-type ((object gpuarray))
   (first (gpuarray-format object)))
 
-;; [TODO] This looks wrong, the beggining right? NO!
+;; [TODO] This looks wrong, the beginning right? NO!
 ;;        remember that the gpu-array could be a sub-array
 ;;        in that case the
 (defun gpuarray-offset (gpu-array)
-  "Returns the offset in bytes from the beggining of the buffer
+  "Returns the offset in bytes from the beginning of the buffer
    that this gpuarray is stored at"
   (let ((format (gpuarray-format gpu-array)))
    (+ (third format) (gl-calc-byte-size (first format) 

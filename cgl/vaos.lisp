@@ -7,6 +7,18 @@
 ;; VAOS ;;
 ;;------;;
 
+(defun free-vao (vao)
+  (with-foreign-object (id :uint) 
+    (setf (mem-ref id :uint) vao)
+    (%gl:delete-vertex-arrays 1 id)))
+
+;; [TODO] would a unboxed lisp array be faster?
+(defun free-vaos (vaos)
+  (with-foreign-object (id :uint (length vaos))
+    (loop :for vao :in vaos :for i :from 0 :do
+       (setf (mem-aref id :uint i) vao))
+    (%gl:delete-vertex-arrays 1 id)))
+
 ;; [TODO] Vao changes the inhabitants of :vertex-array etc
 ;;        this should be undone
 (let ((vao-cache nil))
@@ -17,38 +29,17 @@
   (defun force-bind-vao (vao)
     (gl:bind-vertex-array vao)
     (setf vao-cache vao)))
-
 (setf (documentation 'bind-vao 'function) 
       "Binds the vao specfied")
-
 (setf (symbol-function 'bind-vertex-array) #'bind-vao)
 
-;; glVertexAttribPointer
-;; ---------------------
-;; GL_BYTE
-;; GL_UNSIGNED_BYTE
-;; GL_SHORT
-;; GL_UNSIGNED_SHORT
-;; GL_INT
-;; GL_UNSIGNED_INT 
-;; GL_HALF_FLOAT
-;; GL_FLOAT
+;; [TODO] Types need full support. Read glVertexAttribPointer and work out 
+;;        what to do with gl_half_float, gl_double, gl_fixed, gl_int_2_10_10_10_rev
+;;        & gl_unsigned_int_2_10_10_10_rev
+;; [TODO] Read about glVertexAttribLPointer 
 
-;; GL_DOUBLE
-;; GL_FIXED
-;; GL_INT_2_10_10_10_REV
-;; GL_UNSIGNED_INT_2_10_10_10_REV
-
-;; glVertexAttribLPointer 
-;; ----------------------
-;; GL_DOUBLE 
-
-;; buffer format is a list whose sublists are of the format
-;; type, length, byte-offset-from-start-of-buffer
-
-;; For element-array-buffer the indices can be unsigned bytes, 
-;; unsigned shorts, or unsigned ints. 
-
+;; [TODO] Use suitable-array-for-index-p
+;; [TODO] Sanity check dimensions of buffer contents?
 (defun make-vao-from-formats (formats &key element-buffer)
   "Makes a vao from a list of buffer formats.
    The formats list should be laid out as follows:
@@ -75,10 +66,6 @@
       (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
     vao))
-
-
-;; buffer format is a list whose sublists are of the format
-;; type, length, byte-offset-from-start-of-buffer
 
 (defun suitable-array-for-index-p (array)
   (and (eql (length (glbuffer-format (gpuarray-buffer array))) 1)
