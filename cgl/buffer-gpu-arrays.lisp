@@ -39,8 +39,7 @@
 
 ;; we only set the buffer slot type as undefined as the size and
 ;; offset dont change
-;; If the buffer lives in the pool and all formats are undefined
-;; then free it.
+;; If the buffer is managed and all formats are undefined then free it.
 (defun free-gpu-array-b (gpu-array)
   (let* ((buffer (gpuarray-buffer gpu-array))
          (buffer-formats (glbuffer-format buffer)))
@@ -49,7 +48,7 @@
     (when (and (glbuffer-managed buffer)
                (loop :for format :in buffer-formats :always 
                   (eq (car format) :UNDEFINED)))
-      (free-buffer-from-pool buffer)))
+      (free-buffer buffer)))
   (blank-gpu-array-b-object gpu-array))
 
 ;;---------------------------------------------------------------
@@ -89,7 +88,7 @@
                            &key element-type dimensions
                              (access-style :static-draw))
   (declare (ignore initial-contents))
-  (let ((buffer (add-buffer-to-pool (gen-buffer :managed t))))
+  (let ((buffer (gen-buffer :managed t)))
     (make-gpuarray :buffer (buffer-reserve-block
                             buffer element-type dimensions
                             :array-buffer access-style)
@@ -109,7 +108,7 @@
 
 (defmethod make-gpu-array ((initial-contents c-array) 
                            &key (access-style :static-draw))
-  (let ((buffer (add-buffer-to-pool (gen-buffer :managed t))))
+  (let ((buffer (gen-buffer :managed t)))
     (make-gpuarray :buffer (buffer-data buffer initial-contents
                                         :array-buffer access-style)
                    :format-index 0
@@ -131,9 +130,8 @@
    Finally you can provide an existing buffer if you want to
    use it rather than creating a new buffer. Note that all 
    existing data in the buffer will be destroyed in the process"
-  (let ((buffer (add-buffer-to-pool
-                 (multi-buffer-data (gen-buffer :managed t) c-arrays 
-                                    :array-buffer access-style))))
+  (let ((buffer (multi-buffer-data (gen-buffer :managed t) c-arrays 
+                                   :array-buffer access-style)))
     (loop :for c-array :in c-arrays :for i :from 0 :collecting 
        (make-gpuarray :buffer buffer
                       :format-index i

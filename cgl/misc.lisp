@@ -1,8 +1,5 @@
 (in-package :cgl)
 
-(defun free-managed-resources ()
-  (free-all-buffers-in-pool))
-
 ;; [TODO] There can be only one!!
 (defun lispify-name (name)
   "take a string and changes it to uppercase and replaces

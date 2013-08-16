@@ -40,18 +40,6 @@
        (blank-buffer-object buffer))    
     (%gl:delete-buffers 1 id)))
 
-;; [TODO] Implement buffer freeing properly
-(let ((buffer-pool nil))
-  (defun add-buffer-to-pool (buffer)
-    (setf (glbuffer-managed buffer) t)
-    (setf buffer-pool (cons buffer buffer-pool)) buffer)
-  (defun free-buffer-from-pool (buffer)
-    (setf buffer-pool (remove buffer buffer-pool))
-    (free-buffer buffer))
-  (defun free-all-buffers-in-pool ()
-    (print "Freeing Buffers")
-    (free-buffers buffer-pool)))
-
 ;; [TODO] This needs a rework given how gl targets operate
 (let ((buffer-id-cache nil)
       (buffer-target-cache nil))
