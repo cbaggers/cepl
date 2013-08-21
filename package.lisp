@@ -26,8 +26,7 @@
 
 (defpackage :base-macros
   (:use :cl)
-  (:export :defmemo
-           :once-only
+  (:export :once-only
            :continuable
            :apply-across-elements))
 
