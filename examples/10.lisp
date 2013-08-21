@@ -1,4 +1,4 @@
-;; vertex point light
+;; vertex point light - unfinished
 
 (defparameter *near* 1.0)
 (defparameter *far* 1000.0)
@@ -118,7 +118,7 @@
          (cam-light-vec (m4:mcol*vec4 world-to-cam-matrix 
                                       (v:merge-into-vector (pos *light*) 1.0))))
     (frag-point-light (gstream *monkey*)
-                      :light-pos (v! (v-x cam-light-vec)
+                      :model-space-light-pos (v! (v-x cam-light-vec)
                                      (v-y cam-light-vec)
                                      (v-z cam-light-vec))
                       :light-intensity (v! 1 1 1 0)

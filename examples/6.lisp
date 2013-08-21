@@ -181,7 +181,7 @@
 ;----------------------------------------------
 
 (defun draw ()
-  (clear-depth 1.0)
+  (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (prog-1 (entity-stream *terrain*)
           :model-to-world (entity-matrix *terrain*)

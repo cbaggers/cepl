@@ -63,10 +63,12 @@
                      (when index-array (first (dimensions index-array)))
                      (apply #'min (mapcar #'(lambda (x) (first (dimensions x)))
                                           gpu-arrays)))))
-    (make-raw-vertex-stream :vao (make-vao gpu-arrays index-array)
-                            :start start
-                            :length length
-                            :draw-type draw-type
-                            :index-type (when index-array 
-                                          (element-type index-array))
-                            :managed t)))
+    (if (and (every #'1d-p gpu-arrays) (if index-array (1d-p index-array) t))
+        (make-raw-vertex-stream :vao (make-vao gpu-arrays index-array)
+                                :start start
+                                :length length
+                                :draw-type draw-type
+                                :index-type (when index-array 
+                                              (element-type index-array))
+                                :managed t)
+        (error "You can only make vertex-streams from 1D arrays"))))
