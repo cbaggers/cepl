@@ -17,7 +17,8 @@
 (defconstant +float-threshold+ 1.0e-6)
 ;; [TODO] Need to declare type of these as float
 (defconstant +pi+ (the single-float 3.1415926535897932384626433832795))
-(defconstant +one-degree-in-radians+ (/ (* +pi+ 2.0) 360.0))
+(defconstant +one-degree-in-radians+ (the single-float (/ (* +pi+ 2.0) 360.0)))
+(defconstant +one-radian-in-degrees+ (the single-float (/ 180.0 +pi+)))
 
 
 ;----------------------------------------------------------------
@@ -104,21 +105,17 @@
 
 ;----------------------------------------------------------------
 
-(declaim (inline degrees-to-radians)
-	 (ftype (function ((single-float)) 
-			  (single-float)) 
-		degrees-to-radians))
-(defun degrees-to-radians (x)
-  (declare (single-float x))
-  (* +pi+ (/ x 180)))
+(declaim (inline radians)
+	 (ftype (function ((single-float)) (single-float)) radians))
+(defun radians (degrees)
+  (declare (single-float degrees))
+  (the single-float (* degrees +one-degree-in-radians+)))
 
-(declaim (inline radians-to-degrees)
-	 (ftype (function ((single-float)) 
-			  (single-float)) 
-		radians-to-degrees))
-(defun radians-to-degrees (x)
-  (declare (single-float x))
-  (/ (* x 180) +pi+))
+(declaim (inline degrees)
+	 (ftype (function ((single-float)) (single-float)) degrees))
+(defun degrees (radians)
+  (declare (single-float radians))
+  (the single-float (* radians +one-radian-in-degrees+)))
 
 ;; from quake3
 ;; float Q_rsqrt( float number )

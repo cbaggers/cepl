@@ -21,8 +21,8 @@
            :float-greater-than-zero
            :c-sqrt
            :c-inv-sqrt
-           :degrees-to-radians
-           :radians-to-degrees))
+           :degrees
+           :radians))
 
 (defpackage :base-macros
   (:use :cl)
