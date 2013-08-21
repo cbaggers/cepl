@@ -21,8 +21,8 @@
            :float-greater-than-zero
            :c-sqrt
            :c-inv-sqrt
-           :degrees-to-radians
-           :radians-to-degrees))
+           :degrees
+           :radians))
 
 (defpackage :base-macros
   (:use :cl)
@@ -144,8 +144,8 @@
            :bind-vertex-array
            :make-vao-from-formats
            :make-vao
-           :make-gpu-stream
-           :make-gpu-stream-from-gpu-arrays
+           :make-raw-vertex-stream
+           :make-vertex-stream
            :make-texture
            :bind-texture
            :with-texture-bound
@@ -161,7 +161,7 @@
            :free-managed-resources
            :free-buffer
            :free-buffers
-           :free-gpu-stream
+           :free-vertex-stream
            :free-texture
            :free-textures
            :free-gpu-array
@@ -402,8 +402,7 @@
                 :make-gpu-arrays
                 :gl-subseq
                 :with-gpu-array-as-c-array
-                :make-gpu-stream
-                :make-gpu-stream-from-gpu-arrays
+                :make-vertex-stream
                 :make-texture                
                 :with-texture-bound
                 :p-n-t)

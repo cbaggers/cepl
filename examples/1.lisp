@@ -21,7 +21,7 @@
                       (list (v! -0.5 -0.366 0.0 1.0) (v! 0.0 0.0 1.0 1.0)))
                 :dimensions 3
                 :element-type 'vert-data))
-         (gstream (make-gpu-stream-from-gpu-arrays data)))
+         (gstream (make-vertex-stream data)))
     (loop :until (find :quit-event (sdl:collect-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable (progn (gl:clear :color-buffer-bit)

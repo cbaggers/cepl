@@ -77,7 +77,7 @@
                         (first monkey-data)))
          (indicies (loop for face in (car (last monkey-data))
                       :append (mapcar #'car (first face))))
-         (stream (make-gpu-stream-from-gpu-arrays
+         (stream (make-vertex-stream
                   (make-gpu-array verts :dimensions (length verts)
                                   :element-type 'vert-data)
                   :length (length indicies)

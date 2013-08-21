@@ -193,7 +193,7 @@
            (index (cgl:make-gpu-array 
                    faces :element-type :unsigned-short
                    :dimensions (length faces)))
-           (stream (cgl:make-gpu-stream-from-gpu-arrays 
+           (stream (cgl:make-vertex-stream 
                     array :index-array index)))
       (make-instance 'stub-object :pipeline #'prog-1 
                      :gpu-arrays (list array index) 
@@ -225,7 +225,7 @@
            (index (when faces 
                     (cgl:make-gpu-array faces :element-type :unsigned-short
                                         :dimensions (length faces))))
-           (stream (cgl:make-gpu-stream-from-gpu-arrays 
+           (stream (cgl:make-vertex-stream 
                     array :index-array index)))
       (make-instance 'stub-object :pipeline #'prog-1 
                      :gpu-arrays (list array index) 
@@ -245,7 +245,7 @@
 ;;                          (second data)
 ;;                          :element-type :unsigned-short
 ;;                          :index-array t))
-;;            (stream (cgl:make-gpu-stream-from-gpu-arrays
+;;            (stream (cgl:make-vertex-stream
 ;;                     garray :index-array index-array
 ;;                     :length (length (second data)))))
 ;;       (make-instance 'stub-object :pipeline #'prog-1 

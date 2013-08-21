@@ -1,7 +1,7 @@
 ;; This gives us a simple moving triangle
 
 (defparameter *gpu-array* nil)
-(defparameter *gpu-stream* nil)
+(defparameter *vertex-stream* nil)
 (defparameter *loop* 0.0)
 
 (defpipeline prog-1 ((position :vec4) &uniform (offset :vec4) (loop :float))
@@ -28,7 +28,7 @@
                                           (v!  0.2  -0.2  0.0  1.0))
                                     :element-type :vec4
                                     :dimensions 3))
-  (setf *gpu-stream* (make-gpu-stream-from-gpu-arrays *gpu-array*))
+  (setf *vertex-stream* (make-vertex-stream *gpu-array*))
   (loop :until (find :quit-event (sdl:collect-event-types)) :do
      (cepl-utils:update-swank)
-     (continuable (draw *gpu-stream*))))
+     (continuable (draw *vertex-stream*))))

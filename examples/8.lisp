@@ -3,8 +3,9 @@
 (defun run-demo () 
   (stub:initialize)
   (stub:update-view 640 480)
-  (setf *model* (stub:load-model "/home/baggers/Code/models/MD2/faerie.md2" 
-                                 '(:ai-process-gen-normals)))
+  (setf *model* (stub:load-model 
+                 (asdf:system-relative-pathname 'cepl "examples/&MISSING&")
+                 '(:ai-process-gen-normals)))
   (setf (pos *model*) (v! 0 0 -100))
   (let ((running t))
     (loop :while running :do

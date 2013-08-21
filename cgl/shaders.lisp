@@ -412,13 +412,13 @@
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which
    is handling the binding."
-  (let ((index-type (gpu-stream-index-type stream)))
-    (bind-vao (gpu-stream-vao stream))
+  (let ((index-type (vertex-stream-index-type stream)))
+    (bind-vao (vertex-stream-vao stream))
     (if index-type
-        (%gl:draw-elements (gpu-stream-draw-type stream)
-                           (gpu-stream-length stream)
+        (%gl:draw-elements (vertex-stream-draw-type stream)
+                           (vertex-stream-length stream)
                            (gl::cffi-type-to-gl index-type)
                            (make-pointer 0))
-        (%gl:draw-arrays (gpu-stream-draw-type stream)
-                         (gpu-stream-start stream)
-                         (gpu-stream-length stream)))))
+        (%gl:draw-arrays (vertex-stream-draw-type stream)
+                         (vertex-stream-start stream)
+                         (vertex-stream-length stream)))))

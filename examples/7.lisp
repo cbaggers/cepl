@@ -94,7 +94,7 @@
                    collect (list (v:* (v:merge-into-vector (first vert)) (v! 1 1 1)) 
                                  (v:merge-into-vector (second vert))
                                  (v:merge-into-vector (third vert)))))
-         (stream (make-gpu-stream-from-gpu-arrays
+         (stream (make-vertex-stream
                   (make-gpu-array verts :element-type 'vert-data
                                       :dimensions (length verts))
                   :length (length (second monkey-data))
