@@ -405,6 +405,7 @@
                 :make-vertex-stream
                 :make-texture                
                 :with-texture-bound
-                :p-n-t)
+                :p-n-t
+                :texref)
   (:import-from :3dstub :pos :rot :color :scale)
   (:export :repl))
