@@ -343,8 +343,12 @@
 ;;------------------------------------------------------------
 
 
+;; [TODO] This feels liek could create non-optimal solutions
 (defmethod gl-push ((object c-array) (destination gpu-array-t))
-  (upload-c-array-to-gpuarray-t destination object))
+  (destructuring-bind (pformat ptype)
+      (compile-pixel-format (pixel-format-of object))
+    (upload-c-array-to-gpuarray-t destination object
+                                  pformat ptype)))
 
 (defmethod gl-pull-1 ((object gpu-array-t))
   (declare (ignore object))

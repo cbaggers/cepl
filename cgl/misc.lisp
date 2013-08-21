@@ -7,4 +7,6 @@
   (string-upcase (substitute #\- #\_ name)))
 
 (defun cls ()
-  (clear :color-buffer-bit))
+  (clear :color-buffer-bit)
+  (gl:flush)
+  (sdl:update-display))

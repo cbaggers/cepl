@@ -33,7 +33,7 @@
                                    (,(v! -0.5 -0.366 0.0 1.0) ,(v! -1.0 1.0)))
                                  :dimensions 3 :element-type 'vert-data))
          (gstream (make-gpu-stream-from-gpu-arrays v-data))
-         (img-data (loop :for i :below 64 :do 
+         (img-data (loop :for i :below 64 :collect
                       (loop :for j :below 64 :collect (random 254))))
          (texture (with-c-array (temp '(64 64) :ubyte :initial-contents img-data)
                     (make-texture :initial-contents temp))))
