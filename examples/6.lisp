@@ -68,7 +68,7 @@
         (make-entity 
          :position (v! 0.0 -130.0 -15.0)
          :rotation (v! 0.0 -2.3 0.0)
-         :stream (make-gpu-stream-from-gpu-arrays
+         :stream (make-vertex-stream
                   (make-gpu-array verts :element-type 'vert-data
                                       :dimensions (length verts))
                   :index-array (make-gpu-array 

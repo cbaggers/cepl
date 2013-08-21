@@ -88,7 +88,7 @@
 		    '(0 1 2   1 0 3   2 3 0   3 2 1
 		      5 4 6   4 5 7   7 6 4   6 7 5)
             :dimensions 24 :element-type :unsigned-short))
-	 (stream (make-gpu-stream-from-gpu-arrays
+	 (stream (make-vertex-stream
               verts :index-array indicies)))
     (setf *entities* 
 	  `(,(make-entity :position (v!  0 0 -20) :stream stream)

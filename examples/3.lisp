@@ -45,7 +45,7 @@
                       5  4  6    4  5  7    7  6  4    6  7  5)
                     :element-type :unsigned-short
                     :dimensions 24))
-         (stream (make-gpu-stream-from-gpu-arrays
+         (stream (make-vertex-stream
                   verts
                   :index-array indicies)))
     (setf *entities* (list (make-entity :stream stream)
