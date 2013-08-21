@@ -156,8 +156,8 @@ producing a symbol in the current package."
   "take a string and changes it to uppercase and replaces
    all underscores _ with minus symbols -"
   (let ((name (if (symbolp name)
-		  (mkstr name)
-		  name)))
+                  (mkstr name)
+                  name)))
     (string-upcase (substitute #\- #\_ name))))
 
 (defun symbol-name-equal (a b)
