@@ -88,7 +88,7 @@
       (error "Cannot free gpu-arrays that live inside an immutable texture")
       (error "Mutable textures not yet implmented...How did you get this error?")))
 
-;;use with safe-exit thingy?
+;; [TODO] use with safe-exit thingy?
 (defmacro with-texture-bound ((texture &optional type) &body body)
   (let ((tex (gensym "texture"))
         (res (gensym "result")))
@@ -140,16 +140,16 @@
         (case (length dimensions)
           (1 (gl:tex-sub-image-1d texture-type level-num 0
                                   (first (dimensions c-array))
-                                  format type (pointer c-array)))
+                                  pix-format pix-type (pointer c-array)))
           (2 (gl:tex-sub-image-2d texture-type level-num 0 0
                                   (first (dimensions c-array))
                                   (second (dimensions c-array))
-                                  format type (pointer c-array)))
+                                  pix-format pix-type (pointer c-array)))
           (3 (gl:tex-sub-image-3d texture-type level-num 0 0 0
                                   (first (dimensions c-array))
                                   (second (dimensions c-array))
                                   (third (dimensions c-array))
-                                  format type (pointer c-array)))
+                                  pix-format pix-type (pointer c-array)))
           (t (error "Cannot currently upload a c-array with more than 3 dimensions"))))))
   gpu-array)
 
@@ -350,9 +350,26 @@
     (upload-c-array-to-gpuarray-t destination object
                                   pformat ptype)))
 
+;; [TODO] implement gl-fill and fill arguments
+
+;; [TODO] Alignment
+;; [TODO] Does not respect GL_PIXEL_PACK/UNPACK_BUFFER
 (defmethod gl-pull-1 ((object gpu-array-t))
-  (declare (ignore object))
-  (print "Should now pull the gpu-array-t to a c-array"))
+  (with-slots (layer-num level-num texture-type face-num 
+                         internal-format texture) object
+    (let* ((p-format (pixel-format-from-internal-format 
+                      (internal-format object)))
+           (c-array (make-c-array (dimensions object) p-format)))
+      (destructuring-bind (format type) (compile-pixel-format p-format)
+        (with-texture-bound (texture)
+          (%gl:get-tex-image texture-type level-num format type
+                             (pointer c-array))))
+      c-array)))
+
+;; [TODO] With-c-array is wrong
+(defmethod gl-pull ((object gpu-array-t))
+  (with-c-array (c-array (gl-pull-1 object))
+    (gl-pull-1 c-array)))
 
 (defmethod backed-by ((object gpu-array-t))
   :texture)
@@ -360,6 +377,7 @@
 (defun unbind-texture (type)
   (gl:bind-texture type 0))
 
+;; [TODO] No keeping trackof anything
 (defun bind-texture (texture &optional type)
   (let ((texture-type (slot-value texture 'texture-type)))
     (if (or (null type) (eq type texture-type))
@@ -370,7 +388,7 @@
             (error "Texture has already been bound"))))
   texture)
 
-;; copy data (from cpu to gpu) - texsubimage1d texsubimage2d texsubimage3d
+
 ;; copy data (from gpu to cpu) - get-tex-image
 ;; copy data (from frame-buffer to texture image) - leave for now
 ;; copy from buffer to texture glCopyTexSubImage2D

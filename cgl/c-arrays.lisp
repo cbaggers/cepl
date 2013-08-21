@@ -88,14 +88,8 @@
                      :row-alignment alignment
                      :element-pixel-format (when p-format element-type)))))
 
-(defmacro with-c-array ((var-name dimensions element-type
-                                  &key initial-contents displaced-by 
-                                  (alignment 1))
-                        &body body)
-  `(let* ((,var-name (make-c-array ,dimensions ,element-type
-                                   :initial-contents ,initial-contents
-                                   :displaced-by ,displaced-by
-                                   :alignment ,alignment)))
+(defmacro with-c-array ((var-name c-array) &body body)
+  `(let* ((,var-name ,c-array))
      (unwind-protect (progn ,@body) (free-c-array ,var-name))))
 
 (defun clone-c-array (c-array)

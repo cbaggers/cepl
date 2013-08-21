@@ -101,9 +101,9 @@
                              (alignment 1))
   (unless dimensions (error "dimensions are not optional when making a gpu-array from a list"))
   (unless element-type (error "element-type is not optional when making a gpu-array from a list"))
-  (with-c-array (c-array dimensions element-type 
-                         :initial-contents initial-contents
-                         :alignment alignment)
+  (with-c-array (c-array (make-c-array dimensions element-type 
+                                       :initial-contents initial-contents
+                                       :alignment alignment))
     (make-gpu-array c-array :access-style access-style)))
 
 (defmethod make-gpu-array ((initial-contents c-array) 
