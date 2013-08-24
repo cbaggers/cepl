@@ -31,7 +31,7 @@
 
 ;;; vector3 operations
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline make-vector3)
 	 (ftype (function ((single-float) 
@@ -51,7 +51,7 @@
 	  (aref vec 2) z)
     vec))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 ;; Not sure what I'm going to do with these. I don't belive this
 ;; is the best way to do this as it doesnt give a new vector
@@ -62,7 +62,7 @@
 (defparameter *unit-scale* (vector 1.0 1.0 1.0))
 (defparameter *origin* (vector 0.0 0.0 0.0))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 ;;[TODO] What is faster (* x x) or (expt x 2) ?
 (declaim (inline vzerop)
@@ -76,7 +76,7 @@
   (float-zero (apply-across-elements + ((vc-a vector-a)) 3
 		   (expt vc-a 2))))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline unitp)
 	 (ftype (function ((simple-array single-float (3))) 
@@ -88,10 +88,11 @@
   (declare ((simple-array single-float (3)) vector-a))
   (float-zero (- 1.0 (apply-across-elements + ((vc-a vector-a)) 3
 			  (expt vc-a 2)))))
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 ;; Would be interesting to see if checking that the arrays
 ;; are not 'eq' first would speed this up 
+;; [TODO] needs to be float-eql?
 (declaim (inline v-eq)
 	 (ftype (function ((simple-array single-float (3)) 
 			   (simple-array single-float (3))) 
@@ -103,7 +104,7 @@
   (apply-across-elements and ((vc-a vector-a) (vc-b vector-b)) 3
     (= vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 ;; Not sure how to optomise this
 (defun v+ (&rest vec3s)
@@ -111,7 +112,7 @@
    returning a new vector"
   (reduce #'v+1 vec3s))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline v+1)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -124,7 +125,7 @@
 				       (vc-b vector-b)) 3
     (+ vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 ;; Not sure how to optomise this
 (defun v- (&rest vec3s)
@@ -132,7 +133,7 @@
    a new vector4"
   (reduce #'v-1 vec3s))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline v-1)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -146,7 +147,7 @@
 				       (vc-b vector-b)) 3
     (- vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline v*)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -159,7 +160,7 @@
   (apply-across-elements make-vector3 ((vc-a vector-a)) 3
     (* vc-a a)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline v*vec)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -174,7 +175,7 @@
 				       (vc-b vector-b)) 3
     (* vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 ;;; may just be an evil side effect of ripping this off from
 ;;; from ogre but some of the optomisations will be coming over
@@ -192,7 +193,7 @@
     (apply-across-elements make-vector3 ((vc-a vector-a)) 3
       (* vc-a b))))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline v/vec)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -207,7 +208,7 @@
 				       (vc-b vector-b)) 3
       (/ vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline negate)
 	 (ftype (function ((simple-array single-float (3))) 
@@ -219,7 +220,7 @@
   (apply-across-elements make-vector3 ((vc-a vector-a)) 3
     (- vc-a)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline vlength-squared)
 	 (ftype (function ((simple-array single-float (3))) 
@@ -235,7 +236,7 @@
 	(z (v-z vector-a)))
     (+ (* x x) (* y y) (* z z))))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline vlength)
 	 (ftype (function ((simple-array single-float (3))) 
@@ -247,7 +248,7 @@
   (declare ((simple-array single-float (3)) vector-a))
   (c-sqrt (vlength-squared vector-a)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline distance-squared)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -260,7 +261,7 @@
   (declare ((simple-array single-float (3)) vector-a vector-b))
   (vlength-squared (v- vector-b vector-a)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline distance)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -275,7 +276,7 @@
   (declare ((simple-array single-float (3)) vector-a vector-b))
   (c-sqrt (distance-squared vector-a vector-b)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline dot)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -289,7 +290,7 @@
 			    (vc-b vector-b)) 3
     (* vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline absolute-dot)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -303,7 +304,7 @@
 			    (vc-b vector-b)) 3
     (abs (* vc-a vc-b))))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 ;; [TODO] shouldnt this return a zero vector in event of zero 
 ;; length? does it matter?
@@ -320,7 +321,7 @@
 	vector-a
 	(v* vector-a (c-inv-sqrt len)))))
 
-;----------------------------------------------------------------
+;;---------------------------------------------------------------
 
 (declaim (inline cross)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -345,4 +346,34 @@
    (- (* (v-z vec-a) (v-x vec-b)) (* (v-x vec-a) (v-z vec-b)))
    (- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b)))))
 
+
+;;----------------------------------------------------------------
+
+(defun closest-point-on-line (line point)
+  (destructuring-bind (line-point line-dir) line
+    (let* ((diff-vec (v- point line-point))
+           (dist-sq (dot line-dir line-dir))
+           (projection (dot diff-vec line-dir)))
+      (v:+ line-point (v* line-dir (/ projection dist-sq))))))
+
+(defun closest-point-on-norm-line (line point)
+  (destructuring-bind (line-point line-dir) line
+    (let* ((diff-vec (v- point line-point))
+           (projection (dot diff-vec line-dir)))
+      (v:+ line-point (v* line-dir projection)))))
+
+(defun distance-to-line-sq (line point)
+  (destructuring-bind (line-point line-dir) line
+    (let* ((diff-vec (v- point line-point))
+           (dist-sq (dot line-dir line-dir))
+           (diff-sq (dot diff-vec diff-vec))
+           (projection (dot diff-vec line-dir)))
+      (- diff-sq (/ (* projection projection) dist-sq)))))
+
+(defun distance-to-norm-line-sq (line point)
+  (destructuring-bind (line-point line-dir) line
+    (let* ((diff-vec (v- point line-point))
+           (diff-sq (dot diff-vec diff-vec))
+           (projection (dot diff-vec line-dir)))
+      (- diff-sq (* projection projection)))))
 
