@@ -53,3 +53,5 @@
   (destination-pointer :pointer)
   (source-pointer :pointer)
   (byte-length :long))
+
+(export '(%memcpy))

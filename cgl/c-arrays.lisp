@@ -13,7 +13,6 @@
    (element-pixel-format :initform nil :initarg :element-pixel-format
                          :reader element-pixel-format)))
 
-;; [TODO] Expand this
 (defun blank-c-array-object (c-array)
   (with-slots (pointer dimensions element-type row-byte-size 
                        row-alignment element-pixel-format) c-array
@@ -38,8 +37,6 @@
 ;;        if you then (setf (aref-c a 0) gl-val) you would apply the 
 ;;        payload. If there is a pointer you set and get straight from
 ;;        the foreign data.
-;; [TODO] remove element-type...no wait... this provides a super easy check
-;;        against c-arrays for compatibility
 (defclass c-value ()
   ((pointer :initform nil :initarg :pointer :reader pointer)
    (element-type :initarg :element-type :reader element-type)

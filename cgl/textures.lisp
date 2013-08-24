@@ -10,6 +10,13 @@
 
 ;;------------------------------------------------------------
 
+(defparameter *cube-face-order* '(:texture-cube-map-positive-x​
+                                  :texture-cube-map-negative-x​
+                                  :texture-cube-map-positive-y​
+                                  :texture-cube-map-negative-y​
+                                  :texture-cube-map-positive-z​
+                                  :texture-cube-map-negative-z​)) 
+
 (defclass gl-texture () ())
 
 (defclass immutable-texture (gl-texture)
@@ -137,21 +144,35 @@
       (unless (equal (dimensions c-array) dimensions)
         (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
       (with-texture-bound ((texture gpu-array))
-        (case (length dimensions)
-          (1 (gl:tex-sub-image-1d texture-type level-num 0
+        (case texture-type
+          (:texture-1d (gl:tex-sub-image-1d texture-type level-num 0
                                   (first (dimensions c-array))
                                   pix-format pix-type (pointer c-array)))
-          (2 (gl:tex-sub-image-2d texture-type level-num 0 0
+          (:texture-2d (gl:tex-sub-image-2d texture-type level-num 0 0
                                   (first (dimensions c-array))
                                   (second (dimensions c-array))
                                   pix-format pix-type (pointer c-array)))
-          (3 (gl:tex-sub-image-3d texture-type level-num 0 0 0
+          (:texture-1d-array (gl:tex-sub-image-2d texture-type level-num 0 0
+                                  (first (dimensions c-array)) layer-num
+                                  pix-format pix-type (pointer c-array)))
+          (:texture-3d (gl:tex-sub-image-3d texture-type level-num 0 0 0
                                   (first (dimensions c-array))
                                   (second (dimensions c-array))
                                   (third (dimensions c-array))
                                   pix-format pix-type (pointer c-array)))
-          (t (error "Cannot currently upload a c-array with more than 3 dimensions"))))))
+          (:texture-2d-array (gl:tex-sub-image-3d texture-type level-num 0 0 0
+                                  (first (dimensions c-array))
+                                  (second (dimensions c-array))
+                                  layer-num
+                                  pix-format pix-type (pointer c-array)))
+          (:texture-cube-map (gl:tex-sub-image-2d 
+                              (nth face-num *cube-face-order*)
+                              level-num 0 0 (first (dimensions c-array))
+                              (second (dimensions c-array)) pix-format 
+                              pix-type)) 
+          (t (error "not currently supported for upload: ~a" texture-type))))))
   gpu-array)
+
 
 (defun upload-from-buffer-to-gpuarray-t (&rest args)
   (declare (ignore args))
@@ -175,6 +196,7 @@
 
 ;; [TODO] Add shadow samplers
 ;; [TODO] does cl-opengl use multisample instead of ms?
+;; [TODO] What the buggery is this doing?
 (defun calc-sampler-type (texture-type internal-format)
   (utils:kwd
    (case internal-format
