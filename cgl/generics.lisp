@@ -9,6 +9,10 @@
 (defgeneric backed-by (object))
 (defgeneric make-vao (gpu-arrays &optional index-array))
 (defgeneric pixel-format-of (type))
+(defgeneric aref-c (gl-object &rest subscripts))
+(defgeneric aref-c* (gl-object subscripts))
+(defgeneric (setf aref-c) (value gl-object &rest subscripts))
+(defgeneric (setf aref-c*) (value gl-object subscripts))
 
 
 (defun 1d-p (object)

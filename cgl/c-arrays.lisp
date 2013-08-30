@@ -13,6 +13,8 @@
    (element-pixel-format :initform nil :initarg :element-pixel-format
                          :reader element-pixel-format)))
 
+(defclass indirect-c-array (c-array) ())
+
 (defun blank-c-array-object (c-array)
   (with-slots (pointer dimensions element-type row-byte-size 
                        row-alignment element-pixel-format) c-array
@@ -67,23 +69,31 @@
               row-byte-size))))
 
 (defun make-c-array-from-pointer (dimensions element-type pointer 
-                                   &optional (alignment 1))
+                                   &optional (alignment 1) (indirect nil))
   (unless dimensions 
     (error "dimensions are not optional when making an array from a pointer"))
   (let* ((p-format (pixel-format-p element-type))
          (element-type2 (if p-format
                             (pixel-format-element-type element-type)
                             element-type)))
-    (multiple-value-bind (byte-size row-byte-size)
-        (gl-calc-byte-size element-type dimensions alignment)
-      (declare (ignore byte-size))
-      (make-instance 'c-array
-                     :pointer pointer
-                     :dimensions dimensions
-                     :element-type element-type2
-                     :row-byte-size row-byte-size
-                     :row-alignment alignment
-                     :element-pixel-format (when p-format element-type)))))
+    (if indirect
+        (make-instance 'indirect-c-array
+                             :pointer pointer
+                             :dimensions dimensions
+                             :element-type element-type2
+                             :row-byte-size nil
+                             :row-alignment nil
+                             :element-pixel-format nil)
+        (multiple-value-bind (byte-size row-byte-size)
+            (gl-calc-byte-size element-type dimensions alignment)
+          (declare (ignore byte-size))
+          (make-instance 'c-array
+                         :pointer pointer
+                         :dimensions dimensions
+                         :element-type element-type2
+                         :row-byte-size row-byte-size
+                         :row-alignment alignment
+                         :element-pixel-format (when p-format element-type))))))
 
 (defmacro with-c-array ((var-name c-array) &body body)
   `(let* ((,var-name ,c-array))
@@ -172,23 +182,54 @@
              (w (floor (/ z z-size))))
         (subseq (list (mod subscript x-size) y z w) 0 (length dimensions))))))
 
-(defun aref-c (gl-object &rest subscripts)    
+(defmethod aref-c ((gl-object c-array) &rest subscripts)    
   (mem-ref (pointer gl-object) (element-type gl-object)
            (calc-gl-index gl-object subscripts)))
 
-(defun (setf aref-c) (value gl-object &rest subscripts)  
+(defmethod (setf aref-c) (value (gl-object c-array) &rest subscripts)  
   (setf (mem-ref (pointer gl-object) (element-type gl-object)
                  (calc-gl-index gl-object subscripts))
         value))
 
-(defun aref-c* (gl-object subscripts)    
+(defmethod aref-c* ((gl-object c-array) subscripts)    
   (mem-ref (pointer gl-object) (element-type gl-object)
            (calc-gl-index gl-object subscripts)))
 
-(defun (setf aref-c*) (value gl-object subscripts)  
+(defmethod (setf aref-c*) (value (gl-object c-array) subscripts)  
   (setf (mem-ref (pointer gl-object) (element-type gl-object)
                  (calc-gl-index gl-object subscripts))
         value))
+
+(defun indirect-calc-gl-index (gl-object subscripts)
+  (with-slots (dimensions) gl-object
+    (if (and (eql (length dimensions) (length subscripts))
+             (loop for d in dimensions for s in subscripts
+                :always (and (< s d) (>= s 0))))
+        (+ (first subscripts)
+           (* (or (second subscripts) 0) (or (first dimensions) 0))
+           (* (or (third subscripts) 0) (or (second dimensions) 0))
+           (* (or (fourth subscripts) 0) (or (third dimensions) 0) 
+              (or (second dimensions) 0)))
+        (error "The subscripts ~a are outside of the c-array range ~a"
+               subscripts dimensions))))
+
+(defmethod aref-c ((gl-object indirect-c-array) &rest subscripts)
+  (let ((ptr (mem-aref (pointer gl-object) :pointer 
+                       (calc-gl-index gl-object subscripts))))
+    (make-instance 'c-value :element-type (element-type gl-object) :pointer ptr)))
+
+(defmethod (setf aref-c) (value (gl-object indirect-c-array) &rest subscripts)  
+  (declare (ignore gl-object subscripts))
+  (error "not yet implemented (setf (aref-c <indirect-c-array>))"))
+
+(defmethod aref-c* ((gl-object indirect-c-array) subscripts)    
+  (let ((ptr (mem-aref (pointer gl-object) :pointer 
+                       (calc-gl-index gl-object subscripts))))
+    (make-instance 'c-value :element-type (element-type gl-object) :pointer ptr)))
+
+(defmethod (setf aref-c*) (value (gl-object indirect-c-array) subscripts)  
+  (declare (ignore gl-object subscripts))
+  (error "not yet implemented (setf (aref-c <indirect-c-array>))"))
 
 ;; [TODO] can the common of the two subfuncs be spun off? (almost certainly)
 (defun c-populate (gl-object data &optional (check-sizes t))
