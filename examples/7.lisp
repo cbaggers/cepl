@@ -32,7 +32,7 @@
                    (* (vec4 1.0 1.0 1.0 0.0) 
                       ambient-intensity))))
   (:fragment (out output-color interp-color))
-  (:post-compile (reshape 640 480 *near* *far*)))
+  (:post-compile (reshape 1024 768 *near* *far*)))
 
 (defpipeline prog-2
     ((vert vert-data) &uniform (dir-to-light :vec3) 
@@ -54,7 +54,7 @@
                    (* (vert-data-diffuse-color vert)
                       ambient-intensity))))
   (:fragment (out output-color interp-color))
-  (:post-compile (reshape 640 480 *near* *far*)))
+  (:post-compile (reshape 1024 768 *near* *far*)))
 
 (defstruct entity 
   (stream nil)
@@ -165,7 +165,7 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480 *near* *far*)  
+  (reshape 1024 768 *near* *far*)  
   (let ((running t))
     (loop :while running :do
        (sdl:case-events (event)

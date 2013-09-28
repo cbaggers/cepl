@@ -34,7 +34,7 @@
                                     (* (color data)
                                        ambient-intensity)))))
   (:fragment (out output-color interp-color))
-  (:post-compile (reshape 640 480 *near* *far*)))
+  (:post-compile (reshape 1024 768 *near* *far*)))
 
 (defclass entity ()
   ((gstream :initform nil :initarg :gstream :accessor gstream)
@@ -138,7 +138,7 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480 *near* *far*)  
+  (reshape 1024 768 *near* *far*)  
   (let ((running t))
     (loop :while running :do
        (when (step-demo)

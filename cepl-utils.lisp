@@ -55,6 +55,15 @@
                            (rec (cdr x) acc))))))
     (rec x nil)))
 
+;; [TODO] damn this is slow
+(defun find-in-tree (item tree &key (test #'eql))
+  ""
+  (labels ((rec (x)
+             (cond ((null x) nil)
+                   ((atom x) (funcall test x item))
+                   (t (or (rec (car x)) (rec (cdr x)))))))
+    (rec tree)))
+
 
 (defun mkstr (&rest args)
   "Takes a list of strings or symbols and returns one string

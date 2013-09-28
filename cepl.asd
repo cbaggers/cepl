@@ -17,7 +17,8 @@
                #:cl-ppcre
                #:symbol-munger
                #:classimp
-               #:temporary-file)
+               #:temporary-file
+               #:md5)
   :components ((:file "package")
                (:file "maths/base-maths")
                (:file "base-macros")

@@ -135,7 +135,7 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480 *near* *far*)  
+  (reshape 1024 768 *near* *far*)  
   (let ((running t))
     (loop :while running :do
        (when (step-demo)

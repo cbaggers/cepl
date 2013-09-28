@@ -69,6 +69,7 @@
            :walk-replace
            :file-to-string
            :flatten
+           :find-in-tree
            :mkstr
            :symb
            :symb-package
@@ -79,108 +80,6 @@
            :sub-at-index
            :symbolicate-package
            :lispify-name))
-
-(defpackage :cepl-gl
-  (:use :cl :cffi :base-macros)
-  (:nicknames :cgl)
-  (:import-from :cl-opengl
-                :clear-color
-                :enable
-                :disable
-                :cull-face
-                :front-face
-                :depth-mask
-                :depth-func
-                :depth-range
-                :clear
-                :clear-depth
-                :flush
-                :viewport
-                :delete-shader)
-  (:shadow :float)
-  (:export :gl-free
-           :valid-pixel-format-p
-           :pixel-format
-           :internal-format-from-pixel-format
-           :pixel-format-from-internal-format
-           :pixel-format-of
-           :describe-pixel-format
-           :defglstruct
-           :c-array-byte-size
-           :gl-calc-byte-size
-           :make-c-array-from-pointer
-           :with-c-array
-           :free-c-array
-           :clone-c-array
-           :make-c-array
-           :aref-c
-           :aref-c*
-           :c-populate
-           :gl-subseq
-           :gl-pull
-           :gl-pull-1
-           :gl-push
-           :dimensions ; [TODO] this isnt really inline with array-dimensions
-           :backed-by ; [TODO] is this the right name for the job?
-           :element-type
-           :1d-p
-           :bind-buffer
-           :force-bind-buffer
-           :unbind-buffer
-           :gen-buffer
-           :buffer-data-raw
-           :buffer-data
-           :buffer-sub-data
-           :multi-buffer-data
-           :buffer-reserve-block-raw
-           :buffer-reserve-block
-           :buffer-reserve-blocks
-           :make-gpu-array
-           :make-gpu-arrays
-           :with-gpu-array-as-c-array
-           :suitable-array-for-index-p
-           :bind-vao
-           :bind-vertex-array
-           :make-vao-from-formats
-           :make-vao
-           :make-raw-vertex-stream
-           :make-vertex-stream
-           :make-texture
-           :bind-texture
-           :with-texture-bound
-           :upload-c-array-to-gpuarray-t ; this is a crap name
-           :calc-sampler-type
-           :dimensions-at-mipmap-level
-           :establish-texture-type
-           :gl-texture
-           :gpu-array-t
-           :texref
-           :defpipeline
-           :defpipeline?
-           :free-managed-resources
-           :free-buffer
-           :free-buffers
-           :free-vertex-stream
-           :free-texture
-           :free-textures
-           :free-gpu-array
-           :free-vao
-           :p-n-t
-           ;----------
-           :delete-shader
-           :clear-color
-           :cls
-           :enable
-           :disable
-           :cull-face
-           :front-face
-           :depth-mask
-           :depth-func
-           :depth-range
-           :clear
-           :clear-depth
-           :flush
-           :viewport))
 
 (defpackage :base-vectors
   (:use :cl)
@@ -327,6 +226,119 @@
            :dot :rotate :lerp :slerp :approx-slerp
            :to-matrix3 :to-matrix4))
 
+(defpackage :declarative-values
+  (:use :cl)
+  (:nicknames :dvals)
+  (:export :make-dval :dval :bind))
+
+(defpackage :base-space
+  (:use :cl :base-macros :base-vectors :base-matrices)
+  (:nicknames :cspace)
+  ;;(:export :things)
+  )
+
+(defpackage :cepl-gl
+  (:use :cl :cffi :base-macros :base-vectors :base-matrices)
+  (:nicknames :cgl)
+  (:import-from :cl-opengl
+                :clear-color
+                :enable
+                :disable
+                :cull-face
+                :front-face
+                :depth-mask
+                :depth-func
+                :depth-range
+                :clear
+                :clear-depth
+                :flush
+                :viewport
+                :delete-shader)
+  (:shadow :float)
+  (:export :gl-free
+           :valid-pixel-format-p
+           :pixel-format
+           :internal-format-from-pixel-format
+           :pixel-format-from-internal-format
+           :pixel-format-of
+           :describe-pixel-format
+           :defglstruct
+           :c-array-byte-size
+           :gl-calc-byte-size
+           :make-c-array-from-pointer
+           :with-c-array
+           :free-c-array
+           :clone-c-array
+           :make-c-array
+           :aref-c
+           :aref-c*
+           :c-populate
+           :gl-subseq
+           :gl-pull
+           :gl-pull-1
+           :gl-push
+           :dimensions ; [TODO] this isnt really inline with array-dimensions
+           :backed-by ; [TODO] is this the right name for the job?
+           :element-type
+           :1d-p
+           :bind-buffer
+           :force-bind-buffer
+           :unbind-buffer
+           :gen-buffer
+           :buffer-data-raw
+           :buffer-data
+           :buffer-sub-data
+           :multi-buffer-data
+           :buffer-reserve-block-raw
+           :buffer-reserve-block
+           :buffer-reserve-blocks
+           :make-gpu-array
+           :make-gpu-arrays
+           :with-gpu-array-as-c-array
+           :suitable-array-for-index-p
+           :bind-vao
+           :bind-vertex-array
+           :make-vao-from-formats
+           :make-vao
+           :make-raw-vertex-stream
+           :make-vertex-stream
+           :make-texture
+           :bind-texture
+           :with-texture-bound
+           :upload-c-array-to-gpuarray-t ; this is a crap name
+           :calc-sampler-type
+           :dimensions-at-mipmap-level
+           :establish-texture-type
+           :gl-texture
+           :gpu-array-t
+           :texref
+           :defpipeline
+           :defpipeline?
+           :free-managed-resources
+           :free-buffer
+           :free-buffers
+           :free-vertex-stream
+           :free-texture
+           :free-textures
+           :free-gpu-array
+           :free-vao
+           :p-n-t
+           ;;----------
+           :delete-shader
+           :clear-color
+           :cls
+           :enable
+           :disable
+           :cull-face
+           :front-face
+           :depth-mask
+           :depth-func
+           :depth-range
+           :clear
+           :clear-depth
+           :flush
+           :viewport))
+
 (defpackage :cepl-camera
   (:nicknames :ccam)
   (:use :cl)
@@ -374,6 +386,7 @@
 
 (defpackage :cepl
   (:use :cl
+        :declarative-values
         :base-vectors
         :base-matrices
         :base-maths

@@ -2,7 +2,7 @@
 
 (defun run-demo () 
   (stub:initialize)
-  (stub:update-view 640 480)
+  (stub:update-view 1024 768)
   (setf *model* (stub:load-model 
                  (asdf:system-relative-pathname 'cepl "examples/&MISSING&")
                  '(:ai-process-gen-normals)))

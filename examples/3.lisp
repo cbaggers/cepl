@@ -15,7 +15,7 @@
                              (vec4 (vert-data-position vert) 1.0))))
              (setf gl-position (* cam-to-clip cam-pos))))
   (:fragment (out output-color the-color))
-  (:post-compile (reshape 640 480)))
+  (:post-compile (reshape 1024 768)))
 
 (defstruct entity 
   (stream nil)
@@ -86,7 +86,7 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480)
+  (reshape 1024 768)
   (let ((running t))
     (loop :while running :do
        (sdl:case-events (event)

@@ -13,7 +13,7 @@
                                             1.0)))))
            (out (interp-color :smooth) (vert-data-color vert)))
   (:fragment (out output-color interp-color))
-  (:post-compile (reshape 640 480)))
+  (:post-compile (reshape 1024 768)))
 
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
@@ -116,7 +116,7 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480)  
+  (reshape 1024 768)  
   (let ((running t))
     (loop :while running :do
        (sdl:case-events (event)

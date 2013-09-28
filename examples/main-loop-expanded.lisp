@@ -20,7 +20,7 @@
 ;; Here is an example main loop from one of the example files
 (defun run-demo () 
   (init)
-  (reshape 640 480)
+  (reshape 1024 768)
   (sdl:with-events () 
     (:quit-event () t)
     (:video-resize-event (:w width :h height) 
@@ -36,7 +36,7 @@
 ;; (using the iterate macro)
 (defun run-demo () 
   (init)
-  (reshape 640 480)
+  (reshape 1024 768)
   (iter :main-loop
         (while running)
         (iter 
@@ -64,7 +64,7 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480)  
+  (reshape 1024 768)  
   (let ((running t))
     (loop :while running :do
        (case-events (event)

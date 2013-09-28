@@ -14,7 +14,7 @@
                                             1.0)))))
            (out (interp-color :smooth) (vert-data-color vert)))
   (:fragment (out output-color interp-color))
-  (:post-compile (reshape 640 480)))
+  (:post-compile (reshape 1024 768)))
 
 
 (setf *random-state* (make-random-state t))
@@ -212,7 +212,7 @@
 
 (defun run-demo () 
   (init)
-  (reshape 640 480)  
+  (reshape 1024 768)  
   (let ((draw-timer (make-time-buffer))
         (draw-stepper (make-stepper (/ 1000.0 60))))
     (loop :while *running* :do (step-game draw-timer draw-stepper))))

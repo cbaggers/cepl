@@ -31,7 +31,7 @@
   (incf *count* 0.02))
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
-  (cgl:viewport 0 0 640 480)
+  (cgl:viewport 0 0 1024 768)
   (let* ((img-data (loop :for i :below 64 :collect
                       (loop :for j :below 64 :collect (random 254)))))
     (setf *vert-gpu* 

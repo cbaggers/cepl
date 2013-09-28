@@ -36,7 +36,7 @@
 
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
-  (cgl:viewport 0 0 640 480)
+  (cgl:viewport 0 0 1024 768)
   (setf *gpu-array* (make-gpu-array (list (v! -1.0  -1.0  0.0  1.0)
                                           (v!  1.0  -1.0  0.0  1.0)
                                           (v!  1.0   1.0  0.0  1.0)
