@@ -172,7 +172,7 @@
              (w (floor (/ z z-size))))
         (subseq (list (mod subscript x-size) y z w) 0 (length dimensions))))))
 
-(defun aref-c (gl-object &rest subscripts)    
+(defun aref-c (gl-object &rest subscripts)
   (mem-ref (pointer gl-object) (element-type gl-object)
            (calc-gl-index gl-object subscripts)))
 
@@ -231,7 +231,7 @@
                (loop for j below (nth n dimensions)
                      do (setf (nth n indices) j)
                      collect (if (= n depth)
-                                 (aref-c* object indices)
+                                 (gpull (aref-c* object indices))
                                (recurse (1+ n))))))
       (recurse 0))))
 

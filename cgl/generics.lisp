@@ -10,6 +10,8 @@
 (defgeneric make-vao (gpu-arrays &optional index-array))
 (defgeneric pixel-format-of (type))
 
+(defmethod gpull ((gl-object t))
+  gl-object)
 
 (defun 1d-p (object)
   (= 1 (length (dimensions object))))

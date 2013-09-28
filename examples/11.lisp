@@ -14,20 +14,21 @@
   (:vertex (setf gl-position (+ (pos vert) pos-offset))
            (out (tex-coord :smooth) (tex-pos vert)))
   (:fragment 
-   (let* ((rip-size 0.02) (centre (vec2 0.0 0.25)) (damp 0.6)
-          (peaks 21.0)
+   (let* ((rip-size 0.02) (centre (vec2 0.5 0.5)) (damp 0.6)
+          (peaks 31.0)
           (dif (- tex-coord centre))
           (dist (dot dif dif))
-          (height (sin (+ count (* peaks dist))))
+          (height (/ (+ (sin (+ count (* peaks dist)))
+                        (sin (- count (* peaks (y tex-coord)))))
+                     2.0))
           (rip-offset (* (* rip-size (normalize dif)) height damp)))
-     (out outputColor (+ (texture tex (+ tex-coord rip-offset))
+     (out outputColor (+ (texture tex (+ rip-offset tex-coord) )
                          (vec4 (* -0.2 height) (* -0.2 height) 0.0 0.0))))))
 
 (defun step-demo ()
   (ripple-with-wobble *v-stream* :tex *texture* :count *count*
                       :pos-offset (v! 0 0 0 0))
-  (incf *count* 0.05))
-
+  (incf *count* 0.02))
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (cgl:viewport 0 0 640 480)
@@ -50,3 +51,4 @@
          (step-demo)
          (cgl:flush)
          (sdl:update-display)))))
+

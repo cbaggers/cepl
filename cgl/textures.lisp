@@ -47,15 +47,15 @@
   (with-slots (texture-id base-dimensions texture-type internal-format 
                           sampler-type mipmap-levels layer-count cubes
                           allocated) texture
-    (setf texture-id -1
-          base-dimensions nil
-          texture-type nil
-          internal-format nil
-          sampler-type nil
-          mipmap-levels nil
-          layer-count nil
-          cubes nil
-          allocated nil)))
+    (setf (slot-value texture 'texture-id) -1
+          (slot-value texture 'base-dimensions) nil
+          (slot-value texture 'texture-type) nil
+          (slot-value texture 'internal-format) nil
+          (slot-value texture 'sampler-type) nil
+          (slot-value texture 'mipmap-levels) nil
+          (slot-value texture 'layer-count) nil
+          (slot-value texture 'cubes) nil
+          (slot-value texture 'allocated) nil)))
 
 (defun free-texture (texture)
   (with-foreign-object (id :uint) 
@@ -365,7 +365,10 @@
 ;;------------------------------------------------------------
 
 
-;; [TODO] This feels liek could create non-optimal solutions
+;; [TODO] This feels like could create non-optimal solutions
+;;        So prehaps this should look at texture format, and
+;;        find the most similar compatible format, with worst
+;;        case being just do what we do below
 (defmethod gl-push ((object c-array) (destination gpu-array-t))
   (destructuring-bind (pformat ptype)
       (compile-pixel-format (pixel-format-of object))

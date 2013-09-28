@@ -55,12 +55,20 @@
 ;; [TODO] can glsl and thus varjo have multidimensional arrays?
 ;; [TODO] If slot struct type return a c-value
 ;;        (make-instance ',value-name :element-type ',name :pointer ptr)
+(defun make-puller (name value-name slots)
+  `(defmethod gpull ((gl-object ,value-name))
+     (list ,@(loop :for slot-definition :in slots :collect
+                (destructuring-bind (slot-name vslot-type normalised accessor)
+                    slot-definition
+                  (declare (ignore normalised vslot-type))
+                  (list (or accessor (utils:symb name '- slot-name)) 'gl-object))))))
+
 (defun make-getters-and-setters (name value-name struct-name slots)
   (loop for slot-definition in slots appending
        (destructuring-bind (slot-name vslot-type normalised accessor)
            slot-definition
          (declare (ignore normalised))
-         `((defmethod ,(or accessor (utils:symb name '- slot-name)) 
+         `((defmethod ,(or accessor (utils:symb name '- slot-name))
                ((gl-object ,value-name))
              ,(if (varjo:type-arrayp vslot-type)
                   `(make-c-array-from-pointer 
@@ -187,6 +195,7 @@
          (defclass ,value-name (c-value) ())
          ,@(make-translators name type-name value-name slots struct-name)
          ,@(when accessors (make-getters-and-setters name value-name struct-name slots))
+         ,(when accessors (make-puller name value-name slots))
          ,(when vertex (make-gl-struct-attrib-assigner name slots))
          ,(when pixel (make-struct-pixel-format name slot-descriptions))
          ',name))))

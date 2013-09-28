@@ -206,6 +206,14 @@
   (with-gpu-array-as-c-array (gpu-array :access-type :read-only)
     (clone-c-array gpu-array)))
 
+;; allignmetn
+(defmethod gl-push ((object list) (destination gpuarray))
+  (with-c-array (tmp (make-c-array (dimensions destination)
+                                   (element-type destination) 
+                                   :initial-contents object
+                                   :alignment 1))
+    (gl-push tmp destination)))
+
 (defmethod gl-push ((object c-array) (destination gpuarray))
   (let* ((buffer (gpuarray-buffer destination))
          (format (gpuarray-format destination))
