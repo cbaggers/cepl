@@ -10,8 +10,6 @@
 
 (in-package declarative-values)
 
-;; [TODO] Need a constructor that sets the type
-
 (defun make-dval (&optional value) (make-instance 'declarative-value :value value))
 
 (defclass declarative-value ()
@@ -47,6 +45,8 @@
                       `(let ((key (incf (bcount ,dval))))
                          (setf (gethash key (bound ,dval)) setter)
                          key)))))))
+
+;; [TODO] should be able to tag part to be eval'd now and never again
 
 (defmacro bind (place dvals &optional expr)
   (let ((dvals (if (listp dvals) 

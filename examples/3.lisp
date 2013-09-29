@@ -3,6 +3,7 @@
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *entities* nil)
+(defparameter *loop* (make-dval 0))
 
 (defglstruct vert-data 
   (position :vec3)
@@ -15,14 +16,11 @@
                              (vec4 (vert-data-position vert) 1.0))))
              (setf gl-position (* cam-to-clip cam-pos))))
   (:fragment (out output-color the-color))
-  (:post-compile (reshape 1024 768)))
+  (:post-compile (reshape 640 480)))
 
-(defstruct entity 
-  (stream nil)
-  (pos (v! 0.0 0.0 -20.0))
-  (loop-angle 0.0)
-  (scale 1.0)
-  (matrix nil))
+(defclass entity ()
+  ((stream :initform nil :accessor gstream :initarg :gstream)
+   (matrix :initform nil :accessor matrix)))
 
 (defun init () 
   (setf *frustrum-scale* (ccam:calculate-frustrum-scale 45.0))
@@ -43,8 +41,17 @@
                                    :element-type :unsigned-short 
                                    :dimensions 24))
          (stream (make-vertex-stream verts :index-array indicies)))
-    (setf *entities* (list (make-entity :stream stream)
-                           (make-entity :stream stream :loop-angle 3.14))))
+    
+    (setf *entities* (loop for i below 3 collect (make-instance 'entity :gstream stream)))
+    (loop :for e :in *entities* :for i :from 0 :do
+       (let ((e e) (i i))
+         (bind (matrix e) *loop* 
+               (m4:m* (m4:translation (v! (* 8.0 (sin (+ i *loop*))) 
+                                          0.0
+                                          (+ -20.0 (* 8.0 (cos (+ i *loop*))))))
+                      (m4:scale (v3:make-vector3 (+ 2.0 (sin *loop*))
+                                                 (+ 2.0 (cos *loop*))
+                                                 1.0)))))))
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
@@ -54,26 +61,13 @@
   (gl:depth-func :lequal)
   (gl:depth-range 0.0 1.0))  
 
-(defun move-entity (ent)
-  (let* ((new-loop (+ (entity-loop-angle ent) 0.01))
-         (new-pos (v! (* 8.0 (sin new-loop)) 
-                      0.0
-                      (+ -20.0 (* 8.0 (cos new-loop)))))
-         (new-scale (v3:make-vector3 (+ 2.0 (sin new-loop))
-                                     (+ 2.0 (cos new-loop))
-                                     1.0)))
-    (setf (entity-matrix ent) (matrix4:m* (matrix4:translation new-pos)
-                                          (matrix4:scale new-scale)))
-    (setf (entity-scale ent) new-scale)
-    (setf (entity-loop-angle ent) new-loop)
-    (setf (entity-pos ent) new-pos)))
 
 (defun draw ()
+  (incf (dval *loop*) 0.01)
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (loop :for entity :in *entities* :do
-     (move-entity entity)
-     (prog-1 (entity-stream entity) :model-to-cam (entity-matrix entity)))
+     (prog-1 (gstream entity) :model-to-cam (matrix entity)))
   (gl:flush)
   (sdl:update-display))
 
@@ -86,7 +80,7 @@
 
 (defun run-demo () 
   (init)
-  (reshape 1024 768)
+  (reshape 640 480)
   (let ((running t))
     (loop :while running :do
        (sdl:case-events (event)

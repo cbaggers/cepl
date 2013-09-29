@@ -26,7 +26,7 @@
                 ext)))
     t))
 
-(defun repl (&optional (width 1024) (height 768))
+(defun repl (&optional (width 640) (height 480))
   (in-package :cepl)
   (if (sdl:init-sdl)
       (progn

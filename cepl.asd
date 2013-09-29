@@ -24,6 +24,7 @@
                (:file "base-macros")
                ;; (:file "base-lispbuilder")
                (:file "cepl-utils")
+               (:file "declarative-values")
                (:file "time/base-time")
                (:file "cgl/generics")
                (:file "cgl/pixel-format")

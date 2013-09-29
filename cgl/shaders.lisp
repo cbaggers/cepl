@@ -141,23 +141,69 @@
 (defun valid-shader-typep (shader)
   (find (first shader) '(:vertex :fragment :geometry)))
 
+(defmacro defvshader (name args &body body)
+  (%defshader name :vertex args body))
+(defmacro deffshader (name args &body body)
+  (%defshader name :fragment args body))
+(defmacro defgshader (name args &body body)
+  (%defshader name :geometry args body))
+
+(defmacro defshader (name shader-type args &body body)
+  (case shader-type
+    (:vertex (%defshader name :vertex args body))
+    (:fragment (%defshader name :fragment args body))
+    (:geometry (%defshader name :geometry args body))))
+
+;; where do we check signature?
+(defun %defshader (name type s-args body)
+  (let ((args (loop :for a :in s-args :collect
+                 (if (listp a) 
+                     (first a)
+                     (if (and (symbolp a) (equal (symbol-name a) "&UNIFORM"))
+                         '&key
+                         (error "Invalid atom ~s in shader args" a))))))
+    `(defun ,name ,args
+       (if (eq ,(first args) '--dump--)
+           (list (cons ,type ',body) ',s-args)
+           (error "This is a shader function and can only be called from inside a pipeline..for now")))))
+
+(defun process-shaders (shaders args)
+  (let ((post-compile nil) (result nil))
+    (loop :for shader :in shaders :doing
+       (if (listp shader)
+           (if (eq (first shader) :post-compile)
+               (set post-compile (cons shader post-compile))
+               (if (valid-shader-typep shaders)
+                   (set result `(quote ,(cons shader result)))
+                   (error "Invalid shader type ~a" (first shader))))
+           (setf result (cons `(handle-external-shader #',shader ',args) result))))
+    (list (reverse result) (reverse post-compile))))
+
+(defun handle-external-shader (sfun pipeline-args)
+  (destructuring-bind (code shader-args) (funcall sfun '--dump--)
+    (let ((s-uniforms (varjo:extract-uniforms shader-args))
+          (p-uniforms (varjo:extract-uniforms pipeline-args)))
+      
+      (if (and (if (eq (first code) :vertex)
+                   (equal (first shader-args) (first pipeline-args))
+                   t)
+               (loop :for s-uniform :in s-uniforms :always
+                  (find s-uniform p-uniforms :test #'equal)))
+          code
+          (error "Shader arguments are not fully compatible with those of the pipeline:~%shader args: ~s~%pipeline args: ~s" shader-args pipeline-args)))))
+
 ;; [TODO] We need to make this fast, this 'if not prog' won't do
 (defmacro defpipeline (name (&rest args) &body shaders)
-  (if (> (count :post-compile shaders :key #'first) 1)
-      (error "Cannot not have more than one :post-compile section")
-      (let ((post (rest (find :post-compile shaders :key #'first)))
-            (shaders (remove :post-compile shaders :key #'first)))
-        (if (every #'valid-shader-typep shaders)
-            (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
-              `(let ((program nil))
-                 (defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
-                   (when (not program) 
-                     (setf program (make-program ,name ,args ,shaders))
-                     ,@post)
-                   (funcall program stream ,@(loop for name in uniform-names 
-                                                :append `(,(utils:kwd name)
-                                                           ,name))))))
-            (error "Some shaders have invalid types ~a" (mapcar #'first shaders))))))
+  (destructuring-bind (shaders post) (process-shaders shaders args)
+    (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
+      `(let ((program nil))
+         (defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
+           (when (not program)
+             (setf program (make-program ,name ,args ,(cons 'list shaders)))
+             ,@post)
+           (funcall program stream ,@(loop for name in uniform-names 
+                                        :append `(,(utils:kwd name)
+                                                   ,name))))))))
 
 (defmacro defpipeline? (name (&rest args) &body shaders)
   (declare (ignore name))
@@ -179,7 +225,7 @@
          (uniform-names (mapcar #'first uniforms))
          (image-unit -1))
     `(let* ((shaders (loop for (type code) in (varjo:rolling-translate 
-                                               ',args ',shaders)
+                                               ',args ,shaders)
                         :collect (make-shader type code)))
             (program-id (link-shaders 
                          shaders

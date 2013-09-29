@@ -41,6 +41,13 @@
 ;;            :get-sdl-event
 ;;            :case-events))
 
+(defpackage :conditional-functions
+  (:use :cl)
+  (:nicknames :cfunc)
+  (:export :signal-expired
+           :with-expired
+           :defcfun))
+
 (defpackage :base-time
   (:use :cl)
   (:nicknames :ct :ctime)
@@ -57,9 +64,7 @@
            :t>
            :temporally-expired
            :untilp
-           :afterp
-           :tlambda
-           :with-expired))
+           :afterp))
 
 (defpackage :cepl-utils
   (:use :cl)
