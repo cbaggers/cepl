@@ -318,7 +318,10 @@
            :gpu-array-t
            :texref
            :defpipeline
-           :defpipeline?
+           :defvshader
+           :deffshader
+           :defgshader
+           :defshader
            :free-managed-resources
            :free-buffer
            :free-buffers
@@ -405,7 +408,10 @@
                 :pixel-format-of
                 :describe-pixel-format
                 :defpipeline
-                :defpipeline?
+                :defvshader
+                :deffshader
+                :defgshader
+                :defshader                
                 :defglstruct
                 :gl-pull
                 :gl-pull-1

@@ -1,5 +1,8 @@
 (in-package :cgl)
 
+(defparameter *cached-glsl-source-code* (make-hash-table))
+(defparameter *open-shader* nil)
+
 ;; [TODO] Need to be able to delete programs...How does this fit in lisp?
 
 (defparameter *sampler-types*
@@ -156,14 +159,19 @@
 
 ;; where do we check signature?
 (defun %defshader (name type s-args body)
-  (let ((args (loop :for a :in s-args :collect
-                 (if (listp a) 
-                     (first a)
-                     (if (and (symbolp a) (equal (symbol-name a) "&UNIFORM"))
-                         '&key
-                         (error "Invalid atom ~s in shader args" a))))))
+  (let* ((ignore-these nil)
+         (uniform-hit nil)
+         (args (loop :for a :in s-args :collect
+                  (if (listp a)
+                      (progn (when uniform-hit
+                               (setf ignore-these (cons (first a) ignore-these)))
+                             (first a))
+                      (if (and (symbolp a) (equal (symbol-name a) "&UNIFORM"))
+                          (progn (setf uniform-hit t) '&key)
+                          (error "Invalid atom ~s in shader args" a))))))
     `(defun ,name ,args
-       (if (eq ,(first args) '--dump--)
+       (declare (ignore ,@ignore-these))
+       (if *open-shader*
            (list (cons ,type ',body) ',s-args)
            (error "This is a shader function and can only be called from inside a pipeline..for now")))))
 
@@ -173,14 +181,14 @@
        (if (listp shader)
            (if (eq (first shader) :post-compile)
                (set post-compile (cons shader post-compile))
-               (if (valid-shader-typep shaders)
-                   (set result `(quote ,(cons shader result)))
-                   (error "Invalid shader type ~a" (first shader))))
+               (if (valid-shader-typep shader)
+                   (setf result (cons `(quote ,shader) result))
+                   (error "Invalid shader type ~s" (first shader))))
            (setf result (cons `(handle-external-shader #',shader ',args) result))))
     (list (reverse result) (reverse post-compile))))
 
 (defun handle-external-shader (sfun pipeline-args)
-  (destructuring-bind (code shader-args) (funcall sfun '--dump--)
+  (destructuring-bind (code shader-args) (let ((*open-shader* t)) (funcall sfun))
     (let ((s-uniforms (varjo:extract-uniforms shader-args))
           (p-uniforms (varjo:extract-uniforms pipeline-args)))
       
@@ -205,27 +213,24 @@
                                         :append `(,(utils:kwd name)
                                                    ,name))))))))
 
-(defmacro defpipeline? (name (&rest args) &body shaders)
-  (declare (ignore name))
-  (let ((shaders (remove :post-compile shaders :key #'first)))
-    (if (every #'valid-shader-typep shaders)
-        `(let* ((shaders (varjo:rolling-translate ',args ',shaders)))
-           (format t "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" shaders)
-           nil)
-        (error "Some shaders have invalid types ~a" (mapcar #'first shaders)))))
+(defmethod gl-pull ((object function))
+  (if *cached-glsl-source-code* 
+      (let ((code (gethash object *cached-glsl-source-code*)))
+        (format nil "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" code))
+      "*cached-glsl-source-code* is not enable"))
 
 (defun extract-textures (uniforms)
   (loop for (name type) in uniforms 
-       :if (sampler-typep type)
-       :collect name))
+     :if (sampler-typep type)
+     :collect name))
 
 (defmacro make-program (name args shaders)  
   (let* ((uniforms (varjo:extract-uniforms args))
          (textures (extract-textures uniforms))
          (uniform-names (mapcar #'first uniforms))
          (image-unit -1))
-    `(let* ((shaders (loop for (type code) in (varjo:rolling-translate 
-                                               ',args ,shaders)
+    `(let* ((glsl-src (varjo:rolling-translate ',args ,shaders))
+            (shaders (loop for (type code) in glsl-src
                         :collect (make-shader type code)))
             (program-id (link-shaders 
                          shaders
@@ -239,6 +244,8 @@
                  :collect `(,(utils:symb name '-assigner)
                              (nth ,i assigners))))
        (declare (ignorable assigners))
+       (when cgl::*cached-glsl-source-code* 
+         (setf (gethash #',name cgl::*cached-glsl-source-code*) glsl-src))
        (mapcar #'%gl:delete-shader shaders)
        (unbind-buffer)
        (force-bind-vao 0)

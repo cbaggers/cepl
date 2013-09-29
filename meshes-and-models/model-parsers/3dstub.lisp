@@ -77,6 +77,7 @@
                               (normal data)))
                           dir-to-light) 
                      0.0 1.0))
+
            (* (color data) ambient-intensity))))
   (:fragment (out output-color interp-color))
   (:post-compile (update-view 640 480 *near* *far*)))
