@@ -1,0 +1,13 @@
+Having vectors and matrices as unboxed arrays is lovely
+the ease of get, setting and applying the data is 
+just what I wanted.
+
+However the main thing that sucks about them is that generic
+functions can not specialise on them.
+
+This means the generic math functions are to slow and ugly as
+well. I cant think of a decent way around this right now.
+It really needs a fixed length datatype for working with that 
+I can specialise on.
+
+Bah, gonna be one for stackoverflow I think.
