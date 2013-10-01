@@ -1,7 +1,6 @@
 (in-package :cgl)
 
 (defparameter *cached-glsl-source-code* (make-hash-table))
-(defparameter *open-shader* nil)
 
 ;; [TODO] Need to be able to delete programs...How does this fit in lisp?
 
@@ -157,23 +156,26 @@
     (:fragment (%defshader name :fragment args body))
     (:geometry (%defshader name :geometry args body))))
 
-;; where do we check signature?
 (defun %defshader (name type s-args body)
-  (let* ((ignore-these nil)
-         (uniform-hit nil)
-         (args (loop :for a :in s-args :collect
+  (let* ((args (loop :for a :in s-args :collect
                   (if (listp a)
-                      (progn (when uniform-hit
-                               (setf ignore-these (cons (first a) ignore-these)))
-                             (first a))
+                      (first a)
                       (if (and (symbolp a) (equal (symbol-name a) "&UNIFORM"))
-                          (progn (setf uniform-hit t) '&key)
-                          (error "Invalid atom ~s in shader args" a))))))
-    `(defun ,name ,args
-       (declare (ignore ,@ignore-these))
-       (if *open-shader*
-           (list (cons ,type ',body) ',s-args)
-           (error "This is a shader function and can only be called from inside a pipeline..for now")))))
+                          '&key
+                          (error "Invalid atom ~s in shader args" a)))))
+         (s-args-with-type (if (find '&context s-args :test #'utils:symbol-name-equal)
+                               (append s-args `(:type ,type))
+                               (append s-args `(&context :type ,type)))))
+    `(progn 
+       (defun ,name ,args
+         (declare (ignore ,@(remove '&key args)))
+         (error "This is a shader stage and can only be called from inside a pipeline..for now"))
+       ;; [TODO] how do we handle first shader?
+       (setf (gethash #',name *cached-glsl-source-code*) 
+             (append (list :shader ',s-args) (varjo:translate ',s-args-with-type ',body nil)))
+       ',name)))
+
+
 
 (defun process-shaders (shaders args)
   (let ((post-compile nil) (result nil))
@@ -187,20 +189,9 @@
            (setf result (cons `(handle-external-shader #',shader ',args) result))))
     (list (reverse result) (reverse post-compile))))
 
-(defun handle-external-shader (sfun pipeline-args)
-  (destructuring-bind (code shader-args) (let ((*open-shader* t)) (funcall sfun))
-    (let ((s-uniforms (varjo:extract-uniforms shader-args))
-          (p-uniforms (varjo:extract-uniforms pipeline-args)))
-      
-      (if (and (if (eq (first code) :vertex)
-                   (equal (first shader-args) (first pipeline-args))
-                   t)
-               (loop :for s-uniform :in s-uniforms :always
-                  (find s-uniform p-uniforms :test #'equal)))
-          code
-          (error "Shader arguments are not fully compatible with those of the pipeline:~%shader args: ~s~%pipeline args: ~s" shader-args pipeline-args)))))
+(defun combine-shaders ()
+  )
 
-;; [TODO] We need to make this fast, this 'if not prog' won't do
 (defmacro defpipeline (name (&rest args) &body shaders)
   (destructuring-bind (shaders post) (process-shaders shaders args)
     (let* ((uniform-names (mapcar #'first (varjo:extract-uniforms args))))
@@ -212,17 +203,36 @@
            (funcall program stream ,@(loop for name in uniform-names 
                                         :append `(,(utils:kwd name)
                                                    ,name))))))))
+;; ok so defpipeline could:
+;; - check if symbol
+;;  - if yes pull code in from *cached-glsl-source-code*
+;; - run pass over all code looking for sfuncs 
+;; - if any present wrap entire thing in labels form
+;; - compile as usual
+;; where do we check signature?
+
+;; [TODO] We need to make the above fast, this 'if not prog' won't do
 
 (defmethod gl-pull ((object function))
-  (if *cached-glsl-source-code* 
-      (let ((code (gethash object *cached-glsl-source-code*)))
-        (format nil "~&~{~{~(#~a~)~%~a~}~^-----------~^~%~^~%~}~&" code))
-      "*cached-glsl-source-code* is not enable"))
+  (let* ((code (gethash object *cached-glsl-source-code*))
+         (s-type (first code)))
+    (case s-type
+      (:pipeline (error "cant pull pipelines yet"))
+      (:shader (let ((code-chunk (third code)))
+                 (format nil "~&#~a~%~a" (first code-chunk) (second code-chunk))))
+      (:sfun (error "cant pull sfuns yet")))))
 
 (defun extract-textures (uniforms)
   (loop for (name type) in uniforms 
      :if (sampler-typep type)
      :collect name))
+
+;; [TODO] We should create some callback that is activated when the glcontext is
+;;        created that will compile all the shaders and set the programid of the
+;;        pipeline functions. We could use dvals to implment the callback and 
+;;        scope capture. This should create the entire pipeline-function, not 
+;;        defpipeline. This will mean the only runtime lookup is for the id and
+;;        that will be in the lexicaly scope var.
 
 (defmacro make-program (name args shaders)  
   (let* ((uniforms (varjo:extract-uniforms args))

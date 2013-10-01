@@ -164,6 +164,11 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+;; [TODO] vdefstruct should use eval-when to get data into tables early to
+;;        avoid any issues when compiling shaders. This should allow moving 
+;;        chunks of the compiling into macroexpansion time which will speed
+;;        things at runtime.
+
 (defmacro defglstruct (name &body slot-descriptions)
   (destructuring-bind (name &key (glsl t) (vertex t) (pixel t) (accessors t))
       (if (listp name) name (list name))

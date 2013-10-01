@@ -84,7 +84,8 @@
            :safe-read-from-string
            :sub-at-index
            :symbolicate-package
-           :lispify-name))
+           :lispify-name
+           :symbol-name-equal))
 
 (defpackage :base-vectors
   (:use :cl)

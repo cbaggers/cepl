@@ -1,0 +1,9 @@
+We should implement glsl functionality in lisp so we can test things using the repl.
+Also we have full type information so the code can be littered with 'the' type declarations.
+We can also then look into auto offloading certain task if the gpuarrays are available,
+pushing the results to the gpu in order to finish the job.
+
+Mainly though it is about testing, I'd like to be able to run my implicit surface functions
+locally to perform sanity checks.
+
+I'm not sure how far this idea could go but it can certainly grow as time passes.

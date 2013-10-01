@@ -170,4 +170,4 @@ producing a symbol in the current package."
     (string-upcase (substitute #\- #\_ name))))
 
 (defun symbol-name-equal (a b)
-  (equal (symbol-name a) (symbol-name b)))
+  (and (symbolp a) (symbolp b) (equal (symbol-name a) (symbol-name b))))
