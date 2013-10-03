@@ -5,6 +5,12 @@
 
 (in-package :cepl-utils)
 
+(defun hash-values (hash-table)
+  (loop for i being the hash-values of hash-table collect i))
+
+(defun hash-keys (hash-table)
+  (loop for i being the hash-keys of hash-table collect i))
+
 (defun intersperse (symb sequence)
   (rest (mapcan #'(lambda (x) (list symb x)) sequence)))
 

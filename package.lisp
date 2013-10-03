@@ -69,7 +69,9 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :intersperse
+  (:export :hash-values
+           :hash-keys 
+           :intersperse
            :update-swank
            :walk-replace
            :file-to-string

@@ -156,13 +156,38 @@
     (:fragment (%defshader name :fragment args body))
     (:geometry (%defshader name :geometry args body))))
 
+(defun shader-args-to-list-args (args)
+  (loop :for a :in args :collect
+     (if (listp a)
+         (first a)
+         (if (and (symbolp a) (equal (symbol-name a) "&UNIFORM"))
+             '&key
+             (error "Invalid atom ~s in shader args" a)))))
+
+(defun subst-sfuns (code)
+  (let ((seen nil)
+        (sfuncs nil)               
+        (sfuns (mapcar #'rest (utils:hash-values *cached-glsl-source-code*))))
+    (labels ((wsf (code)
+               (when (consp code)
+                 (let* ((func (first code))
+                        (fdef (and (not (find func seen)) (assoc func sfuns))))
+                   (when fdef (push func seen) (push fdef sfuncs))
+                   (or (every 'identity (loop :for i :in code :collect (wsf i)))
+                       fdef)))))
+      (wsf code)
+      (loop :until (not (wsf sfuncs)))
+      (if sfuncs
+          `((labels (,@(loop :for (name args body) :in sfuncs
+                          :collect `(,name ,args ,@body)))
+              ,@code))
+          code))))
+
+;;[TODO] If a shader-func or sfun is redefined as macro or regular func the 
+;;       source code still remains in the cache
+
 (defun %defshader (name type s-args body)
-  (let* ((args (loop :for a :in s-args :collect
-                  (if (listp a)
-                      (first a)
-                      (if (and (symbolp a) (equal (symbol-name a) "&UNIFORM"))
-                          '&key
-                          (error "Invalid atom ~s in shader args" a)))))
+  (let* ((args (shader-args-to-list-args s-args))
          (s-args-with-type (if (find '&context s-args :test #'utils:symbol-name-equal)
                                (append s-args `(:type ,type))
                                (append s-args `(&context :type ,type)))))
@@ -172,10 +197,10 @@
          (error "This is a shader stage and can only be called from inside a pipeline..for now"))
        ;; [TODO] how do we handle first shader?
        (setf (gethash #',name *cached-glsl-source-code*) 
-             (append (list :shader ',s-args) (varjo:translate ',s-args-with-type ',body nil)))
+             (append (list :shader ',s-args) 
+                     (varjo:translate ',s-args-with-type
+                                      (subst-sfuns ',body) nil)))
        ',name)))
-
-
 
 (defun process-shaders (shaders args)
   (let ((post-compile nil) (result nil))
@@ -211,16 +236,29 @@
 ;; - compile as usual
 ;; where do we check signature?
 
-;; [TODO] We need to make the above fast, this 'if not prog' won't do
+(defmacro defsfun (name args &body body)
+  (let ((l-args (shader-args-to-list-args args)))
+    `(progn
+       (when (and (fboundp ',name) (gethash #',name *cached-glsl-source-code*))
+         (remhash (symbol-function ',name) *cached-glsl-source-code*))
+       (defun ,name ,l-args
+         (declare (ignore ,@(loop :for i :in args :for l :in l-args
+                               :if (listp args) :collect l)))
+         (error "This is an sfun and can only be called from inside a pipeline..for now"))
+       (setf (gethash #',name *cached-glsl-source-code*) '(:sfun ,name ,args ,body))
+       ',name)))
 
 (defmethod gl-pull ((object function))
   (let* ((code (gethash object *cached-glsl-source-code*))
          (s-type (first code)))
-    (case s-type
-      (:pipeline (error "cant pull pipelines yet"))
-      (:shader (let ((code-chunk (third code)))
-                 (format nil "~&#~a~%~a" (first code-chunk) (second code-chunk))))
-      (:sfun (error "cant pull sfuns yet")))))
+    (if code
+        (case s-type
+          (:pipeline (error "cant pull pipelines yet"))
+          (:shader (let ((code-chunk (third code)))
+                     (format nil "~&#~a~%~a" (first code-chunk) (second code-chunk))))
+          (:sfun `(defsfun ,(second code) ,(third code)
+                    ,@(fourth code))))
+        (error "gl-pull can only be used on pipelines, shaders or sfuns"))))
 
 (defun extract-textures (uniforms)
   (loop for (name type) in uniforms 
