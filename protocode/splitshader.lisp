@@ -8,7 +8,7 @@
   (setf gl-position (pos vert))
   (out (the-color :smooth) (col vert)))
 
-(deffshader fs (&uniform (i :int))
+(deffshader fs ((the-color :vec4 :smooth) &uniform (i :int))
   (let ((lerp-value (/ (y gl-frag-coord) 500.0)))
     (out outputColor (mix the-color 
                           (vec4 0.2 0.2 0.2 1.0)

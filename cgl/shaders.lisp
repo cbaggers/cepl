@@ -1,6 +1,7 @@
 (in-package :cgl)
 
 (defparameter *cached-glsl-source-code* (make-hash-table))
+(defparameter *gl-context* (dvals:make-dval))
 
 ;; [TODO] Need to be able to delete programs...How does this fit in lisp?
 
@@ -185,7 +186,7 @@
 
 ;;[TODO] If a shader-func or sfun is redefined as macro or regular func the 
 ;;       source code still remains in the cache
-
+;; [TODO] if this called before deftype has made it's varjo stuff not cool
 (defun %defshader (name type s-args body)
   (let* ((args (shader-args-to-list-args s-args))
          (s-args-with-type (if (find '&context s-args :test #'utils:symbol-name-equal)
@@ -214,8 +215,29 @@
            (setf result (cons `(handle-external-shader #',shader ',args) result))))
     (list (reverse result) (reverse post-compile))))
 
-(defun combine-shaders ()
-  )
+;;
+(defun handle-external-shader (lisp-function pipeline-spec)
+  (destructuring-bind (cepl-type s-args s-def s-out) 
+      (gethash lisp-function *cached-glsl-source-code*)
+    (destructuring-bind (shader-type glsl-src) s-def
+      )))
+
+;;(HANDLE-EXTERNAL-SHADER #'VS '((VERT VERT-DATA) &UNIFORM (I :INT)))
+
+(defun rolling-translate (args shaders &optional accum (first-shader t))  
+  (if (find :type args)
+      (error "Varjo: It is invalid to specify a shader type in a program definition")
+      (if shaders
+          (let* ((shader (first shaders))
+                 (type (first shader)))
+            (destructuring-bind (glsl new-args)
+                (varjo:translate (if (find '&context args 
+                                           :test #'symbol-name-equal)
+                                     (append args `(:type ,type))
+                                     (append args `(&context :type ,type)))
+                                 (rest shader) first-shader)
+              (rolling-translate new-args (rest shaders) (cons glsl accum) nil)))
+          (progn (reverse accum)))))
 
 (defmacro defpipeline (name (&rest args) &body shaders)
   (destructuring-bind (shaders post) (process-shaders shaders args)
@@ -228,49 +250,22 @@
            (funcall program stream ,@(loop for name in uniform-names 
                                         :append `(,(utils:kwd name)
                                                    ,name))))))))
-;; ok so defpipeline could:
-;; - check if symbol
-;;  - if yes pull code in from *cached-glsl-source-code*
-;; - run pass over all code looking for sfuncs 
-;; - if any present wrap entire thing in labels form
-;; - compile as usual
-;; where do we check signature?
 
-(defmacro defsfun (name args &body body)
-  (let ((l-args (shader-args-to-list-args args)))
-    `(progn
-       (when (and (fboundp ',name) (gethash #',name *cached-glsl-source-code*))
-         (remhash (symbol-function ',name) *cached-glsl-source-code*))
-       (defun ,name ,l-args
-         (declare (ignore ,@(loop :for i :in args :for l :in l-args
-                               :if (listp args) :collect l)))
-         (error "This is an sfun and can only be called from inside a pipeline..for now"))
-       (setf (gethash #',name *cached-glsl-source-code*) '(:sfun ,name ,args ,body))
-       ',name)))
-
-(defmethod gl-pull ((object function))
-  (let* ((code (gethash object *cached-glsl-source-code*))
-         (s-type (first code)))
-    (if code
-        (case s-type
-          (:pipeline (error "cant pull pipelines yet"))
-          (:shader (let ((code-chunk (third code)))
-                     (format nil "~&#~a~%~a" (first code-chunk) (second code-chunk))))
-          (:sfun `(defsfun ,(second code) ,(third code)
-                    ,@(fourth code))))
-        (error "gl-pull can only be used on pipelines, shaders or sfuns"))))
-
-(defun extract-textures (uniforms)
-  (loop for (name type) in uniforms 
-     :if (sampler-typep type)
-     :collect name))
-
-;; [TODO] We should create some callback that is activated when the glcontext is
-;;        created that will compile all the shaders and set the programid of the
-;;        pipeline functions. We could use dvals to implment the callback and 
-;;        scope capture. This should create the entire pipeline-function, not 
-;;        defpipeline. This will mean the only runtime lookup is for the id and
-;;        that will be in the lexicaly scope var.
+;; dont forget if not symbol then need to run check for sfuns
+(defmacro defpipeline2 (name (&rest args) &body shaders)
+    (let* ((uniforms (varjo:extract-uniforms args))
+           (textures (extract-textures uniforms))
+           (uniform-names (mapcar #'first uniforms))
+           (image-unit -1)
+           (src->prog-id nil))
+      `(progn
+         (let ((program-id))
+           (if (value *gl-context*)
+               ,src->prog-id
+               (dvals:bind program-id *gl-context* ,src->prog-id))
+           (defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
+             ))
+         (setf (gethash #',name *cached-glsl-source-code*) ,glsl-src)))
 
 (defmacro make-program (name args shaders)  
   (let* ((uniforms (varjo:extract-uniforms args))
@@ -321,6 +316,35 @@
                                                '-assigner))
                        (funcall fun ,uniform-name)))))
          (when stream (no-bind-draw-one stream))))))
+
+(defmacro defsfun (name args &body body)
+  (let ((l-args (shader-args-to-list-args args)))
+    `(progn
+       (when (and (fboundp ',name) (gethash #',name *cached-glsl-source-code*))
+         (remhash (symbol-function ',name) *cached-glsl-source-code*))
+       (defun ,name ,l-args
+         (declare (ignore ,@(loop :for i :in args :for l :in l-args
+                               :if (listp args) :collect l)))
+         (error "This is an sfun and can only be called from inside a pipeline..for now"))
+       (setf (gethash #',name *cached-glsl-source-code*) '(:sfun ,name ,args ,body))
+       ',name)))
+
+(defmethod gl-pull ((object function))
+  (let* ((code (gethash object *cached-glsl-source-code*))
+         (s-type (first code)))
+    (if code
+        (case s-type
+          (:pipeline (error "cant pull pipelines yet"))
+          (:shader (let ((code-chunk (third code)))
+                     (format nil "~&#~a~%~a" (first code-chunk) (second code-chunk))))
+          (:sfun `(defsfun ,(second code) ,(third code)
+                    ,@(fourth code))))
+        (error "gl-pull can only be used on pipelines, shaders or sfuns"))))
+
+(defun extract-textures (uniforms)
+  (loop for (name type) in uniforms 
+     :if (sampler-typep type)
+     :collect name))
 
 ;; make this return list of funcs or nil for each uni-var
 (defun create-uniform-assigners (program-id uniform-vars package)
