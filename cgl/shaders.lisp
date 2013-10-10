@@ -455,8 +455,6 @@ of pairs so that jam[10].toast would become ((jam 10) (toast 0))"
 ;;        Does this need cleaning?
 (defun get-path-offset (lisp-uniform-path uniform-type)
   (let ((array-length (second (first lisp-uniform-path))))
-    (print uniform-type)
-    (print (or (> array-length 1) (varjo:type-struct-p uniform-type)))
     (if (or (> array-length 1) (varjo:type-struct-p uniform-type))
         (let ((child-type uniform-type) (type-b nil))
           (loop :for (slot-name array-length) :in (rest lisp-uniform-path)
