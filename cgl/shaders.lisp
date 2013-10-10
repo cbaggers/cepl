@@ -282,6 +282,7 @@
                                         :append `(,(utils:kwd name)
                                                    ,name))))))))
 
+
 ;; dont forget if not symbol then need to run check for sfuns
 (defmacro defpipeline2 (name (&rest args) &body shaders)
   (let* ((uniforms (varjo:extract-uniforms args))
@@ -290,10 +291,12 @@
          (image-unit -1)
          (src->prog-id '*YOU_HAVENT_IMPLEMENTED_THIS*))
     `(progn
-       (let ((program-id)
+       (let ((program-id nil)
              ,@(loop :for uni-p :in uniform-positions :collect
                   :for i :from 0 
                   `(,(utils:symb 'uniform- i) ,uni-p)));;;;THIS NEEDS FIXING!
+         (defun ,(symb '%%- name)
+             )
          (if (value *gl-context*)
              ,src->prog-id
              (dvals:bind program-id *gl-context* ,src->prog-id))
@@ -425,11 +428,35 @@ of pairs so that jam[10].toast would become ((jam 10) (toast 0))"
 (defun get-slot-type (parent-type slot-name)
   (second (assoc slot-name (varjo:struct-definition parent-type))))
 
+
+
+;; * collect all opengl names
+;; * Run this on the glsl for each name
+;; * feed it through the tools we have
+;; * we can then know what we need for each uniform
+(defun try-thing (uniform-args glsl-shaders package)
+  (let ((merged-shaders (format nil "~{~a~}" glsl-shaders)))
+    (loop :for uniform :in uniform-args :collect 
+       (destructuring-bind (lisp-name varjo-type glsl-name place) 
+           (varjo::flesh-out-arg uniform)
+         (declare (ignorable lisp-name varjo-type glsl-name place))
+         (loop :for (start end) 
+            :on (cl-ppcre:all-matches (format nil "~a(.*?)[, \(\)]" glsl-name) 
+                                      merged-shaders) :by #'cddr :collect
+            (let ((path (parse-uniform-path (list (subseq merged-shaders 
+                                                          start (1- end))) 
+                                            package))
+                  (uniform-type (second uniform)))
+              (get-path-offset path uniform-type)))))))
+
+
 ;; [TODO] If type is non cffi then cffi:foreign-type-size will fail.
 ;;        The array & struct check we dont foreign-type-size a sampler.
 ;;        Does this need cleaning?
 (defun get-path-offset (lisp-uniform-path uniform-type)
   (let ((array-length (second (first lisp-uniform-path))))
+    (print uniform-type)
+    (print (or (> array-length 1) (varjo:type-struct-p uniform-type)))
     (if (or (> array-length 1) (varjo:type-struct-p uniform-type))
         (let ((child-type uniform-type) (type-b nil))
           (loop :for (slot-name array-length) :in (rest lisp-uniform-path)

@@ -246,7 +246,7 @@
   )
 
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :base-vectors :base-matrices)
+  (:use :cl :cffi :base-macros :base-vectors :base-matrices :cepl-utils)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color
