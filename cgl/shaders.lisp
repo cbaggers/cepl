@@ -144,6 +144,35 @@
 (defun valid-shader-typep (shader)
   (find (first shader) '(:vertex :fragment :geometry)))
 
+(defun extract-textures (uniforms)
+  (loop for (name type) in uniforms 
+     :if (sampler-typep type)
+     :collect name))
+
+(defmacro defsfun (name args &body body)
+  (let ((l-args (shader-args-to-list-args args)))
+    `(progn
+       (when (and (fboundp ',name) (gethash #',name *cached-glsl-source-code*))
+         (remhash (symbol-function ',name) *cached-glsl-source-code*))
+       (defun ,name ,l-args
+         (declare (ignore ,@(loop :for i :in args :for l :in l-args
+                               :if (listp args) :collect l)))
+         (error "This is an sfun and can only be called from inside a pipeline..for now"))
+       (setf (gethash #',name *cached-glsl-source-code*) '(:sfun ,name ,args ,body))
+       ',name)))
+
+(defmethod gl-pull ((object function))
+  (let* ((code (gethash object *cached-glsl-source-code*))
+         (s-type (first code)))
+    (if code
+        (case s-type
+          (:pipeline (error "cant pull pipelines yet"))
+          (:shader (let ((code-chunk (third code)))
+                     (format nil "~&#~a~%~a" (first code-chunk) (second code-chunk))))
+          (:sfun `(defsfun ,(second code) ,(third code)
+                    ,@(fourth code))))
+        (error "gl-pull can only be used on pipelines, shaders or sfuns"))))
+
 (defmacro defvshader (name args &body body)
   (%defshader name :vertex args body))
 (defmacro deffshader (name args &body body)
@@ -184,9 +213,11 @@
               ,@code))
           code))))
 
-;;[TODO] If a shader-func or sfun is redefined as macro or regular func the 
-;;       source code still remains in the cache
+;; [TODO] If a shader-func or sfun is redefined as macro or regular func the 
+;;        source code still remains in the cache
 ;; [TODO] if this called before deftype has made it's varjo stuff not cool
+;; [TODO] If we load shaders from files the names will clash
+
 (defun %defshader (name type s-args body)
   (let* ((args (shader-args-to-list-args s-args))
          (s-args-with-type (if (find '&context s-args :test #'utils:symbol-name-equal)
@@ -208,7 +239,7 @@
     (loop :for shader :in shaders :doing
        (if (listp shader)
            (if (eq (first shader) :post-compile)
-               (set post-compile (cons shader post-compile))
+               (setf post-compile (cons shader post-compile))
                (if (valid-shader-typep shader)
                    (setf result (cons `(quote ,shader) result))
                    (error "Invalid shader type ~s" (first shader))))
@@ -232,7 +263,7 @@
                  (type (first shader)))
             (destructuring-bind (glsl new-args)
                 (varjo:translate (if (find '&context args 
-                                           :test #'symbol-name-equal)
+                                           :test #'utils:symbol-name-equal)
                                      (append args `(:type ,type))
                                      (append args `(&context :type ,type)))
                                  (rest shader) first-shader)
@@ -253,19 +284,23 @@
 
 ;; dont forget if not symbol then need to run check for sfuns
 (defmacro defpipeline2 (name (&rest args) &body shaders)
-    (let* ((uniforms (varjo:extract-uniforms args))
-           (textures (extract-textures uniforms))
-           (uniform-names (mapcar #'first uniforms))
-           (image-unit -1)
-           (src->prog-id nil))
-      `(progn
-         (let ((program-id))
-           (if (value *gl-context*)
-               ,src->prog-id
-               (dvals:bind program-id *gl-context* ,src->prog-id))
-           (defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
-             ))
-         (setf (gethash #',name *cached-glsl-source-code*) ,glsl-src)))
+  (let* ((uniforms (varjo:extract-uniforms args))
+         (textures (extract-textures uniforms))
+         (uniform-names (mapcar #'first uniforms))
+         (image-unit -1)
+         (src->prog-id '*YOU_HAVENT_IMPLEMENTED_THIS*))
+    `(progn
+       (let ((program-id)
+             ,@(loop :for uni-p :in uniform-positions :collect
+                  :for i :from 0 
+                  `(,(utils:symb 'uniform- i) ,uni-p)));;;;THIS NEEDS FIXING!
+         (if (value *gl-context*)
+             ,src->prog-id
+             (dvals:bind program-id *gl-context* ,src->prog-id))
+         (defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
+           (when stream (no-bind-draw-one stream))
+           stream))
+       (setf (gethash #',name *cached-glsl-source-code*) ,glsl-src))))
 
 (defmacro make-program (name args shaders)  
   (let* ((uniforms (varjo:extract-uniforms args))
@@ -317,128 +352,94 @@
                        (funcall fun ,uniform-name)))))
          (when stream (no-bind-draw-one stream))))))
 
-(defmacro defsfun (name args &body body)
-  (let ((l-args (shader-args-to-list-args args)))
-    `(progn
-       (when (and (fboundp ',name) (gethash #',name *cached-glsl-source-code*))
-         (remhash (symbol-function ',name) *cached-glsl-source-code*))
-       (defun ,name ,l-args
-         (declare (ignore ,@(loop :for i :in args :for l :in l-args
-                               :if (listp args) :collect l)))
-         (error "This is an sfun and can only be called from inside a pipeline..for now"))
-       (setf (gethash #',name *cached-glsl-source-code*) '(:sfun ,name ,args ,body))
-       ',name)))
-
-(defmethod gl-pull ((object function))
-  (let* ((code (gethash object *cached-glsl-source-code*))
-         (s-type (first code)))
-    (if code
-        (case s-type
-          (:pipeline (error "cant pull pipelines yet"))
-          (:shader (let ((code-chunk (third code)))
-                     (format nil "~&#~a~%~a" (first code-chunk) (second code-chunk))))
-          (:sfun `(defsfun ,(second code) ,(third code)
-                    ,@(fourth code))))
-        (error "gl-pull can only be used on pipelines, shaders or sfuns"))))
-
-(defun extract-textures (uniforms)
-  (loop for (name type) in uniforms 
-     :if (sampler-typep type)
-     :collect name))
 
 ;; make this return list of funcs or nil for each uni-var
+;; package is the package the pipeline is defined in
 (defun create-uniform-assigners (program-id uniform-vars package)
-  (let* ((uniform-details (program-uniforms program-id))
-         (active-uniform-details (process-uniform-details uniform-details
-                                                          uniform-vars
-                                                          package)))
-    (loop for a-uniform in active-uniform-details
-       :collect
-         (when a-uniform
-           (let ((location (gl:get-uniform-location program-id 
-                                                    (second a-uniform))))
-             (if (< location 0)
-                 (error "uniform ~a not found, this is a bug in cepl"
-                        (second a-uniform))
-                 (loop for part in (subseq a-uniform 2)
-                    :collect 
-                      (destructuring-bind (offset type length) part
-                        (let ((uni-fun (get-foreign-uniform-function type))
-                              (uni-fun2 (get-uniform-function type)))
-                          (if (or (> length 1) (varjo:type-struct-p type))
-                              (lambda (pointer)
-                                (funcall uni-fun location length
-                                         (cffi-sys:inc-pointer pointer offset)))
-                              (lambda (value) (funcall uni-fun2 location value))))))))))))
+  ;; uniform details returns (list name type size) given a prog
+  ;; active-uniform-details is in the form:
+  ;;               ("glname" (byte-offset principle-type length)...)
+  "Collect uniform details from opengl for the program, aggregate the 
+   information in a list for each uniform-var. We then pass over each
+   uniform and for each uniform part (remember a struct can have many
+   parts) we create a function that will take a value *or* pointer 
+   and send the data to the correct place in the shader."
+  (let ((active-uniform-details 
+         (process-uniform-details (program-uniforms program-id)
+                                  uniform-vars
+                                  package)))
+    (loop :for a-uniform :in active-uniform-details :collect
+       (destructuring-bind (lisp-name gl-name &rest unif-details) a-uniform
+         (let ((location (gl:get-uniform-location program-id gl-name)))
+           (if (< location 0)
+               (error "uniform ~a not found, this is a bug in cepl" gl-name)
+               (loop :for part :in unif-details :collect 
+                  (destructuring-bind (offset type length) part
+                    (if (or (> length 1) (varjo:type-struct-p type))
+                        (lambda (pointer)
+                          (funcall (get-foreign-uniform-function type)
+                                   location length
+                                   (cffi-sys:inc-pointer pointer offset)))
+                        (lambda (value) (funcall (get-uniform-function type)
+                                                 location value)))))))))))
 
 ;; [TODO] Got to be a quicker and tidier way
 (defun process-uniform-details (uniform-details uniform-vars package)
-  ;; returns '(byte-offset principle-type length)
-  (let ((result nil)
-        (paths (loop for det in uniform-details
-                  collect (parse-uniform-path det package))))
-    (loop for detail in uniform-details
-       for path in paths
-       :do (setf result 
-                 (acons (caar path) 
-                        (cons (first detail)
-                              (cons (list (get-path-offset path uniform-vars)
-                                          (second detail)
-                                          (third detail))
-                                    (rest (rest 
-                                           (assoc (caar path)
-                                                  result)))))
-                        result)))
-    (loop for var in uniform-vars
-       :collect (assoc (first var) result))))
+  ;; uniform details in-form (name type size) 
+  "Uniform-details contains one entry for each uniform BUT some uniforms have
+   multiple parts, a single struct may return multiple uniform entries.
+   Here we amalagamte the details together under a single symbol name.
+   We can then run through the uniform names passed in and find the single
+   list of information on that given uniform argument. 
+   For each symbol we get a list with the opengl name followed by multiple
+   (byte-offset principle-type length) triples."
+  (labels ((uniform-type (name)
+             (or (second (assoc (symbol-name name) uniform-vars
+                                :key #'symbol-name :test #'equal))
+                 (error "Could not find the uniform variable named '~a'" name))))
+    (let ((result (make-hash-table)))
+      (loop :for detail :in uniform-details :do
+         (destructuring-bind (d-name d-type d-size) detail
+           (let* ((path (parse-uniform-path detail package))
+                  (first-name-in-path (caar path))
+                  (current-details (rest (gethash first-name-in-path result))))
+             (setf (gethash first-name-in-path result)
+                   `(,d-name (,(get-path-offset path (uniform-type 
+                                                      first-name-in-path))
+                               ,d-type ,d-size) ,@current-details)))))
+      (loop :for var :in uniform-vars
+         :if (gethash (first var) result)
+         :collect (cons var (gethash (first var) result))))))
 
-;; [TODO] If we load shaders from files the names will clash
 (defun parse-uniform-path (uniform-detail package)
+  "Take a string uniform path from opengl and parse it into a list 
+of pairs so that jam[10].toast would become ((jam 10) (toast 0))"
   (labels ((s-dot (x) (split-sequence:split-sequence #\. x))
            (s-square (x) (split-sequence:split-sequence #\[ x)))
-    (loop for path in (s-dot (first uniform-detail))
-       :collect (let ((part (s-square (remove #\] path))))
-                  (list (symbol-munger:camel-case->lisp-symbol (first part) 
-                                                               package)
-                        (if (second part)
-                            (parse-integer (second part))
-                            0))))))
+    (loop for path in (s-dot (first uniform-detail)) :collect
+         (destructuring-bind (name &optional array-length) 
+             (s-square (remove #\] path))
+           (list (symbol-munger:camel-case->lisp-symbol name package)
+                 (if array-length (parse-integer array-length) 0))))))
 
 (defun get-slot-type (parent-type slot-name)
   (second (assoc slot-name (varjo:struct-definition parent-type))))
 
-;;path: ((TEX 0)) uniform-vars: ((JAM VEC4) (TEX SAMPLER-2D))
-(defun get-path-offset (path uniform-vars)
-  (format t "path: ~a uniform-vars: ~a" path uniform-vars)
-  (labels ((path-offset (type path &optional (sum 0))
-             (if path
-                 (let* ((path-part (first path))
-                        (slot-name (first path-part))
-                        (child-type (varjo:type-principle
-                                     (get-slot-type type
-                                                    slot-name))))
-                   (path-offset 
-                    child-type
-                    (rest path)
-                    (+ sum
-                       (+ (cffi:foreign-slot-offset type slot-name) 
-                          (* (cffi:foreign-type-size child-type)
-                             (second path-part))))))
-                 sum)))
-    (let* ((first-part (first path))
-           (type (second (assoc (symbol-name (first first-part)) uniform-vars
-                                :key #'symbol-name :test #'equal)))
-           (index (second first-part)))
-      (if type
-          ;; this bit was taken from tw olevels up to kill the chance of 
-          ;; cffi being asked the size of a sampler..it's an ugly hack though
-          (if (or (> index 1) (varjo:type-struct-p type))
-              (+ (* (cffi:foreign-type-size type) index) ;; [TODO] What if type non 
-                 ;; cffi
-                 (path-offset type (rest path)))
-              0)
-          (error "Could not find the uniform variable named '~a'" 
-                 (first first-part))))))
+;; [TODO] If type is non cffi then cffi:foreign-type-size will fail.
+;;        The array & struct check we dont foreign-type-size a sampler.
+;;        Does this need cleaning?
+(defun get-path-offset (lisp-uniform-path uniform-type)
+  (let ((array-length (second (first lisp-uniform-path))))
+    (if (or (> array-length 1) (varjo:type-struct-p uniform-type))
+        (let ((child-type uniform-type) (type-b nil))
+          (loop :for (slot-name array-length) :in (rest lisp-uniform-path)
+             :do (setf type-b child-type
+                       child-type (varjo:type-principle 
+                                   (get-slot-type child-type slot-name)))
+             :sum (+ (cffi:foreign-slot-offset type-b slot-name) 
+                     (* (cffi:foreign-type-size child-type) 
+                        array-length))))
+        0)))
 
 (defun program-attrib-count (program)
   "Returns the number of attributes used by the shader"
@@ -465,7 +466,6 @@
      collect (multiple-value-bind (size type name)
                  (gl:get-active-uniform program-id i)
                (list name type size))))
-
 
 (let ((program-cache nil))
   (defun use-program (program-id)
