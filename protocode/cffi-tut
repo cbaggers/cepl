@@ -1,0 +1,11 @@
+;; cffi tutorial
+;; -------------
+;; * What is cffi
+;; * When are we likely to use it
+;; * What are the big differences (typed data, no garbage collection, pointers, 
+;;   it's c basically)
+;; * Allocating data
+;; * setting and getting foreign data
+;; * pointers
+;; * cstructs
+;; * Complex cstructs - pointers
