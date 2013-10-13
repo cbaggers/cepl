@@ -27,9 +27,9 @@
   new-val)
 
 (defun transform-bind (place dvals expr)
-  (print dvals)
-  (let* ((dvals (loop :for v :in dvals :if (utils:find-in-tree v expr)
-                   :collect v))
+  (let* ((dvals (or (loop :for v :in dvals :if (utils:find-in-tree v expr)
+                       :collect v) 
+                    dvals))
          (expr (if (consp expr)
                    (loop :for dval in dvals :do
                       (setf expr (subst `(dval ,dval) dval expr))
@@ -38,13 +38,13 @@
     `(if (not (loop :for d :in (list ,@dvals) :always (typep d 'declarative-value)))
          (error "The second argument must always be a dval or a list of dvals")
          (let ((setter (let (,@(loop for dval in dvals collect
-                                    (list dval dval)))                       
-                         (lambda () (setf ,place ,expr)))))
-           (setf ,place ,expr)
-           (list ,@(loop :for dval :in dvals :collect 
-                      `(let ((key (incf (bcount ,dval))))
-                         (setf (gethash key (bound ,dval)) setter)
-                         key)))))))
+                                      (list dval dval)))
+                           (lambda () (setf ,place ,expr)))))
+           (or (list ,@(loop :for dval :in dvals :collect 
+                          `(let ((key (incf (bcount ,dval))))
+                             (setf (gethash key (bound ,dval)) setter)
+                             key)))
+               t)))))
 
 ;; [TODO] should be able to tag part to be eval'd now and never again
 
