@@ -237,7 +237,7 @@
 (defpackage :declarative-values
   (:use :cl)
   (:nicknames :dvals)
-  (:export :make-dval :dval :bind))
+  (:export :make-dval :dval :bind :unbind :brittle-bind :unbind-all))
 
 (defpackage :base-space
   (:use :cl :base-macros :base-vectors :base-matrices)
