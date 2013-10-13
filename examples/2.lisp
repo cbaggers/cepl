@@ -9,7 +9,7 @@
   (:fragment (out output-color (v! (x offset) (sin loop) 0.3 1.0))))
 
 (defun draw (gstream)
-  (setf *loop* (+ 0.02 *loop*))
+  (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit)  
   (loop :for i :below 23 :do
        (let ((i (/ i 2.0)))

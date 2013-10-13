@@ -34,7 +34,9 @@
                     :icon-caption "CEPL REPL"
                     :title-caption "CEPL REPL")
         (if (cepl-post-context-initialize)
-            (format t "-----------------~%    CEPL-REPL    ~%-----------------")
+            (progn
+              (setf (dval cgl::*gl-context*) t)
+              (format t "-----------------~%    CEPL-REPL    ~%-----------------"))
             (progn (sdl:quit)
                    (error "Failed to initialise CEPL"))))
       (error "Failed to initialise SDL")))

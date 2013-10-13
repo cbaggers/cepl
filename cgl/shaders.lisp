@@ -247,19 +247,14 @@
                 (rolling-translate out-args (rest to-compile)
                                    (cons type-n-code accum) nil)))))
       (progn (reverse accum))))
-;; 
-;; (rest (gethash #'vs *cached-glsl-source-code*))Human   (:vertex "code")
-;; Cached  (((A :FLOAT)) (:VERTEX-SHADER "glsl") (VARJO::&CONTEXT :VERSION :|330|))
-;; human is missing the inputs and outputs, inputs come from previous stage or
-;; pipeline args. If not human then need to compare inputs with given input and 
-;; then pass output to next stage.
-;; dont forget if not symbol then need to run check for sfuns
+
+;; [TODO] Add textures back properly
+;; [TODO] If not symbol then need to run check for sfuns
 (defmacro defpipeline (name (&rest args) &body shaders)
   (let* ((uniforms (varjo:extract-uniforms args))
          ;;(textures (extract-textures uniforms))
          (uniform-names (mapcar #'first uniforms))
          ;;(image-unit -1)
-         ;;(src->prog-id '*YOU_HAVENT_IMPLEMENTED_THIS*)
          (uniform-details (loop :for u :in uniforms :collect 
                              (make-arg-assigners u)))
          (u-lets (loop :for u :in uniform-details :append (first u)))
@@ -283,7 +278,7 @@
          (let* ((glsl-src (varjo:rolling-translate 
                            ',args (list ,@(reverse shaders-no-post))))
                 (shaders-objects (loop :for (type code) :in glsl-src
-                                    :collect (make-shader type code)))
+                                    :collect (make-shader type (print code))))
                 (prog-id (link-shaders shaders-objects
                                        ,(if name `(program-manager ',name)
                                             `(gl:create-program)))))
@@ -299,13 +294,15 @@
        ;; if we are creating once context exists then just run the init func,
        ;; otherwise bind the init func to the creation of the context
        (if (dvals::dval *gl-context*)
-           (,init-func-name)
-           (dvals:bind program-id *gl-context* (,init-func-name)))
+           (setf program-id (,init-func-name))
+           (dvals:brittle-bind program-id *gl-context* (,init-func-name)))
        ;; And finally the pipeline function itself
        (defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
+         (declare (ignorable ,@uniform-names))
          (use-program program-id)
          ,@u-uploads
          (when stream (no-bind-draw-one stream))
+         (use-program 0)
          stream))))
 
 ;;---------------------------------------------------------------------
