@@ -279,23 +279,24 @@
            ,@(loop for u in u-lets collect `(,(first u) -1)))
        ;; func that will create all resources for pipeline
        (defun ,init-func-name ()
+         (print ,(format nil "initialising ~a" name))
          (let* ((glsl-src (varjo:rolling-translate 
                            ',args (list ,@(reverse shaders-no-post))))
                 (shaders-objects (loop for (type code) in glsl-src
                         :collect (make-shader type code))))
            (setf program-id (link-shaders shaders-objects
                                           ,(if name `(program-manager ',name)
-                                               `(gl:create-program)))))
-         ,@(loop for u in u-lets collect (cons 'setf u))
-         (setf (gethash #',name *cached-glsl-source-code*) glsl-src)
-         (mapcar #'%gl:delete-shader shaders-objects)
+                                               `(gl:create-program))))
+           (mapcar #'%gl:delete-shader shaders-objects)
+           ,@(loop for u in u-lets collect (cons 'setf u))
+           (setf (gethash #',name *cached-glsl-source-code*) glsl-src))         
          (unbind-buffer)
          (force-bind-vao 0)
          (force-use-program 0)
          ,@post-compile)
        ;; if we are creating once context exists then just run the init func,
        ;; otherwise bind the init func to the creation of the context
-       (if (value *gl-context*)
+       (if (dvals::dval *gl-context*)
            (,init-func-name)
            (dvals:bind program-id *gl-context* (,init-func-name)))
        ;; And finally the pipeline function itself
