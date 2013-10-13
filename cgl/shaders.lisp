@@ -306,9 +306,6 @@
          (when stream (no-bind-draw-one stream))
          stream))))
 
-(defpipeline test-pline ((stream vert-data) &uniform (thing vert-data) (b :float))
-  vs fs)
-
 ;;---------------------------------------------------------------------
 
 (defun make-arg-assigners (uniform-arg &aux gen-ids assigners)
