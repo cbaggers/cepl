@@ -282,18 +282,20 @@
          (print ,(format nil "initialising ~a" name))
          (let* ((glsl-src (varjo:rolling-translate 
                            ',args (list ,@(reverse shaders-no-post))))
-                (shaders-objects (loop for (type code) in glsl-src
-                        :collect (make-shader type code))))
-           (setf program-id (link-shaders shaders-objects
-                                          ,(if name `(program-manager ',name)
-                                               `(gl:create-program))))
+                (shaders-objects (loop :for (type code) :in glsl-src
+                                    :collect (make-shader type code)))
+                (prog-id (link-shaders shaders-objects
+                                       ,(if name `(program-manager ',name)
+                                            `(gl:create-program)))))
            (mapcar #'%gl:delete-shader shaders-objects)
            ,@(loop for u in u-lets collect (cons 'setf u))
-           (setf (gethash #',name *cached-glsl-source-code*) glsl-src))         
-         (unbind-buffer)
-         (force-bind-vao 0)
-         (force-use-program 0)
-         ,@post-compile)
+           (setf (gethash #',name *cached-glsl-source-code*) glsl-src)
+           
+           (unbind-buffer)
+           (force-bind-vao 0)
+           (force-use-program 0)
+           ,@post-compile
+           prog-id))
        ;; if we are creating once context exists then just run the init func,
        ;; otherwise bind the init func to the creation of the context
        (if (dvals::dval *gl-context*)

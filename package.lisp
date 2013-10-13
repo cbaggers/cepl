@@ -384,16 +384,16 @@
            :box-data
            :sphere-data))
 
-(defpackage :3dstub
-  (:nicknames :stub)
-  (:use :cl
-        :base-vectors
-        :base-matrices
-        :base-maths)
-  (:export :vc :vcn :initialize :point-camera-at
-           :update-view :draw :primitive-model 
-           :load-model :camera-position :pos :rot :color
-           :scale))
+;; (defpackage :3dstub
+;;   (:nicknames :stub)
+;;   (:use :cl
+;;         :base-vectors
+;;         :base-matrices
+;;         :base-maths)
+;;   (:export :vc :vcn :initialize :point-camera-at
+;;            :update-view :draw :primitive-model 
+;;            :load-model :camera-position :pos :rot :color
+;;            :scale))
 
 (defpackage :cepl
   (:use :cl
@@ -433,5 +433,5 @@
                 :with-texture-bound
                 :p-n-t
                 :texref)
-  (:import-from :3dstub :pos :rot :color :scale)
+  ;; (:import-from :stub3d :pos :rot :color :scale)
   (:export :repl))

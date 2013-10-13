@@ -67,7 +67,7 @@
                        dvals)
                    (list dvals))))    
     (if expr
-        (transform-bind place dvals expr)
+        (transform-bind place dvals expr release-on-change)
         (if (> (length dvals) 1)
             (error "You cannot bind to multiple declarative-values without and expression to explain how they interact to make a value")
             (transform-bind place dvals (first dvals) release-on-change)))))

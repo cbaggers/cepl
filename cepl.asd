@@ -55,5 +55,5 @@
                (:file "meshes-and-models/model-parsers/parse-obj")
                (:file "meshes-and-models/model-parsers/parse-lisp")
                (:file "meshes-and-models/model-parsers/classimp-cepl-extras")
-               (:file "meshes-and-models/model-parsers/3dstub")
+               ;; (:file "meshes-and-models/model-parsers/3dstub")
                (:file "cepl")))
