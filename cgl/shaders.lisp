@@ -274,35 +274,37 @@
            ,@(loop for u in u-lets collect `(,(first u) -1)))
        ;; func that will create all resources for pipeline
        (defun ,init-func-name ()
-         (print ,(format nil "initialising ~a" name))
          (let* ((glsl-src (varjo:rolling-translate 
                            ',args (list ,@(reverse shaders-no-post))))
                 (shaders-objects (loop :for (type code) :in glsl-src
-                                    :collect (make-shader type (print code))))
+                                    :collect (make-shader type code)))
                 (prog-id (link-shaders shaders-objects
                                        ,(if name `(program-manager ',name)
                                             `(gl:create-program)))))
            (mapcar #'%gl:delete-shader shaders-objects)
            ,@(loop for u in u-lets collect (cons 'setf u))
            (setf (gethash #',name *cached-glsl-source-code*) glsl-src)
-           
            (unbind-buffer)
            (force-bind-vao 0)
            (force-use-program 0)
            ,@post-compile
+           (setf program-id prog-id)
            prog-id))
        ;; if we are creating once context exists then just run the init func,
        ;; otherwise bind the init func to the creation of the context
-       (if (dvals::dval *gl-context*)
-           (setf program-id (,init-func-name))
-           (dvals:brittle-bind program-id *gl-context* (,init-func-name)))
+       (dvals:brittle-bind program-id *gl-context* (,init-func-name))
        ;; And finally the pipeline function itself
        (defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
-         (use-program program-id)
-         ,@u-uploads
-         (when stream (no-bind-draw-one stream))
-         (use-program 0)
+         (if (not program-id)
+             (progn
+               (print program-id)
+               (setf program-id (,init-func-name)))
+             (progn
+               (use-program program-id)
+               ,@u-uploads
+               (when stream (no-bind-draw-one stream))
+               (use-program 0)))
          stream))))
 
 ;;---------------------------------------------------------------------
