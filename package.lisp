@@ -133,7 +133,7 @@
 (defpackage :vector4
   (:use :cl)
   (:nicknames :v4)
-  (:export :make-vector4 :v+ :v+1 :v- :v-1 :v* :v-eq
+  (:export :make-vector4 :v+ :v+1 :v- :v-1 :v* :v3* :v-eq
            :v*vec :v/ :v/vec :negate :vlength-squared
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :cross
@@ -325,6 +325,7 @@
            :deffshader
            :defgshader
            :defshader
+           :defsfun
            :free-managed-resources
            :free-buffer
            :free-buffers

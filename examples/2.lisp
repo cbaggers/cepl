@@ -4,19 +4,21 @@
 (defparameter *vertex-stream* nil)
 (defparameter *loop* 0.0)
 
-(defpipeline prog-1 ((position :vec4) &uniform (offset :vec4) (loop :float))
-  (:vertex (setf gl-position (+ (* (v! 0.7 0.7 0.7 1.0) position) offset)))
-  (:fragment (out output-color (v! (x offset) (sin loop) 0.3 1.0))))
+(defsfun calc-offset ((a :float) (loop :float))
+  (return (v! (sin (* (cos a) (+ (sin a) loop)))
+              (cos  (+ (cos a) loop))
+              0.0 0.0)))
+
+(defpipeline prog-1 ((position :vec4) &uniform (i :int) (loop :float))
+  (:vertex (setf gl-position (+ position (calc-offset (float i) loop))))
+  (:fragment (out output-color (v! (cos loop) (sin loop) 0.3 1.0))))
 
 (defun draw (gstream)
-  (setf *loop* (+ 0.01 *loop*))
+  (setf *loop* (+ 0.004 *loop*))
   (gl:clear :color-buffer-bit)  
-  (loop :for i :below 23 :do
-       (let ((i (/ i 2.0)))
-         (prog-1 gstream :offset (v! (sin (+ (tan (sin i)) *loop*)) 
-                                     (sin (cos (+ i (cos *loop*)))) 
-                                     0 0)
-                         :loop *loop*)))
+  (loop :for i :below 50 :do
+     (let ((i (/ i 2.0)))
+       (prog-1 gstream :i i :loop *loop*)))
   (gl:flush)
   (sdl:update-display))
 

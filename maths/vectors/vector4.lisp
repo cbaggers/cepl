@@ -164,6 +164,19 @@
 
 ;----------------------------------------------------------------
 
+(declaim (inline v3*)
+	 (ftype (function ((simple-array single-float (4)) 
+			   (single-float)) 
+			  (simple-array single-float (4))) v3*))
+(defun v3* (vector-a a)
+  "Multiply vector by scalar"
+  (declare ((simple-array single-float (4)) vector-a)
+	   ((single-float) a))
+  (make-vector4 (* (aref vector-a 0) a) (* (aref vector-a 1) a)
+              (* (aref vector-a 2) a) (aref vector-a 3)))
+
+;----------------------------------------------------------------
+
 (declaim (inline v*vec)
 	 (ftype (function ((simple-array single-float (4)) 
 			   (simple-array single-float (4))) 

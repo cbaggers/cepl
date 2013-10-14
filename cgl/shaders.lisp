@@ -206,6 +206,22 @@
               ,@code))
           code))))
 
+(defun %defshader (name type s-args body)
+  (let* ((args (shader-args-to-list-args s-args))
+         (s-args-with-type (if (find '&context s-args :test #'utils:symbol-name-equal)
+                               (append s-args `(:type ,type))
+                               (append s-args `(&context :type ,type)))))
+    `(progn
+       (defun ,name ,args
+         (declare (ignore ,@(remove '&key args)))
+         (error "This is a shader stage and can only be called from inside a pipeline..for now"))
+       ;; [TODO] how do we handle first shader?
+       (setf (gethash #',name *cached-glsl-source-code*)
+             (append (list :shader ',s-args)
+                     (varjo:translate ',s-args-with-type
+                                      (subst-sfuns ',body) nil)))
+       ',name)))
+
 (defmacro defvshader (name args &body body)
   (%defshader name :vertex args body))
 (defmacro deffshader (name args &body body)
@@ -267,7 +283,8 @@
            (if (eq (first shader) :post-compile)
                (push shader post-compile)
                (if (valid-shader-typep shader)
-                   (push `(quote ,shader) shaders-no-post)
+                   (push `(cons ,(first shader) (subst-sfuns '(,(second shader))))
+                         shaders-no-post)
                    (error "Invalid shader type ~s" (first shader))))
            (push `(function ,shader) shaders-no-post)))
     `(let ((program-id nil)
