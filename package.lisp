@@ -325,6 +325,7 @@
            :deffshader
            :defgshader
            :defshader
+           :defsmacro
            :defsfun
            :free-managed-resources
            :free-buffer
@@ -417,6 +418,7 @@
                 :defgshader
                 :defshader
                 :defsfun
+                :defsmacro
                 :defglstruct
                 :gl-pull
                 :gl-pull-1
