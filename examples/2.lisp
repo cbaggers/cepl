@@ -5,13 +5,16 @@
 (defparameter *loop* 0.0)
 
 (defsfun calc-offset ((a :float) (loop :float))
-  (return (v! (sin (* (cos a) (+ (sin a) loop)))
+  (return (v! (tan (* (cos a) (+ (sin a) loop)))
               (cos  (+ (cos a) loop))
               0.0 0.0)))
 
+(deffshader frag (&uniform (loop :float)) 
+  (out output-color (v! (cos loop) (sin loop) 1.0 1.0)))
+
 (defpipeline prog-1 ((position :vec4) &uniform (i :int) (loop :float))
   (:vertex (setf gl-position (+ position (calc-offset (float i) loop))))
-  (:fragment (out output-color (v! (cos loop) (sin loop) 0.3 1.0))))
+  frag)
 
 (defun draw (gstream)
   (setf *loop* (+ 0.004 *loop*))

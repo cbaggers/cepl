@@ -240,19 +240,34 @@
 ;; [TODO] if this called before deftype has made it's varjo stuff not cool
 ;; [TODO] If we load shaders from files the names will clash
 (defun shader-args-compatible (pipe-args shader-args)
-  (loop :for shader-arg :in shader-args :always 
-     (find shader-arg pipe-args :test #'equal)))
+  (destructuring-bind (p-shader-type p-version p-in-args p-in-arg-decs
+                                     p-uniform-args p-struct-functions
+                                     p-struct-defs p-types)
+      (varjo::parse-shader-args pipe-args)
+    (declare (ignore p-shader-type p-version p-in-arg-decs p-struct-functions
+                     p-struct-defs p-types))
+    (destructuring-bind (s-shader-type s-version s-in-args s-in-arg-decs
+                                       s-uniform-args s-struct-functions
+                                       s-struct-defs s-types)
+        (varjo::parse-shader-args shader-args)
+      (declare (ignore s-shader-type s-version s-in-arg-decs s-struct-functions
+                       s-struct-defs s-types))
+      (and (loop :for s-in-arg :in s-in-args :always 
+              (find s-in-arg p-in-args :test #'equal))
+           (loop :for s-uniform-arg :in s-uniform-args :always 
+              (find s-uniform-arg p-uniform-args :test #'equal))))))
 
 (defun rolling-translate (in-args to-compile &optional accum (first-shader t))  
   (if to-compile
       (let ((shader (first to-compile)))
-        (if (symbolp shader)
+        (if (functionp shader)
             (destructuring-bind (s-in-args type-n-code out-args)
                 (rest (gethash shader *cached-glsl-source-code*))
               (if (shader-args-compatible in-args s-in-args)
                   (rolling-translate out-args (rest to-compile) 
                                      (cons type-n-code accum) nil)
-                  (error "In-arg error [TODO] Need a decent message here")))
+                  (error "Shader args not compatible with previous stage~%~s~%~s" 
+                         in-args s-in-args)))
             (let ((type (first shader)))
               (destructuring-bind (type-n-code out-args)
                   (varjo:translate (if (find '&context in-args 
@@ -291,7 +306,7 @@
            ,@(loop for u in u-lets collect `(,(first u) -1)))
        ;; func that will create all resources for pipeline
        (defun ,init-func-name ()
-         (let* ((glsl-src (varjo:rolling-translate 
+         (let* ((glsl-src (cgl::rolling-translate 
                            ',args (list ,@(reverse shaders-no-post))))
                 (shaders-objects (loop :for (type code) :in glsl-src
                                     :collect (make-shader type code)))

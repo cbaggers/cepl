@@ -415,7 +415,8 @@
                 :defvshader
                 :deffshader
                 :defgshader
-                :defshader                
+                :defshader
+                :defsfun
                 :defglstruct
                 :gl-pull
                 :gl-pull-1
