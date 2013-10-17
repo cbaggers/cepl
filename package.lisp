@@ -69,7 +69,8 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :hash-values
+  (:export :replace-nth 
+           :hash-values
            :hash-keys 
            :intersperse
            :update-swank
@@ -325,6 +326,7 @@
            :deffshader
            :defgshader
            :defshader
+           :defsmacro
            :defsfun
            :free-managed-resources
            :free-buffer

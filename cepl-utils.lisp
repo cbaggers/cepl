@@ -5,6 +5,9 @@
 
 (in-package :cepl-utils)
 
+(defun replace-nth (list n form)
+  `(,@(subseq list 0 n) ,form ,@(subseq list (1+ n))))
+
 (defun hash-values (hash-table)
   (loop for i being the hash-values of hash-table collect i))
 

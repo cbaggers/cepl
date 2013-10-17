@@ -4,7 +4,18 @@
 (defparameter *vertex-stream* nil)
 (defparameter *loop* 0.0)
 
-;;min(max(d.x,max(d.y,d.z)),0.0) +   length(max(d,0.0))
+(defsmacro density-normal (object-call position-arg-num)
+  (when (not (listp args)) (error "object-call form must a list"))
+  (let ((arg-num (1+ position-arg-num))
+        (oc object-call)
+        (p position-arg-num))
+    `(normalize 
+      (v! (- (utils:replace-nth oc p `(+ ,(nth p oc) (v! 0.01  0.0  0.0)))
+             (utils:replace-nth oc p `(- ,(nth p oc) (v! 0.01  0.0  0.0))))
+          (- (utils:replace-nth oc p `(+ ,(nth p oc) (v!  0.0 0.01  0.0)))
+             (utils:replace-nth oc p `(- ,(nth p oc) (v!  0.0 0.01  0.0))))
+          (- (utils:replace-nth oc p `(+ ,(nth p oc) (v!  0.0  0.0 0.01)))
+             (utils:replace-nth oc p `(- ,(nth p oc) (v!  0.0  0.0 0.01))))))))
 
 (defpipeline prog-1 ((position :vec4) &uniform (loop :float) (radius :float) (fog-dist :float)
                      (eye-pos :vec3) (rot :mat3))
