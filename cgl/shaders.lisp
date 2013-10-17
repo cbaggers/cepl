@@ -156,8 +156,7 @@
      :collect name))
 
 (defmacro defsmacro (name lambda-list &body body)
-  `(varjo::vdefmacro ,name ,lambda-list
-     ,@body))
+  `(varjo::vdefmacro ,name ,lambda-list ,@body))
 
 (defmacro defsfun (name args &body body)
   (let ((l-args (shader-args-to-list-args args)))
