@@ -301,7 +301,7 @@
            (if (eq (first shader) :post-compile)
                (push shader post-compile)
                (if (valid-shader-typep shader)
-                   (push `(cons ,(first shader) (subst-sfuns '(,(second shader))))
+                   (push `(cons ,(first shader) (subst-sfuns '(,@(rest shader))))
                          shaders-no-post)
                    (error "Invalid shader type ~s" (first shader))))
            (push `(function ,shader) shaders-no-post)))
