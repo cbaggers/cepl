@@ -11,6 +11,7 @@
 (asdf:defsystem #:cepl
   :serial t
   :depends-on (#:cl-opengl
+               #:swank
                #:lbm-sdl
                #:varjo
                #:cl-utilities

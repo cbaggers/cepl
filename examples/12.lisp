@@ -66,7 +66,7 @@
   (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit)
   (prog-1 gstream :loop *loop* :radius 1.4 :fog-dist 8.0
-          :eye-pos (v! -1.3 1.3 -5.0) :rot (m3:rotation-y (* 0.1 *loop*)))
+          :eye-pos (v! 0 0 -5.0) :rot (m3:rotation-y 0.0))
   (gl:flush)
   (sdl:update-display))
 

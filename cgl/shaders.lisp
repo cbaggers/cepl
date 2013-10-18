@@ -135,9 +135,6 @@
 ;;; SHADER & PROGRAMS ;;;
 ;;;-------------------;;;
 
-(defun sampler-typep (type)
-  (find type *sampler-types*))
-
 (let ((programs (make-hash-table)))
   (defun program-manager (name)
     (let ((prog-id (gethash name programs)))
@@ -149,11 +146,6 @@
 
 (defun valid-shader-typep (shader)
   (find (first shader) '(:vertex :fragment :geometry)))
-
-(defun extract-textures (uniforms)
-  (loop for (name type) in uniforms 
-     :if (sampler-typep type)
-     :collect name))
 
 (defmacro defsmacro (name lambda-list &body body)
   `(varjo::vdefmacro ,name ,lambda-list ,@body))
@@ -283,12 +275,9 @@
       (progn (reverse accum))))
 
 ;; [TODO] Add textures back properly
-;; [TODO] If not symbol then need to run check for sfuns
 (defmacro defpipeline (name (&rest args) &body shaders)
   (let* ((uniforms (varjo:extract-uniforms args))
-         ;;(textures (extract-textures uniforms))
          (uniform-names (mapcar #'first uniforms))
-         ;;(image-unit -1)
          (uniform-details (loop :for u :in uniforms :collect 
                              (make-arg-assigners u)))
          (u-lets (loop :for u :in uniform-details :append (first u)))
@@ -315,7 +304,9 @@
                                     :collect (make-shader type code)))
                 (prog-id (link-shaders shaders-objects
                                        ,(if name `(program-manager ',name)
-                                            `(gl:create-program)))))
+                                            `(gl:create-program))))
+                (image-unit -1))
+           (declare (ignorable image-unit))
            (mapcar #'%gl:delete-shader shaders-objects)
            ,@(loop for u in u-lets collect (cons 'setf u))
            (setf (gethash #',name *cached-glsl-source-code*) glsl-src)
@@ -344,23 +335,51 @@
 
 ;;---------------------------------------------------------------------
 
+(defun sampler-typep (type)
+  (let ((type (varjo:flesh-out-type type)))
+    (find (first type) *sampler-types*)))
+
 (defun make-arg-assigners (uniform-arg &aux gen-ids assigners)
   (destructuring-bind (arg-name varjo-type glsl-name &rest ignore-args) 
       (varjo::flesh-out-arg uniform-arg)
     (declare (ignore ignore-args))
     (let ((struct-arg (varjo:type-struct-p varjo-type))
-          (array-length (second varjo-type)))
-      (loop :for (gid asn) :in
+          (array-length (second varjo-type))
+          (sampler (sampler-typep varjo-type)))
+      (loop :for (gid asn multi-gid) :in
          (cond (array-length (make-array-assigners varjo-type glsl-name))
                (struct-arg (make-struct-assigners varjo-type glsl-name))
+               (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
                (t `(,(make-simple-assigner varjo-type glsl-name nil))))
-         :do (push gid gen-ids) (push asn assigners))
+         :do (if multi-gid
+                 (progn (loop for g in gid :do (push g gen-ids)) 
+                        (push asn assigners))
+                 (progn (push gid gen-ids) (push asn assigners))))
       `(,(reverse gen-ids)
          (when ,arg-name
            (let ((val ,(if (or array-length struct-arg) 
                            `(pointer ,arg-name)
                            arg-name)))
              ,@(reverse assigners)))))))
+
+(defun make-sampler-assigner (type path &optional (byte-offset 0))
+  (declare (ignore byte-offset))
+  (destructuring-bind (principle-type &rest ignore-args) 
+      (varjo:flesh-out-type type)
+    (declare (ignore ignore-args))
+    (let ((id-name (gensym))
+          (i-unit (gensym "IMAGE-UNIT")))
+      `(((,id-name (gl:get-uniform-location prog-id ,path))
+         (,i-unit (incf image-unit)))
+        (when (>= ,id-name 0)
+          (unless (eq (sampler-type val) ,principle-type) 
+            (error "incorrect texture type passed to shader"))
+          ;; (unless ,id-name 
+          ;;   (error "Texture uniforms must be populated")) ;; [TODO] this wont work here
+          (active-texture-num ,i-unit)
+          (bind-texture val)
+          (uniform-sampler ,id-name ,i-unit))
+        t))))
 
 (defun make-simple-assigner (type path &optional (byte-offset 0))
   (destructuring-bind (principle-type &rest ignore-args) 
@@ -372,7 +391,8 @@
           ,(if byte-offset
                `(,(get-foreign-uniform-function-name principle-type) 
                   ,id-name 1 (cffi:inc-pointer val ,byte-offset))
-               `(,(get-uniform-function-name principle-type) ,id-name val)))))))
+               `(,(get-uniform-function-name principle-type) ,id-name val)))
+        nil))))
 
 (defun make-array-assigners (type path &optional (byte-offset 0))
   (destructuring-bind 
