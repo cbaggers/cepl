@@ -29,6 +29,7 @@
   (ripple-with-wobble *v-stream* :tex *texture* :count *count*
                       :pos-offset (v! 0 0 0 0))
   (incf *count* 0.02))
+
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (cgl:viewport 0 0 1024 768)
