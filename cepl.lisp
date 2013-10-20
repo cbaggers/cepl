@@ -14,16 +14,14 @@
 (in-package :cepl)
 
 (defun get-gl-extensions ()
-  (loop for i below (gl:get-integer :num-extensions)
-     collect (%gl:get-string-i :extensions i)))
+  (loop :for i :below (gl:get-integer :num-extensions)
+     :collect (%gl:get-string-i :extensions i)))
 
 (defun cepl-post-context-initialize ()
-  (let ((required-extensions '("GL_ARB_texture_storage"))
-        (available-extensions (get-gl-extensions)))
-    (loop :for ext :in required-extensions :do
-       (when (not (find ext available-extensions :test #'equal))
-         (error "Required OpenGL Extension '~a' not found"
-                ext)))
+  (let ((available-extensions (get-gl-extensions)))
+    (labels ((has-feature (x) (find x available-extensions :test #'equal)))
+      (unless (has-feature "GL_ARB_texture_storage") 
+        (setf cgl::*immutable-available* nil)))
     t))
 
 (defun repl (&optional (width 640) (height 480))

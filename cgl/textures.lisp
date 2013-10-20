@@ -9,7 +9,7 @@
 (in-package :cepl-gl)
 
 ;;------------------------------------------------------------
-
+(defparameter *immutable-available* t)
 (defparameter *cube-face-order* '(:texture-cube-map-positive-x​
                                   :texture-cube-map-negative-x​
                                   :texture-cube-map-positive-y​
@@ -324,7 +324,7 @@
               (if (and cubes (not (apply #'= dimensions)))
                   (error "Cube textures must be square")
                   (let ((texture (make-instance 
-                                  (if immutable 
+                                  (if (and immutable *immutable-available*) 
                                       'immutable-texture
                                       'mutable-texture)
                                   :texture-id (gen-texture)
@@ -355,7 +355,8 @@
 
 (defmethod allocate-texture ((texture mutable-texture))
   (gl:tex-parameter (texture-type texture) :texture-base-level 0)
-  (gl:tex-parameter (texture-type texture) :texture-max-level 0)
+  (gl:tex-parameter (texture-type texture) :texture-max-level 
+                    (1- (slot-value texture 'mipmap-levels)))
   (setf (slot-value texture 'allocated) t))
 
 (defmethod allocate-texture ((texture immutable-texture))
