@@ -43,7 +43,7 @@
     (setf *texture* (with-c-array
                         (temp (make-c-array '(64 64) :ubyte 
                                             :initial-contents img-data))
-                      (make-texture :initial-contents temp)))
+                      (make-texture :initial-contents temp :immutable nil)))
     (loop :until (find :quit-event (sdl:collect-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable

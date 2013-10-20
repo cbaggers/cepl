@@ -22,3 +22,10 @@
 
 ;; This should allow hooking a region which is used to generate a distance field
 ;; to a audio signal to make rendering fft based visuals and doddle.
+
+(defregion (x) (and (> x 10) (< x 40)))
+
+(inside )
+
+;; Wait are regions just lambdas?
+
