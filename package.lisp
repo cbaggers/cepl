@@ -303,6 +303,7 @@
            :make-texture
            :bind-texture
            :with-texture-bound
+           :mutable-texturep
            :upload-c-array-to-gpuarray-t ; this is a crap name
            :calc-sampler-type
            :dimensions-at-mipmap-level

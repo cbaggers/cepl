@@ -31,12 +31,16 @@
 (defclass immutable-texture (gl-texture) ())
 (defclass mutable-texture (gl-texture) ())
 
+(defgeneric mutable-texturep (texture))
+(defmethod mutable-texturep ((texture mutable-texture)) t)
+(defmethod mutable-texturep ((texture immutable-texture)) nil)
+
 (defmethod print-object ((object mutable-texture) stream)
   (let ((m (slot-value object 'mipmap-levels))
         (l (slot-value object 'layer-count))
         (c (slot-value object 'cubes)))
     (format stream 
-            "#<GL-m_~a (~{~a~^x~})~:[~; mip-levels:~a~]~:[~; layers:~a~]>"
+            "#<GL-~a (~{~a~^x~})~:[~; mip-levels:~a~]~:[~; layers:~a~]>"
             (slot-value object 'texture-type)
             (slot-value object 'base-dimensions)
             (when (> m 1) m) (when (> l 1) l) c)))
