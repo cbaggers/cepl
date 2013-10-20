@@ -16,10 +16,7 @@
                #:varjo
                #:cl-utilities
                #:cl-ppcre
-               #:symbol-munger
-               #:classimp
-               #:temporary-file
-               #:md5)
+               #:symbol-munger)
   :components ((:file "package")
                (:file "maths/base-maths")
                (:file "base-macros")
