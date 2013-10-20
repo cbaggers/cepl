@@ -416,6 +416,8 @@
 
 ;;------------------------------------------------------------
 
+(defmethod gl-push ((object gl-texture) (destination gpu-array-t))
+  (gl-push object (texref destination)))
 
 ;; [TODO] gl-push taking lists
 
