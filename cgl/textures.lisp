@@ -417,6 +417,8 @@
 ;;------------------------------------------------------------
 
 
+;; [TODO] gl-push taking lists
+
 ;; [TODO] This feels like could create non-optimal solutions
 ;;        So prehaps this should look at texture format, and
 ;;        find the most similar compatible format, with worst
@@ -426,6 +428,9 @@
       (compile-pixel-format (pixel-format-of object))
     (upload-c-array-to-gpuarray-t destination object
                                   pformat ptype)))
+
+(defmethod gl-pull ((object gl-texture))
+  (gl-pull (texref object)))
 
 ;; [TODO] implement gl-fill and fill arguments
 

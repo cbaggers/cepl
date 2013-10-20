@@ -167,7 +167,9 @@
          (s-type (first code)))
     (if code
         (case s-type
-          (:pipeline (error "cant pull pipelines yet"))
+          (:pipeline (format nil "~{~a~^~%-----------~%~}"
+                             (loop :for (s-type src) :in (rest code)
+                                :collect (format nil "#~a~%~a" s-type src))))
           (:shader (let ((code-chunk (third code)))
                      (format nil "~&#~a~%~a" (first code-chunk) (second code-chunk))))
           (:sfun `(defsfun ,(second code) ,(third code)
@@ -309,7 +311,8 @@
            (declare (ignorable image-unit))
            (mapcar #'%gl:delete-shader shaders-objects)
            ,@(loop for u in u-lets collect (cons 'setf u))
-           (setf (gethash #',name *cached-glsl-source-code*) glsl-src)
+           (setf (gethash #',name *cached-glsl-source-code*) 
+                 (cons :pipeline glsl-src))
            (unbind-buffer)
            (force-bind-vao 0)
            (force-use-program 0)
