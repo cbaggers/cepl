@@ -163,8 +163,6 @@
 
 (defmethod %upload-tex ((tex mutable-texture) tex-type level-num dimensions
                         layer-num face-num pix-format pix-type pointer)
-  (format t "ti(~{~s ~})" (list tex-type level-num (internal-format tex) dimensions 0
-                                pix-format pix-type pointer))
   (case tex-type
     (:texture-1d (gl:tex-image-1d tex-type level-num (internal-format tex)
                                    (first dimensions) 0 pix-format pix-type
@@ -357,7 +355,7 @@
 
 (defmethod allocate-texture ((texture mutable-texture))
   (gl:tex-parameter (texture-type texture) :texture-base-level 0)
-  (gl:tex-parameter (texture-type texture) :texture-max-level 1)
+  (gl:tex-parameter (texture-type texture) :texture-max-level 0)
   (setf (slot-value texture 'allocated) t))
 
 (defmethod allocate-texture ((texture immutable-texture))

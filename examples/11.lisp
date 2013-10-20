@@ -22,8 +22,8 @@
                         (sin (- count (* peaks (y tex-coord)))))
                      2.0))
           (rip-offset (* (* rip-size (normalize dif)) height damp)))
-     (out outputColor (+ (texture tex (+ rip-offset tex-coord) )
-                         (vec4 (* -0.2 height) (* -0.2 height) 0.0 1.0))))))
+     (out outputColor (+ (texture tex (+ rip-offset tex-coord))
+                         (vec4 (* -0.2 height) (* -0.2 height) 0.0 0.0))))))
 
 (defun step-demo ()
   (ripple-with-wobble *v-stream* :tex *texture* :count *count*
