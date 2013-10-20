@@ -31,7 +31,17 @@
 (defclass immutable-texture (gl-texture) ())
 (defclass mutable-texture (gl-texture) ())
 
-(defmethod print-object ((object gl-texture) stream)
+(defmethod print-object ((object mutable-texture) stream)
+  (let ((m (slot-value object 'mipmap-levels))
+        (l (slot-value object 'layer-count))
+        (c (slot-value object 'cubes)))
+    (format stream 
+            "#<GL-m_~a (~{~a~^x~})~:[~; mip-levels:~a~]~:[~; layers:~a~]>"
+            (slot-value object 'texture-type)
+            (slot-value object 'base-dimensions)
+            (when (> m 1) m) (when (> l 1) l) c)))
+
+(defmethod print-object ((object immutable-texture) stream)
   (let ((m (slot-value object 'mipmap-levels))
         (l (slot-value object 'layer-count))
         (c (slot-value object 'cubes)))
@@ -153,29 +163,31 @@
 
 (defmethod %upload-tex ((tex mutable-texture) tex-type level-num dimensions
                         layer-num face-num pix-format pix-type pointer)
+  (format t "ti(~{~s ~})" (list tex-type level-num (internal-format tex) dimensions 0
+                                pix-format pix-type pointer))
   (case tex-type
     (:texture-1d (gl:tex-image-1d tex-type level-num (internal-format tex)
-                                  (first dimensions) 0 pix-format pix-type
-                                  pointer))
+                                   (first dimensions) 0 pix-format pix-type
+                                   pointer))
     (:texture-2d (gl:tex-image-2d tex-type level-num (internal-format tex)
-                                  (first dimensions) (second dimensions) 0
-                                  pix-format pix-type pointer))
+                                   (first dimensions) (second dimensions) 0
+                                   pix-format pix-type pointer))
     (:texture-3d (gl:tex-image-3d tex-type level-num (internal-format tex)
-                                  (first dimensions) (second dimensions)
-                                  (third dimensions) 0 pix-format pix-type
-                                  pointer))
+                                   (first dimensions) (second dimensions)
+                                   (third dimensions) 0 pix-format pix-type
+                                   pointer))
     (:texture-1d-array (gl:tex-image-2d tex-type level-num 
-                                        (internal-format tex)
-                                        (first dimensions) layer-num 0
-                                        pix-format pix-type pointer))
+                                         (internal-format tex)
+                                         (first dimensions) layer-num 0
+                                         pix-format pix-type pointer))
     (:texture-2d-array (gl:tex-image-3d tex-type level-num 
-                                        (internal-format tex)
-                                        (first dimensions) (second dimensions)
-                                        layer-num 0 pix-format pix-type pointer))
+                                         (internal-format tex)
+                                         (first dimensions) (second dimensions)
+                                         layer-num 0 pix-format pix-type pointer))
     (:texture-cube-map (gl:tex-image-2d (nth face-num *cube-face-order*)
-                                        level-num (internal-format tex)
-                                        (first dimensions) (second dimensions) 0
-                                        pix-format pix-type pointer))
+                                         level-num (internal-format tex)
+                                         (first dimensions) (second dimensions) 0
+                                         pix-format pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))
 
 
@@ -344,6 +356,8 @@
 (defgeneric allocate-texture (texture))
 
 (defmethod allocate-texture ((texture mutable-texture))
+  (gl:tex-parameter (texture-type texture) :texture-base-level 0)
+  (gl:tex-parameter (texture-type texture) :texture-max-level 1)
   (setf (slot-value texture 'allocated) t))
 
 (defmethod allocate-texture ((texture immutable-texture))
@@ -448,7 +462,6 @@
             (error "Texture has already been bound"))))
   texture)
 
-
 ;; copy data (from gpu to cpu) - get-tex-image
 ;; copy data (from frame-buffer to texture image) - leave for now
 ;; copy from buffer to texture glCopyTexSubImage2D
@@ -458,4 +471,5 @@
 ;; generate-mipmaps
 ;; texsubimage*d - pushing data
 ;; glPixelStore — set pixel storage modes
+
 

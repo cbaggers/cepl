@@ -14,7 +14,7 @@
   (:vertex (setf gl-position (+ (pos vert) pos-offset))
            (out (tex-coord :smooth) (tex-pos vert)))
   (:fragment 
-   (let* ((rip-size 0.02) (centre (vec2 0.5 0.5)) (damp 0.6)
+   (let* ((rip-size 0.02) (centre (vec2 0.0 0.0)) (damp 0.6)
           (peaks 31.0)
           (dif (- tex-coord centre))
           (dist (dot dif dif))
@@ -23,7 +23,7 @@
                      2.0))
           (rip-offset (* (* rip-size (normalize dif)) height damp)))
      (out outputColor (+ (texture tex (+ rip-offset tex-coord) )
-                         (vec4 (* -0.2 height) (* -0.2 height) 0.0 0.0))))))
+                         (vec4 (* -0.2 height) (* -0.2 height) 0.0 1.0))))))
 
 (defun step-demo ()
   (ripple-with-wobble *v-stream* :tex *texture* :count *count*
@@ -32,7 +32,7 @@
 
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
-  (cgl:viewport 0 0 1024 768)
+  (cgl:viewport 0 0 640 480)
   (let* ((img-data (loop :for i :below 64 :collect
                       (loop :for j :below 64 :collect (random 254)))))
     (setf *vert-gpu* 

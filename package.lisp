@@ -30,17 +30,6 @@
            :continuable
            :apply-across-elements))
 
-;; uncomment when using lispbuilder instead of lispbuilder-mini
-;; (defpackage :lbm-sdl
-;;   (:use :cl)
-;;   (:nicknames :sdl
-;;   (:export :init-sdl
-;;            :quit-sdl
-;;            :with-init-sdl
-;;            :collect-sdl-event-types
-;;            :get-sdl-event
-;;            :case-events))
-
 (defpackage :conditional-functions
   (:use :cl)
   (:nicknames :cfunc)
@@ -387,17 +376,6 @@
            :box-data
            :sphere-data))
 
-;; (defpackage :3dstub
-;;   (:nicknames :stub)
-;;   (:use :cl
-;;         :base-vectors
-;;         :base-matrices
-;;         :base-maths)
-;;   (:export :vc :vcn :initialize :point-camera-at
-;;            :update-view :draw :primitive-model 
-;;            :load-model :camera-position :pos :rot :color
-;;            :scale))
-
 (defpackage :cepl
   (:use :cl
         :declarative-values
@@ -438,5 +416,4 @@
                 :with-texture-bound
                 :p-n-t
                 :texref)
-  ;; (:import-from :stub3d :pos :rot :color :scale)
   (:export :repl))
