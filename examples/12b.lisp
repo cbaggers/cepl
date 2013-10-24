@@ -56,7 +56,7 @@
                                     :element-type :vec4
                                     :dimensions 6))
   (setf *vertex-stream* (make-vertex-stream *gpu-array*))
-  (loop :until (find :quit-event (sdl:collect-event-types)) :do
+  (loop :until (find :quit-event (sdl2:collect-event-types)) :do
      (cepl-utils:update-swank)
      (continuable (draw *vertex-stream*))))
 
@@ -66,5 +66,5 @@
   (prog-1 gstream :loop *loop* :radius 1.4 :fog-dist 8.0
           :eye-pos (v! -1.3 1.3 -5.0) :rot (m3:rotation-y (* 0.1 *loop*)))
   (gl:flush)
-  (sdl:update-display))
+  (cgl:update-display))
 

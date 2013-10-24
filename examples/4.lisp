@@ -106,7 +106,7 @@
      (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
      (prog-2 (e-stream entity) :model-to-world (entity-matrix entity)))
   (gl:flush)
-  (sdl:update-display))
+  (cgl:update-display))
 
 (defun reshape (width height)  
   (setf (m4:melm *cam-clip-matrix* 0 0) (* *frustrum-scale* (/ height width)))
@@ -119,9 +119,9 @@
   (reshape 1024 768)  
   (let ((running t))
     (loop :while running :do
-       (sdl:case-events (event)
+       (sdl2:case-events (event)
          (:quit-event (setf running nil))
-         (:video-resize-event (reshape (sdl:video-resize-w event)
-                                       (sdl:video-resize-h event))))
+         (:video-resize-event (reshape (sdl2:video-resize-w event)
+                                       (sdl2:video-resize-h event))))
        (cepl-utils:update-swank)
        (continuable (draw)))))

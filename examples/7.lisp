@@ -154,7 +154,7 @@
             :norm-model-to-cam normal-to-cam-matrix
             :ambient-intensity 0.2))
   (gl:flush)
-  (sdl:update-display))
+  (cgl:update-display))
 
 (defun reshape (width height near far)
   (prog-1 nil :cam-to-clip (cepl-camera:make-cam-clip-matrix 
@@ -168,11 +168,11 @@
   (reshape 1024 768 *near* *far*)  
   (let ((running t))
     (loop :while running :do
-       (sdl:case-events (event)
+       (sdl2:case-events (event)
          (:quit-event (setf running nil))
          (:video-resize-event 
-          (reshape (sdl:video-resize-w event)
-                   (sdl:video-resize-h event)
+          (reshape (sdl2:video-resize-w event)
+                   (sdl2:video-resize-h event)
                    *near* *far*)))
        (cepl-utils:update-swank)
        (continuable (draw)))))

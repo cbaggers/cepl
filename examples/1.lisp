@@ -22,9 +22,9 @@
                 :dimensions 3
                 :element-type 'vert-data))
          (gstream (make-vertex-stream data)))
-    (loop :until (find :quit-event (sdl:collect-event-types)) :do
+    (loop :until (find :quit-event (sdl2:collect-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable (progn (gl:clear :color-buffer-bit)
                                        (prog-1 gstream)
                                        (gl:flush)
-                                       (sdl:update-display))))))
+                                       (cgl:update-display))))))

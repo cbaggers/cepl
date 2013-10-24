@@ -12,7 +12,7 @@
   :serial t
   :depends-on (#:cl-opengl
                #:swank
-               #:lbm-sdl
+               #:sdl2
                #:varjo
                #:cl-utilities
                #:cl-ppcre
@@ -52,4 +52,5 @@
                (:file "meshes-and-models/primitives")
                (:file "meshes-and-models/model-parsers/parse-obj")
                (:file "meshes-and-models/model-parsers/parse-lisp")
+               (:file "sdl-extras")
                (:file "cepl")))

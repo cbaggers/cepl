@@ -3,4 +3,7 @@
 (defun cls ()
   (clear :color-buffer-bit)
   (gl:flush)
-  (sdl:update-display))
+  (update-display))
+
+(defun update-display ()
+  (sdl2::sdl-gl-swap-window *gl-window*))

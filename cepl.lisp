@@ -18,30 +18,26 @@
      :collect (%gl:get-string-i :extensions i)))
 
 (defun cepl-post-context-initialize ()
-  (if (lbm-sdl:opengl-context-p)
-      (let ((available-extensions (get-gl-extensions)))
-        (labels ((has-feature (x) (find x available-extensions :test #'equal)))
-          (unless (has-feature "GL_ARB_texture_storage") 
-            (setf cgl::*immutable-available* nil)))
-        t)
-      (progn (error "GL Context was not created")
-             nil)))
+  (let ((available-extensions (get-gl-extensions)))
+    (labels ((has-feature (x) (find x available-extensions :test #'equal)))
+      (unless (has-feature "GL_ARB_texture_storage") 
+        (setf cgl::*immutable-available* nil)))
+    t))
 
 (defun repl (&optional (width 640) (height 480))
   (in-package :cepl)
-  (if (sdl:init-sdl)
-      (progn
-        (sdl:window width height 
-                    :icon-caption "CEPL REPL"
-                    :title-caption "CEPL REPL")
-        (if (cepl-post-context-initialize)
+  (if (sdl2:init)
+      (multiple-value-bind (context window)
+          (sdl2::new-window :width width :height height :title "CEPL REPL")
+        (if (and context window (cepl-post-context-initialize))
             (progn
-              (setf (dval cgl::*gl-context*) t)
+              (setf cgl::*gl-window* window)              
+              (setf (dval cgl::*gl-context*) context)
               (format t "-----------------~%    CEPL-REPL    ~%-----------------"))
-            (progn (sdl:quit)
+            (progn (sdl2:quit)
                    (error "Failed to initialise CEPL"))))
       (error "Failed to initialise SDL")))
 
 (defun quit ()
-  (sdl:quit))
+  (sdl2:quit))
 

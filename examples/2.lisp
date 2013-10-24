@@ -26,7 +26,7 @@
      (let ((i (/ i 2.0)))
        (prog-1 gstream :i i :loop *loop*)))
   (gl:flush)
-  (sdl:update-display))
+  (cgl:update-display))
 
 (defun run-demo ()
   (cgl:clear-color 0.0 0.0 0.0 0.0)
@@ -37,6 +37,6 @@
                                     :element-type :vec4
                                     :dimensions 3))
   (setf *vertex-stream* (make-vertex-stream *gpu-array*))
-  (loop :until (find :quit-event (sdl:collect-event-types)) :do
+  (loop :until (find :quit-event (sdl2:collect-event-types)) :do
      (cepl-utils:update-swank)
      (continuable (draw *vertex-stream*))))

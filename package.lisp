@@ -254,6 +254,7 @@
                 :delete-shader)
   (:shadow :float)
   (:export :gl-free
+           :update-display
            :valid-pixel-format-p
            :pixel-format
            :internal-format-from-pixel-format
@@ -376,6 +377,11 @@
            :plain-data
            :box-data
            :sphere-data))
+
+(defpackage :cepl-sdl2
+  (:nicknames :csdl)
+  (:use :cl :sdl2)
+  (:export :init-sdl))
 
 (defpackage :cepl
   (:use :cl

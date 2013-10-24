@@ -2,6 +2,7 @@
 
 (defparameter *cached-glsl-source-code* (make-hash-table))
 (defparameter *gl-context* (dvals:make-dval))
+(defparameter *gl-window* nil)
 
 ;; [TODO] Need to be able to delete programs...How does this fit in lisp?
 
