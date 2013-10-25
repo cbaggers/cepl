@@ -220,7 +220,6 @@
          (error "This is a shader stage and can only be called from inside a pipeline..for now"))
        ;; [TODO] how do we handle first shader?
        (defun ,invalidate-func-name ()
-         (print '(recompiling ,name))
          (multiple-value-bind (new-code sfuns-found) (subst-sfuns ',body)
            (setf (gethash #',name *cached-glsl-source-code*)
                  (append (list :shader ',s-args)
@@ -299,6 +298,7 @@
     (loop :for p :in chain :if (fboundp p) :do 
        (funcall (symbol-function p)))))
 
+;; [TODO] &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& SUBSTFUN HERE &&&&&&&!!!1lol
 ;; [TODO] Add textures back properly
 (defmacro defpipeline (name (&rest args) &body shaders)
   (let* ((uniforms (varjo:extract-uniforms args))
@@ -313,15 +313,21 @@
          (subscribe nil)
          (post-compile nil))
     (loop :for shader :in shaders :do
-       (if (listp shader)
-           (if (eq (first shader) :post-compile)
-               (push shader post-compile)
-               (if (valid-shader-typep shader)
-                   (push `(cons ,(first shader) (subst-sfuns '(,@(rest shader))))
-                         shaders-no-post)
-                   (error "Invalid shader type ~s" (first shader))))
-           (progn (push `(function ,shader) shaders-no-post)
-                  (push shader subscribe))))
+       (cond ((symbolp shader) (error "Cannot compose symbol '~s' into pipeline stage" shader))
+             ((eq (first shader) :post-compile) (push shader post-compile))
+             ((and (eq (first shader) 'cl:quote) (symbolp (second shader))) 
+              (push (cons 'cl:function (rest shader)) shaders-no-post)
+              (push (second shader) subscribe))
+             ((eq (first shader) 'cl:function) (push shader shaders-no-post) 
+              (push (second shader) subscribe))
+             ((valid-shader-typep shader)
+              (push `(multiple-value-bind (new-code sfuns-found) 
+                         (subst-sfuns '(,@(rest shader)))
+                       (loop :for c :in sfuns-found :do 
+                          (add-compile-chain c ',invalidate-func-name))
+                       (cons ,(first shader) new-code))
+                    shaders-no-post))
+             (t (error "unknown pipeline element: ~s" shader))))
     `(let ((program-id nil)
            ,@(loop for u in u-lets collect `(,(first u) -1)))
        (defun ,invalidate-func-name () (setf program-id nil))
@@ -535,15 +541,16 @@
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
   (let ((program (or program_id (gl:create-program))))
-    (loop for shader in shaders
-       do (gl:attach-shader program shader))
-    (gl:link-program program)
-    ;;check for linking errors
-    (if (not (gl:get-program program :link-status))
-        (error (format nil "Error Linking Program~%~a" 
-                       (gl:get-program-info-log program))))
-    (loop :for shader :in shaders :do
-       (gl:detach-shader program shader))
+    (unwind-protect 
+         (progn (loop :for shader :in shaders :do
+                   (gl:attach-shader program shader))
+                (gl:link-program program)
+                ;;check for linking errors
+                (if (not (gl:get-program program :link-status))
+                    (error (format nil "Error Linking Program~%~a" 
+                                   (gl:get-program-info-log program)))))
+      (loop :for shader :in shaders :do
+         (gl:detach-shader program shader)))
     program))
 
 ;; [TODO] Need to sort gpustream indicies thing
