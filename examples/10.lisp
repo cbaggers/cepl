@@ -149,7 +149,7 @@
                           (* 10 (cos *loop-pos*))))
   (let ((end? nil))
     (sdl2:case-events (event)
-      (:quit-event (setf end? t))
+      (:quit (setf end? t))
       (:video-resize-event 
        (reshape (sdl2:video-resize-w event)
                 (sdl2:video-resize-h event)

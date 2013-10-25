@@ -169,7 +169,7 @@
   (let ((running t))
     (loop :while running :do
        (sdl2:case-events (event)
-         (:quit-event (setf running nil))
+         (:quit (setf running nil))
          (:video-resize-event 
           (reshape (sdl2:video-resize-w event)
                    (sdl2:video-resize-h event)

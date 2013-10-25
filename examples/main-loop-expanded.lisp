@@ -22,7 +22,7 @@
   (init)
   (reshape 1024 768)
   (sdl2:with-events () 
-    (:quit-event () t)
+    (:quit () t)
     (:video-resize-event (:w width :h height) 
                          (reshape width height))
     (:idle () (cepl-utils:update-swank)
@@ -44,7 +44,7 @@
             (if event
                 (progn
                   (case (sdl2:event-type event)
-                    (:quit-event (in :main-loop (finish)))
+                    (:quit (in :main-loop (finish)))
                     (:video-resize-event 
                      (reshape (sdl2:video-resize-w event)
                               (sdl2:video-resize-h event))))
@@ -68,7 +68,7 @@
   (let ((running t))
     (loop :while running :do
        (case-events (event)
-         (:quit-event (setf running nil))
+         (:quit (setf running nil))
          (:video-resize-event 
           (reshape (sdl2:video-resize-w event)
                    (sdl2:video-resize-h event))))

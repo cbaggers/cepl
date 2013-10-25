@@ -56,7 +56,7 @@
                                     :element-type :vec4
                                     :dimensions 6))
   (setf *vertex-stream* (make-vertex-stream *gpu-array*))
-  (loop :until (find :quit-event (sdl2:collect-event-types)) :do
+  (loop :until (find :quit (sdl2:collect-event-types)) :do
      (cepl-utils:update-swank)
      (continuable (draw *vertex-stream*))))
 

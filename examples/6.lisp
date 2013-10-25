@@ -198,7 +198,7 @@
 
 (defun step-game (draw-timer draw-stepper )
   (sdl2:case-events (event)
-    (:quit-event (setf *running* nil))
+    (:quit (setf *running* nil))
     (:video-resize-event (reshape (sdl2:video-resize-w event)
                                   (sdl2:video-resize-h event)))
     (:key-down-event (when (eq (sdl2:key-key event) :sdl2-key-up)

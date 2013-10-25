@@ -2,7 +2,8 @@
 
 (defparameter *cached-glsl-source-code* (make-hash-table))
 (defparameter *gl-context* (dvals:make-dval))
-(defparameter *gl-window* nil)
+(defparameter *gl-window* nil) 
+(defparameter *compile-chain* (make-hash-table))
 
 ;; [TODO] Need to be able to delete programs...How does this fit in lisp?
 
@@ -141,6 +142,7 @@
     (let ((prog-id (gethash name programs)))
       (if prog-id prog-id
           (setf (gethash name programs) (gl:create-program)))))
+  ;;[TODO] Implement delete
   (defun program-manager-delete (name)
     (declare (ignore name))
     (print "delete not yet implemented")))
@@ -161,6 +163,7 @@
                                :if (listp args) :collect l)))
          (error "This is an sfun and can only be called from inside a pipeline..for now"))
        (setf (gethash #',name *cached-glsl-source-code*) '(:sfun ,name ,args ,body))
+       (when *gl-context* (compile-the-chain ',name))
        ',name)))
 
 (defmethod gl-pull ((object function))
@@ -198,26 +201,35 @@
                        fdef)))))
       (wsf code)
       (loop :until (not (wsf sfuncs)))
-      (if sfuncs
-          `((labels (,@(loop :for (name args body) :in sfuncs
-                          :collect `(,name ,args ,@body)))
-              ,@code))
-          code))))
+      (values (if sfuncs
+                  `((labels (,@(loop :for (name args body) :in sfuncs
+                                  :collect `(,name ,args ,@body)))
+                      ,@code))
+                  code)
+              seen))))
 
 (defun %defshader (name type s-args body)
   (let* ((args (shader-args-to-list-args s-args))
          (s-args-with-type (if (find '&context s-args :test #'utils:symbol-name-equal)
                                (append s-args `(:type ,type))
-                               (append s-args `(&context :type ,type)))))
+                               (append s-args `(&context :type ,type))))
+         (invalidate-func-name (symbolicate-package :cgl '££- name)))
     `(progn
        (defun ,name ,args
          (declare (ignore ,@(remove '&key args)))
          (error "This is a shader stage and can only be called from inside a pipeline..for now"))
        ;; [TODO] how do we handle first shader?
-       (setf (gethash #',name *cached-glsl-source-code*)
-             (append (list :shader ',s-args)
-                     (varjo:translate ',s-args-with-type
-                                      (subst-sfuns ',body) nil)))
+       (defun ,invalidate-func-name ()
+         (print '(recompiling ,name))
+         (multiple-value-bind (new-code sfuns-found) (subst-sfuns ',body)
+           (setf (gethash #',name *cached-glsl-source-code*)
+                 (append (list :shader ',s-args)
+                         (varjo:translate ',s-args-with-type
+                                          new-code nil)))
+           (loop :for c :in sfuns-found :do 
+              (add-compile-chain c ',invalidate-func-name)))
+         (when *gl-context* (compile-the-chain ',name)))
+       (,invalidate-func-name)            
        ',name)))
 
 (defmacro defvshader (name args &body body)
@@ -277,6 +289,16 @@
                                    (cons type-n-code accum) nil)))))
       (progn (reverse accum))))
 
+(defun add-compile-chain (child parent)
+  (let ((current-chain (gethash child *compile-chain*)))
+    (when (not (find parent current-chain))
+      (setf (gethash child *compile-chain*) (cons parent current-chain)))))
+
+(defun compile-the-chain (child)
+  (let ((chain (gethash child *compile-chain*)))
+    (loop :for p :in chain :if (fboundp p) :do 
+       (funcall (symbol-function p)))))
+
 ;; [TODO] Add textures back properly
 (defmacro defpipeline (name (&rest args) &body shaders)
   (let* ((uniforms (varjo:extract-uniforms args))
@@ -285,8 +307,10 @@
                              (make-arg-assigners u)))
          (u-lets (loop :for u :in uniform-details :append (first u)))
          (u-uploads (loop :for u :in uniform-details :collect (second u)))
-         (init-func-name (symb '%%- name))
+         (init-func-name (symbolicate-package :cgl '%%- name))
+         (invalidate-func-name (symbolicate-package :cgl '££- name))
          (shaders-no-post nil)
+         (subscribe nil)
          (post-compile nil))
     (loop :for shader :in shaders :do
        (if (listp shader)
@@ -296,9 +320,11 @@
                    (push `(cons ,(first shader) (subst-sfuns '(,@(rest shader))))
                          shaders-no-post)
                    (error "Invalid shader type ~s" (first shader))))
-           (push `(function ,shader) shaders-no-post)))
+           (progn (push `(function ,shader) shaders-no-post)
+                  (push shader subscribe))))
     `(let ((program-id nil)
            ,@(loop for u in u-lets collect `(,(first u) -1)))
+       (defun ,invalidate-func-name () (setf program-id nil))
        ;; func that will create all resources for pipeline
        (defun ,init-func-name ()
          (let* ((glsl-src (cgl::rolling-translate 
@@ -310,6 +336,8 @@
                                             `(gl:create-program))))
                 (image-unit -1))
            (declare (ignorable image-unit))
+           (loop :for stage :in ',subscribe :do 
+              (add-compile-chain stage ',invalidate-func-name))
            (mapcar #'%gl:delete-shader shaders-objects)
            ,@(loop for u in u-lets collect (cons 'setf u))
            (setf (gethash #',name *cached-glsl-source-code*) 
@@ -322,19 +350,16 @@
            prog-id))
        ;; if we are creating once context exists then just run the init func,
        ;; otherwise bind the init func to the creation of the context
-       (dvals:brittle-bind program-id *gl-context* (,init-func-name))
+       ;; which doesnt work yet
+       ;; (dvals:brittle-bind program-id *gl-context* (,init-func-name))
        ;; And finally the pipeline function itself
        (defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
-         (if (not program-id)
-             (progn
-               (print program-id)
-               (setf program-id (,init-func-name)))
-             (progn
-               (use-program program-id)
-               ,@u-uploads
-               (when stream (no-bind-draw-one stream))
-               (use-program 0)))
+         (unless program-id (setf program-id (,init-func-name)))
+         (use-program program-id)
+         ,@u-uploads
+         (when stream (no-bind-draw-one stream))
+         (use-program 0)
          stream))))
 
 ;;---------------------------------------------------------------------

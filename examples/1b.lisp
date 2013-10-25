@@ -25,7 +25,7 @@
                    :dimensions 3
                    :element-type 'vert-data))
   (setf gstream (make-vertex-stream gpu-array))
-  (loop :until (find :quit-event (sdl2:collect-event-types)) :do
+  (loop :until (find :quit (sdl2:collect-event-types)) :do
      (cepl-utils:update-swank)
      (base-macros:continuable (progn (gl:clear :color-buffer-bit)
                                      (prog-1 gstream)

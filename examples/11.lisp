@@ -45,7 +45,7 @@
                         (temp (make-c-array '(64 64) :ubyte 
                                             :initial-contents img-data))
                       (make-texture :initial-contents temp)))
-    (loop :until (find :quit-event (sdl2:collect-event-types)) :do
+    (loop :until (find :quit (sdl2:collect-event-types)) :do
        (cepl-utils:update-swank)
        (base-macros:continuable
          (cgl:clear :color-buffer-bit)
