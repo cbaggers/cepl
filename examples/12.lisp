@@ -1,4 +1,4 @@
-;; Raymarcher!
+;; Raymarcher! -currently broken-
 
 (defparameter *gpu-array* nil)
 (defparameter *vertex-stream* nil)
@@ -45,12 +45,11 @@
 (defpipeline prog-1 ((position :vec4) &uniform (loop :float) (radius :float) 
                      (fog-dist :float) (eye-pos :vec3) (rot :mat3))
   (:vertex (setf gl-position position) (out posxy (swizzle position :xy)))
-  frag)
+  #'frag)
 
 (let ((running nil))
   (defun run-demo ()
     (cgl:clear-color 0.0 0.0 0.0 0.0)
-    (cgl:viewport 0 0 640 480)
     (setf *gpu-array* (make-gpu-array (list (v! -1.0  -1.0  0.0  1.0)
                                             (v!  1.0  -1.0  0.0  1.0)
                                             (v!  1.0   1.0  0.0  1.0)
@@ -60,7 +59,9 @@
                                       :element-type :vec4
                                       :dimensions 6))
     (setf *vertex-stream* (make-vertex-stream *gpu-array*))
-    (loop :until (find :quit (sdl2:collect-event-types)) :do
+    (setf running t)
+    (loop :while running :do
+       (case-events (event) (:quit () (setf running nil)))
        (cepl-utils:update-swank)
        (continuable (draw *vertex-stream*))))
   (defun stop-demo () (setf running nil)))

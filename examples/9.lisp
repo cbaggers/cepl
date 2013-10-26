@@ -34,7 +34,7 @@
                                     (* (color data)
                                        ambient-intensity)))))
   (:fragment (out output-color interp-color))
-  (:post-compile (reshape 1024 768 *near* *far*)))
+  (:post-compile (reshape 640 480 *near* *far*)))
 
 (defclass entity ()
   ((gstream :initform nil :initarg :gstream :accessor gstream)
@@ -140,11 +140,11 @@
   (defun run-demo () 
     (init)
     (reshape 1024 768 *near* *far*)  
-    (let ((running t))
-      (loop :while running :do
-         (when (step-demo)
-           (setf running nil))
-         (cepl-utils:update-swank))))
+    (setf running t)
+    (loop :while running :do
+       (when (step-demo)
+         (setf running nil))
+       (cepl-utils:update-swank)))
   (defun stop-demo () (setf running nil)))
 
 (defun step-demo ()
@@ -153,11 +153,10 @@
                           7
                           (* 10 (cos *loop-pos*))))
   (let ((end? nil))
-    (sdl2:case-events (event)
-      (:quit (setf end? t))
-      (:video-resize-event 
-       (reshape (sdl2:video-resize-w event)
-                (sdl2:video-resize-h event)
-                *near* *far*)))
+    (case-events (event)
+      (:quit () (setf end? t))
+      (:windowevent (:event e :data1 x :data2 y)
+                    (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
+                      (reshape x y *near* *far*))))
     (continuable (draw))
     end?))

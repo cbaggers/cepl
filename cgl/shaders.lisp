@@ -314,7 +314,7 @@
          (post-compile nil))
     (loop :for shader :in shaders :do
        (cond ((symbolp shader) (error "Cannot compose symbol '~s' into pipeline stage" shader))
-             ((eq (first shader) :post-compile) (push shader post-compile))
+             ((eq (first shader) :post-compile) (push (rest shader) post-compile))
              ((and (eq (first shader) 'cl:quote) (symbolp (second shader))) 
               (push (cons 'cl:function (rest shader)) shaders-no-post)
               (push (second shader) subscribe))
@@ -351,8 +351,8 @@
            (unbind-buffer)
            (force-bind-vao 0)
            (force-use-program 0)
-           ,@post-compile
            (setf program-id prog-id)
+           ,@(loop for p in post-compile append p)
            prog-id))
        ;; if we are creating once context exists then just run the init func,
        ;; otherwise bind the init func to the creation of the context

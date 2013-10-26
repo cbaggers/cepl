@@ -378,11 +378,6 @@
            :box-data
            :sphere-data))
 
-(defpackage :cepl-sdl2
-  (:nicknames :csdl)
-  (:use :cl :sdl2)
-  (:export :init-sdl))
-
 (defpackage :cepl
   (:use :cl
         :declarative-values
@@ -390,9 +385,7 @@
         :base-matrices
         :base-maths
         :base-time
-        :base-macros
-        ;; :base-lispbuilder
-        )
+        :base-macros)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format
@@ -423,4 +416,8 @@
                 :with-texture-bound
                 :p-n-t
                 :texref)
-  (:export :repl))
+  (:export :repl
+           :case-events
+           :collect-event-types
+           :evt->
+           :evt+>))

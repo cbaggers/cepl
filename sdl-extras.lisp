@@ -1,4 +1,4 @@
-(in-package :sdl2)
+(in-package :cepl)
 
 ;;helpers
 
@@ -36,37 +36,18 @@
          (loop :while (not (eq (sdl2::sdl-poll-event ,event-sym) 0)) :do
             (case (sdl2::get-event-type ,event-sym)
               ,@(loop :for (type params . forms) :in event-handlers :collect
-                   (expand-handler event-sym type params forms) :into results
+                   (sdl2::expand-handler event-sym type params forms) :into results
                    :finally (return (remove nil results)))))
          (sdl2:free-event ,event-sym))
       (error "event-sym must be a symbol")))
-
-(defun expand-handler2 (sdl-event event-type params forms)
-  (let ((parameter-pairs nil))
-    (do ((keyword params (if (cdr keyword) (cddr keyword) nil)))
-        ((null keyword))
-      (push (list (first keyword) (second keyword)) parameter-pairs))
-    (if (listp event-type)
-        (let ((constant-symb (utils:symbolicate-package 
-                              :sdl2-ffi '+SDL- (first event-type) '- 
-                              (second event-type) '+)))
-          (unless (boundp constant-symb) 
-            (error "constant ~s doesnt exist" constant-symb))
-          `(,(first event-type)
-             (when (eql (,@(cadar (unpack-event-params
-                                   sdl-event (first event-type) `((:type j)))))
-                        ,constant-symb)
-               (let (,@(unpack-event-params sdl-event (first event-type)
-                                            parameter-pairs))
-                 ,@forms))))
-        `(,event-type          
-          (let (,@(unpack-event-params sdl-event event-type parameter-pairs))
-            ,@forms)))))
 
 (defmacro evt-> (event type param)
   "Lets you write following is access event details:
    \(evt-> event :windowevent :data1\)"
   `(,@(cadar (unpack-event-params event (utils:kwd type) `((,param jeff))))))
+
+(defmacro evt+> (event-type item)
+  (utils:symbolicate-package :sdl2-ffi '+SDL- event-type '- item '+))
 
 (defun collect-event-types ()
   (let* ((x (sdl2:new-event))
@@ -74,5 +55,3 @@
                          :collect (sdl2::get-event-type x))))
     (sdl2:free-event x)
     event-types))
-
-(export '(make-window case-events collect-event-types evt->) :sdl2)

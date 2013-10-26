@@ -32,7 +32,7 @@
                    (* (vec4 1.0 1.0 1.0 0.0) 
                       ambient-intensity))))
   (:fragment (out output-color interp-color))
-  (:post-compile (reshape 1024 768 *near* *far*)))
+  (:post-compile (reshape 640 480 *near* *far*)))
 
 (defpipeline prog-2
     ((vert vert-data) &uniform (dir-to-light :vec3) 
@@ -166,15 +166,14 @@
 (let ((running nil))
   (defun run-demo () 
     (init)
-    (reshape 1024 768 *near* *far*)  
-    (let ((running t))
-      (loop :while running :do
-         (sdl2:case-events (event)
-           (:quit (setf running nil))
-           (:video-resize-event 
-            (reshape (sdl2:video-resize-w event)
-                     (sdl2:video-resize-h event)
-                     *near* *far*)))
-         (cepl-utils:update-swank)
-         (continuable (draw)))))
+    (reshape 640 480 *near* *far*)  
+    (setf running t)
+    (loop :while running :do
+       (case-events (event)
+         (:quit () (setf running nil))
+         (:windowevent (:event e :data1 x :data2 y)
+                       (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
+                         (reshape x y *near* *far*))))
+       (cepl-utils:update-swank)
+       (continuable (draw))))
   (defun stop-demo () (setf running nil)))

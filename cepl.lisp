@@ -28,7 +28,7 @@
   (in-package :cepl)
   (if (sdl2:init)
       (multiple-value-bind (context window)
-          (sdl2::new-window :width width :height height :title "CEPL REPL")
+          (new-window :width width :height height :title "CEPL REPL")
         (if (and context window (cepl-post-context-initialize))
             (progn
               (setf cgl::*gl-window* window)              

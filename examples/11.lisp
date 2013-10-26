@@ -15,7 +15,7 @@
            (out (tex-coord :smooth) (tex-pos vert)))
   (:fragment 
    (let* ((rip-size 0.02) (centre (vec2 0.0 0.0)) (damp 0.6)
-          (peaks 31.0)
+          (peaks 9.0)
           (dif (- tex-coord centre))
           (dist (dot dif dif))
           (height (/ (+ (sin (+ count (* peaks dist)))
@@ -32,26 +32,28 @@
 
 (let ((running nil))
   (defun run-demo ()
-   (cgl:clear-color 0.0 0.0 0.0 0.0)
-   (cgl:viewport 0 0 640 480)
-   (let* ((img-data (loop :for i :below 64 :collect
-                       (loop :for j :below 64 :collect (random 254)))))
-     (setf *vert-gpu* 
-           (make-gpu-array `((,(v!  0.0    0.5 0.0 1.0) ,(v!  0.0 -1.0))
-                             (,(v!  0.5 -0.366 0.0 1.0) ,(v!  1.0 1.0))
-                             (,(v! -0.5 -0.366 0.0 1.0) ,(v! -1.0 1.0)))
-                           :dimensions 3 :element-type 'vert-data))
-     (setf *v-stream* (make-vertex-stream *vert-gpu*))
-     (setf *texture* (with-c-array
-                         (temp (make-c-array '(64 64) :ubyte 
-                                             :initial-contents img-data))
-                       (make-texture :initial-contents temp)))
-     (loop :until (find :quit (sdl2:collect-event-types)) :do
-        (cepl-utils:update-swank)
-        (base-macros:continuable
-          (cgl:clear :color-buffer-bit)
-          (step-demo)
-          (cgl:flush)
-          (cgl:update-display)))))
+    (setf running t)
+    (cgl:clear-color 0.0 0.0 0.0 0.0)
+    (cgl:viewport 0 0 640 480)
+    (let* ((img-data (loop :for i :below 64 :collect
+                        (loop :for j :below 64 :collect (random 254)))))
+      (setf *vert-gpu* 
+            (make-gpu-array `((,(v!  0.0    0.5 0.0 1.0) ,(v!  0.0 -1.0))
+                              (,(v!  0.5 -0.366 0.0 1.0) ,(v!  1.0 1.0))
+                              (,(v! -0.5 -0.366 0.0 1.0) ,(v! -1.0 1.0)))
+                            :dimensions 3 :element-type 'vert-data))
+      (setf *v-stream* (make-vertex-stream *vert-gpu*))
+      (setf *texture* (with-c-array
+                          (temp (make-c-array '(64 64) :ubyte 
+                                              :initial-contents img-data))
+                        (make-texture :initial-contents temp)))
+      (loop :while running :do
+         (case-events (event) (:quit () (setf running nil)))
+         (cepl-utils:update-swank)
+         (base-macros:continuable
+           (cgl:clear :color-buffer-bit)
+           (step-demo)
+           (cgl:flush)
+           (cgl:update-display)))))
   (defun stop-demo () (setf running nil)))
 

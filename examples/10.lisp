@@ -136,12 +136,11 @@
 (let ((running nil))
   (defun run-demo () 
     (init)
-    (reshape 1024 768 *near* *far*)  
-    (let ((running t))
-      (loop :while running :do
-         (when (step-demo)
-           (setf running nil))
-         (cepl-utils:update-swank))))
+    (setf running t)
+    (loop :while running :do
+       (when (step-demo)
+         (setf running nil))
+       (cepl-utils:update-swank)))
   (defun stop-demo () (setf running nil)))
 
 (defun step-demo ()
@@ -150,11 +149,10 @@
                           10 
                           (* 10 (cos *loop-pos*))))
   (let ((end? nil))
-    (sdl2:case-events (event)
-      (:quit (setf end? t))
-      (:video-resize-event 
-       (reshape (sdl2:video-resize-w event)
-                (sdl2:video-resize-h event)
-                *near* *far*)))
+    (case-events (event)
+      (:quit () (setf end? nil))
+      (:windowevent (:event e :data1 x :data2 y)
+                    (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
+                      (reshape x y *near* *far*))))
     (continuable (draw))
     end?))
