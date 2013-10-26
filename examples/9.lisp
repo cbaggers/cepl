@@ -136,14 +136,16 @@
                                       *frustrum-scale* near far))
   (gl:viewport 0 0 width height))
 
-(defun run-demo () 
-  (init)
-  (reshape 1024 768 *near* *far*)  
-  (let ((running t))
-    (loop :while running :do
-       (when (step-demo)
-         (setf running nil))
-       (cepl-utils:update-swank))))
+(let ((running nil))
+  (defun run-demo () 
+    (init)
+    (reshape 1024 768 *near* *far*)  
+    (let ((running t))
+      (loop :while running :do
+         (when (step-demo)
+           (setf running nil))
+         (cepl-utils:update-swank))))
+  (defun stop-demo () (setf running nil)))
 
 (defun step-demo ()
   (setf *loop-pos* (+ *loop-pos* 0.01))

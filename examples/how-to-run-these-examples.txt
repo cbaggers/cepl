@@ -5,3 +5,6 @@ How to run the examples
 * Load cepl with: (ql:quickload :cepl)
 * Create a opengl context with (cepl:repl)
 * Compile the example and then in the repl evaluate (run-demo)
+* use (stop-demo) to stop the demo, this is the safe way as clicking 
+  the 'x' on the window will destroy the context and possibly the
+  current lisp session.

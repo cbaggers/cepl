@@ -163,16 +163,18 @@
                             *frustrum-scale* near far))
   (gl:viewport 0 0 width height))
 
-(defun run-demo () 
-  (init)
-  (reshape 1024 768 *near* *far*)  
-  (let ((running t))
-    (loop :while running :do
-       (sdl2:case-events (event)
-         (:quit (setf running nil))
-         (:video-resize-event 
-          (reshape (sdl2:video-resize-w event)
-                   (sdl2:video-resize-h event)
-                   *near* *far*)))
-       (cepl-utils:update-swank)
-       (continuable (draw)))))
+(let ((running nil))
+  (defun run-demo () 
+    (init)
+    (reshape 1024 768 *near* *far*)  
+    (let ((running t))
+      (loop :while running :do
+         (sdl2:case-events (event)
+           (:quit (setf running nil))
+           (:video-resize-event 
+            (reshape (sdl2:video-resize-w event)
+                     (sdl2:video-resize-h event)
+                     *near* *far*)))
+         (cepl-utils:update-swank)
+         (continuable (draw)))))
+  (defun stop-demo () (setf running nil)))

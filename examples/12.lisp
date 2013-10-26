@@ -47,21 +47,23 @@
   (:vertex (setf gl-position position) (out posxy (swizzle position :xy)))
   frag)
 
-(defun run-demo ()
-  (cgl:clear-color 0.0 0.0 0.0 0.0)
-  (cgl:viewport 0 0 640 480)
-  (setf *gpu-array* (make-gpu-array (list (v! -1.0  -1.0  0.0  1.0)
-                                          (v!  1.0  -1.0  0.0  1.0)
-                                          (v!  1.0   1.0  0.0  1.0)
-                                          (v!  1.0   1.0  0.0  1.0)
-                                          (v! -1.0   1.0  0.0  1.0)
-                                          (v! -1.0  -1.0  0.0  1.0))
-                                    :element-type :vec4
-                                    :dimensions 6))
-  (setf *vertex-stream* (make-vertex-stream *gpu-array*))
-  (loop :until (find :quit (sdl2:collect-event-types)) :do
-     (cepl-utils:update-swank)
-     (continuable (draw *vertex-stream*))))
+(let ((running nil))
+  (defun run-demo ()
+    (cgl:clear-color 0.0 0.0 0.0 0.0)
+    (cgl:viewport 0 0 640 480)
+    (setf *gpu-array* (make-gpu-array (list (v! -1.0  -1.0  0.0  1.0)
+                                            (v!  1.0  -1.0  0.0  1.0)
+                                            (v!  1.0   1.0  0.0  1.0)
+                                            (v!  1.0   1.0  0.0  1.0)
+                                            (v! -1.0   1.0  0.0  1.0)
+                                            (v! -1.0  -1.0  0.0  1.0))
+                                      :element-type :vec4
+                                      :dimensions 6))
+    (setf *vertex-stream* (make-vertex-stream *gpu-array*))
+    (loop :until (find :quit (sdl2:collect-event-types)) :do
+       (cepl-utils:update-swank)
+       (continuable (draw *vertex-stream*))))
+  (defun stop-demo () (setf running nil)))
 
 (defun draw (gstream)
   (setf *loop* (+ 0.01 *loop*))
