@@ -5,6 +5,13 @@
 
 (in-package :cepl-utils)
 
+(defun listify (x) (if (listp x) x (list x)))
+
+(defmacro dbind (lambda-list expressions &body body)
+  `(destructuring-bind ,lambda-list ,expressions ,@body))
+
+(defun sn-equal (a b) (equal (symbol-name a) (symbol-name b)))
+
 (defun replace-nth (list n form)
   `(,@(subseq list 0 n) ,form ,@(subseq list (1+ n))))
 

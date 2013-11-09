@@ -168,6 +168,9 @@
 ;;        avoid any issues when compiling shaders. This should allow moving 
 ;;        chunks of the compiling into macroexpansion time which will speed
 ;;        things at runtime.
+;;
+;; [TODO] vdefstruct needs to be rewritten to make use the new types, should 
+;;        be super easy as should match the formats here.
 
 (defmacro defglstruct (name &body slot-descriptions)
   (destructuring-bind (name &key (glsl t) (vertex t) (pixel t) (accessors t))
@@ -175,16 +178,21 @@
     (when (keywordp name) (error "Keyword name are now allowed for glstructs"))
     (unless (> (length slot-descriptions) 0) 
       (error "Cannot have a glstruct with no slots"))
-    (let ((slots (loop for slot in slot-descriptions collect
-                      (destructuring-bind 
-                            (slot-name slot-type &key (normalised nil) 
-                                       (accessor nil) &allow-other-keys)
-                          slot
-                        (list slot-name (varjo:flesh-out-type slot-type) 
-                              normalised accessor))))
-          (struct-name (utils:symb name '-struct))
-          (type-name (utils:symb name '-type))
-          (value-name (utils:symb name '-value)))
+    (let* ((slots (loop for slot in slot-descriptions collect
+                       (destructuring-bind 
+                             (slot-name slot-type &key (normalised nil) 
+                                        (accessor nil) &allow-other-keys)
+                           slot
+                         (list slot-name (varjo:flesh-out-type slot-type) 
+                               normalised accessor))))
+           (struct-name (utils:symb name '-struct))
+           (type-name (utils:symb name '-type))
+           (value-name (utils:symb name '-value))
+           (e-typep (loop :for slot :in slots :always 
+                       (not (enhanced-typep (second slot)))))
+           (glsl (and glsl (not e-typep)))
+           (pixel (and pixel (not e-typep)))
+           (vertex (and vertex (not e-typep))))
       `(progn
          ,(when glsl
                 `(varjo:vdefstruct ,name
@@ -204,3 +212,43 @@
          ,(when vertex (make-gl-struct-attrib-assigner name slots))
          ,(when pixel (make-struct-pixel-format name slot-descriptions))
          ',name))))
+
+(defun enhanced-typep (path)
+  (and (listp path)
+       (or (and (symbolp (first path)) (equal (symbol-name (first path)) "->"))
+           (listp (first path)))))
+
+(defun all-early-pointer-p (types-spec)
+  (let ((spec (reverse (rest (reverse types-spec)))))
+    (loop :for item :in spec :always 
+       (or (sn-equal '-> (if (listp item) (first item) item))))))
+
+
+(defun compile-etype-part (parent-type type-spec)
+  (labels ((swap-pointer (x) (if (sn-equal x '->) :pointer x)))
+    (if (symbolp type-spec) 
+        (list (swap-pointer type-spec))
+        (dbind (type len) type-spec
+          `(,(swap-pointer type) 
+             ,(if (symbolp len) 
+                  `(foreign-slot-value 
+                    (pointer val) (foreign-slot-type ',parent-type 
+                                                     ',len) ',len)
+                  (or len 0)))))))
+
+(defun compile-etype-spec (parent-type slot-type-spec)
+  (unless (all-early-pointer-p slot-type-spec)
+    (error "invalid extended-type spec"))
+  (let* ((split-index (or (position-if #'listp slot-type-spec)
+                          (length slot-type-spec)))         
+         (type-spec (reverse (subseq slot-type-spec 0 split-index)))
+         (final-type (or (subseq slot-type-spec split-index)
+                         (first (last slot-type-spec))))
+         (get-ptr-form 'ptr))
+    (loop :for part :in type-spec :for i :from 0 :do
+       (let ((new (compile-etype-part parent-type part)))         
+         (setf get-ptr-form `(mem-ref ,get-ptr-form ,@new))))
+    (list get-ptr-form 
+          (if (listp final-type) 
+              (compile-etype-part parent-type (first final-type))
+              final-type))))
