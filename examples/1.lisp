@@ -11,6 +11,7 @@
                (out outputColor (mix the-color 
                                      (vec4 0.2 0.2 0.2 1.0)
                                      lerp-value)))))
+
 (let ((running nil))
   (defun run-demo ()
     (setf running t)
