@@ -34,7 +34,7 @@
                (:file "cgl/buffer-gpu-arrays")
                (:file "cgl/vaos")
                (:file "cgl/vertex-streams")
-               (:file "cgl/shaders")
+               ;;(:file "cgl/shaders")
                (:file "cgl/misc")
                (:file "cgl/textures")
                (:file "cgl/types")
