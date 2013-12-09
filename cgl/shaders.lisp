@@ -51,11 +51,12 @@
        ',name)))
 
 (defmacro defpipeline (name args &body shaders)
-  (destructuring-bind (shaders post-compile)
+  (destructuring-bind (stages post-compile)
       (loop :for shader :in shaders
          :if (and (listp shader) (eq (first shader) :post-compile))
          :collect shader :into post
-         :else :collect shader :into main
+         :else :collect (if (listp shader) `(quote ,shader) 
+                            `(get- shader)) :into main
          :finally (return (list (reverse main) (reverse post))))
     (let* ((init-func-name (symbolicate-package :cgl '%%- name))
            (invalidate-func-name (symbolicate-package :cgl '££- name))
@@ -72,13 +73,13 @@
            (let* ((compiled-stages (varjo::rolling-translate ',args (list ,@stages)))
                   (shaders-objects
                    (loop :for compiled-stage :in compiled-stages
-                      :collect (make-shader (stage-type compiled-stage) 
-                                            (glsl-code compiled-stage))))
-                  (prog-id (link-shaders shaders-objects
-                                         ,(if name `(program-manager ',name)
-                                              `(gl:create-program))))
-                  (image-unit -1))
+                      :collect (make-shader (varjo::stage-type compiled-stage) 
+                                            (varjo::glsl-code compiled-stage))))
+                  (prog-id (update-shader-asset ',name :pipeline compiled-stages
+                                              #',invalidate-func-name))
+                  (image-unit -1))             
              (declare (ignorable image-unit))
+             (link-shaders shaders-objects prog-id)
              (mapcar #'%gl:delete-shader shaders-objects)
              ,@(loop for u in u-lets collect (cons 'setf u))
              (unbind-buffer) (force-bind-vao 0) (force-use-program 0)
@@ -124,94 +125,82 @@
 ;;---------------------------------------------------------------------
 
 (defun sampler-typep (type)
-  (let ((type (varjo:flesh-out-type type)))
-    (find (first type) *sampler-types*)))
+  (varjo::v-typep type 'v-sampler))
 
 (defun make-arg-assigners (uniform-arg &aux gen-ids assigners)
-  (destructuring-bind (arg-name varjo-type glsl-name &rest ignore-args) 
-      (varjo::flesh-out-arg uniform-arg)
-    (declare (ignore ignore-args))
-    (let ((struct-arg (varjo:type-struct-p varjo-type))
-          (array-length (second varjo-type))
-          (sampler (sampler-typep varjo-type)))
-      (loop :for (gid asn multi-gid) :in
-         (cond (array-length (make-array-assigners varjo-type glsl-name))
-               (struct-arg (make-struct-assigners varjo-type glsl-name))
-               (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
-               (t `(,(make-simple-assigner varjo-type glsl-name nil))))
-         :do (if multi-gid
-                 (progn (loop for g in gid :do (push g gen-ids)) 
-                        (push asn assigners))
-                 (progn (push gid gen-ids) (push asn assigners))))
-      `(,(reverse gen-ids)
-         (when ,arg-name
-           (let ((val ,(if (or array-length struct-arg) 
-                           `(pointer ,arg-name)
-                           arg-name)))
-             ,@(reverse assigners)))))))
+  (let* ((arg-name (first uniform-arg))
+         (varjo-type (varjo::type-spec->type (second uniform-arg)))
+         (glsl-name (varjo::safe-glsl-name-string arg-name))
+         (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
+         (array-length (second varjo-type))
+         (sampler (sampler-typep varjo-type)))
+    (loop :for (gid asn multi-gid) :in
+       (cond (array-length (make-array-assigners varjo-type glsl-name))
+             (struct-arg (make-struct-assigners varjo-type glsl-name))
+             (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
+             (t `(,(make-simple-assigner varjo-type glsl-name nil))))
+       :do (if multi-gid
+               (progn (loop for g in gid :do (push g gen-ids)) 
+                      (push asn assigners))
+               (progn (push gid gen-ids) (push asn assigners))))p
+    `(,(reverse gen-ids)
+       (when ,arg-name
+         (let ((val ,(if (or array-length struct-arg) 
+                         `(pointer ,arg-name)
+                         arg-name)))
+           ,@(reverse assigners))))))
 
 (defun make-sampler-assigner (type path &optional (byte-offset 0))
-  (declare (ignore byte-offset))
-  (destructuring-bind (principle-type &rest ignore-args) 
-      (varjo:flesh-out-type type)
-    (declare (ignore ignore-args))
-    (let ((id-name (gensym))
-          (i-unit (gensym "IMAGE-UNIT")))
-      `(((,id-name (gl:get-uniform-location prog-id ,path))
-         (,i-unit (incf image-unit)))
-        (when (>= ,id-name 0)
-          (unless (eq (sampler-type val) ,principle-type) 
-            (error "incorrect texture type passed to shader"))
-          ;; (unless ,id-name 
-          ;;   (error "Texture uniforms must be populated")) ;; [TODO] this wont work here
-          (active-texture-num ,i-unit)
-          (bind-texture val)
-          (uniform-sampler ,id-name ,i-unit))
-        t))))
+  (declare (ignore byte-offset))  
+  (let ((id-name (gensym))
+        (i-unit (gensym "IMAGE-UNIT")))
+    `(((,id-name (gl:get-uniform-location prog-id ,path))
+       (,i-unit (incf image-unit)))
+      (when (>= ,id-name 0)
+        (unless (eq (sampler-type val) ,(varjo::type->type-spec type)) 
+          (error "incorrect texture type passed to shader"))
+        ;; (unless ,id-name 
+        ;;   (error "Texture uniforms must be populated")) ;; [TODO] this wont work here
+        (active-texture-num ,i-unit)
+        (bind-texture val)
+        (uniform-sampler ,id-name ,i-unit))
+      t)))
 
 (defun make-simple-assigner (type path &optional (byte-offset 0))
-  (destructuring-bind (principle-type &rest ignore-args) 
-      (varjo:flesh-out-type type)
-    (declare (ignore ignore-args))
-    (let ((id-name (gensym)))
-      `((,id-name (gl:get-uniform-location prog-id ,path))
-        (when (>= ,id-name 0)
-          ,(if byte-offset
-               `(,(get-foreign-uniform-function-name principle-type) 
-                  ,id-name 1 (cffi:inc-pointer val ,byte-offset))
-               `(,(get-uniform-function-name principle-type) ,id-name val)))
-        nil))))
+  (let ((id-name (gensym)))
+    `((,id-name (gl:get-uniform-location prog-id ,path))
+      (when (>= ,id-name 0)
+        ,(if byte-offset
+             `(,(get-foreign-uniform-function-name (varjo::type->type-spec type)) 
+                ,id-name 1 (cffi:inc-pointer val ,byte-offset))
+             `(,(get-uniform-function-name (varjo::type->type-spec type)) ,id-name val)))
+      nil)))
 
 (defun make-array-assigners (type path &optional (byte-offset 0))
-  (destructuring-bind 
-        (principle-type array-length &rest rest) (varjo:flesh-out-type type)
-    (declare (ignore rest))
+  (let ((element-type (varjo::v-element-type type)))
     (loop :for i :below array-length :append
-       (cond ((varjo:type-struct-p principle-type) 
-              (make-struct-assigners principle-type byte-offset))
-             (t (list (make-simple-assigner principle-type 
+       (cond ((varjo::v-typep element-type 'varjo::v-user-struct)
+              (make-struct-assigners element-type byte-offset))
+             (t (list (make-simple-assigner element-type 
                                             (format nil "~a[~a]" path i)
                                             byte-offset))))
-       :do (incf byte-offset (cffi:foreign-type-size principle-type)))))
+       :do (incf byte-offset (cffi:foreign-type-size element-type)))))
 
 (defun make-struct-assigners (type path &optional (byte-offset 0))
-  (destructuring-bind (principle-type &rest rest) (varjo:flesh-out-type type)
-    (declare (ignore rest))
-    (loop :for (l-slot-name v-slot-type glsl-name) 
-       :in (varjo:struct-definition principle-type) :append
-       (destructuring-bind (pslot-type array-length . rest) v-slot-type
-         (declare (ignore rest)) 
-         (let ((path (format nil "~a.~a" path glsl-name)))
-           (prog1
-               (cond (array-length (make-array-assigners v-slot-type path
-                                                         byte-offset))
-                     ((varjo:type-struct-p pslot-type) (make-struct-assigners
-                                                        pslot-type path
-                                                        byte-offset))
-                     (t (list (make-simple-assigner pslot-type path
-                                                    byte-offset))))
-             (incf byte-offset (* (cffi:foreign-type-size pslot-type)
-                                  (or array-length 1)))))))))
+  (loop :for (l-slot-name v-slot-type) :in (varjo::v-slots type) 
+     :for glsl-name = (varjo::safe-glsl-name-string l-slot-name) :append
+     (destructuring-bind (pslot-type array-length . rest) v-slot-type
+       (declare (ignore rest)) 
+       (let ((path (format nil "~a.~a" path glsl-name)))
+         (prog1
+             (cond (array-length (make-array-assigners v-slot-type path
+                                                       byte-offset))
+                   ((varjo::v-typep pslot-type 'v-user-struct)
+                    (make-struct-assigners pslot-type path byte-offset))
+                   (t (list (make-simple-assigner pslot-type path
+                                                  byte-offset))))
+           (incf byte-offset (* (cffi:foreign-type-size pslot-type)
+                                (or array-length 1))))))))
 
 ;;---------------------------------------------------------------------
 
