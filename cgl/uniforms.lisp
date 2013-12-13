@@ -29,6 +29,10 @@
     :usampler-2d-MS-Array-arb :usampler-2d-Rect-arb :usampler-3d-arb
     :usampler-Buffer-arb :usampler-Cube-arb :usampler-Cube-Array-arb))
 
+(defun sampler-typep (type)
+  (or (member type *sampler-types*)
+      (varjo::v-typep type 'v-sampler)))
+
 ;;;--------------------------------------------------------------
 ;;; UNIFORMS ;;;
 ;;;----------;;;

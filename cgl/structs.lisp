@@ -1,4 +1,5 @@
 (in-package :cgl)
+
 ;;------------------------------------------------------------
 
 (defun slot-name (slot) (first slot))
@@ -72,7 +73,7 @@
                      `(setf (mem-ref (foreign-slot-pointer
                                       pointer '(:struct ,struct-name)
                                       ',slot-name) 
-                                     ',(type-principle vslot-type))
+                                     ',(type->spec (type-principle vslot-type)))
                             ,slot-name)))))))))
 
 
@@ -100,21 +101,21 @@
   (loop :for (slot-name vslot-type normalised accessor) :in slots appending
      `((defmethod ,(or accessor (utils:symb name '- slot-name))
            ((gl-object ,value-name))
-         (if (enhanced-typep vslot-type)
-             (dbind (get-ptr get-type) (compile-etype-spec type-name vslot-type)
-               (if (listp get-type)
-                   ;;array
-                   `(make-c-array-from-pointer
-                     ,(second get-type) ,(first get-type)
-                     ,(subst (foreign-slot-value (pointer gl-object)
-                                                 '(:struct ,struct-name)
-                                                 ',slot-name)
-                             'ptr get-ptr))
-                   ;;value
-                   (subst `(foreign-slot-value (pointer gl-object)
-                                               '(:struct ,struct-name)
-                                               ',slot-name) 'ptr get-ptr)))
-             ,(if (v-typep vslot-type 'v-array)
+         ,(if (enhanced-typep vslot-type)
+              (dbind (get-ptr get-type) (compile-etype-spec name vslot-type)
+                (if (listp get-type)
+                    ;;array
+                    `(make-c-array-from-pointer
+                      ,(second get-type) ,(first get-type)
+                      ,(subst `(foreign-slot-value (pointer gl-object)
+                                                   '(:struct ,struct-name)
+                                                   slot-name)
+                              'ptr get-ptr))
+                    ;;value
+                    (subst `(foreign-slot-value (pointer gl-object)
+                                                '(:struct ,struct-name)
+                                                ',slot-name) 'ptr get-ptr)))
+              (if (v-typep vslot-type 'v-array)
                   `(make-c-array-from-pointer 
                     ',(let ((len (v-dimensions vslot-type)))
                            (if (listp len) len (list len)))
@@ -141,7 +142,7 @@
                (setf (mem-ref (foreign-slot-pointer (pointer gl-object) 
                                                     '(:struct ,struct-name)
                                                     ',slot-name) 
-                              ',(type-principle vslot-type))
+                              ',(type->spec (type-principle vslot-type)))
                      value))))))
 
 (defun expand-slot-to-layout (slot)
@@ -158,7 +159,7 @@
                    (list (first (v-dimensions type)) normalise))))
       ((v-typep type 'v-vector)  
        `((,(apply #'* (v-dimensions type))
-           ,(type->spec (v-element-type type)) 
+           ,(type->spec (type-spec->type (v-element-type type))) 
            ,normalise)))
       (t `((1 ,(type->spec (type-principle type)) ,normalise))))))
 
@@ -227,8 +228,8 @@
            (struct-name (utils:symb name '-struct))
            (type-name (utils:symb name '-type))
            (value-name (utils:symb name '-value))
-           (e-typep (loop :for slot :in slots :always 
-                       (not (enhanced-typep (second slot)))))
+           (e-typep (loop :for slot :in slots :thereis
+                       (enhanced-typep (second slot))))
            (glsl (and glsl (not e-typep)))
            (pixel (and pixel (not e-typep)))
            (vertex (and vertex (not e-typep))))
@@ -237,10 +238,10 @@
          ,(when glsl
                 `(v-defstruct ,name ()
                    ,@(loop for slot in slots
-                        collect (append (list (first slot) (type-spec->type (second slot)))
-                                        (list nil nil)
-                                        (when (last slot) 
-                                          (cons :append (last slot)))))))
+                        :collect `(,(first slot) 
+                                   ,(type->type-spec (second slot))
+                                   ,@(when (last slot) 
+                                       (cons :accessor (last slot)))))))
          ,(make-cstruct-def struct-name slots)
          (define-foreign-type ,type-name () 
            ()

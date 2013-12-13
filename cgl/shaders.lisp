@@ -1,6 +1,7 @@
 (in-package :cgl)
 
 (defparameter *gl-context* (dvals:make-dval))
+(defparameter *gl-window* nil)
 
 ;;;--------------------------------------------------------------
 ;;; SHADER & PROGRAMS ;;;
@@ -124,9 +125,6 @@
 
 ;;---------------------------------------------------------------------
 
-(defun sampler-typep (type)
-  (varjo::v-typep type 'v-sampler))
-
 (defun make-arg-assigners (uniform-arg &aux gen-ids assigners)
   (let* ((arg-name (first uniform-arg))
          (varjo-type (varjo::type-spec->type (second uniform-arg)))
@@ -142,7 +140,7 @@
        :do (if multi-gid
                (progn (loop for g in gid :do (push g gen-ids)) 
                       (push asn assigners))
-               (progn (push gid gen-ids) (push asn assigners))))p
+               (progn (push gid gen-ids) (push asn assigners))))
     `(,(reverse gen-ids)
        (when ,arg-name
          (let ((val ,(if (or array-length struct-arg) 
@@ -177,7 +175,8 @@
       nil)))
 
 (defun make-array-assigners (type path &optional (byte-offset 0))
-  (let ((element-type (varjo::v-element-type type)))
+  (let ((element-type (varjo::v-element-type type))
+        (array-length (apply #'* (v-dimensions type))))
     (loop :for i :below array-length :append
        (cond ((varjo::v-typep element-type 'varjo::v-user-struct)
               (make-struct-assigners element-type byte-offset))
