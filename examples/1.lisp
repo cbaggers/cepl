@@ -32,4 +32,4 @@
                                          (prog-1 gstream)
                                          (gl:flush)
                                          (cgl:update-display))))))
-  (defun stop-demo () (setf running nil)))
+  (defun stop-demo () (print "stopping") (setf running nil)))
