@@ -9,7 +9,7 @@
            (out (the-color :smooth) (col vert)))
   (:fragment (let ((lerp-value (/ (y gl-frag-coord) 500.0)))
                (out outputColor (mix the-color 
-                                     (vec4 0.2 0.2 0.2 1.0)
+                                     (v! 0.2 0.2 0.2 1.0)
                                      lerp-value)))))
 
 (let ((running nil))

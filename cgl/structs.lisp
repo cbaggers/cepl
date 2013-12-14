@@ -1,5 +1,11 @@
 (in-package :cgl)
 
+;; this file has been bodged as I am rewriting this soon to be able 
+;; to handle extended types. This is a terrible fucking mess and I'm
+;; sorry
+
+;; More than that, this is wrong
+
 ;;------------------------------------------------------------
 
 (defun slot-name (slot) (first slot))
@@ -19,7 +25,7 @@
             spec))))
 
 (defun type-principle (type)
-  (if (v-typep type 'v-container)
+  (if (v-typep type 'v-array)
       (type-spec->type (v-element-type type))
       type))
 
@@ -29,18 +35,23 @@
       (when (v-typep type 'v-array)
         (type-aggregate-p (type-spec->type (v-element-type type))))))
 
+(defun get-raw-type (type)
+  (if (v-typep type 'v-array)
+      (get-raw-type (type-spec->type (v-element-type type)))
+      type))
+
+(defun get-raw-length (type)
+  (if (v-typep type 'v-array) 
+      (* (apply #'* (v-dimensions type))
+         (get-raw-length (type-spec->type (v-element-type type))))
+      1))
+
 (defun make-cstruct-def (name slots)
   `(defcstruct ,name
      ,@(loop for slot in slots :collect
-            (let* ((slot-type (slot-type slot))
-                   (ptype (type-principle slot-type)))
-              (list (slot-name slot) (type->spec ptype)
-                    :count (let ((len (if (v-typep slot-type 'v-array)
-                                          (apply #'* (v-dimensions slot-type))
-                                          1)))
-                             (if (v-typep ptype 'v-container)
-                                 (* len (apply #'* (v-dimensions ptype)))
-                                 1)))))))
+            (let* ((slot-type (slot-type slot)))
+              (list (slot-name slot) (type->spec (get-raw-type slot-type))
+                    :count (get-raw-length slot-type))))))
 
 
 ;; [TODO] is this fucked now?
@@ -73,7 +84,7 @@
                      `(setf (mem-ref (foreign-slot-pointer
                                       pointer '(:struct ,struct-name)
                                       ',slot-name) 
-                                     ',(type->spec (type-principle vslot-type)))
+                                     ',(type->spec vslot-type))
                             ,slot-name)))))))))
 
 

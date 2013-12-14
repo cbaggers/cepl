@@ -63,7 +63,7 @@
 
 
 (defun draw ()
-  (incf (dval *loop*) 0.01)
+  (incf (dval *loop*) 0.09)
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (loop :for entity :in *entities* :do

@@ -21,7 +21,7 @@
   #'vert #'frag)
 
 (defun draw (gstream)
-  (setf *loop* (+ 0.005 *loop*))
+  (setf *loop* (+ 0.04 *loop*))
   (gl:clear :color-buffer-bit)  
   (loop :for i :below 25 :do
      (let ((i (/ i 2.0)))

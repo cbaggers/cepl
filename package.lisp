@@ -239,7 +239,7 @@
   )
 
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :base-vectors :base-matrices :cepl-utils :varjo)
+  (:use :cl :cffi :base-macros :cepl-utils :varjo)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color
@@ -346,9 +346,6 @@
            :clear-depth
            :flush
            :viewport))
-(defpackage :%cgl
-  (:use :cl :cffi :base-macros :base-vectors :base-matrices 
-        :cepl-utils :varjo :cgl))
 
 (defpackage :cepl-camera
   (:nicknames :ccam)
