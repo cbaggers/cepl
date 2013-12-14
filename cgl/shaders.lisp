@@ -2,6 +2,13 @@
 
 (defparameter *gl-context* (dvals:make-dval))
 (defparameter *gl-window* nil)
+(defparameter *stage-names* '((:vertex . :vertex-shader)
+                              (:fragment . :fragment-shader)
+                              (:geometry . :geometry-shader)
+                              (:compute . :compute-shader)
+                              (:tesselation-evaluation . :tess-evaluation-shader)
+                              (:tesselation-control . :tess-control-shader)))
+
 
 ;;;--------------------------------------------------------------
 ;;; SHADER & PROGRAMS ;;;
@@ -9,13 +16,17 @@
 
 (let ((assets (make-hash-table)))
   (defun update-shader-asset (name type compile-result recompile-function)
-    (let ((prog-id (when (eq type :program) (or (fourth (gethash name assets))
-                                                (gl:create-program)))))
+    (let ((prog-id (when (eq type :pipeline) 
+                     (or (fourth (gethash name assets))
+                         (gl:create-program)))))
       (loop :for (n cr rf id) :being :the :hash-value :of assets
-         :if (find name (varjo::used-external-functions cr))
+         :if (find name (if (listp cr) 
+                            (mapcan #'used-external-functions cr)
+                            (used-external-functions cr)))
          :do (funcall rf id))
       (setf (gethash name assets) (list name compile-result recompile-function 
-                                        prog-id))))
+                                        prog-id))
+      prog-id))
   (defun get-signature (name)
     (let ((asset (gethash name assets)))
       (when asset
@@ -51,6 +62,11 @@
        (,recompile-name)
        ',name)))
 
+;;[TODO] add to errors.lisp
+(defun varjo->gl-stage-names (stage-name)
+  (or (cdr (assoc stage-name *stage-names*))
+      (error "CGL: ~a is not a known type of shader stage" stage-name)))
+
 (defmacro defpipeline (name args &body shaders)
   (destructuring-bind (stages post-compile)
       (loop :for shader :in shaders
@@ -58,7 +74,7 @@
          :collect shader :into post
          :else :collect (if (listp shader) `(quote ,shader) 
                             `(get- shader)) :into main
-         :finally (return (list (reverse main) (reverse post))))
+         :finally (return (list main post)))
     (let* ((init-func-name (symbolicate-package :cgl '%%- name))
            (invalidate-func-name (symbolicate-package :cgl '££- name))
            (uniforms (second (varjo::split-arguments args)))
@@ -74,7 +90,8 @@
            (let* ((compiled-stages (varjo::rolling-translate ',args (list ,@stages)))
                   (shaders-objects
                    (loop :for compiled-stage :in compiled-stages
-                      :collect (make-shader (varjo::stage-type compiled-stage) 
+                      :collect (make-shader (varjo->gl-stage-names
+                                             (varjo::stage-type compiled-stage))
                                             (varjo::glsl-code compiled-stage))))
                   (prog-id (update-shader-asset ',name :pipeline compiled-stages
                                               #',invalidate-func-name))
