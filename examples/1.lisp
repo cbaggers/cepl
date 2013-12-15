@@ -1,5 +1,8 @@
 ;; This is simply to get a colored triangle up on the screen
 
+(defparameter *array* nil)
+(defparameter *stream* nil)
+
 (defglstruct vert-data
   (position :vec4 :accessor pos)
   (colour :vec4 :accessor col))
@@ -17,19 +20,19 @@
     (setf running t)
     (cgl:clear-color 0.0 0.0 0.0 0.0)
     (gl:viewport 0 0 640 480)
-    (let* ((data (make-gpu-array 
-                  (list (list (v!  0.0    0.5 0.0 1.0) (v! 1.0 0.0 0.0 1.0))
-                        (list (v!  0.5 -0.366 0.0 1.0) (v! 0.0 1.0 0.0 1.0))
-                        (list (v! -0.5 -0.366 0.0 1.0) (v! 0.0 0.0 1.0 1.0)))
-                  :dimensions 3
-                  :element-type 'vert-data))
-           (gstream (make-vertex-stream data)))
-      (loop :while running :do
-         (case-events (event)
-           (:quit () (setf running nil)))
-         (cepl-utils:update-swank)
-         (base-macros:continuable (progn (gl:clear :color-buffer-bit)
-                                         (prog-1 gstream)
-                                         (gl:flush)
-                                         (cgl:update-display))))))
+    (setf *array* (make-gpu-array 
+                   (list (list (v!  0.0    0.5 0.0 1.0) (v! 1.0 0.0 0.0 1.0))
+                         (list (v!  0.5 -0.366 0.0 1.0) (v! 0.0 1.0 0.0 1.0))
+                         (list (v! -0.5 -0.366 0.0 1.0) (v! 0.0 0.0 1.0 1.0)))
+                   :dimensions 3
+                   :element-type 'vert-data))
+    (setf *stream* (make-vertex-stream *array*))
+    (loop :while running :do
+       (case-events (event)
+         (:quit () (setf running nil)))
+       (cepl-utils:update-swank)
+       (base-macros:continuable (progn (gl:clear :color-buffer-bit)
+                                       (prog-1 *stream*)
+                                       (gl:flush)
+                                       (cgl:update-display)))))
   (defun stop-demo () (setf running nil)))

@@ -347,6 +347,9 @@
            :flush
            :viewport))
 
+(defpackage :%cgl
+  (:use :cl :varjo :cgl))
+
 (defpackage :cepl-camera
   (:nicknames :ccam)
   (:use :cl)
