@@ -27,15 +27,12 @@
       (setf (gethash name assets) (list name compile-result recompile-function 
                                         prog-id))
       prog-id))
-  (defun get-signature (name)
-    (let ((asset (gethash name assets)))
-      (when asset
-        (list name (varjo::in-args asset) (varjo::out-vars asset) 
-              (varjo::uniforms asset) (varjo::context asset)))))
   (defun get-glsl-code (name)
     (let ((asset (gethash name assets)))
       (when asset
-        (varjo::glsl-code asset))))
+        (varjo::glsl-code (second asset)))))
+  (defun get-compiled-asset (name)
+    (second (gethash name assets)))
   (defun flush-assets () (setf assets nil)))
 
 (defmacro defsmacro (name lambda-list &body body)
@@ -72,9 +69,7 @@
   (destructuring-bind (stages post-compile)
       (loop :for shader :in shaders
          :if (and (listp shader) (eq (first shader) :post-compile))
-         :collect shader :into post
-         :else :collect (if (listp shader) `(quote ,shader) 
-                            `(get-asset shader)) :into main
+         :collect shader :into post :else :collect shader :into main
          :finally (return (list main post)))
     (let* ((init-func-name (symbolicate-package :cgl '%%- name))
            (invalidate-func-name (symbolicate-package :cgl '££- name))
@@ -88,14 +83,18 @@
          (defun ,invalidate-func-name () (setf program-id nil))
          ;; func that will create all resources for pipeline
          (defun ,init-func-name ()
-           (let* ((compiled-stages (varjo::rolling-translate ',args (list ,@stages)))
+           (let* ((compiled-stages (varjo::rolling-translate 
+                                    ',args (loop :for i :in ',stages :collect
+                                              (if (symbolp i) 
+                                                  (get-compiled-asset i) i))))
                   (shaders-objects
                    (loop :for compiled-stage :in compiled-stages
+                      :do (print "--------------------")
                       :collect (make-shader (varjo->gl-stage-names
                                              (varjo::stage-type compiled-stage))
-                                            (varjo::glsl-code compiled-stage))))
+                                            (print (varjo::glsl-code compiled-stage)))))
                   (prog-id (update-shader-asset ',name :pipeline compiled-stages
-                                              #',invalidate-func-name))
+                                                #',invalidate-func-name))
                   (image-unit -1))             
              (declare (ignorable image-unit))
              (link-shaders shaders-objects prog-id)
