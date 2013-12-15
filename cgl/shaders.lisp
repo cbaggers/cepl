@@ -74,11 +74,11 @@
          :if (and (listp shader) (eq (first shader) :post-compile))
          :collect shader :into post
          :else :collect (if (listp shader) `(quote ,shader) 
-                            `(get- shader)) :into main
+                            `(get-asset shader)) :into main
          :finally (return (list main post)))
     (let* ((init-func-name (symbolicate-package :cgl '%%- name))
            (invalidate-func-name (symbolicate-package :cgl '££- name))
-           (uniforms (second (varjo::split-arguments args)))
+           (uniforms (second (varjo:split-arguments args)))
            (uniform-names (mapcar #'first uniforms))
            (uniform-details (loop :for u :in uniforms :collect 
                                (make-arg-assigners u)))
@@ -148,7 +148,8 @@
          (varjo-type (varjo::type-spec->type (second uniform-arg)))
          (glsl-name (varjo::safe-glsl-name-string arg-name))
          (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
-         (array-length (second varjo-type))
+         (array-length (when (v-typep varjo-type 'v-array)
+                         (apply #'* (v-dimensions varjo-type))))
          (sampler (sampler-typep varjo-type)))
     (loop :for (gid asn multi-gid) :in
        (cond (array-length (make-array-assigners varjo-type glsl-name))
@@ -173,7 +174,7 @@
     `(((,id-name (gl:get-uniform-location prog-id ,path))
        (,i-unit (incf image-unit)))
       (when (>= ,id-name 0)
-        (unless (eq (sampler-type val) ,(varjo::type->type-spec type)) 
+        (unless (eq (sampler-type val) ,(type->spec type)) 
           (error "incorrect texture type passed to shader"))
         ;; (unless ,id-name 
         ;;   (error "Texture uniforms must be populated")) ;; [TODO] this wont work here
@@ -187,9 +188,9 @@
     `((,id-name (gl:get-uniform-location prog-id ,path))
       (when (>= ,id-name 0)
         ,(if byte-offset
-             `(,(get-foreign-uniform-function-name (varjo::type->type-spec type)) 
+             `(,(get-foreign-uniform-function-name (type->spec type)) 
                 ,id-name 1 (cffi:inc-pointer val ,byte-offset))
-             `(,(get-uniform-function-name (varjo::type->type-spec type)) ,id-name val)))
+             `(,(get-uniform-function-name (type->spec type)) ,id-name val)))
       nil)))
 
 (defun make-array-assigners (type path &optional (byte-offset 0))

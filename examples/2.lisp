@@ -18,7 +18,7 @@
 
 (defpipeline prog-1 ((position :vec4) &uniform (offset :vec4)  
                      (i :int) (loop :float))
-  #'vert #'frag)
+  vert frag)
 
 (defun draw (gstream)
   (setf *loop* (+ 0.04 *loop*))

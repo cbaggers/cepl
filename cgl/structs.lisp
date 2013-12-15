@@ -26,24 +26,24 @@
 
 (defun type-principle (type)
   (if (v-typep type 'v-array)
-      (type-spec->type (v-element-type type))
+      (v-element-type type)
       type))
 
 (defun type-aggregate-p (type)
   (or (v-typep type 'v-vector)
       (v-typep type 'v-matrix)
       (when (v-typep type 'v-array)
-        (type-aggregate-p (type-spec->type (v-element-type type))))))
+        (type-aggregate-p (v-element-type type)))))
 
 (defun get-raw-type (type)
   (if (v-typep type 'v-array)
-      (get-raw-type (type-spec->type (v-element-type type)))
+      (get-raw-type (v-element-type type))
       type))
 
 (defun get-raw-length (type)
   (if (v-typep type 'v-array) 
       (* (apply #'* (v-dimensions type))
-         (get-raw-length (type-spec->type (v-element-type type))))
+         (get-raw-length (v-element-type type)))
       1))
 
 (defun make-cstruct-def (name slots)
@@ -170,7 +170,7 @@
                    (list (first (v-dimensions type)) normalise))))
       ((v-typep type 'v-vector)  
        `((,(apply #'* (v-dimensions type))
-           ,(type->spec (type-spec->type (v-element-type type))) 
+           ,(type->spec (v-element-type type)) 
            ,normalise)))
       (t `((1 ,(type->spec (type-principle type)) ,normalise))))))
 

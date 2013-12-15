@@ -111,7 +111,7 @@
     ((:mat2 :float-mat2 :float-mat2-arb) 'uniform-matrix-2fvt)
     ((:mat3 :float-mat3 :float-mat3-arb) 'uniform-matrix-3fvt)
     ((:mat4 :float-mat4 :float-mat4-arb) 'uniform-matrix-4fvt)
-    (t (if (sampler-typep type) nil
+    (t (if (sampler-typep (type-spec->type type)) nil
            (error "Sorry cepl doesnt handle that type yet")))))
 
 (defun get-uniform-function-name (type)
@@ -127,5 +127,5 @@
     ((:mat2 :float-mat2 :float-mat2-arb) 'uniform-matrix-2ft)
     ((:mat3 :float-mat3 :float-mat3-arb) 'uniform-matrix-3ft)
     ((:mat4 :float-mat4 :float-mat4-arb) 'uniform-matrix-4ft)    
-    (t (if (sampler-typep type) 'uniform-sampler
+    (t (if (sampler-typep (type-spec->type type)) 'uniform-sampler
            (error "Sorry cepl doesnt handle that type yet")))))
