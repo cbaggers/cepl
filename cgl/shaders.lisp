@@ -15,17 +15,18 @@
 ;;;-------------------;;;
 
 (let ((assets (make-hash-table)))
-  (defun update-shader-asset (name type compile-result recompile-function)
+  (defun update-shader-asset (name type compile-result recompile-function depends-on)
     (let ((prog-id (when (eq type :pipeline) 
                      (or (fourth (gethash name assets))
-                         (gl:create-program)))))
-      (loop :for (n cr rf id) :being :the :hash-value :of assets
-         :if (find name (if (listp cr) 
-                            (mapcan #'used-external-functions cr)
-                            (used-external-functions cr)))
-         :do (funcall rf id))
-      (setf (gethash name assets) (list name compile-result recompile-function 
-                                        prog-id))
+                         (gl:create-program))))
+          (visited nil))
+      (loop :for (n cr rf id dp) :being :the :hash-value :of assets
+         :if (and (not (member n visited)) (find name dp)) :do 
+         (format t "~&; recompiling (~a ...)~&" n)
+         (push n visited)
+         (funcall rf))
+      (setf (gethash name assets) (list name compile-result recompile-function
+                                        prog-id depends-on))
       prog-id))
   (defun get-glsl-code (name)
     (let ((asset (gethash name assets)))
@@ -42,10 +43,9 @@
   (let ((recompile-name (symbolicate-package :%cgl name)))
     `(progn 
        (defun ,recompile-name ()
-         (print ,(format nil "compiling ~a" name))
          (let ((compile-result (varjo::%v-def-external ',name ',args ',body)))
            (update-shader-asset ',name :function compile-result 
-                                #',recompile-name)))
+                                #',recompile-name (used-external-functions compile-result))))
        (,recompile-name)
        ',name)))
 
@@ -53,10 +53,9 @@
   (let ((recompile-name (symbolicate-package :%cgl name)))
     `(progn 
        (defun ,recompile-name ()
-         (print ,(format nil "compiling ~a" name))
-         (let ((compile-result (varjo::translate ',args '(progn ,@body))))
+          (let ((compile-result (varjo::translate ',args '(progn ,@body))))
            (update-shader-asset ',name :shader compile-result 
-                                #',recompile-name)))
+                                #',recompile-name (used-external-functions compile-result))))
        (,recompile-name)
        ',name)))
 
@@ -83,19 +82,21 @@
          (defun ,invalidate-func-name () (setf program-id nil))
          ;; func that will create all resources for pipeline
          (defun ,init-func-name ()
-           (let* ((compiled-stages (varjo::rolling-translate 
-                                    ',args (loop :for i :in ',stages :collect
+           (let* ((stages ',stages)
+                  (compiled-stages (varjo::rolling-translate 
+                                    ',args (loop :for i :in stages :collect
                                               (if (symbolp i) 
                                                   (get-compiled-asset i) i))))
                   (shaders-objects
                    (loop :for compiled-stage :in compiled-stages
-                      :do (print "--------------------")
                       :collect (make-shader (varjo->gl-stage-names
                                              (varjo::stage-type compiled-stage))
-                                            (print (varjo::glsl-code compiled-stage)))))
+                                            (varjo::glsl-code compiled-stage))))
+                  (depends-on (loop :for s :in stages :for c :in compiled-stages :append
+                                 (cond ((symbolp s) `(,s)) ((listp s) (used-external-functions c)))))
                   (prog-id (update-shader-asset ',name :pipeline compiled-stages
-                                                #',invalidate-func-name))
-                  (image-unit -1))             
+                                                #',invalidate-func-name depends-on))
+                  (image-unit -1))
              (declare (ignorable image-unit))
              (link-shaders shaders-objects prog-id)
              (mapcar #'%gl:delete-shader shaders-objects)
@@ -121,12 +122,12 @@
 (defmacro deffshader (name args &body body)
   (let ((args (if (find '&context args :test #'symbol-name-equal)
                   (append (copy-list args) `(:fragment))
-                  (append (copy-list args) `(&context :vertex)))))
+                  (append (copy-list args) `(&context :fragment)))))
     `(defshader ,name ,args ,@body)))
 (defmacro defgshader (name args &body body)
   (let ((args (if (find '&context args :test #'symbol-name-equal)
                   (append (copy-list args) `(:geometry))
-                  (append (copy-list args) `(&context :vertex)))))
+                  (append (copy-list args) `(&context :geometry)))))
     `(defshader ,name ,args ,@body)))
 
 (defmethod gl-pull ((asset-name symbol))
