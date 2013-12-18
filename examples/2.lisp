@@ -11,7 +11,7 @@
                 0.0 0.0))))
 
 (defvshader vert ((position :vec4) &uniform (offset :vec4) (i :int) (loop :float))
-  (setf gl-position (+ position (calc-offset (float i) loop))))
+  (setf gl-position (+ offset position (calc-offset (float i) loop))))
 
 (deffshader frag (&uniform (loop :float)) 
   (out output-color (v! (cos loop) (sin loop) 0.3 1.0)))
@@ -25,7 +25,7 @@
   (gl:clear :color-buffer-bit)  
   (loop :for i :below 25 :do
      (let ((i (/ i 2.0)))
-       (prog-1 gstream :i i :loop *loop*)))
+       (prog-1 gstream :i i :loop *loop* :offset (v! 0 0 0 0))))
   (gl:flush)
   (cgl:update-display))
 

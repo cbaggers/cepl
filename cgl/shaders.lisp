@@ -26,12 +26,17 @@
          (push n visited)
          (funcall rf))
       (setf (gethash name assets) (list name compile-result recompile-function
-                                        prog-id depends-on))
+                                        prog-id depends-on type))
       prog-id))
   (defun get-glsl-code (name)
     (let ((asset (gethash name assets)))
       (when asset
-        (varjo::glsl-code (second asset)))))
+        (destructuring-bind (name compile-result recompile-function prog-id depends-on type)
+            asset
+          (declare (ignore name recompile-function depends-on prog-id))
+          (if (eq type :pipeline)
+              (mapcar #'varjo:glsl-code compile-result)
+              (varjo:glsl-code compile-result))))))
   (defun get-compiled-asset (name)
     (second (gethash name assets)))
   (defun flush-assets () (setf assets nil)))
@@ -98,6 +103,7 @@
                                                 #',invalidate-func-name depends-on))
                   (image-unit -1))
              (declare (ignorable image-unit))
+             (format t ,(format nil "~&; uploading (~a ...)~&" name))
              (link-shaders shaders-objects prog-id)
              (mapcar #'%gl:delete-shader shaders-objects)
              ,@(loop for u in u-lets collect (cons 'setf u))
