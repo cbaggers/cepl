@@ -18,7 +18,7 @@
      (ambient-intensity :vec4) (model-to-cam :mat4)
      (normal-model-to-cam :mat3) (cam-to-clip :mat4))
   (:vertex    
-   (let* ((camera-pos (* model-to-cam (vec4 (pos data) 1.0)))
+   (let* ((camera-pos (* model-to-cam (v! (pos data) 1.0)))
           (norm-cam-space (normalize (* normal-model-to-cam
                                         (normal data))))
           (dir-to-light (normalize 

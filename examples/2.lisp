@@ -7,7 +7,7 @@
 (defsfun calc-offset ((i :float) (loop :float))
   (let ((i (/ i 2)))
     (return (v! (sin (+ (cos i) loop))
-                (cos (+ i (cos loop)))
+                (cos (+ (tan i) loop))
                 0.0 0.0))))
 
 (defvshader vert ((position :vec4) &uniform (offset :vec4) (i :int) (loop :float))
@@ -21,7 +21,7 @@
   vert frag)
 
 (defun draw (gstream)
-  (setf *loop* (+ 0.04 *loop*))
+  (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit)  
   (loop :for i :below 25 :do
      (let ((i (/ i 2.0)))

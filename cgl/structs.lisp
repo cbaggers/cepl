@@ -229,7 +229,7 @@
     (when (keywordp name) (error "Keyword name are now allowed for glstructs"))
     (unless (> (length slot-descriptions) 0) 
       (error "Cannot have a glstruct with no slots"))
-    (let* ((slots (loop for slot in slot-descriptions collect
+    (let* ((slots (loop :for slot :in slot-descriptions :collect
                        (destructuring-bind 
                              (slot-name slot-type &key (normalised nil) 
                                         (accessor nil) &allow-other-keys)
@@ -249,10 +249,10 @@
          ,(when glsl
                 `(v-defstruct ,name ()
                    ,@(loop for slot in slots
-                        :collect `(,(first slot) 
+                        :collect `(,(first (print slot)) 
                                    ,(type->type-spec (second slot))
-                                   ,@(when (last slot) 
-                                       (cons :accessor (last slot)))))))
+                                    ,@(when (fourth slot)
+                                            `(:accessor ,(fourth slot)))))))
          ,(make-cstruct-def struct-name slots)
          (define-foreign-type ,type-name () 
            ()

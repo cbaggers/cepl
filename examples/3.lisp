@@ -5,7 +5,7 @@
 (defparameter *entities* nil)
 (defparameter *loop* (make-dval 0))
 
-(defglstruct vert-data 
+(defglstruct vert-data
   (position :vec3)
   (color :vec4))
 
@@ -13,7 +13,7 @@
                      (cam-to-clip :mat4) (model-to-cam :mat4))
   (:vertex (out (the-color :smooth) (vert-data-color vert))
            (let ((cam-pos (* model-to-cam 
-                             (vec4 (vert-data-position vert) 1.0))))
+                             (v! (vert-data-position vert) 1.0))))
              (setf gl-position (* cam-to-clip cam-pos))))
   (:fragment (out output-color the-color))
   (:post-compile (reshape 640 480)))
@@ -59,7 +59,7 @@
   (gl:enable :depth-test)
   (gl:depth-mask :true)
   (gl:depth-func :lequal)
-  (gl:depth-range 0.0 1.0))  
+  (gl:depth-range 0.0 1.0))
 
 
 (defun draw ()
