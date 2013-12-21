@@ -4,18 +4,6 @@
 (defparameter *vertex-stream* nil)
 (defparameter *loop* 0.0)
 
-(defsmacro density-normal (object-call position-arg-num)
-  (when (not (listp object-call)) (error "object-call form must a list"))
-  (let ((p (1+ position-arg-num))
-        (oc object-call))
-    `(normalize 
-      (v! (- ,(utils:replace-nth oc p `(+ ,(nth p oc) (v! 0.01  0.0  0.0)))
-             ,(utils:replace-nth oc p `(- ,(nth p oc) (v! 0.01  0.0  0.0))))
-          (- ,(utils:replace-nth oc p `(+ ,(nth p oc) (v!  0.0 0.01  0.0)))
-             ,(utils:replace-nth oc p `(- ,(nth p oc) (v!  0.0 0.01  0.0))))
-          (- ,(utils:replace-nth oc p `(+ ,(nth p oc) (v!  0.0  0.0 0.01)))
-             ,(utils:replace-nth oc p `(- ,(nth p oc) (v!  0.0  0.0 0.01))))))))
-
 (defsfun sphere ((p :vec3) (r :float)) 
   (return (- (length p) r)))
 
