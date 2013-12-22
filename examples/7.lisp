@@ -20,7 +20,7 @@
      (ambient-intensity :float))
   (:vertex (setf gl-position (* cam-to-clip
                                 (* model-to-cam				   
-                                   (vec4 (vert-data-position
+                                   (v! (vert-data-position
                                           vert) 1.0))))
            (out (interp-color :smooth) 
                 (+ (* light-intensity 
@@ -29,7 +29,7 @@
                                      (vert-data-normal vert)))
                                  dir-to-light) 
                             0.0 1.0))
-                   (* (vec4 1.0 1.0 1.0 0.0) 
+                   (* (v! 1.0 1.0 1.0 0.0) 
                       ambient-intensity))))
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480 *near* *far*)))
@@ -42,7 +42,7 @@
   (:vertex (setf gl-position 
                  (* cam-to-clip
                     (* model-to-cam				   
-                       (vec4 (vert-data-position vert) 1.0))))
+                       (v! (vert-data-position vert) 1.0))))
            (out (interp-color :smooth) 
                 (+ (* light-intensity 
                       (vert-data-diffuse-color vert)

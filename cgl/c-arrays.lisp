@@ -31,25 +31,10 @@
   (foreign-free (pointer c-array))
   (blank-c-array-object c-array))
 
-;; [TODO] should be baseclass each glstruct will inherit from this
-;; [TODO] payload is an uncommited value, so if you have no pointer and
-;;        you set the object you will populate the payload.
-;;        if you then (setf (aref-c a 0) gl-val) you would apply the 
-;;        payload. If there is a pointer you set and get straight from
-;;        the foreign data.
-(defclass c-value ()
-  ((pointer :initform nil :initarg :pointer :reader pointer)
-   (element-type :initarg :element-type :reader element-type)
-   (lisp-payload :initform nil)))
-
 (defmethod print-object ((object c-array) stream)
   (format stream "#<C-ARRAY :element-type ~s :dimensions ~a>"
           (slot-value object 'element-type)
           (slot-value object 'dimensions)))
-
-(defmethod print-object ((object c-value) stream)
-  (format stream "#<C-VALUE type: ~a>"
-          (slot-value object 'element-type)))
 
 ;;------------------------------------------------------------
 

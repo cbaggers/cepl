@@ -1,22 +1,60 @@
 (in-package :cgl)
+
+;; this file has been bodged as I am rewriting this soon to be able 
+;; to handle extended types. This is a terrible fucking mess and I'm
+;; sorry
+
+;; More than that, this is wrong
+
 ;;------------------------------------------------------------
 
 (defun slot-name (slot) (first slot))
 (defun slot-type (slot) (second slot))
 (defun slot-normalisedp (slot) (third slot))
 
+(defun type->spec (type)
+  (let ((spec (type->type-spec type)))
+    (if (listp spec)
+        `(,(if (core-typep (type-spec->type (first spec)))
+               (symbolicate-package "KEYWORD" (subseq (symbol-name (first spec)) 2))
+               (first spec))
+           ,(if (and (listp (second spec)) (= (length (second spec)) 1))
+                (first (second spec)) (second spec)))
+        (if (core-typep type)
+            (symbolicate-package "KEYWORD" (subseq (symbol-name spec) 2))
+            spec))))
+
+(defun type-principle (type)
+  (if (v-typep type 'v-array)
+      (v-element-type type)
+      type))
+
+(defun type-aggregate-p (type)
+  (or (v-typep type 'v-vector)
+      (v-typep type 'v-matrix)
+      (when (v-typep type 'v-array)
+        (type-aggregate-p (v-element-type type)))))
+
+(defun get-raw-type (type)
+  (if (v-typep type 'v-array)
+      (get-raw-type (v-element-type type))
+      type))
+
+(defun get-raw-length (type)
+  (if (v-typep type 'v-array) 
+      (* (apply #'* (v-dimensions type))
+         (get-raw-length (v-element-type type)))
+      1))
+
 (defun make-cstruct-def (name slots)
   `(defcstruct ,name
-     ,@(loop for slot in slots :collect 
-            (let ((ptype (varjo:type-principle (slot-type slot))))
-              (list (slot-name slot)
-                    (if (varjo:type-aggregate-p ptype)
-                        (varjo:type-principle (slot-type slot))
-                        ptype)
-                    :count (if (varjo:type-arrayp (slot-type slot))
-                               (varjo:type-array-length (slot-type slot))
-                               1))))))
+     ,@(loop for slot in slots :collect
+            (let* ((slot-type (slot-type slot)))
+              (list (slot-name slot) (type->spec (get-raw-type slot-type))
+                    :count (get-raw-length slot-type))))))
 
+
+;; [TODO] is this fucked now?
 (defun make-translators (name type-name value-name slots struct-name)
   (let ((slot-names (mapcar #'first slots)))
     `((defmethod translate-from-foreign (ptr (type ,type-name))
@@ -32,22 +70,23 @@
                (destructuring-bind (slot-name vslot-type normalised accessor)
                    slot-definition
                  (declare (ignore normalised accessor))
-                 (if (varjo:type-arrayp vslot-type)
+                 (if (v-typep vslot-type 'v-array)
                      ;;if array
                      `(let ((array-ptr (foreign-slot-pointer 
                                         pointer '(:struct ,struct-name)
                                         ',slot-name)))
                         (loop for datum in ,slot-name for i from 0 do
                              (setf (mem-aref array-ptr 
-                                            ',(varjo:type-principle vslot-type)
-                                            i)
+                                             ',(type-principle vslot-type)
+                                             i)
                                    datum)))
                      ;;if value
                      `(setf (mem-ref (foreign-slot-pointer
                                       pointer '(:struct ,struct-name)
                                       ',slot-name) 
-                                     ',(varjo:type-principle vslot-type))
+                                     ',(type->spec vslot-type))
                             ,slot-name)))))))))
+
 
 ;; [TODO] Use 'normalize' 
 ;; [TODO] the setter seems ugly, gotta be a better way
@@ -63,68 +102,80 @@
                   (declare (ignore normalised vslot-type))
                   (list (or accessor (utils:symb name '- slot-name)) 'gl-object))))))
 
+
+;; [TODO] Fuck this is ugly gotta rework this
+;; [TODO] alignment, so we need to care here?
+;; [TODO] need to stick result in enhanced-value
+;; [TODO] well this is crap, the etype stuff pretty much wrong
+;;        e.g. hmm maybe easy fix
 (defun make-getters-and-setters (name value-name struct-name slots)
-  (loop for slot-definition in slots appending
-       (destructuring-bind (slot-name vslot-type normalised accessor)
-           slot-definition
-         (declare (ignore normalised))
-         `((defmethod ,(or accessor (utils:symb name '- slot-name))
-               ((gl-object ,value-name))
-             ,(if (varjo:type-arrayp vslot-type)
+  (loop :for (slot-name vslot-type normalised accessor) :in slots appending
+     `((defmethod ,(or accessor (utils:symb name '- slot-name))
+           ((gl-object ,value-name))
+         ,(if (enhanced-typep vslot-type)
+              (dbind (get-ptr get-type) (compile-etype-spec name vslot-type)
+                (if (listp get-type)
+                    ;;array
+                    `(make-c-array-from-pointer
+                      ,(second get-type) ,(first get-type)
+                      ,(subst `(foreign-slot-value (pointer gl-object)
+                                                   '(:struct ,struct-name)
+                                                   slot-name)
+                              'ptr get-ptr))
+                    ;;value
+                    (subst `(foreign-slot-value (pointer gl-object)
+                                                '(:struct ,struct-name)
+                                                ',slot-name) 'ptr get-ptr)))
+              (if (v-typep vslot-type 'v-array)
                   `(make-c-array-from-pointer 
-                    ',(let ((len (varjo:type-array-length vslot-type)))
+                    ',(let ((len (v-dimensions vslot-type)))
                            (if (listp len) len (list len)))
-                    ,(varjo:type-principle vslot-type)
+                    ,(type-principle vslot-type)
                     (foreign-slot-pointer (pointer gl-object)
                                           '(:struct ,struct-name)
                                           ',slot-name))
                   `(foreign-slot-value (pointer gl-object) 
                                        '(:struct ,struct-name)
-                                       ',slot-name)))
-           ,(if (varjo:type-arrayp vslot-type)
-                `(defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
-                     ((value list) (gl-object ,value-name))
-                   (let ((array-ptr (foreign-slot-pointer
-                                     (pointer gl-object) '(:struct ,struct-name)
-                                     ',slot-name)))
-                     (loop for datum in value for i from 0 do
-                          (setf (mem-aref array-ptr 
-                                          ',(varjo:type-principle vslot-type) i)
-                                datum))
-                     value))
-                `(defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
-                     ((value t) (gl-object ,value-name))             
-                   (setf (mem-ref (foreign-slot-pointer (pointer gl-object) 
-                                                        '(:struct ,struct-name)
-                                                        ',slot-name) 
-                                  ',(varjo:type-principle vslot-type))
-                         value)))))))
+                                       ',slot-name))))
+       ,(if (v-typep vslot-type 'v-array)
+            `(defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
+                 ((value list) (gl-object ,value-name))
+               (let ((array-ptr (foreign-slot-pointer
+                                 (pointer gl-object) '(:struct ,struct-name)
+                                 ',slot-name)))
+                 (loop for datum in value for i from 0 do
+                      (setf (mem-aref array-ptr 
+                                      ',(type-principle vslot-type) i)
+                            datum))
+                 value))
+            `(defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
+                 ((value t) (gl-object ,value-name))             
+               (setf (mem-ref (foreign-slot-pointer (pointer gl-object) 
+                                                    '(:struct ,struct-name)
+                                                    ',slot-name) 
+                              ',(type->spec (type-principle vslot-type)))
+                     value))))))
 
 (defun expand-slot-to-layout (slot)
-  (destructuring-bind (type normalise &rest ign)
-      slot
+  (destructuring-bind (type normalise &rest ign) slot
     (declare (ignore ign))
-    (let ((type (varjo:flesh-out-type type)))
-      (cond 
-        ((varjo:type-arrayp type) 
-         (loop for i below (varjo:type-array-length type)
-            :append (expand-slot-to-layout 
-                     (list (varjo:flesh-out-type 
-                            (varjo:type-principle type))
-                           normalise))))
-        ((varjo:mat-typep type) 
-         (loop for i below (varjo:mat/vec-length type)
-            :append (expand-slot-to-layout 
-                     (list (varjo:type-mat-col-to-vec type)
-                           normalise))))
-        ((varjo:vec-typep type) 
-         `((,(varjo:mat/vec-length type) 
-             ,(varjo:type-vec-core-type type) 
-             ,normalise)))
-        (t `((1 ,(varjo:type-principle type) ,normalise)))))))
+    (cond 
+      ((v-typep type 'v-array) 
+       (loop for i below (apply #'* (v-dimensions type))
+          :append (expand-slot-to-layout 
+                   (list (type->spec (type-principle type)) normalise))))
+      ((v-typep type 'v-matrix) 
+       (loop for i below (apply #'* (v-dimensions type))
+          :append (expand-slot-to-layout
+                   (list (first (v-dimensions type)) normalise))))
+      ((v-typep type 'v-vector)  
+       `((,(apply #'* (v-dimensions type))
+           ,(type->spec (v-element-type type)) 
+           ,normalise)))
+      (t `((1 ,(type->spec (type-principle type)) ,normalise))))))
 
 (defun make-gl-struct-attrib-assigner (type-name slots)
-  (when (every #'varjo:type-built-inp (mapcar #'slot-type slots))
+  (when (every #'core-typep (mapcar #'slot-type slots))
     (let* ((stride (if (> (length slots) 1)
                        `(cffi:foreign-type-size ',type-name)
                        0))
@@ -168,6 +219,9 @@
 ;;        avoid any issues when compiling shaders. This should allow moving 
 ;;        chunks of the compiling into macroexpansion time which will speed
 ;;        things at runtime.
+;;
+;; [TODO] vdefstruct needs to be rewritten to make use the new types, should 
+;;        be super easy as should match the formats here.
 
 (defmacro defglstruct (name &body slot-descriptions)
   (destructuring-bind (name &key (glsl t) (vertex t) (pixel t) (accessors t))
@@ -175,23 +229,30 @@
     (when (keywordp name) (error "Keyword name are now allowed for glstructs"))
     (unless (> (length slot-descriptions) 0) 
       (error "Cannot have a glstruct with no slots"))
-    (let ((slots (loop for slot in slot-descriptions collect
-                      (destructuring-bind 
-                            (slot-name slot-type &key (normalised nil) 
-                                       (accessor nil) &allow-other-keys)
-                          slot
-                        (list slot-name (varjo:flesh-out-type slot-type) 
-                              normalised accessor))))
-          (struct-name (utils:symb name '-struct))
-          (type-name (utils:symb name '-type))
-          (value-name (utils:symb name '-value)))
+    (let* ((slots (loop :for slot :in slot-descriptions :collect
+                       (destructuring-bind 
+                             (slot-name slot-type &key (normalised nil) 
+                                        (accessor nil) &allow-other-keys)
+                           slot
+                         (list slot-name (type-spec->type slot-type) 
+                               normalised accessor))))
+           (struct-name (utils:symb name '-struct))
+           (type-name (utils:symb name '-type))
+           (value-name (utils:symb name '-value))
+           (e-typep (loop :for slot :in slots :thereis
+                       (enhanced-typep (second slot))))
+           (glsl (and glsl (not e-typep)))
+           (pixel (and pixel (not e-typep)))
+           (vertex (and vertex (not e-typep))))
+      (when e-typep (error "enhanced types not yet supported"))
       `(progn
          ,(when glsl
-                `(varjo:vdefstruct ,name
+                `(v-defstruct ,name ()
                    ,@(loop for slot in slots
-                        collect (append (subseq slot 0 2) 
-                                        (list nil nil)
-                                        (last slot)))))
+                        :collect `(,(first (print slot)) 
+                                   ,(type->type-spec (second slot))
+                                    ,@(when (fourth slot)
+                                            `(:accessor ,(fourth slot)))))))
          ,(make-cstruct-def struct-name slots)
          (define-foreign-type ,type-name () 
            ()
@@ -199,8 +260,48 @@
            (:simple-parser ,name))
          (defclass ,value-name (c-value) ())
          ,@(when accessors (make-getters-and-setters name value-name struct-name slots))
-         ,@(make-translators name type-name value-name slots struct-name)
+         ,@(unless e-typep (make-translators name type-name value-name slots struct-name))
          ,(when accessors (make-puller name value-name slots))
          ,(when vertex (make-gl-struct-attrib-assigner name slots))
          ,(when pixel (make-struct-pixel-format name slot-descriptions))
          ',name))))
+
+(defun enhanced-typep (path)
+  (and (listp path)
+       (or (and (symbolp (first path)) (equal (symbol-name (first path)) "->"))
+           (listp (first path)))))
+
+(defun all-early-pointer-p (types-spec)
+  (let ((spec (reverse (rest (reverse types-spec)))))
+    (loop :for item :in spec :always 
+       (or (sn-equal '-> (if (listp item) (first item) item))))))
+
+
+(defun compile-etype-part (parent-type type-spec)
+  (labels ((swap-pointer (x) (if (sn-equal x '->) :pointer x)))
+    (if (symbolp type-spec) 
+        (list (swap-pointer type-spec))
+        (dbind (type len) type-spec
+          `(,(swap-pointer type) 
+             ,(if (symbolp len) 
+                  `(foreign-slot-value 
+                    (pointer val) (foreign-slot-type ',parent-type 
+                                                     ',len) ',len)
+                  (or len 0)))))))
+
+(defun compile-etype-spec (parent-type slot-type-spec)
+  (unless (all-early-pointer-p slot-type-spec)
+    (error "invalid extended-type spec"))
+  (let* ((split-index (or (position-if #'listp slot-type-spec)
+                          (length slot-type-spec)))         
+         (type-spec (reverse (subseq slot-type-spec 0 split-index)))
+         (final-type (or (subseq slot-type-spec split-index)
+                         (first (last slot-type-spec))))
+         (get-ptr-form 'ptr))
+    (loop :for part :in type-spec :for i :from 0 :do
+       (let ((new (compile-etype-part parent-type part)))         
+         (setf get-ptr-form `(mem-ref ,get-ptr-form ,@new))))
+    (list get-ptr-form 
+          (if (listp final-type) 
+              (compile-etype-part parent-type (first final-type))
+              final-type))))

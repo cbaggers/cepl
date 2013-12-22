@@ -74,7 +74,7 @@
                                     :unsigned-byte :unsigned-int))))
 
 (defmethod make-vao ((gpu-arrays gpuarray) &optional index-array)
-  (make-vao (list gpuarray) index-array))
+  (make-vao (list gpu-arrays) index-array))
 
 (defmethod make-vao ((gpu-arrays list) &optional index-array)
   "makes a vao using a list of gpu-arrays as the source data

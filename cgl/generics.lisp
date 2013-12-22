@@ -49,8 +49,8 @@
                                                        (pointer-offset 0)
                                                        stride-override
                                                        normalised)
-  (let ((type (varjo:flesh-out-type array-type)))
-    (if (varjo:type-built-inp type)
+  (let ((type (varjo::type-spec->type array-type)))    
+    (if (and (varjo::core-typep type) (not (varjo::v-typep type 'v-sampler)))
         (let ((slot-layout (expand-slot-to-layout (list type normalised)))
               (stride 0))
           (loop :for attr :in slot-layout

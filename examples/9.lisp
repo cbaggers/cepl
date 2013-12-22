@@ -18,21 +18,17 @@
      (ambient-intensity :vec4) (model-to-cam :mat4)
      (normal-model-to-cam :mat3) (cam-to-clip :mat4))
   (:vertex    
-   (let* ((camera-pos (* model-to-cam (vec4 (pos data) 1.0)))
-          (norm-cam-space (normalize (* normal-model-to-cam
-                                        (normal data))))
+   (let* ((camera-pos (* model-to-cam (v! (pos data) 1.0)))
+          (norm-cam-space (normalize (* normal-model-to-cam (normal data))))
           (dir-to-light (normalize 
-                         (- light-pos (swizzle camera-pos 
-                                               'xyz))))
-          (cos-ang-incidence (clamp (dot norm-cam-space 
-                                         dir-to-light)
+                         (- light-pos (swizzle camera-pos :xyz))))
+          (cos-ang-incidence (clamp (dot norm-cam-space dir-to-light)
                                     0.0 1.0)))
      (setf gl-position (* cam-to-clip camera-pos))
      (out (interp-color :smooth) (+ (* (color data)
                                        light-intensity
                                        cos-ang-incidence) 
-                                    (* (color data)
-                                       ambient-intensity)))))
+                                    (* (color data) ambient-intensity)))))
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480 *near* *far*)))
 
@@ -139,7 +135,7 @@
 (let ((running nil))
   (defun run-demo () 
     (init)
-    (reshape 1024 768 *near* *far*)  
+    (reshape 640 480 *near* *far*)  
     (setf running t)
     (loop :while running :do
        (when (step-demo)
@@ -148,7 +144,7 @@
   (defun stop-demo () (setf running nil)))
 
 (defun step-demo ()
-  (setf *loop-pos* (+ *loop-pos* 0.01))
+  (setf *loop-pos* (+ *loop-pos* 0.05))
   (setf (pos *light*) (v! (* 10 (sin *loop-pos*))
                           7
                           (* 10 (cos *loop-pos*))))

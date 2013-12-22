@@ -8,6 +8,33 @@
 
 ;;;; package.lisp
 
+(defpackage :cepl-utils
+  (:use :cl)
+  (:nicknames :utils)
+  (:export :dbind
+           :sn-equal
+           :listify
+           :replace-nth 
+           :hash-values
+           :hash-keys 
+           :intersperse
+           :update-swank
+           :walk-replace
+           :file-to-string
+           :flatten
+           :find-in-tree
+           :mkstr
+           :symb
+           :symb-package
+           :make-keyword
+           :kwd
+           :group
+           :safe-read-from-string
+           :sub-at-index
+           :symbolicate-package
+           :lispify-name
+           :symbol-name-equal))
+
 (defpackage :base-maths
   (:use :cl)
   (:export :+float-threshold+
@@ -54,30 +81,6 @@
            :temporally-expired
            :untilp
            :afterp))
-
-(defpackage :cepl-utils
-  (:use :cl)
-  (:nicknames :utils)
-  (:export :replace-nth 
-           :hash-values
-           :hash-keys 
-           :intersperse
-           :update-swank
-           :walk-replace
-           :file-to-string
-           :flatten
-           :find-in-tree
-           :mkstr
-           :symb
-           :symb-package
-           :make-keyword
-           :kwd
-           :group
-           :safe-read-from-string
-           :sub-at-index
-           :symbolicate-package
-           :lispify-name
-           :symbol-name-equal))
 
 (defpackage :base-vectors
   (:use :cl)
@@ -236,7 +239,7 @@
   )
 
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :base-vectors :base-matrices :cepl-utils)
+  (:use :cl :cffi :base-macros :cepl-utils :varjo)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color
@@ -343,6 +346,9 @@
            :clear-depth
            :flush
            :viewport))
+
+(defpackage :%cgl
+  (:use :cl :varjo :cgl))
 
 (defpackage :cepl-camera
   (:nicknames :ccam)

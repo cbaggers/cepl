@@ -9,7 +9,7 @@
   (:vertex (setf gl-position (* cam-to-clip
                                 (* world-to-cam 
                                    (* model-to-world
-                                      (vec4 (vert-data-position vert) 1.0)))))
+                                      (v! (vert-data-position vert) 1.0)))))
            (out (interp-color :smooth) (vert-data-color vert)))
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480)))

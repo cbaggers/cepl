@@ -7,25 +7,25 @@
 (defsfun calc-offset ((i :float) (loop :float))
   (let ((i (/ i 2)))
     (return (v! (sin (+ (cos i) loop))
-                (cos (+ i (cos loop)))
+                (cos (+ (tan i) loop))
                 0.0 0.0))))
 
 (defvshader vert ((position :vec4) &uniform (offset :vec4) (i :int) (loop :float))
-  (setf gl-position (+ position (calc-offset (float i) loop))))
+  (setf gl-position (+ offset position (calc-offset (float i) loop))))
 
 (deffshader frag (&uniform (loop :float)) 
   (out output-color (v! (cos loop) (sin loop) 0.3 1.0)))
 
 (defpipeline prog-1 ((position :vec4) &uniform (offset :vec4)  
                      (i :int) (loop :float))
-  #'vert #'frag)
+  vert frag)
 
 (defun draw (gstream)
-  (setf *loop* (+ 0.005 *loop*))
+  (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit)  
   (loop :for i :below 25 :do
      (let ((i (/ i 2.0)))
-       (prog-1 gstream :i i :loop *loop*)))
+       (prog-1 gstream :i i :loop *loop* :offset (v! 0 0 0 0))))
   (gl:flush)
   (cgl:update-display))
 
