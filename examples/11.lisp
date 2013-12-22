@@ -14,16 +14,16 @@
   (:vertex (setf gl-position (+ (pos vert) pos-offset))
            (out (tex-coord :smooth) (tex-pos vert)))
   (:fragment 
-   (let* ((rip-size 0.02) (centre (vec2 0.0 0.0)) (damp 0.6)
+   (let* ((rip-size 0.02) (centre (v! 0.0 0.0)) (damp 0.6)
           (peaks 9.0)
           (dif (- tex-coord centre))
           (dist (dot dif dif))
-          (height (/ (+ (sin (+ count (* peaks dist)))
-                        (sin (- count (* peaks (y tex-coord)))))
+          (height (/ (+ (sin (+ count (* dist peaks)))
+                        (sin (- count (* (y tex-coord) peaks))))
                      2.0))
-          (rip-offset (* (* rip-size (normalize dif)) height damp)))
+          (rip-offset (* (* (normalize dif) rip-size) height damp)))
      (out outputColor (+ (texture tex (+ rip-offset tex-coord))
-                         (vec4 (* -0.2 height) (* -0.2 height) 0.0 0.0))))))
+                         (v! (* -0.2 height) (* -0.2 height) 0.0 0.0))))))
 
 (defun step-demo ()
   (ripple-with-wobble *v-stream* :tex *texture* :count *count*
