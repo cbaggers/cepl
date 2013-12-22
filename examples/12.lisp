@@ -30,7 +30,7 @@
          (output (v! 0.0 0.0 0.0))
          (box-dim (v! 1.0 2.0 1.0)))
     (for (i 0) (< i 20) (++ i)
-         (let ((d (sphere e 1.4)))
+         (let ((d (sphere eye-pos 1.4)))
            (if (<= d 0.0)
                (let ((norm (density-normal (sphere e 1.4) 0)))
                  (setf output (v! (+ 0.3 (y norm)) 
