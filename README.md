@@ -28,7 +28,6 @@ Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 * cl-utilities
 * cl-ppcre
 * symbol-munger
-* classimp *(requires assimp3)*
 
 If you are using quicklisp then drop this in your local-projects directory and run the following in your repl:
     (ql:quickload :cepl)
