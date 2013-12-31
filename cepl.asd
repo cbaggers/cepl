@@ -49,6 +49,7 @@
                (:file "maths/matrices/matrix4")
                (:file "maths/matrices/matrices")
                (:file "maths/quaternions")
+               (:file "maths/utils")
                (:file "cepl-camera")
                (:file "meshes-and-models/primitives")
                (:file "meshes-and-models/model-parsers/parse-obj")

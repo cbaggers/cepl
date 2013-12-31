@@ -166,10 +166,11 @@
 (defun beforep (current-time time)
   "test"
   (if current-time
-      (if (< current-time time)
-          current-time
-          (progn (signal 'c-expired)
-                 nil))
+      (let ((ctime (funcall current-time)))
+        (if (< ctime time)
+            ctime
+            (progn (signal 'c-expired)
+                   nil)))
       nil))
 
 (setf (symbol-function 't<)
