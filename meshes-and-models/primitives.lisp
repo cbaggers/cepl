@@ -2,11 +2,12 @@
 
 ;; [TODO] Add Cone & Cylinder
 
-(defun primitive-data (type &key (size 1.0))
+(defun primitive-data (type &key (size 1.0) (colors t) (normals t))
   (case type
-    (:plain (plain-data :size size))
-    ((:box :cube) (box-data :width size :height size :depth size))
-    (:sphere (sphere-data :radius size))
+    (:plain (plain-data :size size :colors colors :normals normals))
+    ((:box :cube) (box-data :width size :height size :depth size 
+                            :colors colors :normals normals))
+    (:sphere (sphere-data :radius size :colors colors :normals normals))
     (t (error "Do not have data for that primitive"))))
 
 (defun plain-data (&key (size 1.0) (colors t) (normals t))
