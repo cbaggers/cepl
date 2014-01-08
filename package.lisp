@@ -166,7 +166,7 @@
            :rotation-from-axis-angle :scale
            :rotation-x :rotation-y :rotation-z
            :get-fixed-angles :get-axis-angle :m+ :m- :negate
-           :m* :m*vec :m*scalar)
+           :m* :mcol*vec3 :mrow*vec3 :m*scalar)
   (:import-from :base-maths :float-zero
                 :c-sqrt)
   (:import-from :vector3 
@@ -353,7 +353,22 @@
 (defpackage :cepl-camera
   (:nicknames :ccam)
   (:use :cl)
-  (:export :calculate-frustrum-scale
+  (:export :camera
+           :make-camera
+           :orthographic-projection
+           :perspective-projection
+           :world->cam
+           :look-at
+           :world-up
+           :pos
+           :dir
+           :frame-size
+           :fov
+           :far
+           :near
+           :cam->clip-func
+           :cam->clip
+           :world->cam
            :make-cam-clip-matrix)
   (:import-from :vector2
                 :make-vector2)
@@ -423,7 +438,38 @@
                 :p-n-t
                 :texref)
   (:export :repl
+           :%repl
            :case-events
            :collect-event-types
            :evt->
-           :evt+>))
+           :evt+>
+           ;;---
+           :cls
+           :pixel-format
+           :pixel-format-of
+           :describe-pixel-format
+           :defpipeline
+           :defvshader
+           :deffshader
+           :defgshader
+           :defshader
+           :defsfun
+           :defsmacro
+           :defglstruct
+           :gl-pull
+           :gl-pull-1
+           :gl-push
+           :make-c-array
+           :with-c-array                
+           :free-c-array
+           :aref-c
+           :c-populate
+           :make-gpu-array
+           :make-gpu-arrays
+           :gl-subseq
+           :with-gpu-array-as-c-array
+           :make-vertex-stream
+           :make-texture                
+           :with-texture-bound
+           :p-n-t
+           :texref))

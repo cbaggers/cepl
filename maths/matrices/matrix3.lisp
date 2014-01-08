@@ -488,6 +488,31 @@
 
 ;;----------------------------------------------------------------
 
+(defun mcol*vec3 (mat-a vec)
+  (make-vector3 
+   (+ (* (v-x vec) (melm mat-a 0 0)) (* (v-y vec) (melm mat-a 0 1))
+      (* (v-z vec) (melm mat-a 0 2)))
+
+   (+ (* (v-x vec) (melm mat-a 1 0)) (* (v-y vec) (melm mat-a 1 1))
+      (* (v-z vec) (melm mat-a 1 2)))
+
+   (+ (* (v-x vec) (melm mat-a 2 0)) (* (v-y vec) (melm mat-a 2 1))
+      (* (v-z vec) (melm mat-a 2 2)))))
+
+;----------------------------------------------------------------
+
+(defun mrow*vec3 (vec mat-a)
+  (make-vector3 
+   (+ (* (v-x vec) (melm mat-a 0 0)) (* (v-y vec) (melm mat-a 1 0))
+      (* (v-z vec) (melm mat-a 2 0)))
+
+   (+ (* (v-x vec) (melm mat-a 0 1)) (* (v-y vec) (melm mat-a 1 1))
+      (* (v-z vec) (melm mat-a 2 1)))
+
+   (+ (* (v-x vec) (melm mat-a 0 2)) (* (v-y vec) (melm mat-a 1 2))
+      (* (v-z vec) (melm mat-a 2 2)))))
+
+;----------------------------------------------------------------
 (defun m* (mat-a mat-b)
   "Multiplies 2 matrices and returns the result as a new 
    matrix"

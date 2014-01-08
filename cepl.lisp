@@ -25,7 +25,10 @@
     t))
 
 (defun repl (&optional (width 640) (height 480))
-  (in-package :cepl)
+  (in-package :cepl)  
+  (%repl width height))
+
+(defun %repl (&optional (width 640) (height 480))  
   (if (sdl2:init)
       (multiple-value-bind (context window)
           (new-window :width width :height height :title "CEPL REPL")
@@ -41,3 +44,4 @@
 (defun quit ()
   (sdl2:quit))
 
+(defun peek (x) (swank:inspect-in-emacs x))
