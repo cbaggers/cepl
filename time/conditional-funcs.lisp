@@ -12,9 +12,35 @@
 
 (in-package :base-time)
 
+(defmacro def-time-units (&body forms)
+  (unless (numberp (second (first forms))) 
+    (error "base unit must be specified as a constant"))
+  (let ((defined nil))
+    `(progn
+       ,@(loop :for (type expression) :in forms
+            :for count = (if (numberp expression) 
+                             expression 
+                             (if (and (listp expression)
+                                      (= (length expression) 2)
+                                      (numberp (second expression))
+                                      (assoc (first expression) defined))
+                                 (* (second expression) 
+                                    (cdr (assoc (first expression) defined)))
+                                 (error "invalid time expression")))
+            :collect `(defun ,type (quantity) (* quantity ,count))
+            :do (push (cons type count) defined)))))
+
+(def-time-units 
+  (milliseconds 1)
+  (seconds (milliseconds 1000))
+  (minutes (seconds 60))
+  (hours (minutes 60)))
+
+;;------------------------------------------------------------
+
 (define-condition c-expired (condition) ())
 
-(defun signal-expired () (signal 'c-expired))
+(defun signal-expired () (signal 'c-expired) nil)
 
 (defmacro defcon (name args condition &body body)
   (let ((lived (gensym "lived")))
@@ -25,10 +51,14 @@
              (when ,lived (signal 'c-expired) nil))))))
 
 (defmacro conditional (args condition &body body)
-  (let ((lived (gensym "lived")))
-    `(let ((,lived nil))
+  (let ((lived (gensym "lived"))
+        (condit (gensym "condition")))
+    `(let ((,lived nil)
+           (,condit ,(if (eq (first condition) 'cl:function)
+                         condition
+                         `(lambda () ,condition))))
        (lambda ,args
-         (if ,condition
+         (if (funcall ,condit)
              (progn (setf ,lived t) ,@body)
              (when ,lived (signal 'c-expired) nil))))))
 
@@ -46,7 +76,7 @@
            ,@(loop :for form :in forms :for i :from 0 :collect
                 `(,i (handler-case ,form 
                        (c-expired (c) (ignore c) (incf ,step) nil))))
-           (,(length forms) (signal-expired) nil))))))
+           (,(length forms) (signal-expired)))))))
 
 ;;--------------------------------------------------------------------
 
@@ -109,6 +139,7 @@
              (<= (time-value time-source) end-time)) 
     (time-value time-source)))
 
+;;--------------------------------------------------------------------
 
 ;; 'every' is the temporal implementation of steppers, they eat time from a 
 ;; relative source and call functions when 'time-buffer is full'
@@ -125,3 +156,7 @@
 (let ((deadline (from-now (seconds 10))))
   (loop :until (after deadline *source*)
      :do (print "hi")))
+
+(conditional ((before 12000 *time*) :name @test) 
+  (lerp (pos *obj*) (v! 0 0 0) (/ (pos *obj*) @test)))
+
