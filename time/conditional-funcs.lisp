@@ -14,7 +14,7 @@
 
 (define-condition c-expired (condition) ())
 
-(defun signal-expired () (signal 'c-expired))
+(defun signal-expired () (signal 'c-expired) nil)
 
 (defmacro defcon (name args condition &body body)
   (let ((lived (gensym "lived")))
@@ -25,10 +25,14 @@
              (when ,lived (signal 'c-expired) nil))))))
 
 (defmacro conditional (args condition &body body)
-  (let ((lived (gensym "lived")))
-    `(let ((,lived nil))
+  (let ((lived (gensym "lived"))
+        (condit (gensym "condition")))
+    `(let ((,lived nil)
+           (,condit ,(if (eq (first condition) 'cl:function)
+                         condition
+                         `(lambda () ,condition))))
        (lambda ,args
-         (if ,condition
+         (if (funcall ,condit)
              (progn (setf ,lived t) ,@body)
              (when ,lived (signal 'c-expired) nil))))))
 
@@ -46,33 +50,73 @@
            ,@(loop :for form :in forms :for i :from 0 :collect
                 `(,i (handler-case ,form 
                        (c-expired (c) (ignore c) (incf ,step) nil))))
-           (,(length forms) (signal-expired) nil))))))
+           (,(length forms) (signal-expired)))))))
 
 ;; ;;--------------------------------------------------------------------
 
-;; (defparameter *system-time* (make-time-source))
-;; (defun update-system-time () 
-;;   (setf (time-source-value *system-time*) (absolute-system-time)))
+(defmacro def-time-units (&body forms)
+  (unless (numberp (second (first forms))) 
+    (error "base unit must be specified as a constant"))
+  (let ((defined nil))
+    `(progn
+       ,@(loop :for (type expression) :in forms
+            :for count = (if (numberp expression) 
+                             expression 
+                             (if (and (listp expression)
+                                      (= (length expression) 2)
+                                      (numberp (second expression))
+                                      (assoc (first expression) defined))
+                                 (* (second expression) 
+                                    (cdr (assoc (first expression) defined)))
+                                 (error "invalid time expression")))
+            :collect `(defun ,type (quantity) (* quantity ,count))
+            :do (push (cons type count) defined)))))
 
-;; (defstruct time-source
-;;   (value 0.0 :type short-float)
-;;   (source nil :type (or null time-source))
-;;   (transform nil :type (or null function)))
+(def-time-units 
+  (milliseconds 1)
+  (seconds (milliseconds 1000))
+  (minutes (seconds 60))
+  (hours (minutes 60)))
 
-;; (defun update-time (source)
-;;   (if (time-source-source source)
-;;       (if (time-source-transform source)
-;;           (setf (time-source-value source) 
-;;                 (funcall (time-source-transform source)
-;;                          (time-source-value (time-source-source source))))
-;;           (setf (time-source-value source) 
-;;                 (time-source-value (time-source-source source))))
-;;       (time-source-value source)))
+(defparameter *system-time* (make-time-source))
+(defun update-system-time () 
+  (setf (time-source-value *system-time*) (absolute-system-time)))
 
-;; (defun before (time &optional (time-source (make-)))
-;;   )
+(defstruct time-source
+  (value 0.0 :type short-float)
+  (last-updated 0.0 :type short-float)
+  (source nil :type (or null time-source))
+  (transform nil :type (or null function)))
 
-;; ;; 'every' is the temporal implementation of steppers, they eat time from a 
-;; ;; relative source and call functions when 'time-buffer is full'
-;; ;; 'every*' is a version that handles multiple things with one source, perfect
-;; ;; for main loops
+(defun update-time (source)
+  (setf (time-source-last-updated source) (absolute-system-time))
+  (if (time-source-source source)
+      (if (time-source-transform source)
+          (setf (time-source-value source) 
+                (funcall (time-source-transform source)
+                         (time-source-value (time-source-source source))))
+          (setf (time-source-value source) 
+                (time-source-value (time-source-source source))))
+      (time-source-value source)))
+
+(defun before (time time-source)
+  (let ((tsv (time-source-value time-source))) 
+    (when (< tsv time) tsv)))
+
+(defun after (time time-source)
+  (let ((tsv (time-source-value time-source))) 
+    (when (> tsv time) tsv)))
+
+(defun during (start-time end-time time-source)
+  (let ((tsv (time-source-value time-source))) 
+    (when (and (> tsv start-time) (< tsv end-time)) tsv)))
+
+
+
+;; 'every' is the temporal implementation of steppers, they eat time from a 
+;; relative source and call functions when 'time-buffer is full'
+;; 'every*' is a version that handles multiple things with one source, perfect
+;; for main loops
+
+(conditional ((before 12000 *time*) :name @test) 
+  (lerp (pos *obj*) (v! 0 0 0) (/ (pos *obj*) @test)))
