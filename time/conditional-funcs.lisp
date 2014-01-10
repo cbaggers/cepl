@@ -154,9 +154,73 @@
 
 
 (let ((deadline (from-now (seconds 10))))
-  (loop :until (after deadline *source*)
+  (loop :while (after deadline *source*)
      :do (print "hi")))
 
 (conditional ((before 12000 *time*) :name @test) 
   (lerp (pos *obj*) (v! 0 0 0) (/ (pos *obj*) @test)))
 
+;; the problem is that non-function based time objects dont update themselves
+;; so that has to be remebered
+(progn
+  (update-system-time)
+  (let ((deadline (from-now (seconds 2))))
+    (loop :until (after deadline)
+       :do (update-system-time) :finally (print "hi"))))
+
+;; however relative sources should only be updated in one place as it is 
+;; relative TO something.
+
+;; want to write this
+(let ((deadline (from-now (seconds 2))))
+  (loop :until (after deadline) :finally (print "hi")))
+
+;; ...ok so now absolute times are functions
+
+(defun from-now (time-offset &optional (time-source #'absolute-system-time))
+  (+ time-offset (funcall time-source)))
+
+(defun before (time &optional (time-source #'absolute-system-time))
+  (let ((current-time (funcall time-source)))
+    (when (< current-time time) current-time)))
+
+(defun after (time &optional (time-source #'absolute-system-time))
+  (let ((current-time (funcall time-source)))
+    (when (> current-time time) current-time)))
+
+(defun between (start-time end-time
+                &optional (time-source #'absolute-system-time))
+  (let ((current-time (funcall time-source)))
+    (when (and (>=  start-time) (<= current-time end-time)) current-time)))
+
+;; what does tidy relative time look like?
+
+(let ((deadline (from-now (seconds 2))))
+  (loop :until (after deadline) :do (format t "timediff=~a" rel-time)))
+
+(defun make-rel-time (&optional (time-source #'absolute-system-time))
+  (let* ((last 0) (step 0)
+         (func (lambda (trigger) 
+                 (when (eq trigger :step)
+                   (let ((new (funcall time-source)))
+                     (setf step (- new last) last new)))
+                 step)))
+    (funcall func :step)
+    func))
+
+(defun make-time-source (&key (type :relative) (parent #'absolute-system-time)
+                           (transform nil))
+  (case type
+    (:absolute (if transform
+                   (lambda (x) 
+                     (declare (ignore x))
+                     (funcall transform (funcall parent)))
+                   (lambda (x) 
+                     (declare (ignore x))
+                     (funcall parent))))
+    (:relative (if transform
+                   (error "transforms cant currently be used on relative time")
+                   (make-rel-time parent)))
+    (t (error "unknown time-source type"))))
+
+(defun t-step (time) (funcall time :step))
