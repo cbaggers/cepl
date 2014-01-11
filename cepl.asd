@@ -23,6 +23,7 @@
                (:file "cepl-utils")
                (:file "declarative-values")
                (:file "time/base-time")
+               (:file "time/conditional-funcs")
                (:file "cgl/generics")
                (:file "cgl/pixel-format")
                (:file "cgl/cffi-extra-primitive-types")
