@@ -35,6 +35,12 @@
            :lispify-name
            :symbol-name-equal))
 
+(defpackage :base-macros
+  (:use :cl :cepl-utils)
+  (:export :once-only
+           :continuable
+           :apply-across-elements))
+
 (defpackage :base-maths
   (:use :cl)
   (:export :+float-threshold+
@@ -51,12 +57,6 @@
            :degrees
            :radians))
 
-(defpackage :base-macros
-  (:use :cl)
-  (:export :once-only
-           :continuable
-           :apply-across-elements))
-
 (defpackage :conditional-functions
   (:use :cl)
   (:nicknames :cfunc)
@@ -65,7 +65,7 @@
            :defcfun))
 
 (defpackage :base-time
-  (:use :cl)
+  (:use :cl :cepl-utils)
   (:nicknames :ct :ctime)
   (:export :absolute-system-time
            :make-time-buffer
@@ -256,7 +256,9 @@
                 :viewport
                 :delete-shader)
   (:shadow :float)
-  (:export :gl-free
+  (:export :gl-context
+           :clear-gl-context-cache
+           :gl-free
            :update-display
            :valid-pixel-format-p
            :pixel-format

@@ -32,7 +32,7 @@
      (continue () :report "CEPL Continue")))
 
 ;----------------------------------------------------------------
-;; 
+;;{TODO} Remove this crappy thing
 (defmacro apply-across-elements (call array-forms 
 			     num-of-elms &body body)
   "This is a helper macro to limit the amount of ugly code 
@@ -77,3 +77,26 @@
     `(,call ,@(gen-line))))
 
 ;----------------------------------------------------------------
+;; Relative values
+;;-----------------
+
+;;{TODO} should also support other source types....not sure what those are
+(defgeneric update-relative (val))
+(defmacro make-relative-type (type &key (dif '-))
+  (let* ((type (if (and (listp type) (eq (first type) 'quote))
+                   (second type) type))
+         (rtype (symb 'relative- type)))
+    `(progn 
+       (defstruct ,rtype
+         (value 0 :type ,type)
+         (last-value 0 :type ,type)
+         (source (lambda () 0) :type function))
+
+       (defmethod update-relative ((val ,rtype))
+         (let ((cval (funcall (,(symb rtype '-source) val)))
+               (lval (,(symb rtype '-last-value) val)))
+           (setf (,(symb rtype '-value) val) (,dif cval lval))
+           (setf (,(symb rtype '-last-value) val) cval)
+           (,(symb rtype '-value) val))))))
+
+(make-relative-type 'integer)

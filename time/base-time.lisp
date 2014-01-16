@@ -12,182 +12,140 @@
 
 (in-package base-time)
 
-;; This is just an alias with a more fitting name
-(setf (symbol-function 'absolute-system-time) 
-      #'get-internal-real-time)
+;;----------------------------------------------------------------------
+;; Time units
+;;------------
 
-(defun make-time-buffer (&optional (abs-time-source
-                                    #'get-internal-real-time))
-  "This make a time buffer. A time buffer is a lambda which each
-   time it is called retuns the ammount of time since it was last
-   called. 
-   It is called a time buffer as it can be imagined as
-   'storing up' time for use later.
-   In short: a time-buffer converts absolute time into relative
-   time."
-  (let ((last-time (funcall abs-time-source)))
-    (lambda () 
-      (let* ((now (funcall abs-time-source))
-             (delta (- now last-time)))
-        (setf last-time now)
-        delta))))
+(defmacro def-time-units (&body forms)
+  (unless (numberp (second (first forms))) 
+    (error "base unit must be specified as a constant"))
+  (let ((defined nil))
+    `(progn
+       ,@(loop :for (type expression) :in forms
+            :for count = (if (numberp expression) 
+                             expression 
+                             (if (and (listp expression)
+                                      (= (length expression) 2)
+                                      (numberp (second expression))
+                                      (assoc (first expression) defined))
+                                 (* (second expression) 
+                                    (cdr (assoc (first expression) defined)))
+                                 (error "invalid time expression")))
+            :collect `(defun ,type (quantity) (* quantity ,count))
+            :do (push (cons type count) defined)))))
 
-(defun make-itime-buffer (&optional (abs-time-source
-                                     #'get-internal-real-time))
-  "This make an interactive time buffer. A time buffer is a lambda 
-   which each time it is called retuns the ammount of time since 
-   it was last called.
-   It is called a time buffer as it can be imagined as
-   'storing up' time for use later.
-   In short: a time-buffer converts absolute time into relative
-   time.
-   The interactive part is that you can pass and optional command
-   :reset to zero the time buffer. This can save creating a new 
-   time-cache, which can be handy when you are outside the original
-   context but you want to maintain the lexical scope."
-  (let ((last-time (funcall abs-time-source)))
-    (lambda (&optional command) 
-      (case command
-        (:reset (setf last-time (funcall abs-time-source))))
-      (let* ((now (funcall abs-time-source))
-             (delta (- now last-time)))
-        (setf last-time now)
-        delta))))
+(def-time-units 
+  (milliseconds 1)
+  (seconds (milliseconds 1000))
+  (minutes (seconds 60))
+  (hours (minutes 60)))
 
-(defun make-time-cache (&optional (rel-time-source
-                                   (make-time-buffer)))
-  "This make an interactive time cache. A time cache is a lambda 
-   which each time it is called retuns the ammount of time since
-   it was created. 
-   In short: a time-cache converts relative time into absolute 
-   time."  
-  (let ((cached-time 0))
-    (lambda () 
-      (setf cached-time (+ cached-time (funcall rel-time-source)))
-      cached-time)))
+;;--------------------------------------------------------------------
 
-(defun make-itime-cache (&optional (rel-time-source
-                                    (make-time-buffer)))
-  "This make a time cache. A time cache is a lambda which each
-   time it is called retuns the ammount of time since it was 
-   created. 
-   In short: a time-cache converts relative time into absolute 
-   time.
-   The interactive part is that you can pass and optional command
-   :reset to zero the time buffer. This can save creating a new 
-   time-cache, which can be handy when you are outside the original
-   context but you want to maintain the lexical scope."  
-  (let ((cached-time 0))
-    (lambda (&optional command) 
-      (setf cached-time (+ cached-time (funcall rel-time-source)))
-      (case command
-        (:reset (progn (setf cached-time 0)
-                       0))
-        (t cached-time)))))
+(defparameter *default-time-source* #'get-internal-real-time)
 
-(defun make-stepper (step-size)
-  "Makes a stepper. 
-   A stepper is a lambda which is created with a step size. When
-   the lambda is called and passed an amount of time it stores 
-   it. When the amount stored is greater than the step size then
-   the lambda returns a scalar between 0 and 1.0 which is how 
-   much overflow there was (the overflow remains in the store).
-   Here is an example:
-    CEPL-EXAMPLES> (setf stepper (make-stepper 1000))
-     #<CLOSURE (LAMBDA (TIME) :IN MAKE-STEPPER) {10085B249B}>
-    CEPL-EXAMPLES> (funcall stepper 400)
-     NIL
-    CEPL-EXAMPLES> (funcall stepper 400)
-     NIL
-    CEPL-EXAMPLES> (funcall stepper 400)
-     1/5
-   This scalar returned is useful for handling temporal aliasing.
-   
-   If you call the stepper with 't' rather than a time then the
-   stepper returns the step size."
-  (let ((time-cache 0))
-    (lambda (time) 
-      (if (eq time t)
+(defun make-time-source (&key (parent *default-time-source*) (transform nil))
+  (if transform
+      (lambda () (declare (ignore x)) (funcall transform (funcall parent)))
+      (lambda () (declare (ignore x)) (funcall parent))))
+
+(defmacro with-time-source (time-source &body body)
+  `(let ((*default-time-source* ,time-source))
+     ,@body))
+
+;;--------------------------------------------------------------------
+
+(defun from-now (time-offset &optional (time-source *default-time-source*))
+  (+ time-offset (funcall time-source)))
+
+(defun beforep (time &optional (time-source *default-time-source*))
+  (let ((current-time (funcall time-source)))
+    (when (< current-time time) current-time)))
+
+(defun afterp (time &optional (time-source *default-time-source*))
+  (let ((current-time (funcall time-source)))
+    (when (> current-time time) current-time)))
+
+(defun betweenp (start-time end-time
+                &optional (time-source *default-time-source*))
+  (let ((current-time (funcall time-source)))
+    (when (and (>=  start-time) (<= current-time end-time)) current-time)))
+
+(defun before (offset &optional (source *default-time-source*))
+  (let ((source source) (offset offset))
+    (lambda () (or (beforep offset source) (signal-expired)))))
+
+(defun after (offset &optional (source *default-time-source*))
+  (let ((source source) (offset offset))
+    (lambda () (afterp offset source))))
+
+(defun between (start-time end-time &optional (source *default-time-source*))
+  (let ((source source) (start-time start-time) (end-time end-time))
+    (lambda () (or (betweenp start-time end-time source)
+                   (when (afterp end-time source) (signal-expired))))))
+
+;;--------------------------------------------------------------------
+
+
+(defun make-stepper (step-size &optional (default-source *default-time-source*))
+  "this takes absolute sources"
+  (let ((time-cache 0)
+        (last-val (funcall default-source)))
+    (lambda (&optional (time-source default-source))
+      (if (eq time-source t)
           step-size
-          (progn
-            (setf time-cache (+ (abs time) time-cache))
-            (if (> time-cache step-size)
-                (progn
-                  (setf time-cache (- time-cache step-size))
-                  (min 1.0 (/ time-cache step-size)))
-                nil))))))
+          (let* ((time (abs (funcall time-source)))
+                 (dif (- time last-val)))
+            (setf last-val time)
+            (incf time-cache dif)
+            (when (> time-cache step-size)
+              (setf time-cache (- time-cache step-size))
+              (min 1.0 (/ time-cache step-size))))))))
+
+(defmacro t-every2 (timestep &optional (default-source '*default-time-source*))
+  `(make-stepper ,timestep ,default-source))
+
+(defmacro t-every (timestep &body forms)
+  (let* ((stepper (gensym "stepper"))
+         (source (if (eq (first forms) :default-source)
+                     (second forms)
+                     '*default-time-source*))
+         (forms (if (eq (first forms) :default-source)
+                    (cddr forms) forms)))
+    `(let ((,stepper (make-stepper ,timestep ,source)))
+       (lambda (&optional (time-source ,source))
+         (when (funcall ,stepper time-source)
+           ,@forms)))))
+
+(defun c+ (&rest funcs)
+  (lambda () (every #'funcall funcs)))
+
+;;{TODO} this gets the behaviour right but performance isnt great
+(defmacro t-every* ((&optional (time-source *default-time-source*)) &body forms)
+  (loop :for (timestep form) :in forms :for name = (gensym "stepper")
+     :collect `(,name (make-stepper ,timestep ,time-source)) :into steppers
+     :collect `(when (funcall ,name time-source) ,form) :into clauses
+     :finally (return
+                `(let (,@steppers)
+                   (lambda (&optional (time-source ,time-source)) ,@clauses)))))
+
+;;----------------------------------------------------------------------
+
+;; The crappiest little time-manager example
+
+(let ((entries (list t)))
+  (defun update-time-manager ()
+    (let ((last entries)
+          (current (cdr entries)))
+      (loop :until (null current) :do
+         (if (expiredp (funcall (car current)))
+             (print "removed")
+             (progn (setf (cdr last) current)
+                    (setf last current)))
+         (setf current (cdr current)))))
+  (defun t-manage (item) (setf (cdr entries) (list item)))
+  (defun t-releaae (item) (delete item entries))
+  (defun t-clean () (setf (cdr entries) nil)))
 
 
-
-(defmacro on-step-call ((stepper time 
-                                 &optional (step-progress (gensym))
-                                 (step-size nil)) 
-                        &body body)
-  "This passes a time to a stepper and when the stepper returns
-   is step progress the body code is executed.
-   You can also declare variables to hold the value returned from
-   the step (the step progress) and the step size of the stepper.
-   These variables can then obviously be used in the body.
-
-    CL-USER> (macroexpand `(with-stepper-call jam 100 sp
-                          (call-thing arg arg2 sp)))
-
-    (LET ((#:SP871 (FUNCALL JAM 100)))
-       (WHEN #:SP871 ((CALL-THING ARG ARG2 #:SP871))))"
-  (if (not (symbolp step-progress))
-      (error "Only symbols may be passed to the key arguments.")
-      (let ((!step-prog (gensym (cepl-utils:mkstr step-progress)))
-            (!step-size (gensym (cepl-utils:mkstr step-size))))
-        `(let ((,!step-prog (funcall ,stepper ,time))
-               ,@(when step-size
-                       `((,!step-size (funcall ,stepper t)))))
-           (when ,!step-prog
-             ,@(utils:walk-replace step-progress !step-prog 
-                                   (utils:walk-replace step-size !step-size body)))))))
-
-
-;;----------------------------------------------------
-
-;; predicates '(until before between within at when unless by)
-
-(defun withinp (current-time start end)
-  (if current-time
-      (if (> current-time start)
-          (if (< current-time end)
-              current-time
-              (progn (signal 'c-expired)
-                     nil))
-          nil)
-      nil))
-
-(setf (symbol-function 'betweenp)
-      #'withinp)
-
-(defun beforep (current-time time)
-  "test"
-  (if current-time
-      (if (< current-time time)
-          current-time
-          (progn (signal 'c-expired)
-                 nil))
-      nil))
-
-(setf (symbol-function 't<)
-      #'beforep)
-
-(setf (symbol-function 'untilp)
-      #'beforep)
-
-(defun afterp (current-time time)
-  (if current-time
-      (if (> current-time time)
-          current-time
-          nil)
-      nil))
-
-(setf (symbol-function 't>)
-      #'beforep)
-
-
-
-
+;;----------------------------------------------------------------------
