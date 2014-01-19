@@ -81,6 +81,7 @@
            :temporally-expired
            :untilp
            :afterp))
+(defpackage :time-syntax)
 
 (defpackage :base-vectors
   (:use :cl)

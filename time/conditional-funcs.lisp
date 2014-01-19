@@ -39,6 +39,9 @@
 (defmacro cfn (args condition &body body)
   `(conditional ,args ,condition ,@body))
 
+(defun cfn+ (&rest funcs)
+  (lambda () (every #'funcall funcs)))
+
 ;;--------------------------------------------------------------------
 
 (defmacro then (args &body forms)
