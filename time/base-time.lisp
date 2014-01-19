@@ -114,17 +114,6 @@
 
 ;;----------------------------------------------------------------------
 
-;; (tlambda (x) (and (beforep 10000) (stepping 300))
-;;   (print x))
-
-;; hmm this cant work as stepping returns a lambda, and it cant expand to 
-;; something better as it needs a cache and the cache must surround the tlambda
-;; ugh
-
-;; another way to tackle this would be to introduce a language for defining
-;; these time setups. This would also take care of the issues with from-now
-;; as we could eval it early.
-
 (defmacro add-time-syntax (name args &body body)
   `(defun ,(symbolicate-package :time-syntax name) ,args
      ,@body))
@@ -133,12 +122,6 @@
   (symbol-function (symbolicate-package :time-syntax name)))
 (defun time-syntax-expand (name rest) 
   (apply (symbol-function (symbolicate-package :time-syntax name)) rest))
-
-;;{TODO} move this to helper funcs/utils
-(defmethod extend-list ((list list) (other number))
-  (let* ((len (length list))
-         (dif (max 0 (- other len))))
-    (append list (loop :for i :below dif :collect nil))))
 
 (defun %compile-time-syntax (form)
   (if (atom form) form
@@ -149,8 +132,6 @@
                         (setf state (append s state)) c))))
         (multiple-value-bind (c s) (time-syntax-expand tname body)
           (values c (remove nil (append s (reverse state))))))))
-
-;;(tlambda () (before (from-now 1)) (print 'hi))
 
 (defmacro tlambda (args test &body body)
   "tlambda is a special case of conditional function, it has one timesource 
