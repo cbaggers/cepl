@@ -13,6 +13,59 @@
 (in-package base-time)
 
 ;;----------------------------------------------------------------------
+
+;;{TODO} There is no way of signalling expired.
+;;       This needs to be built into the compiler or the syntax definitions
+
+(defmacro add-time-syntax (name args &body body)
+  `(defun ,(symbolicate-package :time-syntax name) ,args
+     ,@body))
+
+(defun time-syntaxp (name) 
+  (symbol-function (symbolicate-package :time-syntax name)))
+(defun time-syntax-expand (name rest) 
+  (apply (symbol-function (symbolicate-package :time-syntax name)) rest))
+
+(defun %compile-time-syntax (form)
+  (if (atom form) form
+      (le* ((tname (first form))
+             (state nil)
+             (body (loop :for item :in (rest form) :collect
+                      (multiple-value-bind (c s) (%compile-time-syntax item)
+                        (setf state (append s state)) c))))
+        (multiple-value-bind (c s) (time-syntax-expand tname body)
+          (values c (remove nil (append s (reverse state))))))))
+
+(defmacro tlambda (args test &body body)
+  "tlambda is a special case of conditional function, it has one timesource 
+   which it will use with all time predicates. As it has it's own timesource
+   you can use time predicates rather than the closure generating funcs"
+  (multiple-value-bind (ctest cstate) (%compile-time-syntax test)
+    `(let ,(remove nil cstate)
+       (lambda ,args 
+         (when ,ctest ,@body)))))
+
+(add-time-syntax and (&rest forms) `(and ,@forms))
+(add-time-syntax or (&rest forms) `(or ,@forms))
+
+(add-time-syntax before (deadline) `(beforep ,deadline))
+(add-time-syntax after (deadline) `(afterp ,deadline))
+(add-time-syntax between (start-time end-time)
+  `(betweenp ,start-time ,end-time))
+
+(add-time-syntax from-now (offset)
+  (let ((offsetv (gensym "offset")))
+    (values offsetv `((,offsetv (from-now ,offset))))))
+
+(add-time-syntax the-next (quantity)
+  (let ((offsetv (gensym "offset")))
+    (values `(beforep ,offsetv) `((,offsetv (from-now ,quantity))))))
+
+(add-time-syntax t-every (timestep)
+  (let ((stepv (gensym "stepper")))
+    (values `(funcall ,stepv) `((,stepv (make-stepper ,timestep))))))
+
+;;----------------------------------------------------------------------
 ;; Time units
 ;;------------
 
@@ -23,15 +76,17 @@
     `(progn
        ,@(loop :for (type expression) :in forms
             :for count = (if (numberp expression) 
-                             expression 
+                             expression
                              (if (and (listp expression)
                                       (= (length expression) 2)
                                       (numberp (second expression))
                                       (assoc (first expression) defined))
-                                 (* (second expression) 
+                                 (* (second expression)
                                     (cdr (assoc (first expression) defined)))
                                  (error "invalid time expression")))
-            :collect `(defun ,type (quantity) (* quantity ,count))
+            :append `((defun ,type (quantity) (floor (* quantity ,count)))
+                      (add-time-syntax ,type (quantity) 
+                        (list ',type quantity)))
             :do (push (cons type count) defined)))))
 
 (def-time-units 
@@ -111,47 +166,6 @@
      :finally (return
                 `(let (,@steppers)
                    (lambda (&optional (time-source ,time-source)) ,@clauses)))))
-
-;;----------------------------------------------------------------------
-
-(defmacro add-time-syntax (name args &body body)
-  `(defun ,(symbolicate-package :time-syntax name) ,args
-     ,@body))
-
-(defun time-syntaxp (name) 
-  (symbol-function (symbolicate-package :time-syntax name)))
-(defun time-syntax-expand (name rest) 
-  (apply (symbol-function (symbolicate-package :time-syntax name)) rest))
-
-(defun %compile-time-syntax (form)
-  (if (atom form) form
-      (let* ((tname (first form))
-             (state nil)
-             (body (loop :for item :in (rest form) :collect
-                      (multiple-value-bind (c s) (%compile-time-syntax item)
-                        (setf state (append s state)) c))))
-        (multiple-value-bind (c s) (time-syntax-expand tname body)
-          (values c (remove nil (append s (reverse state))))))))
-
-(defmacro tlambda (args test &body body)
-  "tlambda is a special case of conditional function, it has one timesource 
-   which it will use with all time predicates. As it has it's own timesource
-   you can use time predicates rather than the closure generating funcs"
-  (multiple-value-bind (ctest cstate) (%compile-time-syntax test)
-    `(let ,(remove nil cstate)
-       (lambda ,args 
-         (when ,ctest ,@body)))))
-
-(add-time-syntax and (&rest forms) `(and ,@forms))
-(add-time-syntax or (&rest forms) `(or ,@forms))
-
-(add-time-syntax before (deadline) `(beforep ,deadline))
-(add-time-syntax after (deadline) `(afterp ,deadline))
-(add-time-syntax between (start-time end-time) 
-  `(betweenp ,start-time ,end-time))
-
-(add-time-syntax from-now (offset)
-  (values 'offset `((offset (from-now ,offset)))))
 
 ;;----------------------------------------------------------------------
 
