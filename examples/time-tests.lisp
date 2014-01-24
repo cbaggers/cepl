@@ -23,3 +23,13 @@
                 (setf args (list (apply f args))))
              (values-list args)))))
 
+
+;; well I had to implment a mini time language as this was the only way to get 
+;; the syntax this needed.
+;; The result will loop until the tlambda has expired
+(let ((f (tlambda () (and (before (from-now (seconds 5))) (each (seconds 0.4)))
+               (print 'weee) (force-output))))
+      (loop :until (expiredp (funcall f))))
+
+(t-manage (tlambda () (and (before (from-now (seconds 5))) (each (seconds 0.4)))
+            (print 'weee) (force-output)))

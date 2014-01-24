@@ -47,8 +47,8 @@
   (multiple-value-bind (ctest cstate expiredp) (%compile-time-syntax test)
     `(let ,(remove nil cstate)
        (lambda ,args 
-         (if ,ctest ,@body
-             (when ,expiredp `(when ,expiredp (signal-expired))))))))
+         (if ,ctest (progn ,@body)
+             ,(when expiredp `(when ,expiredp (signal-expired))))))))
 
 (add-time-syntax and (&rest forms) (values `(and ,@forms) nil 'and))
 (add-time-syntax or (&rest forms) (values `(or ,@forms) nil 'or))
@@ -67,7 +67,7 @@
   (let ((offsetv (gensym "offset")))
     (values `(beforep ,offsetv) `((,offsetv (from-now ,quantity))))))
 
-(add-time-syntax t-every (timestep)
+(add-time-syntax each (timestep)
   (let ((stepv (gensym "stepper")))
     (values `(funcall ,stepv) `((,stepv (make-stepper ,timestep))))))
 
