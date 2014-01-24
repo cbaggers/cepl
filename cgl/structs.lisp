@@ -249,7 +249,7 @@
          ,(when glsl
                 `(v-defstruct ,name ()
                    ,@(loop for slot in slots
-                        :collect `(,(first (print slot)) 
+                        :collect `(,(first slot) 
                                    ,(type->type-spec (second slot))
                                     ,@(when (fourth slot)
                                             `(:accessor ,(fourth slot)))))))

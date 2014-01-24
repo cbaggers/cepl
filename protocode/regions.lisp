@@ -103,5 +103,19 @@
 ;; if a key returns nil then it is impossible to compare, anything else is 
 ;; compared using eq.
 
+;; <been away again>
+;; regions are interesting, I have been thinking about regions and durations.
+;; I think I want to be able to write something like
+;; (taking (seconds 3) (lerp (pos *obj*) dest))
+;; Which is ok but you have different concepts. For example, if it is linear
+;; and the dest isnt moving then we dont need to recompute every cycle.
+;; We then have to come up with the ... memoizing is the technique... but there
+;; needs to be some key to decide when to recompute.
+;; Also a function/macro like 'taking' needs some proper introspection into the 
+;; job it is wrapping so it knows what to do.
+;; Not sure if there is a good way to do that.
+
+;; bah also methods will probably be too slow. I am too tired to argue my brain 
+;; right now, but it keeps raising this so I needed to write it down
 
 

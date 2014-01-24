@@ -28,30 +28,36 @@
 
 (defun %compile-time-syntax (form)
   (if (atom form) form
-      (le* ((tname (first form))
+      (let* ((tname (first form))
              (state nil)
+             (expiredp nil)
              (body (loop :for item :in (rest form) :collect
-                      (multiple-value-bind (c s) (%compile-time-syntax item)
-                        (setf state (append s state)) c))))
-        (multiple-value-bind (c s) (time-syntax-expand tname body)
-          (values c (remove nil (append s (reverse state))))))))
+                      (multiple-value-bind (c s e) (%compile-time-syntax item)
+                        (setf state (append s state))
+                        (when e (push e expiredp))
+                        c))))
+        (multiple-value-bind (c s e) (time-syntax-expand tname body)
+          (values c (remove nil (append s (reverse state)))
+                  (if (and (symbolp e) expiredp) (cons e expiredp) e))))))
 
 (defmacro tlambda (args test &body body)
   "tlambda is a special case of conditional function, it has one timesource 
    which it will use with all time predicates. As it has it's own timesource
    you can use time predicates rather than the closure generating funcs"
-  (multiple-value-bind (ctest cstate) (%compile-time-syntax test)
+  (multiple-value-bind (ctest cstate expiredp) (%compile-time-syntax test)
     `(let ,(remove nil cstate)
        (lambda ,args 
-         (when ,ctest ,@body)))))
+         (if ,ctest ,@body
+             (when ,expiredp `(when ,expiredp (signal-expired))))))))
 
-(add-time-syntax and (&rest forms) `(and ,@forms))
-(add-time-syntax or (&rest forms) `(or ,@forms))
+(add-time-syntax and (&rest forms) (values `(and ,@forms) nil 'and))
+(add-time-syntax or (&rest forms) (values `(or ,@forms) nil 'or))
 
-(add-time-syntax before (deadline) `(beforep ,deadline))
+(add-time-syntax before (deadline) 
+  (values `(beforep ,deadline) nil `(afterp ,deadline)))
 (add-time-syntax after (deadline) `(afterp ,deadline))
 (add-time-syntax between (start-time end-time)
-  `(betweenp ,start-time ,end-time))
+  (values `(betweenp ,start-time ,end-time) nil `(afterp ,end-time)))
 
 (add-time-syntax from-now (offset)
   (let ((offsetv (gensym "offset")))
@@ -94,6 +100,9 @@
   (seconds (milliseconds 1000))
   (minutes (seconds 60))
   (hours (minutes 60)))
+
+(with-slots (x y z) obj
+  (print (+ x y z)))
 
 ;;--------------------------------------------------------------------
 
