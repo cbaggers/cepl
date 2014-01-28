@@ -28,26 +28,29 @@
       (let* ((tname (first form))
              (state nil)
              (expiredp nil)
+             (anaphora nil)
              (body (loop :for item :in (rest form) :collect
-                      (multiple-value-bind (c s e) (%compile-time-syntax item)
+                      (multiple-value-bind (c s e a) (%compile-time-syntax item)
                         (setf state (append s state))
+                        (setf anaphora (append a anaphora))
                         (when e (push e expiredp))
                         c))))
         (multiple-value-bind (c s e a) (time-syntax-expand tname body)
           (values c 
                   (remove nil (append s (reverse state)))
                   (if (and (symbolp e) expiredp) (cons e expiredp) e)
-                  a)))))
+                  (remove nil (append a (reverse anaphora))))))))
 
 (defmacro tlambda (args test &body body)
   "tlambda is a special case of conditional function, it has one timesource 
    which it will use with all time predicates. As it has it's own timesource
    you can use time predicates rather than the closure generating funcs"
-  (multiple-value-bind (ctest cstate expiredp) (%compile-time-syntax test)
+  (multiple-value-bind (ctest cstate expiredp anaphora) (%compile-time-syntax test)
     `(let ,(remove nil cstate)
        (lambda ,args 
-         (if ,ctest (progn ,@body)
-             ,(when expiredp `(when ,expiredp (signal-expired))))))))
+         (let ,(remove nil anaphora)
+           (if ,ctest (progn ,@body)
+               ,(when expiredp `(when ,expiredp (signal-expired)))))))))
 
 (add-time-syntax and (&rest forms) (values `(and ,@forms) nil 'and))
 (add-time-syntax or (&rest forms) (values `(or ,@forms) nil 'or))
@@ -66,9 +69,17 @@
   (let ((offsetv (gensym "offset")))
     (values `(beforep ,offsetv) `((,offsetv (from-now ,quantity))))))
 
-(add-time-syntax each (timestep &key step-val)
+(add-time-syntax each (timestep &key step-var fill-var)
+  (unless (symbolp step-var) (error "step-var in 'each' must be a symbol"))
+  (unless (symbolp fill-var) (error "fill-var in 'each' must be a symbol"))
   (let ((stepv (gensym "stepper")))
-    (values `(funcall ,stepv) `((,stepv (make-stepper ,timestep))))))
+    (values (if fill-var 
+                `(setf ,fill-var (funcall ,stepv))
+                `(funcall ,stepv)) 
+            `((,stepv (make-stepper ,timestep)))
+            nil
+            `(,(when step-var `(,step-var ,timestep))
+               ,(when fill-var `(,fill-var ,stepv))))))
 
 ;;----------------------------------------------------------------------
 ;; Time units
