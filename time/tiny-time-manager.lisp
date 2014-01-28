@@ -8,9 +8,10 @@
           (current (cdr entries)))
       (loop :until (null current) :do
          (if (expiredp (funcall (car current)))
-             (print "removed")
-             (progn (setf (cdr last) current)
-                    (setf last current)))
+             (setf (cdr last) (cdr current)
+                   last current)
+             (setf (cdr last) current
+                   last current))
          (setf current (cdr current)))))
   (defun manage (item) (setf (cdr entries) (list item)))
   (defun releaae (item) (delete item entries))

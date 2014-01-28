@@ -66,8 +66,8 @@
                    (setf ,progress (float (- 1.0 (/ (- ,deadsym ,ctimesym) 
                                                     (- ,deadsym ,stimesym)))))
                    (beforep ,deadsym))
-                `(beforep deadline))
-            `((,stimesym (funcall *default-time-source*)))
+                `(beforep ,deadline))
+            (when progress `((,stimesym (funcall *default-time-source*))))
             `(afterp ,deadline)
             (when progress `((,progress 0.0))))))
 
@@ -182,6 +182,8 @@
   (let ((source source) (start-time start-time) (end-time end-time))
     (lambda () (or (betweenp start-time end-time source)
                    (when (afterp end-time source) (signal-expired))))))
+
+
 ;;--------------------------------------------------------------------
 
 (defun make-stepper (step-size &optional (default-source *default-time-source*))

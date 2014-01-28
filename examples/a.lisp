@@ -55,6 +55,7 @@
                         (m4:scale (scale entity)))))
 
 (defun draw ()
+  (ttm:update)
   (incf *loop* 0.01)
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
@@ -78,6 +79,6 @@
          (:windowevent (:event e :data1 x :data2 y)
                        (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
                          (reshape (v! x y)))))
-       (cepl-utils:update-swank)
+       (update-swank)
        (continuable (draw))))
   (defun stop-demo () (setf running nil)))
