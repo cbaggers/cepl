@@ -43,7 +43,9 @@
 
 (defpackage :base-maths
   (:use :cl)
-  (:export :+float-threshold+
+  (:export :clamp
+           :clampf
+           :+float-threshold+
            :+one-degree-in-radians+
            :+pi+
            :float-zero
@@ -82,6 +84,11 @@
            :untilp
            :afterp))
 (defpackage :time-syntax)
+
+(defpackage :tiny-time-manager
+  (:use :cl :cepl-utils :base-time)
+  (:nicknames :ttm)
+  (:export :update :manage :release :clean))
 
 (defpackage :base-vectors
   (:use :cl)
@@ -227,6 +234,10 @@
            :inverse :q+1 :q+ :q-1 :q- :q* :q*quat
            :dot :rotate :lerp :slerp :approx-slerp
            :to-matrix3 :to-matrix4))
+
+(defpackage :interpolation
+  (:use :cl :base-vectors :base-matrices :base-maths)
+  (:export :lerp-number :lerp3 :nlerp3 :slerp3 ))
 
 (defpackage :declarative-values
   (:use :cl)
@@ -408,6 +419,7 @@
         :base-vectors
         :base-matrices
         :base-maths
+        :interpolation
         :base-time
         :base-macros)
   (:import-from :cepl-gl

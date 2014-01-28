@@ -14,9 +14,6 @@
 
 ;;----------------------------------------------------------------------
 
-;;{TODO} There is no way of signalling expired.
-;;       This needs to be built into the compiler or the syntax definitions
-
 (defmacro add-time-syntax (name args &body body)
   `(defun ,(symbolicate-package :time-syntax name) ,args
      ,@body))
@@ -36,9 +33,11 @@
                         (setf state (append s state))
                         (when e (push e expiredp))
                         c))))
-        (multiple-value-bind (c s e) (time-syntax-expand tname body)
-          (values c (remove nil (append s (reverse state)))
-                  (if (and (symbolp e) expiredp) (cons e expiredp) e))))))
+        (multiple-value-bind (c s e a) (time-syntax-expand tname body)
+          (values c 
+                  (remove nil (append s (reverse state)))
+                  (if (and (symbolp e) expiredp) (cons e expiredp) e)
+                  a)))))
 
 (defmacro tlambda (args test &body body)
   "tlambda is a special case of conditional function, it has one timesource 
@@ -67,7 +66,7 @@
   (let ((offsetv (gensym "offset")))
     (values `(beforep ,offsetv) `((,offsetv (from-now ,quantity))))))
 
-(add-time-syntax each (timestep)
+(add-time-syntax each (timestep &key step-val)
   (let ((stepv (gensym "stepper")))
     (values `(funcall ,stepv) `((,stepv (make-stepper ,timestep))))))
 
@@ -100,9 +99,6 @@
   (seconds (milliseconds 1000))
   (minutes (seconds 60))
   (hours (minutes 60)))
-
-(with-slots (x y z) obj
-  (print (+ x y z)))
 
 ;;--------------------------------------------------------------------
 
@@ -176,23 +172,3 @@
                 `(let (,@steppers)
                    (lambda (&optional (time-source ,time-source)) ,@clauses)))))
 
-;;----------------------------------------------------------------------
-
-;; The crappiest little time-manager example
-
-(let ((entries (list t)))
-  (defun update-time-manager ()
-    (let ((last entries)
-          (current (cdr entries)))
-      (loop :until (null current) :do
-         (if (expiredp (funcall (car current)))
-             (print "removed")
-             (progn (setf (cdr last) current)
-                    (setf last current)))
-         (setf current (cdr current)))))
-  (defun t-manage (item) (setf (cdr entries) (list item)))
-  (defun t-releaae (item) (delete item entries))
-  (defun t-clean () (setf (cdr entries) nil)))
-
-
-;;----------------------------------------------------------------------

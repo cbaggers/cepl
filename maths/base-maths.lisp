@@ -20,8 +20,19 @@
 (defconstant +one-degree-in-radians+ (the single-float (/ (* +pi+ 2.0) 360.0)))
 (defconstant +one-radian-in-degrees+ (the single-float (/ 180.0 +pi+)))
 
-
 ;----------------------------------------------------------------
+
+(defun clamp (min max val)
+  (min (max val min) max))
+
+(declaim (inline clampf)
+	 (ftype (function ((single-float) (single-float) (single-float)) 
+			  (single-float)) 
+		clampf))
+(defun clampf (min max float)
+  (declare (single-float min max float))
+  (the single-float (min (max float min) max)))
+
 (declaim (inline float-zero)
 	 (ftype (function ((single-float)) 
 			  (boolean)) 
