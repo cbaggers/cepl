@@ -33,7 +33,7 @@
       (multiple-value-bind (context window)
           (new-window :width width :height height :title "CEPL REPL")
         (if (and context window (cepl-post-context-initialize))
-            (let ((context (make-instance cgl:gl-context :handle context)))
+            (let ((context (make-instance 'cgl:gl-context :handle context)))
               (setf cgl::*gl-window* window)
               (setf (dval cgl::*gl-context*) context)
               (format t "-----------------~%    CEPL-REPL    ~%-----------------"))
