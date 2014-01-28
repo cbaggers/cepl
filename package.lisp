@@ -82,7 +82,8 @@
            :after
            :between
            :make-stepper
-           :each*))
+           :each*
+           :expiredp))
 (defpackage :time-syntax)
 
 (defpackage :tiny-time-manager

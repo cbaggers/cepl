@@ -55,11 +55,37 @@
 (add-time-syntax and (&rest forms) (values `(and ,@forms) nil 'and))
 (add-time-syntax or (&rest forms) (values `(or ,@forms) nil 'or))
 
-(add-time-syntax before (deadline) 
-  (values `(beforep ,deadline) nil `(afterp ,deadline)))
+(add-time-syntax before (deadline &key progress) 
+  (unless (symbolp progress) (error "'progress' in 'each' must be a symbol"))
+  (let ((deadsym (gensym "deadline"))
+        (ctimesym (gensym "current-time"))
+        (stimesym (gensym "start-time")))
+    (values (if progress
+                `(let ((,deadsym ,deadline)
+                       (,ctimesym (funcall *default-time-source*)))
+                   (setf ,progress (float (- 1.0 (/ (- ,deadsym ,ctimesym) 
+                                                    (- ,deadsym ,stimesym)))))
+                   (beforep ,deadsym))
+                `(beforep deadline))
+            `((,stimesym (funcall *default-time-source*)))
+            `(afterp ,deadline)
+            (when progress `((,progress 0.0))))))
+
 (add-time-syntax after (deadline) `(afterp ,deadline))
-(add-time-syntax between (start-time end-time)
-  (values `(betweenp ,start-time ,end-time) nil `(afterp ,end-time)))
+
+(add-time-syntax between (start-time end-time &key progress)
+  (let ((deadsym (gensym "deadline"))
+        (ctimesym (gensym "current-time")))    
+    (values (if progress
+                `(let ((,deadsym ,end-time)
+                       (,ctimesym (funcall *default-time-source*)))
+                   (setf ,progress (float (- 1.0 (/ (- ,deadsym ,ctimesym)
+                                                    (- ,deadsym ,start-time)))))
+                   (betweenp ,start-time ,end-time))
+                `(betweenp ,start-time ,end-time))
+            nil
+            `(afterp ,end-time)
+            (when progress `((,progress 0.0))))))
 
 (add-time-syntax from-now (offset)
   (let ((offsetv (gensym "offset")))
@@ -140,7 +166,9 @@
 (defun betweenp (start-time end-time
                 &optional (time-source *default-time-source*))
   (let ((current-time (funcall time-source)))
-    (when (and (>=  start-time) (<= current-time end-time)) current-time)))
+    (when (and (>= current-time start-time)
+               (<= current-time end-time)) 
+      current-time)))
 
 (defun before (offset &optional (source *default-time-source*))
   (let ((source source) (offset offset))
