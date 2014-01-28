@@ -69,20 +69,20 @@
 (defpackage :base-time
   (:use :cl :cepl-utils)
   (:nicknames :ct :ctime)
-  (:export :absolute-system-time
-           :make-time-buffer
-           :make-time-cache
-           :make-itime-buffer
-           :make-itime-cache
+  (:export :tlambda
            :make-stepper
-           :on-step-call
-           :withinp
+           :def-time-units
+           :make-time-source
+           :with-time-source
+           :from-now
            :beforep
-           :t<
-           :t>
-           :temporally-expired
-           :untilp
-           :afterp))
+           :afterp
+           :betweenp
+           :before
+           :after
+           :between
+           :make-stepper
+           :each*))
 (defpackage :time-syntax)
 
 (defpackage :tiny-time-manager

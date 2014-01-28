@@ -171,11 +171,8 @@
               (setf time-cache (- time-cache step-size))
               (min 1.0 (/ time-cache step-size))))))))
 
-(defun stepping (timestep &optional (default-source *default-time-source*))
-  (make-stepper timestep default-source))
-
 ;;{TODO} this gets the behaviour right but performance isnt great
-(defmacro t-every* ((&optional (time-source *default-time-source*)) &body forms)
+(defmacro each* ((&optional (time-source *default-time-source*)) &body forms)
   (loop :for (timestep form) :in forms :for name = (gensym "stepper")
      :collect `(,name (make-stepper ,timestep ,time-source)) :into steppers
      :collect `(when (funcall ,name time-source) ,form) :into clauses
