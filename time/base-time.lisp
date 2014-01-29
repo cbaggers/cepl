@@ -52,16 +52,29 @@
            (if ,ctest (progn ,@body)
                ,(when expiredp `(when ,expiredp (signal-expired)))))))))
 
+;; {TODO} Once tlambda* is complete should tlambda be deprecated?
+;;        it is pretty redundant
 (defmacro tlambda* (args &body test-body-pairs)
-  (let ((compiled (loop :for (test . body) :in test-body-pairs :collect
-                     (append (multiple-value-list (%compile-time-syntax test))
-                             body))))
+  (let* ((compiled (loop :for (test . body) :in test-body-pairs :collect
+                      (append (multiple-value-list (%compile-time-syntax test))
+                              body))))
     `(let ,(remove nil (mapcan #'second compiled))
        (lambda ,args 
          ,@(loop :for (ctest cstate expiredp anaphora . body) :in compiled :collect
               `(let ,(remove nil anaphora)
                  (if ,ctest (progn ,@body)
                      ,(when expiredp `(when ,expiredp (signal-expired))))))))))
+
+;; {TODO} Write tloop, which is a loop compatible construct with temporal 
+;;        features, should expand to loop macro
+
+;; only here for style reasons, bad really
+(defmacro then (&body temporal-statements)
+  (declare (ignore temporal-statements))
+  (error "'Then' can only be used inside a tlambda*"))
+(defmacro repeat (&body temporal-statements)
+  (declare (ignore temporal-statements))
+  (error "'Repeat' can only be used inside a tlambda*"))
 
 (add-time-syntax and (&rest forms) (values `(and ,@forms) nil 'and))
 (add-time-syntax or (&rest forms) (values `(or ,@forms) nil 'or))
@@ -181,18 +194,21 @@
                (<= current-time end-time)) 
       current-time)))
 
-(defun before (offset &optional (source *default-time-source*))
-  (let ((source source) (offset offset))
-    (lambda () (or (beforep offset source) (signal-expired)))))
+;; those these could be useful it creates to much confusion with the 
+;; mini language used in tlambda & tlambda*
+;;
+;; (defun before (offset &optional (source *default-time-source*))
+;;   (let ((source source) (offset offset))
+;;     (lambda () (or (beforep offset source) (signal-expired)))))
 
-(defun after (offset &optional (source *default-time-source*))
-  (let ((source source) (offset offset))
-    (lambda () (afterp offset source))))
+;; (defun after (offset &optional (source *default-time-source*))
+;;   (let ((source source) (offset offset))
+;;     (lambda () (afterp offset source))))
 
-(defun between (start-time end-time &optional (source *default-time-source*))
-  (let ((source source) (start-time start-time) (end-time end-time))
-    (lambda () (or (betweenp start-time end-time source)
-                   (when (afterp end-time source) (signal-expired))))))
+;; (defun between (start-time end-time &optional (source *default-time-source*))
+;;   (let ((source source) (start-time start-time) (end-time end-time))
+;;     (lambda () (or (betweenp start-time end-time source)
+;;                    (when (afterp end-time source) (signal-expired))))))
 
 
 ;;--------------------------------------------------------------------
@@ -211,13 +227,3 @@
             (when (> time-cache step-size)
               (setf time-cache (- time-cache step-size))
               (min 1.0 (/ time-cache step-size))))))))
-
-;;{TODO} this gets the behaviour right but performance isnt great
-(defmacro each* ((&optional (time-source *default-time-source*)) &body forms)
-  (loop :for (timestep form) :in forms :for name = (gensym "stepper")
-     :collect `(,name (make-stepper ,timestep ,time-source)) :into steppers
-     :collect `(when (funcall ,name time-source) ,form) :into clauses
-     :finally (return
-                `(let (,@steppers)
-                   (lambda (&optional (time-source ,time-source)) ,@clauses)))))
-
