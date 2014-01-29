@@ -10,7 +10,7 @@
 ;; This area is very prone to change as time is so integral
 ;; to game building.
 
-(in-package :base-time)
+(in-package :conditional-functions)
 
 ;;--------------------------------------------------------------------
 

@@ -11,8 +11,10 @@
 
 (defpipeline gpu-draw ((vert vert-data) &uniform (model-clip :mat4))
   (:vertex (setf gl-position (* model-clip (v! (vert-data-position vert) 1.0)))
-           (out (interp-color :smooth) (vert-data-color vert)))
-  (:fragment (out output-color interp-color))
+           (out (interp-color :smooth) (vert-data-color vert))
+           (out (pos :smooth) (vert-data-position vert)))
+  (:fragment (out output-color (+ (v! 0.2 0.2 0.2 0) (* interp-color (/ (sin (* 10 (x pos)))
+                                                                        1.5)))))
   (:post-compile (reshape *resolution*)))
 
 (defclass entity ()

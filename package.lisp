@@ -422,6 +422,7 @@
         :base-maths
         :interpolation
         :base-time
+        :conditional-functions
         :base-macros)
   (:import-from :cepl-gl
                 :cls
