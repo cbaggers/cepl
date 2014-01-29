@@ -24,7 +24,7 @@
   (apply (symbol-function (symbolicate-package :time-syntax name)) rest))
 
 (defun %compile-time-syntax (form)
-  (if (atom form) form
+  (if (atom form) (values form nil nil nil)
       (let* ((tname (first form))
              (state nil)
              (expiredp nil)
@@ -51,6 +51,17 @@
          (let ,(remove nil anaphora)
            (if ,ctest (progn ,@body)
                ,(when expiredp `(when ,expiredp (signal-expired)))))))))
+
+(defmacro tlambda* (args &body test-body-pairs)
+  (let ((compiled (loop :for (test . body) :in test-body-pairs :collect
+                     (append (multiple-value-list (%compile-time-syntax test))
+                             body))))
+    `(let ,(remove nil (mapcan #'second compiled))
+       (lambda ,args 
+         ,@(loop :for (ctest cstate expiredp anaphora . body) :in compiled :collect
+              `(let ,(remove nil anaphora)
+                 (if ,ctest (progn ,@body)
+                     ,(when expiredp `(when ,expiredp (signal-expired))))))))))
 
 (add-time-syntax and (&rest forms) (values `(and ,@forms) nil 'and))
 (add-time-syntax or (&rest forms) (values `(or ,@forms) nil 'or))

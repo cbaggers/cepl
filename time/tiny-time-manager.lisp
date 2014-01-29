@@ -2,6 +2,8 @@
 
 ;; This is meant as an example rather than for serious use.
 
+;;{TODO} The funcall should catch errors and offer to remove the function
+;;       from the time manager
 (let ((entries (list t)))
   (defun update ()
     (let ((last entries)
