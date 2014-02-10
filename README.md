@@ -1,8 +1,11 @@
 CEPL (Code Evaluate Play Loop) - [PRE-ALPHA]
 ============================================
 
-    NOTE: As of 10/02/2013 I am away for a month and a bit. This porject is not dead and I will in fact I have a lot in     the works for this and Varjo. Hope this find you well. Ciao
-    Baggers
+> NOTE: As of 10/02/2013 I am away for a month and a bit. 
+> This project is not dead and I will in fact I have a 
+> lot in the works for this and Varjo. 
+> Hope this find you well. Ciao
+> Baggers
 
 *"Lisp isn't a language, it's a building material." - Alan Kay*
 
