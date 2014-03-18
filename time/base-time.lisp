@@ -65,6 +65,25 @@
                  (if ,ctest (progn ,@body)
                      ,(when expiredp `(when ,expiredp (signal-expired))))))))))
 
+;; another try at tlambda* logic
+(defun compile-tlambda-root-form (form)
+  (if (atom form)
+      (error "blah")
+      (if (listp (first form))
+          (compile-default-time-form form)
+          (funcall (first form) (rest form)))))
+
+(defun compile-test-body-pairs (test-body-pairs)
+  (let* ((compiled (loop :for (test . body) :in test-body-pairs :collect
+                      (append (multiple-value-list (%compile-time-syntax test))
+                              body))))
+    (list 
+     (remove nil (mapcan #'second compiled))
+     (loop :for (ctest cstate expiredp anaphora . body) :in compiled :collect
+        `(let ,(remove nil anaphora)
+           (if ,ctest (progn ,@body)
+               ,(when expiredp `(when ,expiredp (signal-expired)))))))))
+
 ;; {TODO} Write tloop, which is a loop compatible construct with temporal 
 ;;        features, should expand to loop macro
 

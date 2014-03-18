@@ -66,3 +66,16 @@
 (loop :for i :below 10
    :if (oddp i) :do (format t "~a~%" i)
    :do (format t "anyway ~s~%" i))
+
+
+;; hmm need to knwo format of tlambda*
+(let ((count 0))
+  (tlambda* ()
+    (sequential (t (incf count))
+                (then ((before (from-now (seconds 10))) (print "hi"))
+                      ((each (seconds 1)) (print count) (setf count 0) (force-output))
+                      (repeat ((before (from-now (seconds 20))) (print "hi2"))
+                              ((before (from-now (seconds 30))) (print "hi3")))))))
+
+So if the first of form is a list or t then it is a test-pair-block
+else if it is symbol then it must be handled by that thing...this explanatin is bad 
