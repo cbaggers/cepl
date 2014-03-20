@@ -5,7 +5,7 @@
 ;;;------------;;;
 
 (defstruct (vertex-stream (:constructor make-raw-vertex-stream 
-                                        (&key vao start length draw-type 
+                                        (&key vao start length
                                               index-type managed))) 
   "vertex-streams are the structure we use in cepl to pass 
    information to our programs on what to draw and how to draw 
@@ -21,7 +21,6 @@
   vao
   (start 0 :type unsigned-byte)
   (length 1 :type unsigned-byte)
-  (draw-type :triangles :type symbol)
   (index-type nil)
   (managed nil))
 
@@ -32,7 +31,6 @@
   (setf (vertex-stream-vao vertex-stream) nil)
   (setf (vertex-stream-start vertex-stream) 0)
   (setf (vertex-stream-length vertex-stream) 0)
-  (setf (vertex-stream-draw-type vertex-stream) nil)
   (setf (vertex-stream-index-type vertex-stream) nil)
   (setf (vertex-stream-managed vertex-stream) nil))
 
@@ -41,9 +39,7 @@
     (free-vao (vertex-stream-vao vertex-stream)))
   (blank-vertex-stream vertex-stream))
 
-(defun make-vertex-stream (gpu-arrays &key index-array (start 0)
-                                     length
-                                     (draw-type :triangles))
+(defun make-vertex-stream (gpu-arrays &key index-array (start 0) length)
   "This function simplifies making the vertex-stream if you are 
    storing the data in gpu-arrays.
 
@@ -67,7 +63,6 @@
         (make-raw-vertex-stream :vao (make-vao gpu-arrays index-array)
                                 :start start
                                 :length length
-                                :draw-type draw-type
                                 :index-type (when index-array 
                                               (element-type index-array))
                                 :managed t)
