@@ -21,32 +21,32 @@
 ;; 5. closed-vars - proper let form
 
 
-;; (tlambda+ (x y) (+ x y))
+(tlambda (x y) (+ x y))
 
 ;;{TODO} should "every time" stil print after it expires?
-;; (tlambda+ ()
-;;   ((before (from-now 100)) (print "moo"))
-;;   (print "every time"))
+(tlambda ()
+  ((before (from-now 100)) (print "moo"))
+  (print "every time"))
 
-;; (tlambda+ () 
-;;   ((and (each (seconds 1)) (before (from-now (seconds 4)))) 
-;;    (print "hi")))
+(tlambda () 
+  ((and (each (seconds 1)) (before (from-now (seconds 4)))) 
+   (print "hi")))
 
-;; (tlambda+ ()
-;;   (repeat ((before (from-now 100)) (print "--1"))
-;;           ((before (from-now 200)) (print "--2"))
-;;           ((before (from-now 300)) (print "--3"))
-;;           ((before (from-now 400)) (print "--4"))))
+(tlambda ()
+  (repeat ((before (from-now 100)) (print "--1"))
+          ((before (from-now 200)) (print "--2"))
+          ((before (from-now 300)) (print "--3"))
+          ((before (from-now 400)) (print "--4"))))
 
-;; (tlambda+ ()
-;;   (repeat (then ((before (from-now (seconds 2))) (print "1"))
-;;                 ((before (from-now (seconds 3))) (print "2")))
-;;           ((before (from-now 100)) (print "moo"))
-;;           ((before (from-now 999)) (print "wwwwww"))
-;;           ((before (from-now 200)) (print "woo"))))
+(tlambda ()
+  (repeat (then ((before (from-now (seconds 2))) (print "1"))
+                ((before (from-now (seconds 3))) (print "2")))
+          ((before (from-now 100)) (print "moo"))
+          ((before (from-now 999)) (print "wwwwww"))
+          ((before (from-now 200)) (print "woo"))))
 
-;; (tlambda+ ()
-;;   (repeat (then ((before (from-now (seconds 2))) (print "1")))
-;;           ((before (from-now 100)) (print "moo"))))
+(tlambda ()
+  (repeat (then ((before (from-now (seconds 2))) (print "1")))
+          ((before (from-now 100)) (print "moo"))))
 
 

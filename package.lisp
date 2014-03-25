@@ -64,7 +64,8 @@
   (:nicknames :cfunc)
   (:export :signal-expired
            :with-expired
-           :defcfun))
+           :defcfun
+           :expiredp))
 
 (defpackage :base-time
   (:use :cl :cepl-utils)
@@ -81,9 +82,11 @@
            :before
            :after
            :between
+           :then
+           :repeat
+           :once
            :make-stepper
-           :each*
-           :expiredp))
+           :each*))
 (defpackage :time-syntax)
 
 (defpackage :tiny-time-manager

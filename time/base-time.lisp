@@ -56,6 +56,8 @@
                   (remove nil (append a (reverse anaphora)))
                   (remove nil (append s (reverse state))))))))
 
+;; (body test expired-test inner-let closed-vars)
+
 (defun %process-tprogn-forms (forms)
   (loop :for form :in forms :collect
      (if (atom form) (list form t)
@@ -74,7 +76,7 @@
   (let* ((processed-forms (%process-tprogn-forms forms))
          (expire-forms (remove nil (mapcar #'third processed-forms)))
          (let-forms (remove nil (mapcan #'fourth processed-forms))))
-    (list `(let ,(when let-forms (list let-forms))
+    (list `(let ,(when let-forms let-forms)
              ,@(loop :for (body test expired-test inner-let closed-vars) 
                   :in processed-forms :collect
                   (if (and (eq test t) (null expired-test))
@@ -188,6 +190,15 @@
             (when progress `((,stimesym (funcall *default-time-source*))))
             `(afterp ,deadline)
             (when progress `((,progress 0.0))))))
+
+(add-time-syntax once () 
+  (let ((runsym (gensym "run")))
+    (values `(unless ,runsym (setf ,runsym t))
+            `((,runsym nil)) ;;maybe move to last
+            runsym
+            nil)))
+
+;; (body test expired-test inner-let closed-vars)
 
 (add-time-syntax after (deadline) `(afterp ,deadline))
 
