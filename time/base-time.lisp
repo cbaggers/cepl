@@ -23,47 +23,122 @@
 (defun time-syntax-expand (name rest) 
   (apply (symbol-function (symbolicate-package :time-syntax name)) rest))
 
-(defun %compile-time-syntax (form)
+;;{TODO} I think ther are ways to have conflicting expired, address this
+;;       I was slightly off but had the right idea...only this macro must
+;;       signal expiry, the other must idicate it so they can be nested
+(defmacro tlambda (args &body body)
+  (destructuring-bind (body test expired-test inner-let closed-vars)
+      (tprogn+ body)
+    (declare (ignore test inner-let))
+    `(let (,@closed-vars)
+       (lambda ,args
+         ,(if expired-test              
+              `(if ,expired-test
+                   (cfunc:signal-expired)
+                   ,body)
+              body)))))
+
+(defun %compile-time-syntax+ (form)
   (if (atom form) (values form nil nil nil)
       (let* ((tname (first form))
              (state nil)
              (expiredp nil)
              (anaphora nil)
              (body (loop :for item :in (rest form) :collect
-                      (multiple-value-bind (c s e a) (%compile-time-syntax item)
+                      (multiple-value-bind (c e a s) (%compile-time-syntax+ item)
                         (setf state (append s state))
                         (setf anaphora (append a anaphora))
                         (when e (push e expiredp))
                         c))))
         (multiple-value-bind (c s e a) (time-syntax-expand tname body)
           (values c 
-                  (remove nil (append s (reverse state)))
                   (if (and (symbolp e) expiredp) (cons e expiredp) e)
-                  (remove nil (append a (reverse anaphora))))))))
+                  (remove nil (append a (reverse anaphora)))
+                  (remove nil (append s (reverse state))))))))
 
-(defmacro tlambda (args test &body body)
-  "tlambda is a special case of conditional function, it has one timesource 
-   which it will use with all time predicates. As it has it's own timesource
-   you can use time predicates rather than the closure generating funcs"
-  (multiple-value-bind (ctest cstate expiredp anaphora) (%compile-time-syntax test)
-    `(let ,(remove nil cstate)
-       (lambda ,args 
-         (let ,(remove nil anaphora)
-           (if ,ctest (progn ,@body)
-               ,(when expiredp `(when ,expiredp (signal-expired)))))))))
+(defun %process-tprogn-forms (forms)
+  (loop :for form :in forms :collect
+     (if (atom form) (list form t)
+         (case (first form)
+           (repeat (trepeat+ (rest form)))
+           (then (tthen+ (rest form)))
+           (progn (tprogn+ (rest form)))
+           (otherwise (if (or (atom (first form))
+                              (eq (caar form) 'lambda))
+                          (list form t)
+                          (cons (second form)
+                                (multiple-value-list 
+                                 (%compile-time-syntax+ (first form))))))))))
 
-;; {TODO} Once tlambda* is complete should tlambda be deprecated?
-;;        it is pretty redundant
-(defmacro tlambda* (args &body test-body-pairs)
-  (let* ((compiled (loop :for (test . body) :in test-body-pairs :collect
-                      (append (multiple-value-list (%compile-time-syntax test))
-                              body))))
-    `(let ,(remove nil (mapcan #'second compiled))
-       (lambda ,args 
-         ,@(loop :for (ctest cstate expiredp anaphora . body) :in compiled :collect
-              `(let ,(remove nil anaphora)
-                 (if ,ctest (progn ,@body)
-                     ,(when expiredp `(when ,expiredp (signal-expired))))))))))
+(defun tprogn+ (forms)
+  (let* ((processed-forms (%process-tprogn-forms forms))
+         (expire-forms (remove nil (mapcar #'third processed-forms)))
+         (let-forms (remove nil (mapcan #'fourth processed-forms))))
+    (list `(let ,(when let-forms (list let-forms))
+             ,@(loop :for (body test expired-test inner-let closed-vars) 
+                  :in processed-forms :collect
+                  (if (and (eq test t) (null expired-test))
+                      body
+                      `(when ,test ,body))))
+          t          
+          (when expire-forms `(and ,@expire-forms))
+          nil
+          (remove nil (mapcan #'fifth processed-forms)))))
+
+(defun tthen+ (forms)
+  (let* ((processed-forms (%process-tprogn-forms forms))
+         (counter-sym (gensym "counter"))
+         (%closed-vars (remove nil (mapcan #'fifth (copy-tree processed-forms))))
+         (let-forms (remove nil (mapcar #'fourth processed-forms))))
+    (list `(let ,(when let-forms (list let-forms))
+             (case ,counter-sym
+               ,@(loop :for (body test expired-test inner-let closed-vars)
+                    :in processed-forms
+                    :for index :from 0 :collect
+                    `(,index 
+                      (if ,test 
+                          ,body
+                          ,(when expired-test
+                                 `(when ,expired-test
+                                    (incf ,counter-sym)
+                                    ,@(when (< index (1- (length forms)))
+                                            (loop :for i :in (fifth (nth (+ index 1) processed-forms)) :collect `(setf ,@i)))
+                                    nil)))))))
+          `(< ,counter-sym ,(length forms))
+          `(= ,counter-sym ,(length forms))
+          nil
+          (cons `(,counter-sym 0)
+                (cons (first %closed-vars) 
+                      (mapcar #'listify (rest %closed-vars)))))))
+
+(defun trepeat+ (forms) 
+  (let* ((processed-forms (%process-tprogn-forms forms))
+         (counter-sym (gensym "counter"))
+         (%closed-vars (remove nil (mapcan #'fifth (copy-tree processed-forms))))
+         (let-forms (remove nil (mapcar #'fourth (copy-list processed-forms)))))
+    (list `(let ,(when let-forms (list let-forms))
+             (case ,counter-sym
+               ,@(loop :for (body test expired-test inner-let closed-vars)
+                    :in processed-forms
+                    :for index :from 0 :collect
+                    `(,index 
+                      (if ,test 
+                          ,body
+                          ,(when expired-test
+                                 `(when ,expired-test
+                                    ,@(if (= index (1- (length forms)))
+                                          (cons `(setf ,counter-sym 0)
+                                                (loop :for i :in (fifth (first processed-forms)) :collect `(setf ,@i)))
+                                          (cons `(incf ,counter-sym)
+                                                (loop :for i :in (fifth (nth (+ index 1) processed-forms)) :collect `(setf ,@i))))
+                                    nil)))))))
+          t
+          nil
+          nil
+          (cons `(,counter-sym 0)
+                (cons (first %closed-vars)
+                      (mapcar #'listify (rest %closed-vars)))))))
+
 
 ;; another try at tlambda* logic
 (defun compile-tlambda-root-form (form)
