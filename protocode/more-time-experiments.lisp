@@ -33,6 +33,11 @@
    (print "hi")))
 
 (tlambda ()
+  (then ((before (from-now 100)) (print "--1"))
+        ((before (from-now 200)) (print "--2"))
+        ((before (from-now 300)) (print "--3"))))
+
+(tlambda ()
   (repeat ((before (from-now 100)) (print "--1"))
           ((before (from-now 200)) (print "--2"))
           ((before (from-now 300)) (print "--3"))
