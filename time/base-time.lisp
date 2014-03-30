@@ -12,11 +12,52 @@
 
 (in-package base-time)
 
-;;----------------------------------------------------------------------
+(defclass tcompile-obj ()
+  ((code :initarg :code)
+   (run-test :initarg :run-test)
+   (expired-test :initarg :expired-test)
+   (local-vars :initarg :local-vars)
+   (closed-vars :initarg :closed-vars)
+   (override :initarg :override)))
 
-(defmacro add-time-predicate (name args &body body)
-  `(defun ,(symbolicate-package :time-syntax name) ,args
-     ,@body))
+(defmethod merge-tcompile-obj ((a tcompile-obj) (b tcompile-obj))
+  (with-slots ((code-a code) (run-test-a run-test) 
+                (expired-test-a expired-test) (local-vars-a local-vars)
+                (closed-vars-a closed-vars) (override-a override)) a
+    (with-slots ((code-b code) (run-test-b run-test) 
+                (expired-test-b expired-test) (local-vars-b local-vars)
+                (closed-vars-b closed-vars) (override-b override)) b
+      (make-instance 
+       'tcompile-obj
+       :code (append (copy-tree code-a) (copy-tree code-b))
+       :run-test `(and ,(copy-tree run-test-a) ,(copy-tree run-test-b))
+       :expired-test `(and ,(copy-tree expired-test-a) ,(copy-tree expired-test-b))
+       :local-vars (append (copy-tree local-vars-a) (copy-tree local-vars-b))
+       :closed-vars (append (copy-tree closed-vars-a) (copy-tree closed-vars-b))
+       :override (append (copy-tree override-a) (copy-tree override-b))))))
+
+(defmacro add-time-syntax (name args has-time-override &body body)
+  (when has-time-override
+    (when (member "&OPTIONAL" args :key #'symbol-name :test #'equal)
+      (error "&optional is not allowed in time predicates"))
+    (unless (and (member "OVERRIDE" args :key #'symbol-name :test #'equal)
+                 (> (or (position "OVERRIDE" args :key #'symbol-name :test #'equal) 0)
+                    (or (position "&KEY" args :key #'symbol-name :test #'equal) 
+                        (1+ (length args)))))
+      (error "Predicates must have a &key argument called 'override'")))
+  (let ((args (if has-time-override
+                  (subst 'override "OVERRIDE" args 
+                         :key #'(lambda (x) (when (symbolp x) (symbol-name x)))
+                         :test #'equal)
+                  args))
+        (body (if has-time-override
+                  (subst 'override "OVERRIDE" body
+                         :key #'(lambda (x) (when (symbolp x) (symbol-name x)))
+                         :test #'equal)
+                  body)))
+    `(defun ,(symbolicate-package :time-syntax name) ,args
+       (append (progn ,@body)
+               (list ,has-time-override)))))
 
 (defun time-syntaxp (name) 
   (symbol-function (symbolicate-package :time-syntax name)))
@@ -26,9 +67,9 @@
 ;;{TODO} I think ther are ways to have conflicting expired, address this
 ;;       I was slightly off but had the right idea...only this macro must
 ;;       signal expiry, the other must idicate it so they can be nested
-(defmacro tlambda (args &body body)
-  (destructuring-bind (body test expired-test inner-let closed-vars)
-      (tprogn+ body)
+(defmacro tlambda (args &body body)                               
+  (destructuring-bind (&optional body test expired-test inner-let closed-vars)
+      (tprogn body)
     (declare (ignore test inner-let))
     `(let (,@closed-vars)
        (lambda ,args
@@ -38,39 +79,38 @@
                    ,body)
               body)))))
 
-(defun %compile-time-syntax+ (form)
-  (if (atom form) (values form nil nil nil)
+(defun %compile-time-syntax (form)
+  (if (atom form) (list form nil nil nil)
       (let* ((tname (first form))
-             (state nil)
-             (expiredp nil)
-             (anaphora nil)
+             (closed-arg-vars nil)
+             (arg-expire-tests nil)
+             (local-arg-vars nil)
              (body (loop :for item :in (rest form) :collect
-                      (multiple-value-bind (c e a s) (%compile-time-syntax+ item)
-                        (setf state (append s state))
-                        (setf anaphora (append a anaphora))
-                        (when e (push e expiredp))
-                        c))))
-        (multiple-value-bind (c s e a) (time-syntax-expand tname body)
-          (values c 
-                  (if (and (symbolp e) expiredp) (cons e expiredp) e)
-                  (remove nil (append a (reverse anaphora)))
-                  (remove nil (append s (reverse state))))))))
+                      (destructuring-bind (&optional code expired-test
+                                                     local-vars closed-vars
+                                                     override)
+                          (%compile-time-syntax item)
+                        (declare (ignore override))
+                        (setf closed-arg-vars (append closed-vars closed-arg-vars))
+                        (setf local-arg-vars (append local-vars local-arg-vars))
+                        (when expired-test (push expired-test arg-expire-tests))
+                        code
+                        ))));;{TODO} handle override here
+        (destructuring-bind (&optional code expired-test local-vars closed-vars
+                                       override) 
+            (time-syntax-expand tname body)
+          (list code
+                ;;{TODO} what if not symb and arg-expire-tests?
+                (if (and (symbolp expired-test) arg-expire-tests) 
+                    (cons expired-test arg-expire-tests) 
+                    expired-test)
+                (remove nil (append local-vars (reverse arg-expire-tests)))
+                (remove nil (append closed-vars (reverse closed-arg-vars)))
+                override)))))
 
-(defun %process-tprogn-forms (forms)
-  (loop :for form :in forms :collect
-     (if (atom form) (list form t)
-         (case (first form)
-           (repeat (trepeat+ (rest form)))
-           (then (tthen+ (rest form)))
-           (progn (tprogn+ (rest form)))
-           (otherwise (if (or (atom (first form))
-                              (eq (caar form) 'lambda))
-                          (list form t)
-                          (cons (second form)
-                                (multiple-value-list 
-                                 (%compile-time-syntax+ (first form))))))))))
+(tlambda () ((before 100) (print "hi")))
 
-(defun tprogn+ (forms)
+(defun tprogn (forms)
   (let* ((processed-forms (%process-tprogn-forms forms))
          (expire-forms (remove nil (mapcar #'third processed-forms)))
          (let-forms (remove nil (mapcan #'fourth processed-forms))))
@@ -85,53 +125,70 @@
           nil
           (remove nil (mapcan #'fifth processed-forms)))))
 
+(defun %process-tprogn-forms (forms)
+  (loop :for form :in forms :collect
+     (if (atom form) (list form t)
+         (case (first form)
+           (repeat (trepeat (rest form)))
+           (then (tthen (rest form)))
+           (progn (tprogn (rest form)))
+           (otherwise (if (or (atom (first form))
+                              (eq (caar form) 'lambda))
+                          (list form t)
+                          (cons (second form)
+                                (%compile-time-syntax (first form)))))))))
+
+(defun tthen (forms)
+  (unless (null forms)
+    (let* ((processed-forms (%process-tprogn-forms forms))
+           (counter-sym (gensym "counter"))
+           (%closed-vars (remove nil (mapcan #'fifth (copy-tree processed-forms))))
+           (let-forms (remove nil (mapcar #'fourth processed-forms)))
+           (chain-forms 
+            (loop :for (body test expired-test inner-let closed-vars overridep)
+               :in processed-forms :for index :from 0
+               :do (print index)
+               :collect 
+               (list expired-test
+                     test
+                     body
+                     ;;when (< index (1- (length forms))) {TODO} why?
+                     (cons `(incf ,counter-sym)
+                           (loop :for i :in (fifth (nth (+ index 1) processed-forms))
+                              :collect `(setf ,(first i) (second i)
+                                              ,@(when overridep 
+                                                      `((:override ,expired-test))))))))))
+      (list `(let ,(when let-forms (list let-forms))
+               ,(t-chain-expand counter-sym (print chain-forms)))
+            `(< ,counter-sym ,(length forms))
+            `(= ,counter-sym ,(length forms))
+            nil
+            (cons `(,counter-sym 0)
+                  (cons (first %closed-vars) 
+                        (mapcar #'listify (rest %closed-vars))))))))
+
 (defun t-chain-expand (counter forms)
   (loop :for (expire-test run-test code initialize-next) :in (reverse forms)
      :for i :from (1- (length forms)) :downto 0 :with accum = nil :do
      (setf accum `(if ,expire-test
-                      (progn
-                        (when (= ,counter ,i)
-                          ,@(print initialize-next))
-                        ,accum)
-                      (when ,run-test
-                        ,code)))
+                      (progn (when (= ,counter ,i) ,@initialize-next) ,accum)
+                      (when ,run-test ,code)))
      :finally (return accum)))
 
-(defun tthen+ (forms)
+(defun trepeat (forms) 
   (let* ((processed-forms (%process-tprogn-forms forms))
          (counter-sym (gensym "counter"))
          (%closed-vars (remove nil (mapcan #'fifth (copy-tree processed-forms))))
-         (let-forms (remove nil (mapcar #'fourth processed-forms)))
-         (chain-forms 
-          (loop :for (body test expired-test inner-let closed-vars)
-             :in processed-forms :for index :from 0 :collect 
-             (list expired-test test body
-                   (when (< index (1- (length forms)))
-                     (loop :for i :in (fifth (nth (+ index 1) processed-forms)) 
-                        :append `((incf ,counter-sym) (setf ,@i))))))))
-    (list `(let ,(when let-forms (list let-forms))
-             ,(t-chain-expand counter-sym chain-forms))
-          `(< ,counter-sym ,(length forms))
-          `(= ,counter-sym ,(length forms))
-          nil
-          (cons `(,counter-sym 0)
-                (cons (first %closed-vars) 
-                      (mapcar #'listify (rest %closed-vars)))))))
-
-(defun trepeat+ (forms) 
-  (let* ((processed-forms (%process-tprogn-forms forms))
-         (counter-sym (gensym "counter"))
-         (%closed-vars (remove nil (mapcan #'fifth (copy-tree processed-forms))))
-         (let-forms (remove nil (mapcar #'fourth (copy-list processed-forms))))
+         (let-forms (remove nil (mapcar #'third (copy-list processed-forms))))
          (chain-forms 
           (loop :for (body test expired-test) :in processed-forms
              :for index :from 0 :collect 
              (list expired-test test body
                    (if (= index (1- (length forms)))
-                                          (cons `(setf ,counter-sym 0)
-                                                (loop :for i :in (fifth (first processed-forms)) :collect `(setf ,@i)))
-                                          (cons `(incf ,counter-sym)
-                                                (loop :for i :in (fifth (nth (+ index 1) processed-forms)) :collect `(setf ,@i))))))))
+                       (cons `(setf ,counter-sym 0)
+                             (loop :for i :in (fifth (first processed-forms)) :collect `(setf ,@i)))
+                       (cons `(incf ,counter-sym)
+                             (loop :for i :in (fifth (nth (+ index 1) processed-forms)) :collect `(setf ,@i))))))))
     (list `(let ,(when let-forms (list let-forms))
              ,(t-chain-expand counter-sym chain-forms))
           t
@@ -148,67 +205,67 @@
   (declare (ignore temporal-statements))
   (error "'Repeat' can only be used inside a tlambda*"))
 
-(add-time-predicate and (&rest forms) (values `(and ,@forms) nil 'and))
-(add-time-predicate or (&rest forms) (values `(or ,@forms) nil 'or))
+(add-time-syntax and (&rest forms) nil (list `(and ,@forms) 'and))
+(add-time-syntax or (&rest forms) nil (list `(or ,@forms) 'or))
 
-(add-time-predicate once () 
-  (let ((runsym (gensym "run")))
-    (values `(unless ,runsym (setf ,runsym t))
-            `((,runsym nil)) ;;maybe move to last
-            runsym
-            nil)))
+(add-time-syntax once () nil
+  (let ((runsym (gensym "run")))    
+    (list `(unless ,runsym (setf ,runsym t))
+          runsym
+          nil
+          `((,runsym nil)))))
 
-(add-time-predicate before (deadline &key progress) 
+(add-time-syntax before (deadline &key progress override) t
   (unless (symbolp progress) (error "'progress' in 'each' must be a symbol"))
   (let ((deadsym (gensym "deadline"))
         (ctimesym (gensym "current-time"))
         (stimesym (gensym "start-time")))
-    (values (if progress
-                `(let ((,deadsym ,deadline)
-                       (,ctimesym (funcall *default-time-source*)))
-                   (setf ,progress (float (- 1.0 (/ (- ,deadsym ,ctimesym) 
-                                                    (- ,deadsym ,stimesym)))))
-                   (beforep ,deadsym))
-                `(beforep ,deadline))
-            (when progress `((,stimesym (funcall *default-time-source*))))
-            `(afterp ,deadline)
-            (when progress `((,progress 0.0))))))
+    (list
+     (if progress
+              `(let ((,deadsym ,deadline)
+                     (,ctimesym (funcall *default-time-source*)))
+                 (setf ,progress (float (- 1.0 (/ (- ,deadsym ,ctimesym) 
+                                                  (- ,deadsym ,stimesym)))))
+                 (beforep ,deadsym))
+              `(beforep ,deadline))
+     `(afterp ,deadline)
+     (when progress `((,progress 0.0)))
+     (when progress `((,stimesym (funcall *default-time-source*)))))))
 
-(add-time-predicate after (deadline) `(afterp ,deadline))
+(add-time-syntax after (deadline &key override) t `(afterp ,deadline))
 
-(add-time-predicate between (start-time end-time &key progress)
+(add-time-syntax between (start-time end-time &key progress override) t
   (let ((deadsym (gensym "deadline"))
         (ctimesym (gensym "current-time")))    
-    (values (if progress
-                `(let ((,deadsym ,end-time)
-                       (,ctimesym (funcall *default-time-source*)))
-                   (setf ,progress (float (- 1.0 (/ (- ,deadsym ,ctimesym)
-                                                    (- ,deadsym ,start-time)))))
-                   (betweenp ,start-time ,end-time))
-                `(betweenp ,start-time ,end-time))
-            nil
-            `(afterp ,end-time)
-            (when progress `((,progress 0.0))))))
+    (list (if progress
+              `(let ((,deadsym ,end-time)
+                     (,ctimesym (funcall *default-time-source*)))
+                 (setf ,progress (float (- 1.0 (/ (- ,deadsym ,ctimesym)
+                                                  (- ,deadsym ,start-time)))))
+                 (betweenp ,start-time ,end-time))
+              `(betweenp ,start-time ,end-time))
+          `(afterp ,end-time)
+          (when progress `((,progress 0.0))))))
 
-(add-time-predicate from-now (offset)
+(add-time-syntax from-now (offset) nil
   (let ((offsetv (gensym "offset")))
-    (values offsetv `((,offsetv (from-now ,offset))))))
+    (list offsetv nil `((,offsetv (from-now ,offset))))))
 
-(add-time-predicate the-next (quantity)
-  (let ((offsetv (gensym "offset")))
-    (values `(beforep ,offsetv) `((,offsetv (from-now ,quantity))))))
+;; (add-time-syntax the-next (quantity &key override) nil
+;;   (let ((offsetv (gensym "offset")))
+;;     (list `(beforep ,offsetv) `((,offsetv (from-now ,quantity))))))
 
-(add-time-predicate each (timestep &key step-var fill-var)
+(add-time-syntax each (timestep &key step-var fill-var) nil
   (unless (symbolp step-var) (error "step-var in 'each' must be a symbol"))
   (unless (symbolp fill-var) (error "fill-var in 'each' must be a symbol"))
   (let ((stepv (gensym "stepper")))
-    (values (if fill-var 
-                `(setf ,fill-var (funcall ,stepv))
-                `(funcall ,stepv)) 
-            `((,stepv (make-stepper ,timestep)))
-            nil
-            `(,(when step-var `(,step-var ,timestep))
-               ,(when fill-var `(,fill-var ,stepv))))))
+    (list (if fill-var 
+              `(setf ,fill-var (funcall ,stepv))
+              `(funcall ,stepv))
+          nil
+          `(,(when step-var `(,step-var ,timestep))
+             ,(when fill-var `(,fill-var ,stepv)))
+          `((,stepv (make-stepper ,timestep))))))
 
 ;;----------------------------------------------------------------------
 ;; Time units
@@ -230,7 +287,7 @@
                                     (cdr (assoc (first expression) defined)))
                                  (error "invalid time expression")))
             :append `((defun ,type (quantity) (floor (* quantity ,count)))
-                      (add-time-predicate ,type (quantity) 
+                      (add-time-syntax ,type (quantity) nil ;; {TODO} what is this for?
                         (list ',type quantity)))
             :do (push (cons type count) defined)))))
 
@@ -246,8 +303,8 @@
 
 (defun make-time-source (&key (parent *default-time-source*) (transform nil))
   (if transform
-      (lambda () (declare (ignore x)) (funcall transform (funcall parent)))
-      (lambda () (declare (ignore x)) (funcall parent))))
+      (lambda () (funcall transform (funcall parent)))
+      (lambda () (funcall parent))))
 
 (defmacro with-time-source (time-source &body body)
   `(let ((*default-time-source* ,time-source))
@@ -262,18 +319,18 @@
 
 (defun beforep (time &optional (time-source *default-time-source*))
   (let ((current-time (funcall time-source)))
-    (when (< current-time time) current-time)))
+    (when (< current-time time) time)))
 
 (defun afterp (time &optional (time-source *default-time-source*))
   (let ((current-time (funcall time-source)))
     (when (> current-time time) current-time)))
 
 (defun betweenp (start-time end-time
-                &optional (time-source *default-time-source*))
+                 &optional (time-source *default-time-source*))
   (let ((current-time (funcall time-source)))
     (when (and (>= current-time start-time)
                (<= current-time end-time)) 
-      current-time)))
+      end-time)))
 
 ;;--------------------------------------------------------------------
 
