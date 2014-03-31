@@ -67,8 +67,20 @@
            :defcfun
            :expiredp))
 
-(defpackage :base-time
+(defpackage :base-time-backend
   (:use :cl :cepl-utils)
+  (:export :tcompile-obj
+           :with-t-obj
+           :merge-tcompile-obj
+           :add-time-syntax
+           :t-code
+           :t-run-test
+           :t-expired-test
+           :t-local-vars
+           :t-closed-vars
+           :t-override))
+(defpackage :base-time
+  (:use :cl :cepl-utils :base-time-backend)
   (:nicknames :ct :ctime)
   (:export :tlambda
            :make-stepper
