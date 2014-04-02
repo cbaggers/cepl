@@ -30,15 +30,7 @@
        :closed-vars (append (copy-tree closed-vars-a) (copy-tree closed-vars-b))
        :override (append (copy-tree override-a) (copy-tree override-b))))))
 
-(defmacro def-time-condition (name args has-time-override &body body)
-  (when has-time-override
-    (when (member "&OPTIONAL" args :key #'symbol-name :test #'equal)
-      (error "&optional is not allowed in time predicates"))
-    (unless (and (member "OVERRIDE" args :key #'symbol-name :test #'equal)
-                 (> (or (position "OVERRIDE" args :key #'symbol-name :test #'equal) 0)
-                    (or (position "&KEY" args :key #'symbol-name :test #'equal)
-                        (1+ (length args)))))
-      (error "Predicates must have a &key argument called 'override'")))
+(defmacro def-time-condition (name args has-time-override &body body)  
   (let ((args (if has-time-override
                   (subst 'override "OVERRIDE" args
                          :key #'(lambda (x) (when (symbolp x) (symbol-name x)))

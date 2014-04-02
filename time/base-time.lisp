@@ -50,7 +50,7 @@
                            (cfunc:signal-expired)
                            ,code)
                       code)))
-      `(let (,@closed-vars)
+      `(let (,@(loop :for (a b) :in closed-vars collect (list a b)))
          (lambda ,args
            (block tlambda-implicit-block
              (tagbody tlambda-start
@@ -157,7 +157,7 @@
                            (if (= index (1- (length forms)))
                                `((setf ,counter-sym 0)                                 
                                  ,@(loop :for i :in (t-closed-vars (first processed-forms))
-                                      :if override
+                                      :if (and override (third i))
                                       :collect `(setf ,(first i) (- ,(second i) (- (funcall *default-time-source*) ,expired-test)))
                                       :else 
                                       :collect `(setf ,(first i) ,(second i)))
@@ -165,7 +165,7 @@
                                (cons `(incf ,counter-sym)
                                      (loop :for i :in (t-closed-vars 
                                                        (nth (+ index 1) processed-forms))
-                                        :if override
+                                        :if (and override (third i))
                                         :collect `(setf ,(first i) (- ,(second i) (- (funcall *default-time-source*) ,expired-test)))
                                         :else 
                                         :collect `(setf ,(first i) ,(second i))))))
@@ -176,7 +176,7 @@
                                (cons `(incf ,counter-sym)
                                      (loop :for i :in (t-closed-vars
                                                        (nth (+ index 1) processed-forms))
-                                        :if override
+                                        :if (and override (third i))
                                         :collect `(setf ,(first i) (- ,(second i) (- (funcall *default-time-source*) ,expired-test)))
                                         :else 
                                         :collect `(setf ,(first i) ,(second i)))))))))))
@@ -204,9 +204,14 @@
           nil
           `((,runsym nil)))))
 
-(def-time-condition after (deadline &key override) t `(afterp ,deadline))
+(def-time-condition after (deadline) t
+  (let ((deadsym (gensym "deadline")))
+    (list `(afterp ,deadsym)
+          nil
+          nil
+          `((,deadsym ,deadline t)))))
 
-(def-time-condition before (deadline &key progress override) t
+(def-time-condition before (deadline &key progress) t
   (unless (symbolp progress) (error "'progress' in 'each' must be a symbol"))
   (let* ((deadsym (gensym "deadline"))
          (ctimesym (gensym "current-time"))
@@ -221,20 +226,20 @@
      `(afterp ,deadsym)
      (when progress `((,progress 0.0)))
      `(,@(when progress `((,stimesym (funcall *default-time-source*))))
-         ,@`((,deadsym ,deadline))))))
+         ,@`((,deadsym ,deadline t))))))
 
-(def-time-condition between (start-time end-time &key progress override) t
+(def-time-condition between (start-time end-time &key progress) t
   (let ((deadsym (gensym "deadline"))
         (ctimesym (gensym "current-time")))
     (list (if progress
-              `(let ((,deadsym ,end-time)
-                     (,ctimesym (funcall *default-time-source*)))
+              `(let ((,ctimesym (funcall *default-time-source*)))
                  (setf ,progress (float (- 1.0 (/ (- ,deadsym ,ctimesym)
                                                   (- ,deadsym ,start-time)))))
                  (betweenp ,start-time ,end-time))
               `(betweenp ,start-time ,end-time))
           `(afterp ,end-time)
-          (when progress `((,progress 0.0))))))
+          (when progress `((,progress 0.0)))
+          `((,deadsym ,end-time t)))))
 
 (def-time-condition each (timestep &key step-var fill-var) nil
   (unless (symbolp step-var) (error "step-var in 'each' must be a symbol"))
