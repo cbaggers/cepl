@@ -30,7 +30,7 @@
        :closed-vars (append (copy-tree closed-vars-a) (copy-tree closed-vars-b))
        :override (append (copy-tree override-a) (copy-tree override-b))))))
 
-(defmacro add-time-syntax (name args has-time-override &body body)
+(defmacro def-time-condition (name args has-time-override &body body)
   (when has-time-override
     (when (member "&OPTIONAL" args :key #'symbol-name :test #'equal)
       (error "&optional is not allowed in time predicates"))

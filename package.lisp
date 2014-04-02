@@ -73,6 +73,7 @@
            :with-t-obj
            :merge-tcompile-obj
            :add-time-syntax
+           :def-time-condition
            :t-code
            :t-run-test
            :t-expired-test
