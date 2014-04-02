@@ -46,6 +46,6 @@
          (:windowevent (:event e :data1 x :data2 y)
                        (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
                          (format t "window size is now: ~s*~s\n" x y))))
-       (cepl-utils:update-swank)
+       (update-swank)
        (continuable (draw *vertex-stream*))))
   (defun stop-demo () (setf running nil)))
