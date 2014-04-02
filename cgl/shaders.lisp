@@ -1,5 +1,7 @@
 (in-package :cgl)
 
+;;{TODO} Almost everything in here could really benefit from being optimized
+
 (defparameter *gl-context* (dvals:make-dval))
 (defparameter *gl-window* nil)
 (defparameter *stage-names* '((:vertex . :vertex-shader)
@@ -77,7 +79,9 @@
          :finally (return (list main post)))
     (let* ((init-func-name (symbolicate-package :cgl '%%- name))
            (invalidate-func-name (symbolicate-package :cgl '££- name))
-           (uniforms (second (varjo:split-arguments args)))
+           (split-args (varjo:split-arguments args))
+           (prim-type (varjo::get-primitive-type-from-context (third split-args)))
+           (uniforms (second split-args))
            (uniform-names (mapcar #'first uniforms))
            (uniform-details (loop :for u :in uniforms :collect 
                                (make-arg-assigners u)))
@@ -116,7 +120,7 @@
            (unless program-id (setf program-id (,init-func-name)))
            (use-program program-id)
            ,@u-uploads
-           (when stream (no-bind-draw-one stream))
+           (when stream (no-bind-draw-one stream ,prim-type))
            (use-program 0)
            stream)))))
 
@@ -320,7 +324,7 @@
     program))
 
 ;; [TODO] Need to sort gpustream indicies thing
-(defun no-bind-draw-one (stream)
+(defun no-bind-draw-one (stream draw-type)
   "This draws the single stream provided using the currently 
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which
@@ -328,11 +332,11 @@
   (let ((index-type (vertex-stream-index-type stream)))
     (bind-vao (vertex-stream-vao stream))
     (if index-type
-        (%gl:draw-elements (vertex-stream-draw-type stream)
+        (%gl:draw-elements draw-type
                            (vertex-stream-length stream)
                            (gl::cffi-type-to-gl index-type)
                            (make-pointer 0))
-        (%gl:draw-arrays (vertex-stream-draw-type stream)
+        (%gl:draw-arrays draw-type
                          (vertex-stream-start stream)
                          (vertex-stream-length stream)))))
 

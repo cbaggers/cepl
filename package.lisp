@@ -64,10 +64,24 @@
   (:nicknames :cfunc)
   (:export :signal-expired
            :with-expired
-           :defcfun))
+           :defcfun
+           :expiredp))
 
-(defpackage :base-time
+(defpackage :base-time-backend
   (:use :cl :cepl-utils)
+  (:export :tcompile-obj
+           :with-t-obj
+           :merge-tcompile-obj
+           :add-time-syntax
+           :def-time-condition
+           :t-code
+           :t-run-test
+           :t-expired-test
+           :t-local-vars
+           :t-closed-vars
+           :t-override))
+(defpackage :base-time
+  (:use :cl :cepl-utils :base-time-backend)
   (:nicknames :ct :ctime)
   (:export :tlambda
            :make-stepper
@@ -81,9 +95,11 @@
            :before
            :after
            :between
+           :then
+           :repeat
+           :once
            :make-stepper
-           :each*
-           :expiredp))
+           :each*))
 (defpackage :time-syntax)
 
 (defpackage :tiny-time-manager
