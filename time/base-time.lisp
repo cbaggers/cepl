@@ -161,7 +161,7 @@
                                       :collect `(setf ,(first i) (- ,(second i) (- (funcall *default-time-source*) ,expired-test)))
                                       :else 
                                       :collect `(setf ,(first i) ,(second i)))
-                                 ,(when repeat '(progn (print "weee") (go tlambda-start))))
+                                 ,(when repeat '(go tlambda-start)))
                                (cons `(incf ,counter-sym)
                                      (loop :for i :in (t-closed-vars 
                                                        (nth (+ index 1) processed-forms))
