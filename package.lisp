@@ -99,7 +99,11 @@
            :repeat
            :once
            :make-stepper
-           :each*))
+           :each*
+           :milliseconds
+           :seconds
+           :minutes
+           :hours))
 (defpackage :time-syntax)
 
 (defpackage :tiny-time-manager

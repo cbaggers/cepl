@@ -23,6 +23,7 @@
 (defun draw (gstream)
   (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit)  
+  (ttm:update)
   (loop :for i :below 25 :do
      (let ((i (/ i 2.0)))
        (prog-1 gstream :i i :loop *loop* :offset (v! 0 0 0 0))))
