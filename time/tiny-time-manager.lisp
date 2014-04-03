@@ -3,19 +3,23 @@
 ;; This is meant as an example rather than for serious use.
 
 ;;{TODO} The funcall should catch errors and offer to remove the function
-;;       from the time manager
+;; from the time manager
 (let ((entries (list t)))
+  (defun expose () entries)
   (defun update ()
     (let ((last entries)
           (current (cdr entries)))
       (loop :until (null current) :do
-         (if (conditional-functions::expiredp (funcall (car current)))
+         (if (restart-case (conditional-functions::expiredp
+                            (funcall (car current)))
+               (remove-managed-tfunction () t))
              (setf (cdr last) (cdr current)
                    last current)
              (setf (cdr last) current
                    last current))
-         (setf current (cdr current)))))
+         (setf current (cdr current)))
+      t)
+    t)
   (defun manage (item) (setf entries (append entries (list item))))
   (defun release (item) (delete item entries))
-  (defun clean () (setf (cdr entries) (list t))))
-
+  (defun clean () (setf entries (list t))))
