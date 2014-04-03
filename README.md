@@ -1,13 +1,6 @@
 CEPL (Code Evaluate Play Loop) - [PRE-ALPHA]
 ============================================
 
-> NOTE: As of 10/02/2013 I am away for a month and a bit. 
-> This project is not dead and I will in fact I have a 
-> lot in the works for this and Varjo. 
-> Hope this find you well. Ciao
->
-> Baggers
-
 *"Lisp isn't a language, it's a building material." - Alan Kay*
 
 The goal of CEPL is to provide building materials for realtime graphics demos and games.
@@ -30,7 +23,7 @@ Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 **Requirements**
 
 * cl-opengl
-* lispbuilder-mini *(or lispbuilder <see end for note>)*
+* cl-sdl2
 * varjo *used to transalate common-lisp into glsl*
 * cl-utilities
 * cl-ppcre
@@ -39,12 +32,6 @@ Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 If you are using quicklisp then drop this in your local-projects directory and run the following in your repl:
     (ql:quickload :cepl)
     (cepl:repl)
-
-*Note regarding lispbuilder*
-Lispbuilder is awesome but compatibilty is not complete yet as 
-lispbuilder-mini is changing so fast. As soon as possible though
-I will make sure that you can just uncomment a couple of lines
-in the package.lisp file and be under way using lispbuilder.
 
 **Driving Ideas**
 (making (making a game) a game)
