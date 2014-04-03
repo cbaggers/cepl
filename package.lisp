@@ -109,7 +109,7 @@
 (defpackage :tiny-time-manager
   (:use :cl :cepl-utils :base-time)
   (:nicknames :ttm)
-  (:export :update :manage :release :clean))
+  (:export :update :add :release :clean))
 
 (defpackage :base-vectors
   (:use :cl)
