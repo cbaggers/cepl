@@ -19,7 +19,6 @@
                    last current))
          (setf current (cdr current)))
       t)
-    t)
   (defun manage (item) (setf entries (append entries (list item))))
   (defun release (item) (delete item entries))
   (defun clean () (setf entries (list t))))
