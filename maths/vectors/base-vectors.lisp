@@ -35,21 +35,29 @@
 
 ;----------------------------------------------------------------
 
-;; These have been defined as macros as it want to guarantee they
-;; are 'inlined' [TODO] This is a crap idea, trust the compiler 
-;;                      and inline them properly. 
-(defmacro v-x (vec)
+;; {TODO} inline these
+(defun v-x (vec)
   "Returns the x component of the vector"
-  `(aref ,vec 0))
-
-(defmacro v-y (vec)
+  (aref vec 0))
+(defun v-y (vec)
   "Returns the y component of the vector"
-  `(aref ,vec 1))
-
-(defmacro v-z (vec)
+  (aref vec 1))
+(defun v-z (vec)
   "Returns the z component of the vector"
-  `(aref ,vec 2))
-
-(defmacro v-w (vec)
+  (aref vec 2))
+(defun v-w (vec)
   "Returns the w component of the vector"  
-  `(aref ,vec 3))
+  (aref vec 3))
+
+(defun (setf v-x) (value vec)
+  "Returns the x component of the vector"
+  (setf (aref vec 0) (float value)))
+(defun (setf v-y) (value vec)
+  "Returns the y component of the vector"
+  (setf (aref vec 1) (float value)))
+(defun (setf v-z) (value vec)
+  "Returns the z component of the vector"
+  (setf (aref vec 2) (float value)))
+(defun (setf v-w) (value vec)
+  "Returns the w component of the vector"  
+  (setf (aref vec 3) (float value)))

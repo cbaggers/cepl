@@ -128,7 +128,7 @@
                    (with-t-obj () form
                      (if (and (eq run-test t) (null expired-test))
                          code
-                         `(when (and ,run-test (not ,expired-test))
+                         `(when (and (not ,expired-test) ,run-test)
                             ,code))))) ;; this should be an if
      :run-test t
      :expired-test (let ((expire-forms
