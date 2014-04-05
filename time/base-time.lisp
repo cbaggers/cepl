@@ -35,27 +35,23 @@
 ;;   code, expired-test, local-vars, closed-vars
 ;; -----------------------------------------------------------------------------
 
-(defmacro tlambda (args &body body)
-  ;;COPY CODE FROM TLAMBDA-DEBUG WHEN WORKING
-  (apply #'tlambda-debug (cons args body)))
-;; * tlambda has to have an expired-test as only it may release the expired signal
-;;   otherwise we have to have a web of event handlers
-(defun tlambda-debug (args &rest body)
+;; {TODO} can use func-name for block if tdefun
+(defun gen-time-function-body (name args body)
   (with-t-obj () (tprogn body)
-    ;; (when (or expired-test local-vars run-test)
-    ;;   (format t "unhanded~%---------~%local-vars:~s~%run-test:~s"
-    ;;           local-vars (when (not (eq t run-test)) run-test)))
     (let ((lbody (if expired-test
-                      `(if ,expired-test
-                           (cfunc:signal-expired)
-                           ,code)
-                      code)))
+                     `(if ,expired-test
+                          (cfunc:signal-expired)
+                          ,code)
+                     code)))
       `(let (,@(loop :for (a b) :in closed-vars collect (list a b)))
-         (lambda ,args
-           (block tlambda-implicit-block
-             (tagbody tlambda-start
-                (return-from tlambda-implicit-block
-                  ,lbody))))))))
+         (,@(if name `(defun ,name) '(lambda)) ,args
+            (block tlambda-implicit-block
+              (tagbody tlambda-start
+                 (return-from tlambda-implicit-block
+                   ,lbody))))))))
+
+(defmacro tdefun (name args &body body) (gen-time-function-body name args body))
+(defmacro tlambda (args &body body) (gen-time-function-body nil args body))
 
 ;;------------------------------------
 ;; Time compiler internals
@@ -182,7 +178,8 @@
                                         :collect `(setf ,(first i) ,(second i)))))))))))
       (make-instance
        'tcompile-obj
-       :code `(let ,(when let-forms (list let-forms))
+       :code `(let ,(when let-forms (remove-duplicates let-forms :test #'equal)) 
+                ;;{TODO} let form name clash
                 ,(t-chain-expand counter-sym chain-forms))
        :run-test `(< ,counter-sym ,(length forms))
        :expired-test (when (not repeat) `(= ,counter-sym ,(length forms)))
@@ -211,6 +208,8 @@
           nil
           `((,deadsym ,deadline t)))))
 
+;;{TODO} gensym the progress var? hmmm no then cant be used in user code.
+;;
 (def-time-condition before (deadline &key progress) t
   (unless (symbolp progress) (error "'progress' in 'each' must be a symbol"))
   (let* ((deadsym (gensym "deadline"))
