@@ -84,6 +84,7 @@
   (:use :cl :cepl-utils :base-time-backend)
   (:nicknames :ct :ctime)
   (:export :tlambda
+           :tdefun
            :make-stepper
            :def-time-units
            :make-time-source

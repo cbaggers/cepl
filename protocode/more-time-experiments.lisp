@@ -29,6 +29,10 @@
   (print "every time"))
 
 (tlambda () 
+  ((each (seconds 1))
+   (print "hi")))
+
+(tlambda () 
   ((and (each (seconds 1)) (before (from-now (seconds 4)))) 
    (print "hi")))
 

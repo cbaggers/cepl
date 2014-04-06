@@ -99,10 +99,12 @@
            'tcompile-obj
            :code (t-code compiled-body)
            :run-test run-test
-           :expired-test (if (and (symbolp expired-test)
-                                  (t-expired-test compiled-body))
-                             (cons expired-test (t-expired-test compiled-body))
-                             expired-test)
+           :expired-test (if (symbolp expired-test)
+                             (when (t-expired-test compiled-body)
+                               (cons expired-test (t-expired-test compiled-body)))
+                             expired-test) 
+           ;; {TODO} Here we essentially throw away the expiry
+           ;; tests of the other forms...seems dumb
            :local-vars local-vars
            :closed-vars (append closed-vars (t-closed-vars compiled-body))
            :override override)))))
@@ -191,8 +193,8 @@
 ;; Time compiler syntax
 ;;------------------------------------
 
-(def-time-condition and (&rest forms) nil (list `(and ,@forms) 'and))
-(def-time-condition or (&rest forms) nil (list `(or ,@forms) 'or))
+;; (def-time-condition and (&rest forms) nil (list `(and ,@forms) 'and))
+;; (def-time-condition or (&rest forms) nil (list `(or ,@forms) 'or))
 
 (def-time-condition once () nil
   (let ((runsym (gensym "run")))
@@ -207,6 +209,14 @@
           nil
           nil
           `((,deadsym ,deadline t)))))
+
+;; (def-time-condition and (&rest forms) nil 
+;;   (let ((forms (mapcar #'time-syntax-expand forms)))
+;;     (list `(and ,@(remove nil (mapcar #'first forms)))
+;;           `(and ,@(remove nil (mapcar #'second forms)))
+;;           (mapcan #'third forms)
+;;           (mapcan #'fourth forms))))
+;; (run-test expired-test local-vars closed-vars override)
 
 ;;{TODO} gensym the progress var? hmmm no then cant be used in user code.
 ;;
