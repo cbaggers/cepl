@@ -79,3 +79,8 @@
 
 So if the first of form is a list or t then it is a test-pair-block
 else if it is symbol then it must be handled by that thing...this explanatin is bad 
+
+;; Ok more ideas!
+;; each tlambda should shadow #'signal-expired so that the use can use it in their code
+;; to break out of the temporal block.
+;; I fucking love lisp

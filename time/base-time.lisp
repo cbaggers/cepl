@@ -170,14 +170,14 @@
                      (list expired-test
                            run-test
                            code
-                           (if (< index (1- (length forms)))
-                               (cons `(incf ,counter-sym)
-                                     (loop :for i :in (t-closed-vars
-                                                       (nth (+ index 1) processed-forms))
-                                        :if (and override (third i))
-                                        :collect `(setf ,(first i) (- ,(second i) (- (funcall *default-time-source*) ,expired-test)))
-                                        :else 
-                                        :collect `(setf ,(first i) ,(second i)))))))))))
+                           (cons `(incf ,counter-sym)
+                                 (when (< index (1- (length forms)))
+                                   (loop :for i :in (t-closed-vars
+                                                     (nth (+ index 1) processed-forms))
+                                      :if (and override (third i))
+                                      :collect `(setf ,(first i) (- ,(second i) (- (funcall *default-time-source*) ,expired-test)))
+                                      :else 
+                                      :collect `(setf ,(first i) ,(second i)))))))))))
       (make-instance
        'tcompile-obj
        :code `(let ,(when let-forms (remove-duplicates let-forms :test #'equal)) 
@@ -193,8 +193,20 @@
 ;; Time compiler syntax
 ;;------------------------------------
 
-;; (def-time-condition and (&rest forms) nil (list `(and ,@forms) 'and))
-;; (def-time-condition or (&rest forms) nil (list `(or ,@forms) 'or))
+;;{TODO} 
+(def-time-condition and (&rest forms) nil 
+  (let ((forms (mapcar #'time-syntax-expand forms)))
+    (list `(and ,@(remove nil (mapcar #'first forms)))
+          `(or ,@(remove nil (mapcar #'second forms)))
+          (mapcan #'third forms)
+          (mapcan #'fourth forms))))
+
+(def-time-condition or (&rest forms) nil 
+  (let ((forms (mapcar #'time-syntax-expand forms)))
+    (list `(or ,@(remove nil (mapcar #'first forms)))
+          `(and ,@(remove nil (mapcar #'second forms)))
+          (mapcan #'third forms)
+          (mapcan #'fourth forms))))
 
 (def-time-condition once () nil
   (let ((runsym (gensym "run")))
@@ -209,14 +221,6 @@
           nil
           nil
           `((,deadsym ,deadline t)))))
-
-;; (def-time-condition and (&rest forms) nil 
-;;   (let ((forms (mapcar #'time-syntax-expand forms)))
-;;     (list `(and ,@(remove nil (mapcar #'first forms)))
-;;           `(and ,@(remove nil (mapcar #'second forms)))
-;;           (mapcan #'third forms)
-;;           (mapcan #'fourth forms))))
-;; (run-test expired-test local-vars closed-vars override)
 
 ;;{TODO} gensym the progress var? hmmm no then cant be used in user code.
 ;;
