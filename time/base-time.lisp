@@ -260,7 +260,7 @@
           (when progress `((,progress 0.0)))
           `((,deadsym ,end-time t)))))
 
-(def-time-condition each (timestep &key step-var fill-var) nil
+(def-time-condition each (timestep &key step-var fill-var max-cache-size) nil
   (unless (symbolp step-var) (error "step-var in 'each' must be a symbol"))
   (unless (symbolp fill-var) (error "fill-var in 'each' must be a symbol"))
   (let ((stepv (gensym "stepper")))
@@ -270,7 +270,7 @@
           nil
           `(,(when step-var `(,step-var ,timestep))
              ,(when fill-var `(,fill-var ,stepv)))
-          `((,stepv (make-stepper ,timestep))))))
+          `((,stepv (make-stepper ,timestep ,@(when max-cache-size (list max-cache-size))))))))
 
 (def-time-condition while (test) t
   (let ((test-result (gensym "test-result")))
@@ -350,17 +350,19 @@
 
 ;;--------------------------------------------------------------------
 
-(defun make-stepper (step-size &optional (default-source *default-time-source*))
+(defun make-stepper (step-size &optional (max-cache-size (max (* 10 step-size) 10000.0))
+                                 (default-source *default-time-source*))
   "this takes absolute sources"
+  ;; if max-cache-size is set to zero
+  (when (< max-cache-size step-size)
+    (error "Make-Stepper: max-cache-size is smaller than step-size.~%max-cache-size: ~a~%step-size: ~a~%" max-cache-size step-size))
   (let ((time-cache 0)
         (last-val (funcall default-source)))
     (lambda (&optional (time-source default-source))
-      (if (eq time-source t)
-          step-size
-          (let* ((time (abs (funcall time-source)))
-                 (dif (- time last-val)))
-            (setf last-val time)
-            (incf time-cache dif)
-            (when (> time-cache step-size)
-              (setf time-cache (- time-cache step-size))
-              (min 1.0 (/ time-cache step-size))))))))
+      (let* ((time (abs (funcall time-source)))
+             (dif (- time last-val)))
+        (setf last-val time)
+        (setf time-cache (min max-cache-size (+ time-cache dif)))
+        (when (>= time-cache step-size)
+          (setf time-cache (- time-cache step-size))
+          (min 1.0 (/ time-cache step-size)))))))
