@@ -37,7 +37,7 @@
 
 ;; {TODO} can use func-name for block if tdefun
 (defun gen-time-function-body (name args body)
-  (with-t-obj () (tprogn body)
+  (with-t-obj () (tprogn body t)
     (let ((lbody (if expired-test
                      `(if ,expired-test
                           (cfunc:signal-expired)
@@ -49,8 +49,7 @@
             (block tlambda-implicit-block
               (tagbody tlambda-start
                  (return-from tlambda-implicit-block
-                   (let ,local-vars
-                     ,lbody)))))))))
+                   ,lbody))))))))
 
 (defmacro tdefun (name args &body body) (gen-time-function-body name args body))
 (defmacro tlambda (args &body body) (gen-time-function-body nil args body))
@@ -127,9 +126,11 @@
   (declare (ignore temporal-statements))
   (error "'Repeat' can only be used inside a tlambda*"))
 
-(defun tprogn (forms)
+(defun tprogn (forms &optional rootp)
   (let* ((processed-forms (mapcar #'%process-tprogn-form forms))
-         (let-forms (remove nil (mapcan #'t-local-vars processed-forms))))
+         (let-forms (if rootp
+                        (mapcar #'t-local-vars processed-forms)
+                        (remove nil (mapcan #'t-local-vars processed-forms)))))
     (make-instance
      'tcompile-obj
      :code `(progn
@@ -141,9 +142,9 @@
                             ,code))))) ;; this should be an if
      :local-vars let-forms
      :run-test t
-     :expired-test (let ((expire-forms
-                          (remove nil (mapcar #'t-expired-test processed-forms))))
-                     (when expire-forms `(and ,@expire-forms)))
+     :expired-test (let ((expire-forms (mapcar #'t-expired-test processed-forms)))
+                     (when (every #'identity expire-forms)
+                       `(and ,@expire-forms)))
      :closed-vars (remove nil (mapcan #'t-closed-vars processed-forms)))))
 
 (defun tthen/repeat (forms &key repeat)
