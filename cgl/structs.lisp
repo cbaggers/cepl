@@ -1,9 +1,8 @@
 (in-package :cgl)
 
 ;; this file has been bodged as I am rewriting this soon to be able 
-;; to handle extended types. This is a terrible fucking mess and I'm
+;; to handle more complex types. This is a terrible fucking mess and I'm
 ;; sorry
-
 ;; More than that, this is wrong
 
 ;;------------------------------------------------------------
@@ -105,38 +104,21 @@
 
 ;; [TODO] Fuck this is ugly gotta rework this
 ;; [TODO] alignment, so we need to care here?
-;; [TODO] need to stick result in enhanced-value
-;; [TODO] well this is crap, the etype stuff pretty much wrong
-;;        e.g. hmm maybe easy fix
 (defun make-getters-and-setters (name value-name struct-name slots)
   (loop :for (slot-name vslot-type normalised accessor) :in slots appending
      `((defmethod ,(or accessor (utils:symb name '- slot-name))
            ((gl-object ,value-name))
-         ,(if (enhanced-typep vslot-type)
-              (dbind (get-ptr get-type) (compile-etype-spec name vslot-type)
-                (if (listp get-type)
-                    ;;array
-                    `(make-c-array-from-pointer
-                      ,(second get-type) ,(first get-type)
-                      ,(subst `(foreign-slot-value (pointer gl-object)
-                                                   '(:struct ,struct-name)
-                                                   slot-name)
-                              'ptr get-ptr))
-                    ;;value
-                    (subst `(foreign-slot-value (pointer gl-object)
-                                                '(:struct ,struct-name)
-                                                ',slot-name) 'ptr get-ptr)))
-              (if (v-typep vslot-type 'v-array)
-                  `(make-c-array-from-pointer 
-                    ',(let ((len (v-dimensions vslot-type)))
-                           (if (listp len) len (list len)))
-                    ,(type-principle vslot-type)
-                    (foreign-slot-pointer (pointer gl-object)
-                                          '(:struct ,struct-name)
-                                          ',slot-name))
-                  `(foreign-slot-value (pointer gl-object) 
-                                       '(:struct ,struct-name)
-                                       ',slot-name))))
+         ,(if (v-typep vslot-type 'v-array)
+              `(make-c-array-from-pointer 
+                ',(let ((len (v-dimensions vslot-type)))
+                       (if (listp len) len (list len)))
+                ,(type-principle vslot-type)
+                (foreign-slot-pointer (pointer gl-object)
+                                      '(:struct ,struct-name)
+                                      ',slot-name))
+              `(foreign-slot-value (pointer gl-object) 
+                                   '(:struct ,struct-name)
+                                   ',slot-name)))
        ,(if (v-typep vslot-type 'v-array)
             `(defmethod (setf ,(or accessor (utils:symb name '- slot-name)))
                  ((value list) (gl-object ,value-name))
@@ -238,13 +220,7 @@
                                normalised accessor))))
            (struct-name (utils:symb name '-struct))
            (type-name (utils:symb name '-type))
-           (value-name (utils:symb name '-value))
-           (e-typep (loop :for slot :in slots :thereis
-                       (enhanced-typep (second slot))))
-           (glsl (and glsl (not e-typep)))
-           (pixel (and pixel (not e-typep)))
-           (vertex (and vertex (not e-typep))))
-      (when e-typep (error "enhanced types not yet supported"))
+           (value-name (utils:symb name '-value)))
       `(progn
          ,(when glsl
                 `(v-defstruct ,name ()
@@ -260,16 +236,11 @@
            (:simple-parser ,name))
          (defclass ,value-name (c-value) ())
          ,@(when accessors (make-getters-and-setters name value-name struct-name slots))
-         ,@(unless e-typep (make-translators name type-name value-name slots struct-name))
+         ,@(make-translators name type-name value-name slots struct-name)
          ,(when accessors (make-puller name value-name slots))
          ,(when vertex (make-gl-struct-attrib-assigner name slots))
          ,(when pixel (make-struct-pixel-format name slot-descriptions))
          ',name))))
-
-(defun enhanced-typep (path)
-  (and (listp path)
-       (or (and (symbolp (first path)) (equal (symbol-name (first path)) "->"))
-           (listp (first path)))))
 
 (defun all-early-pointer-p (types-spec)
   (let ((spec (reverse (rest (reverse types-spec)))))
@@ -277,31 +248,4 @@
        (or (sn-equal '-> (if (listp item) (first item) item))))))
 
 
-(defun compile-etype-part (parent-type type-spec)
-  (labels ((swap-pointer (x) (if (sn-equal x '->) :pointer x)))
-    (if (symbolp type-spec) 
-        (list (swap-pointer type-spec))
-        (dbind (type len) type-spec
-          `(,(swap-pointer type) 
-             ,(if (symbolp len) 
-                  `(foreign-slot-value 
-                    (pointer val) (foreign-slot-type ',parent-type 
-                                                     ',len) ',len)
-                  (or len 0)))))))
 
-(defun compile-etype-spec (parent-type slot-type-spec)
-  (unless (all-early-pointer-p slot-type-spec)
-    (error "invalid extended-type spec"))
-  (let* ((split-index (or (position-if #'listp slot-type-spec)
-                          (length slot-type-spec)))         
-         (type-spec (reverse (subseq slot-type-spec 0 split-index)))
-         (final-type (or (subseq slot-type-spec split-index)
-                         (first (last slot-type-spec))))
-         (get-ptr-form 'ptr))
-    (loop :for part :in type-spec :for i :from 0 :do
-       (let ((new (compile-etype-part parent-type part)))         
-         (setf get-ptr-form `(mem-ref ,get-ptr-form ,@new))))
-    (list get-ptr-form 
-          (if (listp final-type) 
-              (compile-etype-part parent-type (first final-type))
-              final-type))))
