@@ -78,7 +78,11 @@
   (let ((name (first form))
         (rest (rest form)))
     (apply (symbol-function (symbolicate-package :time-syntax name)) rest)))
+
+;;{TODO} signal a exception and catch it higer up so we can get the original form
 (defun t-chain-expand (counter forms &optional accum)
+  (loop :for form :in forms :if (null (first form)) 
+     :do (error "CEPL: The following time form does not expire and thus~% this chain of forms can never progress:~%~%~a" form))
   (loop :for (expire-test run-test code initialize-next) :in (reverse forms)
      :for i :from (1- (length forms)) :downto 0 :do
      (setf accum `(if ,expire-test
@@ -138,6 +142,7 @@
                      (when expire-forms `(and ,@expire-forms)))
      :closed-vars (remove nil (mapcan #'t-closed-vars processed-forms)))))
 
+;;{TODO} throw error is a stage has no expire condition
 (defun tthen/repeat (forms &key repeat)
   (unless (null forms)
     (let* ((processed-forms (mapcar #'%process-tprogn-form forms))
@@ -265,6 +270,14 @@
           `(,(when step-var `(,step-var ,timestep))
              ,(when fill-var `(,fill-var ,stepv)))
           `((,stepv (make-stepper ,timestep))))))
+
+;; {TODO} test this...do we need an unless equivilent?
+(def-time-condition while (test &key progress) t
+  (let ((test-result (gensym "test-result")))
+    (list test-result
+          `(not test-result)
+          (when progress `((,test-result ,test)))
+          nil)))
 
 ;;==============================================================================
 ;; Below is not part of the time compiler but can be used with it
