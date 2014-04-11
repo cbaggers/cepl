@@ -43,12 +43,14 @@
                           (cfunc:signal-expired)
                           ,code)
                      code)))
-      `(let (,@(loop :for (a b) :in closed-vars collect (list a b)))
-         (,@(if name `(defun ,name) '(lambda)) ,args
+      `(let (,@(loop :for (a b) :in closed-vars
+                  :collect (list a b)))
+         (,@(if name `(defun ,name) '(lambda)) ,args            
             (block tlambda-implicit-block
               (tagbody tlambda-start
                  (return-from tlambda-implicit-block
-                   ,lbody))))))))
+                   (let ,local-vars
+                     ,lbody)))))))))
 
 (defmacro tdefun (name args &body body) (gen-time-function-body name args body))
 (defmacro tlambda (args &body body) (gen-time-function-body nil args body))
@@ -83,11 +85,12 @@
 (defun t-chain-expand (counter forms &optional accum)
   (loop :for form :in forms :if (null (first form)) 
      :do (error "CEPL: The following time form does not expire and thus~% this chain of forms can never progress:~%~%~a" form))
-  (loop :for (expire-test run-test code initialize-next) :in (reverse forms)
-     :for i :from (1- (length forms)) :downto 0 :do
-     (setf accum `(if ,expire-test
-                      (progn (when (= ,counter ,i) ,@initialize-next) ,accum)
-                      (when ,run-test ,code)))
+  (loop :for (expire-test run-test code initialize-next local-vars)
+     :in (reverse forms):for i :from (1- (length forms)) :downto 0 :do
+     (setf accum `(let ,local-vars
+                    (if ,expire-test
+                        (progn (when (= ,counter ,i) ,@initialize-next) ,accum)
+                        (when ,run-test ,code))))
      :finally (return accum)))
 
 (defun %compile-time-cond-form (form)
@@ -129,26 +132,25 @@
          (let-forms (remove nil (mapcan #'t-local-vars processed-forms))))
     (make-instance
      'tcompile-obj
-     :code `(let ,let-forms
+     :code `(progn
               ,@(loop :for form :in processed-forms :collect
                    (with-t-obj () form
                      (if (and (eq run-test t) (null expired-test))
                          code
                          `(when (and (not ,expired-test) ,run-test)
                             ,code))))) ;; this should be an if
+     :local-vars let-forms
      :run-test t
      :expired-test (let ((expire-forms
                           (remove nil (mapcar #'t-expired-test processed-forms))))
                      (when expire-forms `(and ,@expire-forms)))
      :closed-vars (remove nil (mapcan #'t-closed-vars processed-forms)))))
 
-;;{TODO} throw error is a stage has no expire condition
 (defun tthen/repeat (forms &key repeat)
   (unless (null forms)
     (let* ((processed-forms (mapcar #'%process-tprogn-form forms))
            (counter-sym (gensym "counter"))
-           (%closed-vars (remove nil (mapcan #'t-closed-vars processed-forms)))
-           (let-forms (remove nil (mapcan #'t-local-vars processed-forms)))
+           (%closed-vars (remove nil (mapcan #'t-closed-vars processed-forms)))           
            (chain-forms
             (loop :for form :in processed-forms :for index :from 0
                :collect
@@ -171,7 +173,8 @@
                                         :if (and override (third i))
                                         :collect `(setf ,(first i) (- ,(second i) (- (funcall *default-time-source*) ,expired-test)))
                                         :else 
-                                        :collect `(setf ,(first i) ,(second i))))))
+                                        :collect `(setf ,(first i) ,(second i)))))
+                           local-vars)
                      (list expired-test
                            run-test
                            code
@@ -182,12 +185,11 @@
                                       :if (and override (third i))
                                       :collect `(setf ,(first i) (- ,(second i) (- (funcall *default-time-source*) ,expired-test)))
                                       :else 
-                                      :collect `(setf ,(first i) ,(second i)))))))))))
+                                      :collect `(setf ,(first i) ,(second i)))))
+                           local-vars))))))
       (make-instance
        'tcompile-obj
-       :code `(let ,(when let-forms (remove-duplicates let-forms :test #'equal)) 
-                ;;{TODO} let form name clash
-                ,(t-chain-expand counter-sym chain-forms))
+       :code (t-chain-expand counter-sym chain-forms)
        :run-test `(< ,counter-sym ,(length forms))
        :expired-test (when (not repeat) `(= ,counter-sym ,(length forms)))
        :closed-vars (cons `(,counter-sym 0)
@@ -198,7 +200,6 @@
 ;; Time compiler syntax
 ;;------------------------------------
 
-;;{TODO} 
 (def-time-condition and (&rest forms) nil 
   (let ((forms (mapcar #'time-syntax-expand forms)))
     (list `(and ,@(remove nil (mapcar #'first forms)))
@@ -228,7 +229,7 @@
           `((,deadsym ,deadline t)))))
 
 ;;{TODO} gensym the progress var? hmmm no then cant be used in user code.
-;;
+;;{TODO} progres does not take into account overflow
 (def-time-condition before (deadline &key progress) t
   (unless (symbolp progress) (error "'progress' in 'each' must be a symbol"))
   (let* ((deadsym (gensym "deadline"))
@@ -271,12 +272,11 @@
              ,(when fill-var `(,fill-var ,stepv)))
           `((,stepv (make-stepper ,timestep))))))
 
-;; {TODO} test this...do we need an unless equivilent?
-(def-time-condition while (test &key progress) t
+(def-time-condition while (test) t
   (let ((test-result (gensym "test-result")))
     (list test-result
-          `(not test-result)
-          (when progress `((,test-result ,test)))
+          `(not ,test-result)
+          `((,test-result ,test))
           nil)))
 
 ;;==============================================================================
