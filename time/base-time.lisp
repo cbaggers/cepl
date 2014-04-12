@@ -48,13 +48,13 @@
 ;; Time compiler internals
 ;;------------------------------------
 
-(defun %compile-tprogn-form (form &optional release-locals)
+(defun %compile-tprogn-form (form)
   (if (atom form) ;; if lisp literal then it is fine
       (make-instance 't-compile-obj :code form :run-test t)
       (case (first form) ;; handler special forms and t-syntax
         (repeat (tthen/repeat (rest form) :repeat t))
         (then (tthen/repeat (rest form) :repeat nil))
-        (progn (tprogn (rest form) release-locals))
+        (progn (tprogn (rest form)))
         (otherwise (%process-tform form)))))
 
 (defun %process-tform (form)
@@ -131,10 +131,9 @@
 ;;{TODO}
 ;; * im going to remove put everything in :code and remove :local-vars
 ;; * can initialize move?
-(defun tprogn (forms &optional release-locals)
+(defun tprogn (forms)
   (let* ((processed-forms (loop :for f :in forms :collect 
-                             (%compile-tprogn-form f release-locals)))
-         (let-forms (remove nil (mapcan #'t-local-vars processed-forms))))
+                             (%compile-tprogn-form f))))
     (make-instance
      't-compile-obj
      :code
@@ -142,11 +141,10 @@
         ,@(loop :for form :in processed-forms :collect
              (with-t-obj () form
                (if (and (eq run-test t) (null expired-test))
-                   `(let ,(unless release-locals local-vars) ,code)
-                   `(let ,(unless release-locals local-vars)
+                   `(let ,local-vars ,code)
+                   `(let ,local-vars
                       (when (and (not ,expired-test) ,run-test)
                         ,code))))))
-     :local-vars (when release-locals let-forms)
      :run-test t
      :expired-test (let ((expire-forms (mapcar #'t-expired-test processed-forms)))
                      (when (every #'identity expire-forms)
@@ -172,14 +170,14 @@
 
 (defun tthen/repeat (forms &key repeat)
   (let* ((compiled-forms (loop :for f :in forms :collect
-                            (%compile-tprogn-form f nil)))
+                            (%compile-tprogn-form f)))
          (counter-sym (gensym "counter"))
          (closed-vars (remove nil (mapcan #'t-closed-vars compiled-forms)))
-         (chained nil)
+         (chained (when repeat `(go tlambda-start)))
          (%compiled-forms (cons (make-instance 
                                  't-compile-obj
                                  :initialize (when repeat
-                                               (t-expired-test 
+                                               (t-initialize 
                                                 (first compiled-forms))))
                                 (reverse compiled-forms))))
     (loop :for index :from 1 :below (length %compiled-forms) :do
@@ -196,10 +194,7 @@
        :run-test `(< ,counter-sym ,(length forms))
        :expired-test (when (not repeat) `(= ,counter-sym ,(length forms)))
        :closed-vars (cons `(,counter-sym 0) closed-vars)
-       ;; :initialize `((when (= ,counter-sym 0) 
-       ;;                 (incf ,counter-sym)
-       ;;                 ,@(t-initialize (first compiled-forms))))
-       )))
+       :initialize `(,@(t-initialize (first compiled-forms))))))
 
 ;;------------------
 ;; Time conditional
