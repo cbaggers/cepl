@@ -48,13 +48,13 @@
 ;; Time compiler internals
 ;;------------------------------------
 
-(defun %compile-tprogn-form (form)
+(defun %compile-tprogn-form (form &optional release-locals)
   (if (atom form) ;; if lisp literal then it is fine
       (make-instance 't-compile-obj :code form :run-test t)
       (case (first form) ;; handler special forms and t-syntax
         (repeat (tthen/repeat (rest form) :repeat t))
         (then (tthen/repeat (rest form) :repeat nil))
-        (progn (tprogn (rest form)))
+        (progn (tprogn (rest form) release-locals))
         (otherwise (%process-tform form)))))
 
 (defun %process-tform (form)
@@ -128,29 +128,25 @@
   (declare (ignore temporal-statements))
   (error "'Repeat' can only be used inside a tlambda*"))
 
-;; (let ,local-vars
-;;   ,(if expired-test
-;;        `(if ,expired-test
-;;             (cfunc:signal-expired)
-;;             ,code)
-;;        code))
-
 ;;{TODO}
 ;; * im going to remove put everything in :code and remove :local-vars
-
-(defun tprogn (forms)
-  (let* ((processed-forms (mapcar #'%compile-tprogn-form forms))
+;; * can initialize move?
+(defun tprogn (forms &optional release-locals)
+  (let* ((processed-forms (loop :for f :in forms :collect 
+                             (%compile-tprogn-form f release-locals)))
          (let-forms (remove nil (mapcan #'t-local-vars processed-forms))))
     (make-instance
      't-compile-obj
-     :code `(progn
-              ,@(loop :for form :in processed-forms :collect
-                   (with-t-obj () form
-                     (if (and (eq run-test t) (null expired-test))
-                         code
-                         `(when (and (not ,expired-test) ,run-test)
-                            ,code)))))
-     :local-vars let-forms
+     :code
+     `(progn
+        ,@(loop :for form :in processed-forms :collect
+             (with-t-obj () form
+               (if (and (eq run-test t) (null expired-test))
+                   `(let ,(unless release-locals local-vars) ,code)
+                   `(let ,(unless release-locals local-vars)
+                      (when (and (not ,expired-test) ,run-test)
+                        ,code))))))
+     :local-vars (when release-locals let-forms)
      :run-test t
      :expired-test (let ((expire-forms (mapcar #'t-expired-test processed-forms)))
                      (when (every #'identity expire-forms)
@@ -163,19 +159,20 @@
                        counter-sym current-step-num counter-step-form)
   (with-t-obj ('c) current-step-ob
     (with-t-obj ('n) next-step-ob
-      `(if ,expired-test-c
-           (let ((,overflow-sym ,overflow-sym)
-                 ,@local-vars-c)
-             (progn 
-               (when (= ,counter-sym ,current-step-num)
-                 ,counter-step-form
-                 ,(when end-time-c `(setf ,overflow-sym ,end-time-c))
-                 ,@initialize-n)
-               ,next-body))
-           (when ,run-test-c ,code-c)))))
+      `(let ,local-vars-c
+         (if ,expired-test-c
+             (let ((,overflow-sym ,overflow-sym))
+               (progn 
+                 (when (= ,counter-sym ,current-step-num)
+                   ,counter-step-form
+                   ,(when end-time-c `(setf ,overflow-sym ,end-time-c))
+                   ,@initialize-n)
+                 ,next-body))
+             (when ,run-test-c ,code-c))))))
 
 (defun tthen/repeat (forms &key repeat)
-  (let* ((compiled-forms (mapcar #'%compile-tprogn-form forms))
+  (let* ((compiled-forms (loop :for f :in forms :collect
+                            (%compile-tprogn-form f nil)))
          (counter-sym (gensym "counter"))
          (closed-vars (remove nil (mapcan #'t-closed-vars compiled-forms)))
          (chained nil)
