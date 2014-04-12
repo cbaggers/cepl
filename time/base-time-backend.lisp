@@ -41,30 +41,3 @@
         (rest (rest form)))
     (apply (symbol-function (symbolicate-package :time-syntax name)) rest)))
 
-;;BASIC LAYOUT
-;; (if (expired-1)    
-;;     (let ((overflow overflow)
-;;           (local-vars-1))
-;;       (progn 
-;;         (when (= step 1)
-;;           (incf step)
-;;           (set overflow end-time-1) ;; form step 1
-;;           (init-2)) ;; from step 2
-;;         (&&&&)))
-;;       (when (run-1) code-1))
-
-(let ((local-vars))
-  (if (expired)    
-      (let ((local-vars-1))
-        (progn 
-          (when (= step 1)
-            (incf step)
-            (set overflow end-time-1) ;; form step 1
-            (init-2)) ;; from step 2
-          (&&&&)))
-      (when (run-1) code-1)))
-
-;; initialize code run-test expired-test end-time-1 local-vars closed-vars
-
-;; {TODO}
-;; 

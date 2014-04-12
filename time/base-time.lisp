@@ -260,8 +260,8 @@
                    `(progn
                       (setf ,progress (float (- 1.0 (/ (- ,deadsym ,current-time-sym)
                                                        (- ,deadsym ,stimesym)))))
-                      (betweenp ,deadsym))
-                   `(betweenp ,deadsym))
+                      (betweenp ,stimesym ,deadsym))
+                   `(betweenp ,stimesym ,deadsym))
      :end-time deadsym
      :expired-test `(afterp ,deadsym)
      :local-vars (when progress `((,progress 0.0))) ;; cant this have the calculation?
@@ -356,18 +356,16 @@
   (+ time-offset (funcall time-source)))
 
 (defun beforep (time &optional (time-source *default-time-source*))
-  (let ((current-time (funcall time-source)))
-    (when (< current-time time) current-time)))
+  (< (funcall time-source) time))
 
 (defun afterp (time &optional (time-source *default-time-source*))
-  (when (> (funcall time-source) time) time))
+  (> (funcall time-source) time))
 
 (defun betweenp (start-time end-time
                  &optional (time-source *default-time-source*))
   (let ((current-time (funcall time-source)))
-    (when (and (>= current-time start-time)
-               (<= current-time end-time))
-      end-time)))
+    (and (>= current-time start-time)
+         (<= current-time end-time))))
 
 ;;--------------------------------------------------------------------
 
