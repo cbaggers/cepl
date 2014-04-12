@@ -22,6 +22,10 @@
   `(handler-case (progn ,@body nil)
      (c-expired (c) (progn c t))))
 
+(defmacro expiredp+ (&body body) 
+  `(handler-case (values nil (progn ,@body))
+     (c-expired (c) (progn c t))))
+
 ;;--------------------------------------------------------------------
 
 ;;{TODO} ugh...this isnt as fast as I'd like, now do I specify the 

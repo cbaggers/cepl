@@ -1,15 +1,16 @@
 (in-package :base-time)
 
-(defconstant overflow-sym '|overflow-sym|)
+(defconstant overflow-sym '|overflow|)
 (defconstant current-time-sym '|current-time|)
 (defparameter overflow-form `(- ,current-time-sym ,overflow-sym))
+(defparameter end-of-time most-positive-fixnum)
 
 (defclass t-compile-obj ()
   ((initialize :initarg :initialize :accessor t-initialize :initform nil)
    (code :initarg :code :accessor t-code :initform nil)
    (run-test :initarg :run-test :accessor t-run-test :initform nil)
    (expired-test :initarg :expired-test :accessor t-expired-test :initform nil)
-   (end-time :initarg :end-time :accessor t-end-time :initform nil)
+   (end-time :initarg :end-time :accessor t-end-time :initform end-of-time)
    (local-vars :initarg :local-vars :accessor t-local-vars :initform nil)
    (closed-vars :initarg :closed-vars :accessor t-closed-vars :initform nil)))
 
@@ -41,15 +42,18 @@
     (apply (symbol-function (symbolicate-package :time-syntax name)) rest)))
 
 ;;BASIC LAYOUT
-(if (expired-1)    
-    (let ((overflow overflow)
-          (local-vars-1))
-      (progn 
-        (when (= step 1)
-          (incf step)
-          (set overflow end-time-1) ;; form step 1
-          (init-2)) ;; from step 2
-        (&&&&))
-      (when (run-1) code-1)))
+;; (if (expired-1)    
+;;     (let ((overflow overflow)
+;;           (local-vars-1))
+;;       (progn 
+;;         (when (= step 1)
+;;           (incf step)
+;;           (set overflow end-time-1) ;; form step 1
+;;           (init-2)) ;; from step 2
+;;         (&&&&)))
+;;       (when (run-1) code-1))
 
 ;; initialize code run-test expired-test end-time-1 local-vars closed-vars
+
+;; {TODO}
+;; 
