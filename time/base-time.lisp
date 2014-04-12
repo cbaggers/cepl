@@ -207,8 +207,9 @@
      :run-test `(and ,@(remove nil (mapcar #'t-run-test forms)))
      :expired-test `(or ,@(remove nil (mapcar #'t-expired-test forms)))
      :end-time `(max ,@(mapcar #'t-end-time forms))
-     :local-vars (mapcan #'t-local-vars forms)
-     :closed-vars (mapcan #'t-closed-vars forms))))
+     :local-vars (remove nil (mapcan #'t-local-vars forms))
+     :closed-vars (mapcan #'t-closed-vars forms)
+     :initialize (mapcan #'t-initialize forms))))
 
 (defun time-syntax::or (&rest forms)
   (let ((forms (mapcar #'compile-time-syntax forms)))
@@ -217,8 +218,9 @@
      :run-test `(or ,@(remove nil (mapcar #'t-expired-test forms)))
      :expired-test `(and ,@(remove nil (mapcar #'t-run-test forms)))
      :end-time `(max ,@(mapcar #'t-end-time forms)) ;;{TODO} this seems wrong
-     :local-vars (mapcan #'t-local-vars forms)
-     :closed-vars (mapcan #'t-closed-vars forms))))
+     :local-vars (remove nil (mapcan #'t-local-vars forms))
+     :closed-vars (mapcan #'t-closed-vars forms)
+     :initialize (mapcan #'t-initialize forms))))
 
 (defun time-syntax::after (deadline)
   (let ((deadsym (gensym "deadline")))
@@ -278,7 +280,7 @@
                    `(setf ,fill-var (funcall ,stepv))
                    `(funcall ,stepv))
      :local-vars `(,(when step-var `(,step-var ,timestep))
-             ,(when fill-var `(,fill-var ,stepv)))
+                    ,(when fill-var `(,fill-var ,stepv)))
      :closed-vars `((,stepv (make-stepper ,timestep 
                                           ,@(when max-cache-size 
                                                   (list max-cache-size))))))))
