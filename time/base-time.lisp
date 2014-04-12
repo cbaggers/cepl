@@ -12,6 +12,14 @@
 
 (in-package :base-time)
 
+;; (tdefun test () 
+;;   (then ((before (from-now 1000)) (print "hi"))
+;;         ((before (from-now 2000)) (print "there"))))
+
+;; (tdefun test () 
+;;   ((before (from-now 2000)) (print "1"))
+;;   ((before (from-now 4000)) (print "2")))
+
 ;;{TODO} THIS IS WRONG, FIX THIS 
 ;; -----------------------------------------------------------------------------
 ;; + tlambda is the top level and triggers the expire signal
@@ -81,22 +89,30 @@
 
 ;; {TODO} can use func-name for block if tdefun
 (defun gen-time-function-body (name args body)
-  (with-t-obj () (tprogn body t)
-    (let ((lbody (if expired-test
-                     `(if ,expired-test
-                          (cfunc:signal-expired)
-                          ,code)
-                     code)))
-      `(let ((,current-time-sym (funcall *default-time-source*))
-             (,overflow-sym 0.0)
-             ,@(loop :for (a b) :in closed-vars
-                  :collect (list a b)))
+  (with-t-obj () (tprogn body)
+    (let ((lbody `(let ,local-vars
+                    ,(if expired-test
+                         `(if ,expired-test
+                              (cfunc:signal-expired)
+                              ,code)
+                         code)))
+          (first-run-sym (gensym "first-run")))
+      `(let* ((,current-time-sym (funcall *default-time-source*))
+              (,overflow-sym (funcall *default-time-source*))
+              ,@(loop :for (a b) :in closed-vars
+                   :collect (list a b))
+              (,first-run-sym t))
          (declare (ignorable ,current-time-sym ,overflow-sym))
-         (,@(if name `(defun ,name) '(lambda)) ,args            
+         (,@(if name `(defun ,name) '(lambda)) ,args     
+            (setf ,current-time-sym (funcall *default-time-source*))
             (block tlambda-implicit-block
               (tagbody tlambda-start
                  (return-from tlambda-implicit-block
-                   ,lbody))))))))
+                   (progn
+                     (when ,first-run-sym 
+                       (setf ,first-run-sym nil)
+                       ,@initialize) 
+                     ,lbody)))))))))
 
 (defmacro tdefun (name args &body body) (gen-time-function-body name args body))
 (defmacro tlambda (args &body body) (gen-time-function-body nil args body))
@@ -112,11 +128,19 @@
   (declare (ignore temporal-statements))
   (error "'Repeat' can only be used inside a tlambda*"))
 
-(defun tprogn (forms &optional rootp)
+;; (let ,local-vars
+;;   ,(if expired-test
+;;        `(if ,expired-test
+;;             (cfunc:signal-expired)
+;;             ,code)
+;;        code))
+
+;;{TODO}
+;; * im going to remove put everything in :code and remove :local-vars
+
+(defun tprogn (forms)
   (let* ((processed-forms (mapcar #'%compile-tprogn-form forms))
-         (let-forms (if rootp
-                        (mapcar #'t-local-vars processed-forms)
-                        (remove nil (mapcan #'t-local-vars processed-forms)))))
+         (let-forms (remove nil (mapcan #'t-local-vars processed-forms))))
     (make-instance
      't-compile-obj
      :code `(progn
@@ -131,7 +155,8 @@
      :expired-test (let ((expire-forms (mapcar #'t-expired-test processed-forms)))
                      (when (every #'identity expire-forms)
                        `(and ,@expire-forms)))
-     :closed-vars (remove nil (mapcan #'t-closed-vars processed-forms)))))
+     :closed-vars (remove nil (mapcan #'t-closed-vars processed-forms))
+     :initialize (mapcan #'t-initialize processed-forms))))
 
 
 (defun chain-template (current-step-ob next-step-ob next-body
@@ -155,9 +180,9 @@
          (closed-vars (remove nil (mapcan #'t-closed-vars compiled-forms)))
          (chained nil)
          (%compiled-forms (cons (make-instance 
-                                 't-compile-obj 
+                                 't-compile-obj
                                  :initialize (when repeat
-                                               (t-initialize 
+                                               (t-expired-test 
                                                 (first compiled-forms))))
                                 (reverse compiled-forms))))
     (loop :for index :from 1 :below (length %compiled-forms) :do
@@ -173,7 +198,11 @@
        :code chained
        :run-test `(< ,counter-sym ,(length forms))
        :expired-test (when (not repeat) `(= ,counter-sym ,(length forms)))
-       :closed-vars (cons `(,counter-sym 0) closed-vars))))
+       :closed-vars (cons `(,counter-sym 0) closed-vars)
+       ;; :initialize `((when (= ,counter-sym 0) 
+       ;;                 (incf ,counter-sym)
+       ;;                 ,@(t-initialize (first compiled-forms))))
+       )))
 
 ;;------------------
 ;; Time conditional
@@ -221,8 +250,8 @@
                                                        (- ,deadsym ,stimesym)))))
                       (beforep ,deadsym))
                    `(beforep ,deadsym))
-     :end-time `(beforep ,deadsym)
-     :expired-test deadsym
+     :end-time deadsym
+     :expired-test `(afterp ,deadsym)
      :local-vars (when progress `((,progress 0.0))) ;; cant this have the calculation?
      :closed-vars `(,@(when progress `((,stimesym ,current-time-sym)))
                       (,deadsym 0.0)))))
@@ -241,8 +270,8 @@
                                                        (- ,deadsym ,stimesym)))))
                       (betweenp ,deadsym))
                    `(betweenp ,deadsym))
-     :end-time `(beforep ,deadsym)
-     :expired-test deadsym
+     :end-time deadsym
+     :expired-test `(afterp ,deadsym)
      :local-vars (when progress `((,progress 0.0))) ;; cant this have the calculation?
      :closed-vars `(,@(when progress `((,stimesym ,current-time-sym)))
                       (,deadsym 0.0)))))
