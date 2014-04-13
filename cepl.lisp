@@ -6,7 +6,7 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-;; This is a dumping ground for homless functions
+;; This is a dumping ground for homeless functions
 ;; If anything is here currently then it needs to be rehomed or
 ;; the essence of the functionality decided, generalised and 
 ;; rehomed.
@@ -14,8 +14,12 @@
 (in-package :cepl)
 
 (defun get-gl-extensions ()
-  (loop :for i :below (gl:get-integer :num-extensions)
-     :collect (%gl:get-string-i :extensions i)))
+  (if (<= 3 (gl:major-version))
+      (loop :for i :below (gl:get-integer :num-extensions)
+         :collect (%gl:get-string-i :extensions i))
+      ;; OpenGL version < 3
+      (cl-utilities:split-sequence #\space (gl:get-string :extensions)
+                                   :remove-empty-subseqs t)))
 
 (defun cepl-post-context-initialize ()
   (let ((available-extensions (get-gl-extensions)))
@@ -51,6 +55,6 @@
    working while cepl runs"
   (base-macros:continuable
     (let ((connection (or swank::*emacs-connection*
-			  (swank::default-connection))))
+                          (swank::default-connection))))
       (when connection
-	(swank::handle-requests connection t)))))
+        (swank::handle-requests connection t)))))
