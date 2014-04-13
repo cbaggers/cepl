@@ -24,7 +24,7 @@
          ,t-obj
        ,@body)))
 
-(defmacro def-time-condition (name args &body body)  
+(defmacro def-time-condition (name args &body body)
   `(defun ,(symbolicate-package :time-syntax name) ,args
      (progn ,@body)))
 

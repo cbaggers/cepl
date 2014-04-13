@@ -12,38 +12,6 @@
 
 (in-package :base-time)
 
-;; (tdefun test () 
-;;   (then ((before (from-now 1000)) (print "hi"))
-;;         ((before (from-now 2000)) (print "there"))))
-
-;; (tdefun test () 
-;;   ((before (from-now 2000)) (print "1"))
-;;   ((before (from-now 4000)) (print "2")))
-
-;;{TODO} THIS IS WRONG, FIX THIS 
-;; -----------------------------------------------------------------------------
-;; + tlambda is the top level and triggers the expire signal
-;;
-;; + tprogn has given back one progn with multiple if forms, one for
-;;   each step. It also returns the expire-test that check that they have all
-;;   expired
-;;
-;; + mapcar %compile-tprogn-form either calls %compile-time-cond-form, handles the
-;;   time-special-forms or if it is a lisp statement, returns it correctly.
-;;
-;; + compile-time-syntax takes a form and calls the function named by the first
-;;   item in the form (in the time-syntax package). IT passes the rest of the
-;;   form as args to that function
-;;
-;; + %compile-time-cond-form takes a form in the format ((condition) &rest body)
-;;   and returns the result in the correct format for other functions to use.
-;;   It does not wrap in if statements or handle any of the expiry as that
-;;   should be done by the special forms (or the tlambda root form)
-;;
-;; + ~time-syntax~ these functions return a list of data in the following order:
-;;   code, expired-test, local-vars, closed-vars
-;; -----------------------------------------------------------------------------
-
 ;;------------------------------------
 ;; Time compiler internals
 ;;------------------------------------
@@ -128,9 +96,6 @@
   (declare (ignore temporal-statements))
   (error "'Repeat' can only be used inside a tlambda*"))
 
-;;{TODO}
-;; * im going to remove put everything in :code and remove :local-vars
-;; * can initialize move?
 (defun tprogn (forms)
   (let* ((processed-forms (loop :for f :in forms :collect 
                              (%compile-tprogn-form f))))
@@ -152,21 +117,6 @@
      :closed-vars (remove nil (mapcan #'t-closed-vars processed-forms))
      :initialize (mapcan #'t-initialize processed-forms))))
 
-
-(defun chain-template (current-step-ob next-step-ob next-body
-                       counter-sym current-step-num counter-step-form)
-  (with-t-obj ('c) current-step-ob
-    (with-t-obj ('n) next-step-ob
-      `(let ,local-vars-c
-         (if ,expired-test-c
-             (let ((,overflow-sym ,overflow-sym))
-               (progn 
-                 (when (= ,counter-sym ,current-step-num)
-                   ,counter-step-form
-                   ,(when end-time-c `(setf ,overflow-sym ,end-time-c))
-                   ,@initialize-n)
-                 ,next-body))
-             (when ,run-test-c ,code-c))))))
 
 (defun tthen/repeat (forms &key repeat)
   (let* ((compiled-forms (loop :for f :in forms :collect
@@ -196,9 +146,24 @@
        :closed-vars (cons `(,counter-sym 0) closed-vars)
        :initialize `(,@(t-initialize (first compiled-forms))))))
 
-;;------------------
-;; Time conditional
-;;------------------
+(defun chain-template (current-step-ob next-step-ob next-body
+                       counter-sym current-step-num counter-step-form)
+  (with-t-obj ('c) current-step-ob
+    (with-t-obj ('n) next-step-ob
+      `(let ,local-vars-c
+         (if ,expired-test-c
+             (let ((,overflow-sym ,overflow-sym))
+               (progn 
+                 (when (= ,counter-sym ,current-step-num)
+                   ,counter-step-form
+                   ,(when end-time-c `(setf ,overflow-sym ,end-time-c))
+                   ,@initialize-n)
+                 ,next-body))
+             (when ,run-test-c ,code-c))))))
+
+;;-------------------
+;; Time conditionals
+;;-------------------
 
 (defun time-syntax::and (&rest forms)
   (let ((forms (mapcar #'compile-time-syntax forms)))
@@ -206,7 +171,7 @@
      't-compile-obj
      :run-test `(and ,@(remove nil (mapcar #'t-run-test forms)))
      :expired-test `(or ,@(remove nil (mapcar #'t-expired-test forms)))
-     :end-time `(max ,@(mapcar #'t-end-time forms))
+     :end-time `(min ,@(mapcar #'t-end-time forms))
      :local-vars (remove nil (mapcan #'t-local-vars forms))
      :closed-vars (mapcan #'t-closed-vars forms)
      :initialize (mapcan #'t-initialize forms))))
@@ -217,7 +182,7 @@
      't-compile-obj
      :run-test `(or ,@(remove nil (mapcar #'t-expired-test forms)))
      :expired-test `(and ,@(remove nil (mapcar #'t-run-test forms)))
-     :end-time `(max ,@(mapcar #'t-end-time forms)) ;;{TODO} this seems wrong
+     :end-time `(max ,@(mapcar #'t-end-time forms))
      :local-vars (remove nil (mapcan #'t-local-vars forms))
      :closed-vars (mapcan #'t-closed-vars forms)
      :initialize (mapcan #'t-initialize forms))))
@@ -286,23 +251,27 @@
                                                   (list max-cache-size))))))))
 
 (defun time-syntax::once ()
-  (let ((runsym (gensym "run")))
+  (let ((runsym (gensym "run"))
+        (end-time (gensym "end-time")))
     (make-instance 
      't-compile-obj
      :initialize `((setf ,runsym nil))
      :run-test `(unless ,runsym (setf ,runsym t))
-     :expired-test `(progn (setf ,overflow-sym ,current-time-sym) runsym)
-     :end-time nil ;; this is set as a side effect by the expired test
-     :closed-vars `((,runsym nil)))))
+     :expired-test `(progn (setf ,end-time ,current-time-sym) runsym)
+     :end-time end-time
+     :closed-vars `((,runsym nil)
+                    (,end-time ,overflow-sym)))))
 
 (defun time-syntax::while (test)
-  (let ((test-result (gensym "test-result")))
+  (let ((test-result (gensym "test-result"))
+        (end-time (gensym "end-time")))
     (make-instance
      't-compile-obj
      :run-test test-result
-     :expired-test `(progn (setf ,overflow-sym ,current-time-sym) (not ,test-result))
+     :expired-test `(progn (setf ,end-time ,current-time-sym) (not ,test-result))
      :end-time nil ;; this is set as a side effect by the expired test
-     :local-vars `((,test-result ,test)))))
+     :local-vars `((,test-result ,test)
+                   (,end-time ,overflow-sym)))))
 
 ;;==============================================================================
 ;; Below is not part of the time compiler but can be used with it
