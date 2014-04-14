@@ -13,6 +13,17 @@
 
 (in-package :cepl)
 
+#+sb-thread
+(defmacro on-main (&body b)
+    `(let ((thread (first (last (sb-thread:list-all-threads)))))
+       (sb-thread:interrupt-thread thread
+				   #'(lambda () (sb-int:with-float-traps-masked (:underflow :overflow :inexact :invalid :divide-by-zero),@b)))))
+
+#+ccl
+(defmacro on-main (&body b)
+  `(let ((thread (find 0 (all-processes) :key #'process-serial-number)))
+     (process-interrupt thread (lambda () ,@b))))
+
 (defun get-gl-extensions ()
   (if (<= 3 (gl:major-version))
       (loop :for i :below (gl:get-integer :num-extensions)
@@ -28,7 +39,7 @@
         (setf cgl::*immutable-available* nil)))
     t))
 
-(defun repl (&optional (width 640) (height 480))
+(defun repl (&optional (width 640) (height 480))  
   (in-package :cepl)  
   (%repl width height))
 
@@ -40,7 +51,9 @@
             (let ((context (make-instance 'cgl:gl-context :handle context)))
               (setf cgl::*gl-window* window)
               (setf (dval cgl::*gl-context*) context)
-              (format t "-----------------~%    CEPL-REPL    ~%-----------------"))
+              (format t "-----------------~%    CEPL-REPL    ~%-----------------")
+              (unless (> (gl:major-version) 3)
+                (error "Cepl requires OpenGL 3.1 or higher")))
             (progn (sdl2:quit)
                    (error "Failed to initialise CEPL"))))
       (error "Failed to initialise SDL")))

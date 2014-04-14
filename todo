@@ -1,3 +1,15 @@
+
+- demoparty goals-
+
+* clean up osx code
+* clean up window and context creation
+* update struct to be clean and use c-ref
+* create foreign data extraction tool
+* get gamepad input stable
+* 
+
+-----
+
 * Object that represents the opengl state machine. Directly address slots etc
 * Copy between buffer (gpu-arrays)
 * Research safe foreign data initialisation so an error does cause a memrory leak 

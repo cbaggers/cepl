@@ -33,5 +33,11 @@ If you are using quicklisp then drop this in your local-projects directory and r
     (ql:quickload :cepl)
     (cepl:repl)
 
+**Running on OSX**
+
+OSX has a couple of issues worth noting.
+* You must be using a version of sbcl compiled wih native threads enabled.
+* By default OSX gives programs a opengl 2.1 context. Cepl requests a higher one but will fail if this isnt successful. If you get an error based on opengl version please file a bug report.
+
 **Driving Ideas**
 (making (making a game) a game)
