@@ -24,7 +24,7 @@ Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 
 * cl-opengl
 * cl-sdl2
-* varjo *used to transalate common-lisp into glsl*
+* varjo (which you can find at https://github.com/cbaggers/varjo)
 * cl-utilities
 * cl-ppcre
 * symbol-munger
