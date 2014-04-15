@@ -19,7 +19,6 @@
     (let ((gl-context (sdl2:gl-create-context win)))
       (sdl2:gl-make-current win gl-context)
       ;; request version, this should fix issue on osx
-      
       (sdl2:gl-set-attr :context-major-version 3)
       (sdl2:gl-set-attr :context-minor-version 2)
       (sdl2:gl-set-attr :context-profile-mask 1)

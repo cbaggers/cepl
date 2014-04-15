@@ -6,7 +6,8 @@
 * update struct to be clean and use c-ref
 * create foreign data extraction tool
 * get gamepad input stable
-* 
+* expand stupid macro in matrix
+* optimize the vector/matrix/quaternion functions
 
 -----
 
