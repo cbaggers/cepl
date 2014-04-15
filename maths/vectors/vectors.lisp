@@ -27,7 +27,7 @@
         (error "Vectors: swizzle: Cepl vectors cannot have a length less that 2 or greater than 4")
         `(cl:make-array
           ,len :element-type 'single-float :initial-contents
-          (list ,@(loop :for char :being :the :elements :of name
+          (list ,@(loop :for char :across name
                      :collect `(aref ,vec ,(or (position char '(#\X #\Y #\Z #\W))
                                                (error "Vectors: swizzle: Pattern component was not X, Y, Z or W: ~a" char)))))))))
 

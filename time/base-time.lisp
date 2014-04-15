@@ -165,7 +165,7 @@
 ;; Time conditionals
 ;;-------------------
 
-(defun time-syntax::and (&rest forms)
+(deftsyntax and (&rest forms)
   (let ((forms (mapcar #'compile-time-syntax forms)))
     (make-instance 
      't-compile-obj
@@ -176,7 +176,7 @@
      :closed-vars (mapcan #'t-closed-vars forms)
      :initialize (mapcan #'t-initialize forms))))
 
-(defun time-syntax::or (&rest forms)
+(deftsyntax or (&rest forms)
   (let ((forms (mapcar #'compile-time-syntax forms)))
     (make-instance 
      't-compile-obj
@@ -187,7 +187,7 @@
      :closed-vars (mapcan #'t-closed-vars forms)
      :initialize (mapcan #'t-initialize forms))))
 
-(defun time-syntax::after (deadline)
+(deftsyntax after (deadline)
   (let ((deadsym (gensym "deadline")))
     (make-instance
      't-compile-obj
@@ -195,7 +195,7 @@
      :run-test `(afterp ,deadsym)
      :closed-vars `((,deadsym 0.0)))))
 
-(defun time-syntax::before (deadline &key progress)
+(deftsyntax before (deadline &key progress)
   (unless (symbolp progress) (error "'progress' in 'each' must be a symbol"))
   (let* ((deadsym (gensym "deadline"))         
          (stimesym (gensym "start-time")))
@@ -215,7 +215,7 @@
      :closed-vars `(,@(when progress `((,stimesym ,current-time-sym)))
                       (,deadsym 0.0)))))
 
-(defun time-syntax::between (start-time end-time &key progress)
+(deftsyntax between (start-time end-time &key progress)
   (unless (symbolp progress) (error "'progress' in 'each' must be a symbol"))
   (let* ((deadsym (gensym "deadline"))         
          (stimesym (gensym "start-time")))
@@ -235,7 +235,7 @@
      :closed-vars `(,@(when progress `((,stimesym ,current-time-sym)))
                       (,deadsym 0.0)))))
 
-(defun time-syntax::each (timestep &key step-var fill-var max-cache-size)
+(deftsyntax each (timestep &key step-var fill-var max-cache-size)
   (unless (symbolp step-var) (error "step-var in 'each' must be a symbol"))
   (unless (symbolp fill-var) (error "fill-var in 'each' must be a symbol"))  
   (let ((stepv (gensym "stepper")))
@@ -250,7 +250,7 @@
                                           ,@(when max-cache-size 
                                                   (list max-cache-size))))))))
 
-(defun time-syntax::once ()
+(deftsyntax once ()
   (let ((runsym (gensym "run"))
         (end-time (gensym "end-time")))
     (make-instance 
@@ -262,7 +262,7 @@
      :closed-vars `((,runsym nil)
                     (,end-time ,overflow-sym)))))
 
-(defun time-syntax::while (test)
+(deftsyntax while (test)
   (let ((test-result (gensym "test-result"))
         (end-time (gensym "end-time")))
     (make-instance

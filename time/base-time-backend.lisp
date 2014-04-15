@@ -33,11 +33,16 @@
     (loop :for v :in values :if (> v max) :do (setf max v))
     max))
 
+(defmacro deftsyntax (name args &body body)
+  `(defun ,(symbolicate-package :time-syntax 't- name)
+       ,args 
+     ,@body))
+
 (defun time-syntaxp (name)
-  (symbol-function (symbolicate-package :time-syntax name)))
+  (symbol-function (symbolicate-package :time-syntax 't- name)))
 
 (defun compile-time-syntax (form)
   (let ((name (first form))
         (rest (rest form)))
-    (apply (symbol-function (symbolicate-package :time-syntax name)) rest)))
+    (apply (symbol-function (symbolicate-package :time-syntax 't- name)) rest)))
 

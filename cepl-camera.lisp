@@ -17,7 +17,7 @@
 (defclass camera () 
   ((cam->clip :type (simple-array single-float (16)) :reader cam->clip)
    (cam->clip-func :initform nil :initarg :cam->clip-func )
-   (frame-size :type fixnum :reader frame-size :initarg :frame-size)
+   (frame-size :reader frame-size :initarg :frame-size)
    (near :type single-float :reader near :initarg :near)
    (far :type single-float :reader far :initarg :far)
    (fov :type single-float :reader fov :initarg :fov)))
