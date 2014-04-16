@@ -41,28 +41,28 @@
 
 (defun repl (&optional (width 640) (height 480))
   (in-package :cepl)  
-  #+darwin
-  (sdl2:in-main-thread ()
-    (%repl width height))
-  #+windows
-  (%repl width height)  
-  #+linux
-  (%repl width height))
-
-(defun %repl (&optional (width 640) (height 480))  
   (if (sdl2:init)
-      (multiple-value-bind (context window)
-          (new-window :width width :height height :title "CEPL REPL")
-        (if (and context window (cepl-post-context-initialize))
-            (let ((context (make-instance 'cgl:gl-context :handle context)))
-              (setf cgl::*gl-window* window)
-              (setf (dval cgl::*gl-context*) context)
-              (format t "-----------------~%    CEPL-REPL    ~%-----------------")
-              (unless (>= (gl:major-version) 3)
-                (error "Cepl requires OpenGL 3.1 or higher")))
-            (progn (sdl2:quit)
-                   (error "Failed to initialise CEPL"))))
+      (progn #+darwin
+             (sdl2:in-main-thread ()
+               (%repl width height))
+             #+windows
+             (%repl width height)  
+             #+linux
+             (%repl width height))
       (error "Failed to initialise SDL")))
+
+(defun %repl (&optional (width 640) (height 480))    
+  (multiple-value-bind (context window)
+      (new-window :width width :height height :title "CEPL REPL")
+    (if (and context window (cepl-post-context-initialize))
+        (let ((context (make-instance 'cgl:gl-context :handle context)))
+          (setf cgl::*gl-window* window)
+          (setf (dval cgl::*gl-context*) context)
+          (format t "-----------------~%    CEPL-REPL    ~%-----------------")
+          (unless (>= (gl:major-version) 3)
+            (error "Cepl requires OpenGL 3.1 or higher")))
+        (progn (sdl2:quit)
+               (error "Failed to initialise CEPL")))))
 
 (defun quit ()
   (sdl2:quit))
