@@ -106,8 +106,8 @@
         ,@(loop :for form :in processed-forms :collect
              (with-t-obj () form
                (if (and (eq run-test t) (null expired-test))
-                   `(let ,local-vars ,code)
-                   `(let ,local-vars
+                   `(let ,(remove nil local-vars) ,code)
+                   `(let ,(remove nil local-vars)
                       (when (and (not ,expired-test) ,run-test)
                         ,code))))))
      :run-test t

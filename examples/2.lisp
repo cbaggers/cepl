@@ -20,10 +20,17 @@
                      (i :int) (loop :float))
   vert frag)
 
+(defparameter *fps* 0)
+(let ((count 0))
+  (tdefun fps ()
+    (incf count)
+    ((each (seconds 1)) (setf *fps* count) (setf count 0))))
+
 (defun draw (gstream)
   (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit)  
   (ttm:update)
+  (fps)
   (loop :for i :below 25 :do
      (let ((i (/ i 2.0)))
        (prog-1 gstream :i i :loop *loop* :offset (v! 0 0 0 0))))
