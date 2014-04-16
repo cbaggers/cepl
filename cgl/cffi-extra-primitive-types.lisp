@@ -1,5 +1,7 @@
 (in-package :cffi)
 
+;; {TODO} need to add info for autowrap
+
 (define-foreign-type cgl-byte () 
   ()
   (:actual-type :char)

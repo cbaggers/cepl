@@ -55,16 +55,15 @@
 ;; Temporal Functions Top Level
 ;;------------------------------------
 
+;; {TODO} cant make simple live version as on every recompile all gensyms will
+;;        be different. Need to cache the original start time and use that to 
+;;        offset all ops
 ;; {TODO} can use func-name for block if tdefun
 (defun gen-time-function-body (name args body)
   (with-t-obj () (tprogn body)
-    (let ((lbody `(let ,local-vars
-                    ,(if expired-test
-                         `(if ,expired-test
-                              (cfunc:signal-expired)
-                              ,code)
-                         code)))
-          (first-run-sym (gensym "first-run")))
+    (unless (loop :for i :in closed-vars :never (symbol-package i))
+      (error "All closed-vars must be gensym'd to avoid macro variable capture"))
+    (let ((first-run-sym (gensym "first-run")))
       `(let* ((,current-time-sym (funcall *default-time-source*))
               (,overflow-sym (funcall *default-time-source*))
               ,@(loop :for (a b) :in closed-vars
@@ -80,7 +79,12 @@
                      (when ,first-run-sym 
                        (setf ,first-run-sym nil)
                        ,@initialize) 
-                     ,lbody)))))))))
+                     (let ,local-vars
+                       ,(if expired-test
+                            `(if ,expired-test
+                                 (cfunc:signal-expired)
+                                 ,code)
+                            code)))))))))))
 
 (defmacro tdefun (name args &body body) (gen-time-function-body name args body))
 (defmacro tlambda (args &body body) (gen-time-function-body nil args body))
