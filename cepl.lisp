@@ -42,12 +42,10 @@
 (defun repl (&optional (width 640) (height 480))
   (in-package :cepl)  
   (if (sdl2:init)
-      (progn #+darwin
+      (progn #+(and ccl osx)
              (sdl2:in-main-thread ()
                (%repl width height))
-             #+windows
-             (%repl width height)  
-             #+linux
+             #-(and ccl osx)
              (%repl width height))
       (error "Failed to initialise SDL")))
 
