@@ -49,7 +49,8 @@
   `(defcstruct ,name
      ,@(loop for slot in slots :collect
             (let* ((slot-type (slot-type slot)))
-              (list (slot-name slot) (type->spec (get-raw-type slot-type))
+              (list (slot-name slot) 
+                    (type->spec (get-raw-type slot-type))
                     :count (get-raw-length slot-type))))))
 
 
@@ -226,9 +227,8 @@
                 `(v-defstruct ,name ()
                    ,@(loop for slot in slots
                         :collect `(,(first slot) 
-                                   ,(type->type-spec (second slot))
-                                    ,@(when (fourth slot)
-                                            `(:accessor ,(fourth slot)))))))
+                                    ,(type->type-spec (second slot))
+                                    ,@(when (fourth slot) `(:accessor ,(fourth slot)))))))
          ,(make-cstruct-def struct-name slots)
          (define-foreign-type ,type-name () 
            ()
