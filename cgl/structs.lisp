@@ -241,11 +241,3 @@
          ,(when vertex (make-gl-struct-attrib-assigner name slots))
          ,(when pixel (make-struct-pixel-format name slot-descriptions))
          ',name))))
-
-(defun all-early-pointer-p (types-spec)
-  (let ((spec (reverse (rest (reverse types-spec)))))
-    (loop :for item :in spec :always 
-       (or (sn-equal '-> (if (listp item) (first item) item))))))
-
-
-
