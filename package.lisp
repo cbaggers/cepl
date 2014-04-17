@@ -85,6 +85,8 @@
   (:nicknames :ct :ctime)
   (:export :tlambda
            :tdefun
+           :t-repeat
+           :t-then
            :make-stepper
            :def-time-units
            :make-time-source
