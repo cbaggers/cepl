@@ -119,10 +119,10 @@
                         :row-byte-size row-byte-size
                         :row-alignment alignment
                         :element-pixel-format (when p-format element-type))))
-        (when (not (null initial-contents))
-          (cond ((listp initial-contents)
-                 (c-populate new-array initial-contents))
-                (t (error "cannot populate with that... will fix error when I have drunk less"))))
+        (when initial-contents
+          (if (listp initial-contents)
+              (c-populate new-array initial-contents)
+              (error "cannot populate with that... will fix error when I have drunk less")))
         new-array))))
 
 ;; [TODO] this is damn chunky.. can this be better
@@ -177,13 +177,16 @@
 
 ;; [TODO] can the common of the two subfuncs be spun off? (almost certainly)
 (defun c-populate (gl-object data &optional (check-sizes t))
-  (labels ((walk-to-dpop (data dimensions &optional pos)
+  (labels ((walk-to-dpop (data dimensions &optional structp pos)
              (let ((still-to-walk (rest dimensions)))
                (loop for sublist in data for i from 0 do
                     (if still-to-walk
-                        (walk-to-dpop sublist still-to-walk (cons i pos))
-                        (setf (aref-c* gl-object (reverse (cons i pos))) 
-                              sublist)))))
+                        (walk-to-dpop sublist still-to-walk structp (cons i pos))
+                        (if structp
+                            (populate (aref-c* gl-object (reverse (cons i pos)))
+                                      sublist)
+                            (setf (aref-c* gl-object (reverse (cons i pos))) 
+                                  sublist))))))
            (check-sizes (data dimensions)
              (if (null dimensions) t
                  (if (eql (first dimensions) (length data))
@@ -191,7 +194,7 @@
                           (check-sizes sublist (rest dimensions)))
                      (error "Dimensions of data and gl-object do not match")))))
     (when check-sizes (check-sizes data (dimensions gl-object)))
-    (walk-to-dpop data (dimensions gl-object))
+    (walk-to-dpop data (dimensions gl-object) (keywordp (element-type gl-object)))
     gl-object))
 
 (defmethod gl-subseq ((array c-array) start &optional end)

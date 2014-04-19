@@ -3,7 +3,7 @@
 (defparameter *array* nil)
 (defparameter *stream* nil)
 
-(defglstruct vert-data
+(defglstruct vert-data ()
   (position :vec4 :accessor pos)
   (colour :vec4 :accessor col))
 
