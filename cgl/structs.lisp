@@ -65,13 +65,13 @@
            ,@(make-autowrap-record-def autowrap-name slots))
          (autowrap:define-wrapper (:struct (,autowrap-name)))
          ,(make-varjo-struct-def name slots)
-         ,(make-cstruct-def name slots) ; {TODO} what do we need this for?
          ,(make-make-struct name autowrap-name slots)
          ,@(remove nil (mapcan1 #'make-slot-getters slots name autowrap-name))
          ,@(remove nil (mapcan1 #'make-slot-setters slots name autowrap-name))
          ,(make-struct-attrib-assigner name slots)
          ,(make-struct-pixel-format name slots)
          ,(make-populate autowrap-name slots)
+         ,@(make-pull-push autowrap-name slots)
          ',name))))
 
 (defun normalize-slot-description (slot-description type-name no-accesors)
@@ -113,41 +113,6 @@
 
 (defun validate-varjo-type-spec (spec)
   (type->spec (type-spec->type spec)))
-
-;;------------------------------------------------------------
-
-(defun make-cstruct-def (name slots)
-  `(defcstruct ,name
-     ,@(mapcar #'format-slot-for-cstruct slots)))
-
-(defun format-slot-for-cstruct (slot)
-  (when (> (length (s-dimensions slot)) 1) 
-    (error "cannot produce multidimensional array slots yet"))
-  (cond ((s-arrayp slot) (format-array-slot-for-cstruct slot))
-        ((or (s-extra-prim-p slot) (s-prim-p slot)) 
-         (format-regular-slot-for-cstruct slot))
-        (t (format-struct-slot-for-cstruct slot))))
-
-(defun format-regular-slot-for-cstruct (slot)
-  `(,(s-name slot)
-     ,(s-type slot)
-     :count 1
-     ;; :offset {TODO} when do we need offset?
-     ))
-
-(defun format-struct-slot-for-cstruct (slot)
-  `(,(s-name slot)
-     (:struct ,(s-type slot))
-     :count 1
-     ;; :offset {TODO} when do we need offset?
-     ))
-
-(defun format-array-slot-for-cstruct (slot)
-  `(,(s-name slot)
-     ,(s-element-type slot)
-     :count ,(reduce #'* (s-dimensions slot))
-     ;; :offset {TODO} when do we need offset?
-     ))
 
 ;;------------------------------------------------------------
 
@@ -251,84 +216,26 @@
       ((s-arrayp slot) (make-array-slot-setter slot type-name awrap-type-name))
       (t (error "Dont know what to do with slot ~a" slot)))))
 
-(defun %prim-slot-setter (value slot-name type awrap-type-name &optional index)
-  (if index
-      `(let ((ptr (plus-c:c-ref wrapped-object ,awrap-type-name 
-                                ,(kwd slot-name) plus-c:&)))
-         (setf (mem-aref ptr ,type ,index) ,value))
-      `(setf (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd slot-name))
-             ,value)))
-(defun %eprim-slot-setter (value slot-name type awrap-type-name
-                           &optional (index 0))
-  (if index
-      `(let ((ptr (plus-c:c-ref wrapped-object ,awrap-type-name 
-                                ,(kwd slot-name) plus-c::&)))
-         (setf (mem-aref ptr ,type ,index) ,value))
-      `(let ((ptr (plus-c:c-ref wrapped-object ,awrap-type-name
-                                ,(kwd slot-name) ,index plus-c::&)))
-         (setf (mem-ref ptr ,type) ,value))))
-
 (defun make-prim-slot-setter (slot awrap-type-name)
   `((defmethod (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
-      ,(%prim-slot-setter 'value (s-name slot) (s-type slot) awrap-type-name))))
+      (setf (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot)))
+            value))))
 
 (defun make-eprim-slot-setter (slot awrap-type-name)
   `((defmethod (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
-      ,(%eprim-slot-setter 'value (s-name slot) (s-type slot) awrap-type-name))))
+      (let ((ptr (plus-c:c-ref wrapped-object ,awrap-type-name
+                               ,(kwd (s-name slot)) plus-c::&)))
+        (setf (mem-ref ptr ,(s-type slot)) value)))))
 
 (defun make-t-slot-setter (slot awrap-type-name)
   `((defmethod (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
       (populate (,(s-reader slot) wrapped-object) value))))
 
-(defun %calc-multi-index (dimensions index-vars)
-  (let ((len (length dimensions)))
-    `(+ ,@(loop :for i :below len :collect 
-             (if (> (1- i) 0)
-                 `(* (nth (1- i) index-vars) 
-                     (nth i index-vars))
-                 (nth i index-vars))))))
-
 (defun make-array-slot-setter (slot type-name awrap-type-name)
   (declare (ignore type-name))
   `((defmethod (setf ,(s-writer slot))
         ((value list) (wrapped-object ,awrap-type-name))
-      (c-populate (,(s-reader slot) wrapped-object) value)))) 
-
-;; (defun %prim-array-setter (slot awrap-type-name)
-;;   (let ((index-vars (loop :for i :below (length (s-dimensions slot)) :collect 
-;;                        (gensym (format nil "i-~s" i)))))
-;;     (nest-simple-loops 
-;;      (s-dimensions slot) index-vars
-;;      (%prim-slot-setter `(aref value ,@index-vars) (s-name slot)
-;;                         (s-element-type slot) awrap-type-name 
-;;                         (%calc-multi-index (s-dimensions slot) index-vars)))))
-
-;; (defun %eprim-array-setter (slot awrap-type-name)
-;;   (let ((index-vars (loop :for i :below (length (s-dimensions slot)) :collect 
-;;                        (gensym (format nil "i-~s" i)))))
-;;     (nest-simple-loops 
-;;      (s-dimensions slot) index-vars
-;;      (%eprim-slot-setter `(aref value ,@index-vars) (s-name slot)
-;;                          (s-element-type slot) awrap-type-name 
-;;                          (%calc-multi-index (s-dimensions slot) index-vars)))))
-
-;; (defun %struct-array-setter (slot type-name)
-;;   (let* ((index-vars (loop :for i :below (length (s-dimensions slot)) :collect 
-;;                        (gensym (format nil "i-~s" i))))
-;;          (index (%calc-multi-index (s-dimensions slot) index-vars)))    
-;;     (nest-simple-loops 
-;;      (s-dimensions slot) index-vars
-;;      `(populate (aref-c (,(s-writer slot) wrapped-object) ,@index-vars) 
-;;                 (aref value ,index)))))
-
-;; (defmethod (setf ,(s-writer slot)) ((value autowrap::foreign-record)
-;;                                     (wrapped-object c-array))
-;;   (if (equal ',etype (element-type value))))
-;;
-;; ,(cond ((s-prim-p etype) (%prim-array-setter slot awrap-type-name ))
-;;                ((s-extra-prim-p etype) (%eprim-array-setter slot awrap-type-name))
-;;                (t (%struct-array-setter slot type-name)))
-
+      (c-populate (,(s-reader slot) wrapped-object) value))))
 
 ;;------------------------------------------------------------
 
@@ -351,8 +258,7 @@
                   (cffi:make-pointer (+ ,offset pointer-offset))))
                :do (setf offset (+ offset
                                    (* (first attr) 
-                                      (cffi:foreign-type-size
-                                       (second attr))))))))
+                                      (gl-type-size (second attr))))))))
       (when definitions
         `(defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name)) 
                                                &optional (attrib-offset 0)
@@ -381,7 +287,21 @@
            (loop for i below (apply #'* (v-dimensions type))
               :append (expand-slot-to-layout 
                        nil (v-element-type type) normalise)))
-          (t `((1 ,(type->spec (type-principle type)) ,normalise))))))
+          (t `((1 ,(type->spec (s-type slot)) ,normalise))))))
+
+;;------------------------------------------------------------
+
+(defun make-pull-push (autowrap-name slots)
+  `((defmethod gl-pull ((object ,autowrap-name))
+      (list
+       ,@(loop :for slot :in slots :for i :from 0 :collect
+            `(,(s-writer slot) object))))
+    (defmethod gl-pull-1 ((object ,autowrap-name))
+      (list
+       ,@(loop :for slot :in slots :for i :from 0 :collect
+            `(,(s-writer slot) object))))
+    (defmethod gl-push ((object list) (destination ,autowrap-name))
+      (populate destination object))))
 
 ;;------------------------------------------------------------
 

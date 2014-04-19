@@ -311,7 +311,7 @@
            :clone-c-array
            :make-c-array
            :aref-c
-           :aref-c*
+           :%aref-c
            :c-populate
            :gl-subseq
            :gl-pull
