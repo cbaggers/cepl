@@ -212,7 +212,7 @@
              (t (list (make-simple-assigner element-type 
                                             (format nil "~a[~a]" path i)
                                             byte-offset))))
-       :do (incf byte-offset (cffi:foreign-type-size element-type)))))
+       :do (incf byte-offset (gl-type-size element-type)))))
 
 (defun make-struct-assigners (type path &optional (byte-offset 0))
   (loop :for (l-slot-name v-slot-type) :in (varjo::v-slots type) 
@@ -227,7 +227,7 @@
                     (make-struct-assigners pslot-type path byte-offset))
                    (t (list (make-simple-assigner pslot-type path
                                                   byte-offset))))
-           (incf byte-offset (* (cffi:foreign-type-size pslot-type)
+           (incf byte-offset (* (gl-type-size pslot-type)
                                 (or array-length 1))))))))
 
 ;;---------------------------------------------------------------------

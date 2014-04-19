@@ -84,7 +84,7 @@
    the indicies when rendering"
   (unless (and (every #'1d-p gpu-arrays) 
                (or (null index-array) (suitable-array-for-index-p
-                                          index-array))))
+                                       index-array))))
   (let ((element-buffer (when index-array (gpuarray-buffer index-array)))
         (vao (gl:gen-vertex-array))
         (attr 0))
@@ -104,4 +104,5 @@
     (when element-buffer
       (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
-    vao))
+    vao)
+  )

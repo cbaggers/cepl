@@ -101,7 +101,7 @@
    populated with the details of the data stored within the buffer"
   (let ((data-type (element-type c-array)))
     (buffer-data-raw (pointer c-array) data-type size buffer buffer-target usage
-                     (* offset (cffi:foreign-type-size data-type)))))
+                     (* offset (element-byte-size c-array)))))
 
 ;; [TODO] doesnt check for overflow off end of buffer
 (defun buffer-sub-data (buffer c-array byte-offset buffer-target
