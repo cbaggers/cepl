@@ -16,6 +16,8 @@
 (defun 1d-p (object)
   (= 1 (length (dimensions object))))
 
+(defgeneric populate (object data))
+
 (defgeneric gl-subseq (array start &optional end)
   (:documentation
    "This function returns a gpu-array or c-array which contains
