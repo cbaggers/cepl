@@ -4,3 +4,4 @@
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (texture :vec2 :accessor tex))
+

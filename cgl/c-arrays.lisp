@@ -64,10 +64,7 @@
   (let* ((p-format (pixel-format-p element-type))
          (element-type2 (if p-format
                             (pixel-format-element-type element-type)
-                            (if (keywordp element-type)
-                                element-type
-                                (symbolicate-package (symbol-package element-type)
-                                                     element-type '_))))
+                            element-type))
          (elem-size (gl-type-size element-type2)))
     (multiple-value-bind (byte-size row-byte-size)
         (%gl-calc-byte-size elem-size dimensions alignment)
@@ -104,11 +101,7 @@
          (p-format (pixel-format-p element-type))
          (element-type2 (if p-format
                             (pixel-format-element-type element-type)
-                            (if (keywordp element-type)
-                                element-type
-                                (symbolicate-package 
-                                 (symbol-package element-type)
-                                 element-type '_))))
+                            element-type))
          (elem-size (gl-type-size element-type2)))
     (when (> (length dimensions) 4) 
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
