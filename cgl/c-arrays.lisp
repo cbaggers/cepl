@@ -66,7 +66,8 @@
                             (pixel-format-element-type element-type)
                             (if (keywordp element-type)
                                 element-type
-                                (symb element-type '_))))
+                                (symbolicate-package (symbol-package element-type)
+                                                     element-type '_))))
          (elem-size (gl-type-size element-type2)))
     (multiple-value-bind (byte-size row-byte-size)
         (%gl-calc-byte-size elem-size dimensions alignment)
@@ -105,7 +106,9 @@
                             (pixel-format-element-type element-type)
                             (if (keywordp element-type)
                                 element-type
-                                (symb element-type '_))))
+                                (symbolicate-package 
+                                 (symbol-package element-type)
+                                 element-type '_))))
          (elem-size (gl-type-size element-type2)))
     (when (> (length dimensions) 4) 
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
@@ -176,8 +179,7 @@
   (let ((etype (element-type c-array)))
     (if (keywordp etype)        
         (mem-ref (pointer c-array) etype
-                 (calc-gl-index c-array subscripts))
-        
+                 (calc-gl-index c-array subscripts))        
         (autowrap:wrap-pointer 
          (let ((ptr (pointer c-array)))
            (inc-pointer ptr (calc-gl-index c-array subscripts)))         
@@ -190,18 +192,20 @@
                        (calc-gl-index c-array subscripts))
               value)
         (let ((obj (autowrap:wrap-pointer 
-                    (mem-aptr (pointer c-array) etype
-                              (calc-gl-index c-array subscripts))
+                    (let ((ptr (pointer c-array)))
+                      (inc-pointer ptr (calc-gl-index c-array subscripts)))
                     etype)))
           (populate obj value)))))
 
 (defun %aref-c (c-array subscripts)    
   (let ((etype (element-type c-array)))
-    (if (keywordp etype)
+    (if (keywordp etype)        
         (mem-ref (pointer c-array) etype
-                 (calc-gl-index c-array subscripts))
-        (mem-aptr (pointer c-array) etype
-                  (calc-gl-index c-array subscripts)))))
+                 (calc-gl-index c-array subscripts))        
+        (autowrap:wrap-pointer 
+         (let ((ptr (pointer c-array)))
+           (inc-pointer ptr (calc-gl-index c-array subscripts)))         
+         etype))))
 
 (defun (setf %aref-c) (value c-array subscripts)  
   (let ((etype (element-type c-array)))
@@ -210,8 +214,8 @@
                        (calc-gl-index c-array subscripts))
               value)
         (let ((obj (autowrap:wrap-pointer 
-                    (mem-aptr (pointer c-array) etype
-                              (calc-gl-index c-array subscripts))
+                    (let ((ptr (pointer c-array)))
+                      (inc-pointer ptr (calc-gl-index c-array subscripts)))
                     etype)))
           (populate obj value)))))
 
