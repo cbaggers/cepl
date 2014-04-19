@@ -55,15 +55,17 @@
 
 ;;------------------------------------------------------------
 
+;;{TODO} Autowrap-name is name now...can clean up lots of code
 (defmacro defglstruct (name (&key no-accesors) &body slot-descriptions)  
   (let ((slots (mapcar1 #'normalize-slot-description slot-descriptions 
                         name no-accesors))
-        (autowrap-name (symb name '_)))
+        (autowrap-name name))
     (when (validate-defglstruct-form name slots)      
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            ,@(make-autowrap-record-def autowrap-name slots))
-         (autowrap:define-wrapper (:struct (,autowrap-name)))
+         (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name 
+           :constructor ,(symb '%make- name))
          ,(make-varjo-struct-def name slots)
          ,(make-make-struct name autowrap-name slots)
          ,@(remove nil (mapcan1 #'make-slot-getters slots name autowrap-name))
@@ -135,10 +137,9 @@
       (%format-slot-for-autowrap slot)))
 
 (defun %format-slot-for-autowrap (slot)
-  (let* ((s-type (cond ((assoc (s-type slot) cffi::*extra-primitive-types*)
-                        (symbolicate-package :cffi :cgl- (s-type slot)))
-                       ((keywordp (s-type slot)) (s-type slot))
-                       (t (symb (s-type slot) '_))))
+  (let* ((s-type (if (assoc (s-type slot) cffi::*extra-primitive-types*)
+                     (symbolicate-package :cffi :cgl- (s-type slot))
+                     (s-type slot)))
          (a-type (autowrap:find-type s-type)))
     (list (kwd (s-name slot))
           (s-type slot)
