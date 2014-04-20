@@ -8,7 +8,7 @@
 (defparameter *camera* nil)
 (defparameter *light-direction* 0.0)
 
-(defglstruct vert-data 
+(defglstruct vert-data ()
   (position :vec3)
   (diffuse-color :vec4)
   (normal :vec3))

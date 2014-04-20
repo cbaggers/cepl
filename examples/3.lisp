@@ -1,11 +1,12 @@
 ;; Basic 3D
+;; Also tests out declarative values
 
 (defparameter *frustrum-scale* nil)
 (defparameter *cam-clip-matrix* nil)
 (defparameter *entities* nil)
 (defparameter *loop* (make-dval 0))
 
-(defglstruct vert-data
+(defglstruct vert-data ()
   (position :vec3)
   (color :vec4))
 
@@ -22,9 +23,19 @@
   ((stream :initform nil :accessor gstream :initarg :gstream)
    (matrix :initform nil :accessor matrix)))
 
+(defun calculate-frustrum-scale (field-of-view-degrees)
+  (/ 1.0 (tan (/ (* field-of-view-degrees base-maths:+one-degree-in-radians+) 2.0))))
+
+
+(defun make-cam-clip-matrix (frustrum-scale &optional (near 1.0) (far 45.0))
+  (matrix4:make-matrix4 frustrum-scale 0.0 0.0 0.0
+                        0.0 frustrum-scale 0.0 0.0
+                        0.0 0.0 (/ (+ far near) (- near far)) -1.0
+                        0.0 0.0 (/ (* 2.0 far near) (- near far)) 0.0))
+
 (defun init () 
-  (setf *frustrum-scale* (ccam:calculate-frustrum-scale 45.0))
-  (setf *cam-clip-matrix* (ccam:make-cam-clip-matrix *frustrum-scale*))
+  (setf *frustrum-scale* (calculate-frustrum-scale 45.0))
+  (setf *cam-clip-matrix* (make-cam-clip-matrix *frustrum-scale*))
   (prog-1 nil :cam-to-clip *cam-clip-matrix*)
   (let* ((verts (make-gpu-array '((#(+1.0  +1.0  +1.0) #(0.0  1.0  0.0  1.0)) 
                                   (#(-1.0  -1.0  +1.0) #(0.0  0.0  1.0  1.0))
@@ -63,7 +74,7 @@
 
 
 (defun draw ()
-  (incf (dval *loop*) 0.09)
+  (incf (dval *loop*) 0.01)
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (loop :for entity :in *entities* :do
@@ -89,6 +100,6 @@
          (:windowevent (:event e :data1 x :data2 y)
                        (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
                          (reshape x y))))         
-       (cepl-utils:update-swank)
+       (update-swank)
        (continuable (draw))))
   (defun stop-demo () (setf running nil)))
