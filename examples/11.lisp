@@ -5,7 +5,7 @@
 (defparameter *vert-gpu* nil)
 (defparameter *v-stream* nil)
 
-(defglstruct vert-data
+(defglstruct vert-data ()
   (position :vec4 :accessor pos)
   (tex-pos :vec2 :accessor tex-pos))
 

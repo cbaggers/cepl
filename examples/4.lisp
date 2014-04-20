@@ -1,6 +1,6 @@
 ;; More 3D - Multiple objects rotating
 
-(defglstruct vert-data 
+(defglstruct vert-data ()
   (position :vec3)
   (color :vec4))
 

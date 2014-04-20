@@ -1,6 +1,6 @@
 ;; Loading a monkey head :D
 
-(defglstruct vert-data 
+(defglstruct vert-data ()
   (position :vec3)
   (color :vec4))
 

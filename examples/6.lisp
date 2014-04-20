@@ -1,7 +1,7 @@
 ;; Playing around with a diamond square implementation
 
 ;; [TODO] This whole demo is messy and out of date, fix it
-(defglstruct vert-data 
+(defglstruct vert-data ()
   (position :vec3)
   (color :vec4))
 

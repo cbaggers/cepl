@@ -7,7 +7,7 @@
 (defparameter *light* nil)
 (defparameter *loop-pos* 0.0)
 
-(defglstruct vcn
+(defglstruct vcn ()
   (position :vec3 :accessor pos)
   (diffuse-color :vec4 :accessor color)
   (normal :vec3 :accessor normal))
