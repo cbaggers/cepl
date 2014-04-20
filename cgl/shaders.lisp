@@ -58,9 +58,9 @@
 
 (defmacro defshader (name args &body body)
   (let ((recompile-name (symbolicate-package :%cgl name)))
-    `(progn 
+    `(progn
        (defun ,recompile-name ()
-          (let ((compile-result (varjo::translate ',args '(progn ,@body))))
+         (let ((compile-result (varjo::translate ',args '(progn ,@body))))
            (update-shader-asset ',name :shader compile-result 
                                 #',recompile-name (used-external-functions compile-result))))
        (,recompile-name)
