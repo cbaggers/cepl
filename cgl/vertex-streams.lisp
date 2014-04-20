@@ -39,6 +39,7 @@
     (free-vao (vertex-stream-vao vertex-stream)))
   (blank-vertex-stream vertex-stream))
 
+
 (defun make-vertex-stream (gpu-arrays &key index-array (start 0) length)
   "This function simplifies making the vertex-stream if you are 
    storing the data in gpu-arrays.

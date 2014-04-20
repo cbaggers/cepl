@@ -231,7 +231,7 @@
                           (check-sizes sublist (rest dimensions)))
                      (error "Dimensions of data and c-array do not match")))))
     (when check-sizes (check-sizes data (dimensions c-array)))
-    (walk-to-dpop data (dimensions c-array) (keywordp (element-type c-array)))
+    (walk-to-dpop data (dimensions c-array) (not (keywordp (element-type c-array))))
     c-array))
 
 (defmethod gl-subseq ((array c-array) start &optional end)

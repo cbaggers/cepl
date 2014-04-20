@@ -13,7 +13,7 @@
 (defvshader vert ((position :vec4) &uniform (offset :vec4) (i :int) (loop :float))
   (setf gl-position (+ offset position (calc-offset (float i) loop))))
 
-(deffshader frag (&uniform (loop :float)) 
+(deffshader frag (&uniform (loop :float))
   (out output-color (v! (cos loop) (sin loop) 0.3 1.0)))
 
 (defpipeline prog-1 ((position :vec4) &uniform (offset :vec4)  
@@ -27,7 +27,7 @@
     ((each (seconds 1)) (setf *fps* count) (setf count 0))))
 
 (defun draw (gstream)
-  (setf *loop* (+ 0.01 *loop*))
+  (setf *loop* (+ 0.001 *loop*))
   (gl:clear :color-buffer-bit)  
   (ttm:update)
   (fps)

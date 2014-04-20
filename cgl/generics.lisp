@@ -53,7 +53,7 @@
                                                        normalised)
   (let ((type (varjo::type-spec->type array-type)))    
     (if (and (varjo::core-typep type) (not (varjo::v-typep type 'v-sampler)))
-        (let ((slot-layout (expand-slot-to-layout (list type normalised)))
+        (let ((slot-layout (expand-slot-to-layout nil type normalised))
               (stride 0))
           (loop :for attr :in slot-layout
              :for i :from 0

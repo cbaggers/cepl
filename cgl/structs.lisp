@@ -247,7 +247,7 @@
 (defun make-struct-attrib-assigner (type-name slots)
   (when (every #'vertex-stream-comptible-typep slots)
     (let* ((stride (if (> (length slots) 1)
-                       `(cffi:foreign-type-size ',type-name)
+                       `(gl-type-size ',type-name)
                        0))
            (stride-sym (gensym "stride"))
            (definitions             
