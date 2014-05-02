@@ -18,7 +18,7 @@
                #:cl-ppcre
                #:symbol-munger)
   :components ((:file "package")
-               (:file "cepl-utils")
+               (:file "utils")
                (:file "base-macros")
                (:file "maths/base-maths")
                (:file "declarative-values")
