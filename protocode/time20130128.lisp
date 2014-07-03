@@ -84,3 +84,30 @@ else if it is symbol then it must be handled by that thing...this explanatin is 
 ;; each tlambda should shadow #'signal-expired so that the use can use it in their code
 ;; to break out of the temporal block.
 ;; I fucking love lisp
+
+(tlambda () 1)
+(tlambda () ((lambda (x) x) 1))
+(tlambda () (+ 1 2))
+
+(tlambda () ((before (from-now (seconds 10))) (print "hi")))
+
+(tlambda () 
+  ((before (from-now (seconds 20))) (print "hi"))
+  ((before (from-now (seconds 10))) (print "there")))
+
+(tlambda () 
+  (then ((before (from-now (seconds 20))) (print "hi"))
+        ((before (from-now (seconds 10))) (print "there"))))
+
+(tlambda () 
+  (repeat ((before (from-now (seconds 20))) (print "hi"))
+          ((before (from-now (seconds 10))) (print "there"))))
+
+(tlambda () 
+  ((each (seconds 3)) (print "3 seconds have passed")))
+
+(tdefun step-demo ()
+  ((each (seconds 1)) (update-ai))
+  ((each (seconds (/ 1 60)) (render-scene)))
+  (step-physics))
+

@@ -93,6 +93,8 @@
 ;; broken around this and we should read the todo fiel for more info
 
 ;; 
-
-
-
+;; inline pipeline will work if we can specify the name (the number) of the 
+;; glsl-program when we compile it. This means we could replace the inline
+;; form with (run-program n) where n is decided at macro expansion time, we save
+;; the form in a dictioanry against n and then compiel it when the context is 
+;; created.
