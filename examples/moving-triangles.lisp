@@ -3,7 +3,7 @@
 
 (defparameter *gpu-array* nil)
 (defparameter *vertex-stream* nil)
-(defparameter *loop* 0.0)
+(defparameter *loop* 0.1)
 
 (defsfun calc-offset ((i :float) (loop :float))
   (let ((i (/ i 2)))
