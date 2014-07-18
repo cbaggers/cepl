@@ -2,7 +2,7 @@
 
 (defparameter *gpu-array* nil)
 (defparameter *vertex-stream* nil)
-(defparameter *loop* 0.0)
+(defparameter *loop* 0.1)
 
 (defsfun calc-offset ((i :float) (loop :float))
   (let ((i (/ i 2)))
@@ -40,7 +40,7 @@
 (let ((running nil))
   (defun run-demo ()
     (setf running t)
-    (cgl:clear-color 0.0 0.0 0.0 0.0)
+    (cgl:clear-color 1.0 0.0 0.0 0.0)
     (cgl:viewport 0 0 640 480)
     (setf *gpu-array* (make-gpu-array (list (v!  0.0   0.2  0.0  1.0)
                                             (v! -0.2  -0.2  0.0  1.0)

@@ -17,46 +17,89 @@
                #:cl-utilities
                #:cl-ppcre
                #:symbol-munger)
-  :components ((:file "package")
-               (:file "cepl-utils")
-               (:file "base-macros")
-               (:file "maths/base-maths")
-               (:file "declarative-values")
-               (:file "time/base-time-backend")
-               (:file "time/base-time")
-               (:file "time/conditional-funcs")
-               (:file "time/tiny-time-manager")
-               (:file "cgl/context")
-               (:file "cgl/generics")
-               (:file "cgl/pixel-format")
-               (:file "cgl/cffi-extra-primitive-types")
-               (:file "cgl/gl-extras")
-               (:file "cgl/c-values")
-               (:file "cgl/c-arrays")
-               (:file "cgl/structs")
-               (:file "cgl/buffers")
-               (:file "cgl/buffer-gpu-arrays")
-               (:file "cgl/vaos")
-               (:file "cgl/vertex-streams")
-               (:file "cgl/uniforms")
-               (:file "cgl/shaders")
-               (:file "cgl/misc")
-               (:file "cgl/textures")
-               (:file "cgl/types")
-               (:file "maths/vectors/base-vectors")
-               (:file "maths/vectors/vector2")
-               (:file "maths/vectors/vector3")
-               (:file "maths/vectors/vector4")
-               (:file "maths/vectors/vectors")
-               (:file "maths/matrices/base-matrices")
-               (:file "maths/matrices/matrix3")
-               (:file "maths/matrices/matrix4")
-               (:file "maths/matrices/matrices")
-               (:file "maths/quaternions")
-               (:file "maths/interpolation")
-               (:file "cepl-camera")
-               (:file "meshes-and-models/primitives")
-               (:file "meshes-and-models/model-parsers/parse-obj")
-               (:file "meshes-and-models/model-parsers/parse-lisp")
-               (:file "sdl-extras")
-               (:file "cepl")))
+  :components
+  (
+   (:module "cepl-utils"
+            :serial t
+            :components ((:file "package")
+                         (:file "cepl-utils")))
+   (:module "base-macros"
+            :serial t
+            :components ((:file "package")            
+                         (:file "base-macros")))
+   (:module "declarative-values"
+            :serial t
+            :components ((:file "package")
+                         (:file "declarative-values")))
+   (:module "time"
+            :serial t
+            :components ((:file "package")
+                         (:file "base-time-backend")
+                         (:file "base-time")
+                         (:file "conditional-funcs")
+                         (:file "tiny-time-manager")))
+   (:module "cgl"
+            :serial t
+            :components((:file "package")
+                        (:file "context")
+                        (:file "generics")
+                        (:file "pixel-format")
+                        (:file "cffi-extra-primitive-types")
+                        (:file "gl-extras")
+                        (:file "c-values")
+                        (:file "c-arrays")
+                        (:file "structs")
+                        (:file "buffers")
+                        (:file "buffer-gpu-arrays")
+                        (:file "vaos")
+                        (:file "vertex-streams")
+                        (:file "uniforms")
+                        (:file "shaders")
+                        (:file "misc")
+                        (:file "textures")
+                        (:file "types")))
+   (:module "maths"
+            :serial t
+            :components ((:file "package")
+                         (:file "base-maths")
+                         (:module "vectors"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "base-vectors")
+                                               (:file "vector2")
+                                               (:file "vector3")
+                                               (:file "vector4")
+                                               (:file "vectors")))
+                         (:module "matrices"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "base-matrices")
+                                               (:file "matrix3")
+                                               (:file "matrix4")
+                                               (:file "matrices")))
+                         (:module "quaternions"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "quaternions")))
+                         (:module "interpolation"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "interpolation")))))
+   (:module "cepl-camera"
+            :serial t
+            :components ((:file "package")            
+                         (:file "cepl-camera")))
+   (:module "meshes-and-models"
+            :serial t
+            :components ((:file "package")
+                         (:file "primitives")
+                         (:module "model-parsers"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "parse-obj")
+                                               (:file "parse-lisp")))))
+   (:module "cepl"
+            :serial t
+            :components ((:file "package")                         
+                         (:file "sdl-extras")
+                         (:file "cepl")))))
