@@ -1,0 +1,3 @@
+[submodule "varjo"]
+	path = varjo
+	url = https://github.com/cbaggers/varjo.git
