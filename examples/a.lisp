@@ -8,11 +8,23 @@
 (defparameter *loop* 0.0)
 (defparameter *camera* (ccam:make-camera *resolution*))
 
+<<<<<<< HEAD
 (defpipeline gpu-draw ((vert p-n-t) &uniform (model-clip :mat4)
                        (tex :sampler-2d))
   (:vertex (setf gl-position (* model-clip (v! (cgl::pos vert) 1.0)))
            (out (coord :smooth) (cgl::tex vert)))
   (:fragment (out output-color (texture tex coord)))
+=======
+(defglstruct vert-data ()
+  (position :vec3)
+  (color :vec4))
+
+(defpipeline gpu-draw ((vert vert-data) &uniform (model-clip :mat4))
+  (:vertex (setf gl-position (* model-clip (v! (vert-data-position vert) 1.0)))
+           (out (interp-color :smooth) (vert-data-color vert))
+           (out (pos :smooth) (vert-data-position vert)))
+  (:fragment (out output-color interp-color ))
+>>>>>>> e9aab5bf2840804e676a3cd9ecc325084a6148ff
   (:post-compile (reshape *resolution*)))
 
 (defclass entity ()
