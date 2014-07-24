@@ -130,4 +130,5 @@
 
 ;;----------------------------------------------------------------
 
-(defun lerp (start end progress) (+ start (* progress (- end start))))
+(defun lerp (start end ammount) (+ start (* ammount (- end start))))
+(defun mix (start end ammount) (lerp start end ammount))

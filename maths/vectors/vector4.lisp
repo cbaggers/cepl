@@ -361,3 +361,20 @@
 (defun lerp (vector-a vector-b ammount) 
   (declare ((simple-array single-float (4)) vector-a vector-b))
   (v+1 vector-a (v* (v-1 vector-b vector-a) ammount)))
+
+;;----------------------------------------------------------------
+
+(declaim (inline bezier)
+         (ftype (function ((simple-array single-float (4)) 
+                           (simple-array single-float (4))
+                           (simple-array single-float (4)) 
+                           (simple-array single-float (4))
+                           (single-float)) 
+                          (simple-array single-float (4)))
+                bezier))
+(defun bezier (a1 a2 b1 b2 ammount)
+  (declare ((simple-array single-float (4)) a1 a2 b1 b2)
+           ((single-float) ammount))
+  (lerp (lerp a1 a2 ammount)
+        (lerp b1 b2 ammount)
+        ammount))

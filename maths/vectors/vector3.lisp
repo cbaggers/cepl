@@ -412,3 +412,20 @@
 ;;   (let ((angle (* (acos (clampf -1.0 1.0 (dot vector-a vector-b))) ammount))
 ;;         (relative-vec (normalize (v-1 vector-b (v*vec vector-a dot)))))
 ;;     (v+1 (v* vector-a (cos angle)) (v* relative-vec (sin angle)))))
+
+;;----------------------------------------------------------------
+
+(declaim (inline bezier)
+         (ftype (function ((simple-array single-float (3)) 
+                           (simple-array single-float (3))
+                           (simple-array single-float (3)) 
+                           (simple-array single-float (3))
+                           (single-float)) 
+                          (simple-array single-float (3)))
+                bezier))
+(defun bezier (a1 a2 b1 b2 ammount)
+  (declare ((simple-array single-float (3)) a1 a2 b1 b2)
+           ((single-float) ammount))
+  (lerp (lerp a1 a2 ammount)
+        (lerp b1 b2 ammount)
+        ammount))
