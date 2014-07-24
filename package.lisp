@@ -57,9 +57,11 @@
            :c-sqrt
            :c-inv-sqrt
            :degrees
-           :radians
-           :lerp
-           :mix))
+           :radians))
+
+(defpackage :maths
+  (:use :cl)
+  (:export :lerp :mix :stepv :clamp :smoothstep :pulse))
 
 (defpackage :conditional-functions
   (:use :cl)
@@ -252,6 +254,7 @@
 (defpackage :quaternions
   (:use :cl :base-maths)
   (:nicknames :q)
+  (:shadow :lerp)
   (:export :w :x :y :z :zero-quit :zero-quatp 
            :unit-quatp :identity-quat :identity-quatp
            :make-quat :make-quat-from-vec3 

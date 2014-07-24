@@ -129,6 +129,3 @@
   (the single-float (* radians +one-radian-in-degrees+)))
 
 ;;----------------------------------------------------------------
-
-(defun lerp (start end ammount) (+ start (* ammount (- end start))))
-(defun mix (start end ammount) (lerp start end ammount))
