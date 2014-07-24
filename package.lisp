@@ -18,7 +18,6 @@
            :hash-values
            :hash-keys 
            :intersperse
-           :update-swank
            :walk-replace
            :file-to-string
            :flatten
@@ -504,6 +503,7 @@
            :c-populate
            :make-gpu-array
            :make-gpu-arrays
+           :update-swank
            :gl-subseq
            :with-gpu-array-as-c-array
            :make-vertex-stream
