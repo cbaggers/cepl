@@ -11,11 +11,11 @@
                 0.0 0.0))))
 
 (defvshader vert ((position :vec4) &uniform (i :int) (loop :float))
-  (let ((pos (v! (* (s~ position :xyz) 0.2) 1.0)))
+  (let ((pos (v! (* (s~ position :xyz) 0.3) 1.0)))
     (setf gl-position (+ pos (calc-offset (+ (float i)) loop)) )))
 
 (deffshader frag (&uniform (loop :float))
-  (out output-color (v! (cos loop) (sin loop) 0.3 1.0)))
+  (out output-color (v! (cos loop) (sin loop) 0.4 1.0)))
 
 (defpipeline prog-1 ((position :vec4) &uniform (i :int) (loop :float))
   vert frag)

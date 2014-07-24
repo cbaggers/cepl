@@ -1,4 +1,5 @@
 ;; vertex point light
+
 (defparameter *near* 1.0)
 (defparameter *far* 1000.0)
 (defparameter *frustrum-scale* nil)
@@ -6,6 +7,7 @@
 (defparameter *camera* nil)
 (defparameter *light* nil)
 (defparameter *loop-pos* 0.0)
+(defparameter *resolution* (v! 640 480))
 
 (defglstruct vcn ()
   (position :vec3 :accessor pos)
@@ -34,37 +36,13 @@
 
 (defclass entity ()
   ((gstream :initform nil :initarg :gstream :accessor gstream)
-   (position :initform (v! 0 3 2) :initarg :pos :accessor pos)
+   (position :initform (v! 0 0 -3) :initarg :pos :accessor pos)
    (rotation :initform (v! 0 0 0) :initarg :rot :accessor rot)
    (scale :initform (v! 1 1 1) :initarg :scale :accessor scale)))
-
-(defclass camera ()
-  ((position :initform (v! 0 0 0) :initarg :pos :accessor pos)
-   (look-direction :initform (v! 0 0 -1) :initarg :look-dir :accessor look-dir)
-   (up-direction :initform (v! 0 1 0) :initarg :up-direction 
-                 :accessor up-direction)))
 
 (defclass light ()
   ((position :initform (v! 20 20 -20) :initarg :pos :accessor pos)
    (radius :initform 1.0 :initarg :radius :accessor radius)))
-
-(defun point-camera-at (camera point)
-  (setf (look-dir camera) (v:normalize (v:- point (pos camera)))) 
-  camera)
-
-(defun calculate-cam-look-at-w2c-matrix (camera)
-  (let* ((look-dir (v3:normalize (look-dir camera)))
-         (up-dir (v3:normalize (up-direction camera)))
-         (right-dir (v3:normalize (v3:cross look-dir up-dir)))
-         (perp-up-dir (v3:cross right-dir look-dir))
-         (rot-matrix (m4:transpose
-                      (m4:rotation-from-matrix3
-                       (m3:make-from-rows right-dir
-                                          perp-up-dir
-                                          (v3:v-1 (v! 0 0 0) look-dir)))))
-         (trans-matrix (m4:translation (v3:v-1 (v! 0 0 0) 
-                                               (pos camera)))))
-    (m4:m* rot-matrix trans-matrix)))
 
 (defun load-lisp-model (filename)
   (let* ((monkey-data (utils:safe-read-from-string (utils:file-to-string filename)))
@@ -84,23 +62,11 @@
 
 (defun init () 
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-instance 'camera :pos (v! 0 3 6)))
-  (setf *frustrum-scale* (cepl-camera:calculate-frustrum-scale 45.0))
-  (vert-point-light nil :cam-to-clip (ccam:make-cam-clip-matrix *frustrum-scale*))
+  (setf *camera* (ccam:make-camera *resolution*))
+  (vert-point-light nil :cam-to-clip (ccam:cam->clip *camera*))
     
   ;;create monkey
-  (setf *monkey* (load-lisp-model "monkey.data"))
-
-  ;;set options
-  (gl:clear-color 0.0 0.0 0.0 0.0)
-  (gl:enable :cull-face)
-  (gl:cull-face :back)
-  (gl:front-face :ccw)
-  (gl:enable :depth-test)
-  (gl:depth-mask :true)
-  (gl:depth-func :lequal)
-  (gl:depth-range 0.0 1.0)
-  (gl:enable :depth-clamp))
+  (setf *monkey* (load-lisp-model "monkey.data")))
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list (m4:translation (pos entity))
@@ -110,7 +76,7 @@
 (defun draw ()
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (let* ((world-to-cam-matrix (calculate-cam-look-at-w2c-matrix *camera*))
+  (let* ((world-to-cam-matrix (ccam:world->cam *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix 
                                      (entity-matrix *monkey*)))
          (normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
@@ -128,8 +94,10 @@
   (cgl:update-display))
 
 (defun reshape (width height near far)
-  (vert-point-light nil :cam-to-clip (cepl-camera:make-cam-clip-matrix 
-                                      *frustrum-scale* near far))
+  (setf (ccam:frame-size *camera*) (v! width height)
+        (ccam:near *camera*) near
+        (ccam:far *camera*) far)
+  (vert-point-light nil :cam-to-clip (ccam:cam->clip *camera*))
   (gl:viewport 0 0 width height))
 
 (let ((running nil))
@@ -140,11 +108,11 @@
     (loop :while running :do
        (when (step-demo)
          (setf running nil))
-       (cepl-utils:update-swank)))
+       (update-swank)))
   (defun stop-demo () (setf running nil)))
 
 (defun step-demo ()
-  (setf *loop-pos* (+ *loop-pos* 0.05))
+  (setf *loop-pos* (+ *loop-pos* 0.005))
   (setf (pos *light*) (v! (* 10 (sin *loop-pos*))
                           7
                           (* 10 (cos *loop-pos*))))

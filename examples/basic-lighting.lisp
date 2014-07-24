@@ -7,6 +7,7 @@
 (defparameter *monkey* nil)
 (defparameter *camera* nil)
 (defparameter *light-direction* 0.0)
+(defparameter *resolution* (v! 640 480))
 
 (defglstruct vert-data ()
   (position :vec3)
@@ -34,59 +35,12 @@
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480 *near* *far*)))
 
-(defpipeline prog-2
-    ((vert vert-data) &uniform (dir-to-light :vec3) 
-     (light-intensity :vec4) (norm-model-to-cam :mat3)
-     (cam-to-clip :mat4) (model-to-cam :mat4)
-     (ambient-intensity :float))
-  (:vertex (setf gl-position 
-                 (* cam-to-clip
-                    (* model-to-cam				   
-                       (v! (vert-data-position vert) 1.0))))
-           (out (interp-color :smooth) 
-                (+ (* light-intensity 
-                      (vert-data-diffuse-color vert)
-                      (clamp (dot (normalize 
-                                   (* norm-model-to-cam
-                                      (vert-data-normal vert)))
-                                  dir-to-light) 
-                             0.0 1.0))
-                   (* (vert-data-diffuse-color vert)
-                      ambient-intensity))))
-  (:fragment (out output-color interp-color))
-  (:post-compile (reshape 1024 768 *near* *far*)))
 
 (defstruct entity 
   (stream nil)
-  (position (v! 0 3 2))
+  (position (v! 0 0 -4))
   (rotation (v! 0 0 0))
   (scale (v! 1 1 1)))
-
-(defstruct camera 
-  (position (v! 0 0 0))
-  (look-direction (v! 0 0 -1))
-  (up-direction (v! 0 1 0)))
-
-(defun point-camera-at (camera point)
-  (setf (camera-look-direction camera)
-        (v:normalize (v:- point (camera-position camera))))
-  camera)
-
-(defun calculate-cam-look-at-w2c-matrix (camera)
-  (let* ((look-dir (v3:normalize (camera-look-direction camera)))
-         (up-dir (v3:normalize (camera-up-direction camera)))
-         (right-dir (v3:normalize (v3:cross look-dir up-dir)))
-         (perp-up-dir (v3:cross right-dir look-dir))
-         (rot-matrix (m4:transpose
-                      (m4:rotation-from-matrix3
-                       (m3:make-from-rows right-dir
-                                          perp-up-dir
-                                          (v3:v-1 (v! 0 0 0)
-                                                  look-dir)))))
-         (trans-matrix 
-          (m4:translation (v3:v-1 (v! 0 0 0)
-                                  (camera-position camera)))))
-    (m4:m* rot-matrix trans-matrix)))
 
 (defun load-lisp-model (filename)
   (let* ((monkey-data (utils:safe-read-from-string (utils:file-to-string filename)))
@@ -105,24 +59,11 @@
     (make-entity :rotation (v! -1.57079633 1 0) :stream stream)))
 
 (defun init () 
-  (setf *camera* (make-camera :position (v! 0 3 6)))
-  (setf *frustrum-scale* (cepl-camera:calculate-frustrum-scale 45.0))
-  (prog-1 nil :cam-to-clip (ccam:make-cam-clip-matrix *frustrum-scale*))
-  (prog-2 nil :cam-to-clip (ccam:make-cam-clip-matrix *frustrum-scale*))
+  (setf *camera* (ccam:make-camera *resolution*))
+  (prog-1 nil :cam-to-clip (ccam:cam->clip *camera*))
   
   ;;create monkey
-  (setf *monkey* (load-lisp-model "monkey.data"))
-
-  ;;set options
-  (gl:clear-color 0.0 0.0 0.0 0.0)
-  (gl:enable :cull-face)
-  (gl:cull-face :back)
-  (gl:front-face :ccw)
-  (gl:enable :depth-test)
-  (gl:depth-mask :true)
-  (gl:depth-func :lequal)
-  (gl:depth-range 0.0 1.0)
-  (gl:enable :depth-clamp))
+  (setf *monkey* (load-lisp-model "monkey.data")))
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* 
@@ -133,8 +74,7 @@
 (defun draw ()
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (let* ((world-to-cam-matrix (calculate-cam-look-at-w2c-matrix
-                               *camera*))
+  (let* ((world-to-cam-matrix (ccam:world->cam *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix 
                                      (entity-matrix *monkey*)))
          (normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
@@ -157,11 +97,10 @@
   (cgl:update-display))
 
 (defun reshape (width height near far)
-  (prog-1 nil :cam-to-clip (cepl-camera:make-cam-clip-matrix 
-                            *frustrum-scale* near far))
-  (prog-2 nil :cam-to-clip (cepl-camera:make-cam-clip-matrix 
-                            *frustrum-scale* near far))
-  (gl:viewport 0 0 width height))
+  (setf (ccam:frame-size *camera*) (v! width height)
+        (ccam:near *camera*) near
+        (ccam:far *camera*) far)
+  (prog-1 nil :cam-to-clip (ccam:cam->clip *camera*)))
 
 (let ((running nil))
   (defun run-demo () 
@@ -174,6 +113,6 @@
          (:windowevent (:event e :data1 x :data2 y)
                        (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
                          (reshape x y *near* *far*))))
-       (cepl-utils:update-swank)
+       (update-swank)
        (continuable (draw))))
   (defun stop-demo () (setf running nil)))

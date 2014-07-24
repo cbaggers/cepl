@@ -11,7 +11,7 @@
 
 (defpipeline ripple-with-wobble ((vert vert-data) &uniform (tex :sampler-2d)
                                  (count :float) (pos-offset :vec4))
-  (:vertex (setf gl-position (+ (pos vert) pos-offset))
+  (:vertex (setf gl-position (pos vert))
            (out (tex-coord :smooth) (tex-pos vert)))
   (:fragment 
    (let* ((rip-size 0.02) (centre (v! 0.0 0.0)) (damp 0.6)
@@ -38,9 +38,9 @@
     (let* ((img-data (loop :for i :below 64 :collect
                         (loop :for j :below 64 :collect (random 254)))))
       (setf *vert-gpu* 
-            (make-gpu-array `((,(v!  0.0    0.5 0.0 1.0) ,(v!  0.0 -1.0))
+            (make-gpu-array `((,(v! -0.5 -0.366 0.0 1.0) ,(v! -1.0 1.0))
                               (,(v!  0.5 -0.366 0.0 1.0) ,(v!  1.0 1.0))
-                              (,(v! -0.5 -0.366 0.0 1.0) ,(v! -1.0 1.0)))
+                              (,(v!  0.0    0.5 0.0 1.0) ,(v!  0.0 -1.0)))
                             :dimensions 3 :element-type 'vert-data))
       (setf *v-stream* (make-vertex-stream *vert-gpu*))
       (setf *texture* (with-c-array
@@ -49,7 +49,7 @@
                         (make-texture :initial-contents temp)))
       (loop :while running :do
          (case-events (event) (:quit () (setf running nil)))
-         (cepl-utils:update-swank)
+         (update-swank)
          (base-macros:continuable
            (cgl:clear :color-buffer-bit)
            (step-demo)

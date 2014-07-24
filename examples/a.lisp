@@ -1,19 +1,18 @@
 ;; More 3D - Multiple objects rotating
 
 (defparameter *resolution* (v! 640 480))
+(defparameter *gpu-arrays* nil)
+(defparameter *tex-array* nil)
+(defparameter *tex* nil)
 (defparameter *entity* nil)
 (defparameter *loop* 0.0)
 (defparameter *camera* (ccam:make-camera *resolution*))
 
-(defglstruct vert-data ()
-  (position :vec3)
-  (color :vec4))
-
-(defpipeline gpu-draw ((vert vert-data) &uniform (model-clip :mat4))
-  (:vertex (setf gl-position (* model-clip (v! (vert-data-position vert) 1.0)))
-           (out (interp-color :smooth) (vert-data-color vert))
-           (out (pos :smooth) (vert-data-position vert)))
-  (:fragment (out output-color interp-color ))
+(defpipeline gpu-draw ((vert p-n-t) &uniform (model-clip :mat4)
+                       (tex :sampler-2d))
+  (:vertex (setf gl-position (* model-clip (v! (cgl::pos vert) 1.0)))
+           (out (coord :smooth) (cgl::tex vert)))
+  (:fragment (out output-color (texture tex coord)))
   (:post-compile (reshape *resolution*)))
 
 (defclass entity ()
@@ -23,30 +22,16 @@
    (scale :initform (v! 1 1 1) :initarg :scale :accessor scale)))
 
 (defun init () 
-  (let* ((verts (make-gpu-array `((,(v! +1  +1  +1)  ,(v! 0  1  0  1)) 
-                                  (,(v! -1  -1  +1)  ,(v! 0  0  1  1))
-                                  (,(v! -1  +1  -1)  ,(v! 1  0  0  1))
-                                  (,(v! +1  -1  -1)  ,(v! 0.5  0.5  0  1))
-                                  (,(v! -1  -1  -1)  ,(v! 0  1  0  1)) 
-                                  (,(v! +1  +1  -1)  ,(v! 0  0  1  1))
-                                  (,(v! +1  -1  +1)  ,(v! 1  0  0  1))
-                                  (,(v! -1  +1  +1)  ,(v! 0.5  0.5  0  1)))
-                                :element-type 'vert-data :dimensions 8))
-         (indicies (make-gpu-array '(0 1 2   1 0 3   2 3 0   3 2 1
-                                     5 4 6   4 5 7   7 6 4   6 7 5)
-                    :dimensions 24 :element-type :unsigned-short))
-         (stream (make-vertex-stream verts :index-array indicies)))
-    (setf *entity* (make-instance 'entity :e-stream stream)))
-  ;;set options
-  (cgl:clear-color 0.0 0.0 0.0 0.0)
-  (gl:enable :cull-face)
-  (gl:cull-face :back)
-  (gl:front-face :cw)
-  (gl:enable :depth-test)
-  (gl:depth-mask :true)
-  (gl:depth-func :lequal)
-  (gl:depth-range 0.0 1.0)
-  (gl:enable :depth-clamp))
+  (multiple-value-bind (garrays stream) (primitives:prim-array :box 1.0 t t)
+    (setf *gpu-arrays* garrays
+          *entity* (make-instance 'entity :e-stream stream)))
+  (setf *tex-array* (make-c-array '(64 64) :vec4 :initial-contents 
+                      (loop for i below 64 :collect
+                           (loop :for j :below 64 :collect 
+                              (v! (/ (random 100) 100) (/ (random 100) 100)
+                                  (/ (random 100) 100) 1))))
+        *tex* (make-texture :initial-contents *tex-array*))
+  (make-texture :initial-contents *a*))
 
 (defun model->clip (entity)
   (reduce #'m4:m* (list (ccam:cam->clip *camera*)
@@ -60,8 +45,8 @@
   (incf *loop* 0.01)
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
-  (setf (rot *entity*) (v:+ (rot *entity*) (v! 0.004 0.004 0)))
-  (gpu-draw (e-stream *entity*) :model-clip (model->clip *entity*))
+  (setf (rot *entity*) (v:+ (rot *entity*) (v! 0.0008 0.0008 0)))
+  (gpu-draw (e-stream *entity*) :model-clip (model->clip *entity*) :tex *tex*)
   (gl:flush)
   (cgl:update-display))
 

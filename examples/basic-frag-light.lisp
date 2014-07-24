@@ -1,9 +1,10 @@
-;; vertex point light - unfinished
+;; fragment point light - unfinished
 
 (defparameter *near* 1.0)
 (defparameter *far* 1000.0)
 (defparameter *frustrum-scale* nil)
 (defparameter *monkey* nil)
+(defparameter *resolution* (v! 640 480))
 (defparameter *camera* nil)
 (defparameter *light* nil)
 (defparameter *loop-pos* 0.0)
@@ -18,7 +19,7 @@
      (cam-to-clip :mat4) (model-space-light-pos :vec3)
      (light-intensity :vec4) (ambient-intensity :vec4))
   (:vertex (setf gl-position (* cam-to-clip (* model-to-cam 
-                                               (vec4 (pos data) 1.0))))
+                                               (v! (pos data) 1.0))))
            (out model-space-pos (pos data))
            (out vertex-normal (normal data))
            (out diffuse-color (color data)))
@@ -34,38 +35,13 @@
 
 (defclass entity ()
   ((gstream :initform nil :initarg :gstream :accessor gstream)
-   (position :initform (v! 0 3 2) :initarg :pos :accessor pos)
+   (position :initform (v! 0 0 -4) :initarg :pos :accessor pos)
    (rotation :initform (v! 0 0 0) :initarg :rot :accessor rot)
    (scale :initform (v! 1 1 1) :initarg :scale :accessor scale)))
-
-(defclass camera ()
-  ((position :initform (v! 0 0 0) :initarg :pos :accessor pos)
-   (look-direction :initform (v! 0 0 -1) :initarg :look-dir :accessor look-dir)
-   (up-direction :initform (v! 0 1 0) :initarg :up-direction 
-                 :accessor up-direction)))
 
 (defclass light ()
   ((position :initform (v! 20 20 -20) :initarg :pos :accessor pos)
    (radius :initform 1.0 :initarg :radius :accessor radius)))
-
-(defun point-camera-at (camera point)
-  (setf (look-dir camera)
-        (v:normalize (v:- point (pos camera))))
-  camera)
-
-(defun calculate-cam-look-at-w2c-matrix (camera)
-  (let* ((look-dir (v3:normalize (look-dir camera)))
-         (up-dir (v3:normalize (up-direction camera)))
-         (right-dir (v3:normalize (v3:cross look-dir up-dir)))
-         (perp-up-dir (v3:cross right-dir look-dir))
-         (rot-matrix (m4:transpose
-                      (m4:rotation-from-matrix3
-                       (m3:make-from-rows 
-                        right-dir perp-up-dir
-                        (v3:v-1 (v! 0 0 0) look-dir)))))
-         (trans-matrix (m4:translation (v3:v-1 (v! 0 0 0) 
-                                               (pos camera)))))
-    (m4:m* rot-matrix trans-matrix)))
 
 (defun load-lisp-model (filename)
   (let* ((monkey-data (utils:safe-read-from-string (utils:file-to-string filename)))
@@ -85,9 +61,8 @@
 
 (defun init () 
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-instance 'camera :pos (v! 0 3 6)))
-  (setf *frustrum-scale* (cepl-camera:calculate-frustrum-scale 45.0))
-  (frag-point-light nil :cam-to-clip (ccam:make-cam-clip-matrix *frustrum-scale*))
+  (setf *camera* (ccam:make-camera *resolution*))
+    (frag-point-light nil :cam-to-clip (ccam:cam->clip *camera*))
     
   ;;create monkey
   (setf *monkey* (load-lisp-model "monkey.data"))
@@ -111,7 +86,7 @@
 (defun draw ()
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (let* ((world-to-cam-matrix (calculate-cam-look-at-w2c-matrix *camera*))
+  (let* ((world-to-cam-matrix (ccam:world->cam *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix 
                                      (entity-matrix *monkey*)))
          (normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
@@ -123,14 +98,16 @@
                                      (v-z cam-light-vec))
                       :light-intensity (v! 1 1 1 0)
                       :model-to-cam model-to-cam-matrix
-                      :normal-model-to-cam normal-to-cam-matrix
+                      ;; :normal-model-to-cam normal-to-cam-matrix
                       :ambient-intensity (v! 0.1 0.1 0.1 1.0)))
   (gl:flush)
   (cgl:update-display))
 
 (defun reshape (width height near far)
-  (frag-point-light nil :cam-to-clip (cepl-camera:make-cam-clip-matrix 
-                                      *frustrum-scale* near far))
+  (setf (ccam:frame-size *camera*) (v! width height)
+        (ccam:near *camera*) near
+        (ccam:far *camera*) far)
+  (frag-point-light nil :cam-to-clip (ccam:cam->clip *camera*))
   (gl:viewport 0 0 width height))
 
 (let ((running nil))
@@ -140,7 +117,7 @@
     (loop :while running :do
        (when (step-demo)
          (setf running nil))
-       (cepl-utils:update-swank)))
+       (update-swank)))
   (defun stop-demo () (setf running nil)))
 
 (defun step-demo ()

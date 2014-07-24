@@ -369,6 +369,9 @@
            :free-gpu-array
            :free-vao
            :p-n-t
+           :pos
+           :norm
+           :tex
            ;;----------
            :delete-shader
            :clear-color
@@ -435,7 +438,8 @@
   (:export :primitive-data
            :plain-data
            :box-data
-           :sphere-data))
+           :sphere-data
+           :prim-array))
 
 (defpackage :cepl
   (:use :cl
