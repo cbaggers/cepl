@@ -6,13 +6,13 @@
 (defparameter *camera* (ccam:make-camera *resolution*))
 
 (defglstruct vert-data 
-  (position :vec3)
-  (color :vec4))
+  (position :vec3 :accessor vert-pos)
+  (color :vec4 :accessor vert-color))
 
 (defpipeline gpu-draw ((vert vert-data) &uniform (model-clip :mat4))
-  (:vertex (setf gl-position (* model-clip (v! (vert-data-position vert) 1.0)))
-           (out (interp-color :smooth) (vert-data-color vert))
-           (out (pos :smooth) (vert-data-position vert)))
+  (:vertex (setf gl-position (* model-clip (v! (vert-pos vert) 1.0)))
+           (out (interp-color :smooth) (vert-color vert))
+           (out (pos :smooth) (vert-pos vert)))
   (:fragment (out output-color (+ (v! 0.2 0.2 0.2 0) (* interp-color (/ (sin (* 10 (x pos)))
                                                                         1.5)))))
   (:post-compile (reshape *resolution*)))
