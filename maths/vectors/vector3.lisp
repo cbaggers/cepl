@@ -429,3 +429,10 @@
   (lerp (lerp a1 a2 ammount)
         (lerp b1 b2 ammount)
         ammount))
+
+;;----------------------------------------------------------------
+
+(defun spline (x knots)  
+  (make-vector3 (maths:spline x (mapcar #'v-x knots))
+                (maths:spline x (mapcar #'v-y knots))
+                (maths:spline x (mapcar #'v-z knots))))

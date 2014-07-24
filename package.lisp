@@ -60,7 +60,8 @@
 
 (defpackage :maths
   (:use :cl)
-  (:export :lerp :mix :stepv :clamp :smoothstep :pulse))
+  (:export :lerp :mix :stepv :clamp :smoothstep :pulse
+           :spline))
 
 (defpackage :conditional-functions
   (:use :cl)
@@ -135,7 +136,7 @@
            :absolute-dot :normalize :perp-dot
            :*unit-x* :*unit-y* :*unit-scale*
            :vzerop :unitp :cross :face-foreward :lerp
-           :bezier)
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -152,7 +153,7 @@
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
            :vzerop :unitp :cross :face-foreward :lerp
-           :bezier)
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -169,7 +170,7 @@
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*
            :vzerop :unitp :face-foreward :lerp
-           :bezier)
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
