@@ -218,6 +218,19 @@
 
 ;----------------------------------------------------------------
 
+(declaim (inline face-foreward)
+	 (ftype (function ((simple-array single-float (2)) 
+                       (simple-array single-float (2))) 
+                      (simple-array single-float (2))) 
+            face-foreward))
+(defun face-foreward (vector-a vector-b)
+  (declare ((simple-array single-float (2)) vector-a vector-b))
+  (if (> (print (dot vector-a vector-b)) 0)
+      vector-a
+      (negate vector-a)))
+
+;----------------------------------------------------------------
+
 (declaim (inline vlength-squared)
 	 (ftype (function ((simple-array single-float (2))) 
 			  (single-float)) vlength-squared))
@@ -340,3 +353,15 @@
    2 times the area of the triangle."
   (declare ((simple-array single-float (3)) vec-a vec-b))  
   (- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b))))
+
+;----------------------------------------------------------------
+
+(declaim (inline lerp)
+         (ftype (function ((simple-array single-float (2)) 
+                           (simple-array single-float (2))
+                           (single-float)) 
+                          (simple-array single-float (2))) 
+                lerp))
+(defun lerp (vector-a vector-b ammount) 
+  (declare ((simple-array single-float (2)) vector-a vector-b))
+  (v+1 vector-a (v* (v-1 vector-b vector-a) ammount)))
