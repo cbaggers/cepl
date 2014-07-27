@@ -374,7 +374,6 @@
            :free-buffers
            :free-vertex-stream
            :free-texture
-           :free-textures
            :free-gpu-array
            :free-vao
            :p-n-t

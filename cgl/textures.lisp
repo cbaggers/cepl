@@ -20,8 +20,8 @@
 (defclass gl-texture () 
   ((texture-id :initarg :texture-id :reader texture-id)
    (base-dimensions :initarg :base-dimensions :accessor base-dimensions)
-   (texture-type :initarg :texture-type :reader texture-type) ;the structure
-   (internal-format :initarg :internal-format :reader internal-format) ;texels
+   (texture-type :initarg :texture-type :reader texture-type)
+   (internal-format :initarg :internal-format :reader internal-format)
    (sampler-type :initarg :sampler-type :reader sampler-type)
    (mipmap-levels :initarg :mipmap-levels)
    (layer-count :initarg :layer-count)
@@ -30,6 +30,9 @@
 
 (defclass immutable-texture (gl-texture) ())
 (defclass mutable-texture (gl-texture) ())
+(defclass buffer-texture (gl-texture) 
+  ((backing-array :initarg :backing-array)
+   (owns-array :initarg :owns-array)))
 
 (defgeneric mutable-texturep (texture))
 (defmethod mutable-texturep ((texture mutable-texture)) t)
@@ -55,6 +58,12 @@
             (slot-value object 'base-dimensions)
             (when (> m 1) m) (when (> l 1) l) c)))
 
+(defmethod print-object ((object buffer-texture) stream)
+  (format stream 
+          "#<GL-~a (~{~a~^x~})>"
+          (slot-value object 'texture-type)
+          (slot-value object 'base-dimensions)))
+
 (defmethod gl-free ((object gl-texture))
   (free-texture object))
 
@@ -72,17 +81,21 @@
           (slot-value texture 'cubes) nil
           (slot-value texture 'allocated) nil)))
 
-(defun free-texture (texture)
+(defmethod free-texture ((texture gl-texture))
   (with-foreign-object (id :uint) 
     (setf (mem-ref id :uint) (texture-id texture))
     (setf (slot-value texture 'texture-id) -1)
     (%gl:delete-textures 1 id)))
 
-;; [TODO] would a unboxed lisp array be faster?
-(defun free-textures (textures)
-  (with-foreign-object (id :uint (length textures))
-    (loop :for texture :in textures :for i :from 0 :do
-       (setf (mem-aref id :uint i) (texture-id texture)))
+(defmethod free-texture ((texture buffer-texture))
+  (with-foreign-object (id :uint) 
+    (with-slots (owns-array backing-array) texture
+      (when owns-array
+        (gl-free backing-array)
+        (setf owns-array nil
+              backing-array nil)))
+    (setf (mem-ref id :uint) (texture-id texture))
+    (setf (slot-value texture 'texture-id) -1)
     (%gl:delete-textures 1 id)))
 
 (defclass gpu-array-t ()
@@ -123,6 +136,8 @@
 (defun error-on-invalid-upload-formats (target internal-format pixel-format pixel-type)
   (unless (and internal-format pixel-type pixel-format)
     (error "Could not establish all the required formats for the pixel transfer"))
+  (when (eq target :texture-buffer)
+    (error "You should not have reached this function as buffer backed textures have buffer-gpu-arrays as their backing stores"))
   (when (and (find internal-format '(:depth-component :depth-component16
                                      :depth-component24 :depth-component32f))
              (not (find target '(:texture_2d :proxy_texture_2d
@@ -235,13 +250,16 @@
     ((t t t 2 nil nil nil) :texture-cube-map-array)
     ((nil nil nil 2 nil nil t) :texture-rectangle)
     ((nil nil nil 1 nil t nil) :texture-buffer)
+    ((nil nil nil 2 nil t nil) :texture-buffer)
+    ((nil nil nil 3 nil t nil) :texture-buffer)
     ((nil nil nil 2 t nil nil) :texture-2d-multisample)
     ((nil t nil 2 t nil nil) :texture-2d-multisample-array)))
 
+;; {TODO} Ok so the internal format bit is crap. Fix this
 ;; [TODO] Add shadow samplers
 ;; [TODO] does cl-opengl use multisample instead of ms?
-;; [TODO] What the buggery is this doing?
 (defun calc-sampler-type (texture-type internal-format)
+  "Makes the keyword that names the sampler-type for the given texture-type and format"
   (utils:kwd
    (case internal-format
      ((:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm 
@@ -296,30 +314,32 @@
 ;;------------------------------------------------------------
 
 ;; [TODO] how does mipmap-max affect this
-;; [TODO] si the max layercount?
+;; [TODO] what is the max layercount?
 ;; [TODO] should fail on layer-count=0?
 (defun make-texture (&key dimensions internal-format (mipmap nil) 
                        (layer-count 1) (cubes nil) (rectangle nil)
                        (multisample nil) (immutable t) (buffer-storage nil)
                        initial-contents)
-  (let* ((pixel-format (when initial-contents 
-                         (pixel-format-of initial-contents)))
-         (internal-format 
-          (if internal-format
-              (if (pixel-format-p internal-format)
-                  (internal-format-from-pixel-format internal-format)
-                  internal-format)
-              (when initial-contents
-                (or (internal-format-from-pixel-format pixel-format)
-                    (error "Could not infer the internal-format")))))
-         (dimensions (if initial-contents
+  (let* ((dimensions (if initial-contents
                          (if dimensions
                              (error "Cannot specify dimensions and have non nil initial-contents")
                              (dimensions initial-contents))
                          (if dimensions dimensions (error "must specify dimensions if no initial-contents provided")))))
-    (if (not buffer-storage)
+    (if buffer-storage
+        (%make-buffer-texture dimensions internal-format mipmap layer-count cubes
+                             rectangle multisample immutable initial-contents)
         ;; check for power of two - handle or warn
-        (let ((texture-type (establish-texture-type 
+        (let* ((pixel-format (when initial-contents 
+                               (pixel-format-of initial-contents)))
+               (internal-format 
+                (if internal-format
+                    (if (pixel-format-p internal-format)
+                        (pixel-format->internal-format internal-format)
+                        internal-format)
+                    (when initial-contents
+                      (or (pixel-format->internal-format pixel-format)
+                          (error "Could not infer the internal-format")))))
+               (texture-type (establish-texture-type 
                              (if (listp dimensions) (length dimensions) 1)
                              mipmap (> layer-count 1) cubes 
                              (every #'po2p dimensions) multisample 
@@ -352,10 +372,68 @@
                            (texref texture) initial-contents
                            pformat ptype))))
                     texture))
-              (error "This combination of texture features is invalid")))
-        (error "Buffer backed textures are not yet implemented"))))
+              (error "This combination of texture features is invalid"))))))
+
+(defun %make-buffer-texture (dimensions element-format mipmap layer-count cubes
+                             rectangle multisample immutable initial-contents)
+  (declare (ignore immutable))
+  (when (gpuarray-p initial-contents)
+    (error "Cannot currently make a buffer-backed texture with an existing buffer-backed gpu-array"))
+  (when (typep initial-contents 'gpu-array-t)
+    (error "Cannot make a buffer-backed texture with a texture-backed gpu-array"))
+  (when (or mipmap (not (= layer-count 1)) cubes rectangle multisample)
+    (error "Buffer-backed textures cannot have mipmaps, multiple layers or be cube rectangle or multisample"))
+  (unless (or (null initial-contents) (typep initial-contents 'c-array))
+    (error "Invalid initial-contents for making a buffer-backed texture"))
+  (let* ((internal-format (%find-tex-internal-format 
+                           (if initial-contents
+                               (element-type initial-contents)
+                               element-format)))
+         (element-type (if initial-contents
+                           (element-type initial-contents)
+                           (internal-format->element-type internal-format)))
+         (texture-type (establish-texture-type 
+                        (if (listp dimensions) (length dimensions) 1)
+                        nil nil nil (every #'po2p dimensions) nil t nil)))
+    (unless (valid-internal-format-for-buffer-backed-texturep internal-format)
+      (error "Invalid internal format for use with buffer-backed-texture"))
+    (unless (eq texture-type :texture-buffer)
+      (error "Could not establish the correct texture type for a buffer texture: ~a"
+             texture-type))
+    (let* ((array (or (make-gpu-array initial-contents)
+                      (make-gpu-array nil :dimensions dimensions 
+                                      :element-type element-type)))
+           (new-tex (make-instance 
+                     'buffer-texture
+                     :texture-id (gen-texture)
+                     :base-dimensions dimensions
+                     :texture-type texture-type
+                     :mipmap-levels 1
+                     :layer-count 1
+                     :cubes nil
+                     :internal-format internal-format
+                     :sampler-type (calc-sampler-type
+                                    texture-type internal-format)
+                     :backing-array array
+                     :owns-array t)))      
+      (with-texture-bound (new-tex) 
+        (%gl::tex-buffer :texture-buffer internal-format
+                         (glbuffer-buffer-id (gpuarray-buffer array)))
+        (setf (slot-value new-tex 'allocated) t)
+        new-tex))))
+
+(defun %find-tex-internal-format (element-format)
+  (if (pixel-format-p element-format)
+      (pixel-format->internal-format element-format)      
+      (let ((pfo (pixel-format-of element-format)))
+        (if pfo
+            (pixel-format->internal-format pfo)
+            element-format))))
 
 (defgeneric allocate-texture (texture))
+
+(defmethod allocate-texture ((texture buffer-texture))
+  (error "This function should not have been called with a buffer backed texture"))
 
 (defmethod allocate-texture ((texture mutable-texture))
   (gl:tex-parameter (texture-type texture) :texture-base-level 0)
@@ -402,21 +480,25 @@
              (eql 0 cube-face)))))
 
 (defun texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
-  (if (valid-index-p texture mipmap-level layer cube-face)
-      (make-instance 'gpu-array-t
-                     :texture texture
-                     :texture-type (texture-type texture)
-                     :level-num mipmap-level
-                     :layer-num layer
-                     :face-num cube-face
-                     :dimensions (dimensions-at-mipmap-level
-                                  texture mipmap-level)
-                     :internal-format (internal-format texture))
-      (error "Texture index out of range")))
+  (if (eq (slot-value texture 'texture-type) :texture-buffer)
+      (if (> (+ mipmap-level layer cube-face) 0)
+          (error "Texture index out of range")
+          (slot-value texture 'backing-array))
+      (if (valid-index-p texture mipmap-level layer cube-face)
+          (make-instance 'gpu-array-t
+                         :texture texture
+                         :texture-type (texture-type texture)
+                         :level-num mipmap-level
+                         :layer-num layer
+                         :face-num cube-face
+                         :dimensions (dimensions-at-mipmap-level
+                                      texture mipmap-level)
+                         :internal-format (internal-format texture))
+          (error "Texture index out of range"))))
 
 ;;------------------------------------------------------------
 
-(defmethod gl-push ((object gl-texture) (destination gpu-array-t))
+(defmethod gl-push ((object c-array) (destination gl-texture))
   (gl-push object (texref destination)))
 
 ;; [TODO] gl-push taking lists
@@ -441,7 +523,7 @@
 (defmethod gl-pull-1 ((object gpu-array-t))
   (with-slots (layer-num level-num texture-type face-num 
                          internal-format texture) object
-    (let* ((p-format (pixel-format-from-internal-format 
+    (let* ((p-format (internal-format->pixel-format 
                       (internal-format object)))
            (c-array (make-c-array (dimensions object) p-format)))
       (destructuring-bind (format type) (compile-pixel-format p-format)
@@ -472,6 +554,7 @@
             (error "Texture has already been bound"))))
   texture)
 
+;; {TODO}
 ;; copy data (from gpu to cpu) - get-tex-image
 ;; copy data (from frame-buffer to texture image) - leave for now
 ;; copy from buffer to texture glCopyTexSubImage2D

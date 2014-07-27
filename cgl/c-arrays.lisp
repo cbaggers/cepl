@@ -63,7 +63,7 @@
     (error "dimensions are not optional when making an array from a pointer"))
   (let* ((p-format (pixel-format-p element-type))
          (element-type2 (if p-format
-                            (pixel-format-element-type element-type)
+                            (pixel-format->element-type element-type)
                             element-type))
          (elem-size (gl-type-size element-type2)))
     (multiple-value-bind (byte-size row-byte-size)
@@ -100,7 +100,7 @@
   (let* ((dimensions (listify dimensions))
          (p-format (pixel-format-p element-type))
          (element-type2 (if p-format
-                            (pixel-format-element-type element-type)
+                            (pixel-format->element-type element-type)
                             element-type))
          (elem-size (gl-type-size element-type2)))
     (when (> (length dimensions) 4) 
