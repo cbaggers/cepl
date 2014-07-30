@@ -268,10 +268,6 @@
            :dot :rotate :lerp :slerp :approx-slerp
            :to-matrix3 :to-matrix4))
 
-(defpackage :interpolation
-  (:use :cl :base-vectors :base-matrices :base-maths)
-  (:export :lerp-number :lerp3 :nlerp3 :slerp3 ))
-
 (defpackage :declarative-values
   (:use :cl)
   (:nicknames :dvals)
@@ -449,13 +445,21 @@
            :sphere-data
            :prim-array))
 
+(defpackage :tools
+  (:use :cl
+        :base-vectors
+        :base-matrices
+        :base-maths
+        :base-time 
+        :tiny-time-manager)
+  (:export :rqpos))
+
 (defpackage :cepl
   (:use :cl
         :declarative-values
         :base-vectors
         :base-matrices
         :base-maths
-        :interpolation
         :base-time
         :conditional-functions
         :base-macros)
