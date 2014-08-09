@@ -54,6 +54,7 @@
            :evt->
            :evt+>
            ;;---
+           :update-swank
            :cls
            :pixel-format
            :pixel-format-of

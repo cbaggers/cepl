@@ -11,6 +11,14 @@
 ;; some kind of abstraction aroudn the idea of 'cameras'
 
 (in-package :cepl-camera)
+(defun calculate-frustrum-scale (field-of-view-degrees)
+  (/ 1.0 (tan (/ (* field-of-view-degrees base-maths:+one-degree-in-radians+) 2.0))))
+
+(defun make-cam-clip-matrix (frustrum-scale &optional (near 1.0) (far 45.0))
+  (matrix4:make-matrix4 frustrum-scale 0.0 0.0 0.0
+			0.0 frustrum-scale 0.0 0.0
+			0.0 0.0 (/ (+ far near) (- near far)) -1.0
+			0.0 0.0 (/ (* 2.0 far near) (- near far)) 0.0))
 
 ;;;--------------------------------------------------------------
 

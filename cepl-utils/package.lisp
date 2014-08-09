@@ -40,7 +40,6 @@
            :hash-values
            :hash-keys 
            :intersperse
-           :update-swank
            :walk-replace
            :file-to-string
            :flatten

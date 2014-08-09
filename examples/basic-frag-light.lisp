@@ -12,7 +12,7 @@
 (defparameter *loop-pos* 0.0)
 (defparameter *swatch* nil)
 
-(defclass entity ()
+(defclass element ()
   ((gstream :initform nil :initarg :gstream :accessor gstream)
    (position :initform (v! 0 0 -1) :initarg :pos :accessor pos)
    (rotation :initform (v! 0 0 0) :initarg :rot :accessor rot)
@@ -76,10 +76,10 @@
 
 
 
-(defun entity-matrix (entity)
-  (reduce #'m4:m* (list (m4:translation (pos entity))
-                        (m4:rotation-from-euler (rot entity))
-                        (m4:scale (scale entity)))))
+(defun element-matrix (element)
+  (reduce #'m4:m* (list (m4:translation (pos element))
+                        (m4:rotation-from-euler (rot element))
+                        (m4:scale (scale element)))))
 
 (defun draw ()
   (gl:clear-depth 1.0)

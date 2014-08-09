@@ -1,6 +1,7 @@
 (in-package :cepl)
 ;; This gives us a simple moving triangle
 
+(in-package :cepl)
 (defparameter *gpu-array* nil)
 (defparameter *vertex-stream* nil)
 (defparameter *loop* 0.1)

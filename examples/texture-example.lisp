@@ -1,5 +1,6 @@
 ;; Texturing and fragment effects
-
+;; not working
+(in-package :cepl)
 (defparameter *count* 0.0) 
 (defparameter *texture* nil)
 (defparameter *vert-gpu* nil)
