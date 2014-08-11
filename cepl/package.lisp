@@ -7,6 +7,8 @@
 ;; known as the LLGPL.
 
 ;;;; package.lisp
+(in-package #:cl-user)
+
 (defpackage :cepl
   (:use :cl
         :declarative-values
