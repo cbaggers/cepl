@@ -25,10 +25,22 @@
     ((10 10 10 2) :uint) ((:r 2 10 10 10) :uint)
     ((24 8) :uint) ((:r 10 11 11) :uint) ((:r 5 9 9 9) :uint)))
 (defparameter *valid-internal-formats-for-buffer-backed-texture*
-  '(:R16 :R16F :R16I :R16UI :R32F :R32I :R32UI :R8 :R8I :R8UI :RG16 :RG16F
-    :RG16I :RG16UI :RG32F :RG32I :RG32UI :RG8 :RG8I :RG8UI :RGB32F :RGB32I
-    :RGB32UI :RGBA16 :RGBA16F :RGBA16I :RGBA16UI :RGBA32F :RGBA32I :RGBA8
-    :RGBA8I :RGBA8UI :RGBA32UI))
+  '(:r16 :r16f :r16i :r16ui :r32f :r32i :r32ui :r8 :r8i :r8ui :rg16 :rg16f
+    :rg16i :rg16ui :rg32f :rg32i :rg32ui :rg8 :rg8i :rg8ui :rgb32f :rgb32i
+    :rgb32ui :rgba16 :rgba16f :rgba16i :rgba16ui :rgba32f :rgba32i :rgba8
+    :rgba8i :rgba8ui :rgba32ui))
+(defparameter *color-renderable-formats*
+  '(:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm :rgb8
+    :rgb8-snorm :rgb16-snorm :rgba8 :rgba8-snorm :rgba16 :r32f :rg32f :rgb32f
+    :rgba32f :r8i :r8ui :r16i :r16ui :r32i :r32ui :rg8i :rg8ui :rg16i :rg16ui
+    :rg32i :rg32ui :rgb8i :rgb8ui :rgb16i :rgb16ui :rgb32i :rgb32ui :rgba8i
+    :rgba8ui :rgba16i :rgba16ui :rgba32i :rgba32ui :srgb8 :srgb8-alpha8 :rgba2
+    :rgba4 :r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui))
+(defparameter *depth-formats*
+  '(:depth-component16 :depth-component32 :depth-component32f))
+(defparameter *stencil-formats*
+  '(:stencil-index8))
+(defparameter *depth-stencil-formats* '())
 (defparameter *gl-integral-pixel-types* 
   '(:ubyte :byte :ushort :short :uint :int))
 (defparameter *expanded-gl-type-names* 
@@ -242,6 +254,17 @@
   (when (find type *valid-pixel-types*)
     (pixel-format :r type)))
 
-
 (defun valid-internal-format-for-buffer-backed-texturep (format)
   (find format *valid-internal-formats-for-buffer-backed-texture*))
+
+(defun color-renderable-formatp (format)
+  (not (null (find format *color-renderable-formats*))))
+
+(defun depth-formatp (format)
+  (not (null (find format *depth-formats*))))
+
+(defun stencil-formatp (format)
+  (not (null (find format *stencil-formats*))))
+
+(defun depth-stencil-formatp (format)
+  (not (null (find format *depth-stencil-formats*))))

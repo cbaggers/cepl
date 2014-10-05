@@ -11,7 +11,8 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :dbind
+  (:export :gdefun 
+           :dbind
            :sn-equal
            :listify
            :replace-nth 
@@ -32,7 +33,8 @@
            :sub-at-index
            :symbolicate-package
            :lispify-name
-           :symbol-name-equal))
+           :symbol-name-equal
+           :mapcat))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)

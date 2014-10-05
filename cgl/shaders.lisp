@@ -82,12 +82,13 @@
            (split-args (varjo:split-arguments args))
            (prim-type (varjo::get-primitive-type-from-context (third split-args)))
            (uniforms (second split-args))
-           (uniform-names (mapcar #'first uniforms))
+           (uniform-names (mapcar #'first uniforms))           
            (uniform-details (loop :for u :in uniforms :collect 
                                (make-arg-assigners u)))
            (u-lets (loop :for u :in uniform-details :append (first u)))
            (u-uploads (loop :for u :in uniform-details :collect (second u))))
-      `(let ((program-id nil) ,@(loop for (u) in u-lets collect `(,u -1)))
+      `(let ((program-id nil)
+             ,@(loop for (u) in u-lets collect `(,u -1)))
          (defun ,invalidate-func-name () (setf program-id nil))
          ;; func that will create all resources for pipeline
          (defun ,init-func-name ()
@@ -95,7 +96,8 @@
                   (compiled-stages (varjo::rolling-translate 
                                     ',args (loop :for i :in stages :collect
                                               (if (symbolp i) 
-                                                  (get-compiled-asset i) i))))
+                                                  (get-compiled-asset i) 
+                                                  i))))
                   (shaders-objects
                    (loop :for compiled-stage :in compiled-stages
                       :collect (make-shader (varjo->gl-stage-names
@@ -105,7 +107,7 @@
                                  (cond ((symbolp s) `(,s)) ((listp s) (used-external-functions c)))))
                   (prog-id (update-shader-asset ',name :pipeline compiled-stages
                                                 #',invalidate-func-name depends-on))
-                  (image-unit -1))
+                  (image-unit -1))             
              (declare (ignorable image-unit))
              (format t ,(format nil "~&; uploading (~a ...)~&" name))
              (link-shaders shaders-objects prog-id)
@@ -119,25 +121,33 @@
            (declare (ignorable ,@uniform-names))
            (unless program-id (setf program-id (,init-func-name)))
            (use-program program-id)
-           ,@u-uploads
+           ,@u-uploads          
            (when stream (no-bind-draw-one stream ,prim-type))
            (use-program 0)
            stream)))))
 
+;; (defun make-implicit-uniform-uploader (implicit-uniforms)
+;;   (let* ((uniforms (mapcar #'(lambda (x) (list (first x) (third x))) 
+;;                            implicit-uniforms))
+;;          (details (loop :for u :in uniforms :collect 
+;;                      (make-arg-assigners u)))
+;;          (uploaders (loop :for u :in details :collect (second u))))
+;;     (break "break" details)))
+
 (defmacro defvshader (name args &body body)
   (let ((args (if (find '&context args :test #'symbol-name-equal)
-                  (append (copy-list args) `(:vertex))
-                  (append (copy-list args) `(&context :vertex)))))
+                  (append (copy-list args) `(:vertex)) ; :stemcells
+                  (append (copy-list args) `(&context :vertex))))) ; :stemcells
     `(defshader ,name ,args ,@body)))
 (defmacro deffshader (name args &body body)
   (let ((args (if (find '&context args :test #'symbol-name-equal)
-                  (append (copy-list args) `(:fragment))
-                  (append (copy-list args) `(&context :fragment)))))
+                  (append (copy-list args) `(:fragment)) ; :stemcells
+                  (append (copy-list args) `(&context :fragment))))) ; :stemcells
     `(defshader ,name ,args ,@body)))
 (defmacro defgshader (name args &body body)
   (let ((args (if (find '&context args :test #'symbol-name-equal)
-                  (append (copy-list args) `(:geometry))
-                  (append (copy-list args) `(&context :geometry)))))
+                  (append (copy-list args) `(:geometry)) ; :stemcells
+                  (append (copy-list args) `(&context :geometry))))) ; :stemcells
     `(defshader ,name ,args ,@body)))
 
 (defmethod gl-pull ((asset-name symbol))
