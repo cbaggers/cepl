@@ -22,8 +22,6 @@
    (mutablep :type boolean)
    (allocatedp :type boolean)))
 
-(gdefun )
-
 (defclass %glarraytexture (%gltexture)
   ((length :type (unsigned-byte 16))))
 
