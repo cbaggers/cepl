@@ -392,7 +392,14 @@
            :clear
            :clear-depth
            :flush
-           :viewport))
+           :viewport
+           ;;----------
+           :make-fbo
+           :make-fbos
+           :with-bind-fbo
+           :fbo-attach
+           :attachment-compatible
+           :fbo-detach))
 
 (defpackage :%cgl
   (:use :cl :varjo :cgl))
@@ -494,7 +501,14 @@
                 :make-texture                
                 :with-texture-bound
                 :p-n-t
-                :texref)
+                :texref
+                ;;---
+                :make-fbo
+                :make-fbos
+                :with-bind-fbo
+                :fbo-attach
+                :attachment-compatible
+                :fbo-detach)
   (:export :repl
            :%repl
            :case-events

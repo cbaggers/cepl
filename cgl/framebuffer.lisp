@@ -14,7 +14,7 @@
   id)
 
 (defun make-fbo ()
-  (%make-fbo :id (gl:gen-framebuffers 1)))
+  (%make-fbo :id (first (gl:gen-framebuffers 1))))
 
 (defun make-fbos (&optional (count 1))
   (unless (> count 0)
@@ -22,10 +22,10 @@
   (%make-fbo :id (gl:gen-framebuffers 1)))
 
 (defun %delete-fbo (fbo)
-  (gl:delete-framebuffers (listify (fbo-id fbo))))
+  (gl:delete-framebuffers (listify (%fbo-id fbo))))
 
 (defun %delete-fbos (&rest fbos)
-  (gl:delete-framebuffers (mapcar #'fbo-id fbos)))
+  (gl:delete-framebuffers (mapcar #'%fbo-id fbos)))
 
 (defun %bind-fbo (fbo target)
   ;; The target parameter for this object can take one of 3 values:
@@ -56,7 +56,7 @@
 ;; Remember that textures are a set of images. Textures can have mipmaps; thus,
 ;; each individual mipmap level can contain one or more images.
 
-(defun fbo-attach (fbo img attachment &optional (target :draw-framebuffer))
+(defun fbo-attach (fbo tex-array attachment &optional (target :draw-framebuffer))
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target can be '(:framebuffer :read-framebuffer :draw-framebuffer)
   (with-bind-fbo (fbo target)    
@@ -86,15 +86,15 @@
     ;; When attaching a non-cubemap, textarget should be the proper
     ;; texture-type: GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE, etc.
     (with-slots (texture-type dimensions (mipmap-level level-num) layer-num
-                              face-num internal-format texture) img
+                              face-num internal-format texture) tex-array
       (unless (attachment-compatible fbo internal-format)
         (error "attachment is not compatible with this array"))
-      (let (tex-id (slot-value (slot-value texture 'texture) 'texture-id))
-        (case (texture-type img)
+      (let ((tex-id (slot-value texture 'texture-id)))
+        (case (texture-type tex-array)
           ;; A 1D texture contains 2D images that have the vertical height of 1.
           ;; Each individual image can be uniquely identified by a mipmap level.
-          (:texture-1d ((gl:framebuffer-texture-1d target attachment :texture-1d
-                                                   tex-id mipmap-level)))
+          (:texture-1d (gl:framebuffer-texture-1d target attachment :texture-1d
+                                                  tex-id mipmap-level))
           ;; A 2D texture contains 2D images. Each individual image can be
           ;; uniquely identified by a mipmap level.
           (:texture-2d (gl:framebuffer-texture-2d target attachment :texture-2d
