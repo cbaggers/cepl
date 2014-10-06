@@ -13,8 +13,9 @@
                 (:conc-name %fbo-))
   id)
 
-(defun make-fbo ()
-  (%make-fbo :id (first (gl:gen-framebuffers 1))))
+(defun make-fbo (&key initial-attachment)
+  (let ((fbo (%make-fbo :id (first (gl:gen-framebuffers 1)))))
+    (fbo-attach fbo initial-attachment :color-attachment0)))
 
 (defun make-fbos (&optional (count 1))
   (unless (> count 0)
