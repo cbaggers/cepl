@@ -25,5 +25,4 @@
 ;; paths.
 
 
-(autowrap:define-foreign-record tester :struct
-  )
+

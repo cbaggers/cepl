@@ -32,7 +32,11 @@
            :sub-at-index
            :symbolicate-package
            :lispify-name
-           :symbol-name-equal))
+           :symbol-name-equal
+           :range
+           :rangei
+           :arange
+           :arangei))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)

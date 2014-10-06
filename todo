@@ -1,5 +1,10 @@
 
-- demoparty goals-
+* merge in the time and data abstraction changes
+* we should then have the then & repeat macros as tlambda shorthand
+  also add macros for before, after, between. This completes the 
+  full circle of designing the time api.
+
+-----
 
 * clean up osx code
 * clean up window and context creation
