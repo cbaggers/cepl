@@ -44,6 +44,7 @@
                (:file "cgl/misc")
                (:file "cgl/textures")
                (:file "cgl/types")
+               (:file "cgl/framebuffer.lisp")
                (:file "maths/vectors/base-vectors")
                (:file "maths/vectors/vector2")
                (:file "maths/vectors/vector3")

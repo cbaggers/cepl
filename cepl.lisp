@@ -64,6 +64,7 @@
                (error "Failed to initialise CEPL")))))
 
 (defun %set-default-gl-options ()
+  (print "Setting default options")
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
