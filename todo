@@ -13,6 +13,7 @@
 * get gamepad input stable
 * expand stupid macro in matrix
 * optimize the vector/matrix/quaternion functions
+* live version of tdefun
 
 -----
 

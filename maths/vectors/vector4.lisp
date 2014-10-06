@@ -237,6 +237,19 @@
 
 ;----------------------------------------------------------------
 
+(declaim (inline face-foreward)
+	 (ftype (function ((simple-array single-float (4)) 
+                       (simple-array single-float (4))) 
+                      (simple-array single-float (4))) 
+            face-foreward))
+(defun face-foreward (vector-a vector-b)
+  (declare ((simple-array single-float (4)) vector-a vector-b))
+  (if (> (print (dot vector-a vector-b)) 0)
+      vector-a
+      (negate vector-a)))
+
+;----------------------------------------------------------------
+
 (declaim (inline vlength-squared)
 	 (ftype (function ((simple-array single-float (4))) 
 			  (single-float)) vlength-squared))
@@ -338,3 +351,38 @@
 	(v* vector-a (c-inv-sqrt len)))))
 
 ;----------------------------------------------------------------
+
+(declaim (inline lerp)
+         (ftype (function ((simple-array single-float (4)) 
+                           (simple-array single-float (4))
+                           (single-float)) 
+                          (simple-array single-float (4))) 
+                lerp))
+(defun lerp (vector-a vector-b ammount) 
+  (declare ((simple-array single-float (4)) vector-a vector-b))
+  (v+1 vector-a (v* (v-1 vector-b vector-a) ammount)))
+
+;;----------------------------------------------------------------
+
+(declaim (inline bezier)
+         (ftype (function ((simple-array single-float (4)) 
+                           (simple-array single-float (4))
+                           (simple-array single-float (4)) 
+                           (simple-array single-float (4))
+                           (single-float)) 
+                          (simple-array single-float (4)))
+                bezier))
+(defun bezier (a1 a2 b1 b2 ammount)
+  (declare ((simple-array single-float (4)) a1 a2 b1 b2)
+           ((single-float) ammount))
+  (lerp (lerp a1 a2 ammount)
+        (lerp b1 b2 ammount)
+        ammount))
+
+;;----------------------------------------------------------------
+
+(defun spline (x knots)
+  (make-vector4 (maths:spline x (mapcar #'v-x knots))
+                (maths:spline x (mapcar #'v-y knots))
+                (maths:spline x (mapcar #'v-z knots))
+                (maths:spline x (mapcar #'v-w knots))))

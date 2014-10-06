@@ -31,7 +31,7 @@
 
 ;;; vector2 operations
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline make-vector2)
 	 (ftype (function ((single-float) 
@@ -49,7 +49,7 @@
 	  (aref vec 1) y)
     vec))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 ;; Not sure what I'm going to do with these. I don't belive this
 ;; is the best way to do this as it doesnt give a new vector
@@ -59,7 +59,7 @@
 (defparameter *unit-scale* (vector 1.0 1.0))
 (defparameter *origin* (vector 0.0 0.0))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 ;;[TODO] What is faster (* x x) or (expt x 2) ?
 (declaim (inline vzerop)
@@ -73,7 +73,7 @@
   (float-zero (apply-across-elements + ((vc-a vector-a)) 2
 		   (expt vc-a 2))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline unitp)
 	 (ftype (function ((simple-array single-float (2))) 
@@ -85,7 +85,7 @@
   (declare ((simple-array single-float (2)) vector-a))
   (float-zero (- 1.0 (apply-across-elements + ((vc-a vector-a)) 2
 			  (expt vc-a 2)))))
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 ;; Would be interesting to see if checking that the arrays
 ;; are not 'eq' first would speed this up 
@@ -100,7 +100,7 @@
   (apply-across-elements and ((vc-a vector-a) (vc-b vector-b)) 2
     (= vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 ;; Not sure how to optomise this
 (defun v+ (&rest vec2s)
@@ -108,7 +108,7 @@
    returning a new vector2"
   (reduce #'v+1 vec2s))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline v+1)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -121,7 +121,7 @@
 				       (vc-b vector-b)) 2
     (+ vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 ;; Not sure how to optomise this
 (defun v- (&rest vec2s)
@@ -129,7 +129,7 @@
    a new vector4"
   (reduce #'v-1 vec2s))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline v-1)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -143,7 +143,7 @@
 				       (vc-b vector-b)) 2
     (- vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline v*)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -156,7 +156,7 @@
   (apply-across-elements make-vector2 ((vc-a vector-a)) 2
     (* vc-a a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline v*vec)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -171,7 +171,7 @@
 				       (vc-b vector-b)) 2
     (* vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 ;;; may just be an evil side effect of ripping this off from
 ;;; from ogre but some of the optomisations will be coming over
@@ -189,7 +189,7 @@
     (apply-across-elements make-vector2 ((vc-a vector-a)) 2
       (* vc-a b))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline v/vec)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -204,7 +204,7 @@
 				       (vc-b vector-b)) 2
       (/ vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline negate)
 	 (ftype (function ((simple-array single-float (2))) 
@@ -216,7 +216,20 @@
   (apply-across-elements make-vector2 ((vc-a vector-a)) 2
     (- vc-a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
+
+(declaim (inline face-foreward)
+	 (ftype (function ((simple-array single-float (2)) 
+                       (simple-array single-float (2))) 
+                      (simple-array single-float (2))) 
+            face-foreward))
+(defun face-foreward (vector-a vector-b)
+  (declare ((simple-array single-float (2)) vector-a vector-b))
+  (if (> (print (dot vector-a vector-b)) 0)
+      vector-a
+      (negate vector-a)))
+
+;;----------------------------------------------------------------
 
 (declaim (inline vlength-squared)
 	 (ftype (function ((simple-array single-float (2))) 
@@ -231,7 +244,7 @@
 	(y (v-y vector-a)))
     (+ (* x x) (* y y))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline vlength)
 	 (ftype (function ((simple-array single-float (2))) 
@@ -243,7 +256,7 @@
   (declare ((simple-array single-float (2)) vector-a))
   (c-sqrt (vlength-squared vector-a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline distance-squared)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -256,7 +269,7 @@
   (declare ((simple-array single-float (2)) vector-a vector-b))
   (vlength-squared (v- vector-b vector-a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline distance)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -271,7 +284,7 @@
   (declare ((simple-array single-float (2)) vector-a vector-b))
   (c-sqrt (distance-squared vector-a vector-b)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline dot)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -285,7 +298,7 @@
 			    (vc-b vector-b)) 2
     (* vc-a vc-b)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline absolute-dot)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -299,7 +312,7 @@
 			    (vc-b vector-b)) 2
     (abs (* vc-a vc-b))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 ;; [TODO] shouldnt this return a zero vector in event of zero 
 ;; length? does it matter?
@@ -316,7 +329,7 @@
 	vector-a
 	(v* vector-a (c-inv-sqrt len)))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline perp-dot)
 	 (ftype (function ((simple-array single-float (2)) 
@@ -327,7 +340,7 @@
     (declare ((simple-array single-float (2)) vec-a vec-b))
     (- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (declaim (inline cross)
 	 (ftype (function ((simple-array single-float (3)) 
@@ -340,3 +353,38 @@
    2 times the area of the triangle."
   (declare ((simple-array single-float (3)) vec-a vec-b))  
   (- (* (v-x vec-a) (v-y vec-b)) (* (v-y vec-a) (v-x vec-b))))
+
+;;----------------------------------------------------------------
+
+(declaim (inline lerp)
+         (ftype (function ((simple-array single-float (2)) 
+                           (simple-array single-float (2))
+                           (single-float)) 
+                          (simple-array single-float (2))) 
+                lerp))
+(defun lerp (vector-a vector-b ammount) 
+  (declare ((simple-array single-float (2)) vector-a vector-b))
+  (v+1 vector-a (v* (v-1 vector-b vector-a) ammount)))
+
+;;----------------------------------------------------------------
+
+(declaim (inline bezier)
+         (ftype (function ((simple-array single-float (2)) 
+                           (simple-array single-float (2))
+                           (simple-array single-float (2)) 
+                           (simple-array single-float (2))
+                           (single-float)) 
+                          (simple-array single-float (2)))
+                bezier))
+(defun bezier (a1 a2 b1 b2 ammount)
+  (declare ((simple-array single-float (2)) a1 a2 b1 b2)
+           ((single-float) ammount))
+  (lerp (lerp a1 a2 ammount)
+        (lerp b1 b2 ammount)
+        ammount))
+
+;;----------------------------------------------------------------
+
+(defun spline (x knots)  
+  (make-vector2 (maths:spline x (mapcar #'v-x knots))
+                (maths:spline x (mapcar #'v-y knots))))

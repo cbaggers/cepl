@@ -3,7 +3,7 @@
 (defparameter *array* nil)
 (defparameter *stream* nil)
 
-(defglstruct vert-data
+(defglstruct vert-data ()
   (position :vec4 :accessor pos)
   (colour :vec4 :accessor col))
 
@@ -21,8 +21,8 @@
     (cgl:clear-color 0.0 0.0 0.0 0.0)
     (gl:viewport 0 0 640 480)
     (setf *array* (make-gpu-array 
-                   (list (list (v!  0.0    0.5 0.0 1.0) (v! 1.0 0.0 0.0 1.0))
-                         (list (v!  0.5 -0.366 0.0 1.0) (v! 0.0 1.0 0.0 1.0))
+                   (list (list (v!  0.5 -0.366 0.0 1.0) (v! 0.0 1.0 0.0 1.0))
+                         (list (v!  0.0    0.5 0.0 1.0) (v! 1.0 0.0 0.0 1.0))
                          (list (v! -0.5 -0.366 0.0 1.0) (v! 0.0 0.0 1.0 1.0)))
                    :dimensions 3
                    :element-type 'vert-data))

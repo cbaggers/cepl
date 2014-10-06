@@ -5,6 +5,14 @@
 
 (in-package :cepl-utils)
 
+
+(defmacro gdefun (name lambda-list &body body/options)
+  (if (or (null body/options) 
+          (consp (car body/options))
+          (keywordp (car body/options)))
+      `(defgeneric ,name ,lambda-list ,@body/options)
+      `(defmethod ,name ,lambda-list ,@body/options)))
+
 (defun listify (x) (if (listp x) x (list x)))
 
 (defmacro dbind (lambda-list expressions &body body)
@@ -272,4 +280,11 @@ producing a symbol in the current package."
 
 
 
+
+
+(define-compiler-macro mapcat (function &rest lists)
+  `(apply #'concatenate 'list (mapcar ,function ,@lists)))
+
+(defun mapcat (function &rest lists)
+  (apply #'concatenate 'list (apply #'mapcar function lists)))
 

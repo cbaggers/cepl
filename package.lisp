@@ -11,7 +11,8 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :dbind
+  (:export :gdefun 
+           :dbind
            :sn-equal
            :listify
            :replace-nth 
@@ -36,7 +37,8 @@
            :range
            :rangei
            :arange
-           :arangei))
+           :arangei
+           :mapcat))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
@@ -61,6 +63,11 @@
            :c-inv-sqrt
            :degrees
            :radians))
+
+(defpackage :maths
+  (:use :cl)
+  (:export :lerp :mix :stepv :clamp :smoothstep :pulse
+           :spline))
 
 (defpackage :conditional-functions
   (:use :cl)
@@ -88,6 +95,8 @@
   (:nicknames :ct :ctime)
   (:export :tlambda
            :tdefun
+           :t-repeat
+           :t-then
            :make-stepper
            :def-time-units
            :make-time-source
@@ -132,7 +141,8 @@
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :perp-dot
            :*unit-x* :*unit-y* :*unit-scale*
-           :vzerop :unitp :cross)
+           :vzerop :unitp :cross :face-foreward :lerp
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -148,7 +158,8 @@
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
-           :vzerop :unitp :cross)
+           :vzerop :unitp :cross :face-foreward :lerp
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -164,7 +175,8 @@
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*
-           :vzerop :unitp)
+           :vzerop :unitp :face-foreward :lerp
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -178,7 +190,8 @@
   (:export :v :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
            :/ :length :length-squared :distance :distance-squared
            :dot :absolute-dot :perp-dot :normalize :cross :eq
-           :swizzle :merge-into-vector) 
+           :swizzle :merge-into-vector :negate :face-foreward :lerp
+           :mix :bezier) 
   (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
@@ -247,6 +260,7 @@
 (defpackage :quaternions
   (:use :cl :base-maths)
   (:nicknames :q)
+  (:shadow :lerp)
   (:export :w :x :y :z :zero-quit :zero-quatp 
            :unit-quatp :identity-quat :identity-quatp
            :make-quat :make-quat-from-vec3 
@@ -259,10 +273,6 @@
            :inverse :q+1 :q+ :q-1 :q- :q* :q*quat
            :dot :rotate :lerp :slerp :approx-slerp
            :to-matrix3 :to-matrix4))
-
-(defpackage :interpolation
-  (:use :cl :base-vectors :base-matrices :base-maths)
-  (:export :lerp-number :lerp3 :nlerp3 :slerp3 ))
 
 (defpackage :declarative-values
   (:use :cl)
@@ -312,7 +322,7 @@
            :clone-c-array
            :make-c-array
            :aref-c
-           :aref-c*
+           :%aref-c
            :c-populate
            :gl-subseq
            :gl-pull
@@ -366,10 +376,12 @@
            :free-buffers
            :free-vertex-stream
            :free-texture
-           :free-textures
            :free-gpu-array
            :free-vao
            :p-n-t
+           :pos
+           :norm
+           :tex
            ;;----------
            :delete-shader
            :clear-color
@@ -384,7 +396,14 @@
            :clear
            :clear-depth
            :flush
-           :viewport))
+           :viewport
+           ;;----------
+           :make-fbo
+           :make-fbos
+           :with-bind-fbo
+           :fbo-attach
+           :attachment-compatible
+           :fbo-detach))
 
 (defpackage :%cgl
   (:use :cl :varjo :cgl))
@@ -436,7 +455,17 @@
   (:export :primitive-data
            :plain-data
            :box-data
-           :sphere-data))
+           :sphere-data
+           :prim-array))
+
+(defpackage :tools
+  (:use :cl
+        :base-vectors
+        :base-matrices
+        :base-maths
+        :base-time 
+        :tiny-time-manager)
+  (:export :rqpos))
 
 (defpackage :cepl
   (:use :cl
@@ -444,7 +473,6 @@
         :base-vectors
         :base-matrices
         :base-maths
-        :interpolation
         :base-time
         :conditional-functions
         :base-macros)
@@ -477,7 +505,14 @@
                 :make-texture                
                 :with-texture-bound
                 :p-n-t
-                :texref)
+                :texref
+                ;;---
+                :make-fbo
+                :make-fbos
+                :with-bind-fbo
+                :fbo-attach
+                :attachment-compatible
+                :fbo-detach)
   (:export :repl
            :%repl
            :case-events
@@ -485,6 +520,7 @@
            :evt->
            :evt+>
            ;;---
+           :update-swank
            :cls
            :pixel-format
            :pixel-format-of

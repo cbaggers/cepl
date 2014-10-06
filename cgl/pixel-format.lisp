@@ -24,6 +24,23 @@
     ((8 8 8 8) :uint) ((:r 8 8 8 8) :uint)
     ((10 10 10 2) :uint) ((:r 2 10 10 10) :uint)
     ((24 8) :uint) ((:r 10 11 11) :uint) ((:r 5 9 9 9) :uint)))
+(defparameter *valid-internal-formats-for-buffer-backed-texture*
+  '(:r16 :r16f :r16i :r16ui :r32f :r32i :r32ui :r8 :r8i :r8ui :rg16 :rg16f
+    :rg16i :rg16ui :rg32f :rg32i :rg32ui :rg8 :rg8i :rg8ui :rgb32f :rgb32i
+    :rgb32ui :rgba16 :rgba16f :rgba16i :rgba16ui :rgba32f :rgba32i :rgba8
+    :rgba8i :rgba8ui :rgba32ui))
+(defparameter *color-renderable-formats*
+  '(:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm :rgb8
+    :rgb8-snorm :rgb16-snorm :rgba8 :rgba8-snorm :rgba16 :r32f :rg32f :rgb32f
+    :rgba32f :r8i :r8ui :r16i :r16ui :r32i :r32ui :rg8i :rg8ui :rg16i :rg16ui
+    :rg32i :rg32ui :rgb8i :rgb8ui :rgb16i :rgb16ui :rgb32i :rgb32ui :rgba8i
+    :rgba8ui :rgba16i :rgba16ui :rgba32i :rgba32ui :srgb8 :srgb8-alpha8 :rgba2
+    :rgba4 :r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui))
+(defparameter *depth-formats*
+  '(:depth-component16 :depth-component32 :depth-component32f))
+(defparameter *stencil-formats*
+  '(:stencil-index8))
+(defparameter *depth-stencil-formats* '())
 (defparameter *gl-integral-pixel-types* 
   '(:ubyte :byte :ushort :short :uint :int))
 (defparameter *expanded-gl-type-names* 
@@ -93,15 +110,18 @@
   components type normalise sizes reversed comp-length)
 
 (defun describe-pixel-format (object)
-  (let ((pf (if (cgl::pixel-format-p object) object (pixel-format-of object))))
+  (let ((pf (if (pixel-format-p object) object (pixel-format-of object))))
     (print "---------------")
     (when pf
       (print pf)
-      (let ((cf (cgl::compile-pixel-format pf)))
+      (let ((cf (compile-pixel-format pf)))
         (format t "~%format: ~s~%type: ~s" (first cf) (second cf)))
-      (format t "~%internalFormat: ~s" (cgl:internal-format-from-pixel-format pf)))
+      (format t "~%internalFormat: ~s" (pixel-format->internal-format pf)))
     (print "---------------"))
   t)
+
+(defun describe-internal-format (format)
+  (describe-pixel-format (internal-format->pixel-format format)))
 
 (defun get-component-length (components)
   (case components 
@@ -177,7 +197,7 @@
                     expanded-type)))
       (list format type))))
 
-(defun pixel-format-element-type (pixel-format)
+(defun pixel-format->element-type (pixel-format)
   (if (pixel-format-sizes pixel-format)
       (pixel-format-type pixel-format)
       (let ((len (pixel-format-comp-length pixel-format))
@@ -188,27 +208,42 @@
                                     len) 'keyword)
                     type)))))
 
+(defun internal-format->element-type (internal-format)
+  (pixel-format->element-type 
+   (internal-format->pixel-format internal-format)))
+
 ;;--------------------------------------------------------------
 ;; INTERNAL-FORMATS
 ;;------------------
 
-(defun internal-format-from-pixel-format (pixel-format)
-  (second (assoc (list (pixel-format-components pixel-format)
-                       (pixel-format-normalise pixel-format)
-                       (pixel-format-type pixel-format)
-                       (pixel-format-sizes pixel-format)) 
-                 *gl-pixel-to-internal-map*
-                 :test #'equal)))
+(defun pixel-format->internal-format
+    (pixel-format &key (error-if-missing t))
+  (let ((result (second (assoc (list (pixel-format-components pixel-format)
+                                     (pixel-format-normalise pixel-format)
+                                     (pixel-format-type pixel-format)
+                                     (pixel-format-sizes pixel-format)) 
+                               *gl-pixel-to-internal-map*
+                               :test #'equal))))
+    (or result
+        (when error-if-missing
+          (error "Cannot find internal format for pixel format: ~a" 
+                 pixel-format)))))
 
 ;; [TODO] REVERSED??
-(defun pixel-format-from-internal-format (internal-format)
-  (destructuring-bind (components normalise type sizes)
-      (first (rassoc internal-format *gl-pixel-to-internal-map*
-                     :key #'car :test #'eq))
-    (make-pixel-format
-     :components components :type type :normalise normalise
-     :sizes sizes :reversed nil
-     :comp-length (get-component-length components))))
+(defun internal-format->pixel-format 
+    (internal-format &key (error-if-missing t))
+  (let ((pf (first (rassoc internal-format *gl-pixel-to-internal-map*
+                           :key #'car :test #'eq))))
+    (if pf
+        (destructuring-bind (components normalise type sizes)
+            pf
+          (make-pixel-format
+           :components components :type type :normalise normalise
+           :sizes sizes :reversed nil
+           :comp-length (get-component-length components)))
+        (when error-if-missing
+          (error "Cannot find pixel format for internal format: ~a" 
+                 internal-format)))))
 
 
 ;;--------------------------------------------------------------
@@ -218,3 +253,18 @@
 (defmethod pixel-format-of ((type t))
   (when (find type *valid-pixel-types*)
     (pixel-format :r type)))
+
+(defun valid-internal-format-for-buffer-backed-texturep (format)
+  (find format *valid-internal-formats-for-buffer-backed-texture*))
+
+(defun color-renderable-formatp (format)
+  (not (null (find format *color-renderable-formats*))))
+
+(defun depth-formatp (format)
+  (not (null (find format *depth-formats*))))
+
+(defun stencil-formatp (format)
+  (not (null (find format *stencil-formats*))))
+
+(defun depth-stencil-formatp (format)
+  (not (null (find format *depth-stencil-formats*))))

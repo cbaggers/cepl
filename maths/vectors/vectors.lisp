@@ -16,7 +16,7 @@
 
 (in-package :vectors)
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defmacro swizzle (vec pattern)
   (let* ((name (cl:symbol-name (if (listp pattern)
@@ -32,7 +32,7 @@
                                                (error "Vectors: swizzle: Pattern component was not X, Y, Z or W: ~a" char)))))))))
 
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defun make-vector (x y &optional z w)
   "This takes floats and give back a vector, this is just an
@@ -54,7 +54,7 @@
                                    (mapcar #'seqify vectors)))))
       (apply #'make-vector combined))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric veczerop (size vec-a)
   (:documentation "Returns t if the vector is of zero length"))
@@ -72,7 +72,7 @@
   (base-macros:once-only (vec-a)
     `(veczerop (cl:length ,vec-a) ,vec-a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vecunitp (size vec-a)
   (:documentation "Returns t if the vector is of unit length"))
@@ -90,7 +90,7 @@
   (base-macros:once-only (vec-a)
     `(vecunitp (cl:length ,vec-a) ,vec-a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric veceq (size vec-a vec-b)
   (:documentation "Returns t if the two vectors are equal"))
@@ -108,7 +108,7 @@
   (base-macros:once-only (vec-a vec-b)
     `(veceq (cl:length ,vec-a) ,vec-a ,vec-b)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defun = (&rest vecs)
   "Returns either t if the vectors are equal. 
@@ -118,7 +118,7 @@
        when (not (eq vec-a vec)) do (return nil)
        finally (return t))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defun v/= (&rest vecs)
   "Returns either t if the two vectors are equal. 
@@ -128,7 +128,7 @@
        when (eq vec-a vec) do (return nil)
        finally (return t))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vec+1 (size vec-a vec-b)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -148,7 +148,7 @@
          (vec+1 (cl:length ,vec-a) ,vec-a ,vec-b)
          (error "Vector size mismatch"))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vec-1 (size vec-a vec-b)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -168,7 +168,7 @@
          (vec-1 (cl:length ,vec-a) ,vec-a ,vec-b)
          (error "Vector size mismatch"))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vec+ (size &rest vecs)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -186,7 +186,7 @@
   (base-macros:once-only (vec-a)
     `(vec+ (cl:length ,vec-a) ,vec-a ,@vecs)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vec- (size &rest vecs)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -204,7 +204,7 @@
   (base-macros:once-only (vec-a)
     `(vec- (cl:length ,vec-a) ,vec-a ,@vecs)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vec* (size vec-a multiple)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -243,7 +243,7 @@
   (base-macros:once-only (vec-a)
     `(vec* (cl:length ,vec-a) ,vec-a ,scalar-or-vec)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vec/ (size vec-a multiple)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -282,7 +282,7 @@
   (base-macros:once-only (vec-a)
     `(vec/ (cl:length ,vec-a) ,vec-a ,scalar-or-vec)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric veclength (size vec-a)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -300,7 +300,7 @@
   (base-macros:once-only (vec-a)
     `(veclength (cl:length ,vec-a) ,vec-a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric veclength-squared (size vec-a)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -318,7 +318,7 @@
   (base-macros:once-only (vec-a)
     `(veclength-squared (cl:length ,vec-a) ,vec-a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vecdistance (size vec-a vec-b)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -338,7 +338,7 @@
          (vecdistance (cl:length ,vec-a) ,vec-a ,vec-b)
          (error "Vector size mismatch"))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vecdistance-squared (size vec-a vec-b)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -358,7 +358,7 @@
          (vecdistance-squared (cl:length ,vec-a) ,vec-a ,vec-b)
          (error "Vector size mismatch"))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vecdot (size vec-a vec-b)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -378,7 +378,21 @@
          (vecdot (cl:length ,vec-a) ,vec-a ,vec-b)
          (error "Vector size mismatch"))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
+
+(defun negate (vec)
+  (case (cl:length vec)
+    (2 (v2:negate vec))
+    (3 (v3:negate vec))
+    (4 (v4:negate vec))))
+
+(defun face-foreward (vec-a vec-b)
+  (case (cl:length vec-a)
+    (2 (v2:face-foreward vec-a vec-b))
+    (3 (v3:face-foreward vec-a vec-b))
+    (4 (v4:face-foreward vec-a vec-b))))
+
+;;----------------------------------------------------------------
 
 (defgeneric vecabsolute-dot (size vec-a vec-b)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -398,7 +412,7 @@
          (vecabsolute-dot (cl:length ,vec-a) ,vec-a ,vec-b)
          (error "Vector size mismatch"))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vecperp-dot (size vec-a vec-b)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -412,7 +426,7 @@
          (vecperp-dot (cl:length ,vec-a) ,vec-a ,vec-b)
          (error "Vector size mismatch"))))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric vecnormalize (size vec-a)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -430,7 +444,7 @@
   (base-macros:once-only (vec-a)
     `(vecnormalize (cl:length ,vec-a) ,vec-a)))
 
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 
 (defgeneric veccross (size vec-a vec-b)
   (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
@@ -446,3 +460,52 @@
     `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
          (veccross (cl:length ,vec-a) ,vec-a ,vec-b)
          (error "Vector size mismatch"))))
+
+;;----------------------------------------------------------------
+
+(declaim (inline lerp)
+         (ftype (function ((or (simple-array single-float (2))
+                               (simple-array single-float (3))
+                               (simple-array single-float (4))) 
+                           (or (simple-array single-float (2))
+                               (simple-array single-float (3))
+                               (simple-array single-float (4)))
+                           (or (integer) (single-float))) 
+                          (or (simple-array single-float (2))
+                              (simple-array single-float (3))
+                              (simple-array single-float (4)))) 
+                lerp))
+(defun lerp (vector-a vector-b ammount) 
+  (declare ((or (simple-array single-float (2)) 
+                (simple-array single-float (3))
+                (simple-array single-float (4)))
+            vector-a vector-b))
+  (case (cl:length vector-a)
+    (2 (v2:lerp vector-a vector-b (float ammount)))
+    (3 (v3:lerp vector-a vector-b (float ammount)))
+    (4 (v4:lerp vector-a vector-b (float ammount)))
+    (otherwise (error "only vectors of size 2-4 are valid"))))
+
+(declaim (inline mix)
+         (ftype (function ((or (simple-array single-float (2))
+                               (simple-array single-float (3))
+                               (simple-array single-float (4))) 
+                           (or (simple-array single-float (2))
+                               (simple-array single-float (3))
+                               (simple-array single-float (4)))
+                           (or (integer) (single-float))) 
+                          (or (simple-array single-float (2))
+                              (simple-array single-float (3))
+                              (simple-array single-float (4)))) 
+                mix))
+(defun mix (vector-a vector-b ammount)
+  (declare ((or (simple-array single-float (2)) 
+                (simple-array single-float (3))
+                (simple-array single-float (4)))
+            vector-a vector-b))
+  (lerp vector-a vector-b ammount))
+
+(defun bezier (a1 a2 b1 b2 ammount)
+  (lerp (lerp a1 a2 ammount)
+        (lerp b1 b2 ammount)
+        ammount))

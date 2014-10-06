@@ -10,11 +10,13 @@
 (defgeneric make-vao (gpu-arrays &optional index-array))
 (defgeneric pixel-format-of (type))
 
-(defmethod gpull ((gl-object t))
-  gl-object)
+(defmethod gl-pull ((object t)) object)
+(defmethod gl-pull-1 ((object t)) object)
 
 (defun 1d-p (object)
   (= 1 (length (dimensions object))))
+
+(defgeneric populate (object data))
 
 (defgeneric gl-subseq (array start &optional end)
   (:documentation
@@ -51,7 +53,7 @@
                                                        normalised)
   (let ((type (varjo::type-spec->type array-type)))    
     (if (and (varjo::core-typep type) (not (varjo::v-typep type 'v-sampler)))
-        (let ((slot-layout (expand-slot-to-layout (list type normalised)))
+        (let ((slot-layout (expand-slot-to-layout nil type normalised))
               (stride 0))
           (loop :for attr :in slot-layout
              :for i :from 0
@@ -63,8 +65,7 @@
                     (third attr) (or stride-override stride)
                     (cffi:make-pointer (+ offset pointer-offset))))
              :do (setf offset (+ offset (* (first attr)
-                                           (cffi:foreign-type-size
-                                            (second attr))))))
+                                           (gl-type-size (second attr))))))
           (length slot-layout))
         (error "Type ~a is not known to cepl" type))))
 
@@ -84,3 +85,7 @@
    ​ :dynamic-copy)"))
 
 
+(defun gl-type-size (type)
+  (if (keywordp type)
+      (cffi:foreign-type-size type)
+      (autowrap:foreign-type-size type)))

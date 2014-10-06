@@ -6,7 +6,8 @@
 
 (defstruct (vertex-stream (:constructor make-raw-vertex-stream 
                                         (&key vao start length
-                                              index-type managed))) 
+                                              index-type managed
+                                              gpu-arrays))) 
   "vertex-streams are the structure we use in cepl to pass 
    information to our programs on what to draw and how to draw 
    it.
@@ -22,6 +23,7 @@
   (start 0 :type unsigned-byte)
   (length 1 :type unsigned-byte)
   (index-type nil)
+  (gpu-arrays nil)
   (managed nil))
 
 (defmethod gl-free ((object vertex-stream))
@@ -37,9 +39,13 @@
 (defun free-vertex-stream (vertex-stream)
   (when (vertex-stream-managed vertex-stream)
     (free-vao (vertex-stream-vao vertex-stream)))
+  ;; (when (vertex-stream-gpu-arrays vertex-stream)
+  ;;   (mapcar #'free-gpu-array-b (vertex-stream-gpu-arrays vertex-stream)))
   (blank-vertex-stream vertex-stream))
 
-(defun make-vertex-stream (gpu-arrays &key index-array (start 0) length)
+
+(defun make-vertex-stream (gpu-arrays &key index-array (start 0) length 
+                                        retain-arrays)
   "This function simplifies making the vertex-stream if you are 
    storing the data in gpu-arrays.
 
@@ -65,5 +71,6 @@
                                 :length length
                                 :index-type (when index-array 
                                               (element-type index-array))
-                                :managed t)
+                                :managed t
+                                :gpu-arrays (when retain-arrays gpu-arrays))
         (error "You can only make vertex-streams from 1D arrays"))))
