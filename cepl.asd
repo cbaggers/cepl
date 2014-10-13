@@ -14,6 +14,7 @@
                #:swank
                #:sdl2
                #:varjo
+               #:temporal-functions
                #:cl-utilities
                #:cl-ppcre
                #:symbol-munger)
@@ -40,7 +41,7 @@
                (:file "cgl/misc")
                (:file "cgl/textures")
                (:file "cgl/types")
-               (:file "cgl/framebuffer.lisp")
+               (:file "cgl/framebuffer")
                (:file "maths/vectors/base-vectors")
                (:file "maths/vectors/vector2")
                (:file "maths/vectors/vector3")
