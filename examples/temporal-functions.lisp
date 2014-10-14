@@ -62,25 +62,30 @@
                         (m4:rotation-from-euler (rot entity))
                         (m4:scale (scale entity)))))
 
+
+;; vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
+(defun get-time () (get-internal-real-time))
+
 (tdefun update-pos (entity)
   (repeat
-   (before (seconds 1)  
-     (setf (pos entity) (v3:lerp (v! 0 0 -20) (v! 0 10 -20) |progress|)))
-   (before (seconds 1)
-     (setf (pos entity) (v3:lerp (v! 0 10 -20) (v! 10 5 -20) |progress|)))
-   (before (seconds 1)
-     (setf (pos entity) (v3:lerp (v! 10 5 -20) (v! 0 0 -20) |progress|)))))
+   (before (seconds 5) (setf (v-y (pos entity)) (* 10 %progress%)))
+   (before (seconds 3) (setf (v-y (pos entity)) (- 10 (* 10 %progress%))))))
 
 (defun draw ()
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
-  ;;(update-pos *entity*)
-  ;;(setf (rot *entity*) (v:+ (rot *entity*) (v! 0.01 0.02 0)))
+  (update-pos *entity*)
+  (setf (rot *entity*) (v:+ (rot *entity*) (v! 0.01 0.02 0)))
   (prog-2 (e-stream *entity*) 
           :model-to-world (entity-matrix *entity*)
           :world-to-cam (ccam:world->cam *camera*))
   (gl:flush)
   (cgl:update-display))
+
+
+;; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 (defun reshape (width height)  
   (setf (ccam:frame-size *camera*) (v! width height))
