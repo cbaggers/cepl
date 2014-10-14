@@ -14,6 +14,7 @@
                #:swank
                #:sdl2
                #:varjo
+               #:temporal-functions
                #:cl-utilities
                #:cl-ppcre
                #:symbol-munger)
@@ -23,10 +24,6 @@
                (:file "maths/base-maths")
                (:file "maths/maths")
                (:file "declarative-values")
-               (:file "time/base-time-backend")
-               (:file "time/base-time")
-               (:file "time/conditional-funcs")
-               (:file "time/tiny-time-manager")
                (:file "cgl/context")
                (:file "cgl/generics")
                (:file "cgl/pixel-format")

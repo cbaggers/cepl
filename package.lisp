@@ -69,61 +69,6 @@
   (:export :lerp :mix :stepv :clamp :smoothstep :pulse
            :spline))
 
-(defpackage :conditional-functions
-  (:use :cl)
-  (:nicknames :cfunc)
-  (:export :signal-expired
-           :with-expired
-           :defcfun
-           :expiredp))
-
-(defpackage :base-time-backend
-  (:use :cl :cepl-utils)
-  (:export :tcompile-obj
-           :with-t-obj
-           :merge-tcompile-obj
-           :add-time-syntax
-           :def-time-condition
-           :t-code
-           :t-run-test
-           :t-expired-test
-           :t-local-vars
-           :t-closed-vars
-           :t-override))
-(defpackage :base-time
-  (:use :cl :cepl-utils :base-time-backend)
-  (:nicknames :ct :ctime)
-  (:export :tlambda
-           :tdefun
-           :t-repeat
-           :t-then
-           :make-stepper
-           :def-time-units
-           :make-time-source
-           :with-time-source
-           :from-now
-           :beforep
-           :afterp
-           :betweenp
-           :before
-           :after
-           :between
-           :then
-           :repeat
-           :once
-           :make-stepper
-           :each*
-           :milliseconds
-           :seconds
-           :minutes
-           :hours))
-(defpackage :time-syntax)
-
-(defpackage :tiny-time-manager
-  (:use :cl :cepl-utils :base-time)
-  (:nicknames :ttm)
-  (:export :update :add :release :clean))
-
 (defpackage :base-vectors
   (:use :cl)
   (:export :v! :v-x :v-y :v-z :v-w
@@ -462,9 +407,7 @@
   (:use :cl
         :base-vectors
         :base-matrices
-        :base-maths
-        :base-time 
-        :tiny-time-manager)
+        :base-maths)
   (:export :rqpos))
 
 (defpackage :cepl
@@ -473,9 +416,8 @@
         :base-vectors
         :base-matrices
         :base-maths
-        :base-time
-        :conditional-functions
-        :base-macros)
+        :base-macros
+        :temporal-functions)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format

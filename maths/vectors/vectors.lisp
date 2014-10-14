@@ -18,18 +18,30 @@
 
 ;;----------------------------------------------------------------
 
-(defmacro swizzle (vec pattern)
-  (let* ((name (cl:symbol-name (if (listp pattern)
-                                   (second pattern)
-                                   pattern)))
-         (len (cl:length name)))
+(define-compiler-macro swizzle (vec pattern)
+  (let* ((name (cl:symbol-name pattern))
+         (len (cl:length name))
+         (arr (gensym "arr")))
     (if (or (> len 4) (< len 2))
         (error "Vectors: swizzle: Cepl vectors cannot have a length less that 2 or greater than 4")
-        `(cl:make-array
-          ,len :element-type 'single-float :initial-contents
-          (list ,@(loop :for char :across name
-                     :collect `(aref ,vec ,(or (position char '(#\X #\Y #\Z #\W))
-                                               (error "Vectors: swizzle: Pattern component was not X, Y, Z or W: ~a" char)))))))))
+        `(cl:let ((,arr ,vec))
+           (cl:make-array
+            ,len :element-type 'single-float :initial-contents
+            (list ,@(loop :for char :across name
+                       :collect `(aref ,arr ,(or (position char '(#\X #\Y #\Z #\W))
+                                                 (error "Vectors: swizzle: Pattern component was not X, Y, Z or W: ~a" char))))))))))
+
+(defun swizzle (vec pattern)
+  (let* ((name (cl:symbol-name pattern))
+         (len (cl:length name))
+         (result (cl:make-array (cl:length name) :element-type 'single-float)))
+    (if (or (> len 4) (< len 2))
+        (error "Vectors: swizzle: Cepl vectors cannot have a length less that 2 or greater than 4")
+        (loop :for char :across name :for i :from 0 :do
+           (setf (aref result i)
+                 (aref vec (or (position char '(#\X #\Y #\Z #\W))
+                               (error "Vectors: swizzle: Pattern component was not X, Y, Z or W: ~a" char))))))
+    result))
 
 
 ;;----------------------------------------------------------------
@@ -56,57 +68,28 @@
 
 ;;----------------------------------------------------------------
 
-(defgeneric veczerop (size vec-a)
-  (:documentation "Returns t if the vector is of zero length"))
-
-(defmethod veczerop ((size (cl:eql 2)) vec-a)
-  (v2:vzerop vec-a))
-
-(defmethod veczerop ((size (cl:eql 3)) vec-a)
-  (v3:vzerop vec-a))
-
-(defmethod veczerop ((size (cl:eql 4)) vec-a)
-  (v4:vzerop vec-a))
-
-(defmacro zerop (vec-a)
-  (base-macros:once-only (vec-a)
-    `(veczerop (cl:length ,vec-a) ,vec-a)))
+(defun zerop (vec-a)
+  "Returns t if the vector is of zero length"
+  (case (length vec-a)
+    (2 (v2:vzerop vec-a))
+    (3 (v3:vzerop vec-a))
+    (4 (v4:vzerop vec-a))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vecunitp (size vec-a)
-  (:documentation "Returns t if the vector is of unit length"))
-
-(defmethod vecunitp ((size (cl:eql 2)) vec-a)
-  (v2:unitp vec-a))
-
-(defmethod vecunitp ((size (cl:eql 3)) vec-a)
-  (v3:unitp vec-a))
-
-(defmethod vecunitp ((size (cl:eql 4)) vec-a)
-  (v4:unitp vec-a))
-
-(defmacro unitp (vec-a)
-  (base-macros:once-only (vec-a)
-    `(vecunitp (cl:length ,vec-a) ,vec-a)))
+(defun unitp (vec-a)
+  (case (length vec-a)
+    (2 (v2:unitp vec-a))
+    (3 (v3:unitp vec-a))
+    (4 (v4:unitp vec-a))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric veceq (size vec-a vec-b)
-  (:documentation "Returns t if the two vectors are equal"))
-
-(defmethod veceq ((size (cl:eql 2)) vec-a vec-b)
-  (v2:v-eq vec-a vec-b))
-
-(defmethod veceq ((size (cl:eql 3)) vec-a vec-b)
-  (v3:v-eq vec-a vec-b))
-
-(defmethod veceq ((size (cl:eql 4)) vec-a vec-b)
-  (v4:v-eq vec-a vec-b))
-
-(defmacro eq (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(veceq (cl:length ,vec-a) ,vec-a ,vec-b)))
+(defun eq (vec-a vec-b)
+  (case (length vec-a)
+    (2 (v2:v-eq vec-a vec-b))
+    (3 (v3:v-eq vec-a vec-b))
+    (4 (v4:v-eq vec-a vec-b))))
 
 ;;----------------------------------------------------------------
 
@@ -130,253 +113,94 @@
 
 ;;----------------------------------------------------------------
 
-(defgeneric vec+1 (size vec-a vec-b)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vec+1 ((size (cl:eql 2)) vec-a vec-b)
-  (v2:v+1 vec-a vec-b))
-
-(defmethod vec+1 ((size (cl:eql 3)) vec-a vec-b)
-  (v3:v+1 vec-a vec-b))
-
-(defmethod vec+1 ((size (cl:eql 4)) vec-a vec-b)
-  (v4:v+1 vec-a vec-b))
-
-(defmacro 1+ (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
-         (vec+1 (cl:length ,vec-a) ,vec-a ,vec-b)
-         (error "Vector size mismatch"))))
+(defun 1+ (vec-a vec-b)
+  "Adds two vectors together and returns the result as a new vector of the same type"
+  (case (length vec-a)
+    (2 (v2:v+1 vec-a vec-b))
+    (3 (v3:v+1 vec-a vec-b))
+    (4 (v4:v+1 vec-a vec-b))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vec-1 (size vec-a vec-b)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vec-1 ((size (cl:eql 2)) vec-a vec-b)
-  (v2:v-1 vec-a vec-b))
-
-(defmethod vec-1 ((size (cl:eql 3)) vec-a vec-b)
-  (v3:v-1 vec-a vec-b))
-
-(defmethod vec-1 ((size (cl:eql 4)) vec-a vec-b)
-  (v4:v-1 vec-a vec-b))
-
-(defmacro 1- (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
-         (vec-1 (cl:length ,vec-a) ,vec-a ,vec-b)
-         (error "Vector size mismatch"))))
+(defun 1- (vec-a vec-b)
+  "Adds two vectors together and returns the result as a new vector of the same type"
+  (case (length vec-a)
+    (2 (v2:v-1 vec-a vec-b))
+    (3 (v3:v-1 vec-a vec-b))
+    (4 (v4:v-1 vec-a vec-b))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vec+ (size &rest vecs)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vec+ ((size (cl:eql 2)) &rest vecs)
-  (apply #'v2:v+ vecs))
-
-(defmethod vec+ ((size (cl:eql 3)) &rest vecs)
-  (apply #'v3:v+ vecs))
-
-(defmethod vec+ ((size (cl:eql 4)) &rest vecs)
-  (apply #'v4:v+ vecs))
-
-(defmacro + (vec-a &rest vecs)
-  (base-macros:once-only (vec-a)
-    `(vec+ (cl:length ,vec-a) ,vec-a ,@vecs)))
+(defun + (vec-a &rest vecs)
+  (case (length vec-a)
+    (2 (apply #'v2:v+ vecs))
+    (3 (apply #'v3:v+ vecs))
+    (4 (apply #'v4:v+ vecs))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vec- (size &rest vecs)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vec- ((size (cl:eql 2)) &rest vecs)
-  (apply #'v2:v- vecs))
-
-(defmethod vec- ((size (cl:eql 3)) &rest vecs)
-  (apply #'v3:v- vecs))
-
-(defmethod vec- ((size (cl:eql 4)) &rest vecs)
-  (apply #'v4:v- vecs))
-
-(defmacro - (vec-a &rest vecs)
-  (base-macros:once-only (vec-a)
-    `(vec- (cl:length ,vec-a) ,vec-a ,@vecs)))
+(defun - (vec-a &rest vecs)
+  (case (length vec-a)
+    (2 (apply #'v2:v- vecs))
+    (3 (apply #'v3:v- vecs))
+    (4 (apply #'v4:v- vecs))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vec* (size vec-a multiple)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vec* ((size (cl:eql 2)) vec-a (multiple number))
-  (v2:v* vec-a (coerce multiple 'single-float)))
-
-(defmethod vec* ((size (cl:eql 3)) vec-a (multiple number))
-  (v3:v* vec-a (coerce multiple 'single-float)))
-
-(defmethod vec* ((size (cl:eql 4)) vec-a (multiple number))
-  (v4:v* vec-a (coerce multiple 'single-float)))
-
-(defmethod vec* ((size (cl:eql 2))
-                 vec-a 
-                 (multiple #.(class-of 
-                              (make-array 0 :element-type 
-                                          'single-float))))
-  (v2:v*vec vec-a multiple))
-
-(defmethod vec* ((size (cl:eql 3))
-                 vec-a 
-                 (multiple #.(class-of 
-                              (make-array 0 :element-type 
-                                          'single-float))))
-  (v3:v*vec vec-a multiple))
-
-(defmethod vec* ((size (cl:eql 4))
-                 vec-a 
-                 (multiple #.(class-of 
-                              (make-array 0 :element-type 
-                                          'single-float))))
-  (v4:v*vec vec-a multiple))
-
-(defmacro * (vec-a scalar-or-vec)
-  (base-macros:once-only (vec-a)
-    `(vec* (cl:length ,vec-a) ,vec-a ,scalar-or-vec)))
+(defun * (vec-a scalar-or-vec)
+  "Adds two vectors together and returns the result as a new vector of the same type"
+  (case (length vec-a)
+    (2 (v2:v*vec vec-a multiple))
+    (3 (v3:v*vec vec-a multiple))
+    (4 (v4:v*vec vec-a multiple))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vec/ (size vec-a multiple)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vec/ ((size (cl:eql 2)) vec-a (multiple number))
-  (v2:v/ vec-a (coerce multiple 'single-float)))
-
-(defmethod vec/ ((size (cl:eql 3)) vec-a (multiple number))
-  (v3:v/ vec-a (coerce multiple 'single-float)))
-
-(defmethod vec/ ((size (cl:eql 4)) vec-a (multiple number))
-  (v4:v/ vec-a (coerce multiple 'single-float)))
-
-(defmethod vec/ ((size (cl:eql 2))
-                 vec-a 
-                 (multiple #.(class-of 
-                              (make-array 0 :element-type 
-                                          'single-float))))
-  (v2:v/vec vec-a multiple))
-
-(defmethod vec/ ((size (cl:eql 3))
-                 vec-a 
-                 (multiple #.(class-of 
-                              (make-array 0 :element-type 
-                                          'single-float))))
-  (v3:v/vec vec-a multiple))
-
-(defmethod vec/ ((size (cl:eql 4))
-                 vec-a 
-                 (multiple #.(class-of 
-                              (make-array 0 :element-type 
-                                          'single-float))))
-  (v4:v/vec vec-a multiple))
-
-(defmacro / (vec-a scalar-or-vec)
-  (base-macros:once-only (vec-a)
-    `(vec/ (cl:length ,vec-a) ,vec-a ,scalar-or-vec)))
+(defun / (vec-a scalar-or-vec)
+  (case (length vec-a)
+    (2 (v2:v/vec vec-a multiple))
+    (3 (v3:v/vec vec-a multiple))
+    (4 (v4:v/vec vec-a multiple))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric veclength (size vec-a)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod veclength ((size (cl:eql 2)) vec-a)
-  (v2:vlength vec-a))
-
-(defmethod veclength ((size (cl:eql 3)) vec-a)
-  (v3:vlength vec-a))
-
-(defmethod veclength ((size (cl:eql 4)) vec-a)
-  (v4:vlength vec-a))
-
-(defmacro length (vec-a)
-  (base-macros:once-only (vec-a)
-    `(veclength (cl:length ,vec-a) ,vec-a)))
+(defun length (vec-a)
+  (case (length vec-a)
+    (2 (v2:vlength vec-a))
+    (3 (v3:vlength vec-a))
+    (4 (v4:vlength vec-a))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric veclength-squared (size vec-a)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod veclength-squared ((size (cl:eql 2)) vec-a)
-  (v2:vlength-squared vec-a))
-
-(defmethod veclength-squared ((size (cl:eql 3)) vec-a)
-  (v3:vlength-squared vec-a))
-
-(defmethod veclength-squared ((size (cl:eql 4)) vec-a)
-  (v4:vlength-squared vec-a))
-
-(defmacro length-squared (vec-a)
-  (base-macros:once-only (vec-a)
-    `(veclength-squared (cl:length ,vec-a) ,vec-a)))
+(defun length-squared (vec-a)
+  (case (length vec-a)
+    (2 (v2:vlength-squared vec-a))
+    (3 (v3:vlength-squared vec-a))
+    (4 (v4:vlength-squared vec-a))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vecdistance (size vec-a vec-b)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vecdistance ((size (cl:eql 2)) vec-a vec-b)
-  (v2:distance vec-a vec-b))
-
-(defmethod vecdistance ((size (cl:eql 3)) vec-a vec-b)
-  (v3:distance vec-a vec-b))
-
-(defmethod vecdistance ((size (cl:eql 4)) vec-a vec-b)
-  (v4:distance vec-a vec-b))
-
-(defmacro distance (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
-         (vecdistance (cl:length ,vec-a) ,vec-a ,vec-b)
-         (error "Vector size mismatch"))))
+(defun distance (vec-a vec-b)
+  (case (length vec-a)
+    (2 (v2:distance vec-a vec-b))
+    (3 (v3:distance vec-a vec-b))
+    (4 (v4:distance vec-a vec-b))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vecdistance-squared (size vec-a vec-b)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vecdistance-squared ((size (cl:eql 2)) vec-a vec-b)
-  (v2:distance-squared vec-a vec-b))
-
-(defmethod vecdistance-squared ((size (cl:eql 3)) vec-a vec-b)
-  (v3:distance-squared vec-a vec-b))
-
-(defmethod vecdistance-squared ((size (cl:eql 4)) vec-a vec-b)
-  (v4:distance-squared vec-a vec-b))
-
-(defmacro distance-squared (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
-         (vecdistance-squared (cl:length ,vec-a) ,vec-a ,vec-b)
-         (error "Vector size mismatch"))))
+(defun distance-squared (vec-a vec-b)
+  (case (length vec-a)
+    (2 (v2:distance-squared vec-a vec-b))
+    (3 (v3:distance-squared vec-a vec-b))
+    (4 (v4:distance-squared vec-a vec-b))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vecdot (size vec-a vec-b)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vecdot ((size (cl:eql 2)) vec-a vec-b)
-  (v2:dot vec-a vec-b))
-
-(defmethod vecdot ((size (cl:eql 3)) vec-a vec-b)
-  (v3:dot vec-a vec-b))
-
-(defmethod vecdot ((size (cl:eql 4)) vec-a vec-b)
-  (v4:dot vec-a vec-b))
-
-(defmacro dot (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
-         (vecdot (cl:length ,vec-a) ,vec-a ,vec-b)
-         (error "Vector size mismatch"))))
+(defun dot (vec-a vec-b)
+  (case (length vec-a)
+    (2 (v2:dot vec-a vec-b))
+    (3 (v3:dot vec-a vec-b))
+    (4 (v4:dot vec-a vec-b))))
 
 ;;----------------------------------------------------------------
 
@@ -394,72 +218,34 @@
 
 ;;----------------------------------------------------------------
 
-(defgeneric vecabsolute-dot (size vec-a vec-b)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vecabsolute-dot ((size (cl:eql 2)) vec-a vec-b)
-  (v2:absolute-dot vec-a vec-b))
-
-(defmethod vecabsolute-dot ((size (cl:eql 3)) vec-a vec-b)
-  (v3:absolute-dot vec-a vec-b))
-
-(defmethod vecabsolute-dot ((size (cl:eql 4)) vec-a vec-b)
-  (v4:absolute-dot vec-a vec-b))
-
-(defmacro absolute-dot (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
-         (vecabsolute-dot (cl:length ,vec-a) ,vec-a ,vec-b)
-         (error "Vector size mismatch"))))
+(defun absolute-dot (vec-a vec-b)
+  "Adds two vectors together and returns the result as a new vector of the same type"
+  (case (cl:length vec-a)
+    (2 (v2:absolute-dot vec-a vec-b))
+    (3 (v3:absolute-dot vec-a vec-b))
+    (4 (v4:absolute-dot vec-a vec-b))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vecperp-dot (size vec-a vec-b)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vecperp-dot ((size (cl:eql 2)) vec-a vec-b)
-  (v2:perp-dot vec-a vec-b))
-
-(defmacro perp-dot (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
-         (vecperp-dot (cl:length ,vec-a) ,vec-a ,vec-b)
-         (error "Vector size mismatch"))))
+(defun perp-dot (vec-a vec-b)
+  (if (= 2 (length vec-a))
+      (v2:perp-dot vec-a vec-b)
+      (error "Incorrect vector size")))
 
 ;;----------------------------------------------------------------
 
-(defgeneric vecnormalize (size vec-a)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod vecnormalize ((size (cl:eql 2)) vec-a)
-  (v2:normalize vec-a))
-
-(defmethod vecnormalize ((size (cl:eql 3)) vec-a)
-  (v3:normalize vec-a))
-
-(defmethod vecnormalize ((size (cl:eql 4)) vec-a)
-  (v4:normalize vec-a))
-
-(defmacro normalize (vec-a)
-  (base-macros:once-only (vec-a)
-    `(vecnormalize (cl:length ,vec-a) ,vec-a)))
+(defun normalize (vec-a)
+  (case (length vec-a)
+    (2 (v2:normalize vec-a))
+    (3 (v3:normalize vec-a))
+    (4 (v4:normalize vec-a))))
 
 ;;----------------------------------------------------------------
 
-(defgeneric veccross (size vec-a vec-b)
-  (:documentation "Adds two vectors together and returns the result as a new vector of the same type"))
-
-(defmethod veccross ((size (cl:eql 2)) vec-a vec-b)
-  (v2:cross vec-a vec-b))
-
-(defmethod veccross ((size (cl:eql 3)) vec-a vec-b)
-  (v3:cross vec-a vec-b))
-
-(defmacro cross (vec-a vec-b)
-  (base-macros:once-only (vec-a vec-b)
-    `(if (cl:eq (cl:length ,vec-a) (cl:length ,vec-b))
-         (veccross (cl:length ,vec-a) ,vec-a ,vec-b)
-         (error "Vector size mismatch"))))
+(defun cross (vec-a vec-b)
+  (case (length vec-a)
+    (2 (v2:cross vec-a vec-b))
+    (3 (v3:cross vec-a vec-b))))
 
 ;;----------------------------------------------------------------
 
