@@ -49,9 +49,9 @@
 (defun make-vector (x y &optional z w)
   "This takes floats and give back a vector, this is just an
    array but it specifies the array type and populates it. "
-  (cond (w (vector4:make-vector4 x y z w))
-        (z (vector3:make-vector3 x y z))
-        (t (vector2:make-vector2 x y))))
+  (cond (w (vector4:make-vector4 (float x) (float y) (float z) (float w)))
+        (z (vector3:make-vector3 (float x) (float y) (float z)))
+        (t (vector2:make-vector2 (float x) (float y)))))
 
 ;; 
 (defun merge-into-vector (&rest vectors)
@@ -68,28 +68,38 @@
 
 ;;----------------------------------------------------------------
 
+(defun floatify (vec)
+  (make-array (cl:length vec) :element-type 'single-float :initial-contents
+              (loop :for i :across vec :collect (float i))))
+
+;;----------------------------------------------------------------
+
 (defun zerop (vec-a)
   "Returns t if the vector is of zero length"
-  (case (length vec-a)
-    (2 (v2:vzerop vec-a))
-    (3 (v3:vzerop vec-a))
-    (4 (v4:vzerop vec-a))))
+  (let ((vec-a (floatify vec-a)))
+    (case (cl:length vec-a)
+      (2 (v2:vzerop vec-a))
+      (3 (v3:vzerop vec-a))
+      (4 (v4:vzerop vec-a)))))
 
 ;;----------------------------------------------------------------
 
 (defun unitp (vec-a)
-  (case (length vec-a)
-    (2 (v2:unitp vec-a))
-    (3 (v3:unitp vec-a))
-    (4 (v4:unitp vec-a))))
+  (let ((vec-a (floatify vec-a)))
+    (case (cl:length vec-a)
+      (2 (v2:unitp vec-a))
+      (3 (v3:unitp vec-a))
+      (4 (v4:unitp vec-a)))))
 
 ;;----------------------------------------------------------------
 
 (defun eq (vec-a vec-b)
-  (case (length vec-a)
-    (2 (v2:v-eq vec-a vec-b))
-    (3 (v3:v-eq vec-a vec-b))
-    (4 (v4:v-eq vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:v-eq vec-a vec-b))
+      (3 (v3:v-eq vec-a vec-b))
+      (4 (v4:v-eq vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
@@ -97,9 +107,9 @@
   "Returns either t if the vectors are equal. 
    Otherwise it returns nil."
   (let ((vec-a (first vecs)))
-    (loop for vec in (cdr vecs)
-       when (not (eq vec-a vec)) do (return nil)
-       finally (return t))))
+    (loop :for vec :in (cdr vecs)       
+       :when (not (v:eq vec vec-a)) :do (return nil)
+       :finally (return t))))
 
 ;;----------------------------------------------------------------
 
@@ -107,145 +117,171 @@
   "Returns either t if the two vectors are equal. 
    Otherwise it returns nil."
   (let ((vec-a (first vecs)))
-    (loop for vec in (cdr vecs)
-       when (eq vec-a vec) do (return nil)
-       finally (return t))))
+    (loop :for vec :in (cdr vecs)
+       :when (eq vec-a vec) :do (return nil)
+       :finally (return t))))
 
 ;;----------------------------------------------------------------
 
 (defun 1+ (vec-a vec-b)
   "Adds two vectors together and returns the result as a new vector of the same type"
-  (case (length vec-a)
-    (2 (v2:v+1 vec-a vec-b))
-    (3 (v3:v+1 vec-a vec-b))
-    (4 (v4:v+1 vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:v+1 vec-a vec-b))
+      (3 (v3:v+1 vec-a vec-b))
+      (4 (v4:v+1 vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
 (defun 1- (vec-a vec-b)
   "Adds two vectors together and returns the result as a new vector of the same type"
-  (case (length vec-a)
-    (2 (v2:v-1 vec-a vec-b))
-    (3 (v3:v-1 vec-a vec-b))
-    (4 (v4:v-1 vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:v-1 vec-a vec-b))
+      (3 (v3:v-1 vec-a vec-b))
+      (4 (v4:v-1 vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
-(defun + (vec-a &rest vecs)
-  (case (length vec-a)
-    (2 (apply #'v2:v+ vecs))
-    (3 (apply #'v3:v+ vecs))
-    (4 (apply #'v4:v+ vecs))))
+(defun + (&rest vecs)
+  (let ((vecs (mapcar #'floatify vecs)))
+    (case (cl:length (first vecs))
+      (2 (apply #'v2:v+ vecs))
+      (3 (apply #'v3:v+ vecs))
+      (4 (apply #'v4:v+ vecs)))))
 
 ;;----------------------------------------------------------------
 
-(defun - (vec-a &rest vecs)
-  (case (length vec-a)
-    (2 (apply #'v2:v- vecs))
-    (3 (apply #'v3:v- vecs))
-    (4 (apply #'v4:v- vecs))))
+(defun - (&rest vecs)
+  (let ((vecs (mapcar #'floatify vecs)))
+    (case (cl:length (first vecs))
+      (2 (apply #'v2:v- vecs))
+      (3 (apply #'v3:v- vecs))
+      (4 (apply #'v4:v- vecs)))))
 
 ;;----------------------------------------------------------------
 
 (defun * (vec-a scalar-or-vec)
   "Adds two vectors together and returns the result as a new vector of the same type"
-  (case (length vec-a)
-    (2 (v2:v*vec vec-a multiple))
-    (3 (v3:v*vec vec-a multiple))
-    (4 (v4:v*vec vec-a multiple))))
+  (let ((vec-a (floatify vec-a)))
+    (case (cl:length vec-a)
+      (2 (v2:v*vec vec-a scalar-or-vec))
+      (3 (v3:v*vec vec-a scalar-or-vec))
+      (4 (v4:v*vec vec-a scalar-or-vec)))))
 
 ;;----------------------------------------------------------------
 
 (defun / (vec-a scalar-or-vec)
-  (case (length vec-a)
-    (2 (v2:v/vec vec-a multiple))
-    (3 (v3:v/vec vec-a multiple))
-    (4 (v4:v/vec vec-a multiple))))
+  (let ((vec-a (floatify vec-a)))
+    (case (cl:length vec-a)
+      (2 (v2:v/vec vec-a scalar-or-vec))
+      (3 (v3:v/vec vec-a scalar-or-vec))
+      (4 (v4:v/vec vec-a scalar-or-vec)))))
 
 ;;----------------------------------------------------------------
 
 (defun length (vec-a)
-  (case (length vec-a)
-    (2 (v2:vlength vec-a))
-    (3 (v3:vlength vec-a))
-    (4 (v4:vlength vec-a))))
+  (let ((vec-a (floatify vec-a)))
+    (case (cl:length vec-a)
+      (2 (v2:vlength vec-a))
+      (3 (v3:vlength vec-a))
+      (4 (v4:vlength vec-a)))))
 
 ;;----------------------------------------------------------------
 
 (defun length-squared (vec-a)
-  (case (length vec-a)
-    (2 (v2:vlength-squared vec-a))
-    (3 (v3:vlength-squared vec-a))
-    (4 (v4:vlength-squared vec-a))))
+  (let ((vec-a (floatify vec-a)))
+    (case (cl:length vec-a)
+     (2 (v2:vlength-squared vec-a))
+     (3 (v3:vlength-squared vec-a))
+     (4 (v4:vlength-squared vec-a)))))
 
 ;;----------------------------------------------------------------
 
 (defun distance (vec-a vec-b)
-  (case (length vec-a)
-    (2 (v2:distance vec-a vec-b))
-    (3 (v3:distance vec-a vec-b))
-    (4 (v4:distance vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:distance vec-a vec-b))
+      (3 (v3:distance vec-a vec-b))
+      (4 (v4:distance vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
 (defun distance-squared (vec-a vec-b)
-  (case (length vec-a)
-    (2 (v2:distance-squared vec-a vec-b))
-    (3 (v3:distance-squared vec-a vec-b))
-    (4 (v4:distance-squared vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:distance-squared vec-a vec-b))
+      (3 (v3:distance-squared vec-a vec-b))
+      (4 (v4:distance-squared vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
 (defun dot (vec-a vec-b)
-  (case (length vec-a)
-    (2 (v2:dot vec-a vec-b))
-    (3 (v3:dot vec-a vec-b))
-    (4 (v4:dot vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:dot vec-a vec-b))
+      (3 (v3:dot vec-a vec-b))
+      (4 (v4:dot vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
 (defun negate (vec)
-  (case (cl:length vec)
-    (2 (v2:negate vec))
-    (3 (v3:negate vec))
-    (4 (v4:negate vec))))
+  (let ((vec (floatify vec)))
+    (case (cl:length vec)
+      (2 (v2:negate vec))
+      (3 (v3:negate vec))
+      (4 (v4:negate vec)))))
 
 (defun face-foreward (vec-a vec-b)
-  (case (cl:length vec-a)
-    (2 (v2:face-foreward vec-a vec-b))
-    (3 (v3:face-foreward vec-a vec-b))
-    (4 (v4:face-foreward vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:face-foreward vec-a vec-b))
+      (3 (v3:face-foreward vec-a vec-b))
+      (4 (v4:face-foreward vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
 (defun absolute-dot (vec-a vec-b)
   "Adds two vectors together and returns the result as a new vector of the same type"
-  (case (cl:length vec-a)
-    (2 (v2:absolute-dot vec-a vec-b))
-    (3 (v3:absolute-dot vec-a vec-b))
-    (4 (v4:absolute-dot vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:absolute-dot vec-a vec-b))
+      (3 (v3:absolute-dot vec-a vec-b))
+      (4 (v4:absolute-dot vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
 (defun perp-dot (vec-a vec-b)
-  (if (= 2 (length vec-a))
-      (v2:perp-dot vec-a vec-b)
-      (error "Incorrect vector size")))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (if (= 2 (length vec-a))
+        (v2:perp-dot vec-a vec-b)
+        (error "Incorrect vector size"))))
 
 ;;----------------------------------------------------------------
 
 (defun normalize (vec-a)
-  (case (length vec-a)
-    (2 (v2:normalize vec-a))
-    (3 (v3:normalize vec-a))
-    (4 (v4:normalize vec-a))))
+  (let ((vec-a (floatify vec-a)))
+    (case (cl:length vec-a)
+      (2 (v2:normalize vec-a))
+      (3 (v3:normalize vec-a))
+      (4 (v4:normalize vec-a)))))
 
 ;;----------------------------------------------------------------
 
 (defun cross (vec-a vec-b)
-  (case (length vec-a)
-    (2 (v2:cross vec-a vec-b))
-    (3 (v3:cross vec-a vec-b))))
+  (let ((vec-a (floatify vec-a))
+        (vec-b (floatify vec-b)))
+    (case (cl:length vec-a)
+      (2 (v2:cross vec-a vec-b))
+      (3 (v3:cross vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
