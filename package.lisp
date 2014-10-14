@@ -69,14 +69,6 @@
   (:export :lerp :mix :stepv :clamp :smoothstep :pulse
            :spline))
 
-(defpackage :conditional-functions
-  (:use :cl)
-  (:nicknames :cfunc)
-  (:export :signal-expired
-           :with-expired
-           :defcfun
-           :expiredp))
-
 (defpackage :base-vectors
   (:use :cl)
   (:export :v! :v-x :v-y :v-z :v-w
@@ -424,8 +416,8 @@
         :base-vectors
         :base-matrices
         :base-maths
-        :conditional-functions
-        :base-macros)
+        :base-macros
+        :temporal-functions)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format
