@@ -417,7 +417,8 @@
         :base-matrices
         :base-maths
         :base-macros
-        :temporal-functions)
+        :temporal-functions
+        :cepl-camera)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format

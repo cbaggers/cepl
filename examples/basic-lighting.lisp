@@ -59,8 +59,8 @@
     (make-entity :rotation (v! -1.57079633 1 0) :stream stream)))
 
 (defun init () 
-  (setf *camera* (ccam:make-camera *resolution*))
-  (prog-1 nil :cam-to-clip (ccam:cam->clip *camera*))
+  (setf *camera* (make-camera *resolution*))
+  (prog-1 nil :cam-to-clip (cam->clip *camera*))
   
   ;;create monkey
   (setf *monkey* (load-lisp-model "monkey.data")))
@@ -74,7 +74,7 @@
 (defun draw ()
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (let* ((world-to-cam-matrix (ccam:world->cam *camera*))
+  (let* ((world-to-cam-matrix (world->cam *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix 
                                      (entity-matrix *monkey*)))
          (normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
@@ -97,10 +97,10 @@
   (cgl:update-display))
 
 (defun reshape (width height near far)
-  (setf (ccam:frame-size *camera*) (v! width height)
-        (ccam:near *camera*) near
-        (ccam:far *camera*) far)
-  (prog-1 nil :cam-to-clip (ccam:cam->clip *camera*)))
+  (setf (frame-size *camera*) (v! width height)
+        (near *camera*) near
+        (far *camera*) far)
+  (prog-1 nil :cam-to-clip (cam->clip *camera*)))
 
 (let ((running nil))
   (defun run-demo () 

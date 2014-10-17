@@ -29,9 +29,9 @@
 
 
 (defun init () 
-  (setf *camera* (ccam:make-camera *resolution*))
-  (setf (ccam:pos *camera*) (v! 0 8 0))
-  (prog-2 nil :cam-to-clip (ccam:cam->clip *camera*))
+  (setf *camera* (make-camera *resolution*))
+  (setf (pos *camera*) (v! 0 8 0))
+  (prog-2 nil :cam-to-clip (cam->clip *camera*))
   (let* ((verts (make-gpu-array `((,(v! +1  +1  +1)  ,(v! 0  1  0  1)) 
                                   (,(v! -1  -1  +1)  ,(v! 0  0  1  1))
                                   (,(v! -1  +1  -1)  ,(v! 1  0  0  1))
@@ -69,7 +69,7 @@
 (defun draw ()
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
-  (prog-2 nil :world-to-cam (ccam:world->cam *camera*))  
+  (prog-2 nil :world-to-cam (world->cam *camera*))  
   (loop :for entity :in *entities* :do
      (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
      (prog-2 (e-stream entity) :model-to-world (entity-matrix entity)))
@@ -77,8 +77,8 @@
   (cgl:update-display))
 
 (defun reshape (width height)  
-  (setf (ccam:frame-size *camera*) (v! width height))
-  (prog-2 nil :cam-to-clip (ccam:cam->clip *camera*))
+  (setf (frame-size *camera*) (v! width height))
+  (prog-2 nil :cam-to-clip (cam->clip *camera*))
   (cgl:viewport 0 0 width height))
 
 (let ((running nil))
