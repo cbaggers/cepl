@@ -62,7 +62,7 @@
 (defun fbo-attach (fbo tex-array attachment &optional (target :draw-framebuffer))
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target can be '(:framebuffer :read-framebuffer :draw-framebuffer)
-  (with-bind-fbo (fbo target)    
+  (with-bind-fbo (fbo target)
     ;; FBOs have the following attachment points:
     ;; GL_COLOR_ATTACHMENTi: These are an implementation-dependent number of
     ;; attachment points. You can query GL_MAX_COLOR_ATTACHMENTS to determine the
@@ -165,7 +165,7 @@
           (:texture-cube-map-array ()))))))
 
 (defun attachment-compatible (attachment internal-format)
-  (case attachment    
+  (case attachment
     (:depth-attachment (depth-formatp internal-format))
     (:stencil-attachment (stencil-formatp internal-format))
     (:depth-stencil-attachment (depth-stencil-formatp internal-format))
