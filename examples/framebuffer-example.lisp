@@ -41,6 +41,7 @@
 (defun step-demo ()
   (ripple-with-wobble *v-stream* :tex *texture* :count *count*
                       :pos-offset (v! 0 0 0 0))
+
   (with-bind-fbo (*fbo* :framebuffer)
     (ripple-with-wobble *v-stream* :tex *texture* :count *count*
                         :pos-offset (v! 0 0 0 0)))

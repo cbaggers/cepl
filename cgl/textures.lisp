@@ -519,7 +519,8 @@
     (unless (eq texture-type :texture-buffer)
       (error "Could not establish the correct texture type for a buffer texture: ~a"
              texture-type))
-    (let* ((array (or (make-gpu-array initial-contents)
+    (let* ((array (if initial-contents
+                      (make-gpu-array initial-contents)
                       (make-gpu-array nil :dimensions dimensions 
                                       :element-type element-type)))
            (new-tex (make-instance 
