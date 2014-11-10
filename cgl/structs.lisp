@@ -90,7 +90,7 @@
                                (or accessor (symb type-name '- name)))
                      :element-type element-type :dimensions dimensions))))
 
-;; put all cepl's errors defintions in one place (like varjo)
+;; put all cepl's errors definitions in one place (like varjo)
 (defun validate-defglstruct-form (name slots)
   (when (keywordp name) (error "glstruct names cannot be keywords"))
   (when (null slots) (error "glstruct must have at least 1 slot"))
@@ -261,14 +261,15 @@
                                    (* (first attr) 
                                       (gl-type-size (second attr))))))))
       (when definitions
-        `(defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name)) 
-                                               &optional (attrib-offset 0)
-                                                 (pointer-offset 0)
-                                                 stride-override normalised)
-           (declare (ignore array-type normalised))
-           (let ((,stride-sym (or stride-override ,stride)))
-             ,@definitions
-             ,(length definitions)))))))
+        `(progn
+           (defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name)) 
+                                                 &optional (attrib-offset 0)
+                                                   (pointer-offset 0)
+                                                   stride-override normalised)
+             (declare (ignore array-type normalised))
+             (let ((,stride-sym (or stride-override ,stride)))
+               ,@definitions
+               ,(length definitions))))))))
 
 (defun expand-slot-to-layout (slot &optional type normalise)
   (let ((type (or type (type-spec->type (s-type slot))))

@@ -121,10 +121,44 @@
            (declare (ignorable ,@uniform-names))
            (unless program-id (setf program-id (,init-func-name)))
            (use-program program-id)
-           ,@u-uploads          
-           (when stream (no-bind-draw-one stream ,prim-type))
+           ,@u-uploads
+           (when stream (draw-expander stream ,prim-type))
            (use-program 0)
            stream)))))
+
+(defmacro draw-expander (stream draw-type
+                         &optional instancing-attrib-count)
+  "This draws the single stream provided using the currently 
+   bound program. Please note: It Does Not bind the program so
+   this function should only be used from another function which
+   is handling the binding."
+  `(let ((stream ,stream)
+         (draw-type ,draw-type)
+         (index-type (vertex-stream-index-type stream)))
+     (bind-vao (vertex-stream-vao stream))
+     ,(if instancing-attrib-count          
+          `(if index-type
+               (%gl:draw-elements-instanced
+                draw-type
+                (vertex-stream-length stream)
+                (gl::cffi-type-to-gl index-type)
+                (make-pointer 0)
+                instancing-attrib-count)
+               (%gl:draw-arrays-instanced
+                draw-type 
+                (vertex-stream-start stream)
+                (vertex-stream-length stream)
+                instancing-attrib-count))
+          `(if index-type
+               (%gl:draw-elements draw-type
+                                  (vertex-stream-length stream)
+                                  (gl::cffi-type-to-gl index-type)
+                                  (make-pointer 0))
+               (%gl:draw-arrays draw-type
+                                (vertex-stream-start stream)
+                                (vertex-stream-length stream))))))
+
+
 
 ;; (defun make-implicit-uniform-uploader (implicit-uniforms)
 ;;   (let* ((uniforms (mapcar #'(lambda (x) (list (first x) (third x))) 
@@ -332,23 +366,6 @@
       (loop :for shader :in shaders :do
          (gl:detach-shader program shader)))
     program))
-
-;; [TODO] Need to sort gpustream indicies thing
-(defun no-bind-draw-one (stream draw-type)
-  "This draws the single stream provided using the currently 
-   bound program. Please note: It Does Not bind the program so
-   this function should only be used from another function which
-   is handling the binding."
-  (let ((index-type (vertex-stream-index-type stream)))
-    (bind-vao (vertex-stream-vao stream))
-    (if index-type
-        (%gl:draw-elements draw-type
-                           (vertex-stream-length stream)
-                           (gl::cffi-type-to-gl index-type)
-                           (make-pointer 0))
-        (%gl:draw-arrays draw-type
-                         (vertex-stream-start stream)
-                         (vertex-stream-length stream)))))
 
 
 

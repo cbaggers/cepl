@@ -33,6 +33,7 @@
   (rest (mapcan #'(lambda (x) (list symb x)) sequence)))
 
 ;; This will be pretty inefficient, but shoudl be fine for code trees
+;; {TODO} how is this not subst?
 (defun walk-replace (to-replace replace-with form 
 		     &key (test #'eql))
   "This walks a list tree ('form') replacing all occurences of 
