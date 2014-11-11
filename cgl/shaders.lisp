@@ -81,10 +81,10 @@
            (invalidate-func-name (symbolicate-package :cgl '££- name))
            (split-args (utils:lambda-list-split 
                         '(&uniform &context &instancing) args))
-           (context (cdr (assoc :&context split)))
+           (context (cdr (assoc :&context split-args)))
            (prim-type (varjo::get-primitive-type-from-context context))
-           (uniforms (second split-args))
-           (uniform-names (mapcar #'first uniforms))           
+           (uniforms (cdr (assoc :&uniform split-args)))
+           (uniform-names (mapcar #'first uniforms))
            (uniform-details (loop :for u :in uniforms :collect 
                                (make-arg-assigners u)))
            (u-lets (loop :for u :in uniform-details :append (first u)))
