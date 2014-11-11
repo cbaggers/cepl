@@ -17,6 +17,7 @@
            :listify
            :replace-nth 
            :hash-values
+           :lambda-list-split
            :hash-keys 
            :intersperse
            :walk-replace

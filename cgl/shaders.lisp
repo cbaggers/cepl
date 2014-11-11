@@ -79,8 +79,10 @@
          :finally (return (list main post)))
     (let* ((init-func-name (symbolicate-package :cgl '%%- name))
            (invalidate-func-name (symbolicate-package :cgl '££- name))
-           (split-args (varjo:split-arguments args))
-           (prim-type (varjo::get-primitive-type-from-context (third split-args)))
+           (split-args (utils:lambda-list-split 
+                        '(&uniform &context &instancing) args))
+           (context (cdr (assoc :&context split)))
+           (prim-type (varjo::get-primitive-type-from-context context))
            (uniforms (second split-args))
            (uniform-names (mapcar #'first uniforms))           
            (uniform-details (loop :for u :in uniforms :collect 
