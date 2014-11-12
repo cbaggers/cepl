@@ -317,6 +317,7 @@
            :defshader
            :defsmacro
            :defsfun
+           :with-instances
            :free-managed-resources
            :free-buffer
            :free-buffers
@@ -425,6 +426,7 @@
                 :pixel-format
                 :pixel-format-of
                 :describe-pixel-format
+                :with-instances
                 :defpipeline
                 :defvshader
                 :deffshader

@@ -1,0 +1,53 @@
+;; Simple instancing example
+
+(defparameter *gpu-array* nil)
+(defparameter *vertex-stream* nil)
+(defparameter *loop* 0.0)
+
+(defsfun calc-offset ((i :float) (loop :float))
+  (let ((i (/ i 2)))
+    (return (v! (sin (+ i loop))
+                (cos (+ (sin i) loop))
+                0.0 0.0))))
+
+(defvshader vert ((position :vec4) &uniform (loop :float))
+  (let ((pos (v! (* (s~ position :xyz) 0.3) 1.0))
+        (i gl-instance-id))
+    (setf gl-position (+ pos (calc-offset (+ (float i)) loop)) )))
+
+(deffshader frag (&uniform (loop :float))
+  (out output-color (v! (cos loop) (sin loop) 0.4 1.0)))
+
+(defpipeline prog-1 ((position :vec4) &uniform (i :int) (loop :float))
+  vert frag)
+
+
+(defun draw (gstream)
+  (setf *loop* (+ 0.004 *loop*))
+  (gl:clear :color-buffer-bit)  
+  (ttm:update)
+  (with-instances (30)
+    (prog-1 gstream :loop *loop*))
+  (gl:flush)
+  (cgl:update-display))
+
+(let ((running nil))
+  (defun run-demo ()
+    (setf running t)
+    (cgl:clear-color 0.0 0.0 0.0 0.0)
+    (cgl:viewport 0 0 640 480)
+    (setf *gpu-array* (make-gpu-array (list (v!  0.0   0.2  0.0  1.0)
+                                            (v! -0.2  -0.2  0.0  1.0)
+                                            (v!  0.2  -0.2  0.0  1.0))
+                                      :element-type :vec4
+                                      :dimensions 3))
+    (setf *vertex-stream* (make-vertex-stream *gpu-array*))
+    (loop :while running :do
+       (case-events (event)
+         (:quit () (setf running nil))
+         (:windowevent (:event e :data1 x :data2 y)
+                       (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
+                         (format t "window size is now: ~s*~s\n" x y))))
+       (update-swank)
+       (continuable (draw *vertex-stream*))))
+  (defun stop-demo () (setf running nil)))

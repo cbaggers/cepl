@@ -10,7 +10,7 @@
                               (:compute . :compute-shader)
                               (:tesselation-evaluation . :tess-evaluation-shader)
                               (:tesselation-control . :tess-control-shader)))
-
+(defvar |*instance-count*| 0)
 
 ;;;--------------------------------------------------------------
 ;;; SHADER & PROGRAMS ;;;
@@ -18,12 +18,12 @@
 
 (let ((assets (make-hash-table)))
   (defun update-shader-asset (name type compile-result recompile-function depends-on)
-    (let ((prog-id (when (eq type :pipeline) 
+    (let ((prog-id (when (eq type :pipeline)
                      (or (fourth (gethash name assets))
                          (gl:create-program))))
           (visited nil))
       (loop :for (n cr rf id dp) :being :the :hash-value :of assets
-         :if (and (not (member n visited)) (find name dp)) :do 
+         :if (and (not (member n visited)) (find name dp)) :do
          (format t "~&; recompiling (~a ...)~&" n)
          (push n visited)
          (funcall rf))
@@ -48,10 +48,10 @@
 
 (defmacro defsfun (name args &body body)
   (let ((recompile-name (symbolicate-package :%cgl name)))
-    `(progn 
+    `(progn
        (defun ,recompile-name ()
          (let ((compile-result (varjo::%v-def-external ',name ',args ',body)))
-           (update-shader-asset ',name :function compile-result 
+           (update-shader-asset ',name :function compile-result
                                 #',recompile-name (used-external-functions compile-result))))
        (,recompile-name)
        ',name)))
@@ -61,7 +61,7 @@
     `(progn
        (defun ,recompile-name ()
          (let ((compile-result (varjo::translate ',args '(progn ,@body))))
-           (update-shader-asset ',name :shader compile-result 
+           (update-shader-asset ',name :shader compile-result
                                 #',recompile-name (used-external-functions compile-result))))
        (,recompile-name)
        ',name)))
@@ -79,13 +79,13 @@
          :finally (return (list main post)))
     (let* ((init-func-name (symbolicate-package :cgl '%%- name))
            (invalidate-func-name (symbolicate-package :cgl '££- name))
-           (split-args (utils:lambda-list-split 
+           (split-args (utils:lambda-list-split
                         '(&uniform &context &instancing) args))
            (context (cdr (assoc :&context split-args)))
            (prim-type (varjo::get-primitive-type-from-context context))
            (uniforms (cdr (assoc :&uniform split-args)))
            (uniform-names (mapcar #'first uniforms))
-           (uniform-details (loop :for u :in uniforms :collect 
+           (uniform-details (loop :for u :in uniforms :collect
                                (make-arg-assigners u)))
            (u-lets (loop :for u :in uniform-details :append (first u)))
            (u-uploads (loop :for u :in uniform-details :collect (second u))))
@@ -95,10 +95,10 @@
          ;; func that will create all resources for pipeline
          (defun ,init-func-name ()
            (let* ((stages ',stages)
-                  (compiled-stages (varjo::rolling-translate 
+                  (compiled-stages (varjo::rolling-translate
                                     ',args (loop :for i :in stages :collect
-                                              (if (symbolp i) 
-                                                  (get-compiled-asset i) 
+                                              (if (symbolp i)
+                                                  (get-compiled-asset i)
                                                   i))))
                   (shaders-objects
                    (loop :for compiled-stage :in compiled-stages
@@ -109,7 +109,7 @@
                                  (cond ((symbolp s) `(,s)) ((listp s) (used-external-functions c)))))
                   (prog-id (update-shader-asset ',name :pipeline compiled-stages
                                                 #',invalidate-func-name depends-on))
-                  (image-unit -1))             
+                  (image-unit -1))
              (declare (ignorable image-unit))
              (format t ,(format nil "~&; uploading (~a ...)~&" name))
              (link-shaders shaders-objects prog-id)
@@ -128,9 +128,8 @@
            (use-program 0)
            stream)))))
 
-(defmacro draw-expander (stream draw-type
-                         &optional instancing-attrib-count)
-  "This draws the single stream provided using the currently 
+(defmacro draw-expander (stream draw-type)
+  "This draws the single stream provided using the currently
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which
    is handling the binding."
@@ -138,34 +137,38 @@
          (draw-type ,draw-type)
          (index-type (vertex-stream-index-type stream)))
      (bind-vao (vertex-stream-vao stream))
-     ,(if instancing-attrib-count          
-          `(if index-type
-               (%gl:draw-elements-instanced
-                draw-type
-                (vertex-stream-length stream)
-                (gl::cffi-type-to-gl index-type)
-                (make-pointer 0)
-                instancing-attrib-count)
-               (%gl:draw-arrays-instanced
-                draw-type 
-                (vertex-stream-start stream)
-                (vertex-stream-length stream)
-                instancing-attrib-count))
-          `(if index-type
-               (%gl:draw-elements draw-type
-                                  (vertex-stream-length stream)
-                                  (gl::cffi-type-to-gl index-type)
-                                  (make-pointer 0))
-               (%gl:draw-arrays draw-type
-                                (vertex-stream-start stream)
-                                (vertex-stream-length stream))))))
+     (if (= |*instance-count*| 0)
+         (if index-type
+             (%gl:draw-elements draw-type
+                                (vertex-stream-length stream)
+                                (gl::cffi-type-to-gl index-type)
+                                (make-pointer 0))
+             (%gl:draw-arrays draw-type
+                              (vertex-stream-start stream)
+                              (vertex-stream-length stream)))
+         (if index-type
+             (%gl:draw-elements-instanced
+              draw-type
+              (vertex-stream-length stream)
+              (gl::cffi-type-to-gl index-type)
+              (make-pointer 0)
+              |*instance-count*|)
+             (%gl:draw-arrays-instanced
+              draw-type
+              (vertex-stream-start stream)
+              (vertex-stream-length stream)
+              |*instance-count*|)))))
 
-
+(defmacro with-instances ((count) &body body)
+  `(let ((|*instance-count*| ,count))
+     (unless (> |*instance-count*| 0)
+       (error "Instance count must be greater than 0"))
+     ,@body))
 
 ;; (defun make-implicit-uniform-uploader (implicit-uniforms)
-;;   (let* ((uniforms (mapcar #'(lambda (x) (list (first x) (third x))) 
+;;   (let* ((uniforms (mapcar #'(lambda (x) (list (first x) (third x)))
 ;;                            implicit-uniforms))
-;;          (details (loop :for u :in uniforms :collect 
+;;          (details (loop :for u :in uniforms :collect
 ;;                      (make-arg-assigners u)))
 ;;          (uploaders (loop :for u :in details :collect (second u))))
 ;;     (break "break" details)))
@@ -194,7 +197,7 @@
          (context-pos (position '&context args :test #'equal :key #'symbol-name))
          (in-vars (subseq args 0 (or uni-pos context-pos)))
          (uniforms (when uni-pos (subseq args (1+ uni-pos) context-pos))))
-    `(,@(mapcar #'first in-vars) 
+    `(,@(mapcar #'first in-vars)
         ,@(when uniforms (cons '&key (mapcar #'first uniforms))))))
 
 ;;---------------------------------------------------------------------
@@ -213,26 +216,26 @@
              (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
              (t `(,(make-simple-assigner varjo-type glsl-name nil))))
        :do (if multi-gid
-               (progn (loop for g in gid :do (push g gen-ids)) 
+               (progn (loop for g in gid :do (push g gen-ids))
                       (push asn assigners))
                (progn (push gid gen-ids) (push asn assigners))))
     `(,(reverse gen-ids)
        (when ,arg-name
-         (let ((val ,(if (or array-length struct-arg) 
+         (let ((val ,(if (or array-length struct-arg)
                          `(pointer ,arg-name)
                          arg-name)))
            ,@(reverse assigners))))))
 
 (defun make-sampler-assigner (type path &optional (byte-offset 0))
-  (declare (ignore byte-offset))  
+  (declare (ignore byte-offset))
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
     `(((,id-name (gl:get-uniform-location prog-id ,path))
        (,i-unit (incf image-unit)))
       (when (>= ,id-name 0)
-        (unless (eq (sampler-type val) ,(type->spec type)) 
+        (unless (eq (sampler-type val) ,(type->spec type))
           (error "incorrect texture type passed to shader"))
-        ;; (unless ,id-name 
+        ;; (unless ,id-name
         ;;   (error "Texture uniforms must be populated")) ;; [TODO] this wont work here
         (active-texture-num ,i-unit)
         (bind-texture val)
@@ -244,7 +247,7 @@
     `((,id-name (gl:get-uniform-location prog-id ,path))
       (when (>= ,id-name 0)
         ,(if byte-offset
-             `(,(get-foreign-uniform-function-name (type->spec type)) 
+             `(,(get-foreign-uniform-function-name (type->spec type))
                 ,id-name 1 (cffi:inc-pointer val ,byte-offset))
              `(,(get-uniform-function-name (type->spec type)) ,id-name val)))
       nil)))
@@ -255,16 +258,16 @@
     (loop :for i :below array-length :append
        (cond ((varjo::v-typep element-type 'varjo::v-user-struct)
               (make-struct-assigners element-type byte-offset))
-             (t (list (make-simple-assigner element-type 
+             (t (list (make-simple-assigner element-type
                                             (format nil "~a[~a]" path i)
                                             byte-offset))))
        :do (incf byte-offset (gl-type-size element-type)))))
 
 (defun make-struct-assigners (type path &optional (byte-offset 0))
-  (loop :for (l-slot-name v-slot-type) :in (varjo::v-slots type) 
+  (loop :for (l-slot-name v-slot-type) :in (varjo::v-slots type)
      :for glsl-name = (varjo::safe-glsl-name-string l-slot-name) :append
      (destructuring-bind (pslot-type array-length . rest) v-slot-type
-       (declare (ignore rest)) 
+       (declare (ignore rest))
        (let ((path (format nil "~a.~a" path glsl-name)))
          (prog1
              (cond (array-length (make-array-assigners v-slot-type path
@@ -312,10 +315,10 @@
   (defun force-use-program (program-id)
     (gl:use-program program-id)
     (setf program-cache program-id)))
-(setf (documentation 'use-program 'function) 
+(setf (documentation 'use-program 'function)
       "Installs a program object as part of current rendering state")
 
-;; [TODO] Expand on this and allow loading on strings/text files for making 
+;; [TODO] Expand on this and allow loading on strings/text files for making
 ;;        shaders
 (defun shader-type-from-path (path)
   "This uses the extension to return the type of the shader.
@@ -326,8 +329,8 @@
           ((equal exten ".frag") :fragment-shader)
           (t (error "Could not extract shader type from shader file extension (must be .vert or .frag)")))))
 
-(defun make-shader 
-    (shader-type source-string &optional (shader-id (gl:create-shader 
+(defun make-shader
+    (shader-type source-string &optional (shader-id (gl:create-shader
                                                      shader-type)))
   "This makes a new opengl shader object by compiling the text
    in the specified file and, unless specified, establishing the
@@ -336,14 +339,14 @@
   (gl:compile-shader shader-id)
   ;;check for compile errors
   (when (not (gl:get-shader shader-id :compile-status))
-    (error "Error compiling ~(~a~): ~%~a~%~%~a" 
+    (error "Error compiling ~(~a~): ~%~a~%~%~a"
            shader-type
            (gl:get-shader-info-log shader-id)
            source-string))
   shader-id)
 
-(defun load-shader (file-path 
-                    &optional (shader-type 
+(defun load-shader (file-path
+                    &optional (shader-type
                                (shader-type-from-path file-path)))
   (restart-case
       (make-shader (utils:file-to-string file-path) shader-type)
@@ -357,13 +360,13 @@
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
   (let ((program (or program_id (gl:create-program))))
-    (unwind-protect 
+    (unwind-protect
          (progn (loop :for shader :in shaders :do
                    (gl:attach-shader program shader))
                 (gl:link-program program)
                 ;;check for linking errors
                 (if (not (gl:get-program program :link-status))
-                    (error (format nil "Error Linking Program~%~a" 
+                    (error (format nil "Error Linking Program~%~a"
                                    (gl:get-program-info-log program)))))
       (loop :for shader :in shaders :do
          (gl:detach-shader program shader)))
