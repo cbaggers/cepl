@@ -13,6 +13,7 @@
   (:nicknames :utils)
   (:export :gdefun 
            :dbind
+           :assoc-bind
            :sn-equal
            :listify
            :replace-nth 
