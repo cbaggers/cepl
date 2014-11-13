@@ -52,6 +52,17 @@
 (defmacro dbind (lambda-list expressions &body body)
   `(destructuring-bind ,lambda-list ,expressions ,@body))
 
+(defmacro assoc-bind (lambda-list alist &body body)
+  (let ((g (gensym "alist")))
+    `(let ((,g ,alist))
+       (let ,(loop :for l :in lambda-list :collect
+                (let ((var (if (listp l) (first l) l))
+                      (key (if (listp l)
+                               (or (second l) (first l))
+                               l)))
+                  `(,var (cdr (assoc ',key ,g)))))
+         ,@body))))
+
 (defun sn-equal (a b) (equal (symbol-name a) (symbol-name b)))
 
 (defun replace-nth (list n form)

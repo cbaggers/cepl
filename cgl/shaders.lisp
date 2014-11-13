@@ -72,61 +72,70 @@
       (error "CGL: ~a is not a known type of shader stage" stage-name)))
 
 (defmacro defpipeline (name args &body shaders)
+  (utils:assoc-bind ((uniforms :&uniform) (context :&context) (instancing :&instancing))
+      (utils:lambda-list-split '(&uniform &context &instancing) args)
+    (declare (ignore instancing))
+    (let* ((init-func-name (symbolicate-package :cgl '%%- name))
+           (invalidate-func-name (symbolicate-package :cgl '££- name))
+           (uniform-details (mapcar #'make-arg-assigners uniforms))
+           (u-lets (loop :for u :in uniform-details :append (first u))))
+      `(let ((program-id nil)
+             ,@(loop for (u) in u-lets collect `(,u -1)))
+         ,(gen-pipeline-invalidate invalidate-func-name)
+         ,(gen-pipeline-init init-func-name args name invalidate-func-name
+                             u-lets shaders)
+         ,(gen-pipeline-func init-func-name name context
+                             uniforms uniform-details)))))
+
+(defun gen-pipeline-invalidate (invalidate-func-name)
+  `(defun ,invalidate-func-name () (setf program-id nil)))
+
+(defun gen-pipeline-init (init-func-name args name invalidate-func-name u-lets
+                          shaders)
   (destructuring-bind (stages post-compile)
       (loop :for shader :in shaders
          :if (and (listp shader) (eq (first shader) :post-compile))
          :collect shader :into post :else :collect shader :into main
          :finally (return (list main post)))
-    (let* ((init-func-name (symbolicate-package :cgl '%%- name))
-           (invalidate-func-name (symbolicate-package :cgl '££- name))
-           (split-args (utils:lambda-list-split
-                        '(&uniform &context &instancing) args))
-           (context (cdr (assoc :&context split-args)))
-           (prim-type (varjo::get-primitive-type-from-context context))
-           (uniforms (cdr (assoc :&uniform split-args)))
-           (uniform-names (mapcar #'first uniforms))
-           (uniform-details (loop :for u :in uniforms :collect
-                               (make-arg-assigners u)))
-           (u-lets (loop :for u :in uniform-details :append (first u)))
-           (u-uploads (loop :for u :in uniform-details :collect (second u))))
-      `(let ((program-id nil)
-             ,@(loop for (u) in u-lets collect `(,u -1)))
-         (defun ,invalidate-func-name () (setf program-id nil))
-         ;; func that will create all resources for pipeline
-         (defun ,init-func-name ()
-           (let* ((stages ',stages)
-                  (compiled-stages (varjo::rolling-translate
-                                    ',args (loop :for i :in stages :collect
-                                              (if (symbolp i)
-                                                  (get-compiled-asset i)
-                                                  i))))
-                  (shaders-objects
-                   (loop :for compiled-stage :in compiled-stages
-                      :collect (make-shader (varjo->gl-stage-names
-                                             (varjo::stage-type compiled-stage))
-                                            (varjo::glsl-code compiled-stage))))
-                  (depends-on (loop :for s :in stages :for c :in compiled-stages :append
-                                 (cond ((symbolp s) `(,s)) ((listp s) (used-external-functions c)))))
-                  (prog-id (update-shader-asset ',name :pipeline compiled-stages
-                                                #',invalidate-func-name depends-on))
-                  (image-unit -1))
-             (declare (ignorable image-unit))
-             (format t ,(format nil "~&; uploading (~a ...)~&" name))
-             (link-shaders shaders-objects prog-id)
-             (mapcar #'%gl:delete-shader shaders-objects)
-             ,@(loop for u in u-lets collect (cons 'setf u))
-             (unbind-buffer) (force-bind-vao 0) (force-use-program 0)
-             (setf program-id prog-id)
-             ,@(loop for p in post-compile append p)
-             prog-id))
-         (defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
-           (declare (ignorable ,@uniform-names))
-           (unless program-id (setf program-id (,init-func-name)))
-           (use-program program-id)
-           ,@u-uploads
-           (when stream (draw-expander stream ,prim-type))
-           (use-program 0)
-           stream)))))
+    `(defun ,init-func-name ()
+       (let* ((stages ',stages)
+              (compiled-stages (varjo::rolling-translate
+                                ',args (loop :for i :in stages :collect
+                                          (if (symbolp i)
+                                              (get-compiled-asset i)
+                                              i))))
+              (shaders-objects
+               (loop :for compiled-stage :in compiled-stages
+                  :collect (make-shader (varjo->gl-stage-names
+                                         (varjo::stage-type compiled-stage))
+                                        (varjo::glsl-code compiled-stage))))
+              (depends-on (loop :for s :in stages :for c :in compiled-stages :append
+                             (cond ((symbolp s) `(,s)) ((listp s) (used-external-functions c)))))
+              (prog-id (update-shader-asset ',name :pipeline compiled-stages
+                                            #',invalidate-func-name depends-on))
+              (image-unit -1))
+         (declare (ignorable image-unit))
+         (format t ,(format nil "~&; uploading (~a ...)~&" name))
+         (link-shaders shaders-objects prog-id)
+         (mapcar #'%gl:delete-shader shaders-objects)
+         ,@(loop for u in u-lets collect (cons 'setf u))
+         (unbind-buffer) (force-bind-vao 0) (force-use-program 0)
+         (setf program-id prog-id)
+         ,@(loop for p in post-compile append p)
+         prog-id))))
+
+(defun gen-pipeline-func (init-func-name name context uniforms uniform-details)
+  (let ((uniform-names (mapcar #'first uniforms))
+        (prim-type (varjo::get-primitive-type-from-context context))
+        (u-uploads (loop :for u :in uniform-details :collect (second u))))
+    `(defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
+       (declare (ignorable ,@uniform-names))
+       (unless program-id (setf program-id (,init-func-name)))
+       (use-program program-id)
+       ,@u-uploads
+       (when stream (draw-expander stream ,prim-type))
+       (use-program 0)
+       stream)))
 
 (defmacro draw-expander (stream draw-type)
   "This draws the single stream provided using the currently
@@ -371,6 +380,3 @@
       (loop :for shader :in shaders :do
          (gl:detach-shader program shader)))
     program))
-
-
-
