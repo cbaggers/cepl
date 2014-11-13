@@ -32,7 +32,7 @@
 (defun draw (gstream)
   (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit)    (ttm:update)
-  (with-instances (300)
+  (with-instances (1000)
     (prog-1 gstream :loop *loop* :tex *particle-positions*))
   (gl:flush)
   (cgl:update-display))
