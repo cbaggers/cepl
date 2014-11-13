@@ -380,6 +380,3 @@
       (loop :for shader :in shaders :do
          (gl:detach-shader program shader)))
     program))
-
-
-
