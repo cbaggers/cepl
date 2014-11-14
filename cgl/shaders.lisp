@@ -71,7 +71,34 @@
   (or (cdr (assoc stage-name *stage-names*))
       (error "CGL: ~a is not a known type of shader stage" stage-name)))
 
-(defmacro defpipeline (name args &body shaders)
+(defun extract-args-from-stages (stages)
+  (let ((precompiled-stages
+         (mapcar #'get-compiled-asset
+                 (remove-if-not #'symbolp stages))))
+    (aggregate-args-from-stages precompiled-stages t nil)))
+
+(defun aggregate-args-from-stages (stages in-args uniforms)
+  (if stages
+      (let ((stage (first stages)))
+        (aggregate-args-from-stages
+         (rest stages)
+         (if (eql t in-args)
+             (varjo:in-args stage)
+             in-args)
+         (aggregate-uniforms (uniforms stage) uniforms)))
+      `(,in-args &uniform ,@uniforms)))
+
+(defun aggregate-uniforms (from into)
+  (if from
+      (let ((u (first from)))
+        (cond ((not (find (first u) into :test #'equal :key #'first))
+               (aggregate-uniforms (rest from) (cons u into)))
+              ((find u into :test #'equal)
+               (aggregate-uniforms (rest from) into))
+              (t (error "Uniforms for the stages are incompatible: ~a ~a" u into))))
+      into))
+
+(defmacro defpipeline (name args &body stages)
   (utils:assoc-bind ((uniforms :&uniform) (context :&context) (instancing :&instancing))
       (utils:lambda-list-split '(&uniform &context &instancing) args)
     (declare (ignore instancing))
@@ -83,9 +110,18 @@
              ,@(loop for (u) in u-lets collect `(,u -1)))
          ,(gen-pipeline-invalidate invalidate-func-name)
          ,(gen-pipeline-init init-func-name args name invalidate-func-name
-                             u-lets shaders)
+                             u-lets stages)
          ,(gen-pipeline-func init-func-name name context
                              uniforms uniform-details)))))
+
+;; (defmacro defpipeline (name args-or-stage &body stages)
+;;   (let* ((stages (if (symbolp args-or-stage)
+;;                      (cons args-or-stage stages)
+;;                      stages))
+;;          (args (if (symbolp args-or-stage)
+;;                    (print (extract-args-from-stages stages))
+;;                    args-or-stage)))
+;;     ...))
 
 (defun gen-pipeline-invalidate (invalidate-func-name)
   `(defun ,invalidate-func-name () (setf program-id nil)))
