@@ -25,8 +25,7 @@
                         0.4
                         1.0)))
 
-(defpipeline prog-1 ((position :vec4) &uniform (loop :float) (tex :sampler-1d))
-  vert frag)
+(defpipeline prog-1 vert frag)
 
 
 (defun draw (gstream)

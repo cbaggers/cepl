@@ -16,6 +16,9 @@
 ;;; SHADER & PROGRAMS ;;;
 ;;;-------------------;;;
 
+(eval-when (:compile-toplevel :load-toplevel :execute)  
+  (defvar *shader-args* (make-hash-table)))
+
 (let ((assets (make-hash-table)))
   (defun update-shader-asset (name type compile-result recompile-function depends-on)
     (let ((prog-id (when (eq type :pipeline)
@@ -59,6 +62,10 @@
 (defmacro defshader (name args &body body)
   (let ((recompile-name (symbolicate-package :%cgl name)))
     `(progn
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (utils:assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context) (instancing :&instancing))
+             (utils:lambda-list-split '(&uniform &context &instancing) ',args)
+           (setf (gethash ',name *shader-args*) (list in-args uniforms context instancing))))
        (defun ,recompile-name ()
          (let ((compile-result (varjo::translate ',args '(progn ,@body))))
            (update-shader-asset ',name :shader compile-result
@@ -72,20 +79,21 @@
       (error "CGL: ~a is not a known type of shader stage" stage-name)))
 
 (defun extract-args-from-stages (stages)
-  (let ((precompiled-stages
-         (mapcar #'get-compiled-asset
+  (let ((stage-args
+         (mapcar (lambda (x) (gethash x *shader-args*))
                  (remove-if-not #'symbolp stages))))
-    (aggregate-args-from-stages precompiled-stages t nil)))
+    (aggregate-args-from-stages stage-args t nil)))
 
 (defun aggregate-args-from-stages (stages in-args uniforms)
   (if stages
       (let ((stage (first stages)))
-        (aggregate-args-from-stages
-         (rest stages)
-         (if (eql t in-args)
-             (varjo:in-args stage)
-             in-args)
-         (aggregate-uniforms (uniforms stage) uniforms)))
+        (destructuring-bind
+              (stage-args stage-uniforms stage-context stage-instancing) stage
+          (declare (ignore stage-context stage-instancing))
+          (aggregate-args-from-stages
+           (rest stages)
+           (if (eql t in-args) stage-args in-args)
+           (aggregate-uniforms stage-uniforms uniforms))))
       `(,in-args &uniform ,@uniforms)))
 
 (defun aggregate-uniforms (from into)
@@ -98,21 +106,27 @@
               (t (error "Uniforms for the stages are incompatible: ~a ~a" u into))))
       into))
 
-(defmacro defpipeline (name args &body stages)
-  (utils:assoc-bind ((uniforms :&uniform) (context :&context) (instancing :&instancing))
-      (utils:lambda-list-split '(&uniform &context &instancing) args)
-    (declare (ignore instancing))
-    (let* ((init-func-name (symbolicate-package :cgl '%%- name))
-           (invalidate-func-name (symbolicate-package :cgl '££- name))
-           (uniform-details (mapcar #'make-arg-assigners uniforms))
-           (u-lets (loop :for u :in uniform-details :append (first u))))
-      `(let ((program-id nil)
-             ,@(loop for (u) in u-lets collect `(,u -1)))
-         ,(gen-pipeline-invalidate invalidate-func-name)
-         ,(gen-pipeline-init init-func-name args name invalidate-func-name
-                             u-lets stages)
-         ,(gen-pipeline-func init-func-name name context
-                             uniforms uniform-details)))))
+(defmacro defpipeline (name args-or-stage &body stages)
+  (let* ((stages (if (symbolp args-or-stage)
+                     (cons args-or-stage stages)
+                     stages))
+         (args (if (symbolp args-or-stage)
+                   (print (extract-args-from-stages stages))
+                   args-or-stage)))
+    (utils:assoc-bind ((uniforms :&uniform) (context :&context) (instancing :&instancing))
+        (utils:lambda-list-split '(&uniform &context &instancing) args)
+      (declare (ignore instancing))
+      (let* ((init-func-name (symbolicate-package :cgl '%%- name))
+             (invalidate-func-name (symbolicate-package :cgl '££- name))
+             (uniform-details (mapcar #'make-arg-assigners uniforms))
+             (u-lets (loop :for u :in uniform-details :append (first u))))
+        `(let ((program-id nil)
+               ,@(loop for (u) in u-lets collect `(,u -1)))
+           ,(gen-pipeline-invalidate invalidate-func-name)
+           ,(gen-pipeline-init init-func-name args name invalidate-func-name
+                               u-lets stages)
+           ,(gen-pipeline-func init-func-name name context
+                               uniforms uniform-details))))))
 
 ;; (defmacro defpipeline (name args-or-stage &body stages)
 ;;   (let* ((stages (if (symbolp args-or-stage)

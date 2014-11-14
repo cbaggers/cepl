@@ -58,7 +58,7 @@
        (let ,(loop :for l :in lambda-list :collect
                 (let ((var (if (listp l) (first l) l))
                       (key (if (listp l)
-                               (or (second l) (first l))
+                               (second l)
                                l)))
                   `(,var (cdr (assoc ',key ,g)))))
          ,@body))))
