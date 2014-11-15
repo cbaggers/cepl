@@ -11,6 +11,7 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
+
   (:export :gdefun 
            :dbind
            :assoc-bind
@@ -40,7 +41,8 @@
            :rangei
            :arange
            :arangei
-           :mapcat))
+           :mapcat
+           :deferror))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
@@ -351,7 +353,12 @@
            :with-bind-fbo
            :fbo-attach
            :attachment-compatible
-           :fbo-detach))
+           :fbo-detach
+           ;;----------
+           :def-gl-equivalent))
+
+(defpackage :varjo-bridge-types
+  (:use :cl))
 
 (defpackage :%cgl
   (:use :cl :varjo :cgl))
@@ -459,7 +466,11 @@
                 :with-bind-fbo
                 :fbo-attach
                 :attachment-compatible
-                :fbo-detach)
+                :fbo-detach
+                ;;---
+                :def-gl-equivalent)
+  (:import-from :utils
+                :deferror)
   (:export :repl
            :%repl
            :case-events

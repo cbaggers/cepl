@@ -33,6 +33,7 @@
                (:file "cgl/c-arrays")
                (:file "cgl/structs")
                (:file "cgl/buffers")
+               (:file "cgl/equivalent-types")
                (:file "cgl/buffer-gpu-arrays")
                (:file "cgl/vaos")
                (:file "cgl/vertex-streams")

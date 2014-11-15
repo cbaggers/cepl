@@ -334,3 +334,18 @@ producing a symbol in the current package."
 (defun mapcat (function &rest lists)
   (apply #'concatenate 'list (apply #'mapcar function lists)))
 
+;------------ERRORS-----------;
+
+;;[TODO] need better arg test
+(defmacro deferror (name (&key (error-type 'error) prefix)
+                            (&rest args) error-string &body body)
+  (unless (every #'symbolp args) (error "can only take simple args"))
+  (loop :for arg :in args :do
+     (setf body (subst `(,arg condition) arg body :test #'eq)))
+  `(define-condition ,name (,error-type)
+     (,@(loop :for arg :in args :collect
+           `(,arg :initarg ,(kwd arg) :reader ,arg)))
+     (:report (lambda (condition stream)
+                (declare (ignorable condition))
+                (format stream ,(format nil "~@[~a:~] ~a" prefix error-string) 
+                        ,@body)))))

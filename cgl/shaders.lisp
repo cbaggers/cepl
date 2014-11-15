@@ -113,32 +113,52 @@
          (args (if (symbolp args-or-stage)
                    (print (extract-args-from-stages stages))
                    args-or-stage)))
-    (utils:assoc-bind ((uniforms :&uniform) (context :&context) (instancing :&instancing))
+    (utils:assoc-bind ((unexpanded-uniforms :&uniform) (context :&context) (instancing :&instancing))
         (utils:lambda-list-split '(&uniform &context &instancing) args)
       (declare (ignore instancing))
-      (let* ((init-func-name (symbolicate-package :cgl '%%- name))
+      (let* ((uniforms (expand-equivalent-types unexpanded-uniforms))
+             (init-func-name (symbolicate-package :cgl '%%- name))
              (invalidate-func-name (symbolicate-package :cgl '££- name))
-             (uniform-details (mapcar #'make-arg-assigners uniforms))
-             (u-lets (loop :for u :in uniform-details :append (first u))))
+             (uniform-details (mapcar #'make-arg-assigners uniforms))) ;; <---- uniform-converters
         `(let ((program-id nil)
-               ,@(loop for (u) in u-lets collect `(,u -1)))
+               ,@(loop :for (((u-gensym))) :in uniform-details :collect
+                    `(,u-gensym -1)))
            ,(gen-pipeline-invalidate invalidate-func-name)
            ,(gen-pipeline-init init-func-name args name invalidate-func-name
-                               u-lets stages)
+                               uniform-details stages)
            ,(gen-pipeline-func init-func-name name context
-                               uniforms uniform-details))))))
+                               unexpanded-uniforms uniform-details))))))
 
+(defun expand-equivalent-types (args)
+  (mapcan #'expand-equivalent-type args))
 
-;; (defun bake-pipeline (name)
-;;   ;; recreates and recompiles an optimized version of the shader pipelien
-;;   )
+(defun expand-equivalent-type (arg-form)
+  (destructuring-bind (name type) arg-form
+    (multiple-value-bind (type-data exists)
+        (gethash type *gl-equivalent-type-data*)
+      (if exists
+          (case (first type-data)
+            (:direct (expand-direct name (rest type-data)))
+            (:compound (expand-compound name (rest type-data))))
+          (list (list (list name) type))))))
 
+(defun expand-direct (arg-name type-data)
+  (destructuring-bind (lisp-type type converter) type-data
+    (declare (ignore lisp-type))
+    (list (list (list arg-name arg-name converter) type))))
+
+(defun expand-compound (arg-name type-data)
+  (destructuring-bind (lisp-type fields) type-data
+    (declare (ignore lisp-type))
+    (loop :for (name type converter) :in fields :collect
+       (let ((expanded-arg-name (symb arg-name '- name)))
+         (list (list expanded-arg-name arg-name converter) type)))))
 
 (defun gen-pipeline-invalidate (invalidate-func-name)
   `(defun ,invalidate-func-name () (setf program-id nil)))
 
-(defun gen-pipeline-init (init-func-name args name invalidate-func-name u-lets
-                          shaders)
+(defun gen-pipeline-init (init-func-name args name invalidate-func-name
+                          uniform-details shaders)
   (destructuring-bind (stages post-compile)
       (loop :for shader :in shaders
          :if (and (listp shader) (eq (first shader) :post-compile))
@@ -165,17 +185,20 @@
          (format t ,(format nil "~&; uploading (~a ...)~&" name))
          (link-shaders shaders-objects prog-id)
          (mapcar #'%gl:delete-shader shaders-objects)
-         ,@(loop for u in u-lets collect (cons 'setf u))
+         
+         ,@(let ((u-lets (mapcan #'first uniform-details)))
+                (loop for u in u-lets collect (cons 'setf u)))
          (unbind-buffer) (force-bind-vao 0) (force-use-program 0)
          (setf program-id prog-id)
          ,@(loop for p in post-compile append p)
          prog-id))))
 
-(defun gen-pipeline-func (init-func-name name context uniforms uniform-details)
-  (let ((uniform-names (mapcar #'first uniforms))
+(defun gen-pipeline-func (init-func-name name context unexpanded-uniforms
+                          uniform-details)
+  (let ((uniform-names (mapcar #'first unexpanded-uniforms))
         (prim-type (varjo::get-primitive-type-from-context context))
-        (u-uploads (loop :for u :in uniform-details :collect (second u))))
-    `(defun ,name (stream ,@(when uniforms `(&key ,@uniform-names)))
+        (u-uploads (mapcar #'second uniform-details)))
+    `(defun ,name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
        (declare (ignorable ,@uniform-names))
        (unless program-id (setf program-id (,init-func-name)))
        (use-program program-id)
@@ -259,28 +282,38 @@
 ;;---------------------------------------------------------------------
 
 (defun make-arg-assigners (uniform-arg &aux gen-ids assigners)
-  (let* ((arg-name (first uniform-arg))
-         (varjo-type (varjo::type-spec->type (second uniform-arg)))
-         (glsl-name (varjo::safe-glsl-name-string arg-name))
-         (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
-         (array-length (when (v-typep varjo-type 'v-array)
-                         (apply #'* (v-dimensions varjo-type))))
-         (sampler (sampler-typep varjo-type)))
-    (loop :for (gid asn multi-gid) :in
-       (cond (array-length (make-array-assigners varjo-type glsl-name))
-             (struct-arg (make-struct-assigners varjo-type glsl-name))
-             (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
-             (t `(,(make-simple-assigner varjo-type glsl-name nil))))
-       :do (if multi-gid
-               (progn (loop for g in gid :do (push g gen-ids))
-                      (push asn assigners))
-               (progn (push gid gen-ids) (push asn assigners))))
-    `(,(reverse gen-ids)
-       (when ,arg-name
-         (let ((val ,(if (or array-length struct-arg)
-                         `(pointer ,arg-name)
-                         arg-name)))
-           ,@(reverse assigners))))))
+  (destructuring-bind ((arg-name &optional expanded-from converter)
+                       varjo-type~1) uniform-arg
+    (let* ((varjo-type (varjo::type-spec->type varjo-type~1))
+           (glsl-name (varjo::safe-glsl-name-string arg-name))
+           (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
+           (array-length (when (v-typep varjo-type 'v-array)
+                           (apply #'* (v-dimensions varjo-type))))
+           (sampler (sampler-typep varjo-type)))
+      (loop :for (gid asn multi-gid) :in
+         (cond (array-length (make-array-assigners varjo-type glsl-name))
+               (struct-arg (make-struct-assigners varjo-type glsl-name))
+               (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
+               (t `(,(make-simple-assigner varjo-type glsl-name nil))))
+         :do (if multi-gid
+                 (progn (loop for g in gid :do (push g gen-ids))
+                        (push asn assigners))
+                 (progn (push gid gen-ids) (push asn assigners))))
+      (let ((val~ (if expanded-from
+                      expanded-from
+                      (if (or array-length struct-arg)
+                          `(pointer ,arg-name)
+                          arg-name))))
+        `(,(reverse gen-ids)
+           (when ,(or expanded-from arg-name)
+             (let ((val ,(cond ((null converter) val~) 
+                               ((eq (first converter) 'function)
+                                `(,(second converter) ,val~))
+                               ((eq (first converter) 'lambda)
+                                `(labels ((c ,@(rest converter)))
+                                   (c ,val~)))
+                               (t (error "invalid converter in make-arg-assigners")))))               
+               ,@(reverse assigners))))))))
 
 (defun make-sampler-assigner (type path &optional (byte-offset 0))
   (declare (ignore byte-offset))
