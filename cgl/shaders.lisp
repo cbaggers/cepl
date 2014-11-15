@@ -128,14 +128,11 @@
            ,(gen-pipeline-func init-func-name name context
                                uniforms uniform-details))))))
 
-;; (defmacro defpipeline (name args-or-stage &body stages)
-;;   (let* ((stages (if (symbolp args-or-stage)
-;;                      (cons args-or-stage stages)
-;;                      stages))
-;;          (args (if (symbolp args-or-stage)
-;;                    (print (extract-args-from-stages stages))
-;;                    args-or-stage)))
-;;     ...))
+
+;; (defun bake-pipeline (name)
+;;   ;; recreates and recompiles an optimized version of the shader pipelien
+;;   )
+
 
 (defun gen-pipeline-invalidate (invalidate-func-name)
   `(defun ,invalidate-func-name () (setf program-id nil)))
