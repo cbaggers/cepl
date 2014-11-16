@@ -42,7 +42,8 @@
            :arange
            :arangei
            :mapcat
-           :deferror))
+           :deferror
+           :split-seq-by-seq))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)

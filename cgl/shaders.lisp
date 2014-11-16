@@ -113,46 +113,31 @@
          (args (if (symbolp args-or-stage)
                    (print (extract-args-from-stages stages))
                    args-or-stage)))
-    (utils:assoc-bind ((unexpanded-uniforms :&uniform) (context :&context) (instancing :&instancing))
+    (utils:assoc-bind ((in-args nil) (unexpanded-uniforms :&uniform) 
+                       (context :&context) (instancing :&instancing))
         (utils:lambda-list-split '(&uniform &context &instancing) args)
       (declare (ignore instancing))
       (let* ((uniforms (expand-equivalent-types unexpanded-uniforms))
              (init-func-name (symbolicate-package :cgl '%%- name))
              (invalidate-func-name (symbolicate-package :cgl '££- name))
-             (uniform-details (mapcar #'make-arg-assigners uniforms))) ;; <---- uniform-converters
+             (uniform-details (mapcar #'make-arg-assigners uniforms))
+             (varjo-args
+              `(,@in-args
+                ,@(when unexpanded-uniforms
+                        `(&uniform
+                          ,@(loop :for (name type) :in unexpanded-uniforms :collect
+                               (if (gethash type *gl-equivalent-type-data*)
+                                   `(,name ,(symbol-to-bridge-symbol type))
+                                   `(,name ,type)))))
+                ,@(when context `(&context ,@context)))))        
         `(let ((program-id nil)
                ,@(loop :for (((u-gensym))) :in uniform-details :collect
                     `(,u-gensym -1)))
            ,(gen-pipeline-invalidate invalidate-func-name)
-           ,(gen-pipeline-init init-func-name args name invalidate-func-name
-                               uniform-details stages)
+           ,(gen-pipeline-init init-func-name varjo-args name 
+                               invalidate-func-name uniform-details stages)
            ,(gen-pipeline-func init-func-name name context
                                unexpanded-uniforms uniform-details))))))
-
-(defun expand-equivalent-types (args)
-  (mapcan #'expand-equivalent-type args))
-
-(defun expand-equivalent-type (arg-form)
-  (destructuring-bind (name type) arg-form
-    (multiple-value-bind (type-data exists)
-        (gethash type *gl-equivalent-type-data*)
-      (if exists
-          (case (first type-data)
-            (:direct (expand-direct name (rest type-data)))
-            (:compound (expand-compound name (rest type-data))))
-          (list (list (list name) type))))))
-
-(defun expand-direct (arg-name type-data)
-  (destructuring-bind (lisp-type type converter) type-data
-    (declare (ignore lisp-type))
-    (list (list (list arg-name arg-name converter) type))))
-
-(defun expand-compound (arg-name type-data)
-  (destructuring-bind (lisp-type fields) type-data
-    (declare (ignore lisp-type))
-    (loop :for (name type converter) :in fields :collect
-       (let ((expanded-arg-name (symb arg-name '- name)))
-         (list (list expanded-arg-name arg-name converter) type)))))
 
 (defun gen-pipeline-invalidate (invalidate-func-name)
   `(defun ,invalidate-func-name () (setf program-id nil)))
@@ -165,7 +150,7 @@
          :collect shader :into post :else :collect shader :into main
          :finally (return (list main post)))
     `(defun ,init-func-name ()
-       (let* ((stages ',stages)
+       (let* ((stages ',stages)              
               (compiled-stages (varjo::rolling-translate
                                 ',args (loop :for i :in stages :collect
                                           (if (symbolp i)

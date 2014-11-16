@@ -334,6 +334,22 @@ producing a symbol in the current package."
 (defun mapcat (function &rest lists)
   (apply #'concatenate 'list (apply #'mapcar function lists)))
 
+(defun split-seq-by-seq (delim sequence)
+  (let* ((delim-len (length delim))
+         (seq-len (length sequence))
+         (result nil)
+         (last 0)
+         (i 0))
+    (loop :do
+       (setf i (1+ i))
+       (if (> (+ i delim-len) seq-len)
+           (progn (push (subseq sequence last) result)
+                  (return (reverse result)))
+           (when (equal (subseq sequence i (+ i delim-len)) delim)
+             (push (subseq sequence last i) result)
+             (setf i (+ -1 i delim-len)
+                   last (1+ i)))))))
+
 ;------------ERRORS-----------;
 
 ;;[TODO] need better arg test
