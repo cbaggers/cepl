@@ -32,6 +32,11 @@
 ;;;; ==========================================================================
 (in-package #:cl-user)
 
+(defpackage :maths
+  (:use :cl)
+  (:export :lerp :mix :stepv :clamp :smoothstep :pulse
+           :spline))
+
 (defpackage :base-maths
   (:use :cl)
   (:export :clamp

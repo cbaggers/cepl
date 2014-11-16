@@ -45,7 +45,8 @@
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :perp-dot
            :*unit-x* :*unit-y* :*unit-scale*
-           :vzerop :unitp :cross)
+           :vzerop :unitp :cross :face-foreward :lerp
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -61,7 +62,8 @@
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
-           :vzerop :unitp :cross)
+           :vzerop :unitp :cross :face-foreward :lerp
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -77,7 +79,8 @@
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*
-           :vzerop :unitp)
+           :vzerop :unitp :face-foreward :lerp
+           :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -91,7 +94,8 @@
   (:export :v :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
            :/ :length :length-squared :distance :distance-squared
            :dot :absolute-dot :perp-dot :normalize :cross :eq
-           :swizzle :merge-into-vector) 
+           :swizzle :merge-into-vector :negate :face-foreward :lerp
+           :mix :bezier) 
   (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
