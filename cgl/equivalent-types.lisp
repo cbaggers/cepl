@@ -60,9 +60,7 @@
 
 (defun equiv-uniform-string-gen (name type)
   (let* ((lisp-type (bridge-symbol-to-symbol type))
-         (type-obj (type-spec->type type))
          (fields (cgl::expand-equivalent-type `(,name ,lisp-type))))
-    (print (list name type lisp-type type-obj))
     (loop :for ((name _1 _2) gl-type) :in fields :collect
        `(,name ,gl-type ,(varjo::gen-uniform-decl-string
                           name (type-spec->type gl-type))))))
