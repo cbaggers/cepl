@@ -308,9 +308,12 @@
 ;;------------------------------------------------------------
 
 (defun make-populate (autowrap-name slots)
-  `(defmethod populate ((object ,autowrap-name) (data list))
+  `(defmethod populate ((object ,autowrap-name) data)
+     (unless (or (vectorp data) (listp data))
+       (error "can only populate a struct of type ~a with a list or an array" 
+              ',autowrap-name))
      ,@(loop :for slot :in slots :for i :from 0 :collect
-          `(setf (,(s-writer slot) object) (nth ,i data)))
+          `(setf (,(s-writer slot) object) (elt data ,i)))
      object))
 
 ;;------------------------------------------------------------
@@ -326,3 +329,4 @@
              (pixel-format ,components ',type)))))))
 
 ;;------------------------------------------------------------
+

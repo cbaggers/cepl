@@ -104,5 +104,4 @@
     (when element-buffer
       (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
-    vao)
-  )
+    vao))

@@ -131,9 +131,7 @@
                         :row-alignment alignment
                         :element-pixel-format (when p-format element-type))))
         (when initial-contents
-          (if (listp initial-contents)
-              (c-populate new-array initial-contents)
-              (error "cannot populate with that... will fix error when I have drunk less")))
+          (c-populate new-array initial-contents))
         new-array))))
 
 ;; [TODO] this is damn chunky.. can this be better
@@ -214,21 +212,25 @@
 
 ;; [TODO] can the common of the two subfuncs be spun off? (almost certainly)
 (defun c-populate (c-array data &optional (check-sizes t))
+  (unless (or (listp data) (vectorp data))
+    (error "Can only populate c-array with vectors or lists"))
   (labels ((walk-to-dpop (data dimensions &optional structp pos)
              (let ((still-to-walk (rest dimensions)))
-               (loop for sublist in data for i from 0 do
-                    (if still-to-walk
-                        (walk-to-dpop sublist still-to-walk structp (cons i pos))
-                        (if structp
-                            (populate (%aref-c c-array (reverse (cons i pos)))
-                                      sublist)
-                            (setf (%aref-c c-array (reverse (cons i pos))) 
-                                  sublist))))))
+               (map nil (lambda (sublist i)
+                          (if still-to-walk
+                              (walk-to-dpop sublist still-to-walk structp (cons i pos))
+                              (if structp
+                                  (populate (%aref-c c-array (reverse (cons i pos)))
+                                            sublist)
+                                  (setf (%aref-c c-array (reverse (cons i pos))) 
+                                        sublist))))
+                    data (range (length data)))))
            (check-sizes (data dimensions)
-             (if (null dimensions) t
+             (if (null dimensions) 
+                 t
                  (if (eql (first dimensions) (length data))
-                     (loop for sublist in data always
-                          (check-sizes sublist (rest dimensions)))
+                     (every (lambda (sublist) (check-sizes sublist (rest dimensions)))
+                            data)
                      (error "Dimensions of data and c-array do not match")))))
     (when check-sizes (check-sizes data (dimensions c-array)))
     (walk-to-dpop data (dimensions c-array) (not (keywordp (element-type c-array))))
@@ -264,7 +266,9 @@
 (defmethod gl-pull ((object c-array))
   (gl-pull-1 object))
 
-(defmethod gl-push ((object list) (destination c-array))
+(defmethod gl-push (object (destination c-array))
+  (unless (or (listp object) (arrayp object))
+    (error "Can only push arrays or lists to c-arrays"))
   (c-populate destination object))
 
 (defmethod pixel-format-of ((type c-array))
