@@ -203,7 +203,8 @@
   (:export :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
            :identityp :elt :elm :get-rows :get-row
            :get-columns :get-column :determinant
-           :inverse :transpose :trace :negate) 
+           :inverse :transpose :trace :negate
+           :print-matrix) 
   (:shadow :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
            :elt :trace))
 

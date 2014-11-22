@@ -106,6 +106,16 @@
                                        :alignment alignment))
     (make-gpu-array c-array :access-style access-style)))
 
+(defmethod make-gpu-array ((initial-contents vector) 
+                           &key dimensions element-type (access-style :static-draw) 
+                             (alignment 1))
+  (unless dimensions (errorx "dimensions are not optional when making a gpu-array from a list"))
+  (unless element-type (error "element-type is not optional when making a gpu-array from a list"))
+  (with-c-array (c-array (make-c-array dimensions element-type 
+                                       :initial-contents initial-contents
+                                       :alignment alignment))
+    (make-gpu-array c-array :access-style access-style)))
+
 (defmethod make-gpu-array ((initial-contents c-array) 
                            &key (access-style :static-draw))
   (let ((buffer (gen-buffer :managed t)))
