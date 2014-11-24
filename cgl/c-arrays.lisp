@@ -112,20 +112,20 @@
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
                   (error "make-c-array must be given initial-elements or dimensions"))))
+         (p-format (pixel-format-p element-type))
+         (element-type (if p-format
+                             (pixel-format->element-type element-type)
+                             element-type))
          (inferred-lisp-type (cond (element-type nil)
                                    ((and (not element-type) initial-contents)
                                     (scan-for-type initial-contents))                                   
-                                   (t (error "If element-type is not specified the initial-contents must be provided"))))
-         (element-type (if inferred-lisp-type
-                           (lisp->gl-type inferred-lisp-type)
-                           element-type))
+                                   (t (error "If element-type is not specified the initial-contents must be provided"))
+                                   (element-type (if inferred-lisp-type
+                                                     (lisp->gl-type inferred-lisp-type)
+                                                     element-type))))
          (initial-contents (when inferred-lisp-type
                              (update-data initial-contents inferred-lisp-type)))
-         (p-format (pixel-format-p element-type))
-         (element-type~1 (if p-format
-                             (pixel-format->element-type element-type)
-                             element-type))
-         (elem-size (gl-type-size element-type~1)))
+         (elem-size (gl-type-size element-type)))
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))
@@ -138,7 +138,7 @@
           (error "Cannot displace and populate array at the same time")
           (when (or (not (eql (reduce #'* dimensions)
                               (reduce #'* (dimensions displaced-by))))
-                    (not (eq (element-type displaced-by) element-type~1))
+                    (not (eq (element-type displaced-by) element-type))
                     (> (row-alignment displaced-by) 1))
             (error "Byte size and type of arrays must match and alignment must be 1"))))
     (multiple-value-bind (byte-size row-byte-size)
@@ -149,7 +149,7 @@
                                      (cffi::%foreign-alloc byte-size))
                         :dimensions dimensions
                         :element-byte-size elem-size
-                        :element-type element-type~1
+                        :element-type element-type
                         :row-byte-size row-byte-size
                         :row-alignment alignment
                         :element-pixel-format (when p-format element-type))))

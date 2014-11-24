@@ -619,7 +619,8 @@
                          internal-format texture) object
     (let* ((p-format (internal-format->pixel-format 
                       (internal-format object)))
-           (c-array (make-c-array (dimensions object) p-format)))
+           (c-array (make-c-array nil :dimensions (dimensions object)
+                                  :element-type p-format)))
       (destructuring-bind (format type) (compile-pixel-format p-format)
         (with-texture-bound (texture)
           (%gl:get-tex-image texture-type level-num format type

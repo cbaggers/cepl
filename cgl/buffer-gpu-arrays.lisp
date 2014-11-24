@@ -96,23 +96,11 @@
                    :dimensions dimensions
                    :access-style access-style)))
 
-(defmethod make-gpu-array ((initial-contents list) 
+(defmethod make-gpu-array ((initial-contents t) 
                            &key dimensions element-type (access-style :static-draw) 
                              (alignment 1))
-  (unless dimensions (error "dimensions are not optional when making a gpu-array from a list"))
-  (unless element-type (error "element-type is not optional when making a gpu-array from a list"))
-  (with-c-array (c-array (make-c-array dimensions element-type 
-                                       :initial-contents initial-contents
-                                       :alignment alignment))
-    (make-gpu-array c-array :access-style access-style)))
-
-(defmethod make-gpu-array ((initial-contents vector) 
-                           &key dimensions element-type (access-style :static-draw) 
-                             (alignment 1))
-  (unless dimensions (errorx "dimensions are not optional when making a gpu-array from a list"))
-  (unless element-type (error "element-type is not optional when making a gpu-array from a list"))
-  (with-c-array (c-array (make-c-array dimensions element-type 
-                                       :initial-contents initial-contents
+  (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
+                                       :element-type element-type
                                        :alignment alignment))
     (make-gpu-array c-array :access-style access-style)))
 
@@ -218,9 +206,9 @@
 
 ;; allignmetn
 (defmethod gl-push ((object list) (destination gpuarray))
-  (with-c-array (tmp (make-c-array (dimensions destination)
-                                   (element-type destination) 
-                                   :initial-contents object
+  (with-c-array (tmp (make-c-array object
+                                   :dimensions (dimensions destination)
+                                   :element-type (element-type destination) 
                                    :alignment 1))
     (gl-push tmp destination)))
 
