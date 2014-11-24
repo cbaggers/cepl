@@ -29,6 +29,17 @@
            ((integer 0 4) row col))
   (aref mat-a (+ row (* col 4))))
 
+(defun (setf melm) (value mat-a row col)
+  "Provides access to data in the matrix by row
+   and column number. The actual data is stored in a 1d list in
+   column major order, but this abstraction means we only have 
+   to think in row major order which is how most mathematical
+   texts and online tutorials choose to show matrices"
+  (declare ((simple-array single-float (16)) mat-a)
+           ((integer 0 4) row col)
+           (single-float value))
+  (setf (aref mat-a (+ row (* col 4))) value))
+
 (define-compiler-macro melm (mat-a row col)
   "Provide access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in

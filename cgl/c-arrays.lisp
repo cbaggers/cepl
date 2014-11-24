@@ -92,7 +92,7 @@
                    :element-byte-size (element-byte-size c-array)
                    :element-type (element-type c-array)
                    :row-byte-size (row-byte-size c-array)
-                   :row-alignment (row-alignment c-array ))))
+                   :row-alignment (row-alignment c-array))))
 
 ;; [TODO] extract error messages
 (defun make-c-array (initial-contents
@@ -112,20 +112,20 @@
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
                   (error "make-c-array must be given initial-elements or dimensions"))))
-         (p-format (pixel-format-p element-type))
+         (p-format (dbg (pixel-format-p element-type)))
          (element-type (if p-format
-                             (pixel-format->element-type element-type)
-                             element-type))
+                           (pixel-format->element-type element-type)
+                           element-type))
          (inferred-lisp-type (cond (element-type nil)
-                                   ((and (not element-type) initial-contents)
-                                    (scan-for-type initial-contents))                                   
-                                   (t (error "If element-type is not specified the initial-contents must be provided"))
-                                   (element-type (if inferred-lisp-type
-                                                     (lisp->gl-type inferred-lisp-type)
-                                                     element-type))))
+                                   (initial-contents (scan-for-type
+                                                      initial-contents))                                   
+                                   (t (error "If element-type is not specified the initial-contents must be provided"))))
+         (element-type (if inferred-lisp-type
+                           (lisp->gl-type inferred-lisp-type)
+                           element-type))
          (initial-contents (when inferred-lisp-type
                              (update-data initial-contents inferred-lisp-type)))
-         (elem-size (gl-type-size element-type)))
+         (elem-size (dbg (gl-type-size element-type))))
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))
@@ -436,9 +436,11 @@ for any array of, up to and including, 4 dimensions."
                         (declare (ignore type-spec gl-type))
                         (find current-type casts :test #'equal)))
                     (error "Types in source data are inconsistent")))
-              (error "Type invalid for c-array")))))
+              (error "Types in source data are inconsistent")))))
   (defun find-suitable-type (datum)
-    (find-if (lambda (x) (typep datum x)) states :key #'first))
+    (if (typep datum 'structure-object)
+        (list (type-of datum) (type-of datum) nil)
+        (find-if (lambda (x) (typep datum x)) states :key #'first)))
   (defun to-glsl-type (x)
     (second (find x states :key #'first :test #'equal)))
   (defun lisp->gl-type (x)

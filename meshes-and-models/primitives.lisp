@@ -8,14 +8,21 @@
            (if gpu-array
                (cgl:make-gpu-array pn :element-type 'cgl:p-n-t
                                    :dimensions (length pn))
-               (cgl:make-c-array pn :dimensions (length pn) 'cgl:p-n-t)))
+             (cgl:make-c-array pn :dimensions (length pn) 'cgl:p-n-t)))
           (index
            (when f
              (if gpu-array
                  (cgl:make-gpu-array f :element-type :unsigned-short
                                      :dimensions (length f))
-                 (cgl:make-c-array f :dimensions (length f)
-                                   :element-type :ushort
+               (cgl:make-c-array f :dimensions (length f)
+                                 :element-type :ushort)))))
+      (if stream
+          (if gpu-array
+              (values (list verts index)
+                      (cgl:make-vertex-stream verts :index-array index))
+            (error "Cannot create stream without also creating a gpu-array"))
+        (list verts index)))))
+
 
 (defun primitive-data (type &key (size 1.0) (normals t) (tex-coords t))
   (case type

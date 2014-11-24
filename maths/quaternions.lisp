@@ -13,6 +13,9 @@
 
 (in-package #:quaternions)
 
+(defun float-greater-than-zero (x)
+  (> x 1.0s0))
+
 ;----------------------------------------------------------------
 
 (defun w (quat)
@@ -221,7 +224,7 @@
   (v4:v+1 quat-a quat-b))
 
 (defun q+ (&rest quats)
-  (apply v4:v+ quats))
+  (apply #'v4:v+ quats))
 
 (defun q-1 (quat-a quat-b)
   (v4:v-1 quat-a quat-b))

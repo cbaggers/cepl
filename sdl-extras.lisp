@@ -45,7 +45,7 @@
 (defmacro evt-> (event type param)
   "Lets you write following is access event details:
    \(evt-> event :windowevent :data1\)"
-  `(,@(cadar (unpack-event-params event (utils:kwd type) `((,param jeff))))))
+  `(,@(cadar (sdl2::unpack-event-params event (utils:kwd type) `((,param jeff))))))
 
 (defmacro evt+> (event-type item)
   (utils:symbolicate-package :sdl2-ffi '+SDL- event-type '- item '+))

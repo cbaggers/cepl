@@ -11,7 +11,6 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-
   (:export :gdefun 
            :dbind
            :assoc-bind
@@ -43,7 +42,8 @@
            :arangei
            :mapcat
            :deferror
-           :split-seq-by-seq))
+           :split-seq-by-seq
+           :dbg))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
