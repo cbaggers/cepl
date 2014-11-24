@@ -112,7 +112,7 @@
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
                   (error "make-c-array must be given initial-elements or dimensions"))))
-         (p-format (dbg (pixel-format-p element-type)))
+         (p-format (pixel-format-p element-type))
          (element-type (if p-format
                            (pixel-format->element-type element-type)
                            element-type))
@@ -125,7 +125,7 @@
                            element-type))
          (initial-contents (when inferred-lisp-type
                              (update-data initial-contents inferred-lisp-type)))
-         (elem-size (dbg (gl-type-size element-type))))
+         (elem-size (gl-type-size element-type)))
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))
@@ -440,9 +440,7 @@ for any array of, up to and including, 4 dimensions."
   (defun find-suitable-type (datum)
     (if (typep datum 'structure-object)
         (list (type-of datum) (type-of datum) nil)
-        (find-if (lambda (x) (typep datum x)) states :key #'first)))
-  (defun to-glsl-type (x)
-    (second (find x states :key #'first :test #'equal)))
+        (find-if (lambda (x) (typep datum x)) states :key #'first)))  
   (defun lisp->gl-type (x)
     (second (find x states :key #'first :test #'equal))))
 

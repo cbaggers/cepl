@@ -433,65 +433,83 @@
 ;; [TODO] how does mipmap-max affect this
 ;; [TODO] what is the max layercount?
 ;; [TODO] should fail on layer-count=0?
+(defun %texture-dimensions (initial-contents dimensions)
+  (if initial-contents
+      (if dimensions
+          (error "Cannot specify dimensions and have non nil initial-contents")
+          (dimensions initial-contents))
+      (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
+
 (defun make-texture (&key dimensions internal-format (mipmap nil) 
                        (layer-count 1) (cubes nil) (rectangle nil)
                        (multisample nil) (immutable t) (buffer-storage nil)
                        initial-contents)
-  (when multisample
-    (error "cepl: Multisample textures are not supported"))
-  (let* ((dimensions (if initial-contents
-                         (if dimensions
-                             (error "Cannot specify dimensions and have non nil initial-contents")
-                             (dimensions initial-contents))
-                         (if dimensions dimensions (error "must specify dimensions if no initial-contents provided")))))
-    (if buffer-storage
-        (%make-buffer-texture dimensions internal-format mipmap layer-count cubes
-                              rectangle multisample immutable initial-contents)
-        ;; check for power of two - handle or warn
-        (let* ((pixel-format (when initial-contents 
-                               (pixel-format-of initial-contents)))
-               (internal-format 
-                (if internal-format
-                    (if (pixel-format-p internal-format)
-                        (pixel-format->internal-format internal-format)
-                        internal-format)
-                    (when initial-contents
-                      (or (pixel-format->internal-format pixel-format)
-                          (error "Could not infer the internal-format")))))
-               (texture-type (establish-texture-type 
-                              (if (listp dimensions) (length dimensions) 1)
-                              mipmap (> layer-count 1) cubes 
-                              (every #'po2p dimensions) multisample 
-                              buffer-storage rectangle)))
-          (if texture-type
-              (if (and cubes (not (apply #'= dimensions)))
-                  (error "Cube textures must be square")
-                  (let ((texture (make-instance 
-                                  (if (and immutable *immutable-available*) 
-                                      'immutable-texture
-                                      'mutable-texture)
-                                  :texture-id (gen-texture)
-                                  :base-dimensions dimensions
-                                  :texture-type texture-type
-                                  :mipmap-levels 
-                                  (if mipmap
-                                      (floor (log (apply #'max dimensions) 2))
-                                      1)
-                                  :layer-count layer-count
-                                  :cubes cubes
-                                  :internal-format internal-format
-                                  :sampler-type (calc-sampler-type texture-type 
-                                                                   internal-format))))
-                    (with-texture-bound (texture)
-                      (allocate-texture texture)
-                      (when initial-contents
-                        (destructuring-bind (pformat ptype)
-                            (compile-pixel-format pixel-format)
-                          (upload-c-array-to-gpuarray-t
-                           (texref texture) initial-contents
-                           pformat ptype))))
-                    texture))
-              (error "This combination of texture features is invalid"))))))
+  (cond
+    (multisample (error "cepl: Multisample textures are not supported"))
+    ((and initial-contents (typep initial-contents '(or list vector array)))
+     (return-from make-texture 
+       (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions))
+         (make-texture :initial-contents tmp :mipmap mipmap 
+                       :layer-count layer-count :cubes cubes :rectangle rectangle
+                       :multisample multisample :immutable immutable 
+                       :buffer-storage buffer-storage))))
+    (buffer-storage 
+     (%make-buffer-texture (%texture-dimensions initial-contents dimensions)
+                           internal-format mipmap layer-count cubes
+                           rectangle multisample immutable initial-contents))
+    (t (%make-texture dimensions mipmap layer-count cubes buffer-storage
+                      rectangle multisample immutable initial-contents
+                      internal-format))))
+
+(defun %make-texture (dimensions mipmap layer-count cubes buffer-storage
+                      rectangle multisample immutable initial-contents
+                      internal-format)
+  (let* ((dimensions (%texture-dimensions initial-contents dimensions)))
+    ;; check for power of two - handle or warn
+    (let* ((pixel-format (when initial-contents 
+                           (pixel-format-of initial-contents)))
+           (internal-format 
+            (if internal-format
+                (if (pixel-format-p internal-format)
+                    (pixel-format->internal-format internal-format)
+                    internal-format)
+                (when initial-contents
+                  (or (pixel-format->internal-format pixel-format)
+                      (error "Could not infer the internal-format")))))
+           (texture-type (establish-texture-type 
+                          (if (listp dimensions) (length dimensions) 1)
+                          mipmap (> layer-count 1) cubes 
+                          (every #'po2p dimensions) multisample 
+                          buffer-storage rectangle)))
+      (if texture-type
+          (if (and cubes (not (apply #'= dimensions)))
+              (error "Cube textures must be square")
+              (let ((texture (make-instance 
+                              (if (and immutable *immutable-available*) 
+                                  'immutable-texture
+                                  'mutable-texture)
+                              :texture-id (gen-texture)
+                              :base-dimensions dimensions
+                              :texture-type texture-type
+                              :mipmap-levels 
+                              (if mipmap
+                                  (floor (log (apply #'max dimensions) 2))
+                                  1)
+                              :layer-count layer-count
+                              :cubes cubes
+                              :internal-format internal-format
+                              :sampler-type (calc-sampler-type texture-type 
+                                                               internal-format))))
+                (with-texture-bound (texture)
+                  (allocate-texture texture)
+                  (when initial-contents
+                    (destructuring-bind (pformat ptype)
+                        (compile-pixel-format pixel-format)
+                      (upload-c-array-to-gpuarray-t
+                       (texref texture) initial-contents
+                       pformat ptype))))
+                texture))
+          (error "This combination of texture features is invalid")))))
 
 (defun %make-buffer-texture (dimensions element-format mipmap layer-count cubes
                              rectangle multisample immutable initial-contents)
