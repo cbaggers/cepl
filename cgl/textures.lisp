@@ -440,16 +440,16 @@
           (dimensions initial-contents))
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
-(defun make-texture (&key dimensions internal-format (mipmap nil) 
+(defun make-texture (initial-contents 
+                     &key dimensions internal-format (mipmap nil) 
                        (layer-count 1) (cubes nil) (rectangle nil)
-                       (multisample nil) (immutable t) (buffer-storage nil)
-                       initial-contents)
+                       (multisample nil) (immutable t) (buffer-storage nil))
   (cond
     (multisample (error "cepl: Multisample textures are not supported"))
     ((and initial-contents (typep initial-contents '(or list vector array)))
      (return-from make-texture 
        (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions))
-         (make-texture :initial-contents tmp :mipmap mipmap 
+         (make-texture tmp :mipmap mipmap 
                        :layer-count layer-count :cubes cubes :rectangle rectangle
                        :multisample multisample :immutable immutable 
                        :buffer-storage buffer-storage))))

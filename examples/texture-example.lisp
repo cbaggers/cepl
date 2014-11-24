@@ -46,7 +46,7 @@
       (setf *texture* (with-c-array
                           (temp (make-c-array img-data :dimensions '(64 64)
                                               :element-type :ubyte))
-                        (make-texture :initial-contents temp)))
+                        (make-texture temp)))
       (loop :while running :do
          (case-events (event) (:quit () (setf running nil)))
          (update-swank)

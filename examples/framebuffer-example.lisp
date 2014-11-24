@@ -76,8 +76,9 @@
             *texture* (with-c-array
                           (temp (make-c-array img-data '(64 64)
                                               :element-type :ubyte))
-                        (make-texture :initial-contents temp))
-            *fbo-texture* (make-texture :dimensions '(640 480) :internal-format :rgba8)
+                        (make-texture temp))
+            *fbo-texture* (make-texture nil :dimensions '(640 480)
+                                        :internal-format :rgba8)
             *fbo* (make-fbo))
       (fbo-attach *fbo* (texref *fbo-texture*) :color-attachment0)
 
