@@ -44,7 +44,7 @@
 
 (declaim (inline melm)
 	 (ftype (function ((simple-array single-float (9)) (integer 0 3) (integer 0 3)) 
-                      (single-float)) 
+                      single-float) 
 		melm))
 (defun melm (mat-a row col)
   "Provides access to data in the matrix by row

@@ -25,3 +25,41 @@
 ;; then loop over dimensions
 
  
+(defun validate-dimensions (data dimensions)
+  (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
+         (r (typecase data
+              (sequence (validate-seq-dimensions data dimensions))
+              (array (validate-arr-dimensions data dimensions))
+              (otherwise nil))))
+    (when (and r (every #'identity r)) r)))
+
+(defun validate-arr-dimensions (data dimensions)
+  (let* ((actual-dims (array-dimensions data)))
+    (if (= (length actual-dims) (length dimensions))
+        (mapcar (lambda (d a) (if (eq d :?) a (when (= d a) d)))
+                dimensions
+                actual-dims)
+        nil)))
+
+(defun validate-seq-dimensions (data dimensions &optional (orig-dim dimensions) accum)
+  (if (null dimensions)
+      (reverse accum)
+      (typecase data
+        (sequence 
+         (let* ((f (first dimensions))
+                (data-len (length data))
+                (d (if (eq :? f) data-len (when (= f data-len) f))))
+           (validate-seq-dimensions
+            (when (> data-len 0)
+              (elt data 0)) (rest dimensions) orig-dim
+              (cons d accum))))
+        (otherwise nil))))
+
+
+(defun rm-index-to-coords (index subscripts)
+  (let ((cur index))
+    (loop :for s :in subscripts :collect
+       (multiple-value-bind (x rem) (floor cur (car subscripts))           
+         (setq cur x)
+         rem))))
+
