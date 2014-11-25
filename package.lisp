@@ -43,7 +43,8 @@
            :mapcat
            :deferror
            :split-seq-by-seq
-           :dbg))
+           :dbg
+           :print-mem))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
@@ -253,6 +254,9 @@
                 :flush
                 :viewport
                 :delete-shader)
+  (:import-from :utils
+                :deferror
+                :print-mem)
   (:shadow :float)
   (:export :gl-context
            :clear-gl-context-cache
@@ -472,7 +476,8 @@
                 ;;---
                 :def-gl-equivalent)
   (:import-from :utils
-                :deferror)
+                :deferror
+                :print-mem)
   (:export :cepl-gl
            :cls
            :pixel-format

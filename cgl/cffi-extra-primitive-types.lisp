@@ -103,3 +103,8 @@
   (byte-length :long))
 
 (export '(%memcpy))
+
+#+(sbcl)
+(defmethod print-mem ((thing SB-SYS:SYSTEM-AREA-POINTER) 
+                      &optional (size-in-bytes 64))
+  (utils::%print-mem thing size-in-bytes))

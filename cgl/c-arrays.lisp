@@ -38,6 +38,9 @@
           (slot-value object 'element-type)
           (slot-value object 'dimensions)))
 
+(defmethod print-mem ((thing c-array) &optional (size-in-bytes 64))
+  (utils::%print-mem (pointer thing) size-in-bytes))
+
 ;;------------------------------------------------------------
 
 (defun c-array-byte-size (c-array)
