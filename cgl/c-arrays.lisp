@@ -38,8 +38,8 @@
           (slot-value object 'element-type)
           (slot-value object 'dimensions)))
 
-(defmethod print-mem ((thing c-array) &optional (size-in-bytes 64))
-  (utils::%print-mem (pointer thing) size-in-bytes))
+(defmethod print-mem ((thing c-array) &optional (size-in-bytes 64) (offset 0))
+  (utils::%print-mem (cffi:inc-pointer (pointer thing) offset) size-in-bytes))
 
 ;;------------------------------------------------------------
 
@@ -175,6 +175,22 @@
 ;;         (error "The subscripts ~a are outside of the c-array range ~a"
 ;;                subscripts dimensions))))
 
+(defun row-index-correct
+    (indices dimensions 
+     &optional (row-size (car (last dimensions)))
+       (element-size 1))
+  (let ((indices (reverse indices))
+        (dimensions (cons row-size (reverse (rest dimensions)))))
+    (+ (* (first indices) element-size)
+       (let ((p (first dimensions)))
+         (loop :for d :in (rest dimensions)
+            :for i :in (rest indices)
+            :sum (* i p)
+            :do (setq p (* p d)))))))
+
+(defun calc-gl-index-correct (c-array subscripts)
+  (with-slots (dimensions row-byte-size element-byte-size) c-array
+    (row-index-correct subscripts dimensions row-byte-size element-byte-size)))
 
 (defun calc-gl-index (c-array subscripts)
   ;; This is allowed to be unsafe as the ptr is a fixed quantity
@@ -200,8 +216,8 @@
                               (the fixnum 0))))))))
     (locally (declare (optimize (speed 3) (safety 0)))
       (with-slots (dimensions row-byte-size element-byte-size) c-array
-        (let ((sub subscripts)
-              (dim dimensions)
+        (let ((sub (reverse subscripts))
+              (dim (cons row-byte-size (reverse (rest dimensions))))
               (p 1))
           (declare (fixnum p))
           (unsafe-ptr-index 4))))))
@@ -341,10 +357,11 @@ for any array of, up to and including, 4 dimensions."
 
 (defun rm-index-to-coords (index subscripts)
   (let ((cur index))
-    (loop :for s :in subscripts :collect
-       (multiple-value-bind (x rem) (floor cur (car subscripts))
-         (setq cur x)
-         rem))))
+    (nreverse
+     (loop :for s :in subscripts :collect
+        (multiple-value-bind (x rem) (floor cur (car subscripts))
+          (setq cur x)
+          rem)))))
 
 (defun validate-dimensions (data dimensions)
   (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
