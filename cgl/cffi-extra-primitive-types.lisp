@@ -104,7 +104,7 @@
 
 (export '(%memcpy))
 
-#+(sbcl)
+#+sbcl
 (defmethod print-mem ((thing SB-SYS:SYSTEM-AREA-POINTER) 
-                      &optional (size-in-bytes 64))
-  (utils::%print-mem thing size-in-bytes))
+                      &optional (size-in-bytes 64) (offset 0))
+  (utils::%print-mem (cffi:inc-pointer thing offset) size-in-bytes))
