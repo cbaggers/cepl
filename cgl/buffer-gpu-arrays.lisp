@@ -21,6 +21,10 @@
           (element-type object)
           (gpuarray-dimensions object)))
 
+(defmethod print-mem ((thing gpuarray) &optional (size-in-bytes 64))
+  (with-gpu-array-as-c-array (thing :access-type :read-only :temp-name a)
+    (print-mem a size-in-bytes)))
+
 (defmethod backed-by ((object gpuarray))
   :buffer)
 
