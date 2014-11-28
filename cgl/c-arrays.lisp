@@ -49,7 +49,8 @@
                       (row-alignment c-array)))
 
 (defun %gl-calc-byte-size (elem-size dimensions &optional (alignment 1))
-  (let* ((x-size (first dimensions)) (rest (rest dimensions)))
+  (let* ((dimensions (reverse dimensions))
+         (x-size (first dimensions)) (rest (rest dimensions)))
     (let* ((row-raw-size (* x-size elem-size))
            (row-mod (mod row-raw-size alignment))
            (row-byte-size (+ row-raw-size row-mod)))
@@ -286,8 +287,7 @@ for any array of, up to and including, 4 dimensions."
 (defun aref-c (c-array &rest subscripts)
   (let ((etype (element-type c-array)))
     (if (keywordp etype)
-        (mem-ref (pointer c-array) etype
-                 (calc-gl-index c-array subscripts))
+        (mem-ref (inc-pointer (pointer c-array) (calc-gl-index c-array subscripts)) etype)
         (autowrap:wrap-pointer
          (let ((ptr (pointer c-array)))
            (inc-pointer ptr (calc-gl-index c-array subscripts)))
@@ -355,13 +355,15 @@ for any array of, up to and including, 4 dimensions."
       (array (dpop-with-array data (dimensions c-array) (not (keywordp (element-type c-array))))))
     c-array))
 
-(defun rm-index-to-coords (index subscripts)
-  (let ((cur index))
-    (nreverse
-     (loop :for s :in subscripts :collect
-        (multiple-value-bind (x rem) (floor cur (car subscripts))
-          (setq cur x)
-          rem)))))
+(defun rm-index-to-coords (index dimensions)
+  (let ((dims (reverse (rest dimensions)))
+        (i index)
+        (res nil))
+    (loop for d in dims do
+         (multiple-value-bind (x r) (floor i d)
+           (setq res (cons x res))
+           (setq i r)))
+    (append res (list i))))
 
 (defun validate-dimensions (data dimensions)
   (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
