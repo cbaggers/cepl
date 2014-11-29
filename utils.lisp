@@ -385,9 +385,15 @@ producing a symbol in the current package."
 (defgeneric print-mem (thing &optional size-in-bytes offset))
 
 (defmethod print-mem ((thing t) &optional (size-in-bytes 64) (offset 0))
-  (declare (ignore size-in-bytes offset))
-  (format t "Error - Unsure how to print memory of object of type: ~a" 
-          (type-of thing))
+  (typecase thing
+    (cffi:foreign-pointer 
+     (%print-mem (cffi:inc-pointer thing offset)
+                 size-in-bytes))
+    (autowrap:wrapper
+     (%print-mem (cffi:inc-pointer (autowrap:ptr thing) offset)
+                 size-in-bytes))
+    (otherwise (format t "Error - Unsure how to print memory of object of type: ~a" 
+                       (type-of thing))))
   nil)
 
 (defun %print-mem (pointer &optional (size-in-bytes 64))

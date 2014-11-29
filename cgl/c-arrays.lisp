@@ -126,8 +126,9 @@
          (element-type (if inferred-lisp-type
                            (lisp->gl-type inferred-lisp-type)
                            element-type))
-         (initial-contents (when inferred-lisp-type
-                             (update-data initial-contents inferred-lisp-type)))
+         (initial-contents (if inferred-lisp-type
+                               (update-data initial-contents inferred-lisp-type)
+                               initial-contents))
          (elem-size (gl-type-size element-type)))
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
@@ -443,7 +444,7 @@ for any array of, up to and including, 4 dimensions."
                 (double-float :double nil))))
   (defun find-compatible-c-array-type (current-type data)
     (unless current-type
-      (error "current-type must be specified"))    
+      (error "Cannot unambiguously determine the type of the data. Please use the :element-type option"))
     (if (typep data current-type)
         current-type
         (let ((c (find current-type states :key #'first :test #'equal)))
