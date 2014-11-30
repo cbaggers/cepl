@@ -22,7 +22,7 @@
           (gpuarray-dimensions object)))
 
 (defmethod print-mem ((thing gpuarray) &optional (size-in-bytes 64) (offset 0))
-  (with-gpu-array-as-c-array (thing :access-type :read-only :temp-name a)    
+  (with-gpu-array-as-c-array (thing :access-type :read-only :temp-name a)
     (print-mem (cffi:inc-pointer (pointer a) offset) size-in-bytes)))
 
 (defmethod backed-by ((object gpuarray))

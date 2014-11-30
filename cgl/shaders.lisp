@@ -111,7 +111,7 @@
                      (cons args-or-stage stages)
                      stages))
          (args (if (symbolp args-or-stage)
-                   (print (extract-args-from-stages stages))
+                   (extract-args-from-stages stages)
                    args-or-stage)))
     (utils:assoc-bind ((in-args nil) (unexpanded-uniforms :&uniform) 
                        (context :&context) (instancing :&instancing))
@@ -131,13 +131,13 @@
                                    `(,name ,type)))))
                 ,@(when context `(&context ,@context)))))        
         `(let ((program-id nil)
-               ,@(loop :for (((u-gensym))) :in uniform-details :collect
-                    `(,u-gensym -1)))
+               ,@(let ((u-lets (mapcan #'first uniform-details)))
+                      (loop for u in u-lets collect `(,(first u) -1))))
            ,(gen-pipeline-invalidate invalidate-func-name)
            ,(gen-pipeline-init init-func-name varjo-args name 
-                               invalidate-func-name uniform-details stages)
+                               invalidate-func-name (copy-tree uniform-details) stages)
            ,(gen-pipeline-func init-func-name name context
-                               unexpanded-uniforms uniform-details))))))
+                               unexpanded-uniforms (copy-tree uniform-details)))))))
 
 (defun gen-pipeline-invalidate (invalidate-func-name)
   `(defun ,invalidate-func-name () (setf program-id nil)))
