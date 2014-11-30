@@ -15,8 +15,33 @@
 
 ;----------------------------------------------------------------
 
-(defmacro melm (mat-a row col)
-  "A helper macro to provide access to data in the matrix by row
+(declaim (inline melm)
+	 (ftype (function ((simple-array single-float (16)) (integer 0 4) (integer 0 4)) 
+                      (single-float)) 
+		melm))
+(defun melm (mat-a row col)
+  "Provides access to data in the matrix by row
+   and column number. The actual data is stored in a 1d list in
+   column major order, but this abstraction means we only have 
+   to think in row major order which is how most mathematical
+   texts and online tutorials choose to show matrices"
+  (declare ((simple-array single-float (16)) mat-a)
+           ((integer 0 4) row col))
+  (aref mat-a (+ row (* col 4))))
+
+(defun (setf melm) (value mat-a row col)
+  "Provides access to data in the matrix by row
+   and column number. The actual data is stored in a 1d list in
+   column major order, but this abstraction means we only have 
+   to think in row major order which is how most mathematical
+   texts and online tutorials choose to show matrices"
+  (declare ((simple-array single-float (16)) mat-a)
+           ((integer 0 4) row col)
+           (single-float value))
+  (setf (aref mat-a (+ row (* col 4))) value))
+
+(define-compiler-macro melm (mat-a row col)
+  "Provide access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in
    column major order, but this abstraction means we only have 
    to think in row major order which is how most mathematical
@@ -29,6 +54,10 @@
 
 ;----------------------------------------------------------------
 
+(declaim (inline identity-matrix4)
+	 (ftype (function () 
+                      (simple-array single-float (16))) 
+		identity-matrix4))
 (defun identity-matrix4 ()
   "Return a 4x4 identity matrix"
   (make-array 16 :element-type 'single-float
@@ -44,8 +73,18 @@
 
 ;----------------------------------------------------------------
 
-(defun make-matrix4 ( a b c d e f g h i j k l m n o p )
+(declaim
+ (inline make-matrix4)
+ (ftype (function
+         (single-float single-float single-float single-float
+                       single-float single-float single-float single-float
+                       single-float single-float single-float single-float
+                       single-float single-float single-float single-float) 
+         (simple-array single-float (16)))
+        make-matrix4))
+(defun make-matrix4 (a b c d e f g h i j k l m n o p)
   "Make a 4x4 matrix. Data must be provided in row major order"
+  (declare (single-float a b c d e f g h i j k l m n o p))
   ;; as you can see it is stored in column major order
   (make-array 16 :element-type 'single-float
               :initial-contents (list a e i m 
@@ -55,6 +94,12 @@
 
 ;----------------------------------------------------------------
 
+(declaim
+ (inline to-matrix3)
+ (ftype (function
+         ((simple-array single-float (16))) 
+         (simple-array single-float (9)))
+        to-matrix3))
 (defun to-matrix3 (mat4)
   (m3:make-matrix3 (melm mat4 0 0) (melm mat4 0 1) (melm mat4 0 2)
                    (melm mat4 1 0) (melm mat4 1 1) (melm mat4 1 2)
@@ -383,6 +428,8 @@
 
 ;----------------------------------------------------------------
 
+;; {TODO} broken!
+
 (defun rotation-from-axis-angle (axis3 angle)
   "Returns a matrix which will rotate a point about the axis
    specified by the angle provided"
@@ -401,8 +448,8 @@
          (txz (* tx (v-z norm-axis))))
     (make-matrix4
      (+ c-a (* tx (v-x norm-axis))) (- txy sz) (+ txz sy) 0.0
-     (+ txy xz) (+ c (* ty (v-y norm-axis))) (- tyz sx) 0.0
-     (- txz sy) (+ tyz sx) (+ c (* tz (v-z norm-axis))) 0.0
+     (+ txy sz) (+ c-a (* ty (v-y norm-axis))) (- tyz sx) 0.0
+     (- txz sy) (+ tyz sx) (+ c-a (* tz (v-z norm-axis))) 0.0
      0.0   0.0   0.0   1.0)))
 
 ;----------------------------------------------------------------

@@ -292,3 +292,16 @@
 
 ;----------------------------------------------------------------
 
+(defun print-matrix (mat)
+  (case (length mat)
+    (9 (format nil "(m! ~a ~a ~a ~%     ~a ~a ~a ~%     ~a ~a ~a)~%"
+               (m3:melm mat 0 0) (m3:melm mat 0 1) (m3:melm mat 0 2)
+               (m3:melm mat 1 0) (m3:melm mat 1 1) (m3:melm mat 1 2)
+               (m3:melm mat 2 0) (m3:melm mat 2 1) (m3:melm mat 2 2)))
+    (16 (format nil "(m! ~a ~a ~a ~a ~%     ~a ~a ~a ~a ~%     ~a ~a ~a ~a ~%     ~a ~a ~a ~a)~%"
+                (m4:melm mat 0 0) (m4:melm mat 0 1) (m4:melm mat 0 2) (m4:melm mat 0 3)
+                (m4:melm mat 1 0) (m4:melm mat 1 1) (m4:melm mat 1 2) (m4:melm mat 1 3)
+                (m4:melm mat 2 0) (m4:melm mat 2 1) (m4:melm mat 2 2) (m4:melm mat 2 3)
+                (m4:melm mat 3 0) (m4:melm mat 3 1) (m4:melm mat 3 2) (m4:melm mat 3 3)))
+    (otherwise "<unknown matrix format: print-matrix assumes a 3x3 or 4x4 matrix>")))
+

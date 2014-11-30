@@ -44,9 +44,9 @@
                             :dimensions 3 :element-type 'vert-data))
       (setf *v-stream* (make-vertex-stream *vert-gpu*))
       (setf *texture* (with-c-array
-                          (temp (make-c-array '(64 64) :ubyte 
-                                              :initial-contents img-data))
-                        (make-texture :initial-contents temp)))
+                          (temp (make-c-array img-data :dimensions '(64 64)
+                                              :element-type :ubyte))
+                        (make-texture temp)))
       (loop :while running :do
          (case-events (event) (:quit () (setf running nil)))
          (update-swank)

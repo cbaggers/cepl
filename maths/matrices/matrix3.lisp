@@ -37,44 +37,38 @@
 ;; where t > 0 indicates a counterclockwise rotation in the 
 ;; xy-plane.
 
-;; remember that matrix co-ords go row then column, unlike 
-;; how we are used to. The axies (as it were) are generally
-;; named m & n where m is rows and n is columns
+;; All matrices are stored in column-major format, but these functions
+;; expect row major format. The reason is that row-major is easier to
+;; read in code and matches with lots of examples in maths text books.
 
-;; matrices will be stored as 1D arrays with 9 elements, 
-;; this is for speed reasons
 
-;; taken from Ogre, I'm assuming this is some kind of lower 
-;; float boundary
-;; const Real Matrix3::ms_fSvdEpsilon = 1e-04;
+(declaim (inline melm)
+	 (ftype (function ((simple-array single-float (9)) (integer 0 3) (integer 0 3)) 
+                      single-float) 
+		melm))
+(defun melm (mat-a row col)
+  "Provides access to data in the matrix by row
+   and column number. The actual data is stored in a 1d list in
+   column major order, but this abstraction means we only have 
+   to think in row major order which is how most mathematical
+   texts and online tutorials choose to show matrices"
+  (declare ((simple-array single-float (9)) mat-a)
+           ((integer 0 3) row col))
+  (aref mat-a (+ row (* col 3))))
 
-;; used for single value decomposition...need to read up on 
-;; this again
-;; const unsigned int Matrix3::ms_iSvdMaxIterations = 32;
+(defun (setf melm) (value mat-a row col)
+  "Provides access to data in the matrix by row
+   and column number. The actual data is stored in a 1d list in
+   column major order, but this abstraction means we only have 
+   to think in row major order which is how most mathematical
+   texts and online tutorials choose to show matrices"
+  (declare ((simple-array single-float (9)) mat-a)
+           ((integer 0 3) row col)
+           (single-float value))
+  (setf (aref mat-a (+ row (* col 3))) value))
 
-;; [TODO] Ultimately I want to have all math function contents
-;; generated at compile time by macros so we can set a single
-;; flag for left or right handed co-ord systems and have it 
-;; properly handled
-
-;;----------------------------------------------------------------
-
-;; OK, so when you look at this is may seem incorrect at first,
-;; however we are storing the matrix in Column Major Order.
-;; This is due to the following passage from "Essential Mathema
-;; tics for Games and Interactive Applications":
-;; in Direct3D matrices are expected to be used with row vectors.
-;; And even in OpenGL, despite the fact that the documentation
-;; is written using column vectors, the internal representation 
-;; premultiplies the vectors; that is, it expects row vectors as
-;; well..<some more>..The solution is to pretranspose the matrix
-;; in the storage representation.
-;; This ONLY needs attention in the code that accesses the 1D 
-;; version of the matrix. The rest of the code does not need to 
-;; 'know'
-
-(defmacro melm (mat-a row col)
-  "A helper macro to provide access to data in the matrix by row
+(define-compiler-macro melm (mat-a row col)
+  "Provide access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in
    column major order, but this abstraction means we only have 
    to think in row major order which is how most mathematical
@@ -87,19 +81,35 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline identity-matrix3)
+ (ftype (function () (simple-array single-float (9)))
+        identity-matrix3))
 (defun identity-matrix3 ()
   "Return a 3x3 identity matrix"
-  (make-array 9 :element-type `single-float :initial-contents
-              #(1.0 0.0 0.0 
-                0.0 1.0 0.0 
-                0.0 0.0 1.0)))
+  (make-matrix3
+   1.0 0.0 0.0 
+   0.0 1.0 0.0 
+   0.0 0.0 1.0))
 
+(declaim
+ (inline zero-matrix3)
+ (ftype (function () (simple-array single-float (9)))
+        zero-matrix3))
 (defun zero-matrix3 ()
   "Return a 3x3 zero matrix"
-  (make-array 9 :element-type `single-float))
+  (make-array 9 :element-type `single-float :initial-element 0.0))
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline make-matrix3)
+ (ftype (function
+         (single-float single-float single-float
+                       single-float single-float single-float
+                       single-float single-float single-float) 
+         (simple-array single-float (9)))
+        make-matrix3))
 (defun make-matrix3 ( a b c d e f g h i )
   "Make a 3x3 matrix. Data must be provided in row major order"
   (let ((result (zero-matrix3)))
@@ -116,9 +126,17 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline make-from-rows)
+ (ftype (function ((simple-array single-float (3))
+                   (simple-array single-float (3))
+                   (simple-array single-float (3)))
+                  (simple-array single-float (9)))
+        make-from-rows))
 (defun make-from-rows (row-1 row-2 row-3)
   "Make a 3x3 matrix using the data in the 3 vector3s provided
    to populate the rows"
+  (declare ((simple-array single-float (3)) row-1 row-2 row-3))
   (make-matrix3 (v-x row-1) (v-y row-1) (v-z row-1) 
                 (v-x row-2) (v-y row-2)	(v-z row-2)
                 (v-x row-3) (v-y row-3) (v-z row-3)))
@@ -127,6 +145,7 @@
 
 (defun get-rows (mat-a)
   "Return the rows of the matrix a 3 vector3s"
+  (declare ((simple-array single-float (9)) mat-a))
   (list (make-vector3 (melm mat-a 0 0)
                       (melm mat-a 0 1)
                       (melm mat-a 0 2))
@@ -139,17 +158,32 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline get-rows)
+ (ftype (function ((simple-array single-float (9)) (integer 0 3))
+                  (simple-array single-float (3)))
+        get-row))
 (defun get-row (mat-a row-num)
   "Return the specified row of the matrix a vector3"
+  (declare ((simple-array single-float (9)) mat-a)
+           ((integer 0 3) row-num))
   (make-vector3 (melm mat-a row-num 0)
                 (melm mat-a row-num 1)
                 (melm mat-a row-num 2)))
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline make-from-columns)
+ (ftype (function ((simple-array single-float (3))
+                   (simple-array single-float (3))
+                   (simple-array single-float (3)))
+                  (simple-array single-float (9)))
+        make-from-columns))
 (defun make-from-columns (col-1 col-2 col-3)
   "Make a 3x3 matrix using the data in the 3 vector3s provided
    to populate the columns"
+  (declare ((simple-array single-float (3)) col-1 col-2 col-3))
   (make-matrix3 (v-x col-1)
                 (v-x col-2)
                 (v-x col-3) 
@@ -162,8 +196,10 @@
 
 ;;----------------------------------------------------------------
 
+
 (defun get-columns (mat-a)
   "Return the columns of the matrix as 3 vector3s"
+  (declare ((simple-array single-float (9)) mat-a))
   (list (make-vector3 (melm mat-a 0 0)
                       (melm mat-a 1 0)
                       (melm mat-a 2 0))
@@ -176,18 +212,31 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline get-column)
+ (ftype (function ((simple-array single-float (9)) (integer 0 3))
+                  (simple-array single-float (3)))
+        get-column))
 (defun get-column (mat-a col-num)
   "Return the specified column of the matrix a vector3"
+  (declare ((simple-array single-float (9)) mat-a)
+           ((integer 0 3) col-num))
   (make-vector3 (melm mat-a 0 col-num)
                 (melm mat-a 1 col-num)
                 (melm mat-a 2 col-num)))
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline mzerop)
+ (ftype (function ((simple-array single-float (9)))
+                  boolean)
+        mzerop))
 (defun mzerop (mat-a)
   "Returns 't' if this is a zero matrix (as contents of the 
    matrix are floats the values have an error bound as defined
    in base-maths"
+  (declare ((simple-array single-float (9)) mat-a))
   (loop for i below 9
      if (not (float-zero (aref mat-a i)))
      do (return nil)
@@ -195,11 +244,17 @@
 
 ;;----------------------------------------------------------------
 
-                                        ;[TODO] should the checks for '1.0' also have the error bounds?
+;;[TODO] should the checks for '1.0' also have the error bounds?
+(declaim
+ (inline identityp)
+ (ftype (function ((simple-array single-float (9)))
+                  boolean)
+        identityp))
 (defun identityp (mat-a)
   "Returns 't' if this is an identity matrix (as contents of the 
    matrix are floats the values have an error bound as defined
    in base-maths"
+  (declare ((simple-array single-float (9)) mat-a))
   (and (float-zero (- (melm mat-a 0 0) 1.0))
        (float-zero (- (melm mat-a 1 1) 1.0))
        (float-zero (- (melm mat-a 2 2) 1.0))
@@ -212,14 +267,16 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline meql)
+ (ftype (function ((simple-array single-float (9)) (simple-array single-float (9)))
+                  boolean)
+        meql))
 (defun meql (mat-a mat-b)
   "Returns t if all elements of both matrices provided are 
    equal"
-  (loop for i 
-     below 9
-     if (/= (aref mat-a i) (aref mat-b i))
-     do (return nil)
-     finally (return t)))
+  (declare ((simple-array single-float (9)) mat-a mat-b))
+  (loop :for i :below 9 :always (= (aref mat-a i) (aref mat-b i))))
 
 ;;----------------------------------------------------------------
 
@@ -228,6 +285,7 @@
 (defun determinate-cramer (mat-a)
   "Returns the determinate of the matrix
    (uses the cramer method)"
+  (declare ((simple-array single-float (9)) mat-a))
   (let ((cofactor-0 (- (* (melm mat-a 1 1)
                           (melm mat-a 2 2))
                        (* (melm mat-a 1 2)
@@ -248,8 +306,14 @@
 ;;----------------------------------------------------------------
 
 ;;[TODO] Look more into errors
+(declaim
+ (inline inverse)
+ (ftype (function ((simple-array single-float (9)))
+                  (simple-array single-float (9)))
+        inverse))
 (defun inverse (mat-a)
   "returns the inverse of the matrix"
+  (declare ((simple-array single-float (9)) mat-a))
   (multiple-value-bind (det cofactor-0 cofactor-3 cofactor-6)
       (determinate-cramer mat-a)
     (if (float-zero det)
@@ -274,8 +338,14 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline transpose)
+ (ftype (function ((simple-array single-float (9)))
+                  (simple-array single-float (9)))
+        transpose))
 (defun transpose (mat-a)
   "Returns the transpose of the provided matrix"
+  (declare ((simple-array single-float (9))))
   (make-matrix3 
    (melm mat-a 0 0) (melm mat-a 1 0) (melm mat-a 2 0)
    (melm mat-a 0 1) (melm mat-a 1 1) (melm mat-a 2 1)
@@ -284,7 +354,11 @@
 ;;----------------------------------------------------------------
 
 ;;This is taken straight from 'Essential Mathematics for Game..'
-;; Must be a more efficient way :)
+(declaim
+ (inline adjoint)
+ (ftype (function ((simple-array single-float (9)))
+                  (simple-array single-float (9)))
+        adjoint))
 (defun adjoint (mat-a)
   "Returns the adjoint of the matrix"
   (make-matrix3  (- (* (melm mat-a 1 1) (melm mat-a 2 2))
@@ -308,8 +382,10 @@
 
 ;;----------------------------------------------------------------
 
+
 (defun mtrace (mat-a)
   "Returns the trace of the matrix (That is the diagonal values)"
+  (declare ((simple-array single-float (9)) mat-a))
   (+ (melm mat-a 0 0) (melm mat-a 1 1) (melm mat-a 2 2)))
 
 ;;----------------------------------------------------------------
@@ -318,7 +394,13 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline rotation-from-euler)
+ (ftype (function ((simple-array single-float (3)))
+                  (simple-array single-float (9)))
+        rotation-from-euler))
 (defun rotation-from-euler (vec3-a)
+  (declare ((simple-array single-float (3)) vec3-a))
   (let ((x (v-x vec3-a)) (y (v-y vec3-a)) (z (v-z vec3-a)))
     (let ((cx (cos x)) (cy (cos y)) (cz (cos z))
           (sx (sin x)) (sy (sin y)) (sz (sin z)))
@@ -334,13 +416,18 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline rotation-from-axis-angle)
+ (ftype (function ((simple-array single-float (3)) single-float)
+                  (simple-array single-float (9)))
+        rotation-from-axis-angle))
 (defun rotation-from-axis-angle (axis3 angle)
   "Returns a matrix which will rotate a point about the axis
    specified by the angle provided"
   (let* ((c-a (cos angle))
          (s-a (sin angle))
          (tt (- 1.0 c-a))
-         (norm-axis (vector3:normalize axis))
+         (norm-axis (vector3:normalize axis3))
          (tx (* tt (v-x norm-axis)))
          (ty (* tt (v-y norm-axis)))
          (tz (* tt (v-z norm-axis)))
@@ -351,23 +438,35 @@
          (tyz (* ty (v-z norm-axis))) 
          (txz (* tx (v-z norm-axis))))
     (make-matrix3
-     (+ c-a (* tx (v-x norm-axis))) (- txy sz) (+ txz sy)
-     (+ txy xz) (+ c (* ty (v-y norm-axis))) (- tyz sx)
-     (- txz sy) (+ tyz sx) (+ c (* tz (v-z norm-axis))))))
+     (+ c-a (* tx (v-x norm-axis)))  (- txy sz)                      (+ txz sy)
+     (+ txy sz)                      (+ c-a (* ty (v-y norm-axis)))  (- tyz sx)
+     (- txz sy)                      (+ tyz sx)                      (+ c-a (* tz (v-z norm-axis))))))
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline scale)
+ (ftype (function ((simple-array single-float (3)))
+                  (simple-array single-float (9)))
+        scale))
 (defun scale (scale-vec3)
   "Returns a matrix which will scale by the amounts specified"
-  (make-matrix3 (v-x vec)  0.0        0.0
-                0.0        (v-y vec)  0.0
-                0.0        0.0        (v-z vec)))
+  (declare ((simple-array single-float (3)) scale-vec3))
+  (make-matrix3 (v-x scale-vec3)  0.0               0.0
+                0.0               (v-y scale-vec3)  0.0
+                0.0               0.0               (v-z scale-vec3)))
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline rotation-x)
+ (ftype (function (single-float)
+                  (simple-array single-float (9)))
+        rotation-x))
 (defun rotation-x (angle)
   "Returns a matrix which would rotate a point around the x axis
    by the specified amount"
+  (declare (single-float angle))
   (let ((c-a (cos angle))
         (s-a (sin angle)))
     (make-matrix3 1.0    0.0       0.0
@@ -376,9 +475,15 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline rotation-y)
+ (ftype (function (single-float)
+                  (simple-array single-float (9)))
+        rotation-y))
 (defun rotation-y (angle)
   "Returns a matrix which would rotate a point around the y axis
    by the specified amount"
+  (declare (single-float angle))
   (let ((c-a (cos angle))
         (s-a (sin angle)))
     (make-matrix3 c-a    0.0    (- s-a)
@@ -387,9 +492,15 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline rotation-z)
+ (ftype (function (single-float)
+                  (simple-array single-float (9)))
+        rotation-z))
 (defun rotation-z (angle)
   "Returns a matrix which would rotate a point around the z axis
    by the specified amount"
+  (declare (single-float angle))
   (let ((c-a (cos angle))
         (s-a (sin angle)))
     (make-matrix3 c-a      s-a    0.0
@@ -398,13 +509,17 @@
 
 ;;----------------------------------------------------------------
 
-;; [TODO] returned as vector x-y-z
-
+(declaim
+ (inline get-fixed-angles)
+ (ftype (function ((simple-array single-float (9)))
+                  (simple-array single-float (3)))
+        get-fixed-angles))
 (defun get-fixed-angles (mat-a)
   "Gets one set of possible z-y-x fixed angles that will generate
    this matrix. Assumes that this is a rotation matrix"
+  (declare ((simple-array single-float (9)) mat-a))
   (let* ((sy (melm mat-a 0 2))
-         (cy (c-sqrt (- 1.0 (* cy cy)))))
+         (cy (c-sqrt (- 1.0 (* sy sy)))))
     (if (not (float-zero cy)) ; [TODO: not correct PI-epsilon]
         (let* ((factor (/ 1.0 cy))
                (sx (* factor (- (melm mat-a 2 1))))
@@ -414,23 +529,26 @@
           (make-vector3 (atan sx cx) (atan sy cy) (atan sz cz)))
         (let* ((sz 0.0)
                (cx 1.0)
-               (sz (melm mat-a 1 2))
+               (sx (melm mat-a 1 2))
                (cz (melm mat-a 1 1)))
-          (make-vector3 (atan sx cx) (atan sy cy) (atan sz cz))
-          ))))
+          (make-vector3 (atan sx cx) (atan sy cy) (atan sz cz))))))
 
 ;;----------------------------------------------------------------
 
 ;; [TODO] find out how we can declaim angle to be float
 ;; [TODO] Comment the fuck out of this and work out how it works
-
+(declaim
+ (inline get-axis-angle)
+ (ftype (function ((simple-array single-float (9)))
+                  (simple-array single-float (3)))
+        get-axis-angle))
 (defun get-axis-angle (mat-a)
   "Gets one possible axis-angle pair that will generate this 
    matrix. Assumes that this is a rotation matrix"
+  (declare ((simple-array single-float (9)) mat-a))
   (let* ((c-a (* 0.5 (- (mtrace mat-a) 1.0)))
          (angle (acos c-a)))
-    (cond ((float-zero angle) 
-                                        ;angle is zero so axis can be anything
+    (cond ((float-zero angle) ;; <-angle is zero so axis can be anything
            (make-vector3 1.0 0.0 0.0))
           ((< angle (- base-maths:+pi+ base-maths:+float-threshold+))
                                         ;its not 180 degrees
@@ -459,26 +577,47 @@
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline m+)
+ (ftype (function ((simple-array single-float (9))
+                   (simple-array single-float (9)))
+                  (simple-array single-float (9)))
+        m+))
 (defun m+ (mat-a mat-b)
   "Adds the 2 matrices component wise and returns the result as
    a new matrix"
+  (declare ((simple-array single-float (9)) mat-a mat-b))
   (let ((r (zero-matrix3)))
-    (loop for i below 9
-       do (setf (aref r i) (+ (aref mat-a i) (aref mat-b i))))
+    (declare ((simple-array single-float (9)) r))
+    (dotimes (i 9)
+      (setf (aref r i) (+ (aref mat-a i) (aref mat-b i))))
     r))
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline m-)
+ (ftype (function ((simple-array single-float (9))
+                   (simple-array single-float (9)))
+                  (simple-array single-float (9)))
+        m-))
 (defun m- (mat-a mat-b)
   "Subtracts the 2 matrices component wise and returns the result
    as a new matrix"
+  (declare ((simple-array single-float (9)) mat-a mat-b))
   (let ((r (zero-matrix3)))
-    (loop for i below 9
-       do (setf (aref r i) (- (aref mat-a i) (aref mat-b i))))
+    (declare ((simple-array single-float (9)) r))
+    (loop :for i :below 9 :do
+       (setf (aref r i) (- (aref mat-a i) (aref mat-b i))))
     r))
 
 ;;----------------------------------------------------------------
 
+(declaim
+ (inline negate)
+ (ftype (function ((simple-array single-float (9)))
+                  (simple-array single-float (9)))
+        negate))
 (defun negate (mat-a)
   "Negates the components of the matrix"
   (let ((result (zero-matrix3)))

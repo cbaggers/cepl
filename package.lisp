@@ -11,7 +11,6 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-
   (:export :gdefun 
            :dbind
            :assoc-bind
@@ -43,7 +42,9 @@
            :arangei
            :mapcat
            :deferror
-           :split-seq-by-seq))
+           :split-seq-by-seq
+           :dbg
+           :print-mem))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
@@ -203,7 +204,8 @@
   (:export :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
            :identityp :elt :elm :get-rows :get-row
            :get-columns :get-column :determinant
-           :inverse :transpose :trace :negate) 
+           :inverse :transpose :trace :negate
+           :print-matrix) 
   (:shadow :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
            :elt :trace))
 
@@ -252,6 +254,9 @@
                 :flush
                 :viewport
                 :delete-shader)
+  (:import-from :utils
+                :deferror
+                :print-mem)
   (:shadow :float)
   (:export :gl-context
            :clear-gl-context-cache
@@ -471,7 +476,8 @@
                 ;;---
                 :def-gl-equivalent)
   (:import-from :utils
-                :deferror)
+                :deferror
+                :print-mem)
   (:export :cepl-gl
            :cls
            :pixel-format

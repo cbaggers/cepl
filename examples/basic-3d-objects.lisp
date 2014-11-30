@@ -53,7 +53,7 @@
                         ,(make-entity :pos (v!  0 0 -25) :e-stream e-stream)
                         ,(make-entity :pos (v!  5 0 -20) :e-stream e-stream)
                         ,(make-entity :pos (v!  0 0 -15) :e-stream e-stream)
-                        ,(make-entity :pos (v! -5 0 -20) :e-stream e-stream))))  
+                        ,(make-entity :pos (v! -5 0 -20) :e-stream e-stream))))
   ;;set options
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
@@ -75,7 +75,7 @@
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (prog-2 nil :cam *camera*)  
   (loop :for entity :in *entities* :do
-     (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
+     (setf (rot entity) (v:+ (rot entity) (v! 0.001 0.002 0)))
      (prog-2 (e-stream entity) :model-to-world (entity-matrix entity)))
   (gl:flush)
   (cgl:update-display))

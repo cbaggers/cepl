@@ -50,8 +50,8 @@
                                         :element-type :vec4
                                         :dimensions 3))
       (setf *particle-positions* (with-c-array
-                          (temp (make-c-array '(1000) :vec2 :initial-contents pos))
-                                   (make-texture :initial-contents temp)))
+                                     (temp (make-c-array pos :element-type :vec2))
+                                   (make-texture temp)))
       (setf *vertex-stream* (make-vertex-stream *gpu-array*)))
     (loop :while running :do
        (case-events (event)
