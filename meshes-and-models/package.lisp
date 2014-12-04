@@ -40,4 +40,5 @@
   (:export :primitive-data
            :plain-data
            :box-data
-           :sphere-data))
+           :sphere-data
+           :prim-array))

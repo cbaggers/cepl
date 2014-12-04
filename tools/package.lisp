@@ -1,6 +1,6 @@
 ;;;; -*- Mode: Lisp; indent-tabs-mode: nil -*-
 ;;;; ==========================================================================
-;;;; package.lisp --- interpolations package
+;;;; package.lisp --- the tools package
 ;;;;
 ;;;; Copyright (c) 2013, Nikhil Shetty <nikhil.j.shetty@gmail.com>
 ;;;;   All rights reserved.
@@ -32,6 +32,9 @@
 ;;;; ==========================================================================
 (in-package #:cl-user)
 
-(defpackage :interpolation
-  (:use :cl :base-vectors :base-matrices :base-maths)
-  (:export :lerp-number :lerp3 :nlerp3 :slerp3 ))
+(defpackage :tools
+  (:use :cl
+        :base-vectors
+        :base-matrices
+        :base-maths)
+  (:export :rqpos))

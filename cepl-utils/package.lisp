@@ -35,11 +35,14 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :dbind
+  (:export :gdefun 
+           :dbind
+           :assoc-bind
            :sn-equal
            :listify
            :replace-nth 
            :hash-values
+           :lambda-list-split
            :hash-keys 
            :intersperse
            :walk-replace
@@ -56,4 +59,11 @@
            :sub-at-index
            :symbolicate-package
            :lispify-name
-           :symbol-name-equal))
+           :symbol-name-equal
+           :range
+           :rangei
+           :arange
+           :arangei
+           :mapcat
+           :deferror
+           :split-seq-by-seq))

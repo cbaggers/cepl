@@ -51,7 +51,8 @@
       (error "Failed to initialise SDL")))
 
 (defun %repl (&optional (width 640) (height 480))
-  #+(and ccl darwin)
+  #+ (or (and ccl darwin)
+         darwin) 
   (setf cl-opengl-bindings::*gl-get-proc-address* #'sdl2::gl-get-proc-address)
   (multiple-value-bind (context window)
       (new-window :width width :height height :title "CEPL REPL")

@@ -69,7 +69,7 @@
            :clone-c-array
            :make-c-array
            :aref-c
-           :aref-c*
+           :%aref-c
            :c-populate
            :gl-subseq
            :gl-pull
@@ -118,15 +118,18 @@
            :defshader
            :defsmacro
            :defsfun
+           :with-instances
            :free-managed-resources
            :free-buffer
            :free-buffers
            :free-vertex-stream
            :free-texture
-           :free-textures
            :free-gpu-array
            :free-vao
            :p-n-t
+           :pos
+           :norm
+           :tex
            ;;----------
            :delete-shader
            :clear-color
@@ -141,7 +144,16 @@
            :clear
            :clear-depth
            :flush
-           :viewport))
+           :viewport
+           ;;----------
+           :make-fbo
+           :make-fbos
+           :with-bind-fbo
+           :fbo-attach
+           :attachment-compatible
+           :fbo-detach
+           ;;----------
+           :def-gl-equivalent))
 
 (defpackage :%cgl
   (:use :cl :varjo :cgl))

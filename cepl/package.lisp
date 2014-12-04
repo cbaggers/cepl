@@ -15,15 +15,15 @@
         :base-vectors
         :base-matrices
         :base-maths
-        :interpolation
-        :base-time
-        :conditional-functions
-        :base-macros)
+        :base-macros
+        :temporal-functions
+        :cepl-camera)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format
                 :pixel-format-of
                 :describe-pixel-format
+                :with-instances
                 :defpipeline
                 :defvshader
                 :deffshader
@@ -48,7 +48,18 @@
                 :make-texture                
                 :with-texture-bound
                 :p-n-t
-                :texref)
+                :texref
+                ;;---
+                :make-fbo
+                :make-fbos
+                :with-bind-fbo
+                :fbo-attach
+                :attachment-compatible
+                :fbo-detach
+                ;;---
+                :def-gl-equivalent)
+  (:import-from :utils
+                :deferror)
   (:export :repl
            :%repl
            :case-events
@@ -79,6 +90,7 @@
            :c-populate
            :make-gpu-array
            :make-gpu-arrays
+           :update-swank
            :gl-subseq
            :with-gpu-array-as-c-array
            :make-vertex-stream

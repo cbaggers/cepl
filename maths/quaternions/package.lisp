@@ -35,6 +35,7 @@
 (defpackage :quaternions
   (:use :cl :base-maths)
   (:nicknames :q)
+  (:shadow :lerp)
   (:export :w :x :y :z :zero-quit :zero-quatp 
            :unit-quatp :identity-quat :identity-quatp
            :make-quat :make-quat-from-vec3 

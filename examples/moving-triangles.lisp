@@ -22,7 +22,7 @@
 (defpipeline prog-1 ((position :vec4) &uniform (i :int) (loop :float))
   vert frag)
 
-
+;;; ---------------------------------------------------------------------------
 (defun draw (gstream)
   (setf *loop* (+ 0.04 *loop*))
   (gl:clear :color-buffer-bit :depth-buffer-bit)  
