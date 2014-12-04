@@ -156,11 +156,14 @@
          :finally (return (list main post)))
     `(defun ,init-func-name ()
        (let* ((stages ',stages)              
-              (compiled-stages (varjo::rolling-translate
-                                ',args (loop :for i :in stages :collect
-                                          (if (symbolp i)
-                                              (get-compiled-asset i)
-                                              i))))
+              (compiled-stages
+               ,(destructuring-bind (in-args uniforms context)
+                                    (varjo:split-arguments args '(&uniforms &context))
+                   `(varjo::rolling-translate ',in-args ',uniforms ',context
+                                              (loop :for i :in stages :collect
+                                                 (if (symbolp i)
+                                                     (get-compiled-asset i)
+                                                     i)))))
               (shaders-objects
                (loop :for compiled-stage :in compiled-stages
                   :collect (make-shader (varjo->gl-stage-names
