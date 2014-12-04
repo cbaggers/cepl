@@ -1,6 +1,0 @@
-[submodule "temporal-functions"]
-	path = temporal-functions
-	url = https://github.com/cbaggers/temporal-functions.git
-[submodule "varjo"]
-	path = varjo
-	url = git@github.com:nixz/varjo.git
