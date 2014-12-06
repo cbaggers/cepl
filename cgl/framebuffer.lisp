@@ -53,7 +53,6 @@
           ,@body
           ,(when unbind `(%unbind-fbo))))
 
-
 ;; Attaching Images
 
 ;; Remember that textures are a set of images. Textures can have mipmaps; thus,
