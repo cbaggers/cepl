@@ -75,7 +75,7 @@
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
   (prog-2 nil :cam *camera*)  
   (loop :for entity :in *entities* :do
-     (setf (rot entity) (v:+ (rot entity) (v! 0.001 0.002 0)))
+     (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
      (prog-2 (e-stream entity) :model-to-world (entity-matrix entity)))
   (gl:flush)
   (cgl:update-display))
