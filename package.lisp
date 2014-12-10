@@ -428,7 +428,9 @@
 
 (defpackage :live
   (:use :cl :cepl-utils)
-  (:export :defdemo))
+  (:export :defdemo
+           :update-swank
+           :peek))
 
 (defpackage :cepl
   (:use :cl
@@ -438,7 +440,8 @@
         :base-maths
         :base-macros
         :temporal-functions
-        :cepl-camera)
+        :cepl-camera
+        :live)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format
@@ -482,8 +485,6 @@
   (:import-from :utils
                 :deferror
                 :print-mem)
-  (:import-from :live
-                :defdemo)
   (:export :cepl-gl
            :cls
            :pixel-format
@@ -531,4 +532,5 @@
            :evt+>
            :evt->
            :update-swank
+           :peek
            ))
