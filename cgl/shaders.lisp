@@ -158,7 +158,7 @@
        (let* ((stages ',stages)              
               (compiled-stages
                ,(destructuring-bind (in-args uniforms context)
-                                    (varjo:split-arguments args '(&uniforms &context))
+                                    (varjo:split-arguments args '(&uniform &context))
                    `(varjo::rolling-translate ',in-args ',uniforms ',context
                                               (loop :for i :in stages :collect
                                                  (if (symbolp i)
