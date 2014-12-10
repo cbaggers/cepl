@@ -1,6 +1,7 @@
+
 (defdemo test :step #'step-demo :swank-update-sec 0.3)
 
-(defmacro defdemo (name &key init step (swank-update-sec 0.3))
+(defmacro defdemo (name &key init step (swank-update-sec 0.3) subsystems)
   (let ((func-name (gensym (symbol-name name)))
         (start-name (symb 'start- name))
         (stop-name (symb 'stop- name))
@@ -19,7 +20,9 @@
               (update-swank))))
        (defun ,start-name ()
          (setf running t)
-         (unless initd (,init-func))
+         (unless initd
+           (ensure-cepl-subsystems ',subsystems)
+           (,init-func))
          (,func-name))
        (defun ,stop-name ()
          (setf running nil))
