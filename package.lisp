@@ -426,6 +426,10 @@
         :base-maths)
   (:export :rqpos))
 
+(defpackage :live
+  (:use :cl :cepl-utils)
+  (:export :defdemo))
+
 (defpackage :cepl
   (:use :cl
         :declarative-values
@@ -478,6 +482,8 @@
   (:import-from :utils
                 :deferror
                 :print-mem)
+  (:import-from :live
+                :defdemo)
   (:export :cepl-gl
            :cls
            :pixel-format
