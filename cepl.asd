@@ -58,4 +58,5 @@
                (:file "meshes-and-models/model-parsers/parse-obj")
                (:file "meshes-and-models/model-parsers/parse-lisp")
                (:file "sdl-extras")
+               (:file "live/bootstrapping")
                (:file "cepl")))

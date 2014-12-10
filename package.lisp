@@ -426,6 +426,12 @@
         :base-maths)
   (:export :rqpos))
 
+(defpackage :live
+  (:use :cl :cepl-utils)
+  (:export :defdemo
+           :update-swank
+           :peek))
+
 (defpackage :cepl
   (:use :cl
         :declarative-values
@@ -434,7 +440,8 @@
         :base-maths
         :base-macros
         :temporal-functions
-        :cepl-camera)
+        :cepl-camera
+        :live)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format
@@ -525,4 +532,5 @@
            :evt+>
            :evt->
            :update-swank
+           :peek
            ))
