@@ -612,8 +612,16 @@
 
 (defmethod gl-push ((object c-array) (destination gl-texture))
   (gl-push object (texref destination)))
+(defmethod gl-push ((object list) (destination gl-texture))
+  (gl-push object (texref destination)))
 
 ;; [TODO] gl-push taking lists
+(defmethod gl-push ((object list) (destination gpu-array-t))
+  (with-c-array (c-a (make-c-array object 
+                                   :dimensions (dimensions destination)
+                                   :element-type (cgl::internal-format->pixel-format 
+                                                  (cgl::internal-format destination))))
+    (gl-push c-a destination)))
 
 ;; [TODO] This feels like could create non-optimal solutions
 ;;        So prehaps this should look at texture format, and

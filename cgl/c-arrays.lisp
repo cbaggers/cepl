@@ -114,8 +114,9 @@
                   (typecase initial-contents
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
-                  (error "make-c-array must be given initial-elements or dimensions"))))
+                  (error "make-c-array must be given initial-elements or dimensions"))))         
          (p-format (pixel-format-p element-type))
+         (pixel-format (when p-format element-type))
          (element-type (if p-format
                            (pixel-format->element-type element-type)
                            element-type))
@@ -156,7 +157,7 @@
                         :element-type element-type
                         :row-byte-size row-byte-size
                         :row-alignment alignment
-                        :element-pixel-format (when p-format element-type))))
+                        :element-pixel-format pixel-format)))
         (when initial-contents
           (c-populate new-array initial-contents nil))
         new-array))))

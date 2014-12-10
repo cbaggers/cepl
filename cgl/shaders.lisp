@@ -53,10 +53,8 @@
   (let ((recompile-name (symbolicate-package :%cgl name)))
     `(progn
        (defun ,recompile-name ()
-         ,(destructuring-bind (in-args uniforms context)
+         ,(destructuring-bind (in-args context)
                               (varjo:split-arguments args '(&uniforms &context))
-                              (when (uniforms)
-                                (error "defsfun cannot require uniform args")) ;;{TODO} proper error needed
                               `(let ((compile-result (varjo::%v-def-external ',name ',in-args
                                                                              ',context ',body)))
                                  (update-shader-asset ',name :function compile-result
