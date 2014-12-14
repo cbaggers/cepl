@@ -426,6 +426,11 @@
         :base-maths)
   (:export :rqpos))
 
+(defpackage :cepl.events
+  (:use :cl :cepl-utils)
+  (:export :case-events
+           :collect-event-types))
+
 (defpackage :live
   (:use :cl :cepl-utils)
   (:export :defdemo
@@ -485,6 +490,9 @@
   (:import-from :utils
                 :deferror
                 :print-mem)
+  (:import-from :cepl.events
+                :case-events
+                :collect-event-types)
   (:export :cepl-gl
            :cls
            :pixel-format
@@ -532,5 +540,4 @@
            :evt+>
            :evt->
            :update-swank
-           :peek
-           ))
+           :peek))

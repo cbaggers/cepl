@@ -11,6 +11,7 @@
         (run-name (symb 'run- name))
         (stop-name (symb 'stop- name))
         (reset-name (symb 'reset- name))
+        (running-name (symb name '-runningp))
         (init-func (or (second init) 'progn))
         (step-func (or (second step) (error "step fuction must be specified"))))
     `(let ((running nil)
@@ -26,11 +27,13 @@
        (defun ,run-name ()
          (setf running t)
          (unless initd
-           (ensure-cepl-subsystems ',subsystems)
+           (print '(ensure-cepl-subsystems ',subsystems))
            (,init-func))
          (,func-name))
        (defun ,stop-name ()
          (setf running nil))
+       (defun ,running-name ()
+         running)
        (defun ,reset-name ()
          (setf running nil
                initd nil)))))

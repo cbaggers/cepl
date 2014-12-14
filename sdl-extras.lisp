@@ -31,28 +31,3 @@
       (sdl2:gl-set-attr :buffer-size buffer-size)
       (sdl2:gl-set-attr :doublebuffer (if double-buffer 1 0))
       (values gl-context win))))
-
-(defmacro case-events ((event &key (method :poll) (timeout nil)) 
-                       &body event-handlers)
-  `(let (,(when (symbolp event) `(,event (sdl2:new-event))))
-     (loop :until (= 0  (sdl2:next-event ,event ,method ,timeout)) :do
-        (case (sdl2::get-event-type ,event)
-          ,@(loop :for (type params . forms) :in event-handlers :collect
-               (sdl2::expand-handler event type params forms) :into results
-               :finally (return (remove nil results)))))
-     (sdl2:free-event ,event)))
-
-(defmacro evt-> (event type param)
-  "Lets you write following is access event details:
-   \(evt-> event :windowevent :data1\)"
-  `(,@(cadar (sdl2::unpack-event-params event (utils:kwd type) `((,param jeff))))))
-
-(defmacro evt+> (event-type item)
-  (utils:symbolicate-package :sdl2-ffi '+SDL- event-type '- item '+))
-
-(defun collect-event-types ()
-  (let* ((x (sdl2:new-event))
-         (event-types (loop :until (= 0 (sdl2::sdl-poll-event x))
-                         :collect (sdl2::get-event-type x))))
-    (sdl2:free-event x)
-    event-types))
