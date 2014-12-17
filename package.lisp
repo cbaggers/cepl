@@ -334,7 +334,12 @@
            :free-texture
            :free-gpu-array
            :free-vao
-           :p-n-t
+           :g-pn
+           :g-pc
+           :g-pt
+           :g-pnc
+           :g-pnt
+           :g-pntc
            :pos
            :norm
            :tex
@@ -471,7 +476,12 @@
                 :make-vertex-stream
                 :make-texture                
                 :with-texture-bound
-                :p-n-t
+                :g-pn
+                :g-pc
+                :g-pt
+                :g-pnc
+                :g-pnt
+                :g-pntc
                 :texref
                 ;;---
                 :make-fbo
@@ -514,7 +524,12 @@
            :make-vertex-stream
            :make-texture                
            :with-texture-bound
-           :p-n-t
+           :g-pn
+           :g-pc
+           :g-pt
+           :g-pnc
+           :g-pnt
+           :g-pntc
            :texref
            ;;---
            :make-fbo

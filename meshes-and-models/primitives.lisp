@@ -1,14 +1,15 @@
 (in-package :primitives)
 
 ;; [TODO] Add Cone & Cylinder
+;; {TODO} If only position, dont put in list, just return list of :vec3
 
 (defun prim-array (type &optional (size 1.0) (gpu-array t) (stream nil))
   (destructuring-bind (pn f) (primitive-data type :size size)
     (let ((verts
            (if gpu-array
-               (cgl:make-gpu-array pn :element-type 'cgl:p-n-t
+               (cgl:make-gpu-array pn :element-type 'cgl:g-pnt
                                    :dimensions (length pn))
-             (cgl:make-c-array pn :dimensions (length pn) 'cgl:p-n-t)))
+             (cgl:make-c-array pn :dimensions (length pn) 'cgl:g-pnt)))
           (index
            (when f
              (if gpu-array
@@ -45,7 +46,7 @@
               `(,(v! (- size) size 0.0)
                     ,@(when normals `(,(v! 0.0 0.0 1.0)))
                     ,@(when tex-coords `(,(v! 0.0 0.0)))))
-        nil))
+        '(3 0 1 3 1 2)))
 
 (defun box-data (&key (width 1.0) (height 1.0) (depth 1.0)
                    (normals t) (tex-coords t))
