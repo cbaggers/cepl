@@ -49,6 +49,9 @@
                 :flush
                 :viewport
                 :delete-shader)
+  (:import-from :utils
+                :deferror
+                :print-mem)
   (:shadow :float)
   (:export :gl-context
            :clear-gl-context-cache
@@ -126,7 +129,12 @@
            :free-texture
            :free-gpu-array
            :free-vao
-           :p-n-t
+           :g-pn
+           :g-pc
+           :g-pt
+           :g-pnc
+           :g-pnt
+           :g-pntc
            :pos
            :norm
            :tex

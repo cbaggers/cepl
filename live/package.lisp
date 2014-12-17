@@ -32,40 +32,8 @@
 ;;;; ==========================================================================
 (in-package #:cl-user)
 
-(defpackage :cepl-utils
-  (:use :cl)
-  (:nicknames :utils)
-  (:export :gdefun 
-           :dbind
-           :assoc-bind
-           :sn-equal
-           :listify
-           :replace-nth 
-           :hash-values
-           :lambda-list-split
-           :hash-keys 
-           :intersperse
-           :walk-replace
-           :file-to-string
-           :flatten
-           :find-in-tree
-           :mkstr
-           :symb
-           :symb-package
-           :make-keyword
-           :kwd
-           :group
-           :safe-read-from-string
-           :sub-at-index
-           :symbolicate-package
-           :lispify-name
-           :symbol-name-equal
-           :range
-           :rangei
-           :arange
-           :arangei
-           :mapcat
-           :deferror
-           :split-seq-by-seq
-           :dbg
-           :print-mem))
+(defpackage :live
+  (:use :cl :cepl-utils)
+  (:export :defdemo
+           :update-swank
+           :peek))

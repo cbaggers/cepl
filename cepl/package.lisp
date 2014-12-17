@@ -17,7 +17,8 @@
         :base-maths
         :base-macros
         :temporal-functions
-        :cepl-camera)
+        :cepl-camera
+        :live)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format
@@ -47,7 +48,12 @@
                 :make-vertex-stream
                 :make-texture                
                 :with-texture-bound
-                :p-n-t
+                :g-pn
+                :g-pc
+                :g-pt
+                :g-pnc
+                :g-pnt
+                :g-pntc
                 :texref
                 ;;---
                 :make-fbo
@@ -59,19 +65,14 @@
                 ;;---
                 :def-gl-equivalent)
   (:import-from :utils
-                :deferror)
-  (:export :repl
-           :%repl
-           :case-events
-           :collect-event-types
-           :evt->
-           :evt+>
-           ;;---
-           :update-swank
+                :deferror
+                :print-mem)
+  (:export :cepl-gl
            :cls
            :pixel-format
            :pixel-format-of
            :describe-pixel-format
+           :with-instances
            :defpipeline
            :defvshader
            :deffshader
@@ -90,11 +91,33 @@
            :c-populate
            :make-gpu-array
            :make-gpu-arrays
-           :update-swank
            :gl-subseq
            :with-gpu-array-as-c-array
            :make-vertex-stream
            :make-texture                
            :with-texture-bound
-           :p-n-t
-           :texref))
+           :g-pn
+           :g-pc
+           :g-pt
+           :g-pnc
+           :g-pnt
+           :g-pntc
+           :texref
+           ;;---
+           :make-fbo
+           :make-fbos
+           :with-bind-fbo
+           :fbo-attach
+           :attachment-compatible
+           :fbo-detach
+           ;;---
+           :def-gl-equivalent
+           :repl
+           ;;---
+           :case-events
+           :collect-event-types
+           :evt+>
+           :evt->
+           :update-swank
+           :peek
+           ))
