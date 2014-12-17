@@ -75,3 +75,17 @@
                                      (interface-event interface-input)))
                (mouse-event mouse-rotate-cam)))
 
+(defvar *rxy-steps* (make-hash-table :test #'eq :size 100))
+(defmacro defrxy (name &rest steps)
+  (if (hash-table-has-keyp *rxy-steps* name)
+      (recompile-rxy name steps)
+      (compile-rxy name steps)))
+
+(defun compile-rxy (name steps)
+  )
+
+(defun recompile-rxy (name steps)
+  )
+
+(defun hash-table-has-keyp (hash-table key)
+  (second (multiple-value-list (gethash key hash-table))))
