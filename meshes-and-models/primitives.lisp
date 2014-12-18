@@ -1,135 +1,258 @@
 (in-package :primitives)
 
-;; [TODO] Add Cone & Cylinder
 ;; {TODO} If only position, dont put in list, just return list of :vec3
 
-(defun prim-array (type &optional (size 1.0) (gpu-array t) (stream nil))
-  (destructuring-bind (pn f) (primitive-data type :size size)
-    (let ((verts
-           (if gpu-array
-               (cgl:make-gpu-array pn :element-type 'cgl:g-pnt
-                                   :dimensions (length pn))
-             (cgl:make-c-array pn :dimensions (length pn) 'cgl:g-pnt)))
-          (index
-           (when f
-             (if gpu-array
-                 (cgl:make-gpu-array f :element-type :unsigned-short
-                                     :dimensions (length f))
-               (cgl:make-c-array f :dimensions (length f)
-                                 :element-type :ushort)))))
-      (if stream
-          (if gpu-array
-              (values (list verts index)
-                      (cgl:make-vertex-stream verts :index-array index))
-            (error "Cannot create stream without also creating a gpu-array"))
-        (list verts index)))))
+(defun latice-data (&key (width 1.0) (height 1.0) (x-segments 30)
+                      (y-segments 30) (normals t) (tex-coords t))
+  (let* ((x-step (/ width x-segments))
+         (y-step (/ height y-segments))
+         (origin (v! (- (/ width 2)) (- (/ height 2)) 0)))
+    (list
+     (loop :for y :upto x-segments :append
+        (loop :for x :upto y-segments :collect
+           (let ((p (v:+ origin (v! (* x x-step) (* y y-step) 0))))
+             (if (not (or normals tex-coords))
+                 p
+                 `(,p
+                   ,@(when normals (list (v! 0 1 0)))
+                   ,@(when tex-coords
+                           (list (v! (/ x x-segments)
+                                     (/ y y-segments)))))))))
+     (let ((index 0))
+       (loop :for y :upto x-segments :append
+          (loop :for x :upto y-segments :append
+             (list index
+                   (+ index 1)
+                   (+ index y-segments 1)
+                   (+ index 1)
+                   (+ index y-segments 1 1)
+                   (+ index y-segments 1))
+             :do (incf index)))))))
+
+(defun cylinder-data (&key (segments 10) (height 1) (radius 0.5)
+                        (normals t) (tex-coords t) (cap t))
+  (let* ((angle (/ (* pi 2) segments))
+        (cap-data1 (when cap (cap-data :segments segments
+                                       :y-pos 0
+                                       :up-norm t
+                                       :radius radius
+                                       :normals normals
+                                       :tex-coords tex-coords
+                                       :index-offset (* 2 (1+ segments)))))
+        (cap-data2 (when cap (cap-data :segments segments
+                                       :y-pos height
+                                       :up-norm nil
+                                       :radius radius
+                                       :normals normals
+                                       :tex-coords tex-coords
+                                       :index-offset (+ (* 2 (1+ segments))
+                                                        (length (first cap-data1)))))))
+    (list
+     (append
+      (loop :for s :upto segments
+         :for ang = (* s angle)
+         :for normal = (v:normalize (v! (cos ang) 0 (sin ang)))
+         :for p1 = (v! (* radius (cos ang)) 0 (* radius (sin ang)))
+         :for p2 = (v! (* radius (cos ang)) height (* radius (sin ang)))
+         :collect
+         (if (not (or normals tex-coords))
+             p1 `(,p1 ,@(when normals (list normal))
+                      ,@(when tex-coords (list (v! 0.5 0.5)))))
+         :collect
+         (if (not (or normals tex-coords))
+             p2 `(,p2 ,@(when normals (list normal))
+                      ,@(when tex-coords (list (v! (sin ang) (cos ang)))))))
+      (first cap-data1) (first cap-data2))
+     (append
+      (loop :for s :below segments :for index = (* 2 s) :append
+         (list index (+ index 1) (+ index 3) 
+               index (+ index 3) (+ index 2)))
+       (second cap-data1) (second cap-data2)))))
 
 
-(defun primitive-data (type &key (size 1.0) (normals t) (tex-coords t))
-  (case type
-    (:plain (plain-data :size size :normals normals :tex-coords tex-coords))
-    ((:box :cube) (box-data :width size :height size :depth size 
-                            :normals normals :tex-coords tex-coords))
-    (:sphere (sphere-data :radius size :normals normals :tex-coords tex-coords))
-    (t (error "Do not have data for that primitive"))))
+(defun cap-data (&key (segments 10) (y-pos 0) (up-norm nil) (radius 0.5)
+                   (normals t) (tex-coords t) (index-offset 0))
+  (let ((angle (/ (* pi 2) segments)))
+    (list
+     (cons
+      (let ((p (v! 0 y-pos 0)))
+        (if (not (or normals tex-coords))
+            p `(,p ,@(when normals (list (v! 0 (if up-norm 1 -1) 0)))
+                   ,@(when tex-coords (list (v! 0.5 0.5))))))
+      (loop :for s :upto segments
+         :for ang = (* s angle) :collect
+         (let ((p (v! (* radius (cos ang)) y-pos (* radius (sin ang)))))
+           (if (not (or normals tex-coords))
+               p `(,p ,@(when normals (list (v! 0 (if up-norm 1 -1) 0)))
+                      ,@(when tex-coords (list (v! (sin ang) (cos ang)))))))))
+     (loop :for s :from (+ 1 index-offset)
+        :below (+ 1 segments index-offset)
+        :append (if up-norm
+                    (list index-offset s (1+ s))
+                    (list index-offset (1+ s) s))))))
 
-(defun plain-data (&key (size 1.0) (normals t) (tex-coords t))
-  (list (list `(,(v! (- size) (- size) 0.0) 	
-                    ,@(when normals `(,(v! 0.0 0.0 1.0)))
-                    ,@(when tex-coords `(,(v! 0.0 1.0)))) 			
-              `(,(v! size (- size) 0.0) 
-                    ,@(when normals `(,(v! 0.0 0.0 1.0)))
-                    ,@(when tex-coords `(,(v! 1.0 1.0))))
-              `(,(v! size size 0.0)
-                    ,@(when normals `(,(v! 0.0 0.0 1.0)))
-                    ,@(when tex-coords `(,(v! 1.0 0.0))))
-              `(,(v! (- size) size 0.0)
-                    ,@(when normals `(,(v! 0.0 0.0 1.0)))
-                    ,@(when tex-coords `(,(v! 0.0 0.0)))))
-        '(3 0 1 3 1 2)))
+
+(defun cone-data (&key (segments 10) (height 1) (radius 0.5)
+                    (normals t) (tex-coords t) (cap t))
+  (let ((angle (/ (* pi 2) segments))
+        (cap-data (when cap (cap-data :segments segments
+                                      :y-pos 0
+                                      :radius radius
+                                      :normals normals
+                                      :tex-coords tex-coords
+                                      :index-offset (1+ (* 2 segments))))))
+    (list
+     (append
+      (loop :for s :upto segments
+         :for ang = (* (- s) angle)
+         :for normal = (v:normalize (v! (* height (cos ang))
+                                        radius
+                                        (* height (sin ang))))
+         :collect
+         (let ((p (v! 0 height 0)))
+           (if (not (or normals tex-coords))
+               p `(,p ,@(when normals (list normal))
+                      ,@(when tex-coords (list (v! 0.5 0.5))))))
+         :collect
+         (let ((p (v! (* radius (cos ang)) 0 (* radius (sin ang)))))
+           (if (not (or normals tex-coords))
+               p `(,p ,@(when normals (list normal))
+                      ,@(when tex-coords (list (v! (sin ang) (cos ang))))))))
+      (first cap-data))
+     (append
+      (loop :for s :below segments
+         :for index = (* 2 s) :append
+         (list index (+ 1 index) (+ 3 index)))
+      (second cap-data)))))
+
+(defun plain-data (&key (width 1.0) (height 1.0) (normals t) (tex-coords t))
+  (let ((p1 (v! (- width) (- height) 0.0))
+        (p2 (v! width (- height) 0.0))
+        (p3 (v! width height 0.0))
+        (p4 (v! (- width) height 0.0)))
+    (list 
+     (if (not (or normals tex-coords))
+         (list p1 p2 p3 p4)
+         (list `(,p1
+                 ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                 ,@(when tex-coords `(,(v! 0.0 1.0)))) 			
+               `(,p2
+                 ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                 ,@(when tex-coords `(,(v! 1.0 1.0))))
+               `(,p3
+                 ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                 ,@(when tex-coords `(,(v! 1.0 0.0))))
+               `(,p4
+                 ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                 ,@(when tex-coords `(,(v! 0.0 0.0))))))
+     '(3 0 1 3 1 2))))
 
 (defun box-data (&key (width 1.0) (height 1.0) (depth 1.0)
                    (normals t) (tex-coords t))
   (let ((width (/ width 2.0))
         (height (/ height 2.0))
         (depth (/ depth 2.0)))
-    ;; [TODO] why is each side a seperate list?
-    (list (list  `(,(v! (- width) (- height) depth)
-                       ,@(when normals `(,(v! 0.0 0.0 1.0)))
-                       ,@(when tex-coords `(,(v! 0.0 1.0)))) 
-                 `(,(v! width (- height) depth)
-                       ,@(when normals `(,(v! 0.0 0.0 1.0)))
-                       ,@(when tex-coords `(,(v! 1.0 1.0))))
-                 `(,(v! width height depth)
-                       ,@(when normals `(,(v! 0.0 0.0 1.0)))
-                       ,@(when tex-coords `(,(v! 1.0 0.0))))
-                 `(,(v! (- width) height depth)
-                       ,@(when normals `(,(v! 0.0 0.0 1.0)))
-                       ,@(when tex-coords `(,(v! 0.0 0.0))))
-                 `(,(v! width (- height) (- depth))
-                       ,@(when normals `(,(v! 0.0 0.0 -1.0)))
-                       ,@(when tex-coords `(,(v! 0.0 1.0))))
-                 `(,(v! (- width) (- height) (- depth))
-                       ,@(when normals `(,(v! 0.0 0.0 -1.0)))
-                       ,@(when tex-coords `(,(v! 1.0 1.0))))
-                 `(,(v! (- width) height (- depth))
-                       ,@(when normals `(,(v! 0.0 0.0 -1.0)))
-                       ,@(when tex-coords `(,(v! 1.0 0.0))))
-                 `(,(v! width height (- depth))
-                       ,@(when normals `(,(v! 0.0 0.0 -1.0)))
-                       ,@(when tex-coords `(,(v! 0.0 0.0))))
-                 `(,(v! (- width) (- height) (- depth))
-                       ,@(when normals `(,(v! -1.0 0.0 0.0)))
-                       ,@(when tex-coords `(,(v! 0.0 1.0))))
-                 `(,(v! (- width) (- height) depth)
-                       ,@(when normals `(,(v! -1.0 0.0 0.0)))
-                       ,@(when tex-coords `(,(v! 1.0 1.0))))
-                 `(,(v! (- width) height depth)
-                       ,@(when normals `(,(v! -1.0 0.0 0.0)))
-                       ,@(when tex-coords `(,(v! 1.0 0.0))))
-                 `(,(v! (- width) height (- depth))
-                       ,@(when normals `(,(v! -1.0 0.0 0.0)))
-                       ,@(when tex-coords `(,(v! 0.0 0.0))))
-                 `(,(v! width (- height) depth)
-                       ,@(when normals `(,(v! 1.0 0.0 0.0)))
-                       ,@(when tex-coords `(,(v! 0.0 1.0))))
-                 `(,(v! width (- height) (- depth))
-                       ,@(when normals `(,(v! 1.0 0.0 0.0)))
-                       ,@(when tex-coords `(,(v! 1.0 1.0))))
-                 `(,(v! width height (- depth))
-                       ,@(when normals `(,(v! 1.0 0.0 0.0)))
-                       ,@(when tex-coords `(,(v! 1.0 0.0))))
-                 `(,(v! width height depth)
-                       ,@(when normals `(,(v! 1.0 0.0 0.0)))
-                       ,@(when tex-coords `(,(v! 0.0 0.0))))
-                 `(,(v! (- width) height depth)
-                       ,@(when normals `(,(v! 0.0 1.0 0.0)))
-                       ,@(when tex-coords `(,(v! 0.0 1.0))))
-                 `(,(v! width height depth)
-                       ,@(when normals `(,(v! 0.0 1.0 0.0)))
-                       ,@(when tex-coords `(,(v! 1.0 1.0))))
-                 `(,(v! width height (- depth))
-                       ,@(when normals `(,(v! 0.0 1.0 0.0)))
-                       ,@(when tex-coords `(,(v! 1.0 0.0))))
-                 `(,(v! (- width) height (- depth))
-                       ,@(when normals `(,(v! 0.0 1.0 0.0)))
-                       ,@(when tex-coords `(,(v! 0.0 0.0))))
-                 `(,(v! (- width) (- height) (- depth))
-                       ,@(when normals `(,(v! 0.0 -1.0 0.0)))
-                       ,@(when tex-coords `(,(v! 0.0 1.0))))
-                 `(,(v! width (- height) (- depth))
-                       ,@(when normals `(,(v! 0.0 -1.0 0.0)))
-                       ,@(when tex-coords `(,(v! 1.0 1.0))))
-                 `(,(v! width (- height) depth)
-                       ,@(when normals `(,(v! 0.0 -1.0 0.0)))
-                       ,@(when tex-coords `(,(v! 1.0 0.0))))
-                 `(,(v! (- width) (- height) depth)
-                       ,@(when normals `(,(v! 0.0 -1.0 0.0)))
-                       ,@(when tex-coords `(,(v! 0.0 0.0)))))
+    (list (if (not (or normals tex-coords))
+              (list  (v! (- width) (- height) depth)
+                     (v! width (- height) depth)
+                     (v! width height depth)
+                     (v! (- width) height depth)
+                     (v! width (- height) (- depth))
+                     (v! (- width) (- height) (- depth))
+                     (v! (- width) height (- depth))
+                     (v! width height (- depth))
+                     (v! (- width) (- height) (- depth))
+                     (v! (- width) (- height) depth)
+                     (v! (- width) height depth)
+                     (v! (- width) height (- depth))
+                     (v! width (- height) depth)
+                     (v! width (- height) (- depth))
+                     (v! width height (- depth))
+                     (v! width height depth)
+                     (v! (- width) height depth)
+                     (v! width height depth)
+                     (v! width height (- depth))
+                     (v! (- width) height (- depth))
+                     (v! (- width) (- height) (- depth))
+                     (v! width (- height) (- depth))
+                     (v! width (- height) depth)
+                     (v! (- width) (- height) depth))
+              (list  `(,(v! (- width) (- height) depth)
+                        ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                        ,@(when tex-coords `(,(v! 0.0 1.0))))
+                     `(,(v! width (- height) depth)
+                        ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                        ,@(when tex-coords `(,(v! 1.0 1.0))))
+                     `(,(v! width height depth)
+                        ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                        ,@(when tex-coords `(,(v! 1.0 0.0))))
+                     `(,(v! (- width) height depth)
+                        ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                        ,@(when tex-coords `(,(v! 0.0 0.0))))
+                     `(,(v! width (- height) (- depth))
+                        ,@(when normals `(,(v! 0.0 0.0 -1.0)))
+                        ,@(when tex-coords `(,(v! 0.0 1.0))))
+                     `(,(v! (- width) (- height) (- depth))
+                        ,@(when normals `(,(v! 0.0 0.0 -1.0)))
+                        ,@(when tex-coords `(,(v! 1.0 1.0))))
+                     `(,(v! (- width) height (- depth))
+                        ,@(when normals `(,(v! 0.0 0.0 -1.0)))
+                        ,@(when tex-coords `(,(v! 1.0 0.0))))
+                     `(,(v! width height (- depth))
+                        ,@(when normals `(,(v! 0.0 0.0 -1.0)))
+                        ,@(when tex-coords `(,(v! 0.0 0.0))))
+                     `(,(v! (- width) (- height) (- depth))
+                        ,@(when normals `(,(v! -1.0 0.0 0.0)))
+                        ,@(when tex-coords `(,(v! 0.0 1.0))))
+                     `(,(v! (- width) (- height) depth)
+                        ,@(when normals `(,(v! -1.0 0.0 0.0)))
+                        ,@(when tex-coords `(,(v! 1.0 1.0))))
+                     `(,(v! (- width) height depth)
+                        ,@(when normals `(,(v! -1.0 0.0 0.0)))
+                        ,@(when tex-coords `(,(v! 1.0 0.0))))
+                     `(,(v! (- width) height (- depth))
+                        ,@(when normals `(,(v! -1.0 0.0 0.0)))
+                        ,@(when tex-coords `(,(v! 0.0 0.0))))
+                     `(,(v! width (- height) depth)
+                        ,@(when normals `(,(v! 1.0 0.0 0.0)))
+                        ,@(when tex-coords `(,(v! 0.0 1.0))))
+                     `(,(v! width (- height) (- depth))
+                        ,@(when normals `(,(v! 1.0 0.0 0.0)))
+                        ,@(when tex-coords `(,(v! 1.0 1.0))))
+                     `(,(v! width height (- depth))
+                        ,@(when normals `(,(v! 1.0 0.0 0.0)))
+                        ,@(when tex-coords `(,(v! 1.0 0.0))))
+                     `(,(v! width height depth)
+                        ,@(when normals `(,(v! 1.0 0.0 0.0)))
+                        ,@(when tex-coords `(,(v! 0.0 0.0))))
+                     `(,(v! (- width) height depth)
+                        ,@(when normals `(,(v! 0.0 1.0 0.0)))
+                        ,@(when tex-coords `(,(v! 0.0 1.0))))
+                     `(,(v! width height depth)
+                        ,@(when normals `(,(v! 0.0 1.0 0.0)))
+                        ,@(when tex-coords `(,(v! 1.0 1.0))))
+                     `(,(v! width height (- depth))
+                        ,@(when normals `(,(v! 0.0 1.0 0.0)))
+                        ,@(when tex-coords `(,(v! 1.0 0.0))))
+                     `(,(v! (- width) height (- depth))
+                        ,@(when normals `(,(v! 0.0 1.0 0.0)))
+                        ,@(when tex-coords `(,(v! 0.0 0.0))))
+                     `(,(v! (- width) (- height) (- depth))
+                        ,@(when normals `(,(v! 0.0 -1.0 0.0)))
+                        ,@(when tex-coords `(,(v! 0.0 1.0))))
+                     `(,(v! width (- height) (- depth))
+                        ,@(when normals `(,(v! 0.0 -1.0 0.0)))
+                        ,@(when tex-coords `(,(v! 1.0 1.0))))
+                     `(,(v! width (- height) depth)
+                        ,@(when normals `(,(v! 0.0 -1.0 0.0)))
+                        ,@(when tex-coords `(,(v! 1.0 0.0))))
+                     `(,(v! (- width) (- height) depth)
+                        ,@(when normals `(,(v! 0.0 -1.0 0.0)))
+                        ,@(when tex-coords `(,(v! 0.0 0.0))))))
           (list 0 1 2 0 2 3 4 5 6 4 6 7 8 9 10 8 10 11 12 13 14 12 14 15 16 17
                 18 16 18 19 20 21 22 20 22 23))))
 
-(defun sphere-data (&key (radius 1.0) (lines-of-latitude 10)
+(defun sphere-data (&key (radius 0.5) (lines-of-latitude 10)
                       (lines-of-longitude 10) (normals t) (tex-coords t))
   (declare ((unsigned-byte 8) lines-of-longitude lines-of-latitude))
   ;; latitude  -  horizontal
@@ -157,9 +280,11 @@
                               (aref faces (+ f-index 5)) v-index
                               f-index (+ 6 f-index)
                               v-index (1+ v-index))))
-                    `(,(v3:v* pos radius)
-                       ,@(when normals `(,(v3:normalize pos)))
-                       ,@(when tex-coords
-                               `(,(v! (/ lon lines-of-longitude)
-                                      (/ lat lines-of-latitude)))))))))
+                    (if (not (or normals tex-coords))
+                        (v3:v* pos radius)
+                        `(,(v3:v* pos radius)
+                           ,@(when normals `(,(v3:normalize pos)))
+                           ,@(when tex-coords
+                                   `(,(v! (/ lon lines-of-longitude)
+                                          (/ lat lines-of-latitude))))))))))
           (coerce faces 'list))))
