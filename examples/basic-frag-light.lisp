@@ -65,7 +65,8 @@
     (frag-point-light nil :cam-to-clip (cam->clip *camera*))
     
   ;;create monkey
-  (setf *monkey* (load-lisp-model "monkey.data"))
+  (setf *monkey* (load-lisp-model "monkey.data"))  
+  (cepl.events:subscribe #'key-control-monkey cepl.events:keyboard)
 
   ;;set options
   (gl:clear-color 0.0 0.0 0.0 0.0)
@@ -77,6 +78,9 @@
   (gl:depth-func :lequal)
   (gl:depth-range 0.0 1.0)
   (gl:enable :depth-clamp))
+
+(defun key-control-monkey (event)
+  )
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list (m4:translation (pos entity))
@@ -103,21 +107,30 @@
   (gl:flush)
   (cgl:update-display))
 
-(defun reshape (width height near far)
-  (setf (frame-size *camera*) (v! width height)
-        (near *camera*) near
-        (far *camera*) far)
-  (frag-point-light nil :cam-to-clip (cam->clip *camera*))
-  (gl:viewport 0 0 width height))
+(defun reshape (event)
+  (let ((width)
+        (height)
+        (near)
+        (far))
+    (setf (frame-size *camera*) (v! width height)
+          (near *camera*) near
+          (far *camera*) far)
+    (frag-point-light nil :cam-to-clip (cam->clip *camera*))
+    (gl:viewport 0 0 width height)))
 
 (let ((running nil))
   (defun run-demo () 
     (init)
     (setf running t)
+    (cepl.events:subscribe cepl.events:sdl-sys
+                           (lambda (_) (setf running nil)))
+    (cepl.events:subscribe cepl.events:window
+                           λ(when (cepl.eventssdl-window-event-action %)
+                              (reshape %)))
     (loop :while running :do
-       (when (step-demo)
-         (setf running nil))
-       (update-swank)))
+       (continuable
+         (step-demo)         
+         (update-swank))))
   (defun stop-demo () (setf running nil)))
 
 (defun step-demo ()
@@ -125,11 +138,5 @@
   (setf (pos *light*) (v! (* 10 (sin *loop-pos*))
                           10 
                           (* 10 (cos *loop-pos*))))
-  (let ((end? nil))
-    (case-events (event)
-      (:quit () (setf end? nil))
-      (:windowevent (:event e :data1 x :data2 y)
-                    (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
-                      (reshape x y *near* *far*))))
-    (continuable (draw))
-    end?))
+  (draw)
+  (cepl.events:pump-sdl-events))

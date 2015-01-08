@@ -31,3 +31,4 @@
       (sdl2:gl-set-attr :buffer-size buffer-size)
       (sdl2:gl-set-attr :doublebuffer (if double-buffer 1 0))
       (values gl-context win))))
+

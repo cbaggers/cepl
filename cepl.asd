@@ -59,5 +59,6 @@
                (:file "meshes-and-models/model-parsers/parse-lisp")
                (:file "sdl-extras")
                (:file "events/events")
+               (:file "events/sdl-event-sources")
                (:file "live/bootstrapping")
                (:file "cepl")))

@@ -433,8 +433,9 @@
 
 (defpackage :cepl.events
   (:use :cl :cepl-utils)
-  (:export :case-events
-           :collect-event-types))
+  ;; (:nicknames :evt)
+  (:export :collect-event-types
+           :case-events))
 
 (defpackage :live
   (:use :cl :cepl-utils)
