@@ -433,9 +433,26 @@
 
 (defpackage :cepl.events
   (:use :cl :cepl-utils)
-  ;; (:nicknames :evt)
-  (:export :collect-event-types
-           :case-events))
+  (:nicknames :evt)
+  (:shadow :+ :push)  
+  (:export :+
+           :push
+           :defnode
+           :expand
+           :pump-func
+           :filter))
+
+(defpackage :cepl.events.sdl
+  (:use :cl :cepl-utils :cepl.events)
+  (:nicknames :evt.sdl)  
+  (:shadow :push :+)
+  (:export :case-events
+           :quit
+           :window
+           :mouse-scroll
+           :mouse-button
+           :mouse-motion
+           :key))
 
 (defpackage :live
   (:use :cl :cepl-utils)
@@ -501,9 +518,8 @@
   (:import-from :utils
                 :deferror
                 :print-mem)
-  (:import-from :cepl.events
-                :case-events
-                :collect-event-types)
+  (:import-from :cepl.events.sdl
+                :case-events)
   (:export :cepl-gl
            :cls
            :pixel-format
