@@ -60,7 +60,7 @@
 ;; {TODO} optimize
 (let ((sdl->lisp-time-offset 0))
   (defun set-sdl->lisp-time-offset ()
-    (setf sdl->lisp-time-offset (- (get-internal-real-time) (sdl2::get-ticks))))
+    (setf sdl->lisp-time-offset (cl:- (get-internal-real-time) (sdl2::get-ticks))))
   (defun sdl->lisp-time (sdl-time)
     (when (= sdl->lisp-time-offset 0)
       (set-sdl->lisp-time-offset))
@@ -173,7 +173,7 @@
 ;;--------------------------------------------
 ;; scancode lookup
 
-(defun key-type-lookup (num) (aref #(:keydown :keyup) (- num 768)))
+(defun key-type-lookup (num) (aref #(:keydown :keyup) (cl:- num 768)))
 
 (defun key-state-lookup (num) (aref #(:released :pressed) num))
 

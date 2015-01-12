@@ -434,8 +434,9 @@
 (defpackage :cepl.events
   (:use :cl :cepl-utils)
   (:nicknames :evt)
-  (:shadow :+ :push)  
+  (:shadow :+ :- :push)  
   (:export :+
+           :-
            :push
            :defnode
            :expand
@@ -446,7 +447,7 @@
 (defpackage :cepl.events.sdl
   (:use :cl :cepl-utils :cepl.events)
   (:nicknames :evt.sdl)  
-  (:shadow :push :+)
+  (:shadow :push :+ :-)
   (:export :pump-events 
            :case-events
 
