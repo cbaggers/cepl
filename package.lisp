@@ -142,7 +142,7 @@
            :/ :length :length-squared :distance :distance-squared
            :dot :absolute-dot :perp-dot :normalize :cross :eq
            :swizzle :merge-into-vector :negate :face-foreward :lerp
-           :mix :bezier) 
+           :mix :bezier :x :y :z :w) 
   (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
@@ -440,19 +440,43 @@
            :defnode
            :expand
            :pump-func
-           :filter))
+           :filter
+           :terminal))
 
 (defpackage :cepl.events.sdl
   (:use :cl :cepl-utils :cepl.events)
   (:nicknames :evt.sdl)  
   (:shadow :push :+)
-  (:export :case-events
-           :quit
+  (:export :pump-events 
+           :case-events
+
+           :will-quit
            :window
            :mouse-scroll
            :mouse-button
            :mouse-motion
-           :key))
+           :key
+           :terminal
+
+           :|all-events|
+           :|mouse|
+           :|sys|
+           :|window|
+           :|keyboard|
+
+           :action
+           :button
+           :clicks
+           :delta
+           :etype 
+           :id
+           :key
+           :pos
+           :repeat
+           :source-id
+           :state
+           :timestamp
+           :vec))
 
 (defpackage :live
   (:use :cl :cepl-utils)

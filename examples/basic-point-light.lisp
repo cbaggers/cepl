@@ -83,9 +83,9 @@
          (cam-light-vec (m4:mcol*vec4 world-to-cam-matrix 
                                       (v:merge-into-vector (pos *light*) 1.0))))
     (vert-point-light (gstream *monkey*)
-                      :light-pos (v! (v-x cam-light-vec)
-                                     (v-y cam-light-vec)
-                                     (v-z cam-light-vec))
+                      :light-pos (v! (v:x cam-light-vec)
+                                     (v:y cam-light-vec)
+                                     (v:z cam-light-vec))
                       :light-intensity (v! 1 1 1 0)
                       :model-to-cam model-to-cam-matrix
                       :normal-model-to-cam normal-to-cam-matrix

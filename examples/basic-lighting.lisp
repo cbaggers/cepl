@@ -82,13 +82,13 @@
          (cam-light-vec (m4:mcol*vec4 world-to-cam-matrix
                                       light-vec)))
     (setf (entity-rotation *monkey*) 
-          (v! (+ 0.002 (v-x (entity-rotation *monkey*)))
-              (+ 0.001 (v-y (entity-rotation *monkey*)))
-              (v-z (entity-rotation *monkey*))))
+          (v! (+ 0.002 (v:x (entity-rotation *monkey*)))
+              (+ 0.001 (v:y (entity-rotation *monkey*)))
+              (v:z (entity-rotation *monkey*))))
     (prog-1 (entity-stream *monkey*) 
-            :dir-to-light (v! (v-x cam-light-vec) 
-                              (v-y cam-light-vec)
-                              (v-z cam-light-vec))
+            :dir-to-light (v! (v:x cam-light-vec) 
+                              (v:y cam-light-vec)
+                              (v:z cam-light-vec))
             :light-intensity  (v! 0 1 0 1)
             :model-to-cam model-to-cam-matrix
             :norm-model-to-cam normal-to-cam-matrix

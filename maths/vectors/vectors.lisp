@@ -179,10 +179,17 @@
 
 (defun / (vec-a scalar-or-vec)
   (let ((vec-a (floatify vec-a)))
-    (case (cl:length vec-a)
-      (2 (v2:v/vec vec-a scalar-or-vec))
-      (3 (v3:v/vec vec-a scalar-or-vec))
-      (4 (v4:v/vec vec-a scalar-or-vec)))))
+    (if (typep scalar-or-vec 'number)
+        (let ((scalar (float scalar-or-vec)))
+          (case (cl:length vec-a)
+            (2 (v2:v/ vec-a scalar))
+            (3 (v3:v/ vec-a scalar))
+            (4 (v4:v/ vec-a scalar))))
+        (let ((vec-b (floatify scalar-or-vec)))
+          (case (cl:length vec-a)
+            (2 (v2:v/vec vec-a vec-b))
+            (3 (v3:v/vec vec-a vec-b))
+            (4 (v4:v/vec vec-a vec-b)))))))
 
 ;;----------------------------------------------------------------
 
@@ -335,3 +342,52 @@
   (lerp (lerp a1 a2 ammount)
         (lerp b1 b2 ammount)
         ammount))
+
+;----------------------------------------------------------------
+
+;; {TODO} inline these
+(defun x (vec)
+  "Returns the x component of the vector"
+  (aref vec 0))
+(defun y (vec)
+  "Returns the y component of the vector"
+  (aref vec 1))
+(defun z (vec)
+  "Returns the z component of the vector"
+  (aref vec 2))
+(defun w (vec)
+  "Returns the w component of the vector"  
+  (aref vec 3))
+
+(defun (setf x) (value vec)
+  "Returns the x component of the vector"
+  (setf (aref vec 0) (float value)))
+(defun (setf y) (value vec)
+  "Returns the y component of the vector"
+  (setf (aref vec 1) (float value)))
+(defun (setf z) (value vec)
+  "Returns the z component of the vector"
+  (setf (aref vec 2) (float value)))
+(defun (setf w) (value vec)
+  "Returns the w component of the vector"  
+  (setf (aref vec 3) (float value)))
+
+;;----------------------------------------------------------------
+
+(varjo:v-defun vectors:x (a) "~a.x" (v-vector) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:y (a) "~a.y" (v-vector) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-vec3)  (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-bvec3) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-ivec3) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-uvec3) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-dvec3) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-vec4)  (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-bvec4) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-ivec4) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-uvec4) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:z (a) "~a.z" (v-dvec4) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:w (a) "~a.w" (v-vec4) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:w (a) "~a.w" (v-bvec4) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:w (a) "~a.w" (v-ivec4) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:w (a) "~a.w" (v-uvec4) (:element 0) :glsl-spec-matching t)
+(varjo:v-defun vectors:w (a) "~a.w" (v-dvec4) (:element 0) :glsl-spec-matching t)

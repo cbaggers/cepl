@@ -1,37 +1,38 @@
 (in-package :base-vectors)
 
-(defun v!make (type components)
-  (let ((dimen (length components)))
-    (if (or (> dimen 4)
-            (< dimen 2))
-        (error "Incorrect number of components for a vector")
-        `(make-array 
-          ,dimen
-          :element-type ',type
-          :initial-contents (list 
-                             ,@(loop for i in components
-                                  collect
-                                    (if (numberp i)
-                                        (coerce i type)
-                                        `(coerce ,i ',type))))))))
+(defmacro def-v! (name type)
+  `(progn
+     (defun ,name (&rest components)
+       (let* ((components (loop :for c :in components 
+                             :if (typep c 'array)
+                             :append (loop :for e :across c :collect
+                                        (coerce e ',type))
+                             :else :collect (coerce c ',type)))
+              (len (length components)))
+         (when (or (> len 4) (< len 2))
+           (error "Incorrect number of components for a vector: ~a ~a"
+                  len components))
+         (make-array (length components)
+                     :element-type ',type
+                     :initial-contents components)))
+     (define-compiler-macro ,name (&whole form &rest components)
+       (if (every #'numberp components)
+           (let ((components (loop :for c :in components :collect
+                                (coerce c ',type)))
+                 (len (length components)))
+             (when (or (> len 4) (< len 2))
+               (error "Incorrect number of components for a vector: ~a ~a"
+                      len components))
+             (list 'make-array len :element-type '',type
+                   :initial-contents (list 'quote components)))
+           form))))
 
-(defmacro v! (&rest components)
-  (v!make 'single-float components))
-
-(defmacro v!int (&rest components)
-  (v!make 'fixnum components))
-
-(defmacro v!ubyte (&rest components)
-  (v!make '(unsigned-byte 8) components))
-
-(defmacro v!byte (&rest components)
-  (v!make '(signed-byte 8) components))
-
-(defmacro v!ushort (&rest components)
-  (v!make '(unsigned-byte 16) components))
-
-(defmacro v!short (&rest components)
-  (v!make '(signed-byte 16) components))
+(def-v! v! single-float)
+(def-v! v!int fixnum)
+(def-v! v!ubyte (unsigned-byte 8))
+(def-v! v!byte (signed-byte 8))
+(def-v! v!short (unsigned-byte 16))
+(def-v! v!ushort (signed-byte 16))
 
 ;----------------------------------------------------------------
 

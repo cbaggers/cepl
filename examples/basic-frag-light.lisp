@@ -1,4 +1,6 @@
 ;; fragment point light - unfinished
+(in-package :cepl)
+(named-readtables:in-readtable fn_::fn_lambda)
 
 (defparameter *near* 1.0)
 (defparameter *far* 1000.0)
@@ -62,11 +64,10 @@
 (defun init () 
   (setf *light* (make-instance 'light))
   (setf *camera* (make-camera *resolution*))
-    (frag-point-light nil :cam-to-clip (cam->clip *camera*))
+  (reshape *resolution*)
     
   ;;create monkey
-  (setf *monkey* (load-lisp-model "monkey.data"))  
-  (cepl.events:subscribe #'key-control-monkey cepl.events:keyboard)
+  (setf *monkey* (load-lisp-model "/home/baggers/Code/quicklisp/local-projects/cepl/examples/monkey.data"))  
 
   ;;set options
   (gl:clear-color 0.0 0.0 0.0 0.0)
@@ -79,13 +80,25 @@
   (gl:depth-range 0.0 1.0)
   (gl:enable :depth-clamp))
 
-(defun key-control-monkey (event)
-  )
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list (m4:translation (pos entity))
                         (m4:rotation-from-euler (rot entity))
                         (m4:scale (scale entity)))))
+
+(evt:defnode mouse-control-monkey
+    (:source evt.sdl:|mouse| :var e :kind evt.sdl:terminal)
+  (when (typep e 'evt.sdl:mouse-motion)
+    (let ((d (evt.sdl:delta e)))
+      (setf (rot *monkey*) (v:+ (rot *monkey*) (v! (/ (v:y d) -100.0)
+                                                   (/ (v:x d) -100.0)
+                                                   0.0))))))
+(evt:defnode mouse-control-monkey
+    (:source evt.sdl:|keyboard| :var e :kind evt.sdl:terminal)  
+  (let ((key (evt.sdl:key e)))    
+    (case key
+      (:w (setf (pos *monkey*) (v:+ (pos *monkey*) (v! 0 0 -1))))
+      (:s (setf (pos *monkey*) (v:+ (pos *monkey*) (v! 0 0 1)))))))
 
 (defun draw ()
   (gl:clear-depth 1.0)
@@ -93,13 +106,13 @@
   (let* ((world-to-cam-matrix (world->cam *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix 
                                      (entity-matrix *monkey*)))
-         (normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
+         ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
          (cam-light-vec (m4:mcol*vec4 world-to-cam-matrix 
                                       (v:merge-into-vector (pos *light*) 1.0))))
     (frag-point-light (gstream *monkey*)
-                      :model-space-light-pos (v! (v-x cam-light-vec)
-                                     (v-y cam-light-vec)
-                                     (v-z cam-light-vec))
+                      :model-space-light-pos (v! (v:x cam-light-vec)
+                                     (v:y cam-light-vec)
+                                     (v:z cam-light-vec))
                       :light-intensity (v! 1 1 1 0)
                       :model-to-cam model-to-cam-matrix
                       ;; :normal-model-to-cam normal-to-cam-matrix
@@ -107,26 +120,21 @@
   (gl:flush)
   (cgl:update-display))
 
-(defun reshape (event)
-  (let ((width)
-        (height)
-        (near)
-        (far))
-    (setf (frame-size *camera*) (v! width height)
-          (near *camera*) near
-          (far *camera*) far)
-    (frag-point-light nil :cam-to-clip (cam->clip *camera*))
-    (gl:viewport 0 0 width height)))
+(defun reshape (new-dimensions)
+  (setf *resolution* new-dimensions
+        (frame-size *camera*) new-dimensions)
+  (gl:viewport 0 0 (v:x new-dimensions) (v:y new-dimensions))
+  (frag-point-light nil :cam-to-clip (cam->clip *camera*)))
 
 (let ((running nil))
   (defun run-demo () 
     (init)
     (setf running t)
-    (cepl.events:subscribe cepl.events:sdl-sys
-                           (lambda (_) (setf running nil)))
-    (cepl.events:subscribe cepl.events:window
-                           λ(when (cepl.eventssdl-window-event-action %)
-                              (reshape %)))
+    (evt:+ evt.sdl:|sys|
+           λ(when (typep % 'evt.sdl:will-quit) 
+              (setf running nil)))
+    (evt:+ evt.sdl:|window| λ(when (eq :resize(evt.sdl:action %)) 
+                               (reshape (evt.sdl:vec %))))
     (loop :while running :do
        (continuable
          (step-demo)         
@@ -139,4 +147,5 @@
                           10 
                           (* 10 (cos *loop-pos*))))
   (draw)
-  (cepl.events:pump-sdl-events))
+  (evt.sdl:pump-events))
+

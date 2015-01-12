@@ -9,6 +9,7 @@
 (defclass expand (event-node) ())
 (defclass pump-func (event-node) ())
 (defclass filter (event-node) ())
+(defclass terminal (event-node) ())
 
 (defmethod + ((source event-node) (subscriber event-node))
   (cl:push subscriber (slot-value source 'subscribing-nodes))
@@ -47,6 +48,9 @@
     (loop :for result = (funcall body) :while result :do 
        (loop :for node :in nodes :do (push result node))
        (loop :for func :in funcs :do (funcall func result)))))
+
+(defmethod push (event (node terminal))
+  (funcall (slot-value node 'body) event))
 
 
 (defmacro defnode (name (&key source var (kind 'event-node))
