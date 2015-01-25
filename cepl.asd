@@ -17,7 +17,8 @@
                #:temporal-functions
                #:cl-utilities
                #:cl-ppcre
-               #:symbol-munger)
+               #:symbol-munger
+               #:cells)
   :components ((:file "package")
                (:file "utils")
                (:file "base-macros")
@@ -58,6 +59,7 @@
                (:file "meshes-and-models/model-parsers/parse-obj")
                (:file "meshes-and-models/model-parsers/parse-lisp")
                (:file "sdl-extras")
+               (:file "events/event-base")
                (:file "events/events")
                (:file "events/sdl-event-sources")
                (:file "live/bootstrapping")

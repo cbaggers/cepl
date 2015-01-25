@@ -150,26 +150,20 @@
 ;;--------------------------------------------
 ;; sources
 
-(defnode |all-events| (:var _ :kind expand)
-  (declare (ignore _)) 
-  (collect-sdl-events))
-
-(defnode |mouse| (:source |all-events| :var x :kind filter)
+(defun mouse0-eventp (x)
   (or (and (typep x 'mouse-scroll) (= (id x) 0))
       (and (typep x 'mouse-button) (= (id x) 0))
       (and (typep x 'mouse-motion) (= (id x) 0))))
 
-(defnode |sys| (:source |all-events| :var x :kind filter)
-  (typep x 'will-quit))
-
-(defnode |window| (:source |all-events| :var x :kind filter)
-  (typep x 'window))
-
-(defnode |keyboard| (:source |all-events| :var x :kind filter)
-  (typep x 'key))
-
 (defun pump-events ()
-  (cepl.events:push nil |all-events|))
+  (let ((events (collect-sdl-events)))
+    (loop :for e :in events :do (setf (event cepl.events:*all-events*) e))))
+
+(def-event-node sys (:parent all-events) (typep (event :parent) 'will-quit))
+(def-event-node mouse (:parent all-events) (mouse0-eventp (event :parent)))
+(def-event-node keyboard (:parent all-events) (typep (event :parent) 'key))
+(def-event-node window (:parent all-events) (typep (event :parent) 'window))
+
 ;;--------------------------------------------
 ;; scancode lookup
 

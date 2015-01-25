@@ -11,15 +11,15 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :gdefun 
+  (:export :gdefun
            :dbind
            :assoc-bind
            :sn-equal
            :listify
-           :replace-nth 
+           :replace-nth
            :hash-values
            :lambda-list-split
-           :hash-keys 
+           :hash-keys
            :intersperse
            :walk-replace
            :file-to-string
@@ -42,8 +42,7 @@
            :arangei
            :mapcat
            :deferror
-           :split-seq-by-seq
-           :dbg
+           :split-seq-by-seq           
            :print-mem))
 
 (defpackage :base-macros
@@ -141,12 +140,12 @@
   (:export :v :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
            :/ :length :length-squared :distance :distance-squared
            :dot :absolute-dot :perp-dot :normalize :cross :eq
-           :swizzle :merge-into-vector :negate :face-foreward :lerp
-           :mix :bezier :x :y :z :w) 
+           :swizzle :s~ :merge-into-vector :negate :face-foreward :lerp
+           :mix :bezier :x :y :z :w)
   (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
-  (:import-from :vector3 
+  (:import-from :vector3
                 :make-vector3)
   (:import-from :vector4
                 :make-vector4))
@@ -154,19 +153,19 @@
 (defpackage :matrix3
   (:use :cl)
   (:nicknames :m3)
-  (:export :melm :identity-matrix3 :zero-matrix3 
+  (:export :melm :identity-matrix3 :zero-matrix3
            :make-matrix3 :make-from-rows :get-rows
            :get-row :make-from-columns :get-columns
            :get-column :determinate-cramer :inverse
            :mzerop :identityp :meql :transpose :adjoint
-           :mtrace :rotation-from-euler 
+           :mtrace :rotation-from-euler
            :rotation-from-axis-angle :scale
            :rotation-x :rotation-y :rotation-z
            :get-fixed-angles :get-axis-angle :m+ :m- :negate
            :m* :mcol*vec3 :mrow*vec3 :m*scalar)
   (:import-from :base-maths :float-zero
                 :c-sqrt)
-  (:import-from :vector3 
+  (:import-from :vector3
                 :make-vector3)
   (:import-from :base-macros
                 :apply-across-elements)
@@ -175,10 +174,10 @@
 (defpackage :matrix4
   (:use :cl)
   (:nicknames :m4)
-  (:export :melm :identity-matrix4 :zero-matrix4 
+  (:export :melm :identity-matrix4 :zero-matrix4
            :2dclipspace-to-imagespace-matrix4 :make-matrix4
-           :mzerop :identityp :meql :minor :adjoint 
-           :determinant :affine-inverse :transpose 
+           :mzerop :identityp :meql :minor :adjoint
+           :determinant :affine-inverse :transpose
            :translation :rotation-from-matrix3
            :rotation-from-euler :rotation-from-axis-angle
            :scale :rotation-x :rotation-y
@@ -189,7 +188,7 @@
            :get-columns)
   (:import-from :base-maths :float-zero
                 :c-sqrt)
-  (:import-from :vector3 
+  (:import-from :vector3
                 :make-vector3)
   (:import-from :vector4
                 :make-vector4)
@@ -205,7 +204,7 @@
            :identityp :elt :elm :get-rows :get-row
            :get-columns :get-column :determinant
            :inverse :transpose :trace :negate
-           :print-matrix) 
+           :print-matrix)
   (:shadow :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
            :elt :trace))
 
@@ -213,13 +212,13 @@
   (:use :cl :base-maths)
   (:nicknames :q)
   (:shadow :lerp)
-  (:export :w :x :y :z :zero-quit :zero-quatp 
+  (:export :w :x :y :z :zero-quit :zero-quatp
            :unit-quatp :identity-quat :identity-quatp
-           :make-quat :make-quat-from-vec3 
-           :make-quat-from-rotation-matrix3 
+           :make-quat :make-quat-from-vec3
+           :make-quat-from-rotation-matrix3
            :make-quat-from-axis-angle
            :make-quat-from-vectors
-           :make-quat-from-fixed-angles 
+           :make-quat-from-fixed-angles
            :magnitude :norm :quat-eql :quat-!eql
            :copy :get-axis-angle :normalize :qconjugate
            :inverse :q+1 :q+ :q-1 :q- :q* :q*quat
@@ -396,7 +395,7 @@
            :make-cam-clip-matrix)
   (:import-from :vector2
                 :make-vector2)
-  (:import-from :vector3 
+  (:import-from :vector3
                 :make-vector3)
   (:import-from :vector4
                 :make-vector4))
@@ -408,7 +407,7 @@
            :load-lisp-model)
   (:import-from :vector2
                 :make-vector2)
-  (:import-from :vector3 
+  (:import-from :vector3
                 :make-vector3)
   (:import-from :vector4
                 :make-vector4))
@@ -432,23 +431,25 @@
   (:export :rqpos))
 
 (defpackage :cepl.events
-  (:use :cl :cepl-utils)
-  (:nicknames :evt)
-  (:shadow :+ :- :push)  
-  (:export :+
-           :-
-           :push
-           :defnode
-           :expand
-           :pump-func
-           :filter
-           :terminal))
+  (:use :cl :cepl-utils :cells)
+  (:nicknames :evt)  
+  (:export :event
+           :event-cell
+           :map-evt
+           :merge-evt
+           :filter-evt
+           :all-events
+           :*map-evt*
+           :*merge-evt*
+           :*filter-evt*
+           :*all-events*
+           :undefobserver
+           :def-event-node))
 
 (defpackage :cepl.events.sdl
-  (:use :cl :cepl-utils :cepl.events)
-  (:nicknames :evt.sdl)  
-  (:shadow :push :+ :-)
-  (:export :pump-events 
+  (:use :cl :cepl-utils :cepl.events :cells)
+  (:nicknames :evt.sdl)
+  (:export :pump-events
            :case-events
 
            :will-quit
@@ -459,17 +460,17 @@
            :key
            :terminal
 
-           :|all-events|
-           :|mouse|
-           :|sys|
-           :|window|
-           :|keyboard|
+           :all-events
+           :mouse
+           :sys
+           :window
+           :keyboard
 
            :action
            :button
            :clicks
            :delta
-           :etype 
+           :etype
            :id
            :key
            :pos
@@ -513,7 +514,7 @@
                 :gl-pull-1
                 :gl-push
                 :make-c-array
-                :with-c-array                
+                :with-c-array
                 :free-c-array
                 :aref-c
                 :c-populate
@@ -522,7 +523,7 @@
                 :gl-subseq
                 :with-gpu-array-as-c-array
                 :make-vertex-stream
-                :make-texture                
+                :make-texture
                 :with-texture-bound
                 :g-pn
                 :g-pc
@@ -563,7 +564,7 @@
            :gl-pull-1
            :gl-push
            :make-c-array
-           :with-c-array                
+           :with-c-array
            :free-c-array
            :aref-c
            :c-populate
@@ -572,7 +573,7 @@
            :gl-subseq
            :with-gpu-array-as-c-array
            :make-vertex-stream
-           :make-texture                
+           :make-texture
            :with-texture-bound
            :g-pn
            :g-pc

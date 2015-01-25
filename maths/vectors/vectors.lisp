@@ -46,7 +46,7 @@
     result))
 
 (defun s~ (vec pattern) (swizzle vec pattern))
-
+(define-compiler-macro s~ (vec pattern) `(swizzle ,vec ,pattern))
 
 ;;----------------------------------------------------------------
 

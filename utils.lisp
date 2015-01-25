@@ -350,17 +350,17 @@ producing a symbol in the current package."
              (setf i (+ -1 i delim-len)
                    last (1+ i)))))))
 
-(defmacro dbg (form)
-  (unless (and (listp form) (symbolp (first form)) 
-               (not (member (first form) '(quote function))))
-    (error "Doesnt look like a function call does it?"))
-  (let ((gensyms (loop for i in (rest form) collect (gensym))))
-    `(let ,(loop for a in (rest form) for g in gensyms collect `(,g ,a))
-       (format t "~%~a -> " (list ',(first form) ,@gensyms))
-       (let ((res (handler-case (,(first form) ,@gensyms)
-                    (error (x) (format t "<error>~%") (error x)))))
-         (format t "~a~%" res)
-         res))))
+;; (defmacro dbg (form)
+;;   (unless (and (listp form) (symbolp (first form)) 
+;;                (not (member (first form) '(quote function))))
+;;     (error "Doesnt look like a function call does it?"))
+;;   (let ((gensyms (loop for i in (rest form) collect (gensym))))
+;;     `(let ,(loop for a in (rest form) for g in gensyms collect `(,g ,a))
+;;        (format t "~%~a -> " (list ',(first form) ,@gensyms))
+;;        (let ((res (handler-case (,(first form) ,@gensyms)
+;;                     (error (x) (format t "<error>~%") (error x)))))
+;;          (format t "~a~%" res)
+;;          res))))
 
 ;------------ERRORS-----------;
 
