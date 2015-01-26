@@ -13,6 +13,8 @@
 
 (in-package :cepl)
 
+(defparameter +default-resolution+ (v! 640 480))
+
 #+sb-thread
 (defmacro on-main (&body b)
     `(let ((thread (first (last (sb-thread:list-all-threads)))))

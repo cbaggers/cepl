@@ -205,22 +205,6 @@
 	  (list new-val)
 	  (subseq seq (1+ index))))
 
-;;; The following util was taken from SBCL's
-;;; src/code/*-extensions.lisp
-
-(defun symbolicate-package (package &rest things)
-  "Concatenate together the names of some strings and symbols,
-producing a symbol in the current package."
-  (let* ((length (reduce #'+ things
-                         :key (lambda (x) (length (string x)))))
-         (name (make-array length :element-type 'character)))
-    (let ((index 0))
-      (dolist (thing things (values (intern name package)))
-        (let* ((x (string thing))
-               (len (length x)))
-          (replace name x :start1 index)
-          (incf index len))))))
-
 
 (defun lispify-name (name)
   "take a string and changes it to uppercase and replaces

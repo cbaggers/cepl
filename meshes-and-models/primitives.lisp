@@ -125,6 +125,28 @@
          (list index (+ 1 index) (+ 3 index)))
       (second cap-data)))))
 
+(defun equilateral-triangle-data (&key (size 1.0) (normals t) (tex-coords t))
+  (let* ((hs (/ size 2))
+         (height (sqrt (+ (expt size 2) (expt hs 2))))
+         (hh (/ height 2))         
+         (p1 (v! 0 hh 0.0))
+         (p2 (v! (- hs) (- hh) 0.0))
+         (p3 (v! hs (- hh) 0.0)))
+    (list 
+     (if (not (or normals tex-coords))
+         (list p1 p2 p3)
+         (list `(,p1
+                 ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                 ,@(when tex-coords `(,(v! 0.5 0.75)))) 			
+               `(,p2
+                 ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                 ,@(when tex-coords `(,(v! -0.5 0))))
+               `(,p3
+                 ,@(when normals `(,(v! 0.0 0.0 1.0)))
+                 ,@(when tex-coords `(,(v! 0.5 0))))
+               ))
+     '(0 1 2))))
+
 (defun plain-data (&key (width 1.0) (height 1.0) (normals t) (tex-coords t))
   (let ((p1 (v! (- width) (- height) 0.0))
         (p2 (v! width (- height) 0.0))

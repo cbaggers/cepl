@@ -18,7 +18,9 @@
                #:cl-utilities
                #:cl-ppcre
                #:symbol-munger
-               #:cells)
+               #:cells
+               #:classimp
+               #:fn_)
   :components ((:file "package")
                (:file "utils")
                (:file "base-macros")
@@ -56,8 +58,7 @@
                (:file "maths/quaternions")
                (:file "cepl-camera")
                (:file "meshes-and-models/primitives")
-               (:file "meshes-and-models/model-parsers/parse-obj")
-               (:file "meshes-and-models/model-parsers/parse-lisp")
+               (:file "meshes-and-models/classimp-helpers")
                (:file "sdl-extras")
                (:file "events/event-base")
                (:file "events/events")

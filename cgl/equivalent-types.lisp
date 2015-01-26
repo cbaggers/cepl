@@ -22,7 +22,7 @@
 (defun bridge-symbol-to-symbol (x)
   (destructuring-bind (package name)
       (split-seq-by-seq "--" (symbol-name x))
-    (symbolicate-package package name)))
+    (symb-package package name)))
 
 (defun process-direct (bridge-name lisp-type &key type converter)
   (unless type (error 'direct-type-nil))

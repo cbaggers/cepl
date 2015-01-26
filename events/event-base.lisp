@@ -9,7 +9,7 @@
 ;;--------------------------------------------
 ;; Helper macros 
 (defmacro def-event-node 
-    (name (&key parent) predicate-form)
+    (name (&key parent) predicate-form &body other-slot-specs)
   (unless (or parent (eq predicate-form :in))
     (error "def-event-node: Parent is mandatory for non root nodes"))
   (let ((parent (symb '* parent '*)))
@@ -21,7 +21,8 @@
                              ((null predicate-form) t)
                              (t `(cells:c? 
                                    (when ,(subst parent :parent predicate-form)
-                                     (cepl.events:event ,parent))))))))
+                                     (cepl.events:event ,parent))))))
+          ,@(subst parent :parent other-slot-specs)))
        (defparameter ,(symb '* name '*) (make-instance ',name)))))
 
 (defmacro undefobserver (slotname &rest args &aux (aroundp (eq :around (first args))))
@@ -41,3 +42,8 @@
                      ,(if (listp oldvarg) (second oldvarg) t)
                      ,(if (listp oldvargboundp) (second oldvargboundp) t)
                      ,(if (listp cell-arg) (second cell-arg) t))))))
+
+(defmacro observe ((source &optional (event-var-name (symb 'e))) &body body)
+  `(defobserver evt:event ((%node (eql ,source)))
+     (let ((,event-var-name (event %node)))
+       ,@body)))

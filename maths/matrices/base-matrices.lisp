@@ -13,7 +13,7 @@
     (if (or (> dimension 4)
             (< dimension 3))
         (error "Incorrect number of components for a matrix")
-        `(,(cepl-utils:symbolicate-package
+        `(,(cepl-utils:symb-package
 	    (format nil "MATRIX~s" dimension)
 	    "MAKE-MATRIX"
 	    (cepl-utils:mkstr dimension))

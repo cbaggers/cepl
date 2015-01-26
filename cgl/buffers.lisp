@@ -84,12 +84,13 @@
    
    The function returns a buffer object with its format slot
    populated with the details of the data stored within the buffer"
-  (bind-buffer buffer buffer-target)
-  (%gl:buffer-data buffer-target data-byte-size
-                   (cffi:inc-pointer data-pointer byte-offset)
-                   usage)
-  (setf (glbuffer-format buffer) `((,data-type ,data-byte-size 0)))
-  buffer)
+  (let ((data-type (safer-gl-type data-type)))
+    (bind-buffer buffer buffer-target)
+    (%gl:buffer-data buffer-target data-byte-size
+                     (cffi:inc-pointer data-pointer byte-offset)
+                     usage)
+    (setf (glbuffer-format buffer) `((,data-type ,data-byte-size 0)))
+    buffer))
 
 (defun buffer-data (buffer c-array buffer-target usage
                     &key (offset 0) (size (c-array-byte-size c-array)))
@@ -166,16 +167,17 @@
   "This function creates an empty block of data in the opengl buffer
    equal in size to (* length size-in-bytes-of-type).
    It will remove ALL data currently in the buffer"
-  (bind-buffer buffer buffer-target)
-  (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
-  (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
-         (byte-size (gl-calc-byte-size type dimensions)))
-    (buffer-reserve-block-raw buffer
-                              byte-size
-                              buffer-target
-                              usage)
-    (setf (glbuffer-format buffer) `((,type ,byte-size ,0))))
-  buffer)
+  (let ((type (safer-gl-type type)))
+    (bind-buffer buffer buffer-target)
+    (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
+    (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
+           (byte-size (gl-calc-byte-size type dimensions)))
+      (buffer-reserve-block-raw buffer
+                                byte-size
+                                buffer-target
+                                usage)
+      (setf (glbuffer-format buffer) `((,type ,byte-size ,0))))
+    buffer))
 
 (defun buffer-reserve-blocks (buffer types-and-dimensions
                               buffer-target usage)
@@ -188,8 +190,18 @@
   (let ((total-size-in-bytes 0))
     (setf (glbuffer-format buffer) 
           (loop :for (type dimensions) :in types-and-dimensions :collect
-             (progn (let ((size-in-bytes (gl-calc-byte-size type dimensions)))
-                      (incf total-size-in-bytes size-in-bytes)
-                      `(,type ,size-in-bytes ,total-size-in-bytes)))))
+             (let ((type (safer-gl-type type)))
+               (progn (let ((size-in-bytes (gl-calc-byte-size type dimensions)))
+                        (incf total-size-in-bytes size-in-bytes)
+                        `(,type ,size-in-bytes ,total-size-in-bytes))))))
     (buffer-reserve-block-raw buffer total-size-in-bytes buffer-target usage))
   buffer)
+
+;;---------------------------------------------------------------
+
+(defun safer-gl-type (type)
+  "In some cases cl-opengl doesnt like certain types. :ushort is the main case
+as it prefers :unsigned-short. This function fixes this"
+  (if (eq type :ushort)
+      :unsigned-short
+      type))

@@ -45,12 +45,12 @@
   (let ((spec (type->type-spec type)))
     (if (listp spec)
         `(,(if (core-typep (type-spec->type (first spec)))
-               (symbolicate-package "KEYWORD" (subseq (symbol-name (first spec)) 2))
+               (symb-package "KEYWORD" (subseq (symbol-name (first spec)) 2))
                (first spec))
            ,(if (and (listp (second spec)) (= (length (second spec)) 1))
                 (first (second spec)) (second spec)))
         (if (core-typep type)
-            (symbolicate-package "KEYWORD" (subseq (symbol-name spec) 2))
+            (symb-package "KEYWORD" (subseq (symbol-name spec) 2))
             spec))))
 
 ;;------------------------------------------------------------
@@ -138,7 +138,7 @@
 
 (defun %format-slot-for-autowrap (slot)
   (let* ((s-type (if (assoc (s-type slot) cffi::*extra-primitive-types*)
-                     (symbolicate-package :cffi :cgl- (s-type slot))
+                     (symb-package :cffi :cgl- (s-type slot))
                      (s-type slot)))
          (a-type (autowrap:find-type s-type)))
     (list (kwd (s-name slot))
@@ -151,7 +151,7 @@
   (when (> (length (s-dimensions slot)) 1)
     (error "Cannot currently support multi dimensional autowrap arrays"))
   (let* ((e-type (if (assoc (s-element-type slot) cffi::*extra-primitive-types*)
-                     (symbolicate-package :cffi :cgl- (s-element-type slot))
+                     (symb-package :cffi :cgl- (s-element-type slot))
                      (s-element-type slot)))
          (a-type (autowrap:find-type e-type)))    
     (list (kwd (s-name slot))

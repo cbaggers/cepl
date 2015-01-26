@@ -9,7 +9,7 @@
 
 (defclass will-quit (sdl-event) ())
 
-(defclass window (sdl-event)
+(defclass win (sdl-event)
   ((action :initarg :action :initform 0 :reader action
            :type keyword)
    (vec :initarg :vec :reader vec
@@ -53,6 +53,28 @@
    (key :initarg :key :initform 0 :reader key
         :type keyword)))
 
+;;--------------------------------------------
+;; sources
+
+(defun mouse0-eventp (x)
+  (or (and (typep x 'mouse-scroll) (= (id x) 0))
+      (and (typep x 'mouse-button) (= (id x) 0))
+      (and (typep x 'mouse-motion) (= (id x) 0))))
+
+(defun pump-events ()
+  (let ((events (collect-sdl-events)))
+    (loop :for e :in events :do (setf (event cepl.events:*all-events*) e))))
+
+(def-event-node sys (:parent all-events) (typep (event :parent) 'will-quit))
+
+(def-event-node mouse (:parent all-events) (mouse0-eventp (event :parent))
+  (pos :cell t :initform
+       (c? (when (typep (event self) 'mouse-motion)
+             (pos (event self))))))
+
+(def-event-node keyboard (:parent all-events) (typep (event :parent) 'key))
+
+(def-event-node window (:parent all-events) (typep (event :parent) 'win))
 
 ;;--------------------------------------------
 ;; sdl timestamp conversion
@@ -98,7 +120,7 @@
       (:windowevent (:timestamp ts :event e :data1 x :data2 y)
                     (let ((action (window-action-lookup e)))
                       (cl:push
-                       (make-instance 'window
+                       (make-instance 'win
                                       :timestamp (sdl->lisp-time ts)
                                       :action action
                                       :vec (base-vectors:v! x y))
@@ -146,23 +168,6 @@
                                      (plus-c:c-ref keysym sdl2-ffi:sdl-keysym :scancode)))
                 results)))
     (reverse results)))
-
-;;--------------------------------------------
-;; sources
-
-(defun mouse0-eventp (x)
-  (or (and (typep x 'mouse-scroll) (= (id x) 0))
-      (and (typep x 'mouse-button) (= (id x) 0))
-      (and (typep x 'mouse-motion) (= (id x) 0))))
-
-(defun pump-events ()
-  (let ((events (collect-sdl-events)))
-    (loop :for e :in events :do (setf (event cepl.events:*all-events*) e))))
-
-(def-event-node sys (:parent all-events) (typep (event :parent) 'will-quit))
-(def-event-node mouse (:parent all-events) (mouse0-eventp (event :parent)))
-(def-event-node keyboard (:parent all-events) (typep (event :parent) 'key))
-(def-event-node window (:parent all-events) (typep (event :parent) 'window))
 
 ;;--------------------------------------------
 ;; scancode lookup

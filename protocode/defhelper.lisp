@@ -9,7 +9,7 @@
                (cond ((null lam-list) accum) 
                      ((and (symbolp item) (eql (elt (symbol-name item) 0) #\&))
                       (collector (rest lam-list)
-                                 (utils:symbolicate-package :keyword item)
+                                 (utils:symb-package :keyword item)
                                  accum))
                      (t (collector (rest lam-list)
                                    current-modifier

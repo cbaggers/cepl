@@ -27,13 +27,12 @@
            :find-in-tree
            :mkstr
            :symb
-           :symb-package
            :make-keyword
            :kwd
            :group
            :safe-read-from-string
            :sub-at-index
-           :symbolicate-package
+           :symb-package
            :lispify-name
            :symbol-name-equal
            :range
@@ -340,6 +339,7 @@
            :g-pnt
            :g-pntc
            :pos
+           :col
            :norm
            :tex
            ;;----------
@@ -402,9 +402,11 @@
 
 (defpackage :model-parsers
   (:use :cl)
-  (:export :parse-obj-file
-           :parse-lisp-model
-           :load-lisp-model)
+  (:export :load-file
+           :meshes->lists
+           :mesh->lists
+           :mesh-list->gpu
+           :scene-meshes->gpu)
   (:import-from :vector2
                 :make-vector2)
   (:import-from :vector3
@@ -417,9 +419,12 @@
         :base-vectors
         :base-matrices
         :base-maths)
-  (:export :primitive-data
+  (:export :latice-data
+           :primitive-data
+           :cap-data
            :plain-data
            :box-data
+           :equilateral-triangle-data
            :sphere-data
            :prim-array))
 
@@ -443,6 +448,7 @@
            :*merge-evt*
            :*filter-evt*
            :*all-events*
+           :observe
            :undefobserver
            :def-event-node))
 
@@ -465,6 +471,11 @@
            :sys
            :window
            :keyboard
+           :*all-events*
+           :*mouse*
+           :*sys*
+           :*window*
+           :*keyboard*
 
            :action
            :button
@@ -546,7 +557,8 @@
                 :print-mem)
   (:import-from :cepl.events.sdl
                 :case-events)
-  (:export :cepl-gl
+  (:export :+default-resolution+
+           :cepl-gl
            :cls
            :pixel-format
            :pixel-format-of

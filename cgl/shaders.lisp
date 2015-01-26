@@ -50,7 +50,7 @@
   `(varjo::v-defmacro ,name ,lambda-list ,@body))
 
 (defmacro defsfun (name args &body body)
-  (let ((recompile-name (symbolicate-package :%cgl name)))
+  (let ((recompile-name (symb-package :%cgl name)))
     `(progn
        (defun ,recompile-name ()
          ,(destructuring-bind (in-args context)
@@ -63,7 +63,7 @@
        ',name)))
 
 (defmacro defshader (name args &body body)
-  (let ((recompile-name (symbolicate-package :%cgl name)))
+  (let ((recompile-name (symb-package :%cgl name)))
     `(progn
        (eval-when (:compile-toplevel :load-toplevel :execute)
          (utils:assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context) (instancing :&instancing))
@@ -121,8 +121,8 @@
         (utils:lambda-list-split '(&uniform &context &instancing) args)
       (declare (ignore instancing))
       (let* ((uniforms (expand-equivalent-types unexpanded-uniforms))
-             (init-func-name (symbolicate-package :cgl '%%- name))
-             (invalidate-func-name (symbolicate-package :cgl '££- name))
+             (init-func-name (symb-package :cgl '%%- name))
+             (invalidate-func-name (symb-package :cgl '££- name))
              (uniform-details (mapcar #'make-arg-assigners uniforms))
              (varjo-args
               `(,@in-args
