@@ -681,22 +681,23 @@
                    (* (melm mat-a 1 2) (melm mat-b 2 2)))
                 (+ (* (melm mat-a 2 0) (melm mat-b 0 2))
                    (* (melm mat-a 2 1) (melm mat-b 1 2))
-                   (* (melm mat-a 2 2) (melm mat-b 2 2))))
+                   (* (melm mat-a 2 2) (melm mat-b 2 2)))))
 
   ;;----------------------------------------------------------------
 
-  (defun m*vec (mat-a vec-a)
-    "Multiplies the vector3 by the matrix and returns the result
+
+(defun m*vec (mat-a vec-a)
+  "Multiplies the vector3 by the matrix and returns the result
    as a new vector3"
-    (make-vector3 (+ (* (melm mat-a 0 0) (v-x vec-a))
-                     (* (melm mat-a 0 1) (v-y vec-a))
-                     (* (melm mat-a 0 2) (v-z vec-a)))
-                  (+ (* (melm mat-a 1 0) (v-x vec-a))
-                     (* (melm mat-a 1 1) (v-y vec-a))
-                     (* (melm mat-a 1 2) (v-z vec-a)))
-                  (+ (* (melm mat-a 2 0) (v-x vec-a))
-                     (* (melm mat-a 2 1) (v-y vec-a))
-                     (* (melm mat-a 2 2) (v-z vec-a))))))
+  (make-vector3 (+ (* (melm mat-a 0 0) (v-x vec-a))
+                   (* (melm mat-a 0 1) (v-y vec-a))
+                   (* (melm mat-a 0 2) (v-z vec-a)))
+                (+ (* (melm mat-a 1 0) (v-x vec-a))
+                   (* (melm mat-a 1 1) (v-y vec-a))
+                   (* (melm mat-a 1 2) (v-z vec-a)))
+                (+ (* (melm mat-a 2 0) (v-x vec-a))
+                   (* (melm mat-a 2 1) (v-y vec-a))
+                   (* (melm mat-a 2 2) (v-z vec-a)))))
 
 ;;----------------------------------------------------------------
 

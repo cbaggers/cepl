@@ -10,12 +10,12 @@
 
 ;;------------------------------------------------------------
 (defparameter *immutable-available* t)
-(defparameter *cube-face-order* '(:texture-cube-map-positive-x​
-                                  :texture-cube-map-negative-x​
-                                  :texture-cube-map-positive-y​
-                                  :texture-cube-map-negative-y​
-                                  :texture-cube-map-positive-z​
-                                  :texture-cube-map-negative-z​)) 
+(defparameter *cube-face-order* '(:texture-cube-map-positive-x
+                                  :texture-cube-map-negative-x
+                                  :texture-cube-map-positive-y
+                                  :texture-cube-map-negative-y
+                                  :texture-cube-map-positive-z
+                                  :texture-cube-map-negative-z​))
 
 (defclass %gltexture ()
   ((id :type (unsigned-byte 16))
@@ -63,7 +63,7 @@
 
 (defun mipref (texture subscript)
   (typecase texture
-    (texture-1d 
+    (texture-1d
      (make-instance 'gpu-array-t :texture texture :level-num subscript))
     (texture-2d
      (make-instance 'gpu-array-t :texture texture :level-num subscript))
@@ -77,23 +77,23 @@
     (t (error "CEPL: Unknown texture type"))))
 
 (defun %make-tex-cube (texture mipmap-level &optional (index 0))
-  (make-array-cube 
-   :positive-x (make-instance 'gpu-array-t :texture texture 
+  (make-array-cube
+   :positive-x (make-instance 'gpu-array-t :texture texture
                               :level-num mipmap-level :face-num 0
                               :layer-num index)
-   :negative-x (make-instance 'gpu-array-t :texture texture 
+   :negative-x (make-instance 'gpu-array-t :texture texture
                               :level-num mipmap-level :face-num 1
                               :layer-num index)
-   :positive-y (make-instance 'gpu-array-t :texture texture 
+   :positive-y (make-instance 'gpu-array-t :texture texture
                               :level-num mipmap-level :face-num 2
                               :layer-num index)
-   :negative-y (make-instance 'gpu-array-t :texture texture 
+   :negative-y (make-instance 'gpu-array-t :texture texture
                               :level-num mipmap-level :face-num 3
                               :layer-num index)
-   :positive-z (make-instance 'gpu-array-t :texture texture 
+   :positive-z (make-instance 'gpu-array-t :texture texture
                               :level-num mipmap-level :face-num 4
                               :layer-num index)
-   :negative-z (make-instance 'gpu-array-t :texture texture 
+   :negative-z (make-instance 'gpu-array-t :texture texture
                               :level-num mipmap-level :face-num 5
                               :layer-num index)))
 
@@ -127,7 +127,7 @@
 
 ;;------------------------------------------------------------
 
-(defclass gl-texture () 
+(defclass gl-texture ()
   ((texture-id :initarg :texture-id :reader texture-id)
    (base-dimensions :initarg :base-dimensions :accessor base-dimensions)
    (texture-type :initarg :texture-type :reader texture-type)
@@ -140,7 +140,7 @@
 
 (defclass immutable-texture (gl-texture) ())
 (defclass mutable-texture (gl-texture) ())
-(defclass buffer-texture (gl-texture) 
+(defclass buffer-texture (gl-texture)
   ((backing-array :initarg :backing-array)
    (owns-array :initarg :owns-array)))
 
@@ -152,7 +152,7 @@
   (let ((m (slot-value object 'mipmap-levels))
         (l (slot-value object 'layer-count))
         (c (slot-value object 'cubes)))
-    (format stream 
+    (format stream
             "#<GL-~a (~{~a~^x~})~:[~; mip-levels:~a~]~:[~; layers:~a~]>"
             (slot-value object 'texture-type)
             (slot-value object 'base-dimensions)
@@ -162,14 +162,14 @@
   (let ((m (slot-value object 'mipmap-levels))
         (l (slot-value object 'layer-count))
         (c (slot-value object 'cubes)))
-    (format stream 
+    (format stream
             "#<GL-~a (~{~a~^x~})~:[~; mip-levels:~a~]~:[~; layers:~a~]>"
             (slot-value object 'texture-type)
             (slot-value object 'base-dimensions)
             (when (> m 1) m) (when (> l 1) l) c)))
 
 (defmethod print-object ((object buffer-texture) stream)
-  (format stream 
+  (format stream
           "#<GL-~a (~{~a~^x~})>"
           (slot-value object 'texture-type)
           (slot-value object 'base-dimensions)))
@@ -178,7 +178,7 @@
   (free-texture object))
 
 (defun blank-texture-object (texture)
-  (with-slots (texture-id base-dimensions texture-type internal-format 
+  (with-slots (texture-id base-dimensions texture-type internal-format
                           sampler-type mipmap-levels layer-count cubes
                           allocated) texture
     (setf (slot-value texture 'texture-id) -1
@@ -192,13 +192,13 @@
           (slot-value texture 'allocated) nil)))
 
 (defmethod free-texture ((texture gl-texture))
-  (with-foreign-object (id :uint) 
+  (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) (texture-id texture))
     (setf (slot-value texture 'texture-id) -1)
     (%gl:delete-textures 1 id)))
 
 (defmethod free-texture ((texture buffer-texture))
-  (with-foreign-object (id :uint) 
+  (with-foreign-object (id :uint)
     (with-slots (owns-array backing-array) texture
       (when owns-array
         (gl-free backing-array)
@@ -219,9 +219,9 @@
 
 (defmethod initialize-instance :after
     ((array gpu-array-t) &key texture texture-type internal-format)
-  (when (null texture-type) 
+  (when (null texture-type)
     (setf (slot-value array 'texture-type) (texture-type texture)))
-  (when (null internal-format) 
+  (when (null internal-format)
     (setf (slot-value array 'internal-format) (internal-format texture))))
 
 (defmethod print-object ((object gpu-array-t) stream)
@@ -244,7 +244,7 @@
 (defmacro with-texture-bound ((texture &optional type) &body body)
   (let ((tex (gensym "texture"))
         (res (gensym "result")))
-    `(let ((,tex ,texture)) 
+    `(let ((,tex ,texture))
        (bind-texture ,tex ,type)
        (let ((,res (progn ,@body)))
          (unbind-texture (slot-value ,tex 'texture-type))
@@ -263,12 +263,12 @@
     (error "Texture type is ~a. Cannot populate with ~a"
            target internal-format))
   (when (and (eq pixel-format :depth-component)
-             (not (find internal-format 
+             (not (find internal-format
                         '(:depth-component :depth-component16
                           :depth-component24 :depth-component32f))))
     (error "Pixel data is a depth format however the texture is not"))
   (when (and (not (eq pixel-format :depth-component))
-             (find internal-format 
+             (find internal-format
                    '(:depth-component :depth-component16
                      :depth-component24 :depth-component32f)))
     (error "Pixel data is a depth format however the texture is not"))
@@ -289,7 +289,7 @@
       (unless (equal (dimensions c-array) dimensions)
         (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
       (with-texture-bound ((texture gpu-array))
-        (%upload-tex texture texture-type level-num (dimensions c-array) 
+        (%upload-tex texture texture-type level-num (dimensions c-array)
                      layer-num face-num pix-format pix-type (pointer c-array)))))
   gpu-array)
 
@@ -310,11 +310,11 @@
                                   (first dimensions) (second dimensions)
                                   (third dimensions) 0 pix-format pix-type
                                   pointer))
-    (:texture-1d-array (gl:tex-image-2d tex-type level-num 
+    (:texture-1d-array (gl:tex-image-2d tex-type level-num
                                         (internal-format tex)
                                         (first dimensions) layer-num 0
                                         pix-format pix-type pointer))
-    (:texture-2d-array (gl:tex-image-3d tex-type level-num 
+    (:texture-2d-array (gl:tex-image-3d tex-type level-num
                                         (internal-format tex)
                                         (first dimensions) (second dimensions)
                                         layer-num 0 pix-format pix-type pointer))
@@ -328,7 +328,7 @@
 (defmethod %upload-tex ((tex immutable-texture) tex-type level-num dimensions
                         layer-num face-num pix-format pix-type pointer)
   (case tex-type
-    (:texture-1d (gl:tex-sub-image-1d tex-type level-num 0 (first dimensions) 
+    (:texture-1d (gl:tex-sub-image-1d tex-type level-num 0 (first dimensions)
                                       pix-format pix-type pointer))
     (:texture-2d (gl:tex-sub-image-2d tex-type level-num 0 0
                                       (first dimensions) (second dimensions)
@@ -346,7 +346,7 @@
                                             pix-format pix-type pointer))
     (:texture-cube-map (gl:tex-sub-image-2d (nth face-num *cube-face-order*)
                                             level-num 0 0 (first dimensions)
-                                            (second dimensions) pix-format 
+                                            (second dimensions) pix-format
                                             pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))
 
@@ -357,7 +357,7 @@
 ;;------------------------------------------------------------
 
 (defparameter *mipmap-max-levels* 20)
-(defparameter *valid-texture-storage-options* 
+(defparameter *valid-texture-storage-options*
   '(((t nil nil 1 nil nil nil) :texture-1d)
     ((t nil nil 2 nil nil nil) :texture-2d)
     ((t nil nil 3 nil nil nil) :texture-3d)
@@ -379,12 +379,13 @@
   "Makes the keyword that names the sampler-type for the given texture-type and format"
   (utils:kwd
    (case internal-format
-     ((:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm 
-           :r3-g3-b2 :rgb4 :rgb5 :rgb8 :rgb8-snorm :rgb10 :rgb12 
-           :rgb16-snorm :rgba2 :rgba4 
+     ((:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm
+           :r3-g3-b2 :rgb4 :rgb5 :rgb8 :rgb8-snorm :rgb10 :rgb12
+           :rgb16-snorm :rgba2 :rgba4
            :rgb5-a1 :rgba8 :rgba8-snorm :rgb10-a2 :rgba12 :rgba16 :srgb8
            :srgb8-alpha8 :r16f :rg16f :rgb16f :rgba16f :r32f :rg32f :rgb32f
-           :rgba32f :r11f-g11f-b10f :rgb9-e5) "")
+           :rgba32f :r11f-g11f-b10f :rgb9-e5
+           :depth-component16 :depth-component24 :depth-component32) "")
      ((:r8i :r16i :r32i :rg8i :rg16i :rg32i :rgb8i :rgb16i :rgb32i :rgba8i
             :rgba32i :rgba16i) :i)
      ((:rg8ui :rg16ui :rg32ui :rgb8ui :rgb16ui :rgb32ui :rgba8ui :rgba16ui
@@ -396,7 +397,7 @@
      (:texture-1d-array :sampler-1d-array) (:texture-2d-array :sampler-2d-array)
      (:texture-cube-map-array :sampler-cube-array) (:texture-buffer :sampler-buffer)
      (:texture-2d-multisample :sampler-2d-ms)
-     (:texture-2d-multisample-array :sampler-2d-ms-array) 
+     (:texture-2d-multisample-array :sampler-2d-ms-array)
      (t (error "texture type not known")))))
 
 ;;------------------------------------------------------------
@@ -415,7 +416,7 @@
 
 ;;------------------------------------------------------------
 
-(defun establish-texture-type (dimensions mipmap layers cubes po2 multisample 
+(defun establish-texture-type (dimensions mipmap layers cubes po2 multisample
                                buffer rectangle)
   (declare (ignore po2))
   (cadr (assoc (list mipmap layers cubes dimensions multisample buffer rectangle)
@@ -440,23 +441,23 @@
           (dimensions initial-contents))
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
-(defun make-texture (initial-contents 
-                     &key dimensions internal-format (mipmap nil) 
+(defun make-texture (initial-contents
+                     &key dimensions internal-format (mipmap nil)
                        (layer-count 1) (cubes nil) (rectangle nil)
                        (multisample nil) (immutable t) (buffer-storage nil))
   (cond
     (multisample (error "cepl: Multisample textures are not supported"))
-    ((and initial-contents (typep initial-contents '(or list vector array)))
-     (return-from make-texture 
-       (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions))
-         (make-texture tmp :mipmap mipmap 
-                       :layer-count layer-count :cubes cubes :rectangle rectangle
-                       :multisample multisample :immutable immutable 
-                       :buffer-storage buffer-storage))))
-    (buffer-storage 
+    (buffer-storage
      (%make-buffer-texture (%texture-dimensions initial-contents dimensions)
                            internal-format mipmap layer-count cubes
                            rectangle multisample immutable initial-contents))
+    ((and initial-contents (typep initial-contents '(or list vector array)))
+     (return-from make-texture
+       (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions))
+         (make-texture tmp :mipmap mipmap
+                       :layer-count layer-count :cubes cubes :rectangle rectangle
+                       :multisample multisample :immutable immutable
+                       :buffer-storage buffer-storage))))    
     (t (%make-texture dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
                       internal-format))))
@@ -466,9 +467,9 @@
                       internal-format)
   (let* ((dimensions (%texture-dimensions initial-contents dimensions)))
     ;; check for power of two - handle or warn
-    (let* ((pixel-format (when initial-contents 
+    (let* ((pixel-format (when initial-contents
                            (pixel-format-of initial-contents)))
-           (internal-format 
+           (internal-format
             (if internal-format
                 (if (pixel-format-p internal-format)
                     (pixel-format->internal-format internal-format)
@@ -476,29 +477,29 @@
                 (when initial-contents
                   (or (pixel-format->internal-format pixel-format)
                       (error "Could not infer the internal-format")))))
-           (texture-type (establish-texture-type 
+           (texture-type (establish-texture-type
                           (if (listp dimensions) (length dimensions) 1)
-                          mipmap (> layer-count 1) cubes 
-                          (every #'po2p dimensions) multisample 
+                          mipmap (> layer-count 1) cubes
+                          (every #'po2p dimensions) multisample
                           buffer-storage rectangle)))
       (if texture-type
           (if (and cubes (not (apply #'= dimensions)))
               (error "Cube textures must be square")
-              (let ((texture (make-instance 
-                              (if (and immutable *immutable-available*) 
+              (let ((texture (make-instance
+                              (if (and immutable *immutable-available*)
                                   'immutable-texture
                                   'mutable-texture)
                               :texture-id (gen-texture)
                               :base-dimensions dimensions
                               :texture-type texture-type
-                              :mipmap-levels 
+                              :mipmap-levels
                               (if mipmap
                                   (floor (log (apply #'max dimensions) 2))
                                   1)
                               :layer-count layer-count
                               :cubes cubes
                               :internal-format internal-format
-                              :sampler-type (calc-sampler-type texture-type 
+                              :sampler-type (calc-sampler-type texture-type
                                                                internal-format))))
                 (with-texture-bound (texture)
                   (allocate-texture texture)
@@ -522,15 +523,16 @@
     (error "Buffer-backed textures cannot have mipmaps, multiple layers or be cube rectangle or multisample"))
   (unless (or (null initial-contents) (typep initial-contents 'c-array))
     (error "Invalid initial-contents for making a buffer-backed texture"))
-  (let* ((internal-format (%find-tex-internal-format 
+  (let* ((dimensions (listify dimensions))
+         (internal-format (%find-tex-internal-format
                            (if initial-contents
                                (element-type initial-contents)
                                element-format)))
          (element-type (if initial-contents
                            (element-type initial-contents)
                            (internal-format->element-type internal-format)))
-         (texture-type (establish-texture-type 
-                        (if (listp dimensions) (length dimensions) 1)
+         (texture-type (establish-texture-type
+                        (length dimensions)
                         nil nil nil (every #'po2p dimensions) nil t nil)))
     (unless (valid-internal-format-for-buffer-backed-texturep internal-format)
       (error "Invalid internal format for use with buffer-backed-texture"))
@@ -539,9 +541,9 @@
              texture-type))
     (let* ((array (if initial-contents
                       (make-gpu-array initial-contents)
-                      (make-gpu-array nil :dimensions dimensions 
+                      (make-gpu-array nil :dimensions dimensions
                                       :element-type element-type)))
-           (new-tex (make-instance 
+           (new-tex (make-instance
                      'buffer-texture
                      :texture-id (gen-texture)
                      :base-dimensions dimensions
@@ -553,8 +555,8 @@
                      :sampler-type (calc-sampler-type
                                     texture-type internal-format)
                      :backing-array array
-                     :owns-array t)))      
-      (with-texture-bound (new-tex) 
+                     :owns-array t)))
+      (with-texture-bound (new-tex)
         (%gl::tex-buffer :texture-buffer internal-format
                          (glbuffer-buffer-id (gpuarray-buffer array)))
         (setf (slot-value new-tex 'allocated) t)
@@ -562,7 +564,7 @@
 
 (defun %find-tex-internal-format (element-format)
   (if (pixel-format-p element-format)
-      (pixel-format->internal-format element-format)      
+      (pixel-format->internal-format element-format)
       (let ((pfo (pixel-format-of element-format)))
         (if pfo
             (pixel-format->internal-format pfo)
@@ -575,7 +577,7 @@
 
 (defmethod allocate-texture ((texture mutable-texture))
   (gl:tex-parameter (texture-type texture) :texture-base-level 0)
-  (gl:tex-parameter (texture-type texture) :texture-max-level 
+  (gl:tex-parameter (texture-type texture) :texture-max-level
                     (1- (slot-value texture 'mipmap-levels)))
   (setf (slot-value texture 'allocated) t))
 
@@ -585,7 +587,7 @@
       (let ((base-dimensions (base-dimensions texture))
             (texture-type (slot-value texture 'texture-type)))
         (case texture-type
-          ((:texture-1d :proxy-texture-1d) 
+          ((:texture-1d :proxy-texture-1d)
            (tex-storage-1d texture-type
                            (slot-value texture 'mipmap-levels)
                            (slot-value texture 'internal-format)
@@ -598,7 +600,7 @@
                            (slot-value texture 'internal-format)
                            (first base-dimensions)
                            (second base-dimensions)))
-          ((:texture-3d :proxy-texture-3d :texture-2d-array :texture-cube-array 
+          ((:texture-3d :proxy-texture-3d :texture-2d-array :texture-cube-array
                         :proxy-texture-cube-array :proxy-texture-2d-array)
            (tex-storage-3d texture-type
                            (slot-value texture 'mipmap-levels)
@@ -617,9 +619,9 @@
 
 ;; [TODO] gl-push taking lists
 (defmethod gl-push ((object list) (destination gpu-array-t))
-  (with-c-array (c-a (make-c-array object 
+  (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
-                                   :element-type (cgl::internal-format->pixel-format 
+                                   :element-type (cgl::internal-format->pixel-format
                                                   (cgl::internal-format destination))))
     (gl-push c-a destination)))
 
@@ -641,9 +643,9 @@
 ;; [TODO] Alignment
 ;; [TODO] Does not respect GL_PIXEL_PACK/UNPACK_BUFFER
 (defmethod gl-pull-1 ((object gpu-array-t))
-  (with-slots (layer-num level-num texture-type face-num 
+  (with-slots (layer-num level-num texture-type face-num
                          internal-format texture) object
-    (let* ((p-format (internal-format->pixel-format 
+    (let* ((p-format (internal-format->pixel-format
                       (internal-format object)))
            (c-array (make-c-array nil :dimensions (dimensions object)
                                   :element-type p-format)))
@@ -685,5 +687,3 @@
 ;; generate-mipmaps
 ;; texsubimage*d - pushing data
 ;; glPixelStore — set pixel storage modes
-
-

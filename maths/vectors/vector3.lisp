@@ -436,3 +436,8 @@
   (make-vector3 (maths:spline x (mapcar #'v-x knots))
                 (maths:spline x (mapcar #'v-y knots))
                 (maths:spline x (mapcar #'v-z knots))))
+
+;;----------------------------------------------------------------
+
+(defmacro incf (vec3 val3)
+  `(setf ,vec3 (v+ ,vec3 ,val3)))

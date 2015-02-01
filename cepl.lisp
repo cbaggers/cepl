@@ -59,7 +59,7 @@
     (if (and context window (cepl-post-context-initialize))
         (let ((context (make-instance 'cgl:gl-context :handle context)))
           (setf cgl::*gl-window* window)
-          (setf (dval cgl::*gl-context*) context)
+          (setf cgl::*gl-context* context)
           (format t "-----------------~%    CEPL-REPL    ~%-----------------")
           (unless (>= (gl:major-version) 3)
             (error "Cepl requires OpenGL 3.1 or higher"))
@@ -81,5 +81,3 @@
 
 (defun quit ()
   (sdl2:quit))
-
-

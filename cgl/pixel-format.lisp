@@ -37,7 +37,7 @@
     :rgba8ui :rgba16i :rgba16ui :rgba32i :rgba32ui :srgb8 :srgb8-alpha8 :rgba2
     :rgba4 :r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui))
 (defparameter *depth-formats*
-  '(:depth-component16 :depth-component32 :depth-component32f))
+  '(:depth-component16 :depth-component24 :depth-component32 :depth-component32f))
 (defparameter *stencil-formats*
   '(:stencil-index8))
 (defparameter *depth-stencil-formats* '())

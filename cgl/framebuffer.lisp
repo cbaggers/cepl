@@ -89,7 +89,7 @@
     ;; texture-type: GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE, etc.
     (with-slots (texture-type dimensions (mipmap-level level-num) layer-num
                               face-num internal-format texture) tex-array
-      (unless (attachment-compatible fbo internal-format)
+      (unless (attachment-compatible attachment internal-format)
         (error "attachment is not compatible with this array"))
       (let ((tex-id (slot-value texture 'texture-id)))
         (case (texture-type tex-array)

@@ -102,13 +102,14 @@
 (defpackage :vector3
   (:use :cl)
   (:nicknames :v3)
+  (:shadow :incf)
   (:export :make-vector3 :v+ :v+1 :v- :v-1 :v* :v-eq
            :v*vec :v/ :v/vec :negate :vlength-squared
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
            :vzerop :unitp :cross :face-foreward :lerp
-           :bezier :spline)
+           :bezier :spline :incf)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -161,7 +162,7 @@
            :rotation-from-axis-angle :scale
            :rotation-x :rotation-y :rotation-z
            :get-fixed-angles :get-axis-angle :m+ :m- :negate
-           :m* :mcol*vec3 :mrow*vec3 :m*scalar)
+           :m* :m*vec :mcol*vec3 :mrow*vec3 :m*scalar)
   (:import-from :base-maths :float-zero
                 :c-sqrt)
   (:import-from :vector3
@@ -224,11 +225,6 @@
            :dot :rotate :lerp :slerp :approx-slerp
            :to-matrix3 :to-matrix4))
 
-(defpackage :declarative-values
-  (:use :cl)
-  (:nicknames :dvals)
-  (:export :make-dval :dval :bind :unbind :brittle-bind :unbind-all))
-
 (defpackage :base-space
   (:use :cl :base-macros :base-vectors :base-matrices)
   (:nicknames :cspace)
@@ -236,7 +232,7 @@
   )
 
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :cepl-utils :varjo)
+  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color
@@ -365,7 +361,10 @@
            :attachment-compatible
            :fbo-detach
            ;;----------
-           :def-gl-equivalent))
+           :def-gl-equivalent
+           :make-swatch
+           :draw-swatch
+           :with-swatch-bound))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
@@ -499,7 +498,6 @@
 
 (defpackage :cepl
   (:use :cl
-        :declarative-values
         :base-vectors
         :base-matrices
         :base-maths

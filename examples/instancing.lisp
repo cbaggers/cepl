@@ -11,6 +11,7 @@
 (defparameter *tex* nil)
 (defparameter *loop-pos* 0.0)
 (defparameter *swatch* nil)
+(defparameter *pos-tex* nil)
 
 (defclass entity ()
   ((gstream :initform nil :initarg :gstream :accessor gstream)
@@ -46,7 +47,14 @@
   (setf *swatch* (cgl::make-swatch
                   :size (v! 0.3 0.3)
                   :tex-size (v! 640 480)
-                  :attachment :depth)))
+                  :attachment :depth))
+  (setf *pos-tex* (make-texture nil :dimensions 1000
+                                :internal-format :rgba32f
+                                :buffer-storage t))
+  (gl-push (loop :for i :below 1000 :collect
+              (v! (- (random 20.0) 10) (- (random 20.0) 10)
+                  (- -20 (random 10.0)) 1)) 
+           *pos-tex*))
 
 ;;--------------------------------------------------------------
 ;; drawing
@@ -55,13 +63,17 @@
     ((data g-pnt) &uniform (model-to-cam :mat4)
      (cam-to-clip :mat4) (model-space-light-pos :vec3)
      (light-intensity :vec4) (ambient-intensity :vec4)
-     (textur :sampler-2d))
-  (:vertex (setf gl-position
-                 (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0))))
-           (out model-space-pos (cgl:pos data))
-           (out vertex-normal (cgl:norm data))
-           (out diffuse-color (v! 0.4 0 0.4 0))
-           (out tex-coord (cgl:tex data)))
+     (textur :sampler-2d) (offsets :sampler-buffer))
+  (:vertex 
+   (let ((tpos (texel-fetch offsets gl-instance-id)))
+     (setf gl-position
+           (+ (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0)))
+              tpos
+              (v! 0 0 -4 7))))
+   (out model-space-pos (cgl:pos data))
+   (out vertex-normal (cgl:norm data))
+   (out diffuse-color (v! 0.4 0 0.4 0))
+   (out tex-coord (cgl:tex data)))
   (:fragment (let* ((light-dir (normalize (- model-space-light-pos
                                              model-space-pos)))
                     (cos-ang-incidence
@@ -90,24 +102,15 @@
          ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
                                       (v! (pos *light*) 1.0))))
-    (frag-point-light (gstream *wibble*)
-                      :model-space-light-pos (v:s~ cam-light-vec :xyz)
-                      :light-intensity (v! 1 1 1 0)
-                      :model-to-cam model-to-cam-matrix
-                      ;; :normal-model-to-cam normal-to-cam-matrix
-                      :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-                      :textur *tex*)
-    
-    (cgl:with-swatch-bound (*swatch*)
-      (gl:clear :color-buffer-bit :depth-buffer-bit)
+    (with-instances (100)
       (frag-point-light (gstream *wibble*)
-                      :model-space-light-pos (v:s~ cam-light-vec :xyz)
-                      :light-intensity (v! 1 1 1 0)
-                      :model-to-cam model-to-cam-matrix
-                      ;; :normal-model-to-cam normal-to-cam-matrix
-                      :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-                      :textur *tex*)))
-  (cgl:draw-swatch *swatch*)
+                        :model-space-light-pos (v:s~ cam-light-vec :xyz)
+                        :light-intensity (v! 1 1 1 0)
+                        :model-to-cam model-to-cam-matrix
+                        ;; :normal-model-to-cam normal-to-cam-matrix
+                        :ambient-intensity (v! 0.2 0.2 0.2 1.0)
+                        :textur *tex*
+                        :offsets *pos-tex*)))
   (gl:flush)
   (cgl:update-display))
 

@@ -2,7 +2,6 @@
 
 ;;{TODO} Almost everything in here could really benefit from being optimized
 
-(defparameter *gl-context* (dvals:make-dval))
 (defparameter *gl-window* nil)
 (defparameter *stage-names* '((:vertex . :vertex-shader)
                               (:fragment . :fragment-shader)

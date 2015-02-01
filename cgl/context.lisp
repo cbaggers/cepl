@@ -8,13 +8,19 @@
 
 (in-package :cgl)
 
+(defparameter *gl-context* nil)
+
 ;; This is an object which can be used to access data about the gl-context
 ;; it employs caching for any of the areas where the data won't change during 
 ;; the execution or where the changes would be known.
 
-(defclass gl-context () 
-  ((cache :initform (make-hash-table))
-   (handle :initarg :handle :reader handle)))
+(cells:defmodel gl-context ()
+  ((cache :cell nil :initform (make-hash-table))
+   (handle :cell nil :initarg :handle :reader handle)
+   (gl-initialized :cell t :initform (cells:c-in nil) :reader gl-initialized)))
+
+(defmethod initialize-instance :after ((context gl-context) &key)
+  (setf (gl-initialized context) t))
 
 (defmethod clear-gl-context-cache ((object gl-context)) 
   (clrhash (slot-value object 'cache)))
