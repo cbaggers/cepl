@@ -27,13 +27,13 @@
 (defun load-model (filename &optional hard-rotate)
   (let* ((result (first (model-parsers:load-file filename)))
          (mesh (make-instance 'cgl::mesh
-                              :primitive-type :triangles 
+                              :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
-         (mesh~1 (if hard-rotate 
+         (mesh~1 (if hard-rotate
                      (cgl::transform-mesh mesh :rotation hard-rotate)
                      mesh)))
-    (let ((gstream (make-vertex-stream 
+    (let ((gstream (make-vertex-stream
                     (cgl::vertices mesh) :index-array (cgl::indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.3 -3) :mesh mesh~1))))
@@ -66,7 +66,7 @@
            (out tex-coord (cgl:tex data)))
   (:fragment (let* ((light-dir (normalize (- model-space-light-pos
                                              model-space-pos)))
-                    (t-norm (- (* (s~ (texture norm-map tex-coord) :xyz) )
+                    (t-norm (- (* (s~ (texture norm-map tex-coord) :xyz) 1.4)
                                (v! 1 1 1)))
                     (cos-ang-incidence
                      (clamp (dot (normalize (* (+ vertex-normal t-norm) 0.5)) light-dir)
@@ -100,16 +100,15 @@
                       :norm-map *normal-map*
                       :ambient-intensity (v! 0.2 0.2 0.2 1.0)
                       :textur *tex*)
-    
     (cgl:with-swatch-bound (*swatch*)
       (gl:clear :color-buffer-bit :depth-buffer-bit)
       (frag-point-light (gstream *wibble*)
-                      :model-space-light-pos (v:s~ cam-light-vec :xyz)
-                      :light-intensity (v! 1 1 1 0)
-                      :model-to-cam model-to-cam-matrix
-                      ;; :normal-model-to-cam normal-to-cam-matrix
-                      :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-                      :textur *tex*)))
+                        :model-space-light-pos (v:s~ cam-light-vec :xyz)
+                        :light-intensity (v! 1 1 1 0)
+                        :model-to-cam model-to-cam-matrix
+                        ;; :normal-model-to-cam normal-to-cam-matrix
+                        :ambient-intensity (v! 0.2 0.2 0.2 1.0)
+                        :textur *tex*)))
   (cgl:draw-swatch *swatch*)
   (gl:flush)
   (cgl:update-display))
@@ -118,11 +117,11 @@
 ;; controls
 
 (evt:observe (evt.sdl::*mouse*)
-  (when (typep e 'evt.sdl:mouse-motion)
-    (let ((d (evt.sdl:delta e)))
-      (setf (rot *wibble*) (v:+ (rot *wibble*) (v! (/ (v:y d) -100.0)
-                                                   (/ (v:x d) -100.0)
-                                                   0.0))))))
+  (when (eq (evt.sdl::button-state self :left) :down)
+    (let ((d (evt.sdl:pos e)))
+      (setf (rot *wibble*) (v! (/ (v:y d) 100.0)
+                               (/ (v:x d) -100.0)
+                               0.0)))))
 
 ;;--------------------------------------------------------------
 ;; window

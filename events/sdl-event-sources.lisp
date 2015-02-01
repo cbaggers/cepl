@@ -70,9 +70,29 @@
 (def-event-node mouse (:parent all-events) (mouse0-eventp (event :parent))
   (pos :cell t :initform
        (c? (when (typep (event self) 'mouse-motion)
-             (pos (event self))))))
+             (pos (event self)))))
+  (state-tracker 
+   :cell t :initform (c? (when (typep (event self) 'mouse-button)
+                           (setf (gethash (button (event self))
+                                          (slot-value self 'button-state))
+                                 (state (event self))))))
+  (button-state :cell nil :initform (make-hash-table)))
 
-(def-event-node keyboard (:parent all-events) (typep (event :parent) 'key))
+(defmethod button-state ((target mouse) button-id)
+  (gethash button-id (slot-value target 'button-state) 
+           :up))
+
+(def-event-node keyboard (:parent all-events) (typep (event :parent) 'key)
+  (state-tracker 
+   :cell t :initform (c? (when (typep (event self) 'key)
+                           (setf (gethash (key (event self))
+                                          (slot-value self 'key-state))
+                                 (state (event self))))))
+  (key-state :cell nil :initform (make-hash-table)))
+
+(defmethod key-state ((target keyboard) key)
+  (gethash key (slot-value target 'button-state) 
+           :up))
 
 (def-event-node window (:parent all-events) (typep (event :parent) 'win))
 
@@ -97,17 +117,16 @@
 
 (defmacro case-events ((event &key (method :poll) (timeout nil))
                        &body event-handlers)
-  (labels ((my-expand-handler (event type params forms)
-             (if (listp type)
-                 (sdl2::expand-handler event (first type) params forms)
-                 (sdl2::expand-handler event type params forms))))
-    `(let (,(when (symbolp event) `(,event (sdl2:new-event))))
-       (loop :until (= 0  (sdl2:next-event ,event ,method ,timeout)) :do
-          (case (sdl2::get-event-type ,event)
-            ,@(loop :for (type params . forms) :in event-handlers :collect
-                 (my-expand-handler event type params forms) :into results
-                 :finally (return (remove nil results)))))
-       (sdl2:free-event ,event))))
+  `(let (,(when (symbolp event) `(,event (sdl2:new-event))))
+     (loop :until (= 0  (sdl2:next-event ,event ,method ,timeout)) :do
+        (case (sdl2::get-event-type ,event)
+          ,@(loop :for (type params . forms) :in event-handlers               
+               :append (let ((type (listify type)))
+                         (loop :for typ :in type :collect
+                            (sdl2::expand-handler event typ params forms)))
+               :into results
+               :finally (return (remove nil results)))))
+     (sdl2:free-event ,event)))
 
 (defun collect-sdl-events ()
   (let ((results nil))
@@ -174,11 +193,11 @@
 
 (defun key-type-lookup (num) (aref #(:keydown :keyup) (cl:- num 768)))
 
-(defun key-state-lookup (num) (aref #(:released :pressed) num))
+(defun key-state-lookup (num) (aref #(:up :down) num))
 
-(defun mouse-button-lookup (num) (aref #(:left :middle :right) num))
+(defun mouse-button-lookup (num) (aref #(:0 :left :middle :right) num))
 
-(defun mouse-button-state-lookup (num) (aref #(:pressed :released) num))
+(defun mouse-button-state-lookup (num) (aref #(:up :down) num))
 
 (defun window-action-lookup (num)
   (aref *window-events* num))

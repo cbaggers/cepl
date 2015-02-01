@@ -44,6 +44,7 @@
                      ,(if (listp cell-arg) (second cell-arg) t))))))
 
 (defmacro observe ((source &optional (event-var-name (symb 'e))) &body body)
-  `(defobserver evt:event ((%node (eql ,source)))
-     (let ((,event-var-name (event %node)))
-       ,@body)))
+  (let ((gself (symb :self)))
+    `(defobserver evt:event ((,gself (eql ,source)))
+       (let ((,event-var-name (event ,gself)))
+         ,@body))))
