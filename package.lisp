@@ -352,15 +352,20 @@
            :clear
            :clear-depth
            :flush
-           :viewport
+           :viewport   
+           ;;----------
+           :gmap
            ;;----------
            :make-fbo
            :make-fbos
            :with-bind-fbo
            :fbo-attach
+           :fbo-detach
+           :attachment
+           :with-fbo-slots
            :attachment-compatible
            :fbo-detach
-           ;;----------
+           ;;----------           
            :def-gl-equivalent
            :make-swatch
            :draw-swatch
@@ -542,9 +547,12 @@
                 :g-pntc
                 :texref
                 ;;---
+                :gmap
+                ;;---
                 :make-fbo
                 :make-fbos
                 :with-bind-fbo
+                :with-fbo-slots
                 :fbo-attach
                 :attachment-compatible
                 :fbo-detach
@@ -593,9 +601,12 @@
            :g-pntc
            :texref
            ;;---
+           :gmap
+           ;;---
            :make-fbo
            :make-fbos
            :with-bind-fbo
+           :with-fbo-slots
            :fbo-attach
            :attachment-compatible
            :fbo-detach

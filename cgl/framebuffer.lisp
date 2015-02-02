@@ -11,7 +11,76 @@
 
 (defstruct (fbo (:constructor %make-fbo)
                 (:conc-name %fbo-))
-  id)
+  (id -1 :type fixnum)
+  (attachment-color-0 nil :type (or null gpu-array-t))
+  (attachment-color-1 nil :type (or null gpu-array-t))
+  (attachment-color-2 nil :type (or null gpu-array-t))
+  (attachment-color-3 nil :type (or null gpu-array-t))
+  (attachment-color-4 nil :type (or null gpu-array-t))
+  (attachment-color-5 nil :type (or null gpu-array-t))
+  (attachment-color-6 nil :type (or null gpu-array-t))
+  (attachment-color-7 nil :type (or null gpu-array-t))
+  (attachment-color-8 nil :type (or null gpu-array-t))
+  (attachment-color-9 nil :type (or null gpu-array-t))
+  (attachment-depth nil :type (or null gpu-array-t)))
+
+;;--------------------------------------------------------------
+;; Macro to write the helper func and compiler macro
+
+(defmacro case-attachment (var keyform col-count 
+                           &optional (for-macro nil) (setf nil))
+  (assert (not (and for-macro setf)))
+  `(case ,keyform
+     ,@(loop :for i :below col-count :collect
+          (let* ((s (symb-package :cgl :%fbo-attachment-color- i) )
+                 (tmp (if for-macro
+                          (cons 'list `(',s ,var)) 
+                          (if setf
+                              `(setf (,s ,var) value)
+                              `(,s ,var)))))
+            `((,(kwd :attachment-color i)
+                ,(kwd :attachment-color- i)
+                ,(kwd :color- i)
+                ,(kwd :c i)
+                ,(kwd :c- i))
+              ,tmp)))
+     ((:attachment-depth :depth :d) 
+      ,(if for-macro
+           `(list '%fbo-attachment-depth ,var)
+           (if setf
+               `(setf (%fbo-attachment-depth ,var) value)
+               `(%fbo-attachment-depth ,var))))))
+
+(define-compiler-macro attachment (&whole whole fbo attachment-name)
+  (if (keywordp attachment-name)
+      (case-attachment fbo attachment-name 10 t)
+      whole))
+
+(defun attachment (fbo attachment-name)
+  (case-attachment fbo attachment-name 10))
+
+(defun (setf attachment) (value fbo attachment-name)
+  (case-attachment fbo attachment-name 10 nil t))
+
+;;--------------------------------------------------------------
+
+(defmacro with-fbo-slots (attachment-bindings expression &body body)
+  (let ((expr (gensym "expression")))
+    `(let* ((,expr ,expression)
+            ,@(loop :for var-form :in attachment-bindings :collect
+                 (if (listp var-form)
+                     `(,(second var-form) (attachment ,expr 
+                                                      ,(kwd (first var-form))))
+                     `(,var-form (attachment ,expr ,(kwd var-form))))))
+       ,@body)))
+
+;; (with-fbo-slots (c0 d)
+;;     (with-bind-fbo (fbo :framebuffer)
+;;       (gmap #'prog-1 stream :tex tx))
+;;   (print c0)
+;;   (print d))
+
+;;--------------------------------------------------------------
 
 (defun make-fbo (&key initial-attachment)
   (let ((fbo (%make-fbo :id (first (gl:gen-framebuffers 1)))))
@@ -48,10 +117,13 @@
 (defun %unbind-fbo ()
   (gl:bind-framebuffer :framebuffer 0))
 
-(defmacro with-bind-fbo ((fbo target &optional (unbind t)) &body body)
-  `(progn (%bind-fbo ,fbo ,target)
-          ,@body
-          ,(when unbind `(%unbind-fbo))))
+
+;; NOTE: The with-bind-fbo macro lives in the gmap.lisp file, this is because
+;;       of the crazy macro relationship they have for performance reasons
+;;
+;; (defmacro with-bind-fbo ((fbo target &optional (unbind t)) &body body)
+;;   ... Sorry mario, the macro you are looking for is in another file ...
+;;   )
 
 ;; Attaching Images
 
@@ -95,12 +167,16 @@
         (case (texture-type tex-array)
           ;; A 1D texture contains 2D images that have the vertical height of 1.
           ;; Each individual image can be uniquely identified by a mipmap level.
-          (:texture-1d (gl:framebuffer-texture-1d target attachment :texture-1d
-                                                  tex-id mipmap-level))
+          (:texture-1d (progn
+                         (setf (attachment fbo attachment) tex-array)
+                         (gl:framebuffer-texture-1d target attachment :texture-1d
+                                                    tex-id mipmap-level)))
           ;; A 2D texture contains 2D images. Each individual image can be
           ;; uniquely identified by a mipmap level.
-          (:texture-2d (gl:framebuffer-texture-2d target attachment :texture-2d
-                                                  tex-id mipmap-level))
+          (:texture-2d (progn
+                         (setf (attachment fbo attachment) tex-array)
+                         (gl:framebuffer-texture-2d target attachment :texture-2d
+                                                    tex-id mipmap-level)))
           ;; Each mipmap level of a 3D texture is considered a set of 2D images,
           ;; with the number of these being the extent of the Z coordinate.
           ;; Each integer value for the depth of a 3D texture mipmap level is a
@@ -108,8 +184,10 @@
           ;; layer and a mipmap level.
           ;; A single mipmap level of a 3D texture is a layered image, where the
           ;; number of layers is the depth of that particular mipmap level.
-          (:texture-3d (%gl:framebuffer-texture-layer target attachment tex-id
-                                                      mipmap-level layer-num))
+          (:texture-3d (progn
+                         (setf (attachment fbo attachment) tex-array)
+                         (%gl:framebuffer-texture-layer target attachment tex-id
+                                                        mipmap-level layer-num)))
           ;; Each mipmap level of a 1D Array Textures contains a number of images,
           ;; equal to the count images in the array. While these images are
           ;; technically one-dimensional, they are promoted to 2D status for FBO
@@ -118,8 +196,10 @@
           ;; (the array index) and a mipmap level.
           ;; A single mipmap level of a 1D Array Texture is a layered image, where
           ;; the number of layers is the array size.
-          (:texture-1d-array (%gl:framebuffer-texture-layer
-                              target attachment tex-id mipmap-level layer-num))
+          (:texture-1d-array (progn
+                               (setf (attachment fbo attachment) tex-array)
+                               (%gl:framebuffer-texture-layer
+                                target attachment tex-id mipmap-level layer-num)))
           ;; 2D Array textures are much like 3D textures, except instead of the
           ;; number of Z slices, it is the array count. Each 2D image in an array
           ;; texture can be uniquely identified by a layer (the array index) and a
@@ -127,12 +207,17 @@
           ;; going down the mipmap hierarchy.
           ;; A single mipmap level of a 2D Array Texture is a layered image, where
           ;; the number of layers is the array size.
-          (:texture-2d-array (%gl:framebuffer-texture-layer
-                              target attachment tex-id mipmap-level layer-num))
+          (:texture-2d-array (progn                               
+                               (setf (attachment fbo attachment) tex-array)
+                               (%gl:framebuffer-texture-layer
+                                target attachment tex-id mipmap-level layer-num)))
           ;; A Rectangle Texture has a single 2D image, and thus is identified by
           ;; mipmap level 0.
-          (:texture-rectangle (gl:framebuffer-texture-2d target attachment :texture-2d
-                                                         tex-id 0))
+          (:texture-rectangle
+           (progn
+             (setf (attachment fbo attachment) tex-array)
+             (gl:framebuffer-texture-2d target attachment :texture-2d
+                                        tex-id 0)))
           ;; When attaching a cubemap, you must use the Texture2D function, and
           ;; the textarget must be one of the 6 targets for cubemap binding.
           ;; Cubemaps contain 6 targets, each of which is a 2D image. Thus, each
@@ -148,12 +233,15 @@
           ;; 3 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
           ;; 4 	GL_TEXTURE_CUBE_MAP_POSITIVE_Z
           ;; 5 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-          (:texture-cube-map (gl:framebuffer-texture-2d
-                              target attachment '&&&CUBEMAP-TARGET&&&
-                              tex-id mipmap-level))
+          (:texture-cube-map
+           (progn
+             (setf (attachment fbo attachment) tex-array)
+             (gl:framebuffer-texture-2d
+              target attachment '&&&CUBEMAP-TARGET&&&
+              tex-id mipmap-level)))
           ;; Buffer Textures work like 1D texture, only they have a single image,
           ;; identified by mipmap level 0.
-          (:texture-buffer ())
+          (:texture-buffer (error "attaching to buffer textures has not been implmented yet"))
           ;; Cubemap array textures work like 2D array textures, only with 6 times
           ;; the number of images. Thus a 2D image in the array is identified by
           ;; the array layer (technically layer-face) and a mipmap level.
@@ -161,7 +249,7 @@
           ;; layer-face index. Thus it is the face within a layer, ordered as
           ;; above. So if you want to render to the 3rd layer, +z face, you would
           ;; set gl_Layer to (2 * 6) + 4, or 16.
-          (:texture-cube-map-array ()))))))
+          (:texture-cube-map-array (error "attaching to cube-map-array textures has not been implmented yet")))))))
 
 (defun attachment-compatible (attachment internal-format)
   (case attachment
@@ -170,8 +258,9 @@
     (:depth-stencil-attachment (depth-stencil-formatp internal-format))
     (otherwise (color-renderable-formatp internal-format))))
 
-(defun fbo-detach (attachment)
+(defun fbo-detach (fbo attachment)
   ;; The texture argument is the texture object name you want to attach from.
   ;; If you pass zero as texture, this has the effect of clearing the attachment
   ;; for this attachment, regardless of what kind of image was attached there.
+  (setf (attachment fbo attachment) nil)
   (%gl:framebuffer-texture-layer :draw-framebuffer attachment 0 0 0))

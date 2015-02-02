@@ -44,6 +44,7 @@
                (:file "cgl/misc")
                (:file "cgl/textures")
                (:file "cgl/types")
+               (:file "cgl/gmap")
                (:file "cgl/framebuffer")
                (:file "cgl/default-data")
                (:file "cgl/swatch")

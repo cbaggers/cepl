@@ -1,3 +1,4 @@
+(in-package :cepl)
 ;; This is simply to get a colored triangle up on the screen
 
 (defparameter *array* nil)
@@ -12,7 +13,7 @@
   (evt.sdl:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit)
-  (prog-1 *stream*)
+  (gmap #'prog-1 *stream*)
   (gl:flush)
   (cgl:update-display))
 

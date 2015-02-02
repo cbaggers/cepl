@@ -78,14 +78,14 @@
   (with-slots (pos size texture attachment) swatch
     (gl:disable :depth-test)
     (if (eq attachment :depth-attachment)
-        (swatch-depth-renderer *quad-stream*
-                               :tex texture
-                               :offset pos
-                               :scale size)
-        (swatch-renderer *quad-stream*
-                         :tex texture
-                         :offset pos
-                         :scale size))
+        (gmap #'swatch-depth-renderer *quad-stream*
+              :tex texture
+              :offset pos
+              :scale size)
+        (gmap #'swatch-renderer *quad-stream*
+              :tex texture
+              :offset pos
+              :scale size))
     (gl:enable :depth-test)
     t))
 

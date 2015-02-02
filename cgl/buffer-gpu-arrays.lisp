@@ -125,9 +125,9 @@
    Access style is optional but if you are comfortable with 
    opengl, and know what type of usage pattern thsi array will
    have, you can set this to any of the following:
-   (:stream-draw​ :stream-read​ :stream-copy​ :static-draw​ 
-    :static-read​ :static-copy​ :dynamic-draw​ :dynamic-read
-   ​ :dynamic-copy)
+   (:stream-draw :stream-read :stream-copy :static-draw 
+    :static-read :static-copy :dynamic-draw :dynamic-read
+    :dynamic-copy)
 
    Finally you can provide an existing buffer if you want to
    use it rather than creating a new buffer. Note that all 

@@ -91,7 +91,7 @@
   (key-state :cell nil :initform (make-hash-table)))
 
 (defmethod key-state ((target keyboard) key)
-  (gethash key (slot-value target 'button-state) 
+  (gethash key (slot-value target 'key-state) 
            :up))
 
 (def-event-node window (:parent all-events) (typep (event :parent) 'win))

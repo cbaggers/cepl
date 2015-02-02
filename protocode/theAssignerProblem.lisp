@@ -28,7 +28,7 @@
 ;; working release again.
 
 ;; From glwiki: The maximum number of available locations within a single
-;;              program is GL_MAX_UNIFORM_LOCATIONS​, which will be at least
+;;              program is GL_MAX_UNIFORM_LOCATIONS, which will be at least
 ;;              1024 locations.
 
 ;; Stupid Allocator Generator

@@ -110,8 +110,8 @@
 ;; drawing
 
 (defun draw-emmiter (em)
-  (particle-renderer (particle-vert-stream em) :vpos (particle-pos-tex em)
-                     :tex (texture em)))
+  (gmap #'particle-renderer (particle-vert-stream em)
+        :vpos (particle-pos-tex em) :tex (texture em)))
 
 (defpipeline particle-renderer ((data :vec4) &uniform (vpos :sampler-buffer)
                                 (tex :sampler-2d))

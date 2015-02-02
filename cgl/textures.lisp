@@ -8,6 +8,12 @@
 ;;
 (in-package :cepl-gl)
 
+;;{TODO} While I see why I started abstracting this using classes
+;;       We cannot extend core functionality of gl, thus uses 
+;;       extensible constructs is optimizing for a case that can
+;;       never happen. We should go for structs, ubyte and macros
+;;       to hide the ugly, optimize for helping the compiler
+
 ;;------------------------------------------------------------
 (defparameter *immutable-available* t)
 (defparameter *cube-face-order* '(:texture-cube-map-positive-x
@@ -15,7 +21,7 @@
                                   :texture-cube-map-positive-y
                                   :texture-cube-map-negative-y
                                   :texture-cube-map-positive-z
-                                  :texture-cube-map-negative-z​))
+                                  :texture-cube-map-negative-z))
 
 (defclass %gltexture ()
   ((id :type (unsigned-byte 16))

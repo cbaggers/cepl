@@ -66,7 +66,7 @@
            (out tex-coord (cgl:tex data)))
   (:fragment (let* ((light-dir (normalize (- model-space-light-pos
                                              model-space-pos)))
-                    (t-norm (- (* (s~ (texture norm-map tex-coord) :xyz) 1.4)
+                    (t-norm (- (* (s~ (texture norm-map tex-coord) :xyz) 2.1)
                                (v! 1 1 1)))
                     (cos-ang-incidence
                      (clamp (dot (normalize (* (+ vertex-normal t-norm) 0.5)) light-dir)
@@ -93,22 +93,22 @@
          ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
                                       (v! (pos *light*) 1.0))))
-    (frag-point-light (gstream *wibble*)
-                      :model-space-light-pos (v:s~ cam-light-vec :xyz)
-                      :light-intensity (v! 1 1 1 0)
-                      :model-to-cam model-to-cam-matrix
-                      :norm-map *normal-map*
-                      :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-                      :textur *tex*)
+    (gmap #'frag-point-light (gstream *wibble*)
+          :model-space-light-pos (v:s~ cam-light-vec :xyz)
+          :light-intensity (v! 1 1 1 0)
+          :model-to-cam model-to-cam-matrix
+          :norm-map *normal-map*
+          :ambient-intensity (v! 0.2 0.2 0.2 1.0)
+          :textur *tex*)
     (cgl:with-swatch-bound (*swatch*)
       (gl:clear :color-buffer-bit :depth-buffer-bit)
-      (frag-point-light (gstream *wibble*)
-                        :model-space-light-pos (v:s~ cam-light-vec :xyz)
-                        :light-intensity (v! 1 1 1 0)
-                        :model-to-cam model-to-cam-matrix
-                        ;; :normal-model-to-cam normal-to-cam-matrix
-                        :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-                        :textur *tex*)))
+      (gmap #'frag-point-light (gstream *wibble*)
+            :model-space-light-pos (v:s~ cam-light-vec :xyz)
+            :light-intensity (v! 1 1 1 0)
+            :model-to-cam model-to-cam-matrix
+            ;; :normal-model-to-cam normal-to-cam-matrix
+            :ambient-intensity (v! 0.2 0.2 0.2 1.0)
+            :textur *tex*)))
   (cgl:draw-swatch *swatch*)
   (gl:flush)
   (cgl:update-display))
@@ -117,11 +117,21 @@
 ;; controls
 
 (evt:observe (evt.sdl::*mouse*)
-  (when (eq (evt.sdl::button-state self :left) :down)
-    (let ((d (evt.sdl:pos e)))
-      (setf (rot *wibble*) (v! (/ (v:y d) 100.0)
-                               (/ (v:x d) -100.0)
-                               0.0)))))
+  (when (and (typep e 'evt.sdl:mouse-motion)
+             (eq (evt.sdl::button-state self :left) :down))    
+    (let ((d (evt.sdl:delta e)))
+      (cond
+        ((eq (evt.sdl::key-state evt.sdl::*keyboard* :lshift) :down)
+         (v3:incf (pos *wibble*)
+                  (v! 0 0 (/ (v:y d) 100.0))))
+        ((eq (evt.sdl::key-state evt.sdl::*keyboard* :lctrl) :down)
+         (v3:incf (pos *wibble*)
+                  (v! 0 (/ (v:y d) -100.0) 0)))
+        (t
+         (v3:incf (rot *wibble*)
+                  (v! (/ (v:y d) -100.0)
+                      (/ (v:x d) -100.0)
+                      0.0)))))))
 
 ;;--------------------------------------------------------------
 ;; window

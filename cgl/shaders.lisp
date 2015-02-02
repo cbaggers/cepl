@@ -122,6 +122,7 @@
       (let* ((uniforms (expand-equivalent-types unexpanded-uniforms))
              (init-func-name (symb-package :cgl '%%- name))
              (invalidate-func-name (symb-package :cgl '££- name))
+             (dispatch-func-name (symb-package :cgl '$$-dispatch- name))
              (uniform-details (mapcar #'make-arg-assigners uniforms))
              (varjo-args
               `(,@in-args
@@ -138,8 +139,10 @@
            ,(gen-pipeline-invalidate invalidate-func-name)
            ,(gen-pipeline-init init-func-name varjo-args name 
                                invalidate-func-name (copy-tree uniform-details) stages)
-           ,(gen-pipeline-func init-func-name name context
-                               unexpanded-uniforms (copy-tree uniform-details)))))))
+           ,(gen-dispatch-func dispatch-func-name init-func-name context
+                               unexpanded-uniforms (copy-tree uniform-details))
+           ,(gen-dummy-func init-func-name name unexpanded-uniforms
+                            (copy-tree uniform-details)))))))
 
 (defun gen-pipeline-invalidate (invalidate-func-name)
   `(defun ,invalidate-func-name () (setf program-id nil)))
@@ -183,12 +186,25 @@
          ,@(loop for p in post-compile append p)
          prog-id))))
 
-(defun gen-pipeline-func (init-func-name name context unexpanded-uniforms
-                          uniform-details)
+(defun gen-dummy-func (init-func-name name unexpanded-uniforms uniform-details)
+  (let ((uniform-names (mapcar #'first unexpanded-uniforms))
+        (u-uploads (mapcar #'second uniform-details)))
+    `(defun ,name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
+       (declare (ignorable ,@uniform-names))
+       (unless program-id (setf program-id (,init-func-name)))
+       (use-program program-id)
+       ,@u-uploads
+       (when stream
+         (error "Pipelines do not take a stream directly, the stream must be gmap'd over the pipeline"))
+       (use-program 0)
+       stream)))
+
+(defun gen-dispatch-func (dispatch-func-name init-func-name context
+                          unexpanded-uniforms uniform-details)
   (let ((uniform-names (mapcar #'first unexpanded-uniforms))
         (prim-type (varjo::get-primitive-type-from-context context))
         (u-uploads (mapcar #'second uniform-details)))
-    `(defun ,name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
+    `(defun ,dispatch-func-name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
        (declare (ignorable ,@uniform-names))
        (unless program-id (setf program-id (,init-func-name)))
        (use-program program-id)
