@@ -35,8 +35,8 @@
 (defun scene-meshes->gpu (scene)
   (mapcar #'mesh-list->gpu (meshes->lists scene)))
 
+(defun mesh->gpu (mesh)
+  (mesh-list->gpu (mesh->lists mesh)))
+
 (defun load-file (file-path)
   (scene-meshes->gpu (classimp:import-into-lisp file-path)))
-
-
-

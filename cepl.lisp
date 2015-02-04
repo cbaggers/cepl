@@ -13,8 +13,6 @@
 
 (in-package :cepl)
 
-(defparameter +default-resolution+ (v! 640 480))
-
 #+sb-thread
 (defmacro on-main (&body b)
     `(let ((thread (first (last (sb-thread:list-all-threads)))))
@@ -43,6 +41,7 @@
 
 (defun repl (&optional (width 640) (height 480))
   (in-package :cepl)  
+  (setf cgl::+default-resolution+ (list width height))
   (if (sdl2:init)
       (progn #+(and ccl darwin)
              (sdl2:in-main-thread ()

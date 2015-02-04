@@ -13,12 +13,6 @@
 
 (in-package :matrix3)
 
-;; Code adapted from Ogre which in turn was adapted 
-;; from Wild Magic 0.2 Matrix math (free source code 
-;; http://www.geometrictools.com/) and also from Nklien's
-;; excelent few posts on optimizing common lisp
-;; http://nklein.com/tags/optimization/
-
 ;; The coordinate system is assumed to be right-handed.
 ;; Coordinate axis rotation matrices are of the form
 ;;   RX =    1       0       0

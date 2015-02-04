@@ -2,7 +2,7 @@
 
 (defparameter *entities* nil)
 (defparameter *camera* nil)
-(defparameter *resolution* (v! 640 480))
+(defparameter *resolution* cgl:+default-resolution+)
 
 (defglstruct vert-data ()
   (position :vec3)
@@ -20,7 +20,7 @@
                                       (v! (cgl:pos vert) 1.0)))))
            (out (interp-color :smooth) (cgl:col vert)))
   (:fragment (out output-color interp-color))
-  (:post-compile (reshape (v! 640 480))))
+  (:post-compile (reshape cgl:+default-resolution+)))
 
 (defclass entity ()
   ((e-stream :initform nil :initarg :e-stream :accessor e-stream)
@@ -59,7 +59,7 @@
                                    (m4:rotation-from-euler (rot entity))
                                    (m4:scale (scale entity))))))
     (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
-    (prog-2 (e-stream entity) :model-to-world m2w)))
+    (gmap #'prog-2 (e-stream entity) :model-to-world m2w)))
 
 (defun step-demo ()
   (evt.sdl:pump-events)
@@ -74,12 +74,12 @@
 (defun reshape (dimensions)
   (setf (frame-size *camera*) dimensions)
   (prog-2 nil :cam *camera*)
-  (cgl:viewport 0 0 (v:x dimensions) (v:y dimensions)))
+  (apply #'gl:viewport 0 0 dimensions))
 
 (let ((running nil))
   (defun run-demo ()
     (init)
-    (reshape (v! 640 480))
+    (reshape cgl:+default-resolution+)
     (setf running t)
     (loop :while running :do (continuable (step-demo))))
 

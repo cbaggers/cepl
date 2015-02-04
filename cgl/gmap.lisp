@@ -41,7 +41,7 @@
 ;; Q: is this moot because of having to set %current-fbo
 ;; A: I hope not, I think given correct settings the compiler may be able 
 ;;    to optimize away this let as nothing uses it.
-(defmacro with-bind-fbo ((fbo target &optional (unbind t)) &body body)
+(defmacro with-bind-fbo ((fbo &optional (target :framebuffer) (unbind t)) &body body)
   (labels ((inject-gmap-form (fbo-symbol)
              (subst fbo-symbol 'a
                     ``(%gmap a ,pipeline-func ,stream ,uniforms))))

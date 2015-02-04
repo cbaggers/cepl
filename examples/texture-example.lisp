@@ -34,7 +34,7 @@
   (defun run-demo ()
     (setf running t)
     (cgl:clear-color 0.0 0.0 0.0 0.0)
-    (cgl:viewport 0 0 640 480)
+    (apply #'gl:viewport 0 0 cgl:+default-resolution+)
     (let* ((img-data (loop :for i :below 64 :collect
                         (loop :for j :below 64 :collect (random 254)))))
       (setf *vert-gpu* 

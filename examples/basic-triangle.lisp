@@ -22,7 +22,7 @@
     (setf running t)
     (gl:front-face :ccw)
     (cgl:clear-color 0.0 0.0 0.0 0.0)
-    (gl:viewport 0 0 640 480)
+    (apply #'gl:viewport 0 0 cgl:+default-resolution+)
     (setf *array* (make-gpu-array
                    (list (list (v!  0.5 -0.366 0.0) (v! 0.0 1.0 0.0 1.0))
                          (list (v!  0.0    0.5 0.0) (v! 1.0 0.0 0.0 1.0))

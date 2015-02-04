@@ -1,11 +1,11 @@
-(in-package :cepl)
+(in-package :cgl)
 (named-readtables:in-readtable fn_::fn_lambda)
 
 (defparameter *gravity* (v! 0 -10 0))
 
 (defstruct particle
   (life 0.0 :type single-float)
-  (pos (v! 0 0 0) :type (simple-array single-float (3)))
+  (pos (v! 0 -100 0) :type (simple-array single-float (3)))
   (speed (v! 0 0 0) :type (simple-array single-float (3)) ))
 
 (defclass emitter ()
@@ -90,7 +90,7 @@
   (v3:incf (particle-pos p) (v3:v* (particle-speed p) (float time/ms))))
 
 (defun emit-particle (em)
-  (let ((unused (find-index-of-unused em)))
+  (let ((unused (find-dead-particle em)))
     (when unused (make-particle-active unused em))))
 
 (defun find-dead-particle (em)
@@ -109,15 +109,22 @@
 ;;------------------------------------------------------------
 ;; drawing
 
-(defun draw-emmiter (em)
-  (gmap #'particle-renderer (particle-vert-stream em)
-        :vpos (particle-pos-tex em) :tex (texture em)))
+(defun draw-emmiter (em camera)
+  (let* ((world-to-cam-matrix (world->cam camera))
+         (model-to-cam-matrix (m4:m* world-to-cam-matrix
+                                     (m4:translation (pos em)))))
+    (gmap #'particle-renderer (particle-vert-stream em)
+          :vpos (particle-pos-tex em) :tex (texture em)
+          :m2c model-to-cam-matrix :cam-to-clip (cam->clip *camera*))))
 
 (defpipeline particle-renderer ((data :vec4) &uniform (vpos :sampler-buffer)
-                                (tex :sampler-2d))
+                                (tex :sampler-2d) (m2c :mat4) (cam-to-clip :mat4))
   (:vertex (let ((p-id (int (floor (/ gl-vertex-id 6)))))
              (out tc (s~ data :xy))
              (setf gl-position (+ data
-                                  (v! (s~ (texel-fetch vpos p-id) :xy) 1.8 5)))))
+                                  (* cam-to-clip
+                                     m2c 
+                                     (v! (s~ (texel-fetch vpos p-id) :xyz)
+                                         1))))))
   (:fragment (let ((fcol (texture tex tc)))
-               (out output-color (v! (s~ fcol :xyz) (* (z fcol) 0.08))))))
+               (out output-color (v! (s~ fcol :xyz) (* (z fcol) 0.18))))))

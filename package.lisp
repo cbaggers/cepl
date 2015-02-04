@@ -246,13 +246,13 @@
                 :clear
                 :clear-depth
                 :flush
-                :viewport
                 :delete-shader)
   (:import-from :utils
                 :deferror
                 :print-mem)
   (:shadow :float)
   (:export :gl-context
+           :+default-resolution+
            :clear-gl-context-cache
            :gl-free
            :update-display
@@ -352,7 +352,6 @@
            :clear
            :clear-depth
            :flush
-           :viewport   
            ;;----------
            :gmap
            ;;----------
@@ -410,6 +409,7 @@
            :meshes->lists
            :mesh->lists
            :mesh-list->gpu
+           :mesh->gpu
            :scene-meshes->gpu)
   (:import-from :vector2
                 :make-vector2)
@@ -493,7 +493,11 @@
            :source-id
            :state
            :timestamp
-           :vec))
+           :vec
+           :data
+           
+           :button-state
+           :key-state))
 
 (defpackage :live
   (:use :cl :cepl-utils)
@@ -563,8 +567,7 @@
                 :print-mem)
   (:import-from :cepl.events.sdl
                 :case-events)
-  (:export :+default-resolution+
-           :cepl-gl
+  (:export :cepl-gl
            :cls
            :pixel-format
            :pixel-format-of

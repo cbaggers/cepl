@@ -40,13 +40,13 @@
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera +default-resolution+))
-  (reshape +default-resolution+)
+  (setf *camera* (make-camera cgl:+default-resolution+))
+  (reshape cgl:+default-resolution+)
   (setf *wibble* (load-model "./bird/bird.3ds" (v! pi 0 0)))
   (setf *tex* (dirt:load-image-to-texture "./bird/char_bird_col.png"))
   (setf *swatch* (cgl::make-swatch
                   :size (v! 0.3 0.3)
-                  :tex-size (v! 640 480)
+                  :tex-size cgl:+default-resolution+
                   :attachment :depth))
   (setf *pos-tex* (make-texture nil :dimensions 1000
                                 :internal-format :rgba32f
@@ -84,7 +84,7 @@
                (out output-color (+ (* t-col light-intensity
                                        cos-ang-incidence)
                                     (* t-col ambient-intensity)))))
-  (:post-compile (reshape (v! 640 480))))
+  (:post-compile (reshape cgl:+default-resolution+)))
 
 
 
@@ -102,15 +102,15 @@
          ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
                                       (v! (pos *light*) 1.0))))
-    (with-instances (100)
-      (frag-point-light (gstream *wibble*)
-                        :model-space-light-pos (v:s~ cam-light-vec :xyz)
-                        :light-intensity (v! 1 1 1 0)
-                        :model-to-cam model-to-cam-matrix
-                        ;; :normal-model-to-cam normal-to-cam-matrix
-                        :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-                        :textur *tex*
-                        :offsets *pos-tex*)))
+    (with-instances (300)
+      (gmap #'frag-point-light (gstream *wibble*)
+            :model-space-light-pos (v:s~ cam-light-vec :xyz)
+            :light-intensity (v! 1 1 1 0)
+            :model-to-cam model-to-cam-matrix
+            ;; :normal-model-to-cam normal-to-cam-matrix
+            :ambient-intensity (v! 0.2 0.2 0.2 1.0)
+            :textur *tex*
+            :offsets *pos-tex*)))
   (gl:flush)
   (cgl:update-display))
 
@@ -129,7 +129,7 @@
 
 (defun reshape (new-dimensions)
   (setf (frame-size *camera*) new-dimensions)
-  (gl:viewport 0 0 (v:x new-dimensions) (v:y new-dimensions))
+  (apply #'gl:viewport 0 0 new-dimensions)
   (frag-point-light nil :cam-to-clip (cam->clip *camera*)))
 
 (evt:observe (evt.sdl::*window*)

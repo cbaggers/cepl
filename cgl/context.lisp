@@ -9,6 +9,8 @@
 (in-package :cgl)
 
 (defparameter *gl-context* nil)
+(defparameter +default-resolution+ 
+  (make-array 2 :element-type 'single-float :initial-contents '(640.0 480.0)))
 
 ;; This is an object which can be used to access data about the gl-context
 ;; it employs caching for any of the areas where the data won't change during 
@@ -153,7 +155,7 @@
 
 ;; GL_DEPTH_FUNC (GLenum, initially GL_LESS, see glDepthFunc)
 ;;     The depth comparison function.
-(def-context-reader depth-func)
+(def-context-reader depth-func~1)
 
 ;; GL_DEPTH_TEST (GLboolean, initially GL_FALSE, see glDepthFunc and glDepthRange)
 ;;     Whether depth testing of fragments is enabled.

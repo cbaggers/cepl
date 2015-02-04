@@ -62,7 +62,7 @@
 (defun draw (gstream)
   (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit)
-  (prog-1 gstream :loop *loop* :eye-pos (v! 0 0 -5))
+  (gmap #'prog-1 gstream :loop *loop* :eye-pos (v! 0 0 -5))
   (gl:flush)
   (cgl:update-display))
 

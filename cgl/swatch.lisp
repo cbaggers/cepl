@@ -58,11 +58,10 @@
       (error "suitable swatch texture format ~s not found, options are ~s" 
              x (mapcar #'car *swatch-texture-formats*))))
 
-(defun make-swatch (&key (size (v! 0.1 0.1)) (tex-size (v! 320 240))
+(defun make-swatch (&key (size (v! 0.1 0.1)) (tex-size '(320 240))
                       (attachment :color))
   (let ((x (make-instance 'swatch :texture 
-                          (make-texture nil :dimensions (list (floor (aref tex-size 0))
-                                                              (floor (aref tex-size 1)))
+                          (make-texture nil :dimensions tex-size
                                         :internal-format 
                                         (lookup-texture-format attachment))
                           :attachment (lookup-attachment attachment))))

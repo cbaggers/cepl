@@ -12,8 +12,7 @@
 (defclass win (sdl-event)
   ((action :initarg :action :initform 0 :reader action
            :type keyword)
-   (vec :initarg :vec :reader vec
-        :type (simple-array (single-float 3)))))
+   (data :initarg :data :reader data :type list)))
 
 (defclass mouse-scroll (sdl-event)
   ((source-id :initform 0 :reader id
@@ -142,7 +141,7 @@
                        (make-instance 'win
                                       :timestamp (sdl->lisp-time ts)
                                       :action action
-                                      :vec (base-vectors:v! x y))
+                                      :data (list x y))
                        results)))
       
       (:mousewheel (:timestamp ts :which id :x x :y y)

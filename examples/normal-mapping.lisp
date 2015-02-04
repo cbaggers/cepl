@@ -40,14 +40,14 @@
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera +default-resolution+))
-  (reshape +default-resolution+)
+  (setf *camera* (make-camera cgl:+default-resolution+))
+  (reshape cgl:+default-resolution+)
   (setf *wibble* (load-model "./wibble.3ds" (v! pi 0 0)))
   (setf *tex* (dirt:load-image-to-texture "./brick/col.png"))
   (setf *normal-map* (dirt:load-image-to-texture "./brick/norm.png"))
   (setf *swatch* (cgl::make-swatch
                   :size (v! 0.3 0.3)
-                  :tex-size (v! 640 480)
+                  :tex-size cgl:+default-resolution+
                   :attachment :depth)))
 
 ;;--------------------------------------------------------------
@@ -75,7 +75,7 @@
                (out output-color (+ (* t-col light-intensity
                                        cos-ang-incidence)
                                     (* t-col ambient-intensity)))))
-  (:post-compile (reshape (v! 640 480))))
+  (:post-compile (reshape cgl:+default-resolution+)))
 
 
 
@@ -138,7 +138,7 @@
 
 (defun reshape (new-dimensions)
   (setf (frame-size *camera*) new-dimensions)
-  (gl:viewport 0 0 (v:x new-dimensions) (v:y new-dimensions))
+  (apply #'gl:viewport 0 0 new-dimensions)
   (frag-point-light nil :cam-to-clip (cam->clip *camera*)))
 
 (evt:observe (evt.sdl::*window*)

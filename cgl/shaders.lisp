@@ -52,28 +52,34 @@
   (let ((recompile-name (symb-package :%cgl name)))
     `(progn
        (defun ,recompile-name ()
-         ,(destructuring-bind (in-args context)
-                              (varjo:split-arguments args '(&uniforms &context))
-                              `(let ((compile-result (varjo::%v-def-external ',name ',in-args
-                                                                             ',context ',body)))
-                                 (update-shader-asset ',name :function compile-result
-                                                      #',recompile-name (used-external-functions compile-result)))))
+         ,(destructuring-bind
+           (in-args uniforms context)
+           (varjo:split-arguments args '(&uniforms &context))
+           (declare (ignore uniforms))
+           `(let ((compile-result (varjo::%v-def-external ',name ',in-args
+                                                          ',context ',body)))
+              (update-shader-asset ',name :function compile-result
+                                   #',recompile-name (used-external-functions compile-result)))))
        (,recompile-name)
        ',name)))
 
 (defmacro defshader (name args &body body)
   (let ((recompile-name (symb-package :%cgl name)))
-    `(progn
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         (utils:assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context) (instancing :&instancing))
-             (utils:lambda-list-split '(&uniform &context &instancing) ',args)
-           (setf (gethash ',name *shader-args*) (list in-args uniforms context instancing))))
-       (defun ,recompile-name ()
-         (let ((compile-result (varjo::translate ',args '(progn ,@body))))
-           (update-shader-asset ',name :shader compile-result
-                                #',recompile-name (used-external-functions compile-result))))
-       (,recompile-name)
-       ',name)))
+    (destructuring-bind (s-in-args s-uniforms s-context)
+        (varjo:split-arguments args '(&uniform &context))
+      `(progn
+         (eval-when (:compile-toplevel :load-toplevel :execute)
+           (utils:assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context) (instancing :&instancing))
+               (utils:lambda-list-split '(&uniform &context &instancing) ',args)
+             (setf (gethash ',name *shader-args*) (list in-args uniforms context instancing))))
+         (defun ,recompile-name ()
+           (let ((compile-result (varjo::translate 
+                                  ',s-in-args ',s-uniforms ',s-context
+                                  '(progn ,@body))))
+             (update-shader-asset ',name :shader compile-result
+                                  #',recompile-name (used-external-functions compile-result))))
+         (,recompile-name)
+         ',name))))
 
 ;;[TODO] add to errors.lisp
 (defun varjo->gl-stage-names (stage-name)

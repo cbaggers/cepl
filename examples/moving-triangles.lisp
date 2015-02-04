@@ -1,3 +1,4 @@
+(in-package :cepl)
 ;; This gives us a simple moving triangle
 
 (defparameter *gpu-array* nil)
@@ -22,12 +23,12 @@
 
 
 (defun draw (gstream)
-  (setf *loop* (+ 0.004 *loop*))
-  (gl:clear :color-buffer-bit)  
+  (setf *loop* (+ 0.04 *loop*))
+  (gl:clear :color-buffer-bit :depth-buffer-bit)  
   (ttm:update)
-  (loop :for i :below 30 :do
+  (loop :for i :below 37 :do
      (let ((i (/ i 2.0)))
-       (prog-1 gstream :i i :loop *loop*)))
+       (gmap #'prog-1 gstream :i i :loop *loop*)))
   (gl:flush)
   (cgl:update-display))
 
@@ -35,7 +36,7 @@
   (defun run-demo ()
     (setf running t)
     (cgl:clear-color 0.0 0.0 0.0 0.0)
-    (cgl:viewport 0 0 640 480)
+    (apply #'gl:viewport 0 0 cgl:+default-resolution+)
     (setf *gpu-array* (make-gpu-array (list (v!  0.0   0.2  0.0  1.0)
                                             (v! -0.2  -0.2  0.0  1.0)
                                             (v!  0.2  -0.2  0.0  1.0))

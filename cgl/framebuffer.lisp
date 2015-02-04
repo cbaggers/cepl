@@ -38,13 +38,14 @@
                           (if setf
                               `(setf (,s ,var) value)
                               `(,s ,var)))))
-            `((,(kwd :attachment-color i)
-                ,(kwd :attachment-color- i)
+            `((,(kwd :color-attachment i)
+                ,(kwd :color-attachment- i)
                 ,(kwd :color- i)
                 ,(kwd :c i)
-                ,(kwd :c- i))
+                ,(kwd :c- i)
+                ,@(when (= i 0) '(:c)))
               ,tmp)))
-     ((:attachment-depth :depth :d) 
+     ((:depth-attachment :depth :d) 
       ,(if for-macro
            `(list '%fbo-attachment-depth ,var)
            (if setf
@@ -62,6 +63,21 @@
 (defun (setf attachment) (value fbo attachment-name)
   (case-attachment fbo attachment-name 10 nil t))
 
+
+
+(defmacro %symb-attachment (keyform col-count)  
+  `(case ,keyform
+     ,@(loop :for i :below col-count :collect
+          `((,(kwd :color-attachment i)
+              ,(kwd :color-attachment- i)
+              ,(kwd :color- i)
+              ,(kwd :c i)
+              ,(kwd :c- i)
+              ,@(when (= i 0) '(:c)))
+            ,(kwd :color-attachment i)))
+     ((:depth-attachment :depth :d) :depth-attachment)))
+
+(defun get-gl-attachment-keyword (x) (%symb-attachment x 10))
 ;;--------------------------------------------------------------
 
 (defmacro with-fbo-slots (attachment-bindings expression &body body)
@@ -82,10 +98,11 @@
 
 ;;--------------------------------------------------------------
 
-(defun make-fbo (&key initial-attachment)
+(defun make-fbo (&rest fuzzy-attach-args)
+  "Will create an fbo and optionally attach the arguments using
+   #'fbo-gen-attach"
   (let ((fbo (%make-fbo :id (first (gl:gen-framebuffers 1)))))
-    (when initial-attachment
-      (fbo-attach fbo initial-attachment :color-attachment0))
+    (when fuzzy-attach-args (apply #'fbo-gen-attach fbo fuzzy-attach-args))
     fbo))
 
 (defun make-fbos (&optional (count 1))
@@ -250,6 +267,50 @@
           ;; above. So if you want to render to the 3rd layer, +z face, you would
           ;; set gl_Layer to (2 * 6) + 4, or 16.
           (:texture-cube-map-array (error "attaching to cube-map-array textures has not been implmented yet")))))))
+
+(defun fbo-gen-attach (fbo &rest args)
+  "The are 3 kinds of valid argument:
+   - keyword naming an attachment: This makes a new texture at 
+     +default-resolution+ and attaches
+   - (keyword camera) creates a new texture at the framesize of 
+     the camera and attaches it to attachment named by keyword
+   - (keyword vector2): creates a new texture sized by the vector 
+     and attaches it to attachment named by keyword
+   - (keyword texarray): attaches the tex-array
+   - (keyword texture): attaches the root tex-array"
+  (let ((target (%extract-target (first args))))
+    (mapcar (lambda (x y) (fbo-attach fbo x y target))
+            (mapcar #'%gen-textures args)
+            (mapcar (lambda (x) (get-gl-attachment-keyword (first x)))
+                    (mapcar #'listify args)))))
+
+(defun %extract-target (x)
+  (if (member x '(:draw-framebuffer :read-framebuffer :framebuffer :framebuffer))
+      x
+      :draw-framebuffer))
+
+(defun %gen-textures (pattern)
+  (assert (or (listp pattern) (keywordp pattern)))
+  (cond
+    ((keywordp pattern) 
+     (texref
+      (make-texture nil :dimensions +default-resolution+
+                    :internal-format (%get-default-texture-format pattern))))
+    ((typep (second pattern) 'cepl-camera:camera)
+     (texref
+      (make-texture nil :dimensions (let ((fs (cepl-camera:frame-size (second pattern))))
+                                      (list (aref fs 0) (aref fs 1)))
+                    :internal-format (%get-default-texture-format 
+                                      (first pattern)))))
+    ((typep (second pattern) 'gpu-array-t) (second pattern))
+    ((typep (second pattern) 'gl-texture) (texref (second pattern)))))
+
+(defun %get-default-texture-format (attachment) 
+  (assert (keywordp attachment))
+  (let ((char (char-downcase (aref (symbol-name attachment) 0))))    
+    (cond ((char= char #\c) :rgba8)
+          ((char= char #\d) :depth-component16)
+          (t (error "No default texture format for attachment: ~s" attachment)))))
 
 (defun attachment-compatible (attachment internal-format)
   (case attachment

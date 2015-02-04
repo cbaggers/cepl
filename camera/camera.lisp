@@ -17,7 +17,9 @@
 (defclass camera () 
   ((cam->clip :type (simple-array single-float (16)) :reader cam->clip)
    (cam->clip-func :initform nil :initarg :cam->clip-func )
-   (frame-size :reader frame-size :initarg :frame-size)
+   (frame-size :reader frame-size :initarg :frame-size 
+               :initform (v! (nth 0 cgl::+default-resolution+)
+                             (nth 1 cgl::+default-resolution+)))
    (near :type single-float :reader near :initarg :near)
    (far :type single-float :reader far :initarg :far)
    (fov :type single-float :reader fov :initarg :fov)))
@@ -38,8 +40,14 @@
   (setf (slot-value camera 'fov) angle)
   (update-cam->clip camera))
 
-(defmethod (setf frame-size) (size-vec2 (camera camera))
-  (setf (slot-value camera 'frame-size) size-vec2)
+(defmethod (setf frame-size) (frame-size (camera camera))
+  (let ((frame-size-vec2
+         (if (typep frame-size '(simple-array single-float (2)))
+             frame-size
+             (make-array 2 :element-type 'single-float :initial-contents
+                         (list (float (elt frame-size 0))
+                               (float (elt frame-size 1)))))))
+    (setf (slot-value camera 'frame-size) frame-size-vec2))
   (update-cam->clip camera))
 
 (defgeneric world->cam (camera))
@@ -106,12 +114,17 @@
      0.0 0.0 (- (/ (- far near))) (- (/ (+ far near) (- far near)))
      0.0 0.0 0.0 1.0)))
 
-(defun make-camera (frame-size-vec2 &optional (near 1.0) (far 1000.0) (fov 120.0)
+(defun make-camera (frame-size &optional (near 1.0) (far 1000.0) (fov 120.0)
                                       (cam->clip-function 
                                        #'perspective-projection))
-  (let ((camera (make-instance 'pos-dir-cam :cam->clip-func cam->clip-function 
-                               :near near :far far :fov fov 
-                               :frame-size frame-size-vec2)))
+  (let* ((frame-size-vec2 (if (typep frame-size '(simple-array single-float (2)))
+                              frame-size
+                              (make-array 2 :element-type 'single-float :initial-contents
+                                          (list (float (elt frame-size 0))
+                                                (float (elt frame-size 1))))))
+         (camera (make-instance 'pos-dir-cam :cam->clip-func cam->clip-function 
+                                :near near :far far :fov fov 
+                                :frame-size frame-size-vec2)))
     (update-cam->clip camera)
     camera))
 
