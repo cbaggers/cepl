@@ -42,7 +42,7 @@
   (setf *camera* (make-camera cgl:+default-resolution+))
   (reshape cgl:+default-resolution+)
   (setf *wibble* (load-model "./bird/bird.3ds" (v! pi 0 0)))
-  (setf *tex* (dirt:load-image-to-texture "./bird/char_bird_col.png"))
+  (setf *tex* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
   (setf *swatch* (cgl::make-swatch
                   :size (v! 0.3 0.3)
                   :tex-size cgl:+default-resolution+
@@ -67,8 +67,8 @@
                     (cos-ang-incidence
                      (clamp (dot (normalize vertex-normal) light-dir)
                             0.0 1.0))
-                    (t-col (texture textur (v! (x tex-coord)
-                                            (- (y tex-coord))))))
+                    (t-col (texture textur (v! (x tex-coord) 
+                                               (- (y tex-coord))))))
                (out output-color (+ (* t-col light-intensity
                                        cos-ang-incidence)
                                     (* t-col ambient-intensity)))))

@@ -43,8 +43,8 @@
   (setf *camera* (make-camera cgl:+default-resolution+))
   (reshape cgl:+default-resolution+)
   (setf *wibble* (load-model "./wibble.3ds" (v! pi 0 0)))
-  (setf *tex* (dirt:load-image-to-texture "./brick/col.png"))
-  (setf *normal-map* (dirt:load-image-to-texture "./brick/norm.png"))
+  (setf *tex* (devil-helper:load-image-to-texture "./brick/col.png"))
+  (setf *normal-map* (devil-helper:load-image-to-texture "./brick/norm.png"))
   (setf *swatch* (cgl::make-swatch
                   :size (v! 0.3 0.3)
                   :tex-size cgl:+default-resolution+
@@ -66,7 +66,7 @@
            (out tex-coord (cgl:tex data)))
   (:fragment (let* ((light-dir (normalize (- model-space-light-pos
                                              model-space-pos)))
-                    (t-norm (- (* (s~ (texture norm-map tex-coord) :xyz) 2.1)
+                    (t-norm (- (* (s~ (texture norm-map tex-coord) :xyz) 2)
                                (v! 1 1 1)))
                     (cos-ang-incidence
                      (clamp (dot (normalize (* (+ vertex-normal t-norm) 0.5)) light-dir)

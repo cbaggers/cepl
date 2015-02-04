@@ -43,7 +43,7 @@
   (setf *camera* (make-camera cgl:+default-resolution+))
   (reshape cgl:+default-resolution+)
   (setf *wibble* (load-model "./bird/bird.3ds" (v! pi 0 0)))
-  (setf *tex* (dirt:load-image-to-texture "./bird/char_bird_col.png"))
+  (setf *tex* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
   (setf *swatch* (cgl::make-swatch
                   :size (v! 0.3 0.3)
                   :tex-size cgl:+default-resolution+
@@ -102,7 +102,7 @@
          ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
                                       (v! (pos *light*) 1.0))))
-    (with-instances (300)
+    (with-instances (1000)
       (gmap #'frag-point-light (gstream *wibble*)
             :model-space-light-pos (v:s~ cam-light-vec :xyz)
             :light-intensity (v! 1 1 1 0)

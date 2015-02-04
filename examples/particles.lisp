@@ -46,14 +46,14 @@
   (setf *camera* (make-camera cgl:+default-resolution+))
   (reshape cgl:+default-resolution+)
   (setf *wibble* (load-model "./wibble.3ds" (v! pi 0 0)))
-  (setf *tex* (dirt:load-image-to-texture "./brick/col.png"))
-  (setf *normal-map* (dirt:load-image-to-texture "./brick/norm.png"))
+  (setf *tex* (devil-helper:load-image-to-texture "./brick/col.png"))
+  (setf *normal-map* (devil-helper:load-image-to-texture "./brick/norm.png"))
   (setf *swatch* (cgl::make-swatch
                   :size (v! 0.3 0.3)
                   :tex-size cgl:+default-resolution+
                   :attachment :depth))
   (setf *emitter*
-        (make-emitter 200 100 5000 (dirt:load-image-to-texture "./g.png")))
+        (make-emitter 200 100 5000 (devil-helper:load-image-to-texture "./g.png")))
   (setf (pos *emitter*) (v! -0.2 -0.2 -1.2)))
 
 ;;--------------------------------------------------------------

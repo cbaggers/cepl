@@ -418,6 +418,11 @@
   (:import-from :vector4
                 :make-vector4))
 
+(defpackage :devil-helper
+  (:use :cl)
+  (:export :load-image-to-c-array
+           :load-image-to-texture))
+
 (defpackage :primitives
   (:use :cl
         :base-vectors

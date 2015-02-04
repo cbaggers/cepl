@@ -49,9 +49,9 @@
   (setf *wibble* (load-model "./wibble.3ds" 0 (v! pi 0 0)))
   (setf (v:z (pos *wibble*)) -3.0)
   (setf *bird* (load-model "./bird/bird.3ds" 1 (v! pi 0 0)))
-  (setf *bird-tex* (dirt:load-image-to-texture "./water.jpg"))
-  (setf *bird-tex2* (dirt:load-image-to-texture "./bird/char_bird_col.png"))
-  (setf *wib-tex* (dirt:load-image-to-texture "./brick/col.png"))
+  (setf *bird-tex* (devil-helper:load-image-to-texture "./water.jpg"))
+  (setf *bird-tex2* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
+  (setf *wib-tex* (devil-helper:load-image-to-texture "./brick/col.png"))
   (setf *geom-fbo* (make-fbo :c)))
 
 ;;--------------------------------------------------------------
@@ -91,7 +91,7 @@
            (out tex-coord (cgl:tex data)))
   (:fragment (let* ((o (v! (mod (* loop 0.05) 1.0)
                            (mod (* loop 0.05) 1.0)))
-                    (ot (* (s~ (texture textur (+ o tex-coord)) :xy) 0.02))
+                    (ot (* (s~ (texture textur (+ o tex-coord)) :xy) 0.1))
                     (a (texture textur tex-coord))
                     (b (+ (v! (* (x gl-frag-coord) (/ 1.0 640.0))
                               (* (y gl-frag-coord) (/ 1.0 480.0)))

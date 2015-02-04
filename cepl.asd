@@ -11,6 +11,7 @@
 (asdf:defsystem #:cepl
   :serial t
   :depends-on (#:cl-opengl
+               #:cl-devil
                #:swank
                #:sdl2
                #:varjo
@@ -61,6 +62,7 @@
                (:file "maths/matrices/matrices")
                (:file "maths/quaternions")
                (:file "camera/camera")
+               (:file "images/devil-helper")
                (:file "meshes-and-models/primitives")
                (:file "meshes-and-models/mesh")
                (:file "meshes-and-models/classimp-helpers")               
