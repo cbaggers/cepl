@@ -228,6 +228,7 @@
 (defpackage :base-space
   (:use :cl :base-macros :base-vectors :base-matrices)
   (:nicknames :cspace)
+  (:shadow :space)
   ;;(:export :things)
   )
 
