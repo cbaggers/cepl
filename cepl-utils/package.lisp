@@ -35,15 +35,15 @@
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
-  (:export :gdefun 
+  (:export :gdefun
            :dbind
            :assoc-bind
            :sn-equal
            :listify
-           :replace-nth 
+           :replace-nth
            :hash-values
            :lambda-list-split
-           :hash-keys 
+           :hash-keys
            :intersperse
            :walk-replace
            :file-to-string
@@ -51,13 +51,12 @@
            :find-in-tree
            :mkstr
            :symb
-           :symb-package
            :make-keyword
            :kwd
            :group
            :safe-read-from-string
            :sub-at-index
-           :symbolicate-package
+           :symb-package
            :lispify-name
            :symbol-name-equal
            :range
@@ -66,6 +65,5 @@
            :arangei
            :mapcat
            :deferror
-           :split-seq-by-seq
-           :dbg
+           :split-seq-by-seq           
            :print-mem))
