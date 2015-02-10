@@ -36,13 +36,13 @@
   (:use :cl :base-maths)
   (:nicknames :q)
   (:shadow :lerp)
-  (:export :w :x :y :z :zero-quit :zero-quatp 
+  (:export :w :x :y :z :zero-quit :zero-quatp
            :unit-quatp :identity-quat :identity-quatp
-           :make-quat :make-quat-from-vec3 
-           :make-quat-from-rotation-matrix3 
+           :make-quat :make-quat-from-vec3
+           :make-quat-from-rotation-matrix3
            :make-quat-from-axis-angle
            :make-quat-from-vectors
-           :make-quat-from-fixed-angles 
+           :make-quat-from-fixed-angles
            :magnitude :norm :quat-eql :quat-!eql
            :copy :get-axis-angle :normalize :qconjugate
            :inverse :q+1 :q+ :q-1 :q- :q* :q*quat
