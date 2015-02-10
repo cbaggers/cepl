@@ -33,7 +33,7 @@
 (in-package #:cl-user)
 
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :cepl-utils :varjo)
+  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color
@@ -47,13 +47,13 @@
                 :clear
                 :clear-depth
                 :flush
-                :viewport
                 :delete-shader)
   (:import-from :utils
                 :deferror
                 :print-mem)
   (:shadow :float)
   (:export :gl-context
+           :+default-resolution+
            :clear-gl-context-cache
            :gl-free
            :update-display
@@ -136,6 +136,7 @@
            :g-pnt
            :g-pntc
            :pos
+           :col
            :norm
            :tex
            ;;----------
@@ -152,16 +153,26 @@
            :clear
            :clear-depth
            :flush
-           :viewport
+           ;;----------
+           :gmap
            ;;----------
            :make-fbo
            :make-fbos
            :with-bind-fbo
            :fbo-attach
+           :fbo-detach
+           :attachment
+           :with-fbo-slots
            :attachment-compatible
            :fbo-detach
-           ;;----------
-           :def-gl-equivalent))
+           ;;----------           
+           :def-gl-equivalent
+           :make-swatch
+           :draw-swatch
+           :with-swatch-bound))
 
 (defpackage :%cgl
   (:use :cl :varjo :cgl))
+
+(defpackage :varjo-bridge-types
+  (:use :cl))
