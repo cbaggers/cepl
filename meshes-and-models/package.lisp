@@ -32,13 +32,31 @@
 ;;;; ==========================================================================
 (in-package #:cl-user)
 
+(defpackage :model-parsers
+  (:use :cl)
+  (:export :load-file
+           :meshes->lists
+           :mesh->lists
+           :mesh-list->gpu
+           :mesh->gpu
+           :scene-meshes->gpu)
+  (:import-from :vector2
+                :make-vector2)
+  (:import-from :vector3
+                :make-vector3)
+  (:import-from :vector4
+                :make-vector4))
+
 (defpackage :primitives
   (:use :cl
         :base-vectors
         :base-matrices
         :base-maths)
-  (:export :primitive-data
+  (:export :latice-data
+           :primitive-data
+           :cap-data
            :plain-data
            :box-data
+           :equilateral-triangle-data
            :sphere-data
            :prim-array))
