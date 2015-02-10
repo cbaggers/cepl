@@ -39,19 +39,19 @@
 (defpackage :matrix3
   (:use :cl)
   (:nicknames :m3)
-  (:export :melm :identity-matrix3 :zero-matrix3 
+  (:export :melm :identity-matrix3 :zero-matrix3
            :make-matrix3 :make-from-rows :get-rows
            :get-row :make-from-columns :get-columns
            :get-column :determinate-cramer :inverse
            :mzerop :identityp :meql :transpose :adjoint
-           :mtrace :rotation-from-euler 
+           :mtrace :rotation-from-euler
            :rotation-from-axis-angle :scale
            :rotation-x :rotation-y :rotation-z
            :get-fixed-angles :get-axis-angle :m+ :m- :negate
-           :m* :mcol*vec3 :mrow*vec3 :m*scalar)
+           :m* :m*vec :mcol*vec3 :mrow*vec3 :m*scalar)
   (:import-from :base-maths :float-zero
                 :c-sqrt)
-  (:import-from :vector3 
+  (:import-from :vector3
                 :make-vector3)
   (:import-from :base-macros
                 :apply-across-elements)
@@ -60,10 +60,10 @@
 (defpackage :matrix4
   (:use :cl)
   (:nicknames :m4)
-  (:export :melm :identity-matrix4 :zero-matrix4 
+  (:export :melm :identity-matrix4 :zero-matrix4
            :2dclipspace-to-imagespace-matrix4 :make-matrix4
-           :mzerop :identityp :meql :minor :adjoint 
-           :determinant :affine-inverse :transpose 
+           :mzerop :identityp :meql :minor :adjoint
+           :determinant :affine-inverse :transpose
            :translation :rotation-from-matrix3
            :rotation-from-euler :rotation-from-axis-angle
            :scale :rotation-x :rotation-y
@@ -74,13 +74,14 @@
            :get-columns)
   (:import-from :base-maths :float-zero
                 :c-sqrt)
-  (:import-from :vector3 
+  (:import-from :vector3
                 :make-vector3)
   (:import-from :vector4
                 :make-vector4)
   (:import-from :base-macros
                 :apply-across-elements)
   (:import-from :base-vectors :v-x :v-y :v-z :v-w))
+
 
 (defpackage :matrices
   (:use :cl)
@@ -89,6 +90,6 @@
            :identityp :elt :elm :get-rows :get-row
            :get-columns :get-column :determinant
            :inverse :transpose :trace :negate
-           :print-matrix) 
+           :print-matrix)
   (:shadow :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
            :elt :trace))
