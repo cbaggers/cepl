@@ -57,13 +57,14 @@
 (defpackage :vector3
   (:use :cl)
   (:nicknames :v3)
+  (:shadow :incf)
   (:export :make-vector3 :v+ :v+1 :v- :v-1 :v* :v-eq
            :v*vec :v/ :v/vec :negate :vlength-squared
            :vlength :distance-squared :distance :dot
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
            :vzerop :unitp :cross :face-foreward :lerp
-           :bezier :spline)
+           :bezier :spline :incf)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -94,12 +95,12 @@
   (:export :v :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
            :/ :length :length-squared :distance :distance-squared
            :dot :absolute-dot :perp-dot :normalize :cross :eq
-           :swizzle :merge-into-vector :negate :face-foreward :lerp
-           :mix :bezier) 
+           :swizzle :s~ :merge-into-vector :negate :face-foreward :lerp
+           :mix :bezier :x :y :z :w)
   (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
-  (:import-from :vector3 
+  (:import-from :vector3
                 :make-vector3)
   (:import-from :vector4
                 :make-vector4))
