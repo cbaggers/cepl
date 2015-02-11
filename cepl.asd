@@ -27,18 +27,39 @@
    (:module "cepl-utils"
             :serial t
             :components ((:file "package")
-                         (:file "cepl-utils")))
+                         (:file "utils")))
    (:module "base-macros"
             :serial t
             :components ((:file "package")            
                          (:file "base-macros")))
-   (:module "time"
+   (:module "maths"
             :serial t
             :components ((:file "package")
-                         (:file "base-time-backend")
-                         (:file "base-time")
-                         (:file "conditional-funcs")
-                         (:file "tiny-time-manager")))
+                         (:file "base-maths")
+                         (:file "maths")
+                         (:module "vectors"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "base-vectors")
+                                               (:file "vector2")
+                                               (:file "vector3")
+                                               (:file "vector4")
+                                               (:file "vectors")))
+                         (:module "matrices"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "base-matrices")
+                                               (:file "matrix3")
+                                               (:file "matrix4")
+                                               (:file "matrices")))
+                         (:module "quaternions"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "quaternions")))))
+   (:module "camera"
+            :serial t
+            :components ((:file "package")            
+                         (:file "camera")))
    (:module "cgl"
             :serial t
             :components((:file "package")
@@ -68,61 +89,35 @@
    (:module "ugly"
             :serial t
             :components((:file "swatch")
-                        (:file "particles")))
-   (:module "maths"
-            :serial t
-            :components ((:file "package")
-                         (:file "base-maths")
-                         (:file "maths")
-                         (:module "vectors"
-                                  :serial t
-                                  :components ((:file "package")
-                                               (:file "base-vectors")
-                                               (:file "vector2")
-                                               (:file "vector3")
-                                               (:file "vector4")
-                                               (:file "vectors")))
-                         (:module "matrices"
-                                  :serial t
-                                  :components ((:file "package")
-                                               (:file "base-matrices")
-                                               (:file "matrix3")
-                                               (:file "matrix4")
-                                               (:file "matrices")))
-                         (:module "quaternions"
-                                  :serial t
-                                  :components ((:file "package")
-                                               (:file "quaternions")))))                        
-   (:module "space"
-            :serial t
-            :components ((:file "base-space")))
-   (:module "camera"
-            :serial t
-            :components ((:file "package")            
-                         (:file "camera")))
-   (:modules "images"
+                        (:file "particles")))                        
+   ;; (:module "space"
+   ;;          :serial t
+   ;;          :components ((:file "base-space")))
+   (:module "images"
              :serial t
-             :components ((:file "devil-helper")))
+             :components ((:file "package")
+                          (:file "devil-helper")))
    (:module "meshes-and-models"
             :serial t
             :components ((:file "package")
                          (:file "primitives")
                          (:file "mesh")
-                         (:file "classimp-heplers")))
+                         (:file "classimp-helpers")))
    (:module "events"
             :serial t
-            :components ((:file "event-base")
+            :components ((:file "package")
+                         (:file "event-base")
                          (:file "events")
                          (:file "sdl-event-sources")))
    (:module "live"
             :serial t
-            :components ((:file "bootstrapping")))
-   (:module "time"
-            :serial t
-            :components ((:file "time")))
+            :components ((:file "package")
+                         (:file "bootstrapping")))
    (:module "cepl"
             :serial t
             :components ((:file "package")                         
                          (:file "sdl-extras")
-                         (:file "cepl")))))
-
+                         (:file "cepl")))
+   (:module "time"
+            :serial t
+            :components ((:file "time")))))
