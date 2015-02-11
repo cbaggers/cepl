@@ -24,7 +24,7 @@
                #:fn_)
   :components
   (
-   (:module "cepl-utils"
+   (:module "utils"
             :serial t
             :components ((:file "package")
                          (:file "utils")))
