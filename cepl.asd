@@ -21,7 +21,8 @@
                #:symbol-munger
                #:cells
                #:classimp
-               #:fn_)
+               #:fn_
+               #:sb-cga)
   :components
   (
    (:module "utils"
