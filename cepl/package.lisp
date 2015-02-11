@@ -11,7 +11,6 @@
 
 (defpackage :cepl
   (:use :cl
-        :declarative-values
         :base-vectors
         :base-matrices
         :base-maths
@@ -37,7 +36,7 @@
                 :gl-pull-1
                 :gl-push
                 :make-c-array
-                :with-c-array                
+                :with-c-array
                 :free-c-array
                 :aref-c
                 :c-populate
@@ -46,7 +45,7 @@
                 :gl-subseq
                 :with-gpu-array-as-c-array
                 :make-vertex-stream
-                :make-texture                
+                :make-texture
                 :with-texture-bound
                 :g-pn
                 :g-pc
@@ -56,9 +55,12 @@
                 :g-pntc
                 :texref
                 ;;---
+                :gmap
+                ;;---
                 :make-fbo
                 :make-fbos
                 :with-bind-fbo
+                :with-fbo-slots
                 :fbo-attach
                 :attachment-compatible
                 :fbo-detach
@@ -67,6 +69,8 @@
   (:import-from :utils
                 :deferror
                 :print-mem)
+  (:import-from :cepl.events.sdl
+                :case-events)
   (:export :cepl-gl
            :cls
            :pixel-format
@@ -85,7 +89,7 @@
            :gl-pull-1
            :gl-push
            :make-c-array
-           :with-c-array                
+           :with-c-array
            :free-c-array
            :aref-c
            :c-populate
@@ -94,7 +98,7 @@
            :gl-subseq
            :with-gpu-array-as-c-array
            :make-vertex-stream
-           :make-texture                
+           :make-texture
            :with-texture-bound
            :g-pn
            :g-pc
@@ -104,9 +108,12 @@
            :g-pntc
            :texref
            ;;---
+           :gmap
+           ;;---
            :make-fbo
            :make-fbos
            :with-bind-fbo
+           :with-fbo-slots
            :fbo-attach
            :attachment-compatible
            :fbo-detach
@@ -119,5 +126,4 @@
            :evt+>
            :evt->
            :update-swank
-           :peek
-           ))
+           :peek))
