@@ -100,10 +100,10 @@
    (:module "space"
             :serial t
             :components ((:file "base-space")))
-   (:module "cepl-camera"
+   (:module "camera"
             :serial t
             :components ((:file "package")            
-                         (:file "cepl-camera")))
+                         (:file "camera")))
    (:modules "images"
              :serial t
              :components ((:file "devil-helper")))
