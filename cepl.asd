@@ -32,10 +32,6 @@
             :serial t
             :components ((:file "package")            
                          (:file "base-macros")))
-   (:module "declarative-values"
-            :serial t
-            :components ((:file "package")
-                         (:file "declarative-values")))
    (:module "time"
             :serial t
             :components ((:file "package")
