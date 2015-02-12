@@ -57,10 +57,6 @@
                                   :serial t
                                   :components ((:file "package")
                                                (:file "quaternions")))))
-   (:module "camera"
-            :serial t
-            :components ((:file "package")            
-                         (:file "camera")))
    (:module "cgl"
             :serial t
             :components((:file "package")
@@ -87,6 +83,10 @@
                         (:file "framebuffer")
                         (:file "default-data")
                         ))
+   (:module "camera"
+            :serial t
+            :components ((:file "package")            
+                         (:file "camera")))
    (:module "ugly"
             :serial t
             :components((:file "swatch")
