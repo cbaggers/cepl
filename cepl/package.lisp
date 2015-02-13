@@ -121,9 +121,6 @@
            :def-gl-equivalent
            :repl
            ;;---
-           :case-events
-           :collect-event-types
-           :evt+>
-           :evt->
+           :run-in-loop
            :update-swank
            :peek))

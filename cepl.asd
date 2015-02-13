@@ -14,6 +14,9 @@
                #:cl-devil
                #:swank
                #:sdl2
+               #:cl-autowrap
+               #:cl-plus-c
+               #:cl-glfw3
                #:varjo
                #:temporal-functions
                #:cl-utilities
