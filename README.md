@@ -25,6 +25,9 @@ Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 * cl-opengl
 * cl-sdl2
 * varjo (which you can find at https://github.com/cbaggers/varjo)
+* fn_ (which you can find at https://github.com/cbaggers/fn_)
+* temporal-lambda (which you can find at https://github.com/cbaggers/temporal-lambda)
+
 * cl-utilities
 * cl-ppcre
 * symbol-munger
