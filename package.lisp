@@ -53,7 +53,8 @@
            :mapcat
            :deferror
            :split-seq-by-seq
-           :print-mem))
+           :print-mem
+           :mapquote))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
