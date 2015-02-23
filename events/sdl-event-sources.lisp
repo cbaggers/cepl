@@ -47,7 +47,7 @@
           :type keyword)
    (state :initarg :state :initform 0  :reader state
           :type keyword)
-   (repeat :initarg :repeat :initform 0 :reader repeat
+   (repeating :initarg :repeating :initform 0 :reader repeating
            :type boolean)
    (key :initarg :key :initform 0 :reader key
         :type keyword)))
@@ -62,11 +62,11 @@
 
 (defun pump-events ()
   (let ((events (collect-sdl-events)))
-    (loop :for e :in events :do (setf (event cepl.events:*all-events*) e))))
+    (loop :for e :in events :do (setf (event cepl.events:|all-events|) e))))
 
-(def-event-node sys (:parent all-events) (typep (event :parent) 'will-quit))
+(def-event-node |sys| (:parent |all-events|) (typep (event :parent) 'will-quit))
 
-(def-event-node mouse (:parent all-events) (mouse0-eventp (event :parent))
+(def-event-node |mouse| (:parent |all-events|) (mouse0-eventp (event :parent))
   (pos :cell t :initform
        (c? (when (typep (event self) 'mouse-motion)
              (pos (event self)))))
@@ -77,11 +77,11 @@
                                  (state (event self))))))
   (button-state :cell nil :initform (make-hash-table)))
 
-(defmethod button-state ((target mouse) button-id)
+(defmethod button-state ((target |mouse|) button-id)
   (gethash button-id (slot-value target 'button-state) 
            :up))
 
-(def-event-node keyboard (:parent all-events) (typep (event :parent) 'key)
+(def-event-node |keyboard| (:parent |all-events|) (typep (event :parent) 'key)
   (state-tracker 
    :cell t :initform (c? (when (typep (event self) 'key)
                            (setf (gethash (key (event self))
@@ -89,11 +89,11 @@
                                  (state (event self))))))
   (key-state :cell nil :initform (make-hash-table)))
 
-(defmethod key-state ((target keyboard) key)
+(defmethod key-state ((target |keyboard|) key)
   (gethash key (slot-value target 'key-state) 
            :up))
 
-(def-event-node window (:parent all-events) (typep (event :parent) 'win))
+(def-event-node |window| (:parent |all-events|) (typep (event :parent) 'win))
 
 ;;--------------------------------------------
 ;; sdl timestamp conversion
@@ -181,7 +181,7 @@
                                :timestamp (sdl->lisp-time ts)
                                :etype (key-type-lookup typ)
                                :state (key-state-lookup s)
-                               :repeat (= r 0)
+                               :repeating (= r 0)
                                :key (sdl-scancode-lookup 
                                      (plus-c:c-ref keysym sdl2-ffi:sdl-keysym :scancode)))
                 results)))

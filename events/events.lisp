@@ -17,6 +17,6 @@
 ;;--------------------------------------------
 ;; root nodes
 
-(def-event-node all-events () :in)
+(def-event-node |all-events| () :in)
 
 

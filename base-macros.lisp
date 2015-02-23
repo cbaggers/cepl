@@ -21,17 +21,7 @@
         ,(let (,@(loop for n in names for g in gensyms collect `(,n ,g)))
            ,@body)))))
 
-;;;--------------------------------------------------------------
-
-(defmacro continuable (&body body)
-  "Helper macro that we can use to allow us to continue from an
-   error. Remember to hit C in slime or pick the restart so 
-   errors don't kill the app."
-  `(restart-case 
-       (progn ,@body)
-     (continue () :report "CEPL Continue")))
-
-;----------------------------------------------------------------
+;;----------------------------------------------------------------
 ;;{TODO} Remove this crappy thing
 (defmacro apply-across-elements (call array-forms 
 			     num-of-elms &body body)

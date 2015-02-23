@@ -8,6 +8,17 @@
 
 ;;;; package.lisp
 
+(defpackage :cepl-generics
+  (:use :cl)
+  (:export :pos
+           :rot
+           :dir
+           :vec
+           :size
+           :norm
+           :tex
+           :col))
+
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
@@ -47,7 +58,6 @@
 (defpackage :base-macros
   (:use :cl :cepl-utils)
   (:export :once-only
-           :continuable
            :apply-across-elements))
 
 (defpackage :base-maths
@@ -233,7 +243,7 @@
   )
 
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors)
+  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color
@@ -379,7 +389,7 @@
 
 (defpackage :cepl-camera
   (:nicknames :ccam)
-  (:use :cl)
+  (:use :cl :cepl-generics)
   (:export :camera
            :make-camera
            :orthographic-projection
@@ -453,21 +463,16 @@
            :map-evt
            :merge-evt
            :filter-evt
-           :all-events
-           :*map-evt*
-           :*merge-evt*
-           :*filter-evt*
-           :*all-events*
+           :|all-events|
            :observe
            :undefobserver
            :def-event-node))
 
 (defpackage :cepl.events.sdl
-  (:use :cl :cepl-utils :cepl.events :cells)
+  (:use :cl :cepl-utils :cepl.events :cells :cepl-generics)
   (:nicknames :evt.sdl)
   (:export :pump-events
            :case-events
-
            :will-quit
            :window
            :mouse-scroll
@@ -475,18 +480,10 @@
            :mouse-motion
            :key
            :terminal
-
-           :all-events
-           :mouse
-           :sys
-           :window
-           :keyboard
-           :*all-events*
-           :*mouse*
-           :*sys*
-           :*window*
-           :*keyboard*
-
+           :|mouse|
+           :|sys|
+           :|window|
+           :|keyboard|
            :action
            :button
            :clicks
@@ -495,7 +492,7 @@
            :id
            :key
            :pos
-           :repeat
+           :repeating
            :source-id
            :state
            :timestamp
@@ -507,19 +504,26 @@
 
 (defpackage :live
   (:use :cl :cepl-utils)
-  (:export :defdemo
+  (:export :main-loop
            :update-swank
-           :peek))
+           :peek
+           :continuable))
 
 (defpackage :cepl
   (:use :cl
+        :cepl-generics
         :base-vectors
         :base-matrices
         :base-maths
         :base-macros
         :temporal-functions
         :cepl-camera
-        :live)
+        :cl-fad
+        :cepl.events)
+  (:import-from :live
+                :continuable
+                :update-swank
+                :peek)
   (:import-from :cepl-gl
                 :cls
                 :pixel-format
@@ -570,10 +574,80 @@
                 :def-gl-equivalent)
   (:import-from :utils
                 :deferror
-                :print-mem)
-  (:import-from :cepl.events.sdl
-                :case-events)
-  (:export :cepl-gl
+                :print-mem)  
+  (:export :repl
+           :make-project
+           ;----
+           :pos
+           :rot
+           :dir
+           :vec
+           :size
+           :norm
+           :tex
+           :col
+           ;;---
+           :map-evt
+           :merge-evt
+           :filter-evt
+           :|all-events|
+           :observe
+           :undefobserver
+           :def-event-node
+           ;;---
+           :update-swank
+           :peek
+           :*examples-directory*
+           ;;---
+           :v! :v-x :v-y :v-z :v-w
+           :v!byte :v!ubyte :v!int
+           ;;---
+           :m!
+           ;;---
+           :rqpos
+           :continuable
+           ;;---
+           :def-time-units
+           :milliseconds
+           :seconds
+           :minutes
+           :hours
+           :tlambda 
+           :tdefun
+           :before
+           :after
+           :between
+           :each
+           :then
+           :repeat
+           :whilst
+           :%progress%
+           :signal-expired
+           :expiredp
+           :expiredp+
+           :make-stepper
+           ;;---
+           :camera
+           :make-camera
+           :orthographic-projection
+           :perspective-projection
+           :world->cam
+           :look-at
+           :world-up
+           :pos
+           :dir
+           :frame-size
+           :fov
+           :far
+           :near
+           :cam->clip-func
+           :cam->clip
+           :world->cam
+           :make-cam-clip-matrix
+           ;;---
+           :update-swank
+           :peek
+           ;;---
            :cls
            :pixel-format
            :pixel-format-of
@@ -609,9 +683,7 @@
            :g-pnt
            :g-pntc
            :texref
-           ;;---
            :gmap
-           ;;---
            :make-fbo
            :make-fbos
            :with-bind-fbo
@@ -619,13 +691,4 @@
            :fbo-attach
            :attachment-compatible
            :fbo-detach
-           ;;---
-           :def-gl-equivalent
-           :repl
-           ;;---
-           :case-events
-           :collect-event-types
-           :evt+>
-           :evt->
-           :update-swank
-           :peek))
+           :def-gl-equivalent))

@@ -10,7 +10,8 @@
 
 (asdf:defsystem #:cepl
   :serial t
-  :depends-on (#:cl-opengl
+  :depends-on (#:cl-fad
+               #:cl-opengl
                #:cl-devil
                #:swank
                #:sdl2
@@ -21,9 +22,11 @@
                #:symbol-munger
                #:cells
                #:classimp
-               #:fn_)
+               #:fn_
+               #:quickproject)
   :components ((:file "package")
                (:file "utils")
+               (:file "generics")
                (:file "base-macros")
                (:file "maths/base-maths")
                (:file "maths/maths")
@@ -62,14 +65,18 @@
                (:file "maths/matrices/matrices")
                (:file "maths/quaternions")
                (:file "camera/camera")
+               (:file "space/base-space")
+               (:file "space/space")
                (:file "images/devil-helper")
                (:file "meshes-and-models/primitives")
                (:file "meshes-and-models/mesh")
                (:file "meshes-and-models/classimp-helpers")               
                (:file "sdl-extras")
-               (:file "events/event-base")
+               (:file "events/base-events")
                (:file "events/events")
                (:file "events/sdl-event-sources")
+               (:file "live/live-macros")
                (:file "live/bootstrapping")
                (:file "time/time")
+               (:file "projects/quickproject")
                (:file "cepl")))

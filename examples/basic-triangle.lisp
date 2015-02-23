@@ -20,7 +20,6 @@
 (let ((running nil))
   (defun run-demo ()
     (setf running t)
-    (gl:front-face :ccw)
     (cgl:clear-color 0.0 0.0 0.0 0.0)
     (apply #'gl:viewport 0 0 cgl:+default-resolution+)
     (setf *array* (make-gpu-array

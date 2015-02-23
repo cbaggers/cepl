@@ -303,10 +303,10 @@
                               f-index (+ 6 f-index)
                               v-index (1+ v-index))))
                     (if (not (or normals tex-coords))
-                        (v3:v* pos radius)
-                        `(,(v3:v* pos radius)
-                           ,@(when normals `(,(v3:normalize pos)))
-                           ,@(when tex-coords
-                                   `(,(v! (/ lon lines-of-longitude)
-                                          (/ lat lines-of-latitude))))))))))
+                        pos
+                        `(,pos
+                          ,@(when normals `(,(v3:normalize pos)))
+                          ,@(when tex-coords
+                                  `(,(v! (/ lon lines-of-longitude)
+                                         (/ lat lines-of-latitude))))))))))
           (coerce faces 'list))))

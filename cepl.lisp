@@ -13,6 +13,9 @@
 
 (in-package :cepl)
 
+(defparameter *examples-directory* 
+  (asdf:system-relative-pathname :cepl "examples"))
+
 #+sb-thread
 (defmacro on-main (&body b)
     `(let ((thread (first (last (sb-thread:list-all-threads)))))
@@ -40,7 +43,6 @@
     t))
 
 (defun repl (&optional (width 640) (height 480))
-  (in-package :cepl)  
   (setf cgl::+default-resolution+ (list width height))
   (if (sdl2:init)
       (progn #+(and ccl darwin)

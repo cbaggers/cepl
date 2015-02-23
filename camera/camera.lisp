@@ -60,11 +60,11 @@
    (position :type (simple-array single-float (3))
              :initform (v3:make-vector3 0.0 0.0 0.0)
              :initarg :pos
-             :accessor pos)
+             :accessor cepl-generics:pos)
    (direction :type (simple-array single-float (3))
               :initform (v3:make-vector3 0.0 0.0 -1.0)
               :initarg :dir
-              :accessor dir)))
+              :accessor cepl-generics:dir)))
 
 (defmethod look-at ((camera pos-dir-cam) point-vec3)
   (with-slots (world-up position direction) camera
