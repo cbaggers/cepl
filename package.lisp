@@ -52,7 +52,7 @@
            :arangei
            :mapcat
            :deferror
-           :split-seq-by-seq           
+           :split-seq-by-seq
            :print-mem))
 
 (defpackage :base-macros
@@ -243,7 +243,8 @@
   )
 
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics)
+  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
+        :fn_)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color
@@ -375,7 +376,7 @@
            :with-fbo-slots
            :attachment-compatible
            :fbo-detach
-           ;;----------           
+           ;;----------
            :def-gl-equivalent
            :make-swatch
            :draw-swatch
@@ -457,7 +458,7 @@
 
 (defpackage :cepl.events
   (:use :cl :cepl-utils :cells)
-  (:nicknames :evt)  
+  (:nicknames :evt)
   (:export :event
            :event-cell
            :map-evt
@@ -498,7 +499,7 @@
            :timestamp
            :vec
            :data
-           
+
            :button-state
            :key-state))
 
@@ -574,7 +575,7 @@
                 :def-gl-equivalent)
   (:import-from :utils
                 :deferror
-                :print-mem)  
+                :print-mem)
   (:export :repl
            :make-project
            ;----
@@ -612,7 +613,7 @@
            :seconds
            :minutes
            :hours
-           :tlambda 
+           :tlambda
            :tdefun
            :before
            :after
