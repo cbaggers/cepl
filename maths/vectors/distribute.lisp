@@ -63,4 +63,27 @@
 
 ;;--------------------------------------------------
 
+(defun fib-sphere (samples &optional randomize)
+  (let ((rnd (if randomize (random (float samples)) 1))
+        (offset (/ 2.0 samples))
+        (increment (* (coerce pi 'single-float) (- 3.0 (sqrt 5)))))
+    (loop :for i :below samples :collect
+       (let* ((y (+ (- (* i offset) 1) (/ offset 2)))
+              (r (sqrt (- 1 (expt y 2))))
+              (phi (* (mod (+ i rnd) samples) increment))
+              (x (* (cos phi) r))
+              (z (* (sin phi) r)))
+         (make-array 3 :element-type 'single-float
+                     :initial-contents (list x y z))))))
 
+
+;;--------------------------------------------------
+
+;; (defun distrib-triangle (count)
+;;   (let ((line (1d-line count)))
+;;     (remove-duplicates
+;;      (append (offset-line offset-vec angle line)
+;;              (offset-line offset-vec angle line)
+;;              (offset-line offset-vec angle line))
+;;      :test #'equalp)))
+;; should be v2:v=
