@@ -16,13 +16,52 @@
   (defvar *gpu-func-specs* (make-hash-table :test #'eq))
   (defvar *dependent-gpu-functions* (make-hash-table :test #'eq)))
 
-(defun get-gpu-func-spec (name) (gethash name *gpu-func-specs*))
+(defun funcs-that-use-this-func (name)
+  (gethash name *dependent-gpu-functions*))
+
+(defun (setf funcs-that-use-this-func) (value name)
+  (setf (gethash name *dependent-gpu-functions*) value))
+
+(defun map-hash (function hash-table)
+  "map through a hash and actually return something"
+  (let* ((head (list nil))
+         (tail head))
+    (labels ((do-it (k v)
+               (rplacd tail (setq tail (list (funcall function k v))))))
+      (maphash #'do-it hash-table))
+    (cdr head)))
+
+(defun funcs-this-func-uses (name)
+  "Recursivly searches for functions by this function.
+Sorts the list of function names by dependency so the earlier
+names are depended on by the functions named later in the list"
+  (mapcar #'car
+          (remove-duplicates
+           (sort (%funcs-this-func-uses name) #'> :key #'cdr)
+           :key #'car :from-end t)))
+
+(defun %funcs-this-func-uses (name &optional (depth 0))
+  (let ((this-func-calls
+         (remove nil (map-hash
+                      (lambda (k v)
+                        (when (member name v)
+                          (cons k depth)))
+                      *dependent-gpu-functions*))))
+    (append this-func-calls
+            (apply #'append
+                   (mapcar (lambda (x)
+                             (%funcs-this-func-uses (car x) (1+ depth)))
+                           this-func-calls)))))
+
+(defun gpu-func-spec (name) (gethash name *gpu-func-specs*))
+(defun (setf gpu-func-spec) (value name)
+  (setf (gethash name *gpu-func-specs*) value))
 
 (defun %recompile-gpu-functions (name)
   )
 
 (defun %trigger-recompile-for-gpu-func-dependent-on (name)
-  (mapcar #'%recompile-gpu-functions (gethash name *dependent-gpu-functions*)))
+  (mapcar #'%recompile-gpu-functions (funcs-that-use-this-func name)))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             doc-string declarations)
@@ -37,8 +76,8 @@
                  :declarations declarations))
 (defun %serialize-gpu-func-spec (spec)
   (with-gpu-func-spec (spec)
-    `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body ',instancing
-                          ,doc-string ',declarations)))
+    `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
+                          ',instancing ,doc-string ',declarations)))
 
 (defmacro with-gpu-func-spec ((func-spec) &body body)
   `(with-slots (name in-args uniforms context body instancing
@@ -48,21 +87,30 @@
      ,@body))
 
 (defun %subscribe-to-gpu-func (name subscribe-to-name)
-  (symbol-macrolet ((func-specs (gethash subscribe-to-name
-                                         *dependent-gpu-functions*)))
-    (when (and (gethash subscribe-to-name *gpu-func-specs*)
+  (assert (not (eq name subscribe-to-name)))
+  (symbol-macrolet ((func-specs (funcs-that-use-this-func subscribe-to-name)))
+    (when (and (gpu-func-spec subscribe-to-name)
                (not (member name func-specs)))
       (format t "; func ~s subscribed to ~s" name subscribe-to-name)
       (push name func-specs))))
 
+(defun %unsubscibe-from-all (name)
+  (labels ((%remove-gpu-function-from-dependancy-table (func-name dependencies)
+             (when (member name dependencies)
+               (setf (funcs-that-use-this-func func-name)
+                     (remove name dependencies)))))
+    (maphash #'%remove-gpu-function-from-dependancy-table
+             *dependent-gpu-functions*)))
+
 (defun %update-gpu-function-data (spec depends-on)
   (with-slots (name) spec
+    (%unsubscibe-from-all name)
     (mapcar (fn_ #'%subscribe-to-gpu-func name) depends-on)
-    (setf (gethash name *gpu-func-specs*) spec)
+    (setf (gpu-func-spec name) spec)
     (%trigger-recompile-for-gpu-func-dependent-on name)))
 
 (defun %gpu-func-compiles-in-some-context (spec)
-  spec
+  (declare (ignorable spec))
   t)
 
 (defun %expand-all-macros (spec)
@@ -129,12 +177,17 @@
            (declare (ignore ,@arg-names ,@uniform-names))
            (warn "GPU Functions cannot currently be used from the cpu"))))))
 
+(defun %find-recursion (name depends-on)
+  (declare (ignore name depends-on))
+  nil)
+
 (defun %def-gpu-function (name in-args uniforms context body instancing
                           doc-string declarations)
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body
                                    instancing doc-string declarations)))
     (assert (%gpu-func-compiles-in-some-context spec))
     (let ((depends-on (%find-gpu-functions-depended-on spec)))
+      (assert (not (%find-recursion name depends-on)))
       (%make-stand-in-lisp-func spec depends-on))))
 
 ;;--------------------------------------------------
@@ -149,20 +202,15 @@
                          doc-string declarations))))
 
 (defun undefine-gpu-function (name)
-  (labels ((%remove-gpu-function-from-dependancy-table (func-name dependencies)
-             (when (member name dependencies)
-               (setf (gethash func-name *dependent-gpu-functions*)
-                     (remove name dependencies)))))
-    (maphash #'%remove-gpu-function-from-dependancy-table
-             *dependent-gpu-functions*)
-    (remhash name *gpu-func-specs*)
-    (remhash name *dependent-gpu-functions*))
+  (%unsubscibe-from-all name)
+  (remhash name *gpu-func-specs*)
+  (remhash name *dependent-gpu-functions*)
   nil)
 
 ;;--------------------------------------------------
 
 (defun extract-args-from-gpu-functions (function-names)
-  (let ((specs (mapcar #'get-gpu-func-spec function-names)))
+  (let ((specs (mapcar #'gpu-func-spec function-names)))
     (assert (every #'identity specs))
     (aggregate-args-from-specs specs)))
 
@@ -193,3 +241,17 @@
                         (context :&context) (instancing :&instancing))
          (utils:lambda-list-split '(&uniform &context &instancing) args)
        ,@body)))
+
+;;--------------------------------------------------
+
+(defun get-func-as-stage-code (name)
+  (with-gpu-func-spec ((gpu-func-spec name))
+    (list
+     in-args
+     uniforms
+     context
+     `(labels ,(mapcar (lambda (spec)
+                         (with-gpu-func-spec (spec)
+                           `(,name ,in-args ,@body )))
+                       (mapcar #'gpu-func-spec (funcs-this-func-uses name)))
+        ,@body))))
