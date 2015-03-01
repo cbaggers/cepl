@@ -116,12 +116,15 @@ names are depended on by the functions named later in the list"
 (defun %expand-all-macros (spec)
   (with-gpu-func-spec (spec)
     (let ((env (make-instance 'varjo::environment)))
-      (varjo::pipe-> (nil nil context body env)
-        #'varjo::split-input-into-env
-        #'varjo::process-context
-        (equal #'varjo::symbol-macroexpand-pass
-               #'varjo::macroexpand-pass
-               #'varjo::compiler-macroexpand-pass)))))
+      (%%expand-all-macros body context env))))
+
+(defun %%expand-all-macros (body context env)
+  (varjo::pipe-> (nil nil context body env)
+    #'varjo::split-input-into-env
+    #'varjo::process-context
+    (equal #'varjo::symbol-macroexpand-pass
+           #'varjo::macroexpand-pass
+           #'varjo::compiler-macroexpand-pass)))
 
 (defun %find-gpu-funcs-in-source (source &optional locally-defined)
   (unless (atom source)
@@ -153,7 +156,8 @@ names are depended on by the functions named later in the list"
                                  (append names locally-defined))))
           ;; its a symbol, just check it isn't varjo's and if we shouldnt ignore
           ;; it then record it
-          ((and (not (equal (package-name (symbol-package s)) "VARJO"))
+          ((and (symbolp s)
+                (not (equal (package-name (symbol-package s)) "VARJO"))
                 (not (member s locally-defined)))
            (cons s (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
                            (rest source))))
@@ -194,7 +198,8 @@ names are depended on by the functions named later in the list"
 
 (defmacro defun-gpu (name args &body body)
   (let ((doc-string (when (stringp (first body)) (pop body)))
-        (declarations (when (eq (caar body) 'declare) (pop body))))
+        (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
+                        (pop body))))
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
          (lambda-list-split '(:&uniform :&context :&instancing) args)
@@ -244,6 +249,8 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
+(defun %wrap-in-return (body) `(return (progn ,@body)))
+
 (defun get-func-as-stage-code (name)
   (with-gpu-func-spec ((gpu-func-spec name))
     (list
@@ -252,6 +259,10 @@ names are depended on by the functions named later in the list"
      context
      `(labels ,(mapcar (lambda (spec)
                          (with-gpu-func-spec (spec)
-                           `(,name ,in-args ,@body )))
+                           `(,name ,in-args ,(%wrap-in-return body) )))
                        (mapcar #'gpu-func-spec (funcs-this-func-uses name)))
         ,@body))))
+
+(defun varjo-compile-as-stage (name)
+  (apply #'varjo:translate
+         (get-func-as-stage-code name)))
