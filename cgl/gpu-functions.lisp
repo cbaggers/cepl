@@ -13,6 +13,14 @@
    (declarations :initarg :declarations)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmacro with-gpu-func-spec ((func-spec) &body body)
+    `(with-slots (name in-args uniforms context body instancing
+                       doc-string declarations) ,func-spec
+       (declare (ignorable name in-args uniforms context body instancing
+                           doc-string declarations))
+       ,@body)))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *gpu-func-specs* (make-hash-table :test #'eq))
   (defvar *dependent-gpu-functions* (make-hash-table :test #'eq)))
 
@@ -74,17 +82,11 @@ names are depended on by the functions named later in the list"
                  :instancing instancing
                  :doc-string doc-string
                  :declarations declarations))
+
 (defun %serialize-gpu-func-spec (spec)
   (with-gpu-func-spec (spec)
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
                           ',instancing ,doc-string ',declarations)))
-
-(defmacro with-gpu-func-spec ((func-spec) &body body)
-  `(with-slots (name in-args uniforms context body instancing
-                     doc-string declarations) ,func-spec
-     (declare (ignorable name in-args uniforms context body instancing
-                         doc-string declarations))
-     ,@body))
 
 (defun %subscribe-to-gpu-func (name subscribe-to-name)
   (assert (not (eq name subscribe-to-name)))
@@ -124,7 +126,8 @@ names are depended on by the functions named later in the list"
     #'varjo::process-context
     (equal #'varjo::symbol-macroexpand-pass
            #'varjo::macroexpand-pass
-           #'varjo::compiler-macroexpand-pass)))
+           #'varjo::compiler-macroexpand-pass)
+    #'varjo::remove-compiler-quotes))
 
 (defun %find-gpu-funcs-in-source (source &optional locally-defined)
   (unless (atom source)
@@ -249,8 +252,6 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defun %wrap-in-return (body) `(return (progn ,@body)))
-
 (defun get-func-as-stage-code (name)
   (with-gpu-func-spec ((gpu-func-spec name))
     (list
@@ -259,7 +260,7 @@ names are depended on by the functions named later in the list"
      context
      `(labels ,(mapcar (lambda (spec)
                          (with-gpu-func-spec (spec)
-                           `(,name ,in-args ,(%wrap-in-return body) )))
+                           `(,name ,in-args ,@body)))
                        (mapcar #'gpu-func-spec (funcs-this-func-uses name)))
         ,@body))))
 
