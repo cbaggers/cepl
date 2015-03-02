@@ -1,0 +1,9 @@
+;; well holy crap we can make this faster...much faster
+;; Ok so lets declare inline the dispatch function, and make the key args
+;; regular args. This means a much higher chance sbcl can optimize away the
+;; when forms.
+;; later we need to measure this and work out if taking dispatch out of the
+;; closure can improve this. This may mean making dedicated functions to
+;; return the uniform-ids and program-id
+
+;; Also how do we minimize when we upload uniforms? samplers also need reworking

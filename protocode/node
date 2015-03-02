@@ -1,0 +1,10 @@
+A node is the most minimal premade spacial entity in cepl
+
+It has the following:
+- position
+- orientation (quaternion)
+- parent-space
+- optional space - this is kept up to data when position or orientation change
+                   used for spacial hierarchy. No children are defined here.
+                   if they want a spacial relationship the subscribe to the
+                   parent space.

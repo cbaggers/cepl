@@ -1,0 +1,85 @@
+gmap s d -> fb
+(gmap p1 (col (gmap p0 d)))
+
+(gmap #'pipeline stream :a 1 :tex tx) ;; first thought
+
+(gmap #'pipeline :a 1 :tex tx #'stream)
+;; more inline with cl, better when calling
+;; directly, better for composition hmm no
+;; going with first as second looks like badly formed keys.
+
+;; * make totally seperate struct for default fb
+;; * Can gmap be a function? that would be sweet, just use compiler macros to
+;;   make it fast
+;; * gmap returns a framebuffer, either the bound one or default
+;; * need to make supporting macros hacky for speed, use expand-dammit etc to
+;;   get max perf
+;; * fb bind - like destructuring-bind
+
+(fbind (:color0 c :depth d) (gmap #'stage1 :tex t (stream obj))
+  (gmap #'stage2 :tex (tex c) *quad*))
+
+;; * for completeness function of pipeline could be called directly IF primitive
+;;   is :point
+
+;; * gmap gets us the form around the call which buys us a place to put speed
+;;   hacks
+
+
+;; * gmap~ allows any data-type and will meld a new gpu-array & stream for the
+;;   job this allows for more crazy experimentation (at the cost of speed and
+;;   ragging the gpu)
+
+;; can then have crazy composing DSL (g-> ...)
+
+;; shame the result of gmap cant be a stream
+
+;; need to have *resolution* somewhere in cepl...on context I guess
+
+;; NOTE: Also change fbo attachment points to support color-0 etc not just
+;;       color-attachment0
+
+
+(defpipeline prog-1 ((vert vert-data))
+  (:vertex (setf gl-position (pos vert))
+           (out (the-color :smooth) (col vert)))
+  (:fragment (let ((lerp-value (/ (y gl-frag-coord) 500.0)))
+               (out outputColor (mix the-color
+                                     (v! 0.2 0.2 0.2 1.0)
+                                     lerp-value)))))
+
+(defpipeline prog-1 ((data :vec4) &uniform (tx :sampler-2d)
+                     (pos :sampler-buffer))
+  (g-> #'vert-shader
+       #'frag-shader))
+
+(defpipeline prog-1 ((data :vec4) &uniform (tx :sampler-2d)
+                     (pos :sampler-buffer))
+  (g-> (vert-block
+        (setf gl-position (pos vert))
+        (out (the-color :smooth) (col vert)))
+       (frag-block
+        (let ((lerp-value (/ (y gl-frag-coord) 500.0)))
+          (out outputColor (mix the-color
+                                (v! 0.2 0.2 0.2 1.0)
+                                lerp-value))))))
+
+(fbo-bind (:c0 c :b b)
+    (gmap #'frag-shader (gmap #'vert-shader data :pos pos-tx :tx x))
+  (gmap #'post-proc-frag (gmap #'passthrough :c c :b b)))
+
+
+(defvshader vert-shader ((vert vert-data))
+  (setf gl-position (pos vert))
+  (values (col vert)))
+
+(deffshader frag-shader ((the-color :vec4 :smooth))
+  (let ((lerp-value (/ (y gl-frag-coord) 500.0)))
+    (setf outputColor (mix the-color
+                           (v! 0.2 0.2 0.2 1.0)
+                           lerp-value))))
+
+(gcompose test #'frag-shader #'vert-shader)
+
+(fbo-bind (:c0 c :b b) (gmap #'test data :pos pos-tx :tx x)
+  (gmap #'post-proc-frag (gmap #'passthrough :c c :b b)))
