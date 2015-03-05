@@ -126,8 +126,7 @@ names are depended on by the functions named later in the list"
     #'varjo::process-context
     (equal #'varjo::symbol-macroexpand-pass
            #'varjo::macroexpand-pass
-           #'varjo::compiler-macroexpand-pass)
-    #'varjo::remove-compiler-quotes))
+           #'varjo::compiler-macroexpand-pass)))
 
 (defun %find-gpu-funcs-in-source (source &optional locally-defined)
   (unless (atom source)
@@ -267,3 +266,23 @@ names are depended on by the functions named later in the list"
 (defun varjo-compile-as-stage (name)
   (apply #'varjo:translate
          (get-func-as-stage-code name)))
+
+
+(defun varjo-compile-as-pipeline (&key vertex geometry tesselation-evaluation
+                                    tesselation-control fragment)
+  (let ((stages (remove nil (mapcar λ(when % (prepare-stage % %1))
+                                    (list vertex geometry tesselation-evaluation
+                                          tesselation-control fragment)
+                                    varjo::*stage-types*))))
+    (rolling-translate stages)))
+
+(defun prepare-stage (stage-name stage-type)
+  (destructuring-bind (in-args uniforms context code)
+      (get-func-as-stage-code stage-name)
+    ;; ensure context doesnt specify a stage or that it matches
+    (let ((n (count-if λ(member % varjo::*stage-types*) context)))
+      (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+    (list in-args
+          uniforms
+          (cons stage-type (remove stage-type context))
+          code)))
