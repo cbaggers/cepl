@@ -1,5 +1,6 @@
 ;; Raymarcher! -currently broken-
 
+(in-package :cepl)
 (defparameter *gpu-array* nil)
 (defparameter *vertex-stream* nil)
 (defparameter *loop* 0.0)

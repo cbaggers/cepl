@@ -8,12 +8,15 @@
 
 ;;;; cepl.asd
 
-(asdf:defsystem #:cepl
+(defsystem #:cepl
   :serial t
   :depends-on (#:cl-opengl
                #:cl-devil
                #:swank
                #:sdl2
+               #:cl-autowrap
+               #:cl-plus-c
+               #:cl-glfw3
                #:varjo
                #:temporal-functions
                #:cl-utilities
@@ -21,55 +24,104 @@
                #:symbol-munger
                #:cells
                #:classimp
-               #:fn_)
-  :components ((:file "package")
-               (:file "utils")
-               (:file "base-macros")
-               (:file "maths/base-maths")
-               (:file "maths/maths")
-               (:file "maths/vectors/base-vectors")
-               (:file "cgl/cl-opengl-replacements")
-               (:file "cgl/context")
-               (:file "cgl/generics")
-               (:file "cgl/pixel-format")
-               (:file "cgl/cffi-extra-primitive-types")
-               (:file "cgl/gl-extras")
-               (:file "cgl/c-values")
-               (:file "cgl/c-arrays")
-               (:file "cgl/structs")
-               (:file "cgl/buffers")
-               (:file "cgl/equivalent-types")
-               (:file "cgl/buffer-gpu-arrays")
-               (:file "cgl/vaos")
-               (:file "cgl/vertex-streams")
-               (:file "cgl/uniforms")
-               (:file "cgl/shaders")
-               (:file "cgl/misc")
-               (:file "cgl/textures")
-               (:file "cgl/types")
-               (:file "cgl/gmap")
-               (:file "cgl/framebuffer")
-               (:file "cgl/default-data")
-               (:file "ugly/swatch")
-               (:file "ugly/particles")
-               (:file "maths/vectors/vector2")
-               (:file "maths/vectors/vector3")
-               (:file "maths/vectors/vector4")
-               (:file "maths/vectors/vectors")
-               (:file "maths/matrices/base-matrices")
-               (:file "maths/matrices/matrix3")
-               (:file "maths/matrices/matrix4")
-               (:file "maths/matrices/matrices")
-               (:file "maths/quaternions")
-               (:file "camera/camera")
-               (:file "images/devil-helper")
-               (:file "meshes-and-models/primitives")
-               (:file "meshes-and-models/mesh")
-               (:file "meshes-and-models/classimp-helpers")               
-               (:file "sdl-extras")
-               (:file "events/event-base")
-               (:file "events/events")
-               (:file "events/sdl-event-sources")
-               (:file "live/bootstrapping")
-               (:file "time/time")
-               (:file "cepl")))
+               #:fn_
+               #:sb-cga)
+  :components
+  (
+   (:module "utils"
+            :serial t
+            :components ((:file "package")
+                         (:file "utils")))
+   (:module "base-macros"
+            :serial t
+            :components ((:file "package")            
+                         (:file "base-macros")))
+   (:module "maths"
+            :serial t
+            :components ((:file "package")
+                         (:file "base-maths")
+                         (:file "maths")
+                         (:module "vectors"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "base-vectors")
+                                               (:file "vector2")
+                                               (:file "vector3")
+                                               (:file "vector4")
+                                               (:file "vectors")))
+                         (:module "matrices"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "base-matrices")
+                                               (:file "matrix3")
+                                               (:file "matrix4")
+                                               (:file "matrices")))
+                         (:module "quaternions"
+                                  :serial t
+                                  :components ((:file "package")
+                                               (:file "quaternions")))))
+   (:module "cgl"
+            :serial t
+            :components((:file "package")
+                        (:file "cl-opengl-replacements")
+                        (:file "context")
+                        (:file "generics")
+                        (:file "pixel-format")
+                        (:file "cffi-extra-primitive-types")
+                        (:file "gl-extras")
+                        (:file "c-values")
+                        (:file "c-arrays")
+                        (:file "structs")
+                        (:file "buffers")
+                        (:file "equivalent-types")
+                        (:file "buffer-gpu-arrays")
+                        (:file "vaos")
+                        (:file "vertex-streams")
+                        (:file "uniforms")
+                        (:file "shaders")
+                        (:file "misc")
+                        (:file "textures")
+                        (:file "types")
+                        (:file "gmap")
+                        (:file "framebuffer")
+                        (:file "default-data")
+                        ))
+   (:module "camera"
+            :serial t
+            :components ((:file "package")            
+                         (:file "camera")))
+   (:module "ugly"
+            :serial t
+            :components((:file "swatch")
+                        (:file "particles")))                        
+   ;; (:module "space"
+   ;;          :serial t
+   ;;          :components ((:file "base-space")))
+   (:module "images"
+             :serial t
+             :components ((:file "package")
+                          (:file "devil-helper")))
+   (:module "meshes-and-models"
+            :serial t
+            :components ((:file "package")
+                         (:file "primitives")
+                         (:file "mesh")
+                         (:file "classimp-helpers")))
+   (:module "events"
+            :serial t
+            :components ((:file "package")
+                         (:file "event-base")
+                         (:file "events")
+                         (:file "sdl-event-sources")))
+   (:module "live"
+            :serial t
+            :components ((:file "package")
+                         (:file "bootstrapping")))
+   (:module "cepl"
+            :serial t
+            :components ((:file "package")                         
+                         (:file "sdl-extras")
+                         (:file "cepl")))
+   (:module "time"
+            :serial t
+            :components ((:file "time")))))

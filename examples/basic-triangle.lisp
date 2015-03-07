@@ -1,6 +1,7 @@
 (in-package :cepl)
 ;; This is simply to get a colored triangle up on the screen
 
+;; not working
 (defparameter *array* nil)
 (defparameter *stream* nil)
 

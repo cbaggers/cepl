@@ -1,9 +1,10 @@
 (in-package :cepl)
 ;; This gives us a simple moving triangle
 
+(in-package :cepl)
 (defparameter *gpu-array* nil)
 (defparameter *vertex-stream* nil)
-(defparameter *loop* 0.0)
+(defparameter *loop* 0.1)
 
 (defsfun calc-offset ((i :float) (loop :float))
   (let ((i (/ i 2)))
@@ -21,7 +22,7 @@
 (defpipeline prog-1 ((position :vec4) &uniform (i :int) (loop :float))
   vert frag)
 
-
+;;; ---------------------------------------------------------------------------
 (defun draw (gstream)
   (setf *loop* (+ 0.04 *loop*))
   (gl:clear :color-buffer-bit :depth-buffer-bit)  

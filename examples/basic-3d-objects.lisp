@@ -1,5 +1,6 @@
 ;; More 3D - Multiple objects rotating
 
+(in-package :cepl)
 (defparameter *entities* nil)
 (defparameter *camera* nil)
 (defparameter *resolution* cgl:+default-resolution+)
