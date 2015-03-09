@@ -27,43 +27,44 @@
 
 ;;--------------------------------------------------
 
-(defmethod gl-pull ((asset-name symbol))
-  (get-glsl-code asset-name))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *gpu-program-cache* (make-hash-table :test #'eq)))
+
+(defun request-program-id-for (name)
+  (or (gethash name *gpu-program-cache*)
+      (setf (gethash name *gpu-program-cache*)
+            (gl:create-program))))
+
+;; (defmethod gl-pull ((asset-name symbol))
+;;   (get-glsl-code asset-name))
 
 ;;;--------------------------------------------------------------
 ;;; PIPELINE ;;;
 ;;;----------;;;
 
-(defmacro defpipeline (name gpu-pipe-form)
+(defmacro defpipeline (name gpu-pipe-form &body context)
   (assert (eq (first gpu-pipe-form) 'cgl::g->))
-  (let ((pass-key (gensym "PASS-"))
-        (stages (rest gpu-pipe-form)))
-    `(let-pipeline-vars (,stages ,pass-key)
-       (def-pipeline-invalidate ,name ,pass-key)
-       (def-pipeline-init ,name ,stages ,pass-key)
-       (def-dispatch-func ,name ,stages ,pass-key)
-       (def-dummy-func ,name ,stages ,pass-key))))
+  (let* ((pass-key (gensym "PASS-")) ;; used as key for memoization
+         (gpipe-args (rest gpu-pipe-form)))
+    (destructuring-bind (stage-pairs post gpipe-context)
+        (parse-gpipe-args gpipe-args)
+      (assert (not (and gpipe-context context)))
+      (let ((context (or context gpipe-context)))
+        `(let-pipeline-vars (,stage-pairs ,pass-key)
+           (def-pipeline-invalidate ,name)
+           (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
+           (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
+           (def-dummy-func ,name ,stage-pairs ,pass-key))))))
 
 (defun init-func-name (name) (symb-package :cgl '%%- name))
 (defun invalidate-func-name (name) (symb-package :cgl '££- name))
 (defun dispatch-func-name (name) (symb-package :cgl '$$-dispatch- name))
 
-(defun gen-varjo-args (stages)
-  (with-processed-func-specs (stages)
-    `(,@in-args
-      ,@(when unexpanded-uniforms
-              `(&uniform
-                ,@(loop :for (name type) :in unexpanded-uniforms :collect
-                     (if (gethash type *gl-equivalent-type-data*)
-                         `(,name ,(symbol-to-bridge-symbol type))
-                         `(,name ,type)))))
-      ,@(when context `(&context ,@context)))))
-
-(defmacro let-pipeline-vars ((stages pass-key) &body body)
-  (with-processed-func-specs (stages)
-    (let ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                   (expand-equivalent-types
-                                    unexpanded-uniforms))))
+(defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
+  (with-processed-func-specs (mapcar #'cdr stage-pairs)
+    (let ((uniform-details
+           (mapcar (lambda (x) (make-arg-assigners x pass-key))
+                   (expand-equivalent-types unexpanded-uniforms))))
       `(let ((program-id nil)
              ,@(let ((u-lets (mapcan #'first uniform-details)))
                     (mapquote `(,(first %) -1) u-lets)))
@@ -72,51 +73,38 @@
 (defmacro def-pipeline-invalidate (name)
   `(defun ,(invalidate-func-name name) () (setf program-id nil)))
 
-(defmacro def-pipeline-init (name shaders pass-key)
-  (with-processed-func-specs (shaders)
-    (let ((varjo-args (gen-varjo-args shaders))
-          (uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                   (expand-equivalent-types
-                                    unexpanded-uniforms))))
-      (destructuring-bind (stages post-compile)
-          (loop :for shader :in shaders
-             :if (and (listp shader) (eq (first shader) :post-compile))
-             :collect shader :into post :else :collect shader :into main
-             :finally (return (list main post)))
-        `(defun ,(init-func-name name) ()
-           (let* ((stages ',stages)
-                  (compiled-stages
-                   ,(destructuring-bind (in-args uniforms context)
-                                        (varjo:split-arguments varjo-args '(&uniform &context))
-                                        `(varjo::rolling-translate ',in-args ',uniforms ',context
-                                                                   (loop :for i :in stages :collect
-                                                                      (if (symbolp i)
-                                                                          (get-compiled-asset i)
-                                                                          i)))))
-                  (shaders-objects
-                   (loop :for compiled-stage :in compiled-stages
-                      :collect (make-shader (varjo->gl-stage-names
-                                             (varjo::stage-type compiled-stage))
-                                            (varjo::glsl-code compiled-stage))))
-                  (depends-on (loop :for s :in stages :for c :in compiled-stages :append
-                                 (cond ((symbolp s) `(,s)) ((listp s) (used-external-functions c)))))
-                  (prog-id (update-shader-asset ',name :pipeline compiled-stages
-                                                #',(invalidate-func-name name) depends-on))
-                  (image-unit -1))
-             (declare (ignorable image-unit))
-             (format t ,(format nil "~&; uploading (~a ...)~&" name))
-             (link-shaders shaders-objects prog-id)
-             (mapcar #'%gl:delete-shader shaders-objects)
+(defun %gl-make-shader-from-varjo (compiled-stage)
+  (make-shader (varjo->gl-stage-names (varjo::stage-type compiled-stage))
+               (varjo::glsl-code compiled-stage)))
 
-             ,@(let ((u-lets (mapcan #'first uniform-details)))
-                    (loop for u in u-lets collect (cons 'setf u)))
-             (unbind-buffer) (force-bind-vao 0) (force-use-program 0)
-             (setf program-id prog-id)
-             ,@(loop for p in post-compile append p)
-             prog-id))))))
+(defmacro def-pipeline-init (name stage-pairs post pass-key)
+  (let* ((stage-names (mapcar #'cdr stage-pairs))
+         (uniform-details
+          (with-processed-func-specs stage-names
+            (mapcar (lambda (x) (make-arg-assigners x pass-key))
+                    (expand-equivalent-types unexpanded-uniforms)))))
+    `(defun ,(init-func-name name) ()
+       (let* ((compiled-stages (%varjo-compile-as-pipeline ',stage-pairs))
+              (stages-objects (mapcar #'%gl-make-shader-from-varjo
+                                      compiled-stages))
+              (prog-id (request-program-id-for ',name))
+              (image-unit -1))
+         (declare (ignorable image-unit))
+         (format t ,(format nil "~&; uploading (~a ...)~&" name))
+         (link-shaders stages-objects prog-id)
+         (mapcar #'%gl:delete-shader stages-objects)
+         ,@(let ((u-lets (mapcan #'first uniform-details)))
+                (loop for u in u-lets collect (cons 'setf u)))
+         (unbind-buffer)
+         (force-bind-vao 0)
+         (force-use-program 0)
+         (setf program-id prog-id)
+         ,(when post `(funcall ,post))
+         (%recompile-gpu-functions ',stage-names)
+         prog-id))))
 
-(defmacro def-dispatch-func (name stages pass-key)
-  (with-processed-func-specs (stages)
+(defmacro def-dispatch-func (name stage-pairs context pass-key)
+  (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
                                     (expand-equivalent-types
                                      unexpanded-uniforms)))
@@ -133,8 +121,8 @@
          (use-program 0)
          stream))))
 
-(defmacro def-dummy-func (name stages pass-key)
-  (with-processed-func-specs (stages)
+(defmacro def-dummy-func (name stage-pairs pass-key)
+  (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
                                     (expand-equivalent-types
                                      unexpanded-uniforms)))

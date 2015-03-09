@@ -65,7 +65,7 @@ names are depended on by the functions named later in the list"
 (defun (setf gpu-func-spec) (value name)
   (setf (gethash name *gpu-func-specs*) value))
 
-(defun %recompile-gpu-functions (name)
+(defun %recompile-gpu-functions (names)
   )
 
 (defun %trigger-recompile-for-gpu-func-dependent-on (name)
@@ -204,7 +204,7 @@ names are depended on by the functions named later in the list"
                         (pop body))))
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-         (lambda-list-split '(:&uniform :&context :&instancing) args)
+        (varjo::lambda-list-split '(:&uniform :&context :&instancing) args)
       (%def-gpu-function name in-args uniforms context body instancing
                          doc-string declarations))))
 
@@ -242,11 +242,10 @@ names are depended on by the functions named later in the list"
                         u into))))
       into))
 
-(defmacro with-processed-func-specs ((stages) &body body)
+(defmacro with-processed-func-specs (stages &body body)
   `(let ((args (extract-args-from-gpu-functions ,stages)))
-     (utils:assoc-bind ((in-args nil) (unexpanded-uniforms :&uniform)
-                        (context :&context) (instancing :&instancing))
-         (utils:lambda-list-split '(&uniform &context &instancing) args)
+     (utils:assoc-bind ((in-args nil) (unexpanded-uniforms :&uniform))
+         (varjo::lambda-list-split '(&uniform) args)
        ,@body)))
 
 ;;--------------------------------------------------
@@ -267,36 +266,51 @@ names are depended on by the functions named later in the list"
   (apply #'varjo:translate
          (get-func-as-stage-code name)))
 
+(defun varjo-compile-as-pipeline (args)
+  (destructuring-bind (stage-pairs post context) (parse-gpipe-args args)
+    (declare (ignore post context))
+    (%varjo-compile-as-pipeline stage-pairs )))
+(defun %varjo-compile-as-pipeline (parsed-gpipe-args)
+  (rolling-translate (mapcar #'prepare-stage parsed-gpipe-args)))
 
-(defun varjo-compile-as-pipeline (&key vertex geometry tesselation-evaluation
-                                    tesselation-control fragment)
-  (let ((stages (remove nil (mapcar λ(when % (prepare-stage % %1))
-                                    (list vertex geometry tesselation-evaluation
-                                          tesselation-control fragment)
-                                    varjo::*stage-types*))))
-    (rolling-translate stages)))
-
-(defun prepare-stage (stage-name stage-type)
-  (destructuring-bind (in-args uniforms context code)
-      (get-func-as-stage-code stage-name)
-    ;; ensure context doesnt specify a stage or that it matches
-    (let ((n (count-if λ(member % varjo::*stage-types*) context)))
-      (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-    (list in-args
-          uniforms
-          (cons stage-type (remove stage-type context))
-          code)))
+(defun prepare-stage (stage-pair)
+  (let ((stage-type (car stage-pair))
+        (stage-name (cdr stage-pair)))
+    (destructuring-bind (in-args uniforms context code)
+        (get-func-as-stage-code stage-name)
+      ;; ensure context doesnt specify a stage or that it matches
+      (let ((n (count-if λ(member % varjo::*stage-types*) context)))
+        (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+      (list in-args
+            uniforms
+            (cons stage-type (remove stage-type context))
+            code))))
 
 ;;--------------------------------------------------
 
 (defun parse-gpipe-args (args)
-  (if (and (= (length args) 2) (not (some #'keywordp args)))
-      `((:vertex . ,(first args)) (:fragment . ,(second args)))
-      (let ((stages (copy-list varjo::*stage-types*)))
-        (loop :for a :in args
-           :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
-           :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
-                                a)))))
+  (let ((cut-pos (min (or (position :post args) (length args))
+                      (or (position :context args) (length args)))))
+    (destructuring-bind (&key post context) (subseq args cut-pos)
+      (list
+       (let ((args (subseq args 0 cut-pos)))
+         (if (and (= (length args) 2) (not (some #'keywordp args)))
+             `((:vertex . ,(first args)) (:fragment . ,(second args)))
+             (let* ((stages (append (copy-list varjo::*stage-types*) (list :post)))
+                    (results (loop :for a :in args
+                                :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
+                                :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
+                                                     a))))
+               (remove :post (remove :context results :key #'car) :key #'car))))
+       post
+       context))))
+
+(defun get-gpipe-arg (key args)
+  (destructuring-bind (stage-pairs post context) (parse-gpipe-args args)
+    (declare (ignore post context))
+    (%get-gpipe-arg key stage-pairs)))
+(defun %get-gpipe-arg (key parsed-args)
+  (cdr (assoc key parsed-args)))
 
 (defun validate-gpipe-args (args)
   (not (null (reduce #'%validate-gpipe-arg args))))

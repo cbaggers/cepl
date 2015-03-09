@@ -5,41 +5,6 @@
 
 (in-package :cepl-utils)
 
-(defun lambda-list-split (template lam-list)
-  (labels ((kwd (x) (intern (format nil "~a" x) :keyword))
-           (symbol-name= (x y) (equal (symbol-name x) (symbol-name y)))
-           (collector (lam-list &optional current-modifier accum)
-                (let ((item (first lam-list)))
-                  (cond ((null lam-list) accum)
-                        ((and (symbolp item) (eql (elt (symbol-name item) 0) #\&))
-                         (collector (rest lam-list)
-                                    (kwd item)
-                                    accum))
-                        (t (collector (rest lam-list)
-                                      current-modifier
-                                      (acons current-modifier
-                                             (cons item
-                                                   (cdr (assoc current-modifier
-                                                               accum)))
-                                             accum))))))
-           (clean-alist (alist &optional accum)
-             (let ((item (first alist)))
-               (cond ((null alist) accum)
-                     ((atom item) (clean-alist (rest alist) accum))
-                     ((not (assoc (first item) accum))
-                      (clean-alist (rest alist) (cons item accum)))
-                     (t (clean-alist (rest alist) accum)))))
-           (first-in-template-p (x) (or (null (first x))
-                                        (member (first x) template
-                                                :test #'symbol-name= ))))
-    (let ((template (when template (cons nil (mapcar #'kwd template))))
-          (split (collector lam-list)))
-      (if (or (null template)
-              (every #'first-in-template-p split))
-          (clean-alist split)
-          (error "'&' symbol found that was not specified in template ~s"
-                 (mapcar #'first split))))))
-
 (defmacro gdefun (name lambda-list &body body/options)
   (if (or (null body/options)
           (consp (car body/options))
