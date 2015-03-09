@@ -198,7 +198,7 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defmacro defun-gpu (name args &body body)
+(defmacro defun-g (name args &body body)
   (let ((doc-string (when (stringp (first body)) (pop body)))
         (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
                         (pop body))))
@@ -286,3 +286,29 @@ names are depended on by the functions named later in the list"
           uniforms
           (cons stage-type (remove stage-type context))
           code)))
+
+;;--------------------------------------------------
+
+(defun parse-gpipe-args (args)
+  (if (and (= (length args) 2) (not (some #'keywordp args)))
+      `((:vertex . ,(first args)) (:fragment . ,(second args)))
+      (let ((stages (copy-list varjo::*stage-types*)))
+        (loop :for a :in args
+           :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
+           :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
+                                a)))))
+
+(defun validate-gpipe-args (args)
+  (not (null (reduce #'%validate-gpipe-arg args))))
+
+(defun %validate-gpipe-arg (previous current)
+  (if (keywordp current)
+      (progn
+        (when (keywordp previous)
+          (error "Invalid gpipe arguments: ~s follows ~s" current previous))
+        (unless (member current varjo::*stage-types*)
+          (error "Invalid gpipe arguments: ~s is not the name of a stage" current))
+        current)
+      (if (symbolp current)
+          current
+          (error "Invalid gpipe argument: ~a" current))))
