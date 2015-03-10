@@ -1,4 +1,5 @@
 (in-package :cgl)
+(named-readtables:in-readtable fn_::fn_lambda)
 
 ;; defun-gpu is at the bottom of this file
 
@@ -22,13 +23,22 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *gpu-func-specs* (make-hash-table :test #'eq))
-  (defvar *dependent-gpu-functions* (make-hash-table :test #'eq)))
+  (defvar *dependent-gpu-functions* (make-hash-table :test #'eq))
+  (defvar *dependent-external-functions* (make-hash-table :test #'eq)))
 
 (defun funcs-that-use-this-func (name)
   (gethash name *dependent-gpu-functions*))
 
 (defun (setf funcs-that-use-this-func) (value name)
   (setf (gethash name *dependent-gpu-functions*) value))
+
+(defun funcs-to-call-on-change (name)
+  (gethash name *dependent-external-functions*))
+
+(defun add-func-to-call-on-change (name func)
+  (when (not (member func (gethash name *dependent-external-functions*)
+                     :test #'eq))
+    (push func (gethash name *dependent-external-functions*))))
 
 (defun map-hash (function hash-table)
   "map through a hash and actually return something"
@@ -65,11 +75,15 @@ names are depended on by the functions named later in the list"
 (defun (setf gpu-func-spec) (value name)
   (setf (gethash name *gpu-func-specs*) value))
 
-(defun %recompile-gpu-functions (name)
-  )
-
-(defun %trigger-recompile-for-gpu-func-dependent-on (name)
-  (mapcar #'%recompile-gpu-functions (funcs-that-use-this-func name)))
+(defun %recompile-gpu-function (name)
+  (mapcar #'%recompile-gpu-function (funcs-that-use-this-func name))
+  (labels ((safe-call (func)
+             (funcall func)
+             ;; (handler-case (funcall func)
+             ;;   (error () (format t "~%%recompile-gpu-functions: Unable to call ~a"
+             ;;                     func)))
+             ))
+    (mapcar #'safe-call (funcs-to-call-on-change name))))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             doc-string declarations)
@@ -109,7 +123,8 @@ names are depended on by the functions named later in the list"
     (%unsubscibe-from-all name)
     (mapcar (fn_ #'%subscribe-to-gpu-func name) depends-on)
     (setf (gpu-func-spec name) spec)
-    (%trigger-recompile-for-gpu-func-dependent-on name)))
+    ;(%recompile-gpu-function name)
+    ))
 
 (defun %gpu-func-compiles-in-some-context (spec)
   (declare (ignorable spec))
@@ -126,8 +141,7 @@ names are depended on by the functions named later in the list"
     #'varjo::process-context
     (equal #'varjo::symbol-macroexpand-pass
            #'varjo::macroexpand-pass
-           #'varjo::compiler-macroexpand-pass)
-    #'varjo::remove-compiler-quotes))
+           #'varjo::compiler-macroexpand-pass)))
 
 (defun %find-gpu-funcs-in-source (source &optional locally-defined)
   (unless (atom source)
@@ -179,6 +193,7 @@ names are depended on by the functions named later in the list"
          (eval-when (:compile-toplevel :load-toplevel :execute)
            (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
                                       ',depends-on))
+         (%recompile-gpu-function ',name)
          (defun ,name (,@arg-names
                        ,@(when uniforms (cons (symb :&uniform) uniform-names) ))
            (declare (ignore ,@arg-names ,@uniform-names))
@@ -199,13 +214,13 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defmacro defun-gpu (name args &body body)
+(defmacro defun-g (name args &body body)
   (let ((doc-string (when (stringp (first body)) (pop body)))
         (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
                         (pop body))))
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-         (lambda-list-split '(:&uniform :&context :&instancing) args)
+        (varjo::lambda-list-split '(:&uniform :&context :&instancing) args)
       (%def-gpu-function name in-args uniforms context body instancing
                          doc-string declarations))))
 
@@ -213,6 +228,7 @@ names are depended on by the functions named later in the list"
   (%unsubscibe-from-all name)
   (remhash name *gpu-func-specs*)
   (remhash name *dependent-gpu-functions*)
+  (remhash name *dependent-external-functions*)
   nil)
 
 ;;--------------------------------------------------
@@ -243,11 +259,10 @@ names are depended on by the functions named later in the list"
                         u into))))
       into))
 
-(defmacro with-processed-func-specs ((stages) &body body)
+(defmacro with-processed-func-specs (stages &body body)
   `(let ((args (extract-args-from-gpu-functions ,stages)))
-     (utils:assoc-bind ((in-args nil) (unexpanded-uniforms :&uniform)
-                        (context :&context) (instancing :&instancing))
-         (utils:lambda-list-split '(&uniform &context &instancing) args)
+     (utils:assoc-bind ((in-args nil) (unexpanded-uniforms :&uniform))
+         (varjo::lambda-list-split '(&uniform) args)
        ,@body)))
 
 ;;--------------------------------------------------
@@ -267,3 +282,64 @@ names are depended on by the functions named later in the list"
 (defun varjo-compile-as-stage (name)
   (apply #'varjo:translate
          (get-func-as-stage-code name)))
+
+(defun varjo-compile-as-pipeline (args)
+  (destructuring-bind (stage-pairs post context) (parse-gpipe-args args)
+    (declare (ignore post context))
+    (%varjo-compile-as-pipeline stage-pairs )))
+(defun %varjo-compile-as-pipeline (parsed-gpipe-args)
+  (rolling-translate (mapcar #'prepare-stage parsed-gpipe-args)))
+
+(defun prepare-stage (stage-pair)
+  (let ((stage-type (car stage-pair))
+        (stage-name (cdr stage-pair)))
+    (destructuring-bind (in-args uniforms context code)
+        (get-func-as-stage-code stage-name)
+      ;; ensure context doesnt specify a stage or that it matches
+      (let ((n (count-if λ(member % varjo::*stage-types*) context)))
+        (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+      (list in-args
+            uniforms
+            (cons stage-type (remove stage-type context))
+            code))))
+
+;;--------------------------------------------------
+
+(defun parse-gpipe-args (args)
+  (let ((cut-pos (min (or (position :post args) (length args))
+                      (or (position :context args) (length args)))))
+    (destructuring-bind (&key post context) (subseq args cut-pos)
+      (list
+       (let ((args (subseq args 0 cut-pos)))
+         (if (and (= (length args) 2) (not (some #'keywordp args)))
+             `((:vertex . ,(first args)) (:fragment . ,(second args)))
+             (let* ((stages (append (copy-list varjo::*stage-types*) (list :post)))
+                    (results (loop :for a :in args
+                                :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
+                                :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
+                                                     a))))
+               (remove :post (remove :context results :key #'car) :key #'car))))
+       post
+       context))))
+
+(defun get-gpipe-arg (key args)
+  (destructuring-bind (stage-pairs post context) (parse-gpipe-args args)
+    (declare (ignore post context))
+    (%get-gpipe-arg key stage-pairs)))
+(defun %get-gpipe-arg (key parsed-args)
+  (cdr (assoc key parsed-args)))
+
+(defun validate-gpipe-args (args)
+  (not (null (reduce #'%validate-gpipe-arg args))))
+
+(defun %validate-gpipe-arg (previous current)
+  (if (keywordp current)
+      (progn
+        (when (keywordp previous)
+          (error "Invalid gpipe arguments: ~s follows ~s" current previous))
+        (unless (member current varjo::*stage-types*)
+          (error "Invalid gpipe arguments: ~s is not the name of a stage" current))
+        current)
+      (if (symbolp current)
+          current
+          (error "Invalid gpipe argument: ~a" current))))

@@ -27,128 +27,118 @@
 
 ;;--------------------------------------------------
 
-(defmethod gl-pull ((asset-name symbol))
-  (get-glsl-code asset-name))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *gpu-program-cache* (make-hash-table :test #'eq)))
+
+(defun request-program-id-for (name)
+  (or (gethash name *gpu-program-cache*)
+      (setf (gethash name *gpu-program-cache*)
+            (gl:create-program))))
+
+;; (defmethod gl-pull ((asset-name symbol))
+;;   (get-glsl-code asset-name))
 
 ;;;--------------------------------------------------------------
 ;;; PIPELINE ;;;
 ;;;----------;;;
 
-(defmacro defpipeline (name gpu-pipe-form)
-  (assert (eq (first gpu-pipe-form) 'cgl::g->))
-  (let ((pass-key (gensym "PASS-"))
-        (stages (rest gpu-pipe-form)))
-    `(let-pipeline-vars (,stages ,pass-key)
-       (def-pipeline-invalidate ,name ,pass-key)
-       (def-pipeline-init ,name ,stages ,pass-key)
-       (def-dispatch-func ,name ,stages ,pass-key)
-       (def-dummy-func ,name ,stages ,pass-key))))
+(defmacro defpipeline (name gpu-pipe-form &body context)
+  (assert (equal (symbol-name (first gpu-pipe-form)) "G->"))
+  (let* ((pass-key (gensym "PASS-")) ;; used as key for memoization
+         (gpipe-args (rest gpu-pipe-form)))
+    (destructuring-bind (stage-pairs post gpipe-context)
+        (parse-gpipe-args gpipe-args)
+      (assert (not (and gpipe-context context)))
+      (let ((context (or context gpipe-context)))
+        `(let-pipeline-vars (,stage-pairs ,pass-key)
+           (def-pipeline-invalidate ,name)
+           (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
+           (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
+           (def-dummy-func ,name ,stage-pairs ,pass-key))))))
 
 (defun init-func-name (name) (symb-package :cgl '%%- name))
 (defun invalidate-func-name (name) (symb-package :cgl '££- name))
 (defun dispatch-func-name (name) (symb-package :cgl '$$-dispatch- name))
 
-(defun gen-varjo-args (stages)
-  (with-processed-func-specs (stages)
-                             `(,@in-args
-                               ,@(when unexpanded-uniforms
-                                   `(&uniform
-                                     ,@(loop :for (name type) :in unexpanded-uniforms :collect
-                                             (if (gethash type *gl-equivalent-type-data*)
-                                                 `(,name ,(symbol-to-bridge-symbol type))
-                                               `(,name ,type)))))
-                               ,@(when context `(&context ,@context)))))
-
-(defmacro let-pipeline-vars ((stages pass-key) &body body)
-  (with-processed-func-specs (stages)
-                             (let ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                                            (expand-equivalent-types
-                                                             unexpanded-uniforms))))
-                               `(let ((program-id nil)
-                                      ,@(let ((u-lets (mapcan #'first uniform-details)))
-                                          (mapquote `(,(first %) -1) u-lets)))
-                                  ,@body))))
+(defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
+  (with-processed-func-specs (mapcar #'cdr stage-pairs)
+    (let ((uniform-details
+           (mapcar (lambda (x) (make-arg-assigners x pass-key))
+                   (expand-equivalent-types unexpanded-uniforms))))
+      `(let ((program-id nil)
+             ,@(let ((u-lets (mapcan #'first uniform-details)))
+                    (mapquote `(,(first %) -1) u-lets)))
+         ,@body))))
 
 (defmacro def-pipeline-invalidate (name)
   `(defun ,(invalidate-func-name name) () (setf program-id nil)))
 
-(defmacro def-pipeline-init (name shaders pass-key)
-  (with-processed-func-specs (shaders)
-                             (let ((varjo-args (gen-varjo-args shaders))
-                                   (uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                                            (expand-equivalent-types
-                                                             unexpanded-uniforms))))
-                               (destructuring-bind (stages post-compile)
-                                   (loop :for shader :in shaders
-                                         :if (and (listp shader) (eq (first shader) :post-compile))
-                                         :collect shader :into post :else :collect shader :into main
-                                         :finally (return (list main post)))
-                                 `(defun ,(init-func-name name) ()
-                                    (let* ((stages ',stages)
-                                           (compiled-stages
-                                            ,(destructuring-bind (in-args uniforms context)
-                                                 (varjo:split-arguments varjo-args '(&uniform &context))
-                                               `(varjo::rolling-translate ',in-args ',uniforms ',context
-                                                                          (loop :for i :in stages :collect
-                                                                                (if (symbolp i)
-                                                                                    (get-compiled-asset i)
-                                                                                  i)))))
-                                           (shaders-objects
-                                            (loop :for compiled-stage :in compiled-stages
-                                                  :collect (make-shader (varjo->gl-stage-names
-                                                                         (varjo::stage-type compiled-stage))
-                                                                        (varjo::glsl-code compiled-stage))))
-                                           (depends-on (loop :for s :in stages :for c :in compiled-stages :append
-                                                             (cond ((symbolp s) `(,s)) ((listp s) (used-external-functions c)))))
-                                           (prog-id (update-shader-asset ',name :pipeline compiled-stages
-                                                                         #',(invalidate-func-name name) depends-on))
-                                           (image-unit -1))
-                                      (declare (ignorable image-unit))
-                                      (format t ,(format nil "~&; uploading (~a ...)~&" name))
-                                      (link-shaders shaders-objects prog-id)
-                                      (mapcar #'%gl:delete-shader shaders-objects)
+(defun %gl-make-shader-from-varjo (compiled-stage)
+  (make-shader (varjo->gl-stage-names (varjo::stage-type compiled-stage))
+               (varjo::glsl-code compiled-stage)))
 
-                                      ,@(let ((u-lets (mapcan #'first uniform-details)))
-                                          (loop for u in u-lets collect (cons 'setf u)))
-                                      (unbind-buffer) (force-bind-vao 0) (force-use-program 0)
-                                      (setf program-id prog-id)
-                                      ,@(loop for p in post-compile append p)
-                                      prog-id))))))
+(defmacro def-pipeline-init (name stage-pairs post pass-key)
+  (let* ((stage-names (mapcar #'cdr stage-pairs))
+         (uniform-details
+          (with-processed-func-specs stage-names
+            (mapcar (lambda (x) (make-arg-assigners x pass-key))
+                    (expand-equivalent-types unexpanded-uniforms)))))
+    `(defun ,(init-func-name name) ()
+       (let* ((compiled-stages (%varjo-compile-as-pipeline ',stage-pairs))
+              (stages-objects (mapcar #'%gl-make-shader-from-varjo
+                                      compiled-stages))
+              (prog-id (request-program-id-for ',name))
+              (image-unit -1))
+         (declare (ignorable image-unit))
+         (format t ,(format nil "~&; uploading (~a ...)~&" name))
+         (link-shaders stages-objects prog-id)
+         (mapcar #'%gl:delete-shader stages-objects)
+         ,@(let ((u-lets (mapcan #'first uniform-details)))
+                (loop for u in u-lets collect (cons 'setf u)))
+         (unbind-buffer)
+         (force-bind-vao 0)
+         (force-use-program 0)
+         (setf program-id prog-id)
+         ,(when post `(funcall ,post))
+         ,@(loop :for stage-name :in stage-names :collect
+              `(add-func-to-call-on-change
+                ',stage-name #',(invalidate-func-name name)))
+         prog-id))))
 
-(defmacro def-dispatch-func (name stages pass-key)
-  (with-processed-func-specs (stages)
-                             (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                                             (expand-equivalent-types
-                                                              unexpanded-uniforms)))
-                                    (uniform-names (mapcar #'first unexpanded-uniforms))
-                                    (prim-type (varjo::get-primitive-type-from-context context))
-                                    (u-uploads (mapcar #'second uniform-details)))
-                               `(defun ,(dispatch-func-name name)
-                                  (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
-                                  (declare (ignorable ,@uniform-names))
-                                  (unless program-id (setf program-id (,(init-func-name name))))
-                                  (use-program program-id)
-                                  ,@u-uploads
-                                  (when stream (draw-expander stream ,prim-type))
-                                  (use-program 0)
-                                  stream))))
+(defmacro def-dispatch-func (name stage-pairs context pass-key)
+  (with-processed-func-specs (mapcar #'cdr stage-pairs)
+    (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
+                                    (expand-equivalent-types
+                                     unexpanded-uniforms)))
+           (uniform-names (mapcar #'first unexpanded-uniforms))
+           (prim-type (varjo::get-primitive-type-from-context context))
+           (u-uploads (mapcar #'second uniform-details)))
+      `(defun ,(dispatch-func-name name)
+           (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
+         (declare (ignorable ,@uniform-names))
+         (unless program-id (setf program-id (,(init-func-name name))))
+         (use-program program-id)
+         ,@u-uploads
+         (when stream (draw-expander stream ,prim-type))
+         (use-program 0)
+         stream))))
 
-(defmacro def-dummy-func (name stages pass-key)
-  (with-processed-func-specs (stages)
-                             (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                                             (expand-equivalent-types
-                                                              unexpanded-uniforms)))
-                                    (uniform-names (mapcar #'first unexpanded-uniforms))
-                                    (u-uploads (mapcar #'second uniform-details)))
-                               `(defun ,name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
-                                  (declare (ignorable ,@uniform-names))
-                                  (unless program-id (setf program-id (,(init-func-name name))))
-                                  (use-program program-id)
-                                  ,@u-uploads
-                                  (when stream
-                                    (error "Pipelines do not take a stream directly, the stream must be gmap'd over the pipeline"))
-                                  (use-program 0)
-                                  stream))))
+(defmacro def-dummy-func (name stage-pairs pass-key)
+  (with-processed-func-specs (mapcar #'cdr stage-pairs)
+    (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
+                                    (expand-equivalent-types
+                                     unexpanded-uniforms)))
+           (uniform-names (mapcar #'first unexpanded-uniforms))
+           (u-uploads (mapcar #'second uniform-details)))
+      `(defun ,name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
+         (declare (ignorable ,@uniform-names))
+         (unless program-id (setf program-id (,(init-func-name name))))
+         (use-program program-id)
+         ,@u-uploads
+         (when stream
+           (error "Pipelines do not take a stream directly, the stream must be gmap'd over the pipeline"))
+         (use-program 0)
+         stream))))
 
 
 (defmacro draw-expander (stream draw-type)
@@ -166,21 +156,21 @@
                                 (vertex-stream-length stream)
                                 (gl::cffi-type-to-gl index-type)
                                 (make-pointer 0))
-           (%gl:draw-arrays draw-type
-                            (vertex-stream-start stream)
-                            (vertex-stream-length stream)))
-       (if index-type
-           (%gl:draw-elements-instanced
-            draw-type
-            (vertex-stream-length stream)
-            (gl::cffi-type-to-gl index-type)
-            (make-pointer 0)
-            |*instance-count*|)
-         (%gl:draw-arrays-instanced
-          draw-type
-          (vertex-stream-start stream)
-          (vertex-stream-length stream)
-          |*instance-count*|)))))
+             (%gl:draw-arrays draw-type
+                              (vertex-stream-start stream)
+                              (vertex-stream-length stream)))
+         (if index-type
+             (%gl:draw-elements-instanced
+              draw-type
+              (vertex-stream-length stream)
+              (gl::cffi-type-to-gl index-type)
+              (make-pointer 0)
+              |*instance-count*|)
+             (%gl:draw-arrays-instanced
+              draw-type
+              (vertex-stream-start stream)
+              (vertex-stream-length stream)
+              |*instance-count*|)))))
 
 
 
@@ -193,9 +183,9 @@
   (defun make-arg-assigners (uniform-arg &optional pass-key)
     (if (and pass-key (eq cached-key pass-key))
         (return-from make-arg-assigners cached-data)
-      (let ((result (%make-arg-assigners uniform-arg)))
-        (when pass-key (setf cached-data result))
-        result))))
+        (let ((result (%make-arg-assigners uniform-arg)))
+          (when pass-key (setf cached-data result))
+          result))))
 
 (defun %make-arg-assigners (uniform-arg &aux gen-ids assigners)
   (destructuring-bind ((arg-name &optional expanded-from converter)
@@ -207,29 +197,29 @@
                            (apply #'* (v-dimensions varjo-type))))
            (sampler (sampler-typep varjo-type)))
       (loop :for (gid asn multi-gid) :in
-            (cond (array-length (make-array-assigners varjo-type glsl-name))
-                  (struct-arg (make-struct-assigners varjo-type glsl-name))
-                  (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
-                  (t `(,(make-simple-assigner varjo-type glsl-name nil))))
-            :do (if multi-gid
-                    (progn (loop for g in gid :do (push g gen-ids))
-                           (push asn assigners))
-                  (progn (push gid gen-ids) (push asn assigners))))
+         (cond (array-length (make-array-assigners varjo-type glsl-name))
+               (struct-arg (make-struct-assigners varjo-type glsl-name))
+               (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
+               (t `(,(make-simple-assigner varjo-type glsl-name nil))))
+         :do (if multi-gid
+                 (progn (loop for g in gid :do (push g gen-ids))
+                        (push asn assigners))
+                 (progn (push gid gen-ids) (push asn assigners))))
       (let ((val~ (if expanded-from
                       expanded-from
-                    (if (or array-length struct-arg)
-                        `(pointer ,arg-name)
-                      arg-name))))
+                      (if (or array-length struct-arg)
+                          `(pointer ,arg-name)
+                          arg-name))))
         `(,(reverse gen-ids)
-          (when ,(or expanded-from arg-name)
-            (let ((val ,(cond ((null converter) val~)
-                              ((eq (first converter) 'function)
-                               `(,(second converter) ,val~))
-                              ((eq (first converter) 'lambda)
-                               `(labels ((c ,@(rest converter)))
-                                  (c ,val~)))
-                              (t (error "invalid converter in make-arg-assigners")))))
-              ,@(reverse assigners))))))))
+           (when ,(or expanded-from arg-name)
+             (let ((val ,(cond ((null converter) val~)
+                               ((eq (first converter) 'function)
+                                `(,(second converter) ,val~))
+                               ((eq (first converter) 'lambda)
+                                `(labels ((c ,@(rest converter)))
+                                   (c ,val~)))
+                               (t (error "invalid converter in make-arg-assigners")))))
+               ,@(reverse assigners))))))))
 
 (defun make-sampler-assigner (type path &optional (byte-offset 0))
   (declare (ignore byte-offset))
@@ -253,36 +243,36 @@
       (when (>= ,id-name 0)
         ,(if byte-offset
              `(,(get-foreign-uniform-function-name (type->spec type))
-               ,id-name 1 (cffi:inc-pointer val ,byte-offset))
-           `(,(get-uniform-function-name (type->spec type)) ,id-name val)))
+                ,id-name 1 (cffi:inc-pointer val ,byte-offset))
+             `(,(get-uniform-function-name (type->spec type)) ,id-name val)))
       nil)))
 
 (defun make-array-assigners (type path &optional (byte-offset 0))
   (let ((element-type (varjo::v-element-type type))
         (array-length (apply #'* (v-dimensions type))))
     (loop :for i :below array-length :append
-          (cond ((varjo::v-typep element-type 'varjo::v-user-struct)
-                 (make-struct-assigners element-type byte-offset))
-                (t (list (make-simple-assigner element-type
-                                               (format nil "~a[~a]" path i)
-                                               byte-offset))))
-          :do (incf byte-offset (gl-type-size element-type)))))
+       (cond ((varjo::v-typep element-type 'varjo::v-user-struct)
+              (make-struct-assigners element-type byte-offset))
+             (t (list (make-simple-assigner element-type
+                                            (format nil "~a[~a]" path i)
+                                            byte-offset))))
+       :do (incf byte-offset (gl-type-size element-type)))))
 
 (defun make-struct-assigners (type path &optional (byte-offset 0))
   (loop :for (l-slot-name v-slot-type) :in (varjo::v-slots type)
-        :for glsl-name = (varjo::safe-glsl-name-string l-slot-name) :append
-        (destructuring-bind (pslot-type array-length . rest) v-slot-type
-          (declare (ignore rest))
-          (let ((path (format nil "~a.~a" path glsl-name)))
-            (prog1
-                (cond (array-length (make-array-assigners v-slot-type path
-                                                          byte-offset))
-                      ((varjo::v-typep pslot-type 'v-user-struct)
-                       (make-struct-assigners pslot-type path byte-offset))
-                      (t (list (make-simple-assigner pslot-type path
-                                                     byte-offset))))
-              (incf byte-offset (* (gl-type-size pslot-type)
-                                   (or array-length 1))))))))
+     :for glsl-name = (varjo::safe-glsl-name-string l-slot-name) :append
+     (destructuring-bind (pslot-type array-length . rest) v-slot-type
+       (declare (ignore rest))
+       (let ((path (format nil "~a.~a" path glsl-name)))
+         (prog1
+             (cond (array-length (make-array-assigners v-slot-type path
+                                                       byte-offset))
+                   ((varjo::v-typep pslot-type 'v-user-struct)
+                    (make-struct-assigners pslot-type path byte-offset))
+                   (t (list (make-simple-assigner pslot-type path
+                                                  byte-offset))))
+           (incf byte-offset (* (gl-type-size pslot-type)
+                                (or array-length 1))))))))
 
 ;;;--------------------------------------------------------------
 ;;; GL HELPERS ;;;
@@ -297,9 +287,9 @@
    the program. Each element in the list is a list in the
    format: (attribute-name attribute-type attribute-size)"
   (loop for i from 0 below (program-attrib-count program)
-        collect (multiple-value-bind (size type name)
-                    (gl:get-active-attrib program i)
-                  (list name type size))))
+     collect (multiple-value-bind (size type name)
+                 (gl:get-active-attrib program i)
+               (list name type size))))
 
 (defun program-uniform-count (program)
   "Returns the number of uniforms used by the shader"
@@ -310,9 +300,9 @@
    the program. Each element in the list is a list in the
    format: (uniform-name uniform-type uniform-size)"
   (loop for i from 0 below (program-uniform-count program-id)
-        collect (multiple-value-bind (size type name)
-                    (gl:get-active-uniform program-id i)
-                  (list name type size))))
+     collect (multiple-value-bind (size type name)
+                 (gl:get-active-uniform program-id i)
+               (list name type size))))
 
 (let ((program-cache nil))
   (defun use-program (program-id)
@@ -337,8 +327,8 @@
           (t (error "Could not extract shader type from shader file extension (must be .vert or .frag)")))))
 
 (defun make-shader
-  (shader-type source-string &optional (shader-id (gl:create-shader
-                                                   shader-type)))
+    (shader-type source-string &optional (shader-id (gl:create-shader
+                                                     shader-type)))
   "This makes a new opengl shader object by compiling the text
    in the specified file and, unless specified, establishing the
    shader type from the file extension"
@@ -356,9 +346,9 @@
                     &optional (shader-type
                                (shader-type-from-path file-path)))
   (restart-case
-   (make-shader (utils:file-to-string file-path) shader-type)
-   (reload-recompile-shader () (load-shader file-path
-                                            shader-type))))
+      (make-shader (utils:file-to-string file-path) shader-type)
+    (reload-recompile-shader () (load-shader file-path
+                                             shader-type))))
 
 (defun load-shaders (&rest shader-paths)
   (mapcar #'load-shader shader-paths))
@@ -368,13 +358,13 @@
    object. Will recompile an existing program if ID is provided"
   (let ((program (or program_id (gl:create-program))))
     (unwind-protect
-        (progn (loop :for shader :in shaders :do
-                     (gl:attach-shader program shader))
-               (gl:link-program program)
-               ;;check for linking errors
-               (if (not (gl:get-program program :link-status))
-                   (error (format nil "Error Linking Program~%~a"
-                                  (gl:get-program-info-log program)))))
+         (progn (loop :for shader :in shaders :do
+                   (gl:attach-shader program shader))
+                (gl:link-program program)
+                ;;check for linking errors
+                (if (not (gl:get-program program :link-status))
+                    (error (format nil "Error Linking Program~%~a"
+                                   (gl:get-program-info-log program)))))
       (loop :for shader :in shaders :do
-            (gl:detach-shader program shader)))
+         (gl:detach-shader program shader)))
     program))
