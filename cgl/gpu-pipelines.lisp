@@ -43,7 +43,7 @@
 ;;;----------;;;
 
 (defmacro defpipeline (name gpu-pipe-form &body context)
-  (assert (eq (first gpu-pipe-form) 'cgl::g->))
+  (assert (equal (symbol-name (first gpu-pipe-form)) "G->"))
   (let* ((pass-key (gensym "PASS-")) ;; used as key for memoization
          (gpipe-args (rest gpu-pipe-form)))
     (destructuring-bind (stage-pairs post gpipe-context)
@@ -100,7 +100,9 @@
          (force-use-program 0)
          (setf program-id prog-id)
          ,(when post `(funcall ,post))
-         (%recompile-gpu-functions ',stage-names)
+         ,@(loop :for stage-name :in stage-names :collect
+              `(add-func-to-call-on-change
+                ',stage-name #',(invalidate-func-name name)))
          prog-id))))
 
 (defmacro def-dispatch-func (name stage-pairs context pass-key)

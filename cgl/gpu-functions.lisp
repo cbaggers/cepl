@@ -1,4 +1,5 @@
 (in-package :cgl)
+(named-readtables:in-readtable fn_::fn_lambda)
 
 ;; defun-gpu is at the bottom of this file
 
@@ -22,13 +23,22 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *gpu-func-specs* (make-hash-table :test #'eq))
-  (defvar *dependent-gpu-functions* (make-hash-table :test #'eq)))
+  (defvar *dependent-gpu-functions* (make-hash-table :test #'eq))
+  (defvar *dependent-external-functions* (make-hash-table :test #'eq)))
 
 (defun funcs-that-use-this-func (name)
   (gethash name *dependent-gpu-functions*))
 
 (defun (setf funcs-that-use-this-func) (value name)
   (setf (gethash name *dependent-gpu-functions*) value))
+
+(defun funcs-to-call-on-change (name)
+  (gethash name *dependent-external-functions*))
+
+(defun add-func-to-call-on-change (name func)
+  (when (not (member func (gethash name *dependent-external-functions*)
+                     :test #'eq))
+    (push func (gethash name *dependent-external-functions*))))
 
 (defun map-hash (function hash-table)
   "map through a hash and actually return something"
@@ -65,11 +75,15 @@ names are depended on by the functions named later in the list"
 (defun (setf gpu-func-spec) (value name)
   (setf (gethash name *gpu-func-specs*) value))
 
-(defun %recompile-gpu-functions (names)
-  )
-
-(defun %trigger-recompile-for-gpu-func-dependent-on (name)
-  (mapcar #'%recompile-gpu-functions (funcs-that-use-this-func name)))
+(defun %recompile-gpu-function (name)
+  (mapcar #'%recompile-gpu-function (funcs-that-use-this-func name))
+  (labels ((safe-call (func)
+             (funcall func)
+             ;; (handler-case (funcall func)
+             ;;   (error () (format t "~%%recompile-gpu-functions: Unable to call ~a"
+             ;;                     func)))
+             ))
+    (mapcar #'safe-call (funcs-to-call-on-change name))))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             doc-string declarations)
@@ -109,7 +123,8 @@ names are depended on by the functions named later in the list"
     (%unsubscibe-from-all name)
     (mapcar (fn_ #'%subscribe-to-gpu-func name) depends-on)
     (setf (gpu-func-spec name) spec)
-    (%trigger-recompile-for-gpu-func-dependent-on name)))
+    ;(%recompile-gpu-function name)
+    ))
 
 (defun %gpu-func-compiles-in-some-context (spec)
   (declare (ignorable spec))
@@ -178,6 +193,7 @@ names are depended on by the functions named later in the list"
          (eval-when (:compile-toplevel :load-toplevel :execute)
            (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
                                       ',depends-on))
+         (%recompile-gpu-function ',name)
          (defun ,name (,@arg-names
                        ,@(when uniforms (cons (symb :&uniform) uniform-names) ))
            (declare (ignore ,@arg-names ,@uniform-names))
@@ -212,6 +228,7 @@ names are depended on by the functions named later in the list"
   (%unsubscibe-from-all name)
   (remhash name *gpu-func-specs*)
   (remhash name *dependent-gpu-functions*)
+  (remhash name *dependent-external-functions*)
   nil)
 
 ;;--------------------------------------------------

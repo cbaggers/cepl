@@ -327,12 +327,8 @@
            :gpu-array-t
            :texref
            :defpipeline
-           :defvshader
-           :deffshader
-           :defgshader
-           :defshader
-           :defsmacro
-           :defsfun
+           :defun-g
+           :defmacro-g
            :with-instances
            :free-managed-resources
            :free-buffer
@@ -533,12 +529,8 @@
                 :describe-pixel-format
                 :with-instances
                 :defpipeline
-                :defvshader
-                :deffshader
-                :defgshader
-                :defshader
-                :defsfun
-                :defsmacro
+                :defun-g
+                :defmacro-g
                 :defglstruct
                 :gl-pull
                 :gl-pull-1
@@ -656,12 +648,8 @@
            :describe-pixel-format
            :with-instances
            :defpipeline
-           :defvshader
-           :deffshader
-           :defgshader
-           :defshader
-           :defsfun
-           :defsmacro
+           :defun-g
+           :defmacro-g
            :defglstruct
            :gl-pull
            :gl-pull-1

@@ -1,4 +1,4 @@
 (in-package :cgl)
 
-(defmacro defsmacro (name lambda-list &body body)
+(defmacro defmacro-g (name lambda-list &body body)
   `(varjo::v-defmacro ,name ,lambda-list ,@body))
