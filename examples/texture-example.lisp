@@ -1,11 +1,11 @@
 ;; Texturing and fragment effects
 
-(defparameter *count* 0.0) 
+(defparameter *count* 0.0)
 (defparameter *texture* nil)
 (defparameter *vert-gpu* nil)
 (defparameter *v-stream* nil)
 
-(defglstruct vert-data ()
+(defstruct-g vert-data ()
   (position :vec4 :accessor pos)
   (tex-pos :vec2 :accessor tex-pos))
 
@@ -13,7 +13,7 @@
                                  (count :float) (pos-offset :vec4))
   (:vertex (setf gl-position (pos vert))
            (out (tex-coord :smooth) (tex-pos vert)))
-  (:fragment 
+  (:fragment
    (let* ((rip-size 0.02) (centre (v! 0.0 0.0)) (damp 0.6)
           (peaks 9.0)
           (dif (- tex-coord centre))
@@ -37,7 +37,7 @@
     (apply #'gl:viewport 0 0 cgl:+default-resolution+)
     (let* ((img-data (loop :for i :below 64 :collect
                         (loop :for j :below 64 :collect (random 254)))))
-      (setf *vert-gpu* 
+      (setf *vert-gpu*
             (make-gpu-array `((,(v! -0.5 -0.366 0.0 1.0) ,(v! -1.0 1.0))
                               (,(v!  0.5 -0.366 0.0 1.0) ,(v!  1.0 1.0))
                               (,(v!  0.0    0.5 0.0 1.0) ,(v!  0.0 -1.0)))
@@ -56,4 +56,3 @@
            (cgl:flush)
            (cgl:update-display)))))
   (defun stop-demo () (setf running nil)))
-

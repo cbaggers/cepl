@@ -1,31 +1,29 @@
 (in-package :cgl)
 
-(defglstruct g-pn ()
+(defstruct-g g-pn ()
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm))
 
-(defglstruct g-pc ()
+(defstruct-g g-pc ()
   (position :vec3 :accessor pos)
   (color :vec4 :accessor col))
 
-(defglstruct g-pt ()
+(defstruct-g g-pt ()
   (position :vec3 :accessor pos)
   (texture :vec2 :accessor tex))
 
-(defglstruct g-pnc ()
+(defstruct-g g-pnc ()
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (color :vec4 :accessor col))
 
-(defglstruct g-pnt ()
+(defstruct-g g-pnt ()
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (texture :vec2 :accessor tex))
 
-(defglstruct g-pntc ()
+(defstruct-g g-pntc ()
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (texture :vec2 :accessor tex)
   (color :vec4 :accessor col))
-
-

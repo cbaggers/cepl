@@ -8,12 +8,12 @@
 
 ;; This is a dumping ground for homeless functions
 ;; If anything is here currently then it needs to be rehomed or
-;; the essence of the functionality decided, generalised and 
+;; the essence of the functionality decided, generalised and
 ;; rehomed.
 
 (in-package :cepl)
 
-(defparameter *examples-directory* 
+(defparameter *examples-directory*
   (asdf:system-relative-pathname :cepl "examples"))
 
 #+sb-thread
@@ -38,7 +38,7 @@
 (defun cepl-post-context-initialize ()
   (let ((available-extensions (get-gl-extensions)))
     (labels ((has-feature (x) (find x available-extensions :test #'equal)))
-      (unless (has-feature "GL_ARB_texture_storage") 
+      (unless (has-feature "GL_ARB_texture_storage")
         (setf cgl::*immutable-available* nil)))
     t))
 
@@ -64,7 +64,8 @@
           (format t "-----------------~%    CEPL-REPL    ~%-----------------")
           (unless (>= (gl:major-version) 3)
             (error "Cepl requires OpenGL 3.1 or higher"))
-          (%set-default-gl-options))
+          (%set-default-gl-options)
+          (apply #'gl:viewport 0 0 cgl:+default-resolution+))
         (progn (sdl2:quit)
                (error "Failed to initialise CEPL")))))
 
