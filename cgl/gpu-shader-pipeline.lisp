@@ -1,60 +1,18 @@
 (in-package :cgl)
 
-;;{TODO} Almost everything in here could really benefit from being optimized
-
-(defparameter *gl-window* nil)
-
-;;--------------------------------------------------
-
-(let ((stage-names '((:vertex . :vertex-shader)
-                     (:fragment . :fragment-shader)
-                     (:geometry . :geometry-shader)
-                     (:compute . :compute-shader)
-                     (:tesselation-evaluation . :tess-evaluation-shader)
-                     (:tesselation-control . :tess-control-shader))))
-  (defun varjo->gl-stage-names (stage-name)
-    (or (cdr (assoc stage-name stage-names))
-        (error "CGL: ~a is not a known type of shader stage" stage-name))))
-
-;;--------------------------------------------------
-
-(defvar |*instance-count*| 0)
-(defmacro with-instances ((count) &body body)
-  `(let ((|*instance-count*| ,count))
-     (unless (> |*instance-count*| 0)
-       (error "Instance count must be greater than 0"))
-     ,@body))
-
-;;--------------------------------------------------
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *gpu-program-cache* (make-hash-table :test #'eq)))
-
-(defun request-program-id-for (name)
-  (or (gethash name *gpu-program-cache*)
-      (setf (gethash name *gpu-program-cache*)
-            (gl:create-program))))
-
-;; (defmethod gl-pull ((asset-name symbol))
-;;   (get-glsl-code asset-name))
-
-;;;--------------------------------------------------------------
-;;; PIPELINE ;;;
-;;;----------;;;
-
-(defmacro defpipeline (name gpu-pipe-form &body context)
-  (assert (equal (symbol-name (first gpu-pipe-form)) "G->"))
-  (let* ((pass-key (gensym "PASS-")) ;; used as key for memoization
-         (gpipe-args (rest gpu-pipe-form)))
-    (destructuring-bind (stage-pairs post gpipe-context)
-        (parse-gpipe-args gpipe-args)
-      (assert (not (and gpipe-context context)))
-      (let ((context (or context gpipe-context)))
-        `(let-pipeline-vars (,stage-pairs ,pass-key)
-           (def-pipeline-invalidate ,name)
-           (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
-           (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
-           (def-dummy-func ,name ,stage-pairs ,pass-key))))))
+(defun %defpipeline-gfuncs (name args gpipe-args options) ;; {TODO} context is now options, need to parse this
+  (when args (warn "defpipeline: extra args are not used in pipelines composed of g-functions"))
+  (let ((pass-key (gensym "PASS-"))) ;; used as key for memoization
+    (assoc-bind ((context :context) (post :post)) (parse-options options)
+      (destructuring-bind (stage-pairs gpipe-context)
+          (parse-gpipe-args gpipe-args)
+        (assert (not (and gpipe-context context)))
+        (let ((context (or context gpipe-context)))
+          `(let-pipeline-vars (,stage-pairs ,pass-key)
+             (def-pipeline-invalidate ,name)
+             (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
+             (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
+             (def-dummy-func ,name ,stage-pairs ,pass-key)))))))
 
 (defun init-func-name (name) (symb-package :cgl '%%- name))
 (defun invalidate-func-name (name) (symb-package :cgl '££- name))

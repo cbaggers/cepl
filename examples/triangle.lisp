@@ -11,7 +11,8 @@
 (defun-g f ((color :vec4))
   color)
 
-(defpipeline prog-1 (g-> v f))
+(defpipeline prog-1 ()
+  (g-> v f))
 
 (defun step-demo ()
   (evt.sdl:pump-events)

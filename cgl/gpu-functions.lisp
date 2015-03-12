@@ -284,8 +284,8 @@ names are depended on by the functions named later in the list"
          (get-func-as-stage-code name)))
 
 (defun varjo-compile-as-pipeline (args)
-  (destructuring-bind (stage-pairs post context) (parse-gpipe-args args)
-    (declare (ignore post context))
+  (destructuring-bind (stage-pairs context) (parse-gpipe-args args)
+    (declare (ignore context))
     (%varjo-compile-as-pipeline stage-pairs )))
 (defun %varjo-compile-as-pipeline (parsed-gpipe-args)
   (rolling-translate (mapcar #'prepare-stage parsed-gpipe-args)))
@@ -306,9 +306,8 @@ names are depended on by the functions named later in the list"
 ;;--------------------------------------------------
 
 (defun parse-gpipe-args (args)
-  (let ((cut-pos (min (or (position :post args) (length args))
-                      (or (position :context args) (length args)))))
-    (destructuring-bind (&key post context) (subseq args cut-pos)
+  (let ((cut-pos (or (position :context args) (length args))))
+    (destructuring-bind (&key context) (subseq args cut-pos)
       (list
        (let ((args (subseq args 0 cut-pos)))
          (if (and (= (length args) 2) (not (some #'keywordp args)))
@@ -319,12 +318,11 @@ names are depended on by the functions named later in the list"
                                 :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
                                                      a))))
                (remove :post (remove :context results :key #'car) :key #'car))))
-       post
        context))))
 
 (defun get-gpipe-arg (key args)
-  (destructuring-bind (stage-pairs post context) (parse-gpipe-args args)
-    (declare (ignore post context))
+  (destructuring-bind (stage-pairs context) (parse-gpipe-args args)
+    (declare (ignore context))
     (%get-gpipe-arg key stage-pairs)))
 (defun %get-gpipe-arg (key parsed-args)
   (cdr (assoc key parsed-args)))
