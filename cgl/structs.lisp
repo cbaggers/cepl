@@ -2,15 +2,15 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass gl-struct-slot ()
-    ((name :initarg :name :reader s-name) 
+    ((name :initarg :name :reader s-name)
      (type :initarg :type :reader s-type)
      (element-type :initarg :element-type :reader s-element-type)
      (dimensions :initarg :dimensions :initform 1 :reader s-dimensions)
-     (normalised :initarg :normalised :reader s-normalisedp) 
+     (normalised :initarg :normalised :reader s-normalisedp)
      (reader :initarg :reader :reader s-reader)
      (writer :initarg :writer :reader s-writer))))
 
-(defmethod s-arrayp ((object gl-struct-slot)) 
+(defmethod s-arrayp ((object gl-struct-slot))
   (eq (s-type object) :array))
 
 (defmethod s-prim-p ((spec t))
@@ -56,15 +56,15 @@
 ;;------------------------------------------------------------
 
 ;;{TODO} Autowrap-name is name now...can clean up lots of code
-(defmacro defglstruct (name (&key no-accesors) &body slot-descriptions)  
-  (let ((slots (mapcar1 #'normalize-slot-description slot-descriptions 
+(defmacro defstruct-g (name (&key no-accesors) &body slot-descriptions)
+  (let ((slots (mapcar1 #'normalize-slot-description slot-descriptions
                         name no-accesors))
         (autowrap-name name))
-    (when (validate-defglstruct-form name slots)      
+    (when (validate-defstruct-g-form name slots)
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            ,@(make-autowrap-record-def autowrap-name slots))
-         (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name 
+         (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
            :constructor ,(symb '%make- name))
          ,(make-varjo-struct-def name slots)
          ,(make-make-struct name autowrap-name slots)
@@ -84,14 +84,14 @@
            (element-type (when arrayp (first type)))
            (type (if arrayp :array (first type))))
       (make-instance 'gl-struct-slot :name name :type type :normalised normalised
-                     :reader (unless no-accesors 
+                     :reader (unless no-accesors
                                (or accessor (symb type-name '- name)))
-                     :writer (unless no-accesors 
+                     :writer (unless no-accesors
                                (or accessor (symb type-name '- name)))
                      :element-type element-type :dimensions dimensions))))
 
 ;; put all cepl's errors definitions in one place (like varjo)
-(defun validate-defglstruct-form (name slots)
+(defun validate-defstruct-g-form (name slots)
   (when (keywordp name) (error "glstruct names cannot be keywords"))
   (when (null slots) (error "glstruct must have at least 1 slot"))
   t)
@@ -110,7 +110,7 @@
              (list (s-element-type slot) (s-dimensions slot)))
            ,@(when accessor `(:accessor ,accessor)))
         `(,(s-name slot)
-           ,(validate-varjo-type-spec (s-type slot))        
+           ,(validate-varjo-type-spec (s-type slot))
            ,@(when accessor `(:accessor ,accessor))))))
 
 (defun validate-varjo-type-spec (spec)
@@ -131,7 +131,7 @@
              :do (incf offset (nth (1+ (position :bit-size i)) i))))
      `(autowrap:define-foreign-alias ',name '(:struct (,name))))))
 
-(defun format-slot-for-autowrap (slot)  
+(defun format-slot-for-autowrap (slot)
   (if (s-arrayp slot)
       (format-array-slot-for-autowrap slot)
       (%format-slot-for-autowrap slot)))
@@ -153,7 +153,7 @@
   (let* ((e-type (if (assoc (s-element-type slot) cffi::*extra-primitive-types*)
                      (symb-package :cffi :cgl- (s-element-type slot))
                      (s-element-type slot)))
-         (a-type (autowrap:find-type e-type)))    
+         (a-type (autowrap:find-type e-type)))
     (list (kwd (s-name slot))
           `(:array ,(s-element-type slot) ,(reduce #'* (s-dimensions slot)))
           :bit-size (* (autowrap:foreign-type-size a-type)
@@ -176,7 +176,7 @@
 (defun make-slot-getters (slot type-name awrap-type-name)
   (declare (ignore type-name))
   (when (s-reader slot)
-    (cond 
+    (cond
       ((member (s-type slot) cffi:*built-in-foreign-types*)
        (make-prim-slot-getter slot awrap-type-name))
       ((assoc (s-type slot) cffi::*extra-primitive-types*)
@@ -185,30 +185,30 @@
       ((s-arrayp slot) (make-array-slot-getter slot awrap-type-name))
       (t (error "Dont know what to do with slot ~a" slot)))))
 
-(defun make-prim-slot-getter (slot awrap-type-name)  
+(defun make-prim-slot-getter (slot awrap-type-name)
   `((defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
       (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot))))))
 
 (defun make-eprim-slot-getter (slot awrap-type-name)
   `((defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
-      (mem-ref (plus-c:c-ref wrapped-object ,awrap-type-name 
+      (mem-ref (plus-c:c-ref wrapped-object ,awrap-type-name
                              ,(kwd (s-name slot)) plus-c::&)
                ,(s-type slot)))))
 
 (defun make-t-slot-getter (slot awrap-type-name)
   `((defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
-      (plus-c:c-ref wrapped-object ,awrap-type-name 
+      (plus-c:c-ref wrapped-object ,awrap-type-name
                     ,(kwd (s-name slot))))))
 
 (defun make-array-slot-getter (slot awrap-type-name)
   `((defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
-      (make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot) 
+      (make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot)
                                  (plus-c:c-ref wrapped-object ,awrap-type-name
                                                ,(kwd (s-name slot)) plus-c::&)))))
 
 (defun make-slot-setters (slot type-name awrap-type-name)
   (when (s-writer slot)
-    (cond 
+    (cond
       ((member (s-type slot) cffi:*built-in-foreign-types*)
        (make-prim-slot-setter slot awrap-type-name))
       ((assoc (s-type slot) cffi::*extra-primitive-types*)
@@ -250,19 +250,19 @@
                        `(gl-type-size ',type-name)
                        0))
            (stride-sym (gensym "stride"))
-           (definitions             
+           (definitions
             (loop :for attr :in (mapcan #'expand-slot-to-layout slots)
                :for i :from 0 :with offset = 0 :append
                `((gl:enable-vertex-attrib-array (+ attrib-offset ,i))
-                 (%gl:vertex-attrib-pointer 
-                  (+ attrib-offset ,i) ,@attr ,stride-sym 
+                 (%gl:vertex-attrib-pointer
+                  (+ attrib-offset ,i) ,@attr ,stride-sym
                   (cffi:make-pointer (+ ,offset pointer-offset))))
                :do (setf offset (+ offset
-                                   (* (first attr) 
+                                   (* (first attr)
                                       (gl-type-size (second attr))))))))
       (when definitions
         `(progn
-           (defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name)) 
+           (defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name))
                                                  &optional (attrib-offset 0)
                                                    (pointer-offset 0)
                                                    stride-override normalised)
@@ -277,17 +277,17 @@
     (cond ((v-typep type 'v-matrix)
            (let ((v-type (type-spec->type
                           (kwd :vec (second (v-dimensions type))))))
-             (setf (slot-value v-type 'varjo::element-type) 
+             (setf (slot-value v-type 'varjo::element-type)
                    (type->spec (v-element-type type))) ;ugh
              (loop for i below (first (v-dimensions type))
                 :append (expand-slot-to-layout nil v-type normalise))))
-          ((v-typep type 'v-vector)  
+          ((v-typep type 'v-vector)
            `((,(apply #'* (v-dimensions type))
                ,(type->spec (v-element-type type))
                ,normalise)))
-          ((v-typep type 'v-array) 
+          ((v-typep type 'v-array)
            (loop for i below (apply #'* (v-dimensions type))
-              :append (expand-slot-to-layout 
+              :append (expand-slot-to-layout
                        nil (v-element-type type) normalise)))
           (t `((1 ,(type->spec (s-type slot)) ,normalise))))))
 
@@ -310,7 +310,7 @@
 (defun make-populate (autowrap-name slots)
   `(defmethod populate ((object ,autowrap-name) data)
      (unless (or (vectorp data) (listp data))
-       (error "can only populate a struct of type ~a with a list or an array" 
+       (error "can only populate a struct of type ~a with a list or an array"
               ',autowrap-name))
      ,@(loop :for slot :in slots :for i :from 0 :collect
           `(setf (,(s-writer slot) object) (elt data ,i)))
@@ -322,11 +322,10 @@
   (let* ((type (s-type (first slots)))
          (len (length slots)))
     (when (< len 5)
-      (let ((components (utils:kwd (subseq "RGBA" 0 len))))        
+      (let ((components (utils:kwd (subseq "RGBA" 0 len))))
         (when (and (loop for i in slots always (eql (s-type i) type))
                    (valid-pixel-format-p components type t nil))
           `(defmethod pixel-format-of ((type (eql ',name)))
              (pixel-format ,components ',type)))))))
 
 ;;------------------------------------------------------------
-

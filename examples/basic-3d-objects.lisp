@@ -4,7 +4,7 @@
 (defparameter *camera* nil)
 (defparameter *resolution* cgl:+default-resolution+)
 
-(defglstruct vert-data ()
+(defstruct-g vert-data ()
   (position :vec3)
   (color :vec4))
 

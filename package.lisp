@@ -275,7 +275,7 @@
            :pixel-format-from-internal-format
            :pixel-format-of
            :describe-pixel-format
-           :defglstruct
+           :defstruct-g
            :c-array-byte-size
            :gl-calc-byte-size
            :make-c-array-from-pointer
@@ -531,7 +531,7 @@
                 :defpipeline
                 :defun-g
                 :defmacro-g
-                :defglstruct
+                :defstruct-g
                 :gl-pull
                 :gl-pull-1
                 :gl-push
@@ -650,7 +650,7 @@
            :defpipeline
            :defun-g
            :defmacro-g
-           :defglstruct
+           :defstruct-g
            :gl-pull
            :gl-pull-1
            :gl-push

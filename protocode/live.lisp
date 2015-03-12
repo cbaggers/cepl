@@ -1,13 +1,13 @@
 ;; More 3D - Multiple objects rotating
 
-(defglstruct vert-data 
+(defstruct-g vert-data
   (position :vec3)
   (color :vec4))
 
 (defpipeline prog-2 ((vert vert-data) &uniform (cam-to-clip :mat4)
                      (world-to-cam :mat4) (model-to-world :mat4))
   (:vertex (setf gl-position (* cam-to-clip
-                                (* world-to-cam 
+                                (* world-to-cam
                                    (* model-to-world
                                       (v! (vert-data-position vert)
                                             1.0)))))
@@ -59,16 +59,16 @@
                          (* sin-theta (sin phi)))))
     (v3:v+ cam-target (v3:v* dir-to-cam (v-z sphere-cam-rel-pos)))))
 
-(defun init () 
+(defun init ()
   (setf *camera* (make-instance 'camera :pos (v! 0 9 0)))
   (setf *frustrum-scale* (ccam:calculate-frustrum-scale 45.0))
   (setf *cam-clip-matrix* (ccam:make-cam-clip-matrix *frustrum-scale*))
   (prog-2 nil :cam-to-clip *cam-clip-matrix*)
-  (let* ((verts (make-gpu-array `((,(v! +1  +1  +1)  ,(v! 0  1  0  1)) 
+  (let* ((verts (make-gpu-array `((,(v! +1  +1  +1)  ,(v! 0  1  0  1))
                                   (,(v! -1  -1  +1)  ,(v! 0  0  1  1))
                                   (,(v! -1  +1  -1)  ,(v! 1  0  0  1))
                                   (,(v! +1  -1  -1)  ,(v! 0.5  0.5  0  1))
-                                  (,(v! -1  -1  -1)  ,(v! 0  1  0  1)) 
+                                  (,(v! -1  -1  -1)  ,(v! 0  1  0  1))
                                   (,(v! +1  +1  -1)  ,(v! 0  0  1  1))
                                   (,(v! +1  -1  +1)  ,(v! 1  0  0  1))
                                   (,(v! -1  +1  +1)  ,(v! 0.5  0.5  0  1)))
@@ -81,7 +81,7 @@
                         ,(make-entity :pos (v!  0 0 -25) :e-stream e-stream)
                         ,(make-entity :pos (v!  5 0 -20) :e-stream e-stream)
                         ,(make-entity :pos (v!  0 0 -15) :e-stream e-stream)
-                        ,(make-entity :pos (v! -5 0 -20) :e-stream e-stream))))  
+                        ,(make-entity :pos (v! -5 0 -20) :e-stream e-stream))))
   ;;set options
   (cgl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
@@ -101,23 +101,23 @@
 (defun draw ()
   (cgl:clear-depth 1.0)
   (cgl:clear :color-buffer-bit :depth-buffer-bit)
-  (prog-2 nil :world-to-cam (calculate-cam-look-at-w2c-matrix *camera*))  
+  (prog-2 nil :world-to-cam (calculate-cam-look-at-w2c-matrix *camera*))
   (loop :for entity :in *entities* :do
      (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
      (prog-2 (e-stream entity) :model-to-world (entity-matrix entity)))
   (gl:flush)
   (cgl:update-display))
 
-(defun reshape (width height)  
+(defun reshape (width height)
   (setf (m4:melm *cam-clip-matrix* 0 0) (* *frustrum-scale* (/ height width)))
   (setf (m4:melm *cam-clip-matrix* 1 1) *frustrum-scale*)
   (prog-2 nil :cam-to-clip *cam-clip-matrix*)
   (cgl:viewport 0 0 width height))
 
 (let ((running nil))
-  (defun run-demo () 
+  (defun run-demo ()
     (init)
-    (reshape 640 480)  
+    (reshape 640 480)
     (setf running t)
     (loop :while running :do
        (case-events (event)
