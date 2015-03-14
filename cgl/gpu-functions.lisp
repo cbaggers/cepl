@@ -144,7 +144,7 @@
     (let ((arg-names (mapcar #'first in-args))
           (uniform-names (mapcar #'first uniforms)))
       `(defun ,name (,@arg-names
-                     ,@(when uniforms (cons (symb :&uniform) uniform-names) ))
+                     ,@(when uniforms (cons (symb :&key) uniform-names) ))
          (declare (ignore ,@arg-names ,@uniform-names))
          (warn "GPU Functions cannot currently be used from the cpu")))))
 

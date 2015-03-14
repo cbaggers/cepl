@@ -14,21 +14,21 @@
              (let-pipeline-vars (,stage-pairs ,pass-key)
                (eval-when (:compile-toplevel :load-toplevel :execute)
                  (update-pipeline-spec
-                  (make-pipeline-spec ,name ,stage-names
-                                      ,(stages-to-uniform-details stage-pairs
+                  (make-pipeline-spec ',name ',stage-names
+                                      ',(stages-to-uniform-details stage-pairs
                                                                   pass-key)
-                                      (or gpipe-context context))))
+                                      ',(or gpipe-context context))))
                (def-pipeline-invalidate ,name)
                (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
                (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
                (def-dummy-func ,name ,stage-pairs ,pass-key))
              (defun ,(recompile-name name) ()
-               (unless (equalp (uniforms (pipeline-spec ',name))
-                               (stages-to-uniform-details
-                                ',stage-pairs ,pass-key))
-                 (eval `(%defpipeline-gfuncs ,name ,args ,gpipe-args
-                                             ,options t))))
-             ,(unless suppress-compile (recompile-name name))))))))
+               (unless (equalp (slot-value (pipeline-spec ',name)
+                                           'uniforms)
+                               (stages-to-uniform-details ',stage-pairs))
+                 (eval (%defpipeline-gfuncs ',name ',args
+                                            ',gpipe-args ',options t))))
+             ,(unless suppress-compile `(,(recompile-name name)))))))))
 
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
@@ -69,10 +69,7 @@
          (force-bind-vao 0)
          (force-use-program 0)
          (setf program-id prog-id)
-         ,(when post `(funcall ,post))
-         ,@(loop :for stage-name :in stage-names :collect
-              `(add-func-to-call-on-change
-                ',stage-name #',(invalidate-func-name name)))
+         ,(when post `(funcall ,post))         
          prog-id))))
 
 (defun stages-to-uniform-details (stage-pairs &optional pass-key)
@@ -157,9 +154,14 @@
       (cached-key nil))
   (defun make-arg-assigners (uniform-arg &optional pass-key)
     (if (and pass-key (eq cached-key pass-key))
-        (return-from make-arg-assigners cached-data)
+        (progn
+          (print "use cached")
+          (return-from make-arg-assigners cached-data))
         (let ((result (%make-arg-assigners uniform-arg)))
-          (when pass-key (setf cached-data result))
+          (print "gen")
+          (when pass-key
+            (setf cached-key pass-key)
+            (setf cached-data result))
           result))))
 
 (defun %make-arg-assigners (uniform-arg &aux gen-ids assigners)

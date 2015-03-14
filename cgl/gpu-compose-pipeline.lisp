@@ -24,7 +24,8 @@
                         (get-pipeline-specs pipeline-names)))
          (uniforms (mapcar #'(lambda (x) (slot-value x 'uniforms))
                            (mapcar #'gpu-func-spec stages)))
-         (aggregated-uniforms (reduce #'aggregate-uniforms uniforms)))
+         (aggregated-uniforms (when uniforms
+                                (reduce #'aggregate-uniforms uniforms))))
     aggregated-uniforms))
 
 (defun get-pipeline-specs (pipeline-names)
@@ -37,8 +38,8 @@
      (unless initd
        ,(mapcar #'fbo-comp-form fbos)
        (setf initd t)
-       (funcall ,post))
-     (assert (collate-uniforms ',pipeline-names))
+       ,(when post `(funcall ,post)))
+     ,(when pipeline-names `(assert (collate-uniforms ',pipeline-names)))
      ;; {TODO} need to recompile the pipeline..this
      ;;        goes for shader-pipelines too...damnit
      ))
