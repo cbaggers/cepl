@@ -376,3 +376,12 @@
   (let ((args (cons (symb :%) (loop :for i :from 1 :below (length lists)
                                  :collect (symb :% i)))))
     `(mapcar (lambda ,args ,pattern) ,@lists)))
+
+(defun map-hash (function hash-table)
+  "map through a hash and actually return something"
+  (let* ((head (list nil))
+         (tail head))
+    (labels ((do-it (k v)
+               (rplacd tail (setq tail (list (funcall function k v))))))
+      (maphash #'do-it hash-table))
+    (cdr head)))

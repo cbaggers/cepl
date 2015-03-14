@@ -1,22 +1,34 @@
 (in-package :cgl)
 
-(defun %defpipeline-gfuncs (name args gpipe-args options) ;; {TODO} context is now options, need to parse this
+(defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
+  ;; {TODO} context is now options, need to parse this
   (when args (warn "defpipeline: extra args are not used in pipelines composed of g-functions"))
   (let ((pass-key (gensym "PASS-"))) ;; used as key for memoization
     (assoc-bind ((context :context) (post :post)) (parse-options options)
       (destructuring-bind (stage-pairs gpipe-context)
           (parse-gpipe-args gpipe-args)
         (assert (not (and gpipe-context context)))
-        (let ((context (or context gpipe-context)))
-          `(let-pipeline-vars (,stage-pairs ,pass-key)
-             (def-pipeline-invalidate ,name)
-             (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
-             (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
-             (def-dummy-func ,name ,stage-pairs ,pass-key)))))))
-
-(defun init-func-name (name) (symb-package :cgl '%%- name))
-(defun invalidate-func-name (name) (symb-package :cgl '££- name))
-(defun dispatch-func-name (name) (symb-package :cgl '$$-dispatch- name))
+        (let ((context (or context gpipe-context))
+              (stage-names (mapcar #'cdr stage-pairs)))
+          `(progn
+             (let-pipeline-vars (,stage-pairs ,pass-key)
+               (eval-when (:compile-toplevel :load-toplevel :execute)
+                 (update-pipeline-spec
+                  (make-pipeline-spec ,name ,stage-names
+                                      ,(stages-to-uniform-details stage-pairs
+                                                                  pass-key)
+                                      (or gpipe-context context))))
+               (def-pipeline-invalidate ,name)
+               (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
+               (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
+               (def-dummy-func ,name ,stage-pairs ,pass-key))
+             (defun ,(recompile-name name) ()
+               (unless (equalp (uniforms (pipeline-spec ',name))
+                               (stages-to-uniform-details
+                                ',stage-pairs ,pass-key))
+                 (eval `(%defpipeline-gfuncs ,name ,args ,gpipe-args
+                                             ,options t))))
+             ,(unless suppress-compile (recompile-name name))))))))
 
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
@@ -62,6 +74,11 @@
               `(add-func-to-call-on-change
                 ',stage-name #',(invalidate-func-name name)))
          prog-id))))
+
+(defun stages-to-uniform-details (stage-pairs &optional pass-key)
+  (with-processed-func-specs (mapcar #'cdr stage-pairs)
+    (mapcar (lambda (x) (make-arg-assigners x pass-key))
+            (expand-equivalent-types unexpanded-uniforms))))
 
 (defmacro def-dispatch-func (name stage-pairs context pass-key)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)

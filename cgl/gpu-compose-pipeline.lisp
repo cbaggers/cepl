@@ -9,16 +9,11 @@
       (assert (not (and gpipe-context context)))
       (let ((pipeline-names (mapcar #'get-stage-name pass-forms))
             (uniforms (collate-uniforms pass-forms)))
-        `(progn
-           (eval-when (:compile-toplevel :load-toplevel :execute)
-             (update-pipeline-spec
-              (make-pipeline-spec ,name ,pipeline-names
-                                  (or gpipe-context context))))
-           (let (,(mapcar #'car fbos)
-                 (initd nil))
-             (def-compose-init ,name ,pipeline-names ,fbos ,post)
-             (def-compose-dispatch ,name ,args ,uniforms ,pass-forms ,context)
-             (def-compose-dummy ,name ,pass-forms)))))))
+        `(let (,(mapcar #'car fbos)
+               (initd nil))
+           (def-compose-init ,name ,pipeline-names ,fbos ,post)
+           (def-compose-dispatch ,name ,args ,uniforms ,pass-forms ,context)
+           (def-compose-dummy ,name ,pass-forms))))))
 
 (defun fbo-comp-form (form)
   (destructuring-bind (name . make-fbo-args) form
