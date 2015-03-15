@@ -50,9 +50,8 @@
              (when (symbol-function recompile-pipeline-name)
                (handler-case
                    (funcall (symbol-function recompile-pipeline-name))
-                 (undefined-function () nil)
-                 (error () (format t "~%%recompile-gpu-functions: Unable to call ~a"
-                                   recompile-pipeline-name)))))
+                 (undefined-function () (format t "~%%recompile-gpu-functions: no function ~a exists" recompile-pipeline-name))
+                 (error () nil))))
           (pipelines-that-use-this-func name)))
 
 
@@ -170,6 +169,11 @@
            (if (eql t args-accum) in-args args-accum)
            (aggregate-uniforms uniforms uniforms-accum))))
       `(,args-accum &uniform ,@uniforms-accum)))
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Ok so this is meant to flatten uniforms but we need
+one that doesnt so we know which gmap takes which uniforms
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 (defun aggregate-uniforms (from into)
   (if from

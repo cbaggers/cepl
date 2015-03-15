@@ -16,17 +16,16 @@
                (eval-when (:compile-toplevel :load-toplevel :execute)
                  (update-pipeline-spec
                   (make-pipeline-spec ',name ',stage-names
-                                      ',(stages-to-uniform-details stage-pairs
-                                                                   pass-key)
+                                      ',(make-change-signature stage-names)
                                       ',(or gpipe-context context))))
                (def-pipeline-invalidate ,name)
                (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
                (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
                (def-dummy-func ,name ,stage-pairs ,pass-key))
              (defun ,(recompile-name name) ()
-               (unless (%uniform-equal
-                        (slot-value (pipeline-spec ',name) 'uniforms)
-                        (stages-to-uniform-details ',stage-pairs))
+               (unless (equal
+                        (slot-value (pipeline-spec ',name) 'change-spec)
+                        (make-change-signature ',stage-names))
                  (format t "~&; recompile triggered on ~a~&"
                          ',(make-func-description name stage-pairs))
                  (eval (%defpipeline-gfuncs ',name ',args
@@ -37,10 +36,10 @@
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (cons name (append in-args unexpanded-uniforms))))
 
-(defun %uniform-equal (x y)
-  (and (every λ(equal (second (second %)) (second (second %1)))
-              x y)
-       (= (length x) (length y))))
+(defun make-change-signature (stage-names)
+  (mapcar λ(with-gpu-func-spec ((gpu-func-spec %))             
+             (list in-args uniforms body))
+          stage-names))
 
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)

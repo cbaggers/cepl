@@ -91,12 +91,12 @@ names are depended on by the functions named later in the list"
 (defclass pipeline-spec ()
   ((name :initarg :name)
    (stages :initarg :stages)
-   (uniforms :initarg :uniforms)
+   (change-spec :initarg :change-spec)
    (context :initarg :context)))
 
-(defun make-pipeline-spec (name stages uniforms context)
-  (make-instance 'pipeline-spec :name name :stages stages :uniforms uniforms
-                 :context context))
+(defun make-pipeline-spec (name stages change-spec context)
+  (make-instance 'pipeline-spec :name name :stages stages
+                 :change-spec change-spec :context context))
 
 (defun pipeline-spec (name)
   (gethash name *gpu-pipeline-specs*))
