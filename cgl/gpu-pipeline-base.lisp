@@ -124,9 +124,11 @@ names are depended on by the functions named later in the list"
 (defmacro defpipeline (name args gpu-pipe-form &body options)
   (assert (eq (first gpu-pipe-form) 'G->))
   (let* ((gpipe-args (rest gpu-pipe-form)))
-    (if (and (listp (first gpipe-args)) (eq (first gpipe-args) 'function))
-        (%defpipeline-compose name args gpipe-args options)
-        (%defpipeline-gfuncs name args gpipe-args options))))
+    (cond ((and (listp (first gpipe-args)) (eq (caar gpipe-args) 'function))
+           (%defpipeline-gfuncs name args gpipe-args options))
+          ((listp (first gpipe-args))
+           (%defpipeline-compose name args options gpipe-args))
+          (t (error "Invalid defpipeline syntax")))))
 
 (defun ensure-no-name-collision ()
   )
@@ -135,14 +137,8 @@ names are depended on by the functions named later in the list"
 
 (defun parse-options (options)
   (mapcar #'cons
-          (remove-if-not #'keywordp options)
+          (cons nil (remove-if-not #'keywordp options))
           (split-sequence-if #'keywordp options)))
-
-(defun get-stage-name (stage)
-  (assert (listp stage))
-  (if (eq (first stage) 'function)
-      (second stage)
-      (first stage)))
 
 ;;--------------------------------------------------
 

@@ -234,13 +234,13 @@
       (list
        (let ((args (subseq args 0 cut-pos)))
          (if (and (= (length args) 2) (not (some #'keywordp args)))
-             `((:vertex . ,(first args)) (:fragment . ,(second args)))
-             (let* ((stages (append (copy-list varjo::*stage-types*) (list :post)))
+             `((:vertex . ,(cadar args)) (:fragment . ,(cadadr args)))
+             (let* ((stages (copy-list varjo::*stage-types*))
                     (results (loop :for a :in args
                                 :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
                                 :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
-                                                     a))))
-               (remove :post (remove :context results :key #'car) :key #'car))))
+                                                     (cadr a)))))
+               (remove :context results :key #'car))))
        context))))
 
 (defun get-gpipe-arg (key args)

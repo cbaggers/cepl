@@ -1,4 +1,5 @@
 (in-package :cgl)
+(named-readtables:in-readtable fn_::fn_lambda)
 
 (defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
@@ -16,19 +17,30 @@
                  (update-pipeline-spec
                   (make-pipeline-spec ',name ',stage-names
                                       ',(stages-to-uniform-details stage-pairs
-                                                                  pass-key)
+                                                                   pass-key)
                                       ',(or gpipe-context context))))
                (def-pipeline-invalidate ,name)
                (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
                (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
                (def-dummy-func ,name ,stage-pairs ,pass-key))
              (defun ,(recompile-name name) ()
-               (unless (equalp (slot-value (pipeline-spec ',name)
-                                           'uniforms)
-                               (stages-to-uniform-details ',stage-pairs))
+               (unless (%uniform-equal
+                        (slot-value (pipeline-spec ',name) 'uniforms)
+                        (stages-to-uniform-details ',stage-pairs))
+                 (format t "~&; recompile triggered on ~a~&"
+                         ',(make-func-description name stage-pairs))
                  (eval (%defpipeline-gfuncs ',name ',args
                                             ',gpipe-args ',options t))))
              ,(unless suppress-compile `(,(recompile-name name)))))))))
+
+(defun make-func-description (name stage-pairs)
+  (with-processed-func-specs (mapcar #'cdr stage-pairs)
+    (cons name (append in-args unexpanded-uniforms))))
+
+(defun %uniform-equal (x y)
+  (and (every λ(equal (second (second %)) (second (second %1)))
+              x y)
+       (= (length x) (length y))))
 
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
@@ -154,11 +166,8 @@
       (cached-key nil))
   (defun make-arg-assigners (uniform-arg &optional pass-key)
     (if (and pass-key (eq cached-key pass-key))
-        (progn
-          (print "use cached")
-          (return-from make-arg-assigners cached-data))
+        (return-from make-arg-assigners cached-data)
         (let ((result (%make-arg-assigners uniform-arg)))
-          (print "gen")
           (when pass-key
             (setf cached-key pass-key)
             (setf cached-data result))
