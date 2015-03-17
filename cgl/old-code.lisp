@@ -91,7 +91,7 @@
 ;;                                    `(,name ,type)))))
 ;;                 ,@(when context `(&context ,@context)))))
 ;;         `(let ((program-id nil)
-;;                ,@(let ((u-lets (mapcan #'first uniform-details)))
+;;                ,@(let ((u-lets (mapcat #'first uniform-details)))
 ;;                       (loop for u in u-lets collect `(,(first u) -1))))
 ;;            ,(gen-pipeline-invalidate invalidate-func-name)
 ;;            ,(gen-pipeline-init init-func-name varjo-args name

@@ -251,7 +251,7 @@
                        0))
            (stride-sym (gensym "stride"))
            (definitions
-            (loop :for attr :in (mapcan #'expand-slot-to-layout slots)
+            (loop :for attr :in (mapcat #'expand-slot-to-layout slots)
                :for i :from 0 :with offset = 0 :append
                `((gl:enable-vertex-attrib-array (+ attrib-offset ,i))
                  (%gl:vertex-attrib-pointer

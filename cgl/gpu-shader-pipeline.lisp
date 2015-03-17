@@ -4,7 +4,7 @@
 (defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
   (when args (warn "defpipeline: extra args are not used in pipelines composed of g-functions"))
-  (let ((pass-key (gensym "PASS-"))) ;; used as key for memoization
+  (let ((pass-key (%gen-pass-key))) ;; used as key for memoization
     (assoc-bind ((context :context) (post :post)) (parse-options options)
       (destructuring-bind (stage-pairs gpipe-context)
           (parse-gpipe-args gpipe-args)
@@ -15,9 +15,9 @@
              (let-pipeline-vars (,stage-pairs ,pass-key)
                (eval-when (:compile-toplevel :load-toplevel :execute)
                  (update-pipeline-spec
-                  (make-pipeline-spec ',name ',stage-names
-                                      ',(make-change-signature stage-names)
-                                      ',(or gpipe-context context))))
+                  (make-shader-pipeline-spec
+                   ',name ',stage-names ',(make-change-signature stage-names)
+                   ',(or gpipe-context context))))
                (def-pipeline-invalidate ,name)
                (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
                (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
@@ -37,7 +37,7 @@
     (cons name (append in-args unexpanded-uniforms))))
 
 (defun make-change-signature (stage-names)
-  (mapcar λ(with-gpu-func-spec ((gpu-func-spec %))             
+  (mapcar λ(with-gpu-func-spec ((gpu-func-spec % t))
              (list in-args uniforms body))
           stage-names))
 
@@ -46,8 +46,9 @@
     (let ((uniform-details
            (mapcar (lambda (x) (make-arg-assigners x pass-key))
                    (expand-equivalent-types unexpanded-uniforms))))
+
       `(let ((program-id nil)
-             ,@(let ((u-lets (mapcan #'first uniform-details)))
+             ,@(let ((u-lets (mapcat #'first uniform-details)))
                     (mapquote `(,(first %) -1) u-lets)))
          ,@body))))
 
@@ -74,13 +75,13 @@
          (format t ,(format nil "~&; uploading (~a ...)~&" name))
          (link-shaders stages-objects prog-id)
          (mapcar #'%gl:delete-shader stages-objects)
-         ,@(let ((u-lets (mapcan #'first uniform-details)))
+         ,@(let ((u-lets (mapcat #'first uniform-details)))
                 (loop for u in u-lets collect (cons 'setf u)))
          (unbind-buffer)
          (force-bind-vao 0)
          (force-use-program 0)
          (setf program-id prog-id)
-         ,(when post `(funcall ,post))         
+         ,(when post `(funcall ,post))
          prog-id))))
 
 (defun stages-to-uniform-details (stage-pairs &optional pass-key)
@@ -162,14 +163,19 @@
 ;;;---------------;;;
 
 (let ((cached-data nil)
-      (cached-key nil))
+      (cached-key -1))
   (defun make-arg-assigners (uniform-arg &optional pass-key)
-    (if (and pass-key (eq cached-key pass-key))
-        (return-from make-arg-assigners cached-data)
+    (if (and pass-key (= cached-key pass-key)
+             (assoc uniform-arg cached-data :test #'equal))
+        (return-from make-arg-assigners
+          (cdr (assoc uniform-arg cached-data :test #'equal)))
         (let ((result (%make-arg-assigners uniform-arg)))
           (when pass-key
-            (setf cached-key pass-key)
-            (setf cached-data result))
+            (when (not (= cached-key pass-key))
+              (format t "~%cleared ~a ~a~%" cached-key pass-key)
+              (setf cached-data nil)
+              (setf cached-key pass-key))
+            (setf cached-data (acons uniform-arg result cached-data)))
           result))))
 
 (defun %make-arg-assigners (uniform-arg &aux gen-ids assigners)

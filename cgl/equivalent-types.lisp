@@ -13,7 +13,7 @@
        (if (symbolp (first body))
            (apply #'process-direct bridge-name lisp-type body)
            (process-compound lisp-type bridge-name body))
-     `(progn (eval-when (:compile-toplevel :load-toplevel :execute)     
+     `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
                (setf (gethash ',lisp-type *gl-equivalent-type-data*) ',spec)
                ,@shader-forms)))))
 
@@ -35,7 +35,7 @@
      ,lisp-type
      ,(loop :for f :in fields :collect
          (destructuring-bind (name &key type converter) f
-           `(,name 
+           `(,name
              ,type
              ,(if converter
                   (if (valid-convertorp converter)
@@ -43,18 +43,18 @@
                       (error 'invalid-converter-form :form converter))
                   `(function ,name))))))
    (cons
-    `(defclass ,bridge-name (l-type) 
+    `(defclass ,bridge-name (l-type)
        ((varjo::uniform-string-gen :initform #'equiv-uniform-string-gen
                             :initarg :uniform-expansion)))
     (loop :for (name &key type converter) :in fields :collect
        (if type
            `(v-defun ,name (x)
-              ,(format nil "~~a_~a" (varjo::safe-glsl-name-string name)) 
+              ,(format nil "~~a_~a" (varjo::safe-glsl-name-string name))
               (,bridge-name)
-              ,type :glsl-spec-matching nil)          
+              ,type :glsl-spec-matching nil)
            (if converter
                (error 'converter-for-nil-field)
-               `(v-defun ,name (x) 
+               `(v-defun ,name (x)
                          ,(format nil "<invalid lisp field access>~~a-~a" name)
                          (,bridge-name) ,type :glsl-spec-matching nil)))))))
 
@@ -82,7 +82,7 @@
              (eq y 'lambda)))))
 
 (defun expand-equivalent-types (args)
-  (mapcan #'expand-equivalent-type args))
+  (mapcat #'expand-equivalent-type args))
 
 (defun expand-equivalent-type (arg-form)
   (destructuring-bind (name type) arg-form
@@ -113,7 +113,7 @@
     "Field type may be nil in the fields of a compound~%equivalent type but not in this case as it is a direct equivalentB type~%")
 
 (deferror invalid-converter-form (:prefix "CEPL: Equivalent Types") (form)
-    "Invalid form for converter, must be sharp-quoted function or lambda:~%~s" 
+    "Invalid form for converter, must be sharp-quoted function or lambda:~%~s"
   form)
 
 (deferror converter-for-nil-field (:prefix "CEPL: Equivalent Types") ()

@@ -168,23 +168,30 @@
            (rest specs)
            (if (eql t args-accum) in-args args-accum)
            (aggregate-uniforms uniforms uniforms-accum))))
-      `(,args-accum &uniform ,@uniforms-accum)))
+      `(,@args-accum ,@(when uniforms-accum (cons '&uniform uniforms-accum)))))
 
-&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-Ok so this is meant to flatten uniforms but we need
-one that doesnt so we know which gmap takes which uniforms
-&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+(defun aggregate-uniforms (uniforms &optional accum)
+  (if uniforms
+      (let ((u (first uniforms)))
+        (cond
+          ;; if there is no other uniform with matching name, hense no collision
+          ((not (find (first u) accum :test #'equal :key #'first))
+           (aggregate-uniforms (rest uniforms) (cons u accum)))
+          ;; or the uniform matches perfectly so no collision
+          ((find u accum :test #'equal)
+           (aggregate-uniforms (rest uniforms) accum))
+          ;; or it's a clash
+          (t (error "Uniforms for the functions are incompatible: ~a ~a"
+                    u accum))))
+      accum))
 
-(defun aggregate-uniforms (from into)
-  (if from
-      (let ((u (first from)))
-        (cond ((not (find (first u) into :test #'equal :key #'first))
-               (aggregate-uniforms (rest from) (cons u into)))
-              ((find u into :test #'equal)
-               (aggregate-uniforms (rest from) into))
-              (t (error "Uniforms for the functions are incompatible: ~a ~a"
-                        u into))))
-      into))
+(defun %get-stage-uniforms (names &optional uniforms-accum)
+  (if names
+      (with-gpu-func-spec ((gpu-func-spec (first names)))
+        (%get-stage-uniforms
+         (rest names)
+         (aggregate-uniforms uniforms uniforms-accum)))
+      uniforms-accum))
 
 (defmacro with-processed-func-specs (stages &body body)
   `(let ((args (extract-args-from-gpu-functions ,stages)))

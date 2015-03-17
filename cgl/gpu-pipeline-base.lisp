@@ -45,9 +45,14 @@
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
                           ',instancing ,doc-string ',declarations)))
 
-(defun gpu-func-spec (name) (gethash name *gpu-func-specs*))
+(defun gpu-func-spec (name &optional error-if-missing)
+  (or (gethash name *gpu-func-specs*)
+      (when error-if-missing
+        (error "gpu-func-spec: gpu function ~a not found" name))))
 
-(defun (setf gpu-func-spec) (value name)
+(defun (setf gpu-func-spec) (value name &optional error-if-missing)
+  (when (and error-if-missing (null (gethash name *gpu-func-specs*)))
+    (error "gpu-func-spec: gpu function ~a not found" name))
   (setf (gethash name *gpu-func-specs*) value))
 
 (defun funcs-that-use-this-func (name)
@@ -88,15 +93,25 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defclass pipeline-spec ()
+(defclass shader-pipeline-spec ()
   ((name :initarg :name)
    (stages :initarg :stages)
    (change-spec :initarg :change-spec)
    (context :initarg :context)))
 
-(defun make-pipeline-spec (name stages change-spec context)
-  (make-instance 'pipeline-spec :name name :stages stages
+(defclass compose-pipeline-spec ()
+  ((name :initarg :name)
+   (pipelines :initarg :pipelines)
+   (in-args :initarg :in-args)
+   (uniforms :initarg :uniforms)
+   (context :initarg :context)))
+
+(defun make-shader-pipeline-spec (name stages change-spec context)
+  (make-instance 'shader-pipeline-spec :name name :stages stages
                  :change-spec change-spec :context context))
+(defun make-compose-pipeline-spec (name pipelines in-args uniforms context)
+  (make-instance 'compose-pipeline-spec :name name :pipelines pipelines
+                 :in-args in-args :uniforms uniforms :context context))
 
 (defun pipeline-spec (name)
   (gethash name *gpu-pipeline-specs*))
@@ -167,3 +182,8 @@ names are depended on by the functions named later in the list"
 (defun invalidate-func-name (name) (symb-package :cgl '££- name))
 (defun dispatch-func-name (name) (symb-package :cgl '$$-dispatch- name))
 (defun recompile-name (name) (symb-package :cgl '~~- name))
+
+;;--------------------------------------------------
+
+(let ((current-key 0))
+  (defun %gen-pass-key () (incf current-key)))
