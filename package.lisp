@@ -54,7 +54,6 @@
            :deferror
            :split-seq-by-seq
            :print-mem
-           :mapquote
            :map-hash))
 
 (defpackage :base-macros

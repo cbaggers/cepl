@@ -44,12 +44,11 @@
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (let ((uniform-details
-           (mapcar (lambda (x) (make-arg-assigners x pass-key))
+           (mapcar λ(make-arg-assigners % pass-key)
                    (expand-equivalent-types unexpanded-uniforms))))
-
       `(let ((program-id nil)
              ,@(let ((u-lets (mapcat #'first uniform-details)))
-                    (mapquote `(,(first %) -1) u-lets)))
+                    (mapcar λ`(,(first %) -1) u-lets)))
          ,@body))))
 
 (defmacro def-pipeline-invalidate (name)
@@ -165,14 +164,15 @@
 (let ((cached-data nil)
       (cached-key -1))
   (defun make-arg-assigners (uniform-arg &optional pass-key)
+    ;; This function is pretty much just memoization for %make-arg-assigners
     (if (and pass-key (= cached-key pass-key)
              (assoc uniform-arg cached-data :test #'equal))
         (return-from make-arg-assigners
           (cdr (assoc uniform-arg cached-data :test #'equal)))
+        ;; the call here -vvvv is the only bit of real work in this function
         (let ((result (%make-arg-assigners uniform-arg)))
           (when pass-key
             (when (not (= cached-key pass-key))
-              (format t "~%cleared ~a ~a~%" cached-key pass-key)
               (setf cached-data nil)
               (setf cached-key pass-key))
             (setf cached-data (acons uniform-arg result cached-data)))

@@ -372,10 +372,6 @@
                   :collect "     ")
                chars))))
 
-(defmacro mapquote (pattern &rest lists)
-  (let ((args (cons (symb :%) (loop :for i :from 1 :below (length lists)
-                                 :collect (symb :% i)))))
-    `(mapcar (lambda ,args ,pattern) ,@lists)))
 
 (defun map-hash (function hash-table)
   "map through a hash and actually return something"
