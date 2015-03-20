@@ -54,7 +54,7 @@
            :deferror
            :split-seq-by-seq
            :print-mem
-           :mapquote))
+           :map-hash))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
@@ -245,7 +245,7 @@
 
 (defpackage :cepl-gl
   (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
-        :fn_)
+        :fn_ :split-sequence)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color

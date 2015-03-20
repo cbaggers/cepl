@@ -3,104 +3,57 @@
 
 ;; defun-gpu is at the bottom of this file
 
-(defclass gpu-func-spec ()
-  ((name :initarg :name)
-   (in-args :initarg :in-args)
-   (uniforms :initarg :uniforms)
-   (context :initarg :context)
-   (body :initarg :body)
-   (instancing :initarg :instancing)
-   (doc-string :initarg :doc-string)
-   (declarations :initarg :declarations)))
+;;--------------------------------------------------
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmacro with-gpu-func-spec ((func-spec) &body body)
-    `(with-slots (name in-args uniforms context body instancing
-                       doc-string declarations) ,func-spec
-       (declare (ignorable name in-args uniforms context body instancing
-                           doc-string declarations))
-       ,@body)))
+;; extract details from args and delegate to %def-gpu-function
+;; for the main logic
+(defmacro defun-g (name args &body body)
+  "Define a function that runs on the gpu. "
+  (let ((doc-string (when (stringp (first body)) (pop body)))
+        (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
+                        (pop body))))
+    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
+                 (instancing :&instancing))
+        (varjo::lambda-list-split '(:&uniform :&context :&instancing) args)
+      (%def-gpu-function name in-args uniforms context body instancing
+                         doc-string declarations))))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *gpu-func-specs* (make-hash-table :test #'eq))
-  (defvar *dependent-gpu-functions* (make-hash-table :test #'eq))
-  (defvar *dependent-external-functions* (make-hash-table :test #'eq)))
+(defun undefine-gpu-function (name)
+  (%unsubscibe-from-all name)
+  (remhash name *gpu-func-specs*)
+  (remhash name *dependent-gpu-functions*)
+  nil)
 
-(defun funcs-that-use-this-func (name)
-  (gethash name *dependent-gpu-functions*))
+;;--------------------------------------------------
 
-(defun (setf funcs-that-use-this-func) (value name)
-  (setf (gethash name *dependent-gpu-functions*) value))
+(defun %def-gpu-function (name in-args uniforms context body instancing
+                          doc-string declarations)
+  (let ((spec (%make-gpu-func-spec name in-args uniforms context body
+                                   instancing doc-string declarations)))
+    (assert (%gpu-func-compiles-in-some-context spec))
+    (let ((depends-on (%find-gpu-functions-depended-on spec))
+          (pipelines-depending-on (pipelines-that-use-this-func name)))
+      (assert (not (%find-recursion name depends-on)))
+      `(progn
+         (eval-when (:compile-toplevel :load-toplevel :execute)
+           (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
+                                      ',depends-on))
+         ,(%make-stand-in-lisp-func spec)
+         (%recompile-gpu-function ',name)))))
 
-(defun funcs-to-call-on-change (name)
-  (gethash name *dependent-external-functions*))
-
-(defun add-func-to-call-on-change (name func)
-  (when (not (member func (gethash name *dependent-external-functions*)
-                     :test #'eq))
-    (push func (gethash name *dependent-external-functions*))))
-
-(defun map-hash (function hash-table)
-  "map through a hash and actually return something"
-  (let* ((head (list nil))
-         (tail head))
-    (labels ((do-it (k v)
-               (rplacd tail (setq tail (list (funcall function k v))))))
-      (maphash #'do-it hash-table))
-    (cdr head)))
-
-(defun funcs-this-func-uses (name)
-  "Recursivly searches for functions by this function.
-Sorts the list of function names by dependency so the earlier
-names are depended on by the functions named later in the list"
-  (mapcar #'car
-          (remove-duplicates
-           (sort (%funcs-this-func-uses name) #'> :key #'cdr)
-           :key #'car :from-end t)))
-
-(defun %funcs-this-func-uses (name &optional (depth 0))
-  (let ((this-func-calls
-         (remove nil (map-hash
-                      (lambda (k v)
-                        (when (member name v)
-                          (cons k depth)))
-                      *dependent-gpu-functions*))))
-    (append this-func-calls
-            (apply #'append
-                   (mapcar (lambda (x)
-                             (%funcs-this-func-uses (car x) (1+ depth)))
-                           this-func-calls)))))
-
-(defun gpu-func-spec (name) (gethash name *gpu-func-specs*))
-(defun (setf gpu-func-spec) (value name)
-  (setf (gethash name *gpu-func-specs*) value))
 
 (defun %recompile-gpu-function (name)
+  ;; recompile gpu-funcs that depends on name
   (mapcar #'%recompile-gpu-function (funcs-that-use-this-func name))
-  (labels ((safe-call (func)
-             (funcall func)
-             ;; (handler-case (funcall func)
-             ;;   (error () (format t "~%%recompile-gpu-functions: Unable to call ~a"
-             ;;                     func)))
-             ))
-    (mapcar #'safe-call (funcs-to-call-on-change name))))
+  ;; and recompile pipelines that depend on name
+  (mapcar λ(let ((recompile-pipeline-name (recompile-name %)))
+             (when (symbol-function recompile-pipeline-name)
+               (handler-case
+                   (funcall (symbol-function recompile-pipeline-name))
+                 (undefined-function () (format t "~%%recompile-gpu-functions: no function ~a exists" recompile-pipeline-name))
+                 (error () nil))))
+          (pipelines-that-use-this-func name)))
 
-(defun %make-gpu-func-spec (name in-args uniforms context body instancing
-                            doc-string declarations)
-  (make-instance 'gpu-func-spec
-                 :name name
-                 :in-args (mapcar #'listify in-args)
-                 :uniforms (mapcar #'listify uniforms)
-                 :context context
-                 :body body
-                 :instancing instancing
-                 :doc-string doc-string
-                 :declarations declarations))
-
-(defun %serialize-gpu-func-spec (spec)
-  (with-gpu-func-spec (spec)
-    `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
-                          ',instancing ,doc-string ',declarations)))
 
 (defun %subscribe-to-gpu-func (name subscribe-to-name)
   (assert (not (eq name subscribe-to-name)))
@@ -185,51 +138,20 @@ names are depended on by the functions named later in the list"
 (defun %find-gpu-functions-depended-on (spec)
   (%find-gpu-funcs-in-source (%expand-all-macros spec)))
 
-(defun %make-stand-in-lisp-func (spec depends-on)
+(defun %make-stand-in-lisp-func (spec)
   (with-gpu-func-spec (spec)
     (let ((arg-names (mapcar #'first in-args))
           (uniform-names (mapcar #'first uniforms)))
-      `(progn
-         (eval-when (:compile-toplevel :load-toplevel :execute)
-           (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
-                                      ',depends-on))
-         (%recompile-gpu-function ',name)
-         (defun ,name (,@arg-names
-                       ,@(when uniforms (cons (symb :&uniform) uniform-names) ))
-           (declare (ignore ,@arg-names ,@uniform-names))
-           (warn "GPU Functions cannot currently be used from the cpu"))))))
+      `(defun ,name (,@arg-names
+                     ,@(when uniforms (cons (symb :&key) uniform-names) ))
+         (declare (ignore ,@arg-names ,@uniform-names))
+         (warn "GPU Functions cannot currently be used from the cpu")))))
 
 (defun %find-recursion (name depends-on)
   (declare (ignore name depends-on))
   nil)
 
-(defun %def-gpu-function (name in-args uniforms context body instancing
-                          doc-string declarations)
-  (let ((spec (%make-gpu-func-spec name in-args uniforms context body
-                                   instancing doc-string declarations)))
-    (assert (%gpu-func-compiles-in-some-context spec))
-    (let ((depends-on (%find-gpu-functions-depended-on spec)))
-      (assert (not (%find-recursion name depends-on)))
-      (%make-stand-in-lisp-func spec depends-on))))
 
-;;--------------------------------------------------
-
-(defmacro defun-g (name args &body body)
-  (let ((doc-string (when (stringp (first body)) (pop body)))
-        (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
-                        (pop body))))
-    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
-                 (instancing :&instancing))
-        (varjo::lambda-list-split '(:&uniform :&context :&instancing) args)
-      (%def-gpu-function name in-args uniforms context body instancing
-                         doc-string declarations))))
-
-(defun undefine-gpu-function (name)
-  (%unsubscibe-from-all name)
-  (remhash name *gpu-func-specs*)
-  (remhash name *dependent-gpu-functions*)
-  (remhash name *dependent-external-functions*)
-  nil)
 
 ;;--------------------------------------------------
 
@@ -246,18 +168,30 @@ names are depended on by the functions named later in the list"
            (rest specs)
            (if (eql t args-accum) in-args args-accum)
            (aggregate-uniforms uniforms uniforms-accum))))
-      `(,args-accum &uniform ,@uniforms-accum)))
+      `(,@args-accum ,@(when uniforms-accum (cons '&uniform uniforms-accum)))))
 
-(defun aggregate-uniforms (from into)
-  (if from
-      (let ((u (first from)))
-        (cond ((not (find (first u) into :test #'equal :key #'first))
-               (aggregate-uniforms (rest from) (cons u into)))
-              ((find u into :test #'equal)
-               (aggregate-uniforms (rest from) into))
-              (t (error "Uniforms for the functions are incompatible: ~a ~a"
-                        u into))))
-      into))
+(defun aggregate-uniforms (uniforms &optional accum)
+  (if uniforms
+      (let ((u (first uniforms)))
+        (cond
+          ;; if there is no other uniform with matching name, hense no collision
+          ((not (find (first u) accum :test #'equal :key #'first))
+           (aggregate-uniforms (rest uniforms) (cons u accum)))
+          ;; or the uniform matches perfectly so no collision
+          ((find u accum :test #'equal)
+           (aggregate-uniforms (rest uniforms) accum))
+          ;; or it's a clash
+          (t (error "Uniforms for the functions are incompatible: ~a ~a"
+                    u accum))))
+      accum))
+
+(defun %get-stage-uniforms (names &optional uniforms-accum)
+  (if names
+      (with-gpu-func-spec ((gpu-func-spec (first names)))
+        (%get-stage-uniforms
+         (rest names)
+         (aggregate-uniforms uniforms uniforms-accum)))
+      uniforms-accum))
 
 (defmacro with-processed-func-specs (stages &body body)
   `(let ((args (extract-args-from-gpu-functions ,stages)))
@@ -284,8 +218,8 @@ names are depended on by the functions named later in the list"
          (get-func-as-stage-code name)))
 
 (defun varjo-compile-as-pipeline (args)
-  (destructuring-bind (stage-pairs post context) (parse-gpipe-args args)
-    (declare (ignore post context))
+  (destructuring-bind (stage-pairs context) (parse-gpipe-args args)
+    (declare (ignore context))
     (%varjo-compile-as-pipeline stage-pairs )))
 (defun %varjo-compile-as-pipeline (parsed-gpipe-args)
   (rolling-translate (mapcar #'prepare-stage parsed-gpipe-args)))
@@ -306,25 +240,23 @@ names are depended on by the functions named later in the list"
 ;;--------------------------------------------------
 
 (defun parse-gpipe-args (args)
-  (let ((cut-pos (min (or (position :post args) (length args))
-                      (or (position :context args) (length args)))))
-    (destructuring-bind (&key post context) (subseq args cut-pos)
+  (let ((cut-pos (or (position :context args) (length args))))
+    (destructuring-bind (&key context) (subseq args cut-pos)
       (list
        (let ((args (subseq args 0 cut-pos)))
          (if (and (= (length args) 2) (not (some #'keywordp args)))
-             `((:vertex . ,(first args)) (:fragment . ,(second args)))
-             (let* ((stages (append (copy-list varjo::*stage-types*) (list :post)))
+             `((:vertex . ,(cadar args)) (:fragment . ,(cadadr args)))
+             (let* ((stages (copy-list varjo::*stage-types*))
                     (results (loop :for a :in args
                                 :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
                                 :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
-                                                     a))))
-               (remove :post (remove :context results :key #'car) :key #'car))))
-       post
+                                                     (cadr a)))))
+               (remove :context results :key #'car))))
        context))))
 
 (defun get-gpipe-arg (key args)
-  (destructuring-bind (stage-pairs post context) (parse-gpipe-args args)
-    (declare (ignore post context))
+  (destructuring-bind (stage-pairs context) (parse-gpipe-args args)
+    (declare (ignore context))
     (%get-gpipe-arg key stage-pairs)))
 (defun %get-gpipe-arg (key parsed-args)
   (cdr (assoc key parsed-args)))

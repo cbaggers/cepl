@@ -15,7 +15,8 @@
 (defun-g frag ((color :vec4))
   color)
 
-(defpipeline prog-1 (g-> vert frag))
+(defpipeline prog-1 ()
+  (g-> v f))
 
 (defun step-demo ()
   (evt:pump-events)
