@@ -44,8 +44,7 @@
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (let ((uniform-details
-           (mapcar λ(make-arg-assigners % pass-key)
-                   (expand-equivalent-types unexpanded-uniforms))))
+           (mapcar λ(make-arg-assigners % pass-key) unexpanded-uniforms)))
       `(let ((program-id nil)
              ,@(let ((u-lets (mapcat #'first uniform-details)))
                     (mapcar λ`(,(first %) -1) u-lets)))
@@ -63,7 +62,7 @@
          (uniform-details
           (with-processed-func-specs stage-names
             (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                    (expand-equivalent-types unexpanded-uniforms)))))
+                    unexpanded-uniforms))))
     `(defun ,(init-func-name name) ()
        (let* ((compiled-stages (%varjo-compile-as-pipeline ',stage-pairs))
               (stages-objects (mapcar #'%gl-make-shader-from-varjo
@@ -86,13 +85,12 @@
 (defun stages-to-uniform-details (stage-pairs &optional pass-key)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (mapcar (lambda (x) (make-arg-assigners x pass-key))
-            (expand-equivalent-types unexpanded-uniforms))))
+            unexpanded-uniforms)))
 
 (defmacro def-dispatch-func (name stage-pairs context pass-key)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                    (expand-equivalent-types
-                                     unexpanded-uniforms)))
+                                    unexpanded-uniforms))
            (uniform-names (mapcar #'first unexpanded-uniforms))
            (prim-type (varjo::get-primitive-type-from-context context))
            (u-uploads (mapcar #'second uniform-details)))
@@ -109,8 +107,7 @@
 (defmacro def-dummy-func (name stage-pairs pass-key)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                    (expand-equivalent-types
-                                     unexpanded-uniforms)))
+                                    unexpanded-uniforms))
            (uniform-names (mapcar #'first unexpanded-uniforms))
            (u-uploads (mapcar #'second uniform-details)))
       `(defun ,name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
@@ -179,40 +176,34 @@
           result))))
 
 (defun %make-arg-assigners (uniform-arg &aux gen-ids assigners)
-  (destructuring-bind ((arg-name &optional expanded-from converter)
-                       varjo-type~1) uniform-arg
+  (varjo::with-arg (arg-name varjo-type~1 qualifiers glsl-name) uniform-arg
     (let* ((varjo-type (varjo::type-spec->type varjo-type~1))
-           (glsl-name (varjo::safe-glsl-name-string arg-name))
+           (glsl-name (or (varjo::safe-glsl-name-string arg-name)
+                          glsl-name))
            (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
            (array-length (when (v-typep varjo-type 'v-array)
                            (apply #'* (v-dimensions varjo-type))))
-           (sampler (sampler-typep varjo-type)))
+           (sampler (sampler-typep varjo-type))
+           (ubo (member :ubo qualifiers)))
       (loop :for (gid asn multi-gid) :in
-         (cond (array-length (make-array-assigners varjo-type glsl-name))
-               (struct-arg (make-struct-assigners varjo-type glsl-name))
-               (sampler `(,(make-sampler-assigner varjo-type glsl-name nil)))
-               (t `(,(make-simple-assigner varjo-type glsl-name nil))))
+         (cond
+           (ubo `(,(make-ubo-assigner varjo-type glsl-name)))
+           (array-length (make-array-assigners varjo-type glsl-name))
+           (struct-arg (make-struct-assigners varjo-type glsl-name))
+           (sampler `(,(make-sampler-assigner varjo-type glsl-name)))
+           (t `(,(make-simple-assigner varjo-type glsl-name nil))))
          :do (if multi-gid
                  (progn (loop for g in gid :do (push g gen-ids))
                         (push asn assigners))
                  (progn (push gid gen-ids) (push asn assigners))))
-      (let ((val~ (if expanded-from
-                      expanded-from
-                      (if (or array-length struct-arg)
-                          `(pointer ,arg-name)
-                          arg-name))))
-        `(,(reverse gen-ids)
-           (when ,(or expanded-from arg-name)
-             (let ((val ,(cond ((null converter) val~)
-                               ((eq (first converter) 'function)
-                                `(,(second converter) ,val~))
-                               ((eq (first converter) 'lambda)
-                                `(labels ((c ,@(rest converter)))
-                                   (c ,val~)))
-                               (t (error "invalid converter in make-arg-assigners")))))
-               ,@(reverse assigners))))))))
+      `(,(reverse gen-ids)
+         (when ,arg-name
+           (let ((val ,(if (or array-length struct-arg)
+                           `(pointer ,arg-name)
+                           arg-name)))
+             ,@(reverse assigners)))))))
 
-(defun make-sampler-assigner (type path &optional (byte-offset 0))
+(defun make-sampler-assigner (type path)
   (declare (ignore byte-offset))
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
@@ -227,6 +218,20 @@
         (bind-texture val)
         (uniform-sampler ,id-name ,i-unit))
       t)))
+
+(defun make-ubo-assigner (varjo-type glsl-name)
+  (let ((id-name (gensym))
+        (type-spec (varjo::type->type-spec varjo-type)))
+    `((,id-name (get-uniform-block-index
+                 prog-id ,(format nil "_UBO_~a" glsl-name)))
+      (when (>= ,id-name 0)
+        (if (and (typep val 'ubo)
+                 (v-type-eq (varjo::type-spec->type ',type-spec)
+                            (ubo-data-type val)))
+            (%gl:uniform-block-binding prog-id ,id-name (ubo-id val))
+            (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
+                   ',type-spec (ubo-data-type val))))
+      nil)))
 
 (defun make-simple-assigner (type path &optional (byte-offset 0))
   (let ((id-name (gensym)))

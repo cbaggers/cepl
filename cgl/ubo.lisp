@@ -17,6 +17,12 @@
   (data nil)
   (index 0 :type fixnum))
 
+(defun ubo-data-type (ubo)
+  (let ((data (ubo-data ubo)))
+    (typecase data
+      (glbuffer (caar (glbuffer-format data)))
+      (gpuarray (first (gpuarray-format data))))))
+
 (defun make-ubo (&optional data (index 0))
   (assert (>= index 0))
   (assert (when (> index 0) (typep data 'gpuarray)))
