@@ -99,7 +99,10 @@
 ;;------------------------------------------------------------
 
 (defun make-varjo-struct-def (name slots)
-  `(v-defstruct ,name () ,@(mapcar #'format-slot-for-varjo slots)))
+  (let ((hidden-name (symb-package (symbol-package name)
+                                   'v_ name )))
+    `(v-defstruct (,name :shadowing ,hidden-name) ()
+       ,@(mapcar #'format-slot-for-varjo slots))))
 
 ;;{TODO} make varjo support readers and writers and then remove this hack
 (defun format-slot-for-varjo (slot)
@@ -289,7 +292,7 @@
            (loop for i below (apply #'* (v-dimensions type))
               :append (expand-slot-to-layout
                        nil (v-element-type type) normalise)))
-          (t `((1 ,(type->spec (s-type slot)) ,normalise))))))
+          (t `((1 ,(type->spec type) ,normalise))))))
 
 ;;------------------------------------------------------------
 

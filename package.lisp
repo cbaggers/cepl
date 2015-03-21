@@ -327,6 +327,7 @@
            :gpu-array-t
            :texref
            :defpipeline
+           :g->
            :defun-g
            :defmacro-g
            :with-instances
@@ -377,7 +378,9 @@
            :def-gl-equivalent
            :make-swatch
            :draw-swatch
-           :with-swatch-bound))
+           :with-swatch-bound
+           ;;----------
+           :make-ubo))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
@@ -461,14 +464,20 @@
            :map-evt
            :merge-evt
            :filter-evt
+           :pump-events
            :|all-events|
            :observe
            :undefobserver
-           :def-event-node))
+           :def-event-node
+           :|mouse|
+           :|sys|
+           :|window|
+           :|keyboard|))
 
 (defpackage :cepl.events.sdl
   (:use :cl :cepl-utils :cepl.events :cells :cepl-generics)
   (:nicknames :evt.sdl)
+  (:shadow :pump-events)
   (:export :pump-events
            :case-events
            :will-quit
@@ -529,6 +538,7 @@
                 :describe-pixel-format
                 :with-instances
                 :defpipeline
+                :g->
                 :defun-g
                 :defmacro-g
                 :defstruct-g
@@ -565,7 +575,9 @@
                 :attachment-compatible
                 :fbo-detach
                 ;;---
-                :def-gl-equivalent)
+                :def-gl-equivalent
+                ;;---
+                :make-ubo)
   (:import-from :utils
                 :deferror
                 :print-mem)
@@ -681,4 +693,6 @@
            :fbo-attach
            :attachment-compatible
            :fbo-detach
-           :def-gl-equivalent))
+           :def-gl-equivalent
+           ;;---
+           :make-ubo))

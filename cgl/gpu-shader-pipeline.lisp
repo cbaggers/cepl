@@ -45,13 +45,13 @@
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (let ((uniform-details
            (mapcar λ(make-arg-assigners % pass-key) unexpanded-uniforms)))
-      `(let ((program-id nil)
+      `(let ((prog-id nil)
              ,@(let ((u-lets (mapcat #'first uniform-details)))
                     (mapcar λ`(,(first %) -1) u-lets)))
          ,@body))))
 
 (defmacro def-pipeline-invalidate (name)
-  `(defun ,(invalidate-func-name name) () (setf program-id nil)))
+  `(defun ,(invalidate-func-name name) () (setf prog-id nil)))
 
 (defun %gl-make-shader-from-varjo (compiled-stage)
   (make-shader (varjo->gl-stage-names (varjo::stage-type compiled-stage))
@@ -78,7 +78,7 @@
          (unbind-buffer)
          (force-bind-vao 0)
          (force-use-program 0)
-         (setf program-id prog-id)
+         (setf prog-id prog-id)
          ,(when post `(funcall ,post))
          prog-id))))
 
@@ -97,8 +97,8 @@
       `(defun ,(dispatch-func-name name)
            (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
-         (unless program-id (setf program-id (,(init-func-name name))))
-         (use-program program-id)
+         (unless prog-id (setf prog-id (,(init-func-name name))))
+         (use-program prog-id)
          ,@u-uploads
          (when stream (draw-expander stream ,prim-type))
          (use-program 0)
@@ -112,8 +112,8 @@
            (u-uploads (mapcar #'second uniform-details)))
       `(defun ,name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
-         (unless program-id (setf program-id (,(init-func-name name))))
-         (use-program program-id)
+         (unless prog-id (setf prog-id (,(init-func-name name))))
+         (use-program prog-id)
          ,@u-uploads
          (when stream
            (error "Pipelines do not take a stream directly, the stream must be gmap'd over the pipeline"))
@@ -198,7 +198,8 @@
                  (progn (push gid gen-ids) (push asn assigners))))
       `(,(reverse gen-ids)
          (when ,arg-name
-           (let ((val ,(if (or array-length struct-arg)
+           (let ((val ,(if (and (or array-length struct-arg)
+                                (not ubo))
                            `(pointer ,arg-name)
                            arg-name)))
              ,@(reverse assigners)))))))

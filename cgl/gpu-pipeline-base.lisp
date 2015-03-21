@@ -187,3 +187,9 @@ names are depended on by the functions named later in the list"
 
 (let ((current-key 0))
   (defun %gen-pass-key () (incf current-key)))
+
+;;--------------------------------------------------
+
+(defmacro g-> (&rest forms)
+  (declare (ignore forms))
+  (error "Sorry, g-> can currently only be used inside defpipeline"))

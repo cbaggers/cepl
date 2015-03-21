@@ -114,7 +114,7 @@
                   (typecase initial-contents
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
-                  (error "make-c-array must be given initial-elements or dimensions"))))         
+                  (error "make-c-array must be given initial-elements or dimensions"))))
          (p-format (pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
@@ -122,7 +122,7 @@
                            element-type))
          (inferred-lisp-type (cond (element-type nil)
                                    (initial-contents (scan-for-type
-                                                      initial-contents))                                   
+                                                      initial-contents))
                                    (t (error "If element-type is not specified the initial-contents must be provided"))))
          (element-type (if inferred-lisp-type
                            (lisp->gl-type inferred-lisp-type)
@@ -178,7 +178,7 @@
 ;;                subscripts dimensions))))
 
 (defun row-index-correct
-    (indices dimensions 
+    (indices dimensions
      &optional (row-size (car (last dimensions)))
        (element-size 1))
   (let ((indices (reverse indices))
@@ -462,7 +462,7 @@ for any array of, up to and including, 4 dimensions."
   (defun find-suitable-type (datum)
     (if (typep datum 'structure-object)
         (list (type-of datum) (type-of datum) nil)
-        (find-if (lambda (x) (typep datum x)) states :key #'first)))  
+        (find-if (lambda (x) (typep datum x)) states :key #'first)))
   (defun lisp->gl-type (x)
     (second (find x states :key #'first :test #'equal))))
 
