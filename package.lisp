@@ -267,7 +267,7 @@
   (:export :gl-context
            :viewport
            :with-viewport
-           :make-verm
+           :with-fbo-viewport
            :+default-resolution+
            :clear-gl-context-cache
            :gl-free
