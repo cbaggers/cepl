@@ -283,6 +283,7 @@
            :gl-calc-byte-size
            :make-c-array-from-pointer
            :with-c-array
+           :with-c-arrays
            :free-c-array
            :clone-c-array
            :make-c-array
@@ -452,7 +453,8 @@
            :box-data
            :equilateral-triangle-data
            :sphere-data
-           :prim-array))
+           :prim-array
+           :swap-winding-order))
 
 (defpackage :tools
   (:use :cl
@@ -552,6 +554,7 @@
                 :push-g
                 :make-c-array
                 :with-c-array
+                :with-c-arrays
                 :free-c-array
                 :aref-c
                 :c-populate
@@ -675,6 +678,7 @@
            :push-g
            :make-c-array
            :with-c-array
+           :with-c-arrays
            :free-c-array
            :aref-c
            :c-populate

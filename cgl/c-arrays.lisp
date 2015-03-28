@@ -85,6 +85,11 @@
   `(let* ((,var-name ,c-array))
      (unwind-protect (progn ,@body) (free-c-array ,var-name))))
 
+(defmacro with-c-arrays ((var-name c-arrays) &body body)
+  `(let* ((,var-name ,c-arrays))
+     (unwind-protect (progn ,@body)
+       (loop :for a :in ,var-name :do (free-c-array a)))))
+
 (defun clone-c-array (c-array)
   (let* ((size (c-array-byte-size c-array))
          (new-pointer (cffi::%foreign-alloc size)))

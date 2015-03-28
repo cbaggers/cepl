@@ -201,7 +201,8 @@
   (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) (texture-id texture))
     (setf (slot-value texture 'texture-id) -1)
-    (%gl:delete-textures 1 id)))
+    (%gl:delete-textures 1 id)
+    t))
 
 (defmethod free-texture ((texture buffer-texture))
   (with-foreign-object (id :uint)
@@ -443,7 +444,7 @@
 (defun %texture-dimensions (initial-contents dimensions)
   (if initial-contents
       (if dimensions
-          (error "Cannot specify dimensions and have non nil initial-contents")
+          (error "Cannot specify dimensions and initial-contents")
           (dimensions initial-contents))
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
@@ -457,6 +458,19 @@
      (%make-buffer-texture (%texture-dimensions initial-contents dimensions)
                            internal-format mipmap layer-count cubes
                            rectangle multisample immutable initial-contents))
+    ((and initial-contents cubes)
+     (assert (= 6 (length initial-contents)))
+     (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
+            (dim (if (every λ(equal target-dim (dimensions %)) initial-contents)
+                     target-dim
+                     (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
+                            initial-contents)))
+            (result (%make-texture dim mipmap layer-count cubes buffer-storage
+                                   rectangle multisample immutable nil
+                                   internal-format)))
+       (loop :for data :in initial-contents :for i :from 0 :do
+          (push-g data (texref result :cube-face i)))
+       result))
     ((and initial-contents (typep initial-contents '(or list vector array)))
      (return-from make-texture
        (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions))
