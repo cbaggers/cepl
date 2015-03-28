@@ -3,7 +3,7 @@
 ;;; BUFFERS ;;;
 ;;;---------;;;
 
-;; [TODO] Should buffers have gl-pull and gl-push? of course! do it :)
+;; [TODO] Should buffers have pull-g and push-g? of course! do it :)
 
 (defstruct glbuffer
   "This is our opengl buffer object. Along with the opengl

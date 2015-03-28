@@ -410,7 +410,7 @@ for any array of, up to and including, 4 dimensions."
                                                      (list start))))
               (error "Invalid subseq start or end for c-array"))))))
 
-(defmethod gl-pull-1 ((object c-array))
+(defmethod pull1-g ((object c-array))
   (let* ((dimensions (dimensions object))
          (depth      (1- (length dimensions)))
          (indices    (make-list (1+ depth))))
@@ -418,14 +418,14 @@ for any array of, up to and including, 4 dimensions."
                (loop for j below (nth n dimensions)
                      do (setf (nth n indices) j)
                      collect (if (= n depth)
-                                 (gl-pull-1 (%aref-c object indices))
+                                 (pull1-g (%aref-c object indices))
                                (recurse (1+ n))))))
       (recurse 0))))
 
-(defmethod gl-pull ((object c-array))
-  (gl-pull-1 object))
+(defmethod pull-g ((object c-array))
+  (pull1-g object))
 
-(defmethod gl-push (object (destination c-array))
+(defmethod push-g (object (destination c-array))
   (unless (or (listp object) (arrayp object))
     (error "Can only push arrays or lists to c-arrays"))
   (c-populate destination object))

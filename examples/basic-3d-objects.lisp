@@ -47,7 +47,7 @@
          (indicies (make-gpu-array '(0 2 1   1 3 0   2 0 3   3 1 2
                                      5 6 4   4 7 5   7 4 6   6 5 7)
                     :dimensions 24 :element-type :unsigned-short))
-         (e-stream (make-vertex-stream verts :index-array indicies)))
+         (e-stream (make-buffer-stream verts :index-array indicies)))
     (setf *entities* `(,(make-entity :pos (v!  0 0 -20) :e-stream e-stream)
                         ,(make-entity :pos (v!  0 0 -25) :e-stream e-stream)
                         ,(make-entity :pos (v!  5 0 -20) :e-stream e-stream)

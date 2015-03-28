@@ -265,6 +265,9 @@
                 :print-mem)
   (:shadow :float)
   (:export :gl-context
+           :viewport
+           :with-viewport
+           :make-verm
            :+default-resolution+
            :clear-gl-context-cache
            :gl-free
@@ -287,9 +290,9 @@
            :%aref-c
            :c-populate
            :gl-subseq
-           :gl-pull
-           :gl-pull-1
-           :gl-push
+           :pull-g
+           :pull1-g
+           :push-g
            :dimensions ; [TODO] this isnt really inline with array-dimensions
            :backed-by ; [TODO] is this the right name for the job?
            :element-type
@@ -314,7 +317,7 @@
            :make-vao-from-formats
            :make-vao
            :make-raw-vertex-stream
-           :make-vertex-stream
+           :make-buffer-stream
            :make-texture
            :bind-texture
            :with-texture-bound
@@ -380,7 +383,9 @@
            :draw-swatch
            :with-swatch-bound
            ;;----------
-           :make-ubo))
+           :make-ubo
+           :ubo-data
+           :ubo-index))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
@@ -542,9 +547,9 @@
                 :defun-g
                 :defmacro-g
                 :defstruct-g
-                :gl-pull
-                :gl-pull-1
-                :gl-push
+                :pull-g
+                :pull1-g
+                :push-g
                 :make-c-array
                 :with-c-array
                 :free-c-array
@@ -554,7 +559,7 @@
                 :make-gpu-arrays
                 :gl-subseq
                 :with-gpu-array-as-c-array
-                :make-vertex-stream
+                :make-buffer-stream
                 :make-texture
                 :with-texture-bound
                 :g-pn
@@ -577,7 +582,9 @@
                 ;;---
                 :def-gl-equivalent
                 ;;---
-                :make-ubo)
+                :make-ubo
+                :ubo-data
+                :ubo-index)
   (:import-from :utils
                 :deferror
                 :print-mem)
@@ -663,9 +670,9 @@
            :defun-g
            :defmacro-g
            :defstruct-g
-           :gl-pull
-           :gl-pull-1
-           :gl-push
+           :pull-g
+           :pull1-g
+           :push-g
            :make-c-array
            :with-c-array
            :free-c-array
@@ -675,7 +682,7 @@
            :make-gpu-arrays
            :gl-subseq
            :with-gpu-array-as-c-array
-           :make-vertex-stream
+           :make-buffer-stream
            :make-texture
            :with-texture-bound
            :g-pn
@@ -695,4 +702,6 @@
            :fbo-detach
            :def-gl-equivalent
            ;;---
-           :make-ubo))
+           :make-ubo
+           :ubo-data
+           :ubo-index))

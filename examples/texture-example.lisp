@@ -42,7 +42,7 @@
                               (,(v!  0.5 -0.366 0.0 1.0) ,(v!  1.0 1.0))
                               (,(v!  0.0    0.5 0.0 1.0) ,(v!  0.0 -1.0)))
                             :dimensions 3 :element-type 'vert-data))
-      (setf *v-stream* (make-vertex-stream *vert-gpu*))
+      (setf *v-stream* (make-buffer-stream *vert-gpu*))
       (setf *texture* (with-c-array
                           (temp (make-c-array img-data :dimensions '(64 64)
                                               :element-type :ubyte))

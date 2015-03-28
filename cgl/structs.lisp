@@ -297,15 +297,15 @@
 ;;------------------------------------------------------------
 
 (defun make-pull-push (autowrap-name slots)
-  `((defmethod gl-pull ((object ,autowrap-name))
+  `((defmethod pull-g ((object ,autowrap-name))
       (list
        ,@(loop :for slot :in slots :for i :from 0 :collect
             `(,(s-writer slot) object))))
-    (defmethod gl-pull-1 ((object ,autowrap-name))
+    (defmethod pull1-g ((object ,autowrap-name))
       (list
        ,@(loop :for slot :in slots :for i :from 0 :collect
             `(,(s-writer slot) object))))
-    (defmethod gl-push ((object list) (destination ,autowrap-name))
+    (defmethod push-g ((object list) (destination ,autowrap-name))
       (populate destination object))))
 
 ;;------------------------------------------------------------

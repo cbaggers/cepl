@@ -54,7 +54,7 @@
      :particle-lifespan (float lifespan)
      :max-particles num-of-particles
      :particle-verts particle-verts
-     :particle-vert-stream (make-vertex-stream particle-verts)
+     :particle-vert-stream (make-buffer-stream particle-verts)
      :particles particles
      :particle-pos-tex pos-tex
      :texture texture)))
@@ -96,14 +96,14 @@
 (defun find-dead-particle (em)
   (find-if λ(not (particle-livep %)) (particles em)))
 
-(defun update-emitter (em)  
+(defun update-emitter (em)
   (with-slots (step-rate stepper emit-rate emit-stepper) em
     (loop :for emit = (funcall emit-stepper) :while emit :do
        (emit-particle em))
     (loop :for stepped = (funcall stepper) :while stepped :do
        (map nil λ(when (particle-livep %) (update-particle % step-rate))
             (particles em))
-       (gl-push (map 'list λ(v! (particle-pos %) 1) (particles em))
+       (push-g (map 'list λ(v! (particle-pos %) 1) (particles em))
                 (particle-pos-tex em)))))
 
 ;;------------------------------------------------------------
@@ -123,7 +123,7 @@
              (out tc (s~ data :xy))
              (setf gl-position (+ data
                                   (* cam-to-clip
-                                     m2c 
+                                     m2c
                                      (v! (s~ (texel-fetch vpos p-id) :xyz)
                                          1))))))
   (:fragment (let ((fcol (texture tex tc)))

@@ -129,7 +129,7 @@ names are depended on by the functions named later in the list"
       (setf (gethash name *gpu-program-cache*)
             (gl:create-program))))
 
-;; (defmethod gl-pull ((asset-name symbol))
+;; (defmethod pull-g ((asset-name symbol))
 ;;   (get-glsl-code asset-name))
 
 ;;;--------------------------------------------------------------
@@ -139,6 +139,7 @@ names are depended on by the functions named later in the list"
 (defmacro defpipeline (name args gpu-pipe-form &body options)
   (assert (eq (first gpu-pipe-form) 'G->))
   (let* ((gpipe-args (rest gpu-pipe-form)))
+    (assert (not (null gpipe-args)))
     (cond ((and (listp (first gpipe-args)) (eq (caar gpipe-args) 'function))
            (%defpipeline-gfuncs name args gpipe-args options))
           ((listp (first gpipe-args))

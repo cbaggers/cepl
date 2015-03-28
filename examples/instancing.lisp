@@ -27,13 +27,13 @@
 (defun load-model (filename &optional hard-rotate)
   (let* ((result (second (model-parsers:load-file filename)))
          (mesh (make-instance 'cgl::mesh
-                              :primitive-type :triangles 
+                              :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
-         (mesh~1 (if hard-rotate 
+         (mesh~1 (if hard-rotate
                      (cgl::transform-mesh mesh :rotation hard-rotate)
                      mesh)))
-    (let ((gstream (make-vertex-stream 
+    (let ((gstream (make-buffer-stream
                     (cgl::vertices mesh) :index-array (cgl::indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.4 -1) :mesh mesh~1))))
@@ -51,9 +51,9 @@
   (setf *pos-tex* (make-texture nil :dimensions 1000
                                 :internal-format :rgba32f
                                 :buffer-storage t))
-  (gl-push (loop :for i :below 1000 :collect
+  (push-g (loop :for i :below 1000 :collect
               (v! (- (random 20.0) 10) (- (random 20.0) 10)
-                  (- -20 (random 10.0)) 1)) 
+                  (- -20 (random 10.0)) 1))
            *pos-tex*))
 
 ;;--------------------------------------------------------------
@@ -64,7 +64,7 @@
      (cam-to-clip :mat4) (model-space-light-pos :vec3)
      (light-intensity :vec4) (ambient-intensity :vec4)
      (textur :sampler-2d) (offsets :sampler-buffer))
-  (:vertex 
+  (:vertex
    (let ((tpos (texel-fetch offsets gl-instance-id)))
      (setf gl-position
            (+ (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0)))

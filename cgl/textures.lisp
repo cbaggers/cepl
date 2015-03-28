@@ -9,7 +9,7 @@
 (in-package :cepl-gl)
 
 ;;{TODO} While I see why I started abstracting this using classes
-;;       We cannot extend core functionality of gl, thus uses 
+;;       We cannot extend core functionality of gl, thus uses
 ;;       extensible constructs is optimizing for a case that can
 ;;       never happen. We should go for structs, ubyte and macros
 ;;       to hide the ugly, optimize for helping the compiler
@@ -463,7 +463,7 @@
          (make-texture tmp :mipmap mipmap
                        :layer-count layer-count :cubes cubes :rectangle rectangle
                        :multisample multisample :immutable immutable
-                       :buffer-storage buffer-storage))))    
+                       :buffer-storage buffer-storage))))
     (t (%make-texture dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
                       internal-format))))
@@ -618,37 +618,37 @@
 
 ;;------------------------------------------------------------
 
-(defmethod gl-push ((object c-array) (destination gl-texture))
-  (gl-push object (texref destination)))
-(defmethod gl-push ((object list) (destination gl-texture))
-  (gl-push object (texref destination)))
+(defmethod push-g ((object c-array) (destination gl-texture))
+  (push-g object (texref destination)))
+(defmethod push-g ((object list) (destination gl-texture))
+  (push-g object (texref destination)))
 
-;; [TODO] gl-push taking lists
-(defmethod gl-push ((object list) (destination gpu-array-t))
+;; [TODO] push-g taking lists
+(defmethod push-g ((object list) (destination gpu-array-t))
   (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (cgl::internal-format->pixel-format
                                                   (cgl::internal-format destination))))
-    (gl-push c-a destination)))
+    (push-g c-a destination)))
 
 ;; [TODO] This feels like could create non-optimal solutions
 ;;        So prehaps this should look at texture format, and
 ;;        find the most similar compatible format, with worst
 ;;        case being just do what we do below
-(defmethod gl-push ((object c-array) (destination gpu-array-t))
+(defmethod push-g ((object c-array) (destination gpu-array-t))
   (destructuring-bind (pformat ptype)
       (compile-pixel-format (pixel-format-of object))
     (upload-c-array-to-gpuarray-t destination object
                                   pformat ptype)))
 
-(defmethod gl-pull ((object gl-texture))
-  (gl-pull (texref object)))
+(defmethod pull-g ((object gl-texture))
+  (pull-g (texref object)))
 
 ;; [TODO] implement gl-fill and fill arguments
 
 ;; [TODO] Alignment
 ;; [TODO] Does not respect GL_PIXEL_PACK/UNPACK_BUFFER
-(defmethod gl-pull-1 ((object gpu-array-t))
+(defmethod pull1-g ((object gpu-array-t))
   (with-slots (layer-num level-num texture-type face-num
                          internal-format texture) object
     (let* ((p-format (internal-format->pixel-format
@@ -662,9 +662,9 @@
       c-array)))
 
 ;; [TODO] With-c-array is wrong
-(defmethod gl-pull ((object gpu-array-t))
-  (with-c-array (c-array (gl-pull-1 object))
-    (gl-pull-1 c-array)))
+(defmethod pull-g ((object gpu-array-t))
+  (with-c-array (c-array (pull1-g object))
+    (pull1-g c-array)))
 
 (defmethod backed-by ((object gpu-array-t))
   :texture)

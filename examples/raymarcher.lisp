@@ -4,17 +4,17 @@
 (defparameter *vertex-stream* nil)
 (defparameter *loop* 0.0)
 
-(defsfun sphere ((p :vec3) (r :float)) 
+(defsfun sphere ((p :vec3) (r :float))
   (return (- (length p) r)))
 
-(defsfun box ((p :vec3) (b :vec3)) 
+(defsfun box ((p :vec3) (b :vec3))
   (let ((d (- (abs p) b)))
     (return (+ (min (max (x d) (max (y d) (z d))) 0.0)
                (length (max d 0.0))))))
 
-(defsfun thing2 ((p :vec3) (r :float) (l :float)) 
+(defsfun thing2 ((p :vec3) (r :float) (l :float))
   (return (+ (* 0.2 (+ (y p)
-                       (sin (+ (* (+ (cos l) 8.0) 
+                       (sin (+ (* (+ (cos l) 8.0)
                                   (* 2 (x p))) l))))
              (- (length p) r))))
 
@@ -51,7 +51,7 @@
                                             (v! -1.0  -1.0  0.0  1.0))
                                       :element-type :vec4
                                       :dimensions 6))
-    (setf *vertex-stream* (make-vertex-stream *gpu-array*))
+    (setf *vertex-stream* (make-buffer-stream *gpu-array*))
     (setf running t)
     (loop :while running :do
        (case-events (event) (:quit () (setf running nil)))
@@ -71,7 +71,7 @@
   (when (not (listp object-call)) (error "object-call form must a list"))
   (let ((p (1+ position-arg-num))
         (oc object-call))
-    `(normalize 
+    `(normalize
       (v! (- ,(utils:replace-nth oc p `(+ ,(nth p oc) (v! 0.01  0.0  0.0)))
              ,(utils:replace-nth oc p `(- ,(nth p oc) (v! 0.01  0.0  0.0))))
           (- ,(utils:replace-nth oc p `(+ ,(nth p oc) (v!  0.0 0.01  0.0)))

@@ -74,4 +74,4 @@
                        (list (v!  0.0    0.5 0.0) (v! 1.0 0.0 0.0 1.0))
                        (list (v! -0.5 -0.366 0.0) (v! 0.0 0.0 1.0 1.0)))
                  :element-type 'g-pc))
-  (setf *stream* (make-vertex-stream *array*)))
+  (setf *stream* (make-buffer-stream *array*)))

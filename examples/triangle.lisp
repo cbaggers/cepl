@@ -31,7 +31,7 @@
                                       (list (v!    0   0.5 0) (v! 1 0 0 1))
                                       (list (v! -0.5 -0.36 0) (v! 0 0 1 1)))
                                 :element-type 'pos-col)
-   *stream* (make-vertex-stream *array*))
+   *stream* (make-buffer-stream *array*))
   (loop :while *running* :do (continuable (step-demo))))
 
 (defun stop-demo ()

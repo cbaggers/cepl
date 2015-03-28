@@ -24,6 +24,10 @@
   (remhash name *dependent-gpu-functions*)
   nil)
 
+(defun %test-compile (in-args uniforms context body)
+  (varjo::translate in-args uniforms (union '(:vertex :fragment :330) context)
+                    `(progn ,@body (v! 1 2 3 4))))
+
 ;;--------------------------------------------------
 
 (defun %def-gpu-function (name in-args uniforms context body instancing
@@ -32,12 +36,13 @@
                                    instancing doc-string declarations)))
     (assert (%gpu-func-compiles-in-some-context spec))
     (let ((depends-on (%find-gpu-functions-depended-on spec))
-          (pipelines-depending-on (pipelines-that-use-this-func name)))
+          (pipelines-depending-on (pipelines-that-use-this-func name))) ;; {TODO} why isnt this used?
       (assert (not (%find-recursion name depends-on)))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
                                       ',depends-on))
+         (%test-compile ',in-args ',uniforms ',context ',body)
          ,(%make-stand-in-lisp-func spec)
          (%recompile-gpu-function ',name)))))
 

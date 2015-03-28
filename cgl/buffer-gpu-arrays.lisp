@@ -204,19 +204,19 @@
 (defun gpu-array-pull-1 (gpu-array)
   "This function returns the contents of the gpu array as a c-array
    Note that you often dont need to use this as the generic
-   function gl-pull will call this function if given a gpu-array"
+   function pull-g will call this function if given a gpu-array"
   (with-gpu-array-as-c-array (gpu-array :access-type :read-only)
     (clone-c-array gpu-array)))
 
 ;; allignmetn
-(defmethod gl-push ((object list) (destination gpuarray))
+(defmethod push-g ((object list) (destination gpuarray))
   (with-c-array (tmp (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (element-type destination)
                                    :alignment 1))
-    (gl-push tmp destination)))
+    (push-g tmp destination)))
 
-(defmethod gl-push ((object c-array) (destination gpuarray))
+(defmethod push-g ((object c-array) (destination gpuarray))
   (let* ((buffer (gpuarray-buffer destination))
          (format (gpuarray-format destination))
          (type (first format))
@@ -234,12 +234,12 @@ be <= length of the destination array. If the arrays have more than 1
 dimension then their sizes must match exactly"))
     destination))
 
-(defmethod gl-pull-1 ((object gpuarray))
+(defmethod pull1-g ((object gpuarray))
   (gpu-array-pull-1 object))
 
-(defmethod gl-pull ((object gpuarray))
+(defmethod pull-g ((object gpuarray))
   (with-gpu-array-as-c-array (object :access-type :read-only)
-    (gl-pull-1 object)))
+    (pull1-g object)))
 
 ;; copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData

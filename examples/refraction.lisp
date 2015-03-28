@@ -37,7 +37,7 @@
          (mesh~1 (if hard-rotate
                      (cgl::transform-mesh mesh :rotation hard-rotate)
                      mesh)))
-    (let ((gstream (make-vertex-stream
+    (let ((gstream (make-buffer-stream
                     (cgl::vertices mesh) :index-array (cgl::indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.4 -1) :mesh mesh~1))))

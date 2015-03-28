@@ -28,13 +28,13 @@
 (defun load-model (filename &optional hard-rotate)
   (let* ((result (first (model-parsers:load-file filename)))
          (mesh (make-instance 'cgl::mesh
-                              :primitive-type :triangles 
+                              :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
-         (mesh~1 (if hard-rotate 
+         (mesh~1 (if hard-rotate
                      (cgl::transform-mesh mesh :rotation hard-rotate)
                      mesh)))
-    (let ((gstream (make-vertex-stream 
+    (let ((gstream (make-buffer-stream
                     (cgl::vertices mesh) :index-array (cgl::indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.3 -3) :mesh mesh~1))))

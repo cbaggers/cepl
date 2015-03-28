@@ -24,7 +24,7 @@
 
 (defun draw (gstream)
   (setf *loop* (+ 0.04 *loop*))
-  (gl:clear :color-buffer-bit :depth-buffer-bit)  
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
   (ttm:update)
   (loop :for i :below 37 :do
      (let ((i (/ i 2.0)))
@@ -42,7 +42,7 @@
                                             (v!  0.2  -0.2  0.0  1.0))
                                       :element-type :vec4
                                       :dimensions 3))
-    (setf *vertex-stream* (make-vertex-stream *gpu-array*))
+    (setf *vertex-stream* (make-buffer-stream *gpu-array*))
     (loop :while running :do
        (case-events (event)
          (:quit () (setf running nil))

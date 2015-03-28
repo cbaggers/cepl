@@ -4,20 +4,20 @@
 ;;; GPUSTREAMS ;;;
 ;;;------------;;;
 
-(defstruct (vertex-stream (:constructor make-raw-vertex-stream 
+(defstruct (vertex-stream (:constructor make-raw-vertex-stream
                                         (&key vao start length
                                               index-type managed
-                                              gpu-arrays))) 
-  "vertex-streams are the structure we use in cepl to pass 
-   information to our programs on what to draw and how to draw 
+                                              gpu-arrays)))
+  "vertex-streams are the structure we use in cepl to pass
+   information to our programs on what to draw and how to draw
    it.
 
    It basically adds the only things that arent captured in the
    vao but are needed to draw, namely the range of data to draw
    and the style of drawing.
 
-   If you are using c-arrays then be sure to use the 
-   make-vertex-stream function as it does all the
+   If you are using c-arrays then be sure to use the
+   make-buffer-stream function as it does all the
    work for you."
   vao
   (start 0 :type unsigned-byte)
@@ -44,15 +44,15 @@
   (blank-vertex-stream vertex-stream))
 
 
-(defun make-vertex-stream (gpu-arrays &key index-array (start 0) length 
+(defun make-buffer-stream (gpu-arrays &key index-array (start 0) length
                                         retain-arrays)
-  "This function simplifies making the vertex-stream if you are 
+  "This function simplifies making the vertex-stream if you are
    storing the data in gpu-arrays.
 
    Remember that you can also use gpu-sub-arrays in here if you
-   want to limit the data you are using, for example the 
+   want to limit the data you are using, for example the
    following is perfectly legal code:
-   (make-vertex-stream 
+   (make-buffer-stream
      :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
                   ,(gpu-sub-array monster-col-data 1000 2000))
      :index-array monster-index-array
@@ -61,7 +61,7 @@
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
          ;; OF TRIANGLES
-         (length (or length 
+         (length (or length
                      (when index-array (first (dimensions index-array)))
                      (apply #'min (mapcar #'(lambda (x) (first (dimensions x)))
                                           gpu-arrays)))))
@@ -69,7 +69,7 @@
         (make-raw-vertex-stream :vao (make-vao gpu-arrays index-array)
                                 :start start
                                 :length length
-                                :index-type (when index-array 
+                                :index-type (when index-array
                                               (element-type index-array))
                                 :managed t
                                 :gpu-arrays (when retain-arrays gpu-arrays))

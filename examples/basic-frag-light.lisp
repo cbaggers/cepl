@@ -26,13 +26,13 @@
 (defun load-model (filename &optional hard-rotate)
   (let* ((result (second (model-parsers:load-file filename)))
          (mesh (make-instance 'cgl::mesh
-                              :primitive-type :triangles 
+                              :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
-         (mesh~1 (if hard-rotate 
+         (mesh~1 (if hard-rotate
                      (cgl::transform-mesh mesh :rotation hard-rotate)
                      mesh)))
-    (let ((gstream (make-vertex-stream 
+    (let ((gstream (make-buffer-stream
                     (cgl::vertices mesh) :index-array (cgl::indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.4 -1) :mesh mesh~1))))
@@ -67,7 +67,7 @@
                     (cos-ang-incidence
                      (clamp (dot (normalize vertex-normal) light-dir)
                             0.0 1.0))
-                    (t-col (texture textur (v! (x tex-coord) 
+                    (t-col (texture textur (v! (x tex-coord)
                                                (- (y tex-coord))))))
                (out output-color (+ (* t-col light-intensity
                                        cos-ang-incidence)
@@ -97,7 +97,7 @@
           ;; :normal-model-to-cam normal-to-cam-matrix
           :ambient-intensity (v! 0.2 0.2 0.2 1.0)
           :textur *tex*)
-    
+
     (cgl:with-swatch-bound (*swatch*)
       (gl:clear :color-buffer-bit :depth-buffer-bit)
       (gmap #'frag-point-light (gstream *wibble*)
