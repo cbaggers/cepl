@@ -38,7 +38,7 @@
                  :doc-string doc-string
                  :declarations declarations))
 
-(defmacro with-gpu-func-spec ((func-spec) &body body)
+(defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms context body instancing
                      equivalent-inargs equivalent-uniforms
                      doc-string declarations) ,func-spec
@@ -48,7 +48,7 @@
      ,@body))
 
 (defun %serialize-gpu-func-spec (spec)
-  (with-gpu-func-spec (spec)
+  (with-gpu-func-spec spec
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
                           ',instancing ',equivalent-inargs ',equivalent-uniforms
                           ,doc-string ',declarations)))

@@ -114,7 +114,8 @@
 
 (defmethod %get-pipeline-uniforms
     ((pipeline-spec shader-pipeline-spec) call-form)
-  (let ((result (%get-stage-uniforms (slot-value pipeline-spec 'stages)))
+  (let ((result (aggregate-uniforms-from-specs
+                 (slot-value pipeline-spec 'stages)))
         (overriden-uniforms (remove-if-not #'keywordp call-form)))
     (remove-if λ(member % overriden-uniforms
                         :test (lambda (x y) (string-equal (car x) y)))

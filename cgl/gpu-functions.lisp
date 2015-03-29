@@ -99,7 +99,7 @@
   t)
 
 (defun %expand-all-macros (spec)
-  (with-gpu-func-spec (spec)
+  (with-gpu-func-spec spec
     (let ((env (make-instance 'varjo::environment)))
       (%%expand-all-macros body context env))))
 
@@ -154,7 +154,7 @@
   (%find-gpu-funcs-in-source (%expand-all-macros spec)))
 
 (defun %make-stand-in-lisp-func (spec)
-  (with-gpu-func-spec (spec)
+  (with-gpu-func-spec spec
     (let ((arg-names (mapcar #'first in-args))
           (uniform-names (mapcar #'first uniforms)))
       `(defun ,name (,@arg-names
@@ -185,47 +185,37 @@
                     u accum))))
       accum))
 
-(defun %get-stage-uniforms (names &optional uniforms-accum)
+(defun aggregate-uniforms-from-specs (names &optional uniforms-accum)
   (if names
-      (with-gpu-func-spec ((gpu-func-spec (first names)))
-        (%get-stage-uniforms
+      (with-gpu-func-spec (gpu-func-spec (first names))
+        (aggregate-uniforms-from-specs
          (rest names)
          (aggregate-uniforms uniforms uniforms-accum)))
       uniforms-accum))
 
-(defun aggregate-args-from-specs (specs &optional (args-accum t) uniforms-accum)
-  (if specs
-      (let ((spec (first specs)))
-        (with-gpu-func-spec (spec)
-          (aggregate-args-from-specs
-           (rest specs)
-           (if (eql t args-accum) in-args args-accum)
-           (aggregate-uniforms uniforms uniforms-accum))))
-      (list args-accum uniforms-accum)))
+(defun aggregate-in-args-from-specs (names &optional (args-accum t))
+  (if names
+      (with-gpu-func-spec (gpu-func-spec (first names))
+        (aggregate-in-args-from-specs
+         (rest names)
+         (if (eql t args-accum) in-args args-accum)))
+      args-accum))
 
-(defun extract-args-from-gpu-functions (function-names)
-  (let ((specs (mapcar #'gpu-func-spec function-names)))
-    (assert (every #'identity specs))
-    (aggregate-args-from-specs specs)))
-
-(defmacro with-processed-func-specs (stages &body body)
-  `(destructuring-bind (in-args uniforms)
-       (extract-args-from-gpu-functions ,stages)
+(defmacro with-processed-func-specs (names &body body)
+  `(let* ((in-args (aggregate-in-args-from-specs ,names))
+          (uniforms (aggregate-uniforms-from-specs ,names)))
      ,@body))
-
-(defun uniforms-from-gpu-functions (function-names)
-  (second (extract-args-from-gpu-functions function-names)))
 
 ;;--------------------------------------------------
 
 (defun get-func-as-stage-code (name)
-  (with-gpu-func-spec ((gpu-func-spec name))
+  (with-gpu-func-spec (gpu-func-spec name)
     (list
      in-args
      uniforms
      context
      `(labels ,(mapcar (lambda (spec)
-                         (with-gpu-func-spec (spec)
+                         (with-gpu-func-spec spec
                            `(,name ,in-args ,@body)))
                        (mapcar #'gpu-func-spec (funcs-this-func-uses name)))
         ,@body))))
