@@ -15,8 +15,16 @@
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
         (varjo::lambda-list-split '(:&uniform :&context :&instancing) args)
-      (%def-gpu-function name in-args uniforms context body instancing
-                         doc-string declarations))))
+      (let ((in-args (swap-equivalent-types in-args))
+            (uniforms (swap-equivalent-types uniforms))
+            (equivalent-inargs (mapcar λ(when (equivalent-typep %) %)
+                                       (mapcar #'second in-args)))
+            (equivalent-uniforms (mapcar λ(when (equivalent-typep %) %)
+                                         (mapcar #'second uniforms))))
+        (assert (every #'null equivalent-inargs))
+        (%def-gpu-function name in-args uniforms context body instancing
+                           equivalent-inargs equivalent-uniforms
+                           doc-string declarations)))))
 
 (defun undefine-gpu-function (name)
   (%unsubscibe-from-all name)
@@ -31,9 +39,11 @@
 ;;--------------------------------------------------
 
 (defun %def-gpu-function (name in-args uniforms context body instancing
+                          equivalent-inargs equivalent-uniforms
                           doc-string declarations)
-  (let ((spec (%make-gpu-func-spec name in-args uniforms context body
-                                   instancing doc-string declarations)))
+  (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
+                                   equivalent-inargs equivalent-uniforms
+                                   doc-string declarations)))
     (assert (%gpu-func-compiles-in-some-context spec))
     (let ((depends-on (%find-gpu-functions-depended-on spec))
           (pipelines-depending-on (pipelines-that-use-this-func name))) ;; {TODO} why isnt this used?
@@ -160,21 +170,6 @@
 
 ;;--------------------------------------------------
 
-(defun extract-args-from-gpu-functions (function-names)
-  (let ((specs (mapcar #'gpu-func-spec function-names)))
-    (assert (every #'identity specs))
-    (aggregate-args-from-specs specs)))
-
-(defun aggregate-args-from-specs (specs &optional (args-accum t) uniforms-accum)
-  (if specs
-      (let ((spec (first specs)))
-        (with-gpu-func-spec (spec)
-          (aggregate-args-from-specs
-           (rest specs)
-           (if (eql t args-accum) in-args args-accum)
-           (aggregate-uniforms uniforms uniforms-accum))))
-      `(,@args-accum ,@(when uniforms-accum (cons '&uniform uniforms-accum)))))
-
 (defun aggregate-uniforms (uniforms &optional accum)
   (if uniforms
       (let ((u (first uniforms)))
@@ -198,11 +193,28 @@
          (aggregate-uniforms uniforms uniforms-accum)))
       uniforms-accum))
 
+(defun aggregate-args-from-specs (specs &optional (args-accum t) uniforms-accum)
+  (if specs
+      (let ((spec (first specs)))
+        (with-gpu-func-spec (spec)
+          (aggregate-args-from-specs
+           (rest specs)
+           (if (eql t args-accum) in-args args-accum)
+           (aggregate-uniforms uniforms uniforms-accum))))
+      (list args-accum uniforms-accum)))
+
+(defun extract-args-from-gpu-functions (function-names)
+  (let ((specs (mapcar #'gpu-func-spec function-names)))
+    (assert (every #'identity specs))
+    (aggregate-args-from-specs specs)))
+
 (defmacro with-processed-func-specs (stages &body body)
-  `(let ((args (extract-args-from-gpu-functions ,stages)))
-     (utils:assoc-bind ((in-args nil) (unexpanded-uniforms :&uniform))
-         (varjo::lambda-list-split '(&uniform) args)
-       ,@body)))
+  `(destructuring-bind (in-args uniforms)
+       (extract-args-from-gpu-functions ,stages)
+     ,@body))
+
+(defun uniforms-from-gpu-functions (function-names)
+  (second (extract-args-from-gpu-functions function-names)))
 
 ;;--------------------------------------------------
 

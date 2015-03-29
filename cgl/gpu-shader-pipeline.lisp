@@ -34,7 +34,7 @@
 
 (defun make-func-description (name stage-pairs)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
-    (cons name (append in-args unexpanded-uniforms))))
+    (cons name (append in-args uniforms))))
 
 (defun make-change-signature (stage-names)
   (mapcar λ(with-gpu-func-spec ((gpu-func-spec % t))
@@ -42,11 +42,10 @@
           stage-names))
 
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
-  (with-processed-func-specs (mapcar #'cdr stage-pairs)
-    (let ((uniform-details
-           (mapcar λ(make-arg-assigners % pass-key) unexpanded-uniforms)))
+  (let ((stage-names (mapcar #'cdr stage-pairs)))
+    (let ((uniform-assigners (stages->uniform-assigners stage-names pass-key)))
       `(let ((prog-id nil)
-             ,@(let ((u-lets (mapcat #'first uniform-details)))
+             ,@(let ((u-lets (mapcat #'first uniform-assigners)))
                     (mapcar λ`(,(first %) -1) u-lets)))
          ,@body))))
 
@@ -59,10 +58,8 @@
 
 (defmacro def-pipeline-init (name stage-pairs post pass-key)
   (let* ((stage-names (mapcar #'cdr stage-pairs))
-         (uniform-details
-          (with-processed-func-specs stage-names
-            (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                    unexpanded-uniforms))))
+         (uniform-assigners
+          (stages->uniform-assigners stage-names pass-key)))
     `(defun ,(init-func-name name) ()
        (let* ((compiled-stages (%varjo-compile-as-pipeline ',stage-pairs))
               (stages-objects (mapcar #'%gl-make-shader-from-varjo
@@ -73,7 +70,7 @@
          (format t ,(format nil "~&; uploading (~a ...)~&" name))
          (link-shaders stages-objects prog-id)
          (mapcar #'%gl:delete-shader stages-objects)
-         ,@(let ((u-lets (mapcat #'first uniform-details)))
+         ,@(let ((u-lets (mapcat #'first uniform-assigners)))
                 (loop for u in u-lets collect (cons 'setf u)))
          (unbind-buffer)
          (force-bind-vao 0)
@@ -82,20 +79,15 @@
          ,(when post `(funcall ,post))
          prog-id))))
 
-(defun stages-to-uniform-details (stage-pairs &optional pass-key)
-  (with-processed-func-specs (mapcar #'cdr stage-pairs)
-    (mapcar (lambda (x) (make-arg-assigners x pass-key))
-            unexpanded-uniforms)))
-
 (defmacro def-dispatch-func (name stage-pairs context pass-key)
-  (with-processed-func-specs (mapcar #'cdr stage-pairs)
-    (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                    unexpanded-uniforms))
-           (uniform-names (mapcar #'first unexpanded-uniforms))
+  (let ((stage-names (mapcar #'cdr stage-pairs)))
+    (let* ((uniform-assigners (stages->uniform-assigners stage-names pass-key))
+           (uniform-names
+            (mapcar #'first (uniforms-from-gpu-functions stage-names)))
            (prim-type (varjo::get-primitive-type-from-context context))
-           (u-uploads (mapcar #'second uniform-details)))
+           (u-uploads (mapcar #'second uniform-assigners)))
       `(defun ,(dispatch-func-name name)
-           (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
+           (stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
          (unless prog-id (setf prog-id (,(init-func-name name))))
          (use-program prog-id)
@@ -105,12 +97,13 @@
          stream))))
 
 (defmacro def-dummy-func (name stage-pairs pass-key)
-  (with-processed-func-specs (mapcar #'cdr stage-pairs)
-    (let* ((uniform-details (mapcar (lambda (x) (make-arg-assigners x pass-key))
-                                    unexpanded-uniforms))
-           (uniform-names (mapcar #'first unexpanded-uniforms))
-           (u-uploads (mapcar #'second uniform-details)))
-      `(defun ,name (stream ,@(when unexpanded-uniforms `(&key ,@uniform-names)))
+  (let ((stage-names (mapcar #'cdr stage-pairs)))
+    (let* ((uniform-assigners
+            (stages->uniform-assigners stage-names pass-key))
+           (uniform-names
+            (mapcar #'first (uniforms-from-gpu-functions stage-names)))
+           (u-uploads (mapcar #'second uniform-assigners)))
+      `(defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
          (unless prog-id (setf prog-id (,(init-func-name name))))
          (use-program prog-id)
@@ -157,6 +150,10 @@
 ;;;--------------------------------------------------------------
 ;;; ARG ASSIGNERS ;;;
 ;;;---------------;;;
+
+(defun stages->uniform-assigners (stage-names &optional pass-key)
+  (mapcar λ(make-arg-assigners % pass-key)
+          (uniforms-from-gpu-functions stage-names)))
 
 (let ((cached-data nil)
       (cached-key -1))
@@ -205,7 +202,6 @@
              ,@(reverse assigners)))))))
 
 (defun make-sampler-assigner (type path)
-  (declare (ignore byte-offset))
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
     `(((,id-name (gl:get-uniform-location prog-id ,path))

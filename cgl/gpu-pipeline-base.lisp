@@ -18,10 +18,13 @@
    (context :initarg :context)
    (body :initarg :body)
    (instancing :initarg :instancing)
+   (equivalent-inargs :initarg :equivalent-inargs)
+   (equivalent-uniforms :initarg :equivalent-uniforms)
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
+                            equivalent-inargs equivalent-uniforms
                             doc-string declarations)
   (make-instance 'gpu-func-spec
                  :name name
@@ -30,20 +33,25 @@
                  :context context
                  :body body
                  :instancing instancing
+                 :equivalent-inargs equivalent-inargs
+                 :equivalent-uniforms equivalent-uniforms
                  :doc-string doc-string
                  :declarations declarations))
 
 (defmacro with-gpu-func-spec ((func-spec) &body body)
   `(with-slots (name in-args uniforms context body instancing
+                     equivalent-inargs equivalent-uniforms
                      doc-string declarations) ,func-spec
      (declare (ignorable name in-args uniforms context body instancing
+                         equivalent-inargs equivalent-uniforms
                          doc-string declarations))
      ,@body))
 
 (defun %serialize-gpu-func-spec (spec)
   (with-gpu-func-spec (spec)
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
-                          ',instancing ,doc-string ',declarations)))
+                          ',instancing ',equivalent-inargs ',equivalent-uniforms
+                          ,doc-string ',declarations)))
 
 (defun gpu-func-spec (name &optional error-if-missing)
   (or (gethash name *gpu-func-specs*)
