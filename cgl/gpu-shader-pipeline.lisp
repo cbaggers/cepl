@@ -83,7 +83,7 @@
   (let ((stage-names (mapcar #'cdr stage-pairs)))
     (let* ((uniform-assigners (stages->uniform-assigners stage-names pass-key))
            (uniform-names
-            (mapcar #'first (aggregate-uniforms-from-specs stage-names)))
+            (mapcar #'first (aggregate-uniforms stage-names)))
            (prim-type (varjo::get-primitive-type-from-context context))
            (u-uploads (mapcar #'second uniform-assigners)))
       `(defun ,(dispatch-func-name name)
@@ -101,7 +101,7 @@
     (let* ((uniform-assigners
             (stages->uniform-assigners stage-names pass-key))
            (uniform-names
-            (mapcar #'first (aggregate-uniforms-from-specs stage-names)))
+            (mapcar #'first (aggregate-uniforms stage-names)))
            (u-uploads (mapcar #'second uniform-assigners)))
       `(defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
@@ -152,8 +152,7 @@
 ;;;---------------;;;
 
 (defun stages->uniform-assigners (stage-names &optional pass-key)
-  (mapcar λ(make-arg-assigners % pass-key)
-          (aggregate-uniforms-from-specs stage-names)))
+  (mapcar λ(make-arg-assigners % pass-key) (aggregate-uniforms stage-names)))
 
 (let ((cached-data nil)
       (cached-key -1))

@@ -170,40 +170,40 @@
 
 ;;--------------------------------------------------
 
-(defun aggregate-uniforms (uniforms &optional accum)
+(defun %aggregate-uniforms (uniforms &optional accum)
   (if uniforms
       (let ((u (first uniforms)))
         (cond
           ;; if there is no other uniform with matching name, hense no collision
           ((not (find (first u) accum :test #'equal :key #'first))
-           (aggregate-uniforms (rest uniforms) (cons u accum)))
+           (%aggregate-uniforms (rest uniforms) (cons u accum)))
           ;; or the uniform matches perfectly so no collision
           ((find u accum :test #'equal)
-           (aggregate-uniforms (rest uniforms) accum))
+           (%aggregate-uniforms (rest uniforms) accum))
           ;; or it's a clash
           (t (error "Uniforms for the functions are incompatible: ~a ~a"
                     u accum))))
       accum))
 
-(defun aggregate-uniforms-from-specs (names &optional uniforms-accum)
+(defun aggregate-uniforms (names &optional uniforms-accum)
   (if names
       (with-gpu-func-spec (gpu-func-spec (first names))
-        (aggregate-uniforms-from-specs
+        (aggregate-uniforms
          (rest names)
-         (aggregate-uniforms uniforms uniforms-accum)))
+         (%aggregate-uniforms uniforms uniforms-accum)))
       uniforms-accum))
 
-(defun aggregate-in-args-from-specs (names &optional (args-accum t))
+(defun aggregate-in-args (names &optional (args-accum t))
   (if names
       (with-gpu-func-spec (gpu-func-spec (first names))
-        (aggregate-in-args-from-specs
+        (aggregate-in-args
          (rest names)
          (if (eql t args-accum) in-args args-accum)))
       args-accum))
 
 (defmacro with-processed-func-specs (names &body body)
-  `(let* ((in-args (aggregate-in-args-from-specs ,names))
-          (uniforms (aggregate-uniforms-from-specs ,names)))
+  `(let* ((in-args (aggregate-in-args ,names))
+          (uniforms (aggregate-uniforms ,names)))
      ,@body))
 
 ;;--------------------------------------------------
