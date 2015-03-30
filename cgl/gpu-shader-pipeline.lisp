@@ -185,8 +185,8 @@
 
 (defun dispatch-make-assigner (arg-name type glsl-name qualifiers)
   (let* ((is-equiv (equivalent-typep type))
-         (varjo-type (print (varjo::type-spec->type
-                        (if is-equiv (equivalent-type type) type))))
+         (varjo-type (varjo::type-spec->type
+                      (if is-equiv (equivalent-type type) type)))
          (glsl-name (or glsl-name
                         (varjo::safe-glsl-name-string arg-name)))
          (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
