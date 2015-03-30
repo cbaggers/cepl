@@ -166,8 +166,6 @@
   (declare (ignore name depends-on))
   nil)
 
-
-
 ;;--------------------------------------------------
 
 (defun %aggregate-uniforms (uniforms &optional accum)
@@ -185,13 +183,18 @@
                     u accum))))
       accum))
 
-(defun aggregate-uniforms (names &optional uniforms-accum)
+(defun %uniforms-pre-equiv (spec)
+  (with-gpu-func-spec spec
+    (mapcar λ(if % `(,(car %1) ,% ,@(cddr %1)) %1)
+            equivalent-uniforms uniforms)))
+
+(defun aggregate-uniforms (names &optional accum)
   (if names
-      (with-gpu-func-spec (gpu-func-spec (first names))
-        (aggregate-uniforms
-         (rest names)
-         (%aggregate-uniforms uniforms uniforms-accum)))
-      uniforms-accum))
+      (aggregate-uniforms
+       (rest names)
+       (%aggregate-uniforms (%uniforms-pre-equiv (gpu-func-spec (first names)))
+                            accum))
+      accum))
 
 (defun aggregate-in-args (names &optional (args-accum t))
   (if names

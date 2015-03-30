@@ -98,6 +98,7 @@
   (let* ((forms (mapcar #'second pass-forms)))
     (mapcar λ(remove-if-not #'keywordp %) forms)))
 
+;;{TODO} handle equivalent types
 (defun make-pipeline-uniform-args (pipeline-names overriden-uniforms)
   (let ((all-uniforms
          (mapcat (lambda (uniforms overriden)

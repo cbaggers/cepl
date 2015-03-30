@@ -171,100 +171,148 @@
             (setf cached-data (acons uniform-arg result cached-data)))
           result))))
 
-(defun %make-arg-assigners (uniform-arg &aux gen-ids assigners)
+(defun %make-arg-assigners (uniform-arg)
   (varjo::with-arg (arg-name varjo-type~1 qualifiers glsl-name) uniform-arg
-    (let* ((varjo-type (varjo::type-spec->type varjo-type~1))
-           (glsl-name (or (varjo::safe-glsl-name-string arg-name)
-                          glsl-name))
-           (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
-           (array-length (when (v-typep varjo-type 'v-array)
-                           (apply #'* (v-dimensions varjo-type))))
-           (sampler (sampler-typep varjo-type))
-           (ubo (member :ubo qualifiers)))
-      (loop :for (gid asn multi-gid) :in
-         (cond
-           (ubo `(,(make-ubo-assigner varjo-type glsl-name)))
-           (array-length (make-array-assigners varjo-type glsl-name))
-           (struct-arg (make-struct-assigners varjo-type glsl-name))
-           (sampler `(,(make-sampler-assigner varjo-type glsl-name)))
-           (t `(,(make-simple-assigner varjo-type glsl-name nil))))
-         :do (if multi-gid
-                 (progn (loop for g in gid :do (push g gen-ids))
-                        (push asn assigners))
-                 (progn (push gid gen-ids) (push asn assigners))))
-      `(,(reverse gen-ids)
+    (let* ((local-arg-name 'val)
+           (assigner (dispatch-make-assigner local-arg-name varjo-type~1
+                                             glsl-name qualifiers)))
+      `(,(let-forms assigner)
          (when ,arg-name
-           (let ((val ,(if (and (or array-length struct-arg)
-                                (not ubo))
-                           `(pointer ,arg-name)
-                           arg-name)))
-             ,@(reverse assigners)))))))
+           (let ((,local-arg-name ,(if (pointer-arg assigner)
+                                       `(pointer ,arg-name)
+                                       arg-name)))
+             ,@(uploaders assigner)))))))
 
-(defun make-sampler-assigner (type path)
+(defun dispatch-make-assigner (arg-name type glsl-name qualifiers)
+  (let* ((is-equiv (equivalent-typep type))
+         (varjo-type (print (varjo::type-spec->type
+                        (if is-equiv (equivalent-type type) type))))
+         (glsl-name (or glsl-name
+                        (varjo::safe-glsl-name-string arg-name)))
+         (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
+         (array-length (when (v-typep varjo-type 'v-array)
+                         (apply #'* (v-dimensions varjo-type))))
+         (sampler (sampler-typep varjo-type))
+         (ubo (member :ubo qualifiers)))
+    (cond
+      (is-equiv (make-eq-type-assigner arg-name type varjo-type glsl-name
+                                       qualifiers))
+      ;;
+      (ubo (make-ubo-assigner arg-name varjo-type glsl-name))
+      ;;
+      (array-length (make-array-assigners arg-name varjo-type glsl-name))
+      ;;
+      (struct-arg (make-struct-assigners arg-name varjo-type glsl-name ))
+      ;;
+      (sampler (make-sampler-assigner arg-name varjo-type glsl-name))
+      ;;
+      (t (make-simple-assigner arg-name varjo-type glsl-name)))))
+
+(defun make-sampler-assigner (arg-name type glsl-name-path)
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
-    `(((,id-name (gl:get-uniform-location prog-id ,path))
-       (,i-unit (incf image-unit)))
-      (when (>= ,id-name 0)
-        (unless (eq (sampler-type val) ,(type->spec type))
-          (error "incorrect texture type passed to shader"))
-        ;; (unless ,id-name
-        ;;   (error "Texture uniforms must be populated")) ;; [TODO] this wont work here
-        (active-texture-num ,i-unit)
-        (bind-texture val)
-        (uniform-sampler ,id-name ,i-unit))
-      t)))
+    (make-assigner
+     :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path))
+                  (,i-unit (incf image-unit)))
+     :uploaders `(when (>= ,id-name 0)
+                   (unless (eq (sampler-type ,arg-name) ,(type->spec type))
+                     (error "incorrect texture type passed to shader"))
+                   (active-texture-num ,i-unit)
+                   (bind-texture ,arg-name)
+                   (uniform-sampler ,id-name ,i-unit)))))
 
-(defun make-ubo-assigner (varjo-type glsl-name)
+(defun make-ubo-assigner (arg-name varjo-type glsl-name)
   (let ((id-name (gensym))
         (type-spec (varjo::type->type-spec varjo-type)))
-    `((,id-name (get-uniform-block-index
-                 prog-id ,(format nil "_UBO_~a" glsl-name)))
-      (when (>= ,id-name 0)
-        (if (and (typep val 'ubo)
-                 (v-type-eq (varjo::type-spec->type ',type-spec)
-                            (ubo-data-type val)))
-            (%gl:uniform-block-binding prog-id ,id-name (ubo-id val))
-            (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
-                   ',type-spec (ubo-data-type val))))
-      nil)))
+    (make-assigner
+     :let-forms
+     `((,id-name (get-uniform-block-index
+                  prog-id ,(format nil "_UBO_~a" glsl-name))))
+     :uploaders
+     `(when (>= ,id-name 0)
+       (if (and (typep ,arg-name 'ubo)
+                (v-type-eq (varjo::type-spec->type ',type-spec)
+                           (ubo-data-type ,arg-name)))
+           (%gl:uniform-block-binding prog-id ,id-name (ubo-id ,arg-name))
+           (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
+                  ',type-spec (ubo-data-type ,arg-name)))))))
 
-(defun make-simple-assigner (type path &optional (byte-offset 0))
+(defun make-simple-assigner (arg-name type glsl-name-path &optional (byte-offset 0))
   (let ((id-name (gensym)))
-    `((,id-name (gl:get-uniform-location prog-id ,path))
-      (when (>= ,id-name 0)
+    (make-assigner
+     :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path)))
+     :uploaders
+     `(when (>= ,id-name 0)
         ,(if byte-offset
              `(,(get-foreign-uniform-function-name (type->spec type))
-                ,id-name 1 (cffi:inc-pointer val ,byte-offset))
-             `(,(get-uniform-function-name (type->spec type)) ,id-name val)))
-      nil)))
+                ,id-name 1 (cffi:inc-pointer ,arg-name ,byte-offset))
+             `(,(get-uniform-function-name (type->spec type)) ,id-name ,arg-name))))))
 
-(defun make-array-assigners (type path &optional (byte-offset 0))
+(defun make-array-assigners (arg-name type glsl-name-path &optional (byte-offset 0))
   (let ((element-type (varjo::v-element-type type))
         (array-length (apply #'* (v-dimensions type))))
-    (loop :for i :below array-length :append
-       (cond ((varjo::v-typep element-type 'varjo::v-user-struct)
-              (make-struct-assigners element-type byte-offset))
-             (t (list (make-simple-assigner element-type
-                                            (format nil "~a[~a]" path i)
-                                            byte-offset))))
-       :do (incf byte-offset (gl-type-size element-type)))))
+    (merge-into-assigner
+     t
+     (loop :for i :below array-length
+        :if (varjo::v-typep element-type 'varjo::v-user-struct) :append
+        (make-struct-assigners arg-name element-type
+                               (format nil "~a[~a]" glsl-name-path i)
+                               byte-offset)
+        :else :collect
+        (list (make-simple-assigner element-type
+                                    (format nil "~a[~a]" glsl-name-path i)
+                                    byte-offset))
+        :do (incf byte-offset (gl-type-size element-type))))))
 
-(defun make-struct-assigners (type path &optional (byte-offset 0))
-  (loop :for (l-slot-name v-slot-type) :in (varjo::v-slots type)
-     :for glsl-name = (varjo::safe-glsl-name-string l-slot-name) :append
-     (destructuring-bind (pslot-type array-length . rest) v-slot-type
-       (declare (ignore rest))
-       (let ((path (format nil "~a.~a" path glsl-name)))
-         (prog1
-             (cond (array-length (make-array-assigners v-slot-type path
-                                                       byte-offset))
-                   ((varjo::v-typep pslot-type 'v-user-struct)
-                    (make-struct-assigners pslot-type path byte-offset))
-                   (t (list (make-simple-assigner pslot-type path
-                                                  byte-offset))))
-           (incf byte-offset (* (gl-type-size pslot-type)
-                                (or array-length 1))))))))
+(defun make-eq-type-assigner (arg-name type varjo-type glsl-name qualifiers)
+  (let* ((local-var (gensym (symbol-name arg-name)))
+         (assigner (dispatch-make-assigner
+                    local-var (varjo::type->type-spec varjo-type) glsl-name qualifiers))
+         (eq-spec (equiv-spec type))
+         (updaters (mapcar λ(cons 'setf %) (second eq-spec))))
+    (make-assigner
+     :let-forms (cons `(,local-var (autowrap:alloc ',varjo-type))
+                      (let-forms assigner))
+     :uploaders (append updaters (uploaders assigner)))))
+
+(defun make-struct-assigners (arg-name type glsl-name-path
+                              &optional (byte-offset 0))
+  (merge-into-assigner
+   t
+   (loop
+      :for (l-slot-name v-slot-type) :in (varjo::v-slots type)
+      :for (pslot-type array-length . rest) := (listify v-slot-type)
+      :append
+      (let* ((glsl-name (varjo::safe-glsl-name-string l-slot-name))
+             (glsl-name-path (format nil "~a.~a" glsl-name-path glsl-name)))
+        (cond
+          ;;
+          (array-length (make-array-assigners arg-name v-slot-type
+                                              glsl-name-path byte-offset))
+          ;;
+          ((varjo::v-typep pslot-type 'v-user-struct)
+           (make-struct-assigners arg-name pslot-type glsl-name-path
+                                  byte-offset))
+          ;;
+          (t (list (make-simple-assigner arg-name pslot-type glsl-name-path
+                                         byte-offset)))))
+      :do (incf byte-offset (* (gl-type-size pslot-type)
+                               (or array-length 1))))))
+
+
+(defclass assigner ()
+  ((let-forms :initform nil :initarg :let-forms :accessor let-forms)
+   (uploaders :initform nil :initarg :uploaders :accessor uploaders)
+   (pointer-arg :initform nil :initarg :pointer-arg :accessor pointer-arg)))
+
+(defun make-assigner (&key let-forms uploaders pointer-arg)
+  (make-instance 'assigner :let-forms let-forms :uploaders uploaders
+                 :pointer-arg pointer-arg))
+
+(defun merge-into-assigner (pointer-arg &rest assingers)
+  (make-assigner :let-forms (mapcat #'let-forms assingers)
+                 :uploaders (mapcat #'uploaders assingers)
+                 :pointer-arg pointer-arg))
 
 ;;;--------------------------------------------------------------
 ;;; GL HELPERS ;;;

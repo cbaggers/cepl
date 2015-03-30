@@ -7,6 +7,8 @@
   (setf (gethash lisp-type *equivalent-type-specs*) value))
 (defun equivalent-typep (lisp-type)
   (not (null (gethash lisp-type *equivalent-type-specs*))))
+(defun equivalent-type (lisp-type)
+  (first (equiv-spec lisp-type)))
 
 (defun swap-equivalent-types (args)
   (mapcar #'swap-equivalent-type args))
@@ -60,7 +62,11 @@
     `(progn
        (eval-when (:compile-toplevel :load-toplevel :execute)
          (setf (equiv-spec ',lisp-type-name)
-               ',(list alt-type (mapcar λ(subseq % 0 2) slots))))
+               ',(list alt-type
+                       (mapcar λ(destructuring-bind (name _ form &key accessor)
+                                    %
+                                  (declare (ignore _))
+                                  (list (or accessor name) form)) slots))))
        (v-defstruct (,alt-type :constructor ,lisp-type-name) ()
          ,@(mapcar λ(append (subseq % 0 2) (subseq % 3))
                    slots)))))
