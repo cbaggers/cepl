@@ -283,7 +283,8 @@
       :for (l-slot-name v-slot-type) :in (varjo::v-slots type)
       :for (pslot-type array-length . rest) := (listify v-slot-type)
       :append
-      (let* ((glsl-name (varjo::safe-glsl-name-string l-slot-name))
+      (let* ((pslot-type (type-spec->type pslot-type))
+             (glsl-name (varjo::safe-glsl-name-string l-slot-name))
              (glsl-name-path (format nil "~a.~a" glsl-name-path glsl-name)))
         (cond
           ;;
@@ -309,7 +310,7 @@
   (make-instance 'assigner :let-forms let-forms :uploaders uploaders
                  :pointer-arg pointer-arg))
 
-(defun merge-into-assigner (pointer-arg &rest assingers)
+(defun merge-into-assigner (pointer-arg assingers)
   (make-assigner :let-forms (mapcat #'let-forms assingers)
                  :uploaders (mapcat #'uploaders assingers)
                  :pointer-arg pointer-arg))
