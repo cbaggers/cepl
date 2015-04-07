@@ -7,6 +7,7 @@
 ;; known as the LLGPL.
 ;;
 (in-package :cepl-gl)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 ;;{TODO} While I see why I started abstracting this using classes
 ;;       We cannot extend core functionality of gl, thus uses
