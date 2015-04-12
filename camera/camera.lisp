@@ -24,6 +24,10 @@
    (far :type single-float :reader far :initarg :far)
    (fov :type single-float :reader fov :initarg :fov)))
 
+(cgl:def-equivalent-type camera
+  (cam->clip :mat4 (cam->clip %) :accessor cam->clip)
+  (world->cam :mat4 (world->cam %) :accessor world->cam))
+
 (defmethod update-cam->clip ((camera camera))
   (setf (slot-value camera 'cam->clip)
         (funcall (slot-value camera 'cam->clip-func) camera)))

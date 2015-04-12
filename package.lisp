@@ -379,14 +379,16 @@
            :attachment-compatible
            :fbo-detach
            ;;----------
-           :def-gl-equivalent
            :make-swatch
            :draw-swatch
            :with-swatch-bound
            ;;----------
            :make-ubo
            :ubo-data
-           :ubo-index))
+           :ubo-index
+           ;;----------
+           :def-equivalent-type
+           ))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
@@ -533,7 +535,8 @@
         :temporal-functions
         :cepl-camera
         :cl-fad
-        :cepl.events)
+        :cepl.events
+        :named-readtables)
   (:import-from :live
                 :continuable
                 :update-swank
@@ -583,7 +586,7 @@
                 :attachment-compatible
                 :fbo-detach
                 ;;---
-                :def-gl-equivalent
+                :def-equivalent-type
                 ;;---
                 :make-ubo
                 :ubo-data
@@ -704,7 +707,7 @@
            :fbo-attach
            :attachment-compatible
            :fbo-detach
-           :def-gl-equivalent
+           :def-equivalent-type
            ;;---
            :make-ubo
            :ubo-data

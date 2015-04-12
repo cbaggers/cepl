@@ -34,7 +34,7 @@
 
 (defun %test-compile (in-args uniforms context body)
   (varjo::translate in-args uniforms (union '(:vertex :fragment :330) context)
-                    `(progn ,@body (v! 1 2 3 4))))
+                    `(progn ,@body)))
 
 ;;--------------------------------------------------
 

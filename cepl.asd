@@ -21,6 +21,7 @@
                #:cl-ppcre
                #:symbol-munger
                #:cells
+               #:named-readtables
                #:classimp
                #:fn_
                #:quickproject)

@@ -1,4 +1,5 @@
 (in-package :cgl)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass gl-struct-slot ()
@@ -35,12 +36,7 @@
                             ,loop-op ,body)
                         loop-op))))
     (inner (reverse dimensions) (reverse index-vars) body loop-op)))
-(defmacro mapcar1 (function list &rest args)
-  (let ((i (gensym "i")))
-    `(loop :for ,i :in ,list :collect (funcall ,function ,i ,@args))))
-(defmacro mapcan1 (function list &rest args)
-  (let ((i (gensym "i")))
-    `(loop :for ,i :in ,list :append (funcall ,function ,i ,@args))))
+
 (defun type->spec (type)
   (let ((spec (type->type-spec type)))
     (if (listp spec)
@@ -56,9 +52,14 @@
 ;;------------------------------------------------------------
 
 ;;{TODO} Autowrap-name is name now...can clean up lots of code
-(defmacro defstruct-g (name (&key no-accesors) &body slot-descriptions)
-  (let ((slots (mapcar1 #'normalize-slot-description slot-descriptions
-                        name no-accesors))
+(defmacro defstruct-g (name (&key (accesors t) (constructor t) varjo-constructor
+                                  (readers t) (writers t) (pull-push t)
+                                  (attribs t) (populate t))
+                       &body slot-descriptions)
+  (let ((slots (mapcar λ(normalize-slot-description
+                         % name (and readers accesors)
+                         (and writers accesors))
+                       slot-descriptions))
         (autowrap-name name))
     (when (validate-defstruct-g-form name slots)
       `(progn
@@ -66,17 +67,21 @@
            ,@(make-autowrap-record-def autowrap-name slots))
          (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
            :constructor ,(symb '%make- name))
-         ,(make-varjo-struct-def name slots)
-         ,(make-make-struct name autowrap-name slots)
-         ,@(remove nil (mapcan1 #'make-slot-getters slots name autowrap-name))
-         ,@(remove nil (mapcan1 #'make-slot-setters slots name autowrap-name))
-         ,(make-struct-attrib-assigner name slots)
+         ,(make-varjo-struct-def name slots varjo-constructor)
+         ,(when constructor (make-make-struct name autowrap-name slots))
+         ,@(when (and readers accesors)
+                 (remove nil (mapcar λ(make-slot-getter % name autowrap-name)
+                                     slots)))
+         ,@(when (and writers accesors)
+                 (remove nil (mapcar λ(make-slot-setter % name autowrap-name)
+                                     slots)))
+         ,(when attribs (make-struct-attrib-assigner name slots))
          ,(make-struct-pixel-format name slots)
-         ,(make-populate autowrap-name slots)
-         ,@(make-pull-push autowrap-name slots)
+         ,(when populate (make-populate autowrap-name slots))
+         ,@(when pull-push (make-pull-push autowrap-name slots))
          ',name))))
 
-(defun normalize-slot-description (slot-description type-name no-accesors)
+(defun normalize-slot-description (slot-description type-name readers writers)
   (destructuring-bind (name type &key normalised accessor) slot-description
     (let* ((type (listify type))
            (dimensions (listify (or (second type) 1)))
@@ -84,9 +89,9 @@
            (element-type (when arrayp (first type)))
            (type (if arrayp :array (first type))))
       (make-instance 'gl-struct-slot :name name :type type :normalised normalised
-                     :reader (unless no-accesors
+                     :reader (when readers
                                (or accessor (symb type-name '- name)))
-                     :writer (unless no-accesors
+                     :writer (when writers
                                (or accessor (symb type-name '- name)))
                      :element-type element-type :dimensions dimensions))))
 
@@ -98,10 +103,15 @@
 
 ;;------------------------------------------------------------
 
-(defun make-varjo-struct-def (name slots)
+(defun make-varjo-struct-def (name slots varjo-constructor)
   (let ((hidden-name (symb-package (symbol-package name)
                                    'v_ name )))
-    `(v-defstruct (,name :shadowing ,hidden-name) ()
+    `(v-defstruct
+         (,name
+          :shadowing ,hidden-name
+          ,@(when varjo-constructor `(:constructor ,varjo-constructor))
+          )
+         ()
        ,@(mapcar #'format-slot-for-varjo slots))))
 
 ;;{TODO} make varjo support readers and writers and then remove this hack
@@ -176,7 +186,7 @@
 
 ;;------------------------------------------------------------
 
-(defun make-slot-getters (slot type-name awrap-type-name)
+(defun make-slot-getter (slot type-name awrap-type-name)
   (declare (ignore type-name))
   (when (s-reader slot)
     (cond
@@ -189,27 +199,27 @@
       (t (error "Dont know what to do with slot ~a" slot)))))
 
 (defun make-prim-slot-getter (slot awrap-type-name)
-  `((defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
-      (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot))))))
+  `(defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+     (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot)))))
 
 (defun make-eprim-slot-getter (slot awrap-type-name)
-  `((defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
-      (mem-ref (plus-c:c-ref wrapped-object ,awrap-type-name
-                             ,(kwd (s-name slot)) plus-c::&)
-               ,(s-type slot)))))
+  `(defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+     (mem-ref (plus-c:c-ref wrapped-object ,awrap-type-name
+                            ,(kwd (s-name slot)) plus-c::&)
+              ,(s-type slot))))
 
 (defun make-t-slot-getter (slot awrap-type-name)
-  `((defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
-      (plus-c:c-ref wrapped-object ,awrap-type-name
-                    ,(kwd (s-name slot))))))
+  `(defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+     (plus-c:c-ref wrapped-object ,awrap-type-name
+                   ,(kwd (s-name slot)))))
 
 (defun make-array-slot-getter (slot awrap-type-name)
-  `((defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
-      (make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot)
-                                 (plus-c:c-ref wrapped-object ,awrap-type-name
-                                               ,(kwd (s-name slot)) plus-c::&)))))
+  `(defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+     (make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot)
+                                (plus-c:c-ref wrapped-object ,awrap-type-name
+                                              ,(kwd (s-name slot)) plus-c::&))))
 
-(defun make-slot-setters (slot type-name awrap-type-name)
+(defun make-slot-setter (slot type-name awrap-type-name)
   (when (s-writer slot)
     (cond
       ((member (s-type slot) cffi:*built-in-foreign-types*)
@@ -221,25 +231,24 @@
       (t (error "Dont know what to do with slot ~a" slot)))))
 
 (defun make-prim-slot-setter (slot awrap-type-name)
-  `((defmethod (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
-      (setf (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot)))
-            value))))
+  `(defmethod (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
+     (setf (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot)))
+           value)))
 
 (defun make-eprim-slot-setter (slot awrap-type-name)
-  `((defmethod (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
-      (let ((ptr (plus-c:c-ref wrapped-object ,awrap-type-name
-                               ,(kwd (s-name slot)) plus-c::&)))
-        (setf (mem-ref ptr ,(s-type slot)) value)))))
+  `(defmethod (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
+     (let ((ptr (plus-c:c-ref wrapped-object ,awrap-type-name
+                              ,(kwd (s-name slot)) plus-c::&)))
+       (setf (mem-ref ptr ,(s-type slot)) value))))
 
 (defun make-t-slot-setter (slot awrap-type-name)
-  `((defmethod (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
-      (populate (,(s-reader slot) wrapped-object) value))))
+  `(defmethod (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
+     (populate (,(s-reader slot) wrapped-object) value)))
 
 (defun make-array-slot-setter (slot type-name awrap-type-name)
   (declare (ignore type-name))
-  `((defmethod (setf ,(s-writer slot))
-        ((value list) (wrapped-object ,awrap-type-name))
-      (c-populate (,(s-reader slot) wrapped-object) value))))
+  `(defmethod (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
+     (c-populate (,(s-reader slot) wrapped-object) value)))
 
 ;;------------------------------------------------------------
 

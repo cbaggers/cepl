@@ -206,8 +206,9 @@
       ;;
       (sampler (make-sampler-assigner arg-name varjo-type glsl-name))
       ;;
-      (t (make-simple-assigner arg-name varjo-type glsl-name)))))
+      (t (make-simple-assigner arg-name varjo-type glsl-name nil)))))
 
+;; {TODO} Why does this not have a byte-offset? Very tired cant work it out :)
 (defun make-sampler-assigner (arg-name type glsl-name-path)
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
@@ -237,18 +238,18 @@
               (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
                      ',type-spec (ubo-data-type ,arg-name))))))))
 
-(defun make-simple-assigner (arg-name type glsl-name-path &optional (byte-offset 0))
+;; NOTE: byte-offset can be nil, this is a legit value
+(defun make-simple-assigner (arg-name type glsl-name-path
+                             &optional (byte-offset 0))
   (let ((id-name (gensym)))
     (make-assigner
      :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path)))
      :uploaders
      `((when (>= ,id-name 0)
-         ,(if (> byte-offset 0)
+         ,(if byte-offset
               `(,(get-foreign-uniform-function-name (type->spec type))
                  ,id-name 1 (cffi:inc-pointer ,arg-name ,byte-offset))
               `(,(get-uniform-function-name (type->spec type)) ,id-name ,arg-name)))))))
-;; {TODO} ^^^^^^^^^^^^^^^^^^^^^^ this will fail with byte-offset>0 because
-;;                               we cant increment the pointer of a lisp-array
 
 (defun make-array-assigners (arg-name type glsl-name-path &optional (byte-offset 0))
   (let ((element-type (varjo::v-element-type type))
@@ -268,14 +269,25 @@
 
 (defun make-eq-type-assigner (arg-name type varjo-type glsl-name qualifiers)
   (let* ((local-var (gensym (symbol-name arg-name)))
-         (assigner (dispatch-make-assigner
-                    local-var (varjo::type->type-spec varjo-type) glsl-name qualifiers))
+         (varjo-type-spec (varjo::type->type-spec varjo-type))
+         (assigner (dispatch-make-assigner `(autowrap:ptr ,local-var)
+                                           varjo-type-spec
+                                           glsl-name
+                                           qualifiers))
          (eq-spec (equiv-spec type))
-         (updaters (mapcar λ(cons 'setf %) (second eq-spec))))
+         (varjo-type-name (first eq-spec))
+         (updaters `((progn
+                       ,@(loop :for x :in (second eq-spec) :collect
+                            `(setf (,(first x) ,local-var)
+                                   ,(subst arg-name '% (second x)
+                                           :test λ(when (symbolp %1)
+                                                    (string-equal % %1)))))))))
     (make-assigner
-     :let-forms (cons `(,local-var (autowrap:alloc ',varjo-type))
+     :let-forms (cons `(,local-var (autowrap:alloc ',varjo-type-name))
                       (let-forms assigner))
      :uploaders (append updaters (uploaders assigner)))))
+
+
 
 (defun make-struct-assigners (arg-name type glsl-name-path
                               &optional (byte-offset 0))

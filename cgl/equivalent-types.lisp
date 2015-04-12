@@ -18,6 +18,8 @@
         `(,(car arg) ,(first (equiv-spec type)) ,@(cddr arg))
         arg)))
 
+;; {TODO} Currently equivalent types cannot be used in the same file
+;;        as they are defined. Try fixing this
 (defmacro def-equivalent-type (lisp-type-name &body options)
   (if (symbolp (first options))
       (if (null (rest options))
@@ -67,6 +69,9 @@
                                     %
                                   (declare (ignore _))
                                   (list (or accessor name) form)) slots))))
-       (v-defstruct (,alt-type :constructor ,lisp-type-name) ()
+       (defstruct-g ,alt-type
+           (:constructor nil :varjo-constructor ,lisp-type-name :populate nil
+                         :attribs nil :readers nil :pull-push nil)
          ,@(mapcar λ(append (subseq % 0 2) (subseq % 3))
-                   slots)))))
+                   slots))
+       ',lisp-type-name)))
