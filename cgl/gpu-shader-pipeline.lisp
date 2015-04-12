@@ -68,6 +68,8 @@
          (declare (ignorable image-unit))
          (format t ,(format nil "~&; uploading (~a ...)~&" name))
          (link-shaders stages-objects prog-id compiled-stages)
+         (when +cache-last-pipeline-compile-result+
+           (add-compile-results-to-pipeline ',name compiled-stages))
          (mapcar #'%gl:delete-shader stages-objects)
          ,@(let ((u-lets (mapcat #'first uniform-assigners)))
                 (loop for u in u-lets collect (cons 'setf u)))

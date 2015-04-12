@@ -101,11 +101,14 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
+(defconstant +cache-last-pipeline-compile-result+ t)
+
 (defclass shader-pipeline-spec ()
   ((name :initarg :name)
    (stages :initarg :stages)
    (change-spec :initarg :change-spec)
-   (context :initarg :context)))
+   (context :initarg :context)
+   (cached-compile-results :initform nil)))
 
 (defclass compose-pipeline-spec ()
   ((name :initarg :name)
@@ -130,15 +133,29 @@ names are depended on by the functions named later in the list"
 (defun update-pipeline-spec (spec)
   (setf (pipeline-spec (slot-value spec 'name)) spec))
 
+(defun add-compile-results-to-pipeline (name compiled-results)
+  (setf (slot-value (pipeline-spec name) 'cached-compile-results)
+        compiled-results))
+
+(defmethod pull1-g ((asset-name symbol))
+  (if +cache-last-pipeline-compile-result+
+      (slot-value (pipeline-spec asset-name) 'cached-compile-results)
+      "CEPL has been set to not cache the results of pipeline compilation.
+See the +cache-last-pipeline-compile-result+ constant for more details"))
+
+(defmethod pull-g ((asset-name symbol))
+  (if +cache-last-pipeline-compile-result+
+      (mapcar #'varjo::glsl-code
+              (slot-value (pipeline-spec asset-name) 'cached-compile-results))
+      "CEPL has been set to not cache the results of pipeline compilation.
+See the +cache-last-pipeline-compile-result+ constant for more details"))
+
 ;;--------------------------------------------------
 
 (defun request-program-id-for (name)
   (or (gethash name *gpu-program-cache*)
       (setf (gethash name *gpu-program-cache*)
             (gl:create-program))))
-
-;; (defmethod pull-g ((asset-name symbol))
-;;   (get-glsl-code asset-name))
 
 ;;;--------------------------------------------------------------
 ;;; PIPELINE ;;;
