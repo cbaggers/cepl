@@ -32,9 +32,10 @@
   (remhash name *dependent-gpu-functions*)
   nil)
 
-(defun %test-compile (in-args uniforms context body)
-  (varjo::translate in-args uniforms (union '(:vertex :fragment :330) context)
-                    `(progn ,@body)))
+(defun %test-compile (in-args uniforms context body depends-on)
+  (let ((body (labels-form-from-func-names depends-on body)))
+    (varjo::translate in-args uniforms (union '(:vertex :fragment :330) context)
+                      body)))
 
 ;;--------------------------------------------------
 
@@ -45,14 +46,13 @@
                                    equivalent-inargs equivalent-uniforms
                                    doc-string declarations)))
     (assert (%gpu-func-compiles-in-some-context spec))
-    (let ((depends-on (%find-gpu-functions-depended-on spec))
-          (pipelines-depending-on (pipelines-that-use-this-func name))) ;; {TODO} why isnt this used?
+    (let ((depends-on (%find-gpu-functions-depended-on spec)))
       (assert (not (%find-recursion name depends-on)))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
                                       ',depends-on))
-         (%test-compile ',in-args ',uniforms ',context ',body)
+         (%test-compile ',in-args ',uniforms ',context ',body ',depends-on)
          ,(%make-stand-in-lisp-func spec)
          (%recompile-gpu-function ',name)))))
 
@@ -211,21 +211,23 @@
 
 ;;--------------------------------------------------
 
+(defun labels-form-from-func-names (names body)
+  `(labels ,(mapcar (lambda (spec)
+                         (with-gpu-func-spec spec
+                           `(,name ,in-args ,@body)))
+                    (remove nil (mapcar #'gpu-func-spec names)))
+     ,@body))
+
 (defun get-func-as-stage-code (name)
   (with-gpu-func-spec (gpu-func-spec name)
     (list
      in-args
      uniforms
      context
-     `(labels ,(mapcar (lambda (spec)
-                         (with-gpu-func-spec spec
-                           `(,name ,in-args ,@body)))
-                       (mapcar #'gpu-func-spec (funcs-this-func-uses name)))
-        ,@body))))
+     (labels-form-from-func-names (funcs-this-func-uses name) body))))
 
 (defun varjo-compile-as-stage (name)
-  (apply #'varjo:translate
-         (get-func-as-stage-code name)))
+  (apply #'varjo:translate (get-func-as-stage-code name)))
 
 (defun varjo-compile-as-pipeline (args)
   (destructuring-bind (stage-pairs context) (parse-gpipe-args args)

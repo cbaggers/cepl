@@ -58,8 +58,7 @@
 
 (defmacro def-pipeline-init (name stage-pairs post pass-key)
   (let* ((stage-names (mapcar #'cdr stage-pairs))
-         (uniform-assigners
-          (stages->uniform-assigners stage-names pass-key)))
+         (uniform-assigners (stages->uniform-assigners stage-names pass-key)))
     `(defun ,(init-func-name name) ()
        (let* ((compiled-stages (%varjo-compile-as-pipeline ',stage-pairs))
               (stages-objects (mapcar #'%gl-make-shader-from-varjo
@@ -68,7 +67,7 @@
               (image-unit -1))
          (declare (ignorable image-unit))
          (format t ,(format nil "~&; uploading (~a ...)~&" name))
-         (link-shaders stages-objects prog-id)
+         (link-shaders stages-objects prog-id compiled-stages)
          (mapcar #'%gl:delete-shader stages-objects)
          ,@(let ((u-lets (mapcat #'first uniform-assigners)))
                 (loop for u in u-lets collect (cons 'setf u)))
@@ -408,7 +407,7 @@
 (defun load-shaders (&rest shader-paths)
   (mapcar #'load-shader shader-paths))
 
-(defun link-shaders (shaders &optional program_id)
+(defun link-shaders (shaders program_id compiled-stages)
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
   (let ((program (or program_id (gl:create-program))))
@@ -418,8 +417,9 @@
                 (gl:link-program program)
                 ;;check for linking errors
                 (if (not (gl:get-program program :link-status))
-                    (error (format nil "Error Linking Program~%~a"
-                                   (gl:get-program-info-log program)))))
+                    (error (format nil "Error Linking Program~%~a~%~%Compiled-stages:~{~%~% ~a~}"
+                                   (gl:get-program-info-log program)
+                                   (mapcar #'glsl-code compiled-stages)))))
       (loop :for shader :in shaders :do
          (gl:detach-shader program shader)))
     program))
