@@ -68,7 +68,6 @@
                (:file "cgl/gmap")
                (:file "cgl/fbo")
                (:file "cgl/default-data")
-               ;; (:file "ugly/particles")
                (:file "camera/camera")
                ;; (:file "space/base-space")
                ;; (:file "space/space")
