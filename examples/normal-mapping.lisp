@@ -56,10 +56,10 @@
           (cgl:tex data)))
 
 (defun-g nm-frag ((model-space-pos :vec3) (vertex-normal :vec3)
-               (diffuse-color :vec4) (tex-coord :vec2) &uniform
-               (model-space-light-pos :vec3) (light-intensity :vec4)
-               (ambient-intensity :vec4) (textur :sampler-2d)
-               (norm-map :sampler-2d))
+                  (diffuse-color :vec4) (tex-coord :vec2) &uniform
+                  (model-space-light-pos :vec3) (light-intensity :vec4)
+                  (ambient-intensity :vec4) (textur :sampler-2d)
+                  (norm-map :sampler-2d))
   (let* ((light-dir (normalize (- model-space-light-pos
                                   model-space-pos)))
          (t-norm (- (* (s~ (texture norm-map tex-coord) :xyz) 2)
