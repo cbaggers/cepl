@@ -10,7 +10,6 @@
 (defparameter *light* nil)
 (defparameter *tex* nil)
 (defparameter *loop-pos* 0.0)
-(defparameter *swatch* nil)
 (defparameter *pos-tex* nil)
 
 (defclass entity ()
@@ -44,10 +43,6 @@
   (reshape cgl:+default-resolution+)
   (setf *wibble* (load-model "./bird/bird.3ds" (v! pi 0 0)))
   (setf *tex* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
-  (setf *swatch* (cgl::make-swatch
-                  :size (v! 0.3 0.3)
-                  :tex-size cgl:+default-resolution+
-                  :attachment :depth))
   (setf *pos-tex* (make-texture nil :dimensions 1000
                                 :internal-format :rgba32f
                                 :buffer-storage t))

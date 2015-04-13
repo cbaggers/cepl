@@ -379,10 +379,6 @@
            :attachment-compatible
            :fbo-detach
            ;;----------
-           :make-swatch
-           :draw-swatch
-           :with-swatch-bound
-           ;;----------
            :make-ubo
            :ubo-data
            :ubo-index
