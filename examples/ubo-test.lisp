@@ -5,14 +5,10 @@
 (defparameter *stream* nil)
 (defparameter *running* nil)
 
-(defstruct-g pos-col ()
-  (position :vec3 :accessor pos)
-  (color :vec4 :accessor col))
-
 (defstruct-g test ()
   (scale :float :accessor scale))
 
-(defun-g vert ((vert pos-col) &uniform (hmm test :ubo))
+(defun-g vert ((vert g-pc) &uniform (hmm test :ubo))
   (values (v! (* (pos vert) (scale hmm)) 1.0)
           (:smooth (col vert))))
 
@@ -26,7 +22,7 @@
   (evt:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit)
-  (gmap #'prog-1 *stream*)
+  (gmap #'prog-1 *stream*) ;; :hmm *ubo*
   (cgl:update-display))
 
 (defun run-demo ()
@@ -35,7 +31,7 @@
         *array* (make-gpu-array (list (list (v!  0.5 -0.36 0) (v! 0 1 0 1))
                                       (list (v!    0   0.5 0) (v! 1 0 0 1))
                                       (list (v! -0.5 -0.36 0) (v! 0 0 1 1)))
-                                :element-type 'pos-col)
+                                :element-type 'g-pc)
    *stream* (make-buffer-stream *array*))
   (loop :while *running* :do (continuable (step-demo))))
 
