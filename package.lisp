@@ -265,6 +265,9 @@
                 :print-mem)
   (:shadow :float)
   (:export :gl-context
+           :viewport
+           :with-viewport
+           :with-fbo-viewport
            :+default-resolution+
            :clear-gl-context-cache
            :gl-free
@@ -280,6 +283,7 @@
            :gl-calc-byte-size
            :make-c-array-from-pointer
            :with-c-array
+           :with-c-arrays
            :free-c-array
            :clone-c-array
            :make-c-array
@@ -287,9 +291,9 @@
            :%aref-c
            :c-populate
            :gl-subseq
-           :gl-pull
-           :gl-pull-1
-           :gl-push
+           :pull-g
+           :pull1-g
+           :push-g
            :dimensions ; [TODO] this isnt really inline with array-dimensions
            :backed-by ; [TODO] is this the right name for the job?
            :element-type
@@ -314,7 +318,7 @@
            :make-vao-from-formats
            :make-vao
            :make-raw-vertex-stream
-           :make-vertex-stream
+           :make-buffer-stream
            :make-texture
            :bind-texture
            :with-texture-bound
@@ -327,6 +331,7 @@
            :gpu-array-t
            :texref
            :defpipeline
+           :g->
            :defun-g
            :defmacro-g
            :with-instances
@@ -374,10 +379,12 @@
            :attachment-compatible
            :fbo-detach
            ;;----------
-           :def-gl-equivalent
-           :make-swatch
-           :draw-swatch
-           :with-swatch-bound))
+           :make-ubo
+           :ubo-data
+           :ubo-index
+           ;;----------
+           :def-equivalent-type
+           ))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
@@ -444,7 +451,8 @@
            :box-data
            :equilateral-triangle-data
            :sphere-data
-           :prim-array))
+           :prim-array
+           :swap-winding-order))
 
 (defpackage :tools
   (:use :cl
@@ -461,14 +469,20 @@
            :map-evt
            :merge-evt
            :filter-evt
+           :pump-events
            :|all-events|
            :observe
            :undefobserver
-           :def-event-node))
+           :def-event-node
+           :|mouse|
+           :|sys|
+           :|window|
+           :|keyboard|))
 
 (defpackage :cepl.events.sdl
   (:use :cl :cepl-utils :cepl.events :cells :cepl-generics)
   (:nicknames :evt.sdl)
+  (:shadow :pump-events)
   (:export :pump-events
            :case-events
            :will-quit
@@ -517,7 +531,8 @@
         :temporal-functions
         :cepl-camera
         :cl-fad
-        :cepl.events)
+        :cepl.events
+        :named-readtables)
   (:import-from :live
                 :continuable
                 :update-swank
@@ -529,14 +544,16 @@
                 :describe-pixel-format
                 :with-instances
                 :defpipeline
+                :g->
                 :defun-g
                 :defmacro-g
                 :defstruct-g
-                :gl-pull
-                :gl-pull-1
-                :gl-push
+                :pull-g
+                :pull1-g
+                :push-g
                 :make-c-array
                 :with-c-array
+                :with-c-arrays
                 :free-c-array
                 :aref-c
                 :c-populate
@@ -544,7 +561,7 @@
                 :make-gpu-arrays
                 :gl-subseq
                 :with-gpu-array-as-c-array
-                :make-vertex-stream
+                :make-buffer-stream
                 :make-texture
                 :with-texture-bound
                 :g-pn
@@ -565,7 +582,11 @@
                 :attachment-compatible
                 :fbo-detach
                 ;;---
-                :def-gl-equivalent)
+                :def-equivalent-type
+                ;;---
+                :make-ubo
+                :ubo-data
+                :ubo-index)
   (:import-from :utils
                 :deferror
                 :print-mem)
@@ -651,11 +672,12 @@
            :defun-g
            :defmacro-g
            :defstruct-g
-           :gl-pull
-           :gl-pull-1
-           :gl-push
+           :pull-g
+           :pull1-g
+           :push-g
            :make-c-array
            :with-c-array
+           :with-c-arrays
            :free-c-array
            :aref-c
            :c-populate
@@ -663,7 +685,7 @@
            :make-gpu-arrays
            :gl-subseq
            :with-gpu-array-as-c-array
-           :make-vertex-stream
+           :make-buffer-stream
            :make-texture
            :with-texture-bound
            :g-pn
@@ -681,4 +703,8 @@
            :fbo-attach
            :attachment-compatible
            :fbo-detach
-           :def-gl-equivalent))
+           :def-equivalent-type
+           ;;---
+           :make-ubo
+           :ubo-data
+           :ubo-index))

@@ -7,6 +7,14 @@
 ;; known as the LLGPL.
 ;;
 (in-package :cepl-gl)
+(named-readtables:in-readtable fn_:fn_lambda)
+
+
+;;{TODO} While I see why I started abstracting this using classes
+;;       We cannot extend core functionality of gl, thus uses
+;;       extensible constructs is optimizing for a case that can
+;;       never happen. We should go for structs, ubyte and macros
+;;       to hide the ugly, optimize for helping the compiler
 
 ;;------------------------------------------------------------
 
@@ -116,7 +124,8 @@
   (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) (texture-id texture))
     (setf (slot-value texture 'texture-id) -1)
-    (%gl:delete-textures 1 id)))
+    (%gl:delete-textures 1 id)
+    t))
 
 (defmethod free-texture ((texture buffer-texture))
   (with-foreign-object (id :uint)
@@ -358,7 +367,7 @@
 (defun %texture-dimensions (initial-contents dimensions)
   (if initial-contents
       (if dimensions
-          (error "Cannot specify dimensions and have non nil initial-contents")
+          (error "Cannot specify dimensions and initial-contents")
           (dimensions initial-contents))
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
@@ -372,6 +381,19 @@
      (%make-buffer-texture (%texture-dimensions initial-contents dimensions)
                            internal-format mipmap layer-count cubes
                            rectangle multisample immutable initial-contents))
+    ((and initial-contents cubes)
+     (assert (= 6 (length initial-contents)))
+     (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
+            (dim (if (every λ(equal target-dim (dimensions %)) initial-contents)
+                     target-dim
+                     (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
+                            initial-contents)))
+            (result (%make-texture dim mipmap layer-count cubes buffer-storage
+                                   rectangle multisample immutable nil
+                                   internal-format)))
+       (loop :for data :in initial-contents :for i :from 0 :do
+          (push-g data (texref result :cube-face i)))
+       result))
     ((and initial-contents (typep initial-contents '(or list vector array)))
      (return-from make-texture
        (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions))
@@ -533,37 +555,37 @@
 
 ;;------------------------------------------------------------
 
-(defmethod gl-push ((object c-array) (destination gl-texture))
-  (gl-push object (texref destination)))
-(defmethod gl-push ((object list) (destination gl-texture))
-  (gl-push object (texref destination)))
+(defmethod push-g ((object c-array) (destination gl-texture))
+  (push-g object (texref destination)))
+(defmethod push-g ((object list) (destination gl-texture))
+  (push-g object (texref destination)))
 
-;; [TODO] gl-push taking lists
-(defmethod gl-push ((object list) (destination gpu-array-t))
+;; [TODO] push-g taking lists
+(defmethod push-g ((object list) (destination gpu-array-t))
   (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (cgl::internal-format->pixel-format
                                                   (cgl::internal-format destination))))
-    (gl-push c-a destination)))
+    (push-g c-a destination)))
 
 ;; [TODO] This feels like could create non-optimal solutions
 ;;        So prehaps this should look at texture format, and
 ;;        find the most similar compatible format, with worst
 ;;        case being just do what we do below
-(defmethod gl-push ((object c-array) (destination gpu-array-t))
+(defmethod push-g ((object c-array) (destination gpu-array-t))
   (destructuring-bind (pformat ptype)
       (compile-pixel-format (pixel-format-of object))
     (upload-c-array-to-gpuarray-t destination object
                                   pformat ptype)))
 
-(defmethod gl-pull ((object gl-texture))
-  (gl-pull (texref object)))
+(defmethod pull-g ((object gl-texture))
+  (pull-g (texref object)))
 
 ;; [TODO] implement gl-fill and fill arguments
 
 ;; [TODO] Alignment
 ;; [TODO] Does not respect GL_PIXEL_PACK/UNPACK_BUFFER
-(defmethod gl-pull-1 ((object gpu-array-t))
+(defmethod pull1-g ((object gpu-array-t))
   (with-slots (layer-num level-num texture-type face-num
                          internal-format texture) object
     (let* ((p-format (internal-format->pixel-format
@@ -577,9 +599,9 @@
       c-array)))
 
 ;; [TODO] With-c-array is wrong
-(defmethod gl-pull ((object gpu-array-t))
-  (with-c-array (c-array (gl-pull-1 object))
-    (gl-pull-1 c-array)))
+(defmethod pull-g ((object gpu-array-t))
+  (with-c-array (c-array (pull1-g object))
+    (pull1-g c-array)))
 
 (defmethod backed-by ((object gpu-array-t))
   :texture)

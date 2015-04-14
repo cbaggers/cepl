@@ -16,4 +16,4 @@
                                        (v!  0.0   0.0))
                                  :element-type :vec2
                                  :dimensions 6))
-    (setf *quad-stream* (make-vertex-stream *quad*))))
+    (setf *quad-stream* (make-buffer-stream *quad*))))

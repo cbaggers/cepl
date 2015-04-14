@@ -25,7 +25,7 @@
 
 (defun make-ubo (&optional data (index 0))
   (assert (>= index 0))
-  (assert (when (> index 0) (typep data 'gpuarray)))
+  (assert (or (= index 0) (typep data 'gpuarray)))
   (let ((ubo (%make-ubo :id (get-free-ubo-id)
                         :data data
                         :index index)))
@@ -46,7 +46,7 @@
                         (gpuarray-format data)
                       (declare (ignore len))
                       (+ byte-offset
-                         (gl-calc-byte-size type (ubo-index ubo)))))))
+                         (gl-calc-byte-size type (list (ubo-index ubo))))))))
          (size (typecase data
                  (glbuffer (gl-type-size (caar (glbuffer-format data))))
                  (gpuarray

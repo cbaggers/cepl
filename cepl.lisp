@@ -56,7 +56,7 @@
   #+(and ccl darwin)
   (setf cl-opengl-bindings::*gl-get-proc-address* #'sdl2::gl-get-proc-address)
   (multiple-value-bind (context window)
-      (new-window :width width :height height :title "CEPL REPL")
+      (new-window :width width :height height :title "CEPL REPL" :resizable t)
     (if (and context window (cepl-post-context-initialize))
         (let ((context (make-instance 'cgl:gl-context :handle context)))
           (setf cgl::*gl-window* window)

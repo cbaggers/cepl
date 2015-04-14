@@ -98,6 +98,7 @@
   (let* ((forms (mapcar #'second pass-forms)))
     (mapcar λ(remove-if-not #'keywordp %) forms)))
 
+;;{TODO} handle equivalent types
 (defun make-pipeline-uniform-args (pipeline-names overriden-uniforms)
   (let ((all-uniforms
          (mapcat (lambda (uniforms overriden)
@@ -107,14 +108,14 @@
                       :collect uniform))
                  (mapcar #'get-pipeline-uniforms pipeline-names)
                  overriden-uniforms)))
-    (aggregate-uniforms all-uniforms)))
+    (%aggregate-uniforms all-uniforms)))
 
 (defun get-pipeline-uniforms (pipeline-name &optional call-form)
   (%get-pipeline-uniforms (pipeline-spec pipeline-name) call-form))
 
 (defmethod %get-pipeline-uniforms
     ((pipeline-spec shader-pipeline-spec) call-form)
-  (let ((result (%get-stage-uniforms (slot-value pipeline-spec 'stages)))
+  (let ((result (aggregate-uniforms (slot-value pipeline-spec 'stages)))
         (overriden-uniforms (remove-if-not #'keywordp call-form)))
     (remove-if λ(member % overriden-uniforms
                         :test (lambda (x y) (string-equal (car x) y)))

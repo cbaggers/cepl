@@ -15,8 +15,16 @@
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
         (varjo::lambda-list-split '(:&uniform :&context :&instancing) args)
-      (%def-gpu-function name in-args uniforms context body instancing
-                         doc-string declarations))))
+      (let ((in-args (swap-equivalent-types in-args))
+            (uniforms (swap-equivalent-types uniforms))
+            (equivalent-inargs (mapcar λ(when (equivalent-typep %) %)
+                                       (mapcar #'second in-args)))
+            (equivalent-uniforms (mapcar λ(when (equivalent-typep %) %)
+                                         (mapcar #'second uniforms))))
+        (assert (every #'null equivalent-inargs))
+        (%def-gpu-function name in-args uniforms context body instancing
+                           equivalent-inargs equivalent-uniforms
+                           doc-string declarations)))))
 
 (defun undefine-gpu-function (name)
   (%unsubscibe-from-all name)
@@ -24,20 +32,27 @@
   (remhash name *dependent-gpu-functions*)
   nil)
 
+(defun %test-compile (in-args uniforms context body depends-on)
+  (let ((body (labels-form-from-func-names depends-on body)))
+    (varjo::translate in-args uniforms (union '(:vertex :fragment :330) context)
+                      body)))
+
 ;;--------------------------------------------------
 
 (defun %def-gpu-function (name in-args uniforms context body instancing
+                          equivalent-inargs equivalent-uniforms
                           doc-string declarations)
-  (let ((spec (%make-gpu-func-spec name in-args uniforms context body
-                                   instancing doc-string declarations)))
+  (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
+                                   equivalent-inargs equivalent-uniforms
+                                   doc-string declarations)))
     (assert (%gpu-func-compiles-in-some-context spec))
-    (let ((depends-on (%find-gpu-functions-depended-on spec))
-          (pipelines-depending-on (pipelines-that-use-this-func name)))
+    (let ((depends-on (%find-gpu-functions-depended-on spec)))
       (assert (not (%find-recursion name depends-on)))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
                                       ',depends-on))
+         (%test-compile ',in-args ',uniforms ',context ',body ',depends-on)
          ,(%make-stand-in-lisp-func spec)
          (%recompile-gpu-function ',name)))))
 
@@ -84,7 +99,7 @@
   t)
 
 (defun %expand-all-macros (spec)
-  (with-gpu-func-spec (spec)
+  (with-gpu-func-spec spec
     (let ((env (make-instance 'varjo::environment)))
       (%%expand-all-macros body context env))))
 
@@ -139,7 +154,7 @@
   (%find-gpu-funcs-in-source (%expand-all-macros spec)))
 
 (defun %make-stand-in-lisp-func (spec)
-  (with-gpu-func-spec (spec)
+  (with-gpu-func-spec spec
     (let ((arg-names (mapcar #'first in-args))
           (uniform-names (mapcar #'first uniforms)))
       `(defun ,name (,@arg-names
@@ -151,71 +166,68 @@
   (declare (ignore name depends-on))
   nil)
 
-
-
 ;;--------------------------------------------------
 
-(defun extract-args-from-gpu-functions (function-names)
-  (let ((specs (mapcar #'gpu-func-spec function-names)))
-    (assert (every #'identity specs))
-    (aggregate-args-from-specs specs)))
-
-(defun aggregate-args-from-specs (specs &optional (args-accum t) uniforms-accum)
-  (if specs
-      (let ((spec (first specs)))
-        (with-gpu-func-spec (spec)
-          (aggregate-args-from-specs
-           (rest specs)
-           (if (eql t args-accum) in-args args-accum)
-           (aggregate-uniforms uniforms uniforms-accum))))
-      `(,@args-accum ,@(when uniforms-accum (cons '&uniform uniforms-accum)))))
-
-(defun aggregate-uniforms (uniforms &optional accum)
+(defun %aggregate-uniforms (uniforms &optional accum)
   (if uniforms
       (let ((u (first uniforms)))
         (cond
           ;; if there is no other uniform with matching name, hense no collision
           ((not (find (first u) accum :test #'equal :key #'first))
-           (aggregate-uniforms (rest uniforms) (cons u accum)))
+           (%aggregate-uniforms (rest uniforms) (cons u accum)))
           ;; or the uniform matches perfectly so no collision
           ((find u accum :test #'equal)
-           (aggregate-uniforms (rest uniforms) accum))
+           (%aggregate-uniforms (rest uniforms) accum))
           ;; or it's a clash
           (t (error "Uniforms for the functions are incompatible: ~a ~a"
                     u accum))))
       accum))
 
-(defun %get-stage-uniforms (names &optional uniforms-accum)
-  (if names
-      (with-gpu-func-spec ((gpu-func-spec (first names)))
-        (%get-stage-uniforms
-         (rest names)
-         (aggregate-uniforms uniforms uniforms-accum)))
-      uniforms-accum))
+(defun %uniforms-pre-equiv (spec)
+  (with-gpu-func-spec spec
+    (mapcar λ(if % `(,(car %1) ,% ,@(cddr %1)) %1)
+            equivalent-uniforms uniforms)))
 
-(defmacro with-processed-func-specs (stages &body body)
-  `(let ((args (extract-args-from-gpu-functions ,stages)))
-     (utils:assoc-bind ((in-args nil) (unexpanded-uniforms :&uniform))
-         (varjo::lambda-list-split '(&uniform) args)
-       ,@body)))
+(defun aggregate-uniforms (names &optional accum)
+  (if names
+      (aggregate-uniforms
+       (rest names)
+       (%aggregate-uniforms (%uniforms-pre-equiv (gpu-func-spec (first names)))
+                            accum))
+      accum))
+
+(defun aggregate-in-args (names &optional (args-accum t))
+  (if names
+      (with-gpu-func-spec (gpu-func-spec (first names))
+        (aggregate-in-args
+         (rest names)
+         (if (eql t args-accum) in-args args-accum)))
+      args-accum))
+
+(defmacro with-processed-func-specs (names &body body)
+  `(let* ((in-args (aggregate-in-args ,names))
+          (uniforms (aggregate-uniforms ,names)))
+     ,@body))
 
 ;;--------------------------------------------------
 
+(defun labels-form-from-func-names (names body)
+  `(labels ,(mapcar (lambda (spec)
+                         (with-gpu-func-spec spec
+                           `(,name ,in-args ,@body)))
+                    (remove nil (mapcar #'gpu-func-spec names)))
+     ,@body))
+
 (defun get-func-as-stage-code (name)
-  (with-gpu-func-spec ((gpu-func-spec name))
+  (with-gpu-func-spec (gpu-func-spec name)
     (list
      in-args
      uniforms
      context
-     `(labels ,(mapcar (lambda (spec)
-                         (with-gpu-func-spec (spec)
-                           `(,name ,in-args ,@body)))
-                       (mapcar #'gpu-func-spec (funcs-this-func-uses name)))
-        ,@body))))
+     (labels-form-from-func-names (funcs-this-func-uses name) body))))
 
 (defun varjo-compile-as-stage (name)
-  (apply #'varjo:translate
-         (get-func-as-stage-code name)))
+  (apply #'varjo:translate (get-func-as-stage-code name)))
 
 (defun varjo-compile-as-pipeline (args)
   (destructuring-bind (stage-pairs context) (parse-gpipe-args args)

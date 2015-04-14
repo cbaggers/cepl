@@ -18,10 +18,13 @@
    (context :initarg :context)
    (body :initarg :body)
    (instancing :initarg :instancing)
+   (equivalent-inargs :initarg :equivalent-inargs)
+   (equivalent-uniforms :initarg :equivalent-uniforms)
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
+                            equivalent-inargs equivalent-uniforms
                             doc-string declarations)
   (make-instance 'gpu-func-spec
                  :name name
@@ -30,20 +33,25 @@
                  :context context
                  :body body
                  :instancing instancing
+                 :equivalent-inargs equivalent-inargs
+                 :equivalent-uniforms equivalent-uniforms
                  :doc-string doc-string
                  :declarations declarations))
 
-(defmacro with-gpu-func-spec ((func-spec) &body body)
+(defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms context body instancing
+                     equivalent-inargs equivalent-uniforms
                      doc-string declarations) ,func-spec
      (declare (ignorable name in-args uniforms context body instancing
+                         equivalent-inargs equivalent-uniforms
                          doc-string declarations))
      ,@body))
 
 (defun %serialize-gpu-func-spec (spec)
-  (with-gpu-func-spec (spec)
+  (with-gpu-func-spec spec
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
-                          ',instancing ,doc-string ',declarations)))
+                          ',instancing ',equivalent-inargs ',equivalent-uniforms
+                          ,doc-string ',declarations)))
 
 (defun gpu-func-spec (name &optional error-if-missing)
   (or (gethash name *gpu-func-specs*)
@@ -93,11 +101,14 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
+(defconstant +cache-last-pipeline-compile-result+ t)
+
 (defclass shader-pipeline-spec ()
   ((name :initarg :name)
    (stages :initarg :stages)
    (change-spec :initarg :change-spec)
-   (context :initarg :context)))
+   (context :initarg :context)
+   (cached-compile-results :initform nil)))
 
 (defclass compose-pipeline-spec ()
   ((name :initarg :name)
@@ -122,15 +133,29 @@ names are depended on by the functions named later in the list"
 (defun update-pipeline-spec (spec)
   (setf (pipeline-spec (slot-value spec 'name)) spec))
 
+(defun add-compile-results-to-pipeline (name compiled-results)
+  (setf (slot-value (pipeline-spec name) 'cached-compile-results)
+        compiled-results))
+
+(defmethod pull1-g ((asset-name symbol))
+  (if +cache-last-pipeline-compile-result+
+      (slot-value (pipeline-spec asset-name) 'cached-compile-results)
+      "CEPL has been set to not cache the results of pipeline compilation.
+See the +cache-last-pipeline-compile-result+ constant for more details"))
+
+(defmethod pull-g ((asset-name symbol))
+  (if +cache-last-pipeline-compile-result+
+      (mapcar #'varjo::glsl-code
+              (slot-value (pipeline-spec asset-name) 'cached-compile-results))
+      "CEPL has been set to not cache the results of pipeline compilation.
+See the +cache-last-pipeline-compile-result+ constant for more details"))
+
 ;;--------------------------------------------------
 
 (defun request-program-id-for (name)
   (or (gethash name *gpu-program-cache*)
       (setf (gethash name *gpu-program-cache*)
             (gl:create-program))))
-
-;; (defmethod gl-pull ((asset-name symbol))
-;;   (get-glsl-code asset-name))
 
 ;;;--------------------------------------------------------------
 ;;; PIPELINE ;;;
@@ -139,6 +164,7 @@ names are depended on by the functions named later in the list"
 (defmacro defpipeline (name args gpu-pipe-form &body options)
   (assert (eq (first gpu-pipe-form) 'G->))
   (let* ((gpipe-args (rest gpu-pipe-form)))
+    (assert (not (null gpipe-args)))
     (cond ((and (listp (first gpipe-args)) (eq (caar gpipe-args) 'function))
            (%defpipeline-gfuncs name args gpipe-args options))
           ((listp (first gpipe-args))
@@ -187,3 +213,9 @@ names are depended on by the functions named later in the list"
 
 (let ((current-key 0))
   (defun %gen-pass-key () (incf current-key)))
+
+;;--------------------------------------------------
+
+(defmacro g-> (&rest forms)
+  (declare (ignore forms))
+  (error "Sorry, g-> can currently only be used inside defpipeline"))

@@ -85,6 +85,11 @@
   `(let* ((,var-name ,c-array))
      (unwind-protect (progn ,@body) (free-c-array ,var-name))))
 
+(defmacro with-c-arrays ((var-name c-arrays) &body body)
+  `(let* ((,var-name ,c-arrays))
+     (unwind-protect (progn ,@body)
+       (loop :for a :in ,var-name :do (free-c-array a)))))
+
 (defun clone-c-array (c-array)
   (let* ((size (c-array-byte-size c-array))
          (new-pointer (cffi::%foreign-alloc size)))
@@ -114,7 +119,7 @@
                   (typecase initial-contents
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
-                  (error "make-c-array must be given initial-elements or dimensions"))))         
+                  (error "make-c-array must be given initial-elements or dimensions"))))
          (p-format (pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
@@ -122,7 +127,7 @@
                            element-type))
          (inferred-lisp-type (cond (element-type nil)
                                    (initial-contents (scan-for-type
-                                                      initial-contents))                                   
+                                                      initial-contents))
                                    (t (error "If element-type is not specified the initial-contents must be provided"))))
          (element-type (if inferred-lisp-type
                            (lisp->gl-type inferred-lisp-type)
@@ -178,7 +183,7 @@
 ;;                subscripts dimensions))))
 
 (defun row-index-correct
-    (indices dimensions 
+    (indices dimensions
      &optional (row-size (car (last dimensions)))
        (element-size 1))
   (let ((indices (reverse indices))
@@ -410,7 +415,7 @@ for any array of, up to and including, 4 dimensions."
                                                      (list start))))
               (error "Invalid subseq start or end for c-array"))))))
 
-(defmethod gl-pull-1 ((object c-array))
+(defmethod pull1-g ((object c-array))
   (let* ((dimensions (dimensions object))
          (depth      (1- (length dimensions)))
          (indices    (make-list (1+ depth))))
@@ -418,14 +423,14 @@ for any array of, up to and including, 4 dimensions."
                (loop for j below (nth n dimensions)
                      do (setf (nth n indices) j)
                      collect (if (= n depth)
-                                 (gl-pull-1 (%aref-c object indices))
+                                 (pull1-g (%aref-c object indices))
                                (recurse (1+ n))))))
       (recurse 0))))
 
-(defmethod gl-pull ((object c-array))
-  (gl-pull-1 object))
+(defmethod pull-g ((object c-array))
+  (pull1-g object))
 
-(defmethod gl-push (object (destination c-array))
+(defmethod push-g (object (destination c-array))
   (unless (or (listp object) (arrayp object))
     (error "Can only push arrays or lists to c-arrays"))
   (c-populate destination object))
@@ -462,7 +467,7 @@ for any array of, up to and including, 4 dimensions."
   (defun find-suitable-type (datum)
     (if (typep datum 'structure-object)
         (list (type-of datum) (type-of datum) nil)
-        (find-if (lambda (x) (typep datum x)) states :key #'first)))  
+        (find-if (lambda (x) (typep datum x)) states :key #'first)))
   (defun lisp->gl-type (x)
     (second (find x states :key #'first :test #'equal))))
 
