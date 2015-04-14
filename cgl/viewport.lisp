@@ -28,7 +28,10 @@
                '((viewport *viewport-size* *viewport-origin*))))))
 
 
-(defmacro with-fbo-viewport ((fbo &optional (attachment :color0)) &body body)
-  `(let ((tex-array (attachment ,fbo ,attachment)))
-     (with-viewport ((dimensions tex-array))
-       ,@body)))
+(defmacro with-fbo-viewport ((fbo &optional (attachment :color-0)) &body body)
+  (let ((tex-array (gensym "tx-array"))
+        (size (gensym "size")))
+    `(let* ((,tex-array (attachment ,fbo ,attachment))
+            (,size (dimensions ,tex-array)))
+       (with-viewport ((v! (first ,size) (second ,size)))
+         ,@body))))

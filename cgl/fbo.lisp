@@ -27,30 +27,32 @@
 ;;--------------------------------------------------------------
 ;; Macro to write the helper func and compiler macro
 
-(defmacro case-attachment (var keyform col-count 
+(defmacro case-attachment (var keyform col-count
                            &optional (for-macro nil) (setf nil))
   (assert (not (and for-macro setf)))
   `(case ,keyform
      ,@(loop :for i :below col-count :collect
           (let* ((s (symb-package :cgl :%fbo-attachment-color- i) )
                  (tmp (if for-macro
-                          (cons 'list `(',s ,var)) 
+                          (cons 'list `(',s ,var))
                           (if setf
                               `(setf (,s ,var) value)
                               `(,s ,var)))))
             `((,(kwd :color-attachment i)
                 ,(kwd :color-attachment- i)
                 ,(kwd :color- i)
+                ,(kwd :color i)
                 ,(kwd :c i)
                 ,(kwd :c- i)
                 ,@(when (= i 0) '(:c)))
               ,tmp)))
-     ((:depth-attachment :depth :d) 
+     ((:depth-attachment :depth :d)
       ,(if for-macro
            `(list '%fbo-attachment-depth ,var)
            (if setf
                `(setf (%fbo-attachment-depth ,var) value)
-               `(%fbo-attachment-depth ,var))))))
+               `(%fbo-attachment-depth ,var))))
+     (otherwise (error "invalid fbo attachment pattern ~s" ',keyform))))
 
 (define-compiler-macro attachment (&whole whole fbo attachment-name)
   (if (keywordp attachment-name)
@@ -65,7 +67,7 @@
 
 
 
-(defmacro %symb-attachment (keyform col-count)  
+(defmacro %symb-attachment (keyform col-count)
   `(case ,keyform
      ,@(loop :for i :below col-count :collect
           `((,(kwd :color-attachment i)
@@ -85,7 +87,7 @@
     `(let* ((,expr ,expression)
             ,@(loop :for var-form :in attachment-bindings :collect
                  (if (listp var-form)
-                     `(,(second var-form) (attachment ,expr 
+                     `(,(second var-form) (attachment ,expr
                                                       ,(kwd (first var-form))))
                      `(,var-form (attachment ,expr ,(kwd var-form))))))
        ,@body)))
@@ -150,7 +152,7 @@
 (defun fbo-attach (fbo tex-array attachment &optional (target :draw-framebuffer))
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target can be '(:framebuffer :read-framebuffer :draw-framebuffer)
-  (with-bind-fbo (fbo target)
+  (with-bind-fbo (fbo target t :color-0 nil)
     ;; FBOs have the following attachment points:
     ;; GL_COLOR_ATTACHMENTi: These are an implementation-dependent number of
     ;; attachment points. You can query GL_MAX_COLOR_ATTACHMENTS to determine the
@@ -224,7 +226,7 @@
           ;; going down the mipmap hierarchy.
           ;; A single mipmap level of a 2D Array Texture is a layered image, where
           ;; the number of layers is the array size.
-          (:texture-2d-array (progn                               
+          (:texture-2d-array (progn
                                (setf (attachment fbo attachment) tex-array)
                                (%gl:framebuffer-texture-layer
                                 target attachment tex-id mipmap-level layer-num)))
@@ -270,11 +272,11 @@
 
 (defun fbo-gen-attach (fbo &rest args)
   "The are 3 kinds of valid argument:
-   - keyword naming an attachment: This makes a new texture at 
+   - keyword naming an attachment: This makes a new texture at
      +default-resolution+ and attaches
-   - (keyword camera) creates a new texture at the framesize of 
+   - (keyword camera) creates a new texture at the framesize of
      the camera and attaches it to attachment named by keyword
-   - (keyword vector2): creates a new texture sized by the vector 
+   - (keyword vector2): creates a new texture sized by the vector
      and attaches it to attachment named by keyword
    - (keyword texarray): attaches the tex-array
    - (keyword texture): attaches the root tex-array"
@@ -292,7 +294,7 @@
 (defun %gen-textures (pattern)
   (assert (or (listp pattern) (keywordp pattern)))
   (cond
-    ((keywordp pattern) 
+    ((keywordp pattern)
      (texref
       (make-texture nil :dimensions +default-resolution+
                     :internal-format (%get-default-texture-format pattern))))
@@ -300,14 +302,15 @@
      (texref
       (make-texture nil :dimensions (let ((fs (cepl-camera:frame-size (second pattern))))
                                       (list (aref fs 0) (aref fs 1)))
-                    :internal-format (%get-default-texture-format 
+                    :internal-format (%get-default-texture-format
                                       (first pattern)))))
     ((typep (second pattern) 'gpu-array-t) (second pattern))
-    ((typep (second pattern) 'gl-texture) (texref (second pattern)))))
+    ((typep (second pattern) 'gl-texture) (texref (second pattern)))
+    (t (error "Invalid pattern in %gen-textures"))))
 
-(defun %get-default-texture-format (attachment) 
+(defun %get-default-texture-format (attachment)
   (assert (keywordp attachment))
-  (let ((char (char-downcase (aref (symbol-name attachment) 0))))    
+  (let ((char (char-downcase (aref (symbol-name attachment) 0))))
     (cond ((char= char #\c) :rgba8)
           ((char= char #\d) :depth-component16)
           (t (error "No default texture format for attachment: ~s" attachment)))))

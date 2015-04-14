@@ -54,7 +54,8 @@
            :deferror
            :split-seq-by-seq
            :print-mem
-           :map-hash))
+           :map-hash
+           :last1))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)

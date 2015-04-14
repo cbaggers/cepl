@@ -13,7 +13,6 @@
 (defparameter *bird-tex2* nil)
 (defparameter *wib-tex* nil)
 (defparameter *loop-pos* 0.0)
-(defparameter *geom-fbo* nil)
 
 (defclass entity ()
   ((gstream :initform nil :initarg :gstream :accessor gstream)
@@ -51,134 +50,111 @@
   (setf *bird* (load-model "./bird/bird.3ds" 1 (v! pi 0 0)))
   (setf *bird-tex* (devil-helper:load-image-to-texture "./water.jpg"))
   (setf *bird-tex2* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
-  (setf *wib-tex* (devil-helper:load-image-to-texture "./brick/col.png"))
-  (setf *geom-fbo* (make-fbo :c)))
+  (setf *wib-tex* (devil-helper:load-image-to-texture "./brick/col.png")))
 
 ;;--------------------------------------------------------------
 ;; drawing
 
-(defpipeline first-pass
-    ((data g-pnt) &uniform (model-to-cam :mat4)
-     (cam-to-clip :mat4) (model-space-light-pos :vec3)
-     (light-intensity :vec4) (ambient-intensity :vec4)
-     (textur :sampler-2d))
-  (:vertex (setf gl-position
-                 (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0))))
-           (out model-space-pos (cgl:pos data))
-           (out vertex-normal (cgl:norm data))
-           (out diffuse-color (v! 0.4 0 0.4 0))
-           (out tex-coord (cgl:tex data)))
-  (:fragment (let* ((light-dir (normalize (- model-space-light-pos
-                                             model-space-pos)))
-                    (cos-ang-incidence
-                     (clamp (dot (normalize vertex-normal) light-dir)
-                            0.0 1.0))
-                    (t-col (texture textur (v! (x tex-coord)
-                                            (- (y tex-coord))))))
-               (out output-color (+ (* t-col light-intensity
-                                       cos-ang-incidence)
-                                    (* t-col ambient-intensity)))))
-  (:post-compile (reshape cgl:+default-resolution+)))
+(defun-g standard-vert ((data g-pnt) &uniform (model-to-cam :mat4)
+                        (cam-to-clip :mat4))
+  (values (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0)))
+          (cgl:pos data)
+          (cgl:norm data)
+          (v! 0.4 0 0.4 0)
+          (cgl:tex data)))
 
-(defpipeline hmm-pass
-    ((data g-pnt) &uniform (model-to-cam :mat4)
-     (cam-to-clip :mat4) (model-space-light-pos :vec3)
-     (light-intensity :vec4) (ambient-intensity :vec4)
-     (textur :sampler-2d) (bird-tex :sampler-2d) (fbo-tex :sampler-2d)
-     (loop :float))
-  (:vertex (setf gl-position
-                 (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0))))
-           (out tex-coord (cgl:tex data)))
-  (:fragment (let* ((o (v! (mod (* loop 0.05) 1.0)
-                           (mod (* loop 0.05) 1.0)))
-                    (ot (* (s~ (texture textur (+ o tex-coord)) :xy) 0.1))
-                    (a (texture textur tex-coord))
-                    (b (+ (v! (* (x gl-frag-coord) (/ 1.0 640.0))
-                              (* (y gl-frag-coord) (/ 1.0 480.0)))
-                          (* (s~ a :xy) 0.020)
-                          ot))
-                    (c (texture fbo-tex b))
-                    (r (* (texture bird-tex (* (v! 1 -1) tex-coord)) 0.1))
-                    (f (+ r c)))
-               (out output-color f)))
-  (:post-compile (reshape cgl:+default-resolution+)))
+(defun-g standard-frag
+    ((model-space-pos :vec3) (vertex-normal :vec3) (diffuse-color :vec4)
+     (tex-coord :vec2)
+     &uniform (model-space-light-pos :vec3) (light-intensity :vec4)
+     (ambient-intensity :vec4) (textur :sampler-2d))
+  (let* ((light-dir (normalize (- model-space-light-pos
+                                  model-space-pos)))
+         (cos-ang-incidence
+          (clamp (dot (normalize vertex-normal) light-dir) 0.0 1.0))
+         (t-col (texture textur (v! (x tex-coord) (- (y tex-coord))))))
+    (+ (* t-col light-intensity cos-ang-incidence)
+       (* t-col ambient-intensity))))
+
+(defun-g refract-vert ((data g-pnt) &uniform (model-to-cam :mat4)
+                       (cam-to-clip :mat4))
+  (values (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0)))
+          (cgl:tex data)))
+
+(defun-g refract-frag ((tex-coord :vec2) &uniform (textur :sampler-2d)
+                       (bird-tex :sampler-2d) (fbo-tex :sampler-2d)
+                       (loop :float))
+  (let* ((o (v! (mod (* loop 0.05) 1.0)
+                (mod (* loop 0.05) 1.0)))
+         (ot (* (s~ (texture textur (+ o tex-coord)) :xy) 0.1))
+         (a (texture textur tex-coord))
+         (b (+ (v! (* (x gl-frag-coord) (/ 1.0 640.0))
+                   (* (y gl-frag-coord) (/ 1.0 480.0)))
+               (* (s~ a :xy) 0.020)
+               ot))
+         (c (texture fbo-tex b))
+         (r (* (texture bird-tex (* (v! 1 -1) tex-coord)) 0.1)))
+    (+ r c)))
+
+(defpipeline standard-pass () (g-> #'standard-vert #'standard-frag))
+(defpipeline refract-pass () (g-> #'refract-vert #'refract-frag))
+
+(defpipeline two-pass (&uniform model-to-cam2)
+    (g-> (scene (gl:clear :color-buffer-bit :depth-buffer-bit)
+                (standard-pass :light-intensity (v! 1 1 1 0)
+                               :textur *bird-tex*
+                               :ambient-intensity (v! 0.2 0.2 0.2 1.0)))
+         (nil (refract-pass :model-to-cam model-to-cam2
+                            :fbo-tex (slot-value (cgl::attachment scene :c)
+                                                 'cgl::texture)
+                            :textur *bird-tex*
+                            :bird-tex *bird-tex2*
+                            :loop *loop-pos*)))
+  :fbos (scene :c))
+
+(defun draw ()
+  (gl:clear-depth 1.0)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
+  (let* ((world-to-cam-matrix (world->cam *camera*))
+         (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
+                                      (v! (pos *light*) 1.0))))
+    (gmap #'standard-pass (gstream *wibble*)
+          :textur *bird-tex*
+          :ambient-intensity (v! 0.2 0.2 0.2 1.0)
+          :light-intensity (v! 1 1 1 0)
+          :model-space-light-pos (v:s~ cam-light-vec :xyz)
+          :model-to-cam (m4:m* world-to-cam-matrix (entity-matrix *wibble*)))
+    (gmap #'two-pass (gstream *wibble*) (gstream *bird*)
+          :model-to-cam (m4:m* world-to-cam-matrix (entity-matrix *wibble*))
+          :model-to-cam2 (m4:m* world-to-cam-matrix (entity-matrix *bird*))
+          :model-space-light-pos (v:s~ cam-light-vec :xyz)))
+  (cgl:update-display))
+
+
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list (m4:translation (pos entity))
                         (m4:rotation-from-euler (rot entity))
                         (m4:scale (scale entity)))))
 
-(defun draw ()
-  (gl:clear-depth 1.0)
-  (gl:clear :color-buffer-bit :depth-buffer-bit)
-
-  (let* ((world-to-cam-matrix (world->cam *camera*))
-         (model-to-cam-matrix (m4:m* world-to-cam-matrix
-                                     (entity-matrix *wibble*)))
-         ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
-         (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
-                                      (v! (pos *light*) 1.0))))
-    (gmap #'first-pass (gstream *wibble*)
-          :model-space-light-pos (v:s~ cam-light-vec :xyz)
-          :light-intensity (v! 1 1 1 0)
-          :model-to-cam model-to-cam-matrix
-          ;; :normal-model-to-cam normal-to-cam-matrix
-          :ambient-intensity (v! 0.3 0.3 0.3 1.0)
-          :textur *wib-tex*))
-  (let ((fbo
-         (with-bind-fbo (*geom-fbo*)
-           (gl:clear :color-buffer-bit :depth-buffer-bit)
-           (let* ((world-to-cam-matrix (world->cam *camera*))
-                  (model-to-cam-matrix (m4:m* world-to-cam-matrix
-                                              (entity-matrix *wibble*)))
-                  ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
-                  (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
-                                               (v! (pos *light*) 1.0))))
-             (gmap #'first-pass (gstream *wibble*)
-                   :model-space-light-pos (v:s~ cam-light-vec :xyz)
-                   :light-intensity (v! 1 1 1 0)
-                   :model-to-cam model-to-cam-matrix
-                   ;; :normal-model-to-cam normal-to-cam-matrix
-                   :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-                   :textur *wib-tex*)))))
-    (let* ((world-to-cam-matrix (world->cam *camera*))
-           (model-to-cam-matrix (m4:m* world-to-cam-matrix
-                                       (entity-matrix *bird*)))
-           ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
-           (cam-light-vec (m4:mcol*vec4 (entity-matrix *bird*)
-                                        (v! (pos *light*) 1.0))))
-      (with-fbo-slots (c) fbo
-          (gmap #'hmm-pass (gstream *bird*)
-                :model-space-light-pos (v:s~ cam-light-vec :xyz)
-                :light-intensity (v! 1 1 1 0)
-                :model-to-cam model-to-cam-matrix
-                ;; :normal-model-to-cam normal-to-cam-matrix
-                :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-                :textur *bird-tex* :fbo-tex (slot-value c 'cgl::texture)
-                :bird-tex *bird-tex2*
-                :loop *loop-pos*))))
-  (gl:flush)
-  (cgl:update-display))
-
 ;;--------------------------------------------------------------
 ;; controls
 
-(evt:observe (evt.sdl:*mouse*)
+(evt:observe (|mouse|)
   (when (typep e 'evt.sdl:mouse-motion)
-    (when (eq (evt.sdl:button-state evt.sdl::*mouse* :left) :down)
+    (when (eq (evt.sdl:button-state |mouse| :left) :down)
       (let ((d (evt.sdl:delta e)))
         (cond
-          ((eq (evt.sdl:key-state evt.sdl:*keyboard* :lctrl) :down)
+          ((eq (evt.sdl:key-state |keyboard| :lctrl) :down)
            (v3:incf (pos *bird*) (v! (/ (v:x d) 480.0)
                                      (/ (v:y d) -640.0)
                                      0)))
-          ((eq (evt.sdl:key-state evt.sdl:*keyboard* :lshift) :down)
+          ((eq (evt.sdl:key-state |keyboard| :lshift) :down)
            (v3:incf (pos *bird*) (v! 0 0 (/ (v:y d) 300.0))))
           (t
            (setf (rot *bird*) (v:+ (rot *bird*) (v! (/ (v:y d) -100.0)
                                                     (/ (v:x d) -100.0)
-                                                    0.0)))))
-        ))))
+                                                    0.0)))))))))
 
 ;;--------------------------------------------------------------
 ;; window
@@ -186,12 +162,12 @@
 (defun reshape (&optional (new-dimensions cgl:+default-resolution+))
   (setf (frame-size *camera*) new-dimensions)
   (apply #'gl:viewport 0 0 new-dimensions)
-  (first-pass nil :cam-to-clip (cam->clip *camera*))
-  (hmm-pass nil :cam-to-clip (cam->clip *camera*)))
+  (standard-pass nil :cam-to-clip (cam->clip *camera*))
+  (refract-pass nil :cam-to-clip (cam->clip *camera*)))
 
-(evt:observe (evt.sdl::*window*)
-  (when (eq (evt.sdl:action e) :resized)
-    (reshape (evt.sdl:vec e))))
+(observe (|window|)
+  (when (eq (cepl.events.sdl:action e) :resized)
+    (reshape (vec e))))
 
 ;;--------------------------------------------------------------
 ;; main loop
@@ -204,9 +180,11 @@
        (continuable
          (step-demo)
          (update-swank))))
-  (defun stop-demo () (setf running nil))
-  (evt:observe (evt.sdl::*sys*)
-    (setf running (typep e 'evt.sdl:will-quit))))
+  (defun stop-demo () (setf running nil)))
+
+(evt:observe (|sys|)
+  (when (typep e 'evt.sdl:will-quit)
+    (stop-demo)))
 
 (defun step-demo ()
   (evt.sdl:pump-events)

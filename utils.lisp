@@ -381,3 +381,5 @@
                (rplacd tail (setq tail (list (funcall function k v))))))
       (maphash #'do-it hash-table))
     (cdr head)))
+
+(defun last1 (list) (car (last list)))

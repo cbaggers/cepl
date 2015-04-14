@@ -1,17 +1,20 @@
 (in-package :cgl)
 (named-readtables:in-readtable fn_::fn_lambda)
 
+(defun parse-compose-gpipe-args (args)
+  `(,(mapcar (fn+ #'car #'last1) args)
+    nil))
+
 (defun %defpipeline-compose (name args options gpipe-args)
   (assert (and (every #'symbolp args) (not (some #'keywordp args))))
   (destructuring-bind (args &optional user-uniforms)
       (split-sequence :&uniform args :test #'string-equal)
     (assoc-bind ((fbos :fbos) (context :context) (post :post))
         (parse-options options)
-      (destructuring-bind (pass-forms gpipe-context)
-          (parse-gpipe-args gpipe-args)
+      (destructuring-bind (pipeline-names gpipe-context)
+          (parse-compose-gpipe-args gpipe-args)
         (assert (not (and gpipe-context context)))
-        (let* ((pipeline-names (mapcar #'second pass-forms))
-               (uniform-args (make-pipeline-uniform-args
+        (let* ((uniform-args (make-pipeline-uniform-args
                               pipeline-names
                               (get-overidden-uniforms gpipe-args)))
                (uniforms
@@ -61,16 +64,23 @@
     `(setf ,name (make-fbo ,@make-fbo-args))))
 
 (defun make-gmap-pass (pass-form stream-args)
-  (destructuring-bind (fbo call-form &optional options) pass-form
-    (declare (ignore options))
-    (let* ((func-name (first call-form))
+  (destructuring-bind (fbo &rest call-forms) pass-form
+    (let* ((lisp-forms (butlast call-forms))
+           (call-form (last1 call-forms))
+           (func-name (first call-form))
            (gmap-form `(gmap #',func-name ,@stream-args ,@(rest call-form)
                              ,@(mapcat #'%uniform-arg-to-call
                                        (get-pipeline-uniforms func-name
                                                               call-form)))))
       (if fbo
-          `(with-bind-fbo (,@(listify fbo)) ,gmap-form)
-          gmap-form))))
+          `(with-bind-fbo (,@(listify fbo))
+             ,@lisp-forms
+             ,gmap-form)
+          (if lisp-forms
+              `(progn
+                 ,@lisp-forms
+                 ,gmap-form)
+              gmap-form)))))
 
 (defun %uniform-arg-to-call (uniform-arg)
   `(,(kwd (first uniform-arg)) ,(first uniform-arg)))
@@ -95,7 +105,7 @@
   (mapcar #'pipeline-spec pipeline-names))
 
 (defun get-overidden-uniforms (pass-forms)
-  (let* ((forms (mapcar #'second pass-forms)))
+  (let* ((forms (mapcar #'last1 pass-forms)))
     (mapcar λ(remove-if-not #'keywordp %) forms)))
 
 ;;{TODO} handle equivalent types

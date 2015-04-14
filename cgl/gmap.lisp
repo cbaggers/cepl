@@ -42,7 +42,8 @@
 ;; A: I hope not, I think given correct settings the compiler may be able
 ;;    to optimize away this let as nothing uses it.
 (defmacro with-bind-fbo ((fbo &optional (target :framebuffer) (unbind t)
-                              (attachment-for-size :color0)) &body body)
+                              (attachment-for-size :color-0) (with-viewport t))
+                         &body body)
   (labels ((inject-gmap-form (fbo-symbol)
              (subst fbo-symbol 'a
                     ``(%gmap a ,pipeline-func ,stream ,uniforms))))
@@ -52,7 +53,9 @@
          (let* ((,once-fbo ,fbo)
                 (%current-fbo ,once-fbo))
            (%bind-fbo ,once-fbo ,target)
-           (prog1 (with-fbo-viewport (,once-fbo ,attachment-for-size)
+           (prog1 (,@(if with-viewport
+                         `(with-fbo-viewport (,once-fbo ,attachment-for-size))
+                         '(progn))
                     ,@body)
              (when ,unbind (%unbind-fbo))))))))
 
