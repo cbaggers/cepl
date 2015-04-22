@@ -15,7 +15,7 @@
          (peaks 9.0)
          (dif (- tex-coord centre))
          (dist (dot dif dif))
-         (height (/ (+ (sin (+ count (* dist peaks)))
+         (height (/ (+ (cos (+ count (* dist peaks)))
                        (sin (- count (* (y tex-coord) peaks))))
                     2.0))
          (rip-offset (* (* (normalize dif) rip-size) height damp)))
@@ -28,7 +28,7 @@
   (evt.sdl:pump-events)
   (update-swank)
   (cgl:clear :color-buffer-bit)
-  (gmap #'ripple-with-wobble *v-stream*
+  (map-g #'ripple-with-wobble *v-stream*
         :texture *texture* :count *count* :pos-offset (v! 0 0 0 0))
   (incf *count* 0.08)
   (cgl:update-display))
@@ -54,3 +54,5 @@
       (loop :while running :do (continuable (step-demo)))))
   (defun stop-demo () (setf running nil)))
 (evt:observe (|sys|) (when (typep e 'evt.sdl:will-quit) (stop-demo)))
+(observe (|window|))
+(evt:observe (evt:|mouse|))

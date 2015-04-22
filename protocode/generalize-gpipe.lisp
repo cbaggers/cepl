@@ -62,7 +62,7 @@
 
 
 (with-bind-fbo (*geom-fbo*)
-  (gmap #'first-pass (gstream *wibble*)
+  (map-g #'first-pass (gstream *wibble*)
         :model-space-light-pos (v:s~ cam-light-vec :xyz)
         :light-intensity (v! 1 1 1 0)
         :model-to-cam model-to-cam-matrix
@@ -70,7 +70,7 @@
         :ambient-intensity (v! 0.2 0.2 0.2 1.0)
         :textur *wib-tex*))
 (with-fbo-slots (c) *geom-fbo*
-  (gmap #'hmm-pass (gstream *bird*)
+  (map-g #'hmm-pass (gstream *bird*)
         :model-space-light-pos (v:s~ cam-light-vec :xyz)
         :light-intensity (v! 1 1 1 0)
         :model-to-cam model-to-cam-matrix

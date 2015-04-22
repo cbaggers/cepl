@@ -37,7 +37,7 @@
     (cons name (append in-args uniforms))))
 
 (defun make-change-signature (stage-names)
-  (mapcar λ(with-gpu-func-spec (gpu-func-spec % t)
+  (mapcar λ(with-gpu-func-spec (gpu-func-spec _ t)
              (list in-args uniforms body))
           stage-names))
 
@@ -46,7 +46,7 @@
     (let ((uniform-assigners (stages->uniform-assigners stage-names pass-key)))
       `(let ((prog-id nil)
              ,@(let ((u-lets (mapcat #'first uniform-assigners)))
-                    (mapcar λ`(,(first %) -1) u-lets)))
+                    (mapcar λ`(,(first _) -1) u-lets)))
          ,@body))))
 
 (defmacro def-pipeline-invalidate (name)
@@ -110,7 +110,7 @@
          (use-program prog-id)
          ,@u-uploads
          (when stream
-           (error "Pipelines do not take a stream directly, the stream must be gmap'd over the pipeline"))
+           (error "Pipelines do not take a stream directly, the stream must be map-g'd over the pipeline"))
          (use-program 0)
          stream))))
 
@@ -153,7 +153,7 @@
 ;;;---------------;;;
 
 (defun stages->uniform-assigners (stage-names &optional pass-key)
-  (mapcar λ(make-arg-assigners % pass-key) (aggregate-uniforms stage-names)))
+  (mapcar λ(make-arg-assigners _ pass-key) (aggregate-uniforms stage-names)))
 
 (let ((cached-data nil)
       (cached-key -1))
@@ -281,8 +281,8 @@
                        ,@(loop :for x :in (second eq-spec) :collect
                             `(setf (,(first x) ,local-var)
                                    ,(subst arg-name '% (second x)
-                                           :test λ(when (symbolp %1)
-                                                    (string-equal % %1)))))))))
+                                           :test λ(when (symbolp _1)
+                                                    (string-equal _ _1)))))))))
     (make-assigner
      :let-forms (cons `(,local-var (autowrap:alloc ',varjo-type-name))
                       (let-forms assigner))

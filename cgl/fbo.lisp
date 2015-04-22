@@ -94,7 +94,7 @@
 
 ;; (with-fbo-slots (c0 d)
 ;;     (with-bind-fbo (fbo :framebuffer)
-;;       (gmap #'prog-1 stream :tex tx))
+;;       (map-g #'prog-1 stream :tex tx))
 ;;   (print c0)
 ;;   (print d))
 

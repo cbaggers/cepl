@@ -9,13 +9,13 @@
   (defun function-formp (x) x))
 
 ;; This macro runs the shader pipeline and returns the currently bound fbo
-;; This with-bind-fbo macro will shadow the gmap macro in order to use the
+;; This with-bind-fbo macro will shadow the map-g macro in order to use the
 ;; hard-bind-fbo argument and optimize the return of the current-fbo
 ;;
-;; We have to make %current-fbo special so that we can have a gmap inside
+;; We have to make %current-fbo special so that we can have a map-g inside
 ;; a function that was called from inside a block in which with-bind-fbo
 ;; was used.
-(defmacro %gmap (hard-bind-fbo pipeline-func stream uniforms)
+(defmacro %map-g (hard-bind-fbo pipeline-func stream uniforms)
   (assert (function-formp pipeline-func))
   (let ((pipeline-name (second pipeline-func)))
     `(progn
@@ -26,13 +26,13 @@
 
 
 ;; This is a passthrough macro that exists so that with-bind-fbo can shadow it
-(defmacro gmap (pipeline-func stream &rest uniforms)
-  `(%gmap nil ,pipeline-func ,stream ,uniforms))
+(defmacro map-g (pipeline-func stream &rest uniforms)
+  `(%map-g nil ,pipeline-func ,stream ,uniforms))
 
 ;; Ok got some macro madness going on here so I want to be clear what
 ;; is happening. Here are some facts
 ;;
-;; - Gmap runs a pipeline with the input and then returns a framebuffer
+;; - Map-G runs a pipeline with the input and then returns a framebuffer
 ;; - the current framebuffer is in the %current-fbo var.
 ;;
 ;; Given that, if we are inside a with-bind-fbo, we know what the the
@@ -44,12 +44,12 @@
 (defmacro with-bind-fbo ((fbo &optional (target :framebuffer) (unbind t)
                               (attachment-for-size :color-0) (with-viewport t))
                          &body body)
-  (labels ((inject-gmap-form (fbo-symbol)
+  (labels ((inject-map-g-form (fbo-symbol)
              (subst fbo-symbol 'a
-                    ``(%gmap a ,pipeline-func ,stream ,uniforms))))
+                    ``(%map-g a ,pipeline-func ,stream ,uniforms))))
     (let ((once-fbo (gensym "once-fbo")))
-      `(macrolet ((gmap (pipeline-func stream &rest uniforms)
-                    ,(inject-gmap-form once-fbo)))
+      `(macrolet ((map-g (pipeline-func stream &rest uniforms)
+                    ,(inject-map-g-form once-fbo)))
          (let* ((,once-fbo ,fbo)
                 (%current-fbo ,once-fbo))
            (%bind-fbo ,once-fbo ,target)
@@ -62,16 +62,16 @@
 
 ;; EXAMPLES
 ;;
-;; (gmap #'test a :tex tx)
+;; (map-g #'test a :tex tx)
 ;;
 ;; (macroexpand-dammit:macroexpand-dammit
 ;;       '(with-bind-fbo (some-fbo :framebuffer)
-;;         (let ((jam (gmap #'test a :tex tx)))
+;;         (let ((jam (map-g #'test a :tex tx)))
 ;;           (print jam))))
 
 
-;; Deliberatly innefficient very of gmap that will create a temporary stream
+;; Deliberatly innefficient very of map-g that will create a temporary stream
 ;; if you give dont give it one. It will even create a temporary gpu-array
 ;; to hold the data, MADNESS!
-;; (defmacro gmap~ (pipeline-func stream &rest uniforms)
+;; (defmacro map-g~ (pipeline-func stream &rest uniforms)
 ;;   ())

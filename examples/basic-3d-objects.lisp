@@ -51,7 +51,7 @@
                     :dimensions 24 :element-type :unsigned-short))
          (e-stream (make-buffer-stream verts :index-array indicies)))
     (setf *entities*
-          (mapcar λ(make-entity :pos % :e-stream e-stream)
+          (mapcar λ(make-entity :pos _ :e-stream e-stream)
                   (list (v!  0 0 -20) (v!  0 0 -25) (v!  5 0 -20)
                         (v!  0 0 -15) (v! -5 0 -20))))))
 
@@ -60,7 +60,7 @@
                                    (m4:rotation-from-euler (rot entity))
                                    (m4:scale (scale entity))))))
     (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
-    (gmap #'render-widgets (e-stream entity) :model->world m2w)))
+    (map-g #'render-widgets (e-stream entity) :model->world m2w)))
 
 (defun step-demo ()
   (evt.sdl:pump-events)

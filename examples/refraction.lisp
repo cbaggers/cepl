@@ -102,7 +102,7 @@
 (defpipeline two-pass (&uniform model-to-cam2)
     (g-> (scene (gl:clear :color-buffer-bit :depth-buffer-bit)
                 (standard-pass :light-intensity (v! 1 1 1 0)
-                               :textur *bird-tex*
+                               :textur *wib-tex*
                                :ambient-intensity (v! 0.2 0.2 0.2 1.0)))
          (nil (refract-pass :model-to-cam model-to-cam2
                             :fbo-tex (slot-value (cgl::attachment scene :c)
@@ -118,13 +118,13 @@
   (let* ((world-to-cam-matrix (world->cam *camera*))
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
                                       (v! (pos *light*) 1.0))))
-    (gmap #'standard-pass (gstream *wibble*)
-          :textur *bird-tex*
+    (map-g #'standard-pass (gstream *wibble*)
+          :textur *wib-tex*
           :ambient-intensity (v! 0.2 0.2 0.2 1.0)
           :light-intensity (v! 1 1 1 0)
           :model-space-light-pos (v:s~ cam-light-vec :xyz)
           :model-to-cam (m4:m* world-to-cam-matrix (entity-matrix *wibble*)))
-    (gmap #'two-pass (gstream *wibble*) (gstream *bird*)
+    (map-g #'two-pass (gstream *wibble*) (gstream *bird*)
           :model-to-cam (m4:m* world-to-cam-matrix (entity-matrix *wibble*))
           :model-to-cam2 (m4:m* world-to-cam-matrix (entity-matrix *bird*))
           :model-space-light-pos (v:s~ cam-light-vec :xyz)))

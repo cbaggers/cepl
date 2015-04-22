@@ -89,7 +89,7 @@
          ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
                                       (v! (pos *light*) 1.0))))
-    (gmap #'frag-point-light (gstream *wibble*)
+    (map-g #'frag-point-light (gstream *wibble*)
           :model-space-light-pos (v:s~ cam-light-vec :xyz)
           :light-intensity (v! 1 1 1 0)
           :model-to-cam model-to-cam-matrix

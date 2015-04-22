@@ -383,3 +383,35 @@
     (cdr head)))
 
 (defun last1 (list) (car (last list)))
+
+
+(defmacro p-> (args &body stages)
+  "\(p-> \(1 2 3\) #'a #'b #'c #'d\)
+   Calls first function with args provided and uses result as
+   arguments for next function. Uses multiple-value-call so you
+   can use (values) to specify complex lambda-args."
+  (let ((stages (reverse stages)))
+    (when stages
+      (let ((stage (first stages)))
+        (if (eq 'function (first stage))
+            `(multiple-value-call ,stage
+               ,(if (rest stages)
+                    `(p-> ,args ,@(reverse (rest stages)))
+                    (if (listp args)
+                        `(values ,@args)
+                        `(values-list ,args))))
+            (destructuring-bind (check-func &rest steps) stage
+              `(let ((rest (multiple-value-list
+                            ,(if (rest stages)
+                                 `(p-> ,args ,@(reverse (rest stages)))
+                                 (if (listp args)
+                                     `(values ,@args)
+                                     `(values-list ,args))))))
+                 (let ((args rest))
+                   (let ((passes nil))
+                     (loop :do (let ((results (multiple-value-list
+                                               (p-> ,@(cons 'args steps)))))
+                                 (setf args results)
+                                 (push results passes))
+                        :until (,check-func (first passes) (second passes))))
+                   (values-list args)))))))))

@@ -77,6 +77,6 @@
   (update-swank)
   (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (gmap #'raymarcher *vertex-stream* :loop *loop* :eye-pos (v! 0 0 -5))
+  (map-g #'raymarcher *vertex-stream* :loop *loop* :eye-pos (v! 0 0 -5))
   (gl:flush)
   (cgl:update-display))

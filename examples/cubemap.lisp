@@ -1,7 +1,7 @@
 (in-package :cepl)
 
 (defvar tx)
-(defvar strm)
+(defvar strm nil)
 (defvar cam)
 
 (defun-g vert ((vert :vec3) &uniform (mod-clip :mat4))
@@ -28,9 +28,9 @@
                                    :retain-arrays t)))
   (setf cam (make-camera)))
 
-(defun step ()
+(defun step-demo ()
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (gmap #'skybox strm :tex tx :mod-clip (m4:m* (cam->clip cam) (world->cam cam)))
+  (map-g #'skybox strm :tex tx :mod-clip (m4:m* (cam->clip cam) (world->cam cam)))
   (cgl:update-display))
 
 (defvar mouse-ang (v! 0 0))
@@ -47,4 +47,4 @@
 (defun reshape (&optional (dims cgl:+default-resolution+))
   (apply #'gl:viewport 0 0 dims))
 
-(live:main-loop :init init :step step)
+(live:main-loop :init init :step step-demo)

@@ -15,7 +15,7 @@
    (data :initarg :data :reader data :type list)))
 
 (defclass mouse-scroll (sdl-event)
-  ((source-id :initform 0 :reader id
+  ((source-id :initarg :source-id :initform 0 :reader id
               :type fixnum)
    (vec :initarg :vec :reader vec
         :type (simple-array (single-float 3)))))
@@ -194,7 +194,7 @@
 
 (defun key-state-lookup (num) (aref #(:up :down) num))
 
-(defun mouse-button-lookup (num) (aref #(:0 :left :middle :right) num))
+(defun mouse-button-lookup (num) (aref #(:0 :left :middle :right :other0 :other1 :other2 :other3 :other4) num))
 
 (defun mouse-button-state-lookup (num) (aref #(:up :down) num))
 
