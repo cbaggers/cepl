@@ -33,9 +33,10 @@
   nil)
 
 (defun %test-compile (in-args uniforms context body depends-on)
-  (let ((body (labels-form-from-func-names depends-on body)))
-    (varjo::translate in-args uniforms (union '(:vertex :fragment :330) context)
-                      body)))
+  (when (every #'gpu-func-spec depends-on)
+    (let ((body (labels-form-from-func-names depends-on body)))
+      (varjo::translate in-args uniforms (union '(:vertex :fragment :330) context)
+                        body))))
 
 ;;--------------------------------------------------
 
@@ -48,6 +49,9 @@
     (assert (%gpu-func-compiles-in-some-context spec))
     (let ((depends-on (%find-gpu-functions-depended-on spec)))
       (assert (not (%find-recursion name depends-on)))
+      (when (every #'gpu-func-spec depends-on)
+        (%update-gpu-function-data (%serialize-gpu-func-spec spec)
+                                   depends-on))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
@@ -62,11 +66,8 @@
   (mapcar #'%recompile-gpu-function (funcs-that-use-this-func name))
   ;; and recompile pipelines that depend on name
   (mapcar λ(let ((recompile-pipeline-name (recompile-name %)))
-             (when (symbol-function recompile-pipeline-name)
-               (handler-case
-                   (funcall (symbol-function recompile-pipeline-name))
-                 (undefined-function () (format t "~%%recompile-gpu-functions: no function ~a exists" recompile-pipeline-name))
-                 (error () nil))))
+             (when (fboundp recompile-pipeline-name)
+               (funcall (symbol-function recompile-pipeline-name))))
           (pipelines-that-use-this-func name)))
 
 

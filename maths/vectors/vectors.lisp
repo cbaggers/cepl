@@ -117,7 +117,7 @@
 
 ;;----------------------------------------------------------------
 
-(defun v/= (&rest vecs)
+(defun /= (&rest vecs)
   "Returns either t if the two vectors are equal.
    Otherwise it returns nil."
   (let ((vec-a (first vecs)))

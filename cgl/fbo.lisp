@@ -110,7 +110,8 @@
 (defun make-fbos (&optional (count 1))
   (unless (> count 0)
     (error "Attempting to create invalid number of framebuffers: ~s" count))
-  (%make-fbo :id (gl:gen-framebuffers 1)))
+  (mapcar (lambda (x) (%make-fbo :id x))
+          (gl:gen-framebuffers count)))
 
 (defun %delete-fbo (fbo)
   (gl:delete-framebuffers (listify (%fbo-id fbo))))

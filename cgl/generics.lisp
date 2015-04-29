@@ -8,7 +8,7 @@
 (defgeneric dimensions (object))
 (defgeneric backed-by (object))
 (defgeneric make-vao (gpu-arrays &optional index-array))
-(defgeneric pixel-format-of (type))
+(defgeneric lisp-type->pixel-format (type))
 
 (defmethod pull-g ((object t)) object)
 (defmethod pull1-g ((object t)) object)

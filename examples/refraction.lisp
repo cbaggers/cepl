@@ -96,13 +96,16 @@
          (r (* (texture bird-tex (* (v! 1 -1) tex-coord)) 0.1)))
     (+ r c)))
 
-(defpipeline standard-pass () (g-> #'standard-vert #'standard-frag))
-(defpipeline refract-pass () (g-> #'refract-vert #'refract-frag))
+(defpipeline standard-pass () (g-> #'standard-vert #'standard-frag)
+  :post #'reshape)
+
+(defpipeline refract-pass () (g-> #'refract-vert #'refract-frag)
+  :post #'reshape)
 
 (defpipeline two-pass (&uniform model-to-cam2)
     (g-> (scene (gl:clear :color-buffer-bit :depth-buffer-bit)
                 (standard-pass :light-intensity (v! 1 1 1 0)
-                               :textur *bird-tex*
+                               :textur *wib-tex*
                                :ambient-intensity (v! 0.2 0.2 0.2 1.0)))
          (nil (refract-pass :model-to-cam model-to-cam2
                             :fbo-tex (slot-value (cgl::attachment scene :c)
@@ -119,7 +122,7 @@
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
                                       (v! (pos *light*) 1.0))))
     (gmap #'standard-pass (gstream *wibble*)
-          :textur *bird-tex*
+          :textur *wib-tex*
           :ambient-intensity (v! 0.2 0.2 0.2 1.0)
           :light-intensity (v! 1 1 1 0)
           :model-space-light-pos (v:s~ cam-light-vec :xyz)

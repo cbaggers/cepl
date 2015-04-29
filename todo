@@ -1,3 +1,10 @@
+
+Add *-from-id functions.
+They will call gl's gl_is_* and if true then will make a cepl
+wrapper for that type
+
+-----
+
 * check qualifiers are valid in varjo
 * inherit qualifiers from previous stage
 * uniforms saying arg incompatible for basic changes...merge 'em

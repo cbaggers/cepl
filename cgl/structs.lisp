@@ -337,7 +337,7 @@
       (let ((components (utils:kwd (subseq "RGBA" 0 len))))
         (when (and (loop for i in slots always (eql (s-type i) type))
                    (valid-pixel-format-p components type t nil))
-          `(defmethod pixel-format-of ((type (eql ',name)))
+          `(defmethod lisp-type->pixel-format ((type (eql ',name)))
              (pixel-format ,components ',type)))))))
 
 ;;------------------------------------------------------------

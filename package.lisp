@@ -275,9 +275,14 @@
            :update-display
            :valid-pixel-format-p
            :pixel-format
+           :lisp-type->pixel-format
+           :pixel-format->lisp-type
+           :pixel-format->internal-format
+           :internal-format->pixel-format
+           :internal-format->lisp-type
+           :lisp-type->internal-format
            :internal-format-from-pixel-format
            :pixel-format-from-internal-format
-           :pixel-format-of
            :describe-pixel-format
            :defstruct-g
            :c-array-byte-size
@@ -541,8 +546,13 @@
   (:import-from :cepl-gl
                 :cls
                 :pixel-format
-                :pixel-format-of
                 :describe-pixel-format
+                :lisp-type->pixel-format
+                :pixel-format->lisp-type
+                :pixel-format->internal-format
+                :internal-format->pixel-format
+                :internal-format->lisp-type
+                :lisp-type->internal-format
                 :with-instances
                 :defpipeline
                 :g->
@@ -666,7 +676,12 @@
            ;;---
            :cls
            :pixel-format
-           :pixel-format-of
+           :lisp-type->pixel-format
+           :pixel-format->lisp-type
+           :pixel-format->internal-format
+           :internal-format->pixel-format
+           :internal-format->lisp-type
+           :lisp-type->internal-format
            :describe-pixel-format
            :with-instances
            :defpipeline

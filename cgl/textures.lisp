@@ -208,7 +208,7 @@
   ;; if no format or type
   (when (or (and format (not type)) (and type (not format)))
     (error "cannot only specify either format or type, must be both or neither"))
-  (let* ((element-pf (pixel-format-of c-array))
+  (let* ((element-pf (lisp-type->pixel-format c-array))
          (compiled-pf (compile-pixel-format element-pf))
          (pix-format (or format (first compiled-pf)))
          (pix-type (or type (second compiled-pf))))
@@ -288,6 +288,7 @@
 
 (defparameter *mipmap-max-levels* 20)
 (defparameter *valid-texture-storage-options*
+  ;; mipmap layers cubes dimensions multisample buffer rectangle
   '(((t nil nil 1 nil nil nil) :texture-1d)
     ((t nil nil 2 nil nil nil) :texture-2d)
     ((t nil nil 3 nil nil nil) :texture-3d)
@@ -301,34 +302,6 @@
     ((nil nil nil 3 nil t nil) :texture-buffer)
     ((nil nil nil 2 t nil nil) :texture-2d-multisample)
     ((nil t nil 2 t nil nil) :texture-2d-multisample-array)))
-
-;; {TODO} Ok so the internal format bit is crap. Fix this
-;; [TODO] Add shadow samplers
-;; [TODO] does cl-opengl use multisample instead of ms?
-(defun calc-sampler-type (texture-type internal-format)
-  "Makes the keyword that names the sampler-type for the given texture-type and format"
-  (utils:kwd
-   (case internal-format
-     ((:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm
-           :r3-g3-b2 :rgb4 :rgb5 :rgb8 :rgb8-snorm :rgb10 :rgb12
-           :rgb16-snorm :rgba2 :rgba4
-           :rgb5-a1 :rgba8 :rgba8-snorm :rgb10-a2 :rgba12 :rgba16 :srgb8
-           :srgb8-alpha8 :r16f :rg16f :rgb16f :rgba16f :r32f :rg32f :rgb32f
-           :rgba32f :r11f-g11f-b10f :rgb9-e5
-           :depth-component16 :depth-component24 :depth-component32) "")
-     ((:r8i :r16i :r32i :rg8i :rg16i :rg32i :rgb8i :rgb16i :rgb32i :rgba8i
-            :rgba32i :rgba16i) :i)
-     ((:rg8ui :rg16ui :rg32ui :rgb8ui :rgb16ui :rgb32ui :rgba8ui :rgba16ui
-              :rgba32ui :rgb10-a2ui :r8ui :r16ui :r32ui) :ui)
-     (t (error "internal-format unknown")))
-   (case texture-type
-     (:texture-1d :sampler-1d) (:texture-2d :sampler-2d) (:texture-3d :sampler-3d)
-     (:texture-cube-map :sampler-cube) (:texture-rectangle :sampler-2drect)
-     (:texture-1d-array :sampler-1d-array) (:texture-2d-array :sampler-2d-array)
-     (:texture-cube-map-array :sampler-cube-array) (:texture-buffer :sampler-buffer)
-     (:texture-2d-multisample :sampler-2d-ms)
-     (:texture-2d-multisample-array :sampler-2d-ms-array)
-     (t (error "texture type not known")))))
 
 ;;------------------------------------------------------------
 
@@ -360,6 +333,13 @@
                                 (eql b5 a5) (eql b6 a6) (eql b7 a7)))))))
 
 ;;------------------------------------------------------------
+;; {TODO} Texture sizes have a limit based on the GL
+;;        implementation. For 1D and 2D textures (and any texture types that
+;;        use similar dimensionality, like cubemaps) the max size of either
+;;        dimension is GL_MAX_TEXTURE_SIZE​. For array textures, the maximum
+;;        array length is GL_MAX_ARRAY_TEXTURE_LAYERS​. For 3D textures, no
+;;        dimension can be greater than GL_MAX_3D_TEXTURE_SIZE​ in size.
+
 
 ;; [TODO] how does mipmap-max affect this
 ;; [TODO] what is the max layercount?
@@ -411,7 +391,7 @@
   (let* ((dimensions (%texture-dimensions initial-contents dimensions)))
     ;; check for power of two - handle or warn
     (let* ((pixel-format (when initial-contents
-                           (pixel-format-of initial-contents)))
+                           (lisp-type->pixel-format initial-contents)))
            (internal-format
             (if internal-format
                 (if (pixel-format-p internal-format)
@@ -473,7 +453,7 @@
                                element-format)))
          (element-type (if initial-contents
                            (element-type initial-contents)
-                           (internal-format->element-type internal-format)))
+                           (internal-format->lisp-type internal-format)))
          (texture-type (establish-texture-type
                         (length dimensions)
                         nil nil nil (every #'po2p dimensions) nil t nil)))
@@ -508,7 +488,7 @@
 (defun %find-tex-internal-format (element-format)
   (if (pixel-format-p element-format)
       (pixel-format->internal-format element-format)
-      (let ((pfo (pixel-format-of element-format)))
+      (let ((pfo (lisp-type->pixel-format element-format)))
         (if pfo
             (pixel-format->internal-format pfo)
             element-format))))
@@ -574,7 +554,7 @@
 ;;        case being just do what we do below
 (defmethod push-g ((object c-array) (destination gpu-array-t))
   (destructuring-bind (pformat ptype)
-      (compile-pixel-format (pixel-format-of object))
+      (compile-pixel-format (lisp-type->pixel-format object))
     (upload-c-array-to-gpuarray-t destination object
                                   pformat ptype)))
 

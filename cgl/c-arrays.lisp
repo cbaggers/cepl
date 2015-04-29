@@ -66,7 +66,7 @@
     (error "dimensions are not optional when making an array from a pointer"))
   (let* ((p-format (pixel-format-p element-type))
          (element-type2 (if p-format
-                            (pixel-format->element-type element-type)
+                            (pixel-format->lisp-type element-type)
                             element-type))
          (elem-size (gl-type-size element-type2)))
     (multiple-value-bind (byte-size row-byte-size)
@@ -123,7 +123,7 @@
          (p-format (pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
-                           (pixel-format->element-type element-type)
+                           (pixel-format->lisp-type element-type)
                            element-type))
          (inferred-lisp-type (cond (element-type nil)
                                    (initial-contents (scan-for-type
@@ -435,9 +435,9 @@ for any array of, up to and including, 4 dimensions."
     (error "Can only push arrays or lists to c-arrays"))
   (c-populate destination object))
 
-(defmethod pixel-format-of ((type c-array))
+(defmethod lisp-type->pixel-format ((type c-array))
   (or (element-pixel-format type)
-      (pixel-format-of (element-type type))))
+      (lisp-type->pixel-format (element-type type))))
 
 ;;------------------------------------------------------------
 

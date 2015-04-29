@@ -11,6 +11,10 @@
         (assert (not (and gpipe-context context)))
         (let ((context (or context gpipe-context))
               (stage-names (mapcar #'cdr stage-pairs)))
+          (update-pipeline-spec
+           (make-shader-pipeline-spec
+            name stage-names (make-change-signature stage-names)
+            (or gpipe-context context)))
           `(progn
              (let-pipeline-vars (,stage-pairs ,pass-key)
                (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -77,7 +81,7 @@
          (force-bind-vao 0)
          (force-use-program 0)
          (setf prog-id prog-id)
-         ,(when post `(funcall ,post))
+         ,(when post `(funcall ,(car post)))
          prog-id))))
 
 (defmacro def-dispatch-func (name stage-pairs context pass-key)

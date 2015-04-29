@@ -3,7 +3,7 @@
 ;; {TODO} need to add info for autowrap
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *extra-primitive-types* 
+  (defparameter *extra-primitive-types*
     '((:vec2 2 :float)
       (:vec3 3 :float)
       (:vec4 4 :float)
@@ -32,12 +32,12 @@
       (:byte-vec3 3 :byte)
       (:byte-vec4 4 :byte))))
 
-(define-foreign-type cgl-byte () 
+(define-foreign-type cgl-byte ()
   ()
   (:actual-type :char)
   (:simple-parser :byte))
 
-(define-foreign-type cgl-ubyte () 
+(define-foreign-type cgl-ubyte ()
   ()
   (:actual-type :uchar)
   (:simple-parser :ubyte))
@@ -54,31 +54,31 @@
                (:ubyte 'fixnum)
                (t (error "How is there a cffi type with components of ~a" f-type)))))
     (let* ((new-user-types *extra-primitive-types*))
-      `(progn 
+      `(progn
          ,@(loop :for (type len comp-type) :in (append new-user-types)
               :collect
               (let* ((name (utils:symb 'cgl- type))
                      (type-name (utils:symb name '-type))
-                     (comp-bit-size (* 8 (cffi:foreign-type-size comp-type)))) 
+                     (comp-bit-size (* 8 (cffi:foreign-type-size comp-type))))
                 `(progn
                    (cffi:defcstruct ,name (components ,comp-type :count ,len))
-                   (define-foreign-type ,type-name () 
+                   (define-foreign-type ,type-name ()
                      ()
                      (:actual-type :struct ,name)
                      (:simple-parser ,type))
                    (defmethod translate-from-foreign (ptr (type ,type-name))
                      (make-array ,len :element-type ',(get-lisp-type comp-type)
                                  :initial-contents
-                                 (list ,@(loop :for j :below len :collect 
+                                 (list ,@(loop :for j :below len :collect
                                             `(mem-aref ptr ,comp-type ,j)))))
                    (defmethod translate-into-foreign-memory
                        (value (type ,type-name) pointer)
-                     ,@(loop :for j :below len :collect 
+                     ,@(loop :for j :below len :collect
                           `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))
                    ,(when (< len 5)
                           (let ((components (utils:kwd (subseq "RGBA" 0 len))))
                             (when (cgl::valid-pixel-format-p components comp-type t nil)
-                              `(defmethod cgl::pixel-format-of ((comp-type (eql ,type)))
+                              `(defmethod cgl::lisp-type->pixel-format ((comp-type (eql ,type)))
                                  (cgl::pixel-format ,components ',comp-type)))))
                    (autowrap:define-foreign-record
                        ',name
