@@ -22,7 +22,6 @@
 (defun step-demo ()
   (evt:pump-events)
   (update-swank)
-  (incf *loop* 0.1)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (map-g #'prog-1 *stream*)
   (cgl:update-display))
