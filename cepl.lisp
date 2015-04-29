@@ -42,7 +42,7 @@
         (setf cgl::*immutable-available* nil)))
     t))
 
-(defun repl (&optional (width 640) (height 480))
+(defun repl (&optional (width 320) (height 240))
   (setf cgl::+default-resolution+ (list width height))
   (if (sdl2:init)
       (progn #+(and ccl darwin)

@@ -11,7 +11,7 @@
 
 (defun draw ()
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (gmap #'prog-1 *stream*)
+  (map-g #'prog-1 *stream*)
   (gl:flush)
   (cgl:update-display))
 

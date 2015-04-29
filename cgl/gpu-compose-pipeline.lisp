@@ -56,31 +56,31 @@
        ,@(mapcar #'fbo-comp-form fbos)
        (setf initd t)
        ,(when post `(funcall ,post)))
-     ,@(mapcar #'make-gmap-pass gpipe-args
+     ,@(mapcar #'make-map-g-pass gpipe-args
                (%number-args (collate-args pipeline-names)))))
 
 (defun fbo-comp-form (form)
   (destructuring-bind (name . make-fbo-args) form
     `(setf ,name (make-fbo ,@make-fbo-args))))
 
-(defun make-gmap-pass (pass-form stream-args)
+(defun make-map-g-pass (pass-form stream-args)
   (destructuring-bind (fbo &rest call-forms) pass-form
     (let* ((lisp-forms (butlast call-forms))
            (call-form (last1 call-forms))
            (func-name (first call-form))
-           (gmap-form `(gmap #',func-name ,@stream-args ,@(rest call-form)
+           (map-g-form `(map-g #',func-name ,@stream-args ,@(rest call-form)
                              ,@(mapcat #'%uniform-arg-to-call
                                        (get-pipeline-uniforms func-name
                                                               call-form)))))
       (if fbo
           `(with-bind-fbo (,@(listify fbo))
              ,@lisp-forms
-             ,gmap-form)
+             ,map-g-form)
           (if lisp-forms
               `(progn
                  ,@lisp-forms
-                 ,gmap-form)
-              gmap-form)))))
+                 ,map-g-form)
+              map-g-form)))))
 
 (defun %uniform-arg-to-call (uniform-arg)
   `(,(kwd (first uniform-arg)) ,(first uniform-arg)))
@@ -90,7 +90,7 @@
 (defmacro def-compose-dummy (name args uniforms)
   `(defun ,name (,@args ,@(when uniforms `(&key ,@uniforms)))
      (declare (ignorable ,@uniforms ,@args))
-     (error "Pipelines do not take a stream directly, the stream must be gmap'd over the pipeline")))
+     (error "Pipelines do not take a stream directly, the stream must be map-g'd over the pipeline")))
 
 ;;--------------------------------------------------
 
@@ -106,7 +106,7 @@
 
 (defun get-overidden-uniforms (pass-forms)
   (let* ((forms (mapcar #'last1 pass-forms)))
-    (mapcar λ(remove-if-not #'keywordp %) forms)))
+    (mapcar λ(remove-if-not #'keywordp _) forms)))
 
 ;;{TODO} handle equivalent types
 (defun make-pipeline-uniform-args (pipeline-names overriden-uniforms)
@@ -127,7 +127,7 @@
     ((pipeline-spec shader-pipeline-spec) call-form)
   (let ((result (aggregate-uniforms (slot-value pipeline-spec 'stages)))
         (overriden-uniforms (remove-if-not #'keywordp call-form)))
-    (remove-if λ(member % overriden-uniforms
+    (remove-if λ(member _ overriden-uniforms
                         :test (lambda (x y) (string-equal (car x) y)))
                result)))
 
@@ -135,6 +135,6 @@
     ((pipeline-spec compose-pipeline-spec) call-form)
   (let ((result (slot-value pipeline-spec 'uniforms))
         (overriden-uniforms (remove-if-not #'keywordp call-form)))
-    (remove-if λ(member % overriden-uniforms
+    (remove-if λ(member _ overriden-uniforms
                         :test (lambda (x y) (string-equal (car x) y)))
                result)))

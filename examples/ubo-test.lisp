@@ -22,7 +22,7 @@
   (evt:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit)
-  (gmap #'prog-1 *stream*) ;; :hmm *ubo*
+  (map-g #'prog-1 *stream*) ;; :hmm *ubo*
   (cgl:update-display))
 
 (defun run-demo ()

@@ -364,7 +364,7 @@
     ((and initial-contents cubes)
      (assert (= 6 (length initial-contents)))
      (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
-            (dim (if (every λ(equal target-dim (dimensions %)) initial-contents)
+            (dim (if (every λ(equal target-dim (dimensions _)) initial-contents)
                      target-dim
                      (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
                             initial-contents)))
@@ -577,6 +577,9 @@
           (%gl:get-tex-image texture-type level-num format type
                              (pointer c-array))))
       c-array)))
+
+(defmethod pull1-g ((object gl-texture))
+  (pull1-g (texref object)))
 
 ;; [TODO] With-c-array is wrong
 (defmethod pull-g ((object gpu-array-t))

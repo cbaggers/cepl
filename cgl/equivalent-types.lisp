@@ -43,7 +43,7 @@
 ;;   (position (pos %))
 ;;   (normal (norm %)))
 (defun det-exisiting-type (lisp-type-name varjo-type &rest slots)
-  (assert (every λ(= (length %) 2) slots))
+  (assert (every λ(= (length _) 2) slots))
   `(progn
      (eval-when (:compile-toplevel :load-toplevel :execute)
        (setf (equiv-spec ,lisp-type-name) ,(list varjo-type slots)))
@@ -66,12 +66,12 @@
          (setf (equiv-spec ',lisp-type-name)
                ',(list alt-type
                        (mapcar λ(destructuring-bind (name _ form &key accessor)
-                                    %
+                                    _
                                   (declare (ignore _))
                                   (list (or accessor name) form)) slots))))
        (defstruct-g ,alt-type
            (:constructor nil :varjo-constructor ,lisp-type-name :populate nil
                          :attribs nil :readers nil :pull-push nil)
-         ,@(mapcar λ(append (subseq % 0 2) (subseq % 3))
+         ,@(mapcar λ(append (subseq _ 0 2) (subseq _ 3))
                    slots))
        ',lisp-type-name)))

@@ -55,7 +55,8 @@
            :split-seq-by-seq
            :print-mem
            :map-hash
-           :last1))
+           :last1
+           :p->))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
@@ -373,7 +374,7 @@
            :clear-depth
            :flush
            ;;----------
-           :gmap
+           :map-g
            ;;----------
            :make-fbo
            :make-fbos
@@ -583,7 +584,7 @@
                 :g-pntc
                 :texref
                 ;;---
-                :gmap
+                :map-g
                 ;;---
                 :make-fbo
                 :make-fbos
@@ -600,7 +601,8 @@
                 :ubo-index)
   (:import-from :utils
                 :deferror
-                :print-mem)
+                :print-mem
+                :p->)
   (:export :repl
            :make-project
            ;----
@@ -711,7 +713,7 @@
            :g-pnt
            :g-pntc
            :texref
-           :gmap
+           :map-g
            :make-fbo
            :make-fbos
            :with-bind-fbo

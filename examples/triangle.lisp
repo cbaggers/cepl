@@ -6,11 +6,12 @@
 
 (defstruct-g pos-col ()
   (position :vec3 :accessor pos)
-  (color :vec4 :accessor col))
+  (color :vec4 :accessor col)
+  (tex :vec2))
 
 (defun-g vert ((vert pos-col))
   (values (v! (pos vert) 1.0)
-          (:smooth (col vert))))
+          (col vert)))
 
 (defun-g frag ((color :vec4))
   color)
@@ -21,16 +22,18 @@
 (defun step-demo ()
   (evt:pump-events)
   (update-swank)
-  (gl:clear :color-buffer-bit)
-  (gmap #'prog-1 *stream*)
+  (incf *loop* 0.1)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
+  (map-g #'prog-1 *stream*)
   (cgl:update-display))
 
 (defun run-demo ()
   (setf *running* t
-        *array* (make-gpu-array (list (list (v!  0.5 -0.36 0) (v! 0 1 0 1))
-                                      (list (v!    0   0.5 0) (v! 1 0 0 1))
-                                      (list (v! -0.5 -0.36 0) (v! 0 0 1 1)))
-                                :element-type 'pos-col)
+        *array* (make-gpu-array
+                 (list (list (v!  0.5 -0.36 0) (v! 0 1 0 1) (v! -1 1))
+                       (list (v!    0   0.5 0) (v! 1 0 0 1) (v! 1 1))
+                       (list (v! -0.5 -0.36 0) (v! 0 0 1 1) (v! 0 -1)))
+                 :element-type 'pos-col)
    *stream* (make-buffer-stream *array*))
   (loop :while *running* :do (continuable (step-demo))))
 
