@@ -67,9 +67,9 @@
        (let* ((compiled-stages (%varjo-compile-as-pipeline ',stage-pairs))
               (stages-objects (mapcar #'%gl-make-shader-from-varjo
                                       compiled-stages))
-              (prog-id (request-program-id-for ',name))
               (image-unit -1))
          (declare (ignorable image-unit))
+         (setf prog-id (request-program-id-for ',name))
          (format t ,(format nil "~&; uploading (~a ...)~&" name))
          (link-shaders stages-objects prog-id compiled-stages)
          (when +cache-last-pipeline-compile-result+
@@ -80,7 +80,6 @@
          (unbind-buffer)
          (force-bind-vao 0)
          (force-use-program 0)
-         (setf prog-id prog-id)
          ,(when post `(funcall ,(car post)))
          prog-id))))
 

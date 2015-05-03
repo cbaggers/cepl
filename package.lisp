@@ -517,7 +517,6 @@
            :timestamp
            :vec
            :data
-
            :button-state
            :key-state))
 

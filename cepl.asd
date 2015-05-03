@@ -65,6 +65,7 @@
                (:file "cgl/ubo")
                (:file "cgl/misc")
                (:file "cgl/textures")
+               (:file "cgl/samplers")
                (:file "cgl/gmap")
                (:file "cgl/fbo")
                (:file "cgl/default-data")

@@ -161,29 +161,67 @@
      (gl::sampler-parameter (%sampler-id sampler) :texture-lod-bias value))
     ((typep sampler 'gl-texture)
      (with-texture-bound (sampler)
-       (gl::tex-parameter (texture-id sampler) :texture-lod-bias value)))
-    (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler))))
+       (gl::tex-parameter (texture-type sampler) :texture-lod-bias value)))
+    (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
+  sampler)
 
 (defun min-lod (sampler) (%sampler-min-lod sampler))
 (defun (setf min-lod) (value sampler)
-  (setf (%sampler-min-lod sampler) value)
-  (gl::sampler-parameter (%sampler-id sampler) :texture-min-lod value))
+  (cond
+    ((sampler-p sampler)
+     (setf (%sampler-min-lod sampler) value)
+     (gl::sampler-parameter (%sampler-id sampler) :texture-min-lod value))
+    ((typep sampler 'gl-texture)
+     (with-texture-bound (sampler)
+       (gl::tex-parameter (texture-type sampler) :texture-min-lod value)))
+    (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
+  sampler)
 
 (defun max-lod (sampler) (%sampler-max-lod sampler))
 (defun (setf max-lod) (value sampler)
-  (setf (%sampler-max-lod sampler) value)
-  (gl::sampler-parameter (%sampler-id sampler) :texture-max-lod value))
+  (cond
+    ((sampler-p sampler)
+     (setf (%sampler-max-lod sampler) value)
+     (gl::sampler-parameter (%sampler-id sampler) :texture-max-lod value))
+    ((typep sampler 'gl-texture)
+     (with-texture-bound (sampler)
+       (gl::tex-parameter (texture-type sampler) :texture-max-lod value)))
+    (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
+  sampler)
 
 (defun magnify-filter (sampler) (%sampler-magnify-filter sampler))
 (defun (setf magnify-filter) (value sampler)
   (assert (member value '(:linear :nearest)))
-  (setf (%sampler-magnify-filter sampler) value)
-  (gl::sampler-parameter (%sampler-id sampler) :texture-mag-filter value))
+  (cond
+    ((sampler-p sampler)
+     (setf (%sampler-magnify-filter sampler) value)
+     (gl::sampler-parameter (%sampler-id sampler) :texture-mag-filter value))
+    ((typep sampler 'gl-texture)
+     (with-texture-bound (sampler)
+       (gl::tex-parameter (texture-type sampler) :texture-mag-filter value)))
+    (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
+  sampler)
 
 (defun minify-filter (sampler) (%sampler-minify-filter sampler))
 (defun (setf minify-filter) (value sampler)
-  (setf (%sampler-minify-filter sampler) value)
-  (gl::sampler-parameter (%sampler-id sampler) :texture-min-filter value))
+  (cond
+    ((sampler-p sampler)
+     (when (member value '(:linear-mipmap-linear :nearest-mipmap-linear
+                           :linear-mipmap-nearest :nearest-mipmap-nearest))
+       (setf (%sampler-expects-mipmap sampler) t) )
+     (setf (%sampler-minify-filter sampler) value)
+     (gl::sampler-parameter (%sampler-id sampler) :texture-min-filter value))
+    ((typep sampler 'gl-texture)
+     (with-texture-bound (sampler)
+       (gl::tex-parameter (texture-type sampler) :texture-min-filter value)))
+    (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
+  sampler)
+
+;; remembering the gl names for the interpolation is a bit annoying so
+;; this function does it for you, alas because it takes two arguments it
+;; doesnt work well as a setf func.
+(defun set-minify-filter (sampler for-level &key (between-levels nil))
+  (setf (minify-filter sampler) (calc-minify-filter for-level between-levels)))
 
 (defun calc-minify-filter (for-level between-levels)
   (assert (and (member for-level '(:linear :nearest))
@@ -198,43 +236,53 @@
               :nearest-mipmap-nearest))
       for-level))
 
-(defun set-minify-filter (sampler for-level &key (between-levels nil))
-  (let ((filter (calc-minify-filter for-level between-levels)))
-    (setf (%sampler-expects-mipmap sampler) (not (null between-levels))
-          (minify-filter sampler) filter)))
-
-(defun wrap (sampler)
-  (%sampler-wrap sampler))
-
+(defun wrap (sampler) (%sampler-wrap sampler))
 (defun (setf wrap) (value sampler)
   (let ((options '(:repeat :mirrored-repeat :clamp-to-edge :clamp-to-border
                    :mirror-clamp-to-edge)))
     (assert (and (vectorp value) (every (lambda (x) (member x options)) value)))
-    (setf (%sampler-wrap sampler) value)
-    (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-s (aref value 0))
-    (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-t (aref value 1))
-    (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-r (aref value 2))))
+    (cond
+      ((sampler-p sampler)
+       (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-s (aref value 0))
+       (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-t (aref value 1))
+       (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-r (aref value 2))
+       (setf (%sampler-wrap sampler) value))
+      ((typep sampler 'gl-texture)
+       (with-texture-bound (sampler)
+         (gl::tex-parameter (texture-type sampler) :texture-wrap-s (aref value 0))
+         (gl::tex-parameter (texture-type sampler) :texture-wrap-t (aref value 1))
+         (gl::tex-parameter (texture-type sampler) :texture-wrap-r (aref value 2))))
+      (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler))))
+  sampler)
 
 (defun compare (sampler) (%sampler-compare sampler))
 (defun (setf compare) (value sampler)
-  (if value
-      (gl::sampler-parameter sampler :texture-compare-mode :none)
-      (progn
-        (gl::sampler-parameter sampler :texture-compare-mode
-                               :compare-ref-to-texture)
-        (gl::sampler-parameter
-         sampler :texture-compare-func
-         (case value
-           ((:never nil) :never)
-           ((:always t) :always)
-           ((:equal := =) :equal)
-           ((:not-equal :/= /=) :not-equal)
-           ((:less :< <) :less)
-           ((:greater :> >) :greater)
-           ((:lequal :<= <=) :lequal)
-           ((:gequal :>= >=) :gequal)
-           (otherwise (error "Invalid compare func for sampler ~a" value))))))
-  (setf (%sampler-compare sampler) value))
+  (let ((func (cond ((sampler-p sampler)
+                     (setf (%sampler-compare sampler) value)
+                     #'gl::sampler-parameter)
+                    ((typep sampler 'gl-texture)
+                     (lambda (sampler x y)
+                       (with-texture-bound (sampler)
+                         (gl::tex-parameter (texture-type sampler) x y))))
+                    (t (error "Invalid type ~a of ~a for lod-bias"
+                              (type-of sampler) sampler)))))
+    (if value
+        (funcall func sampler :texture-compare-mode :none)
+        (progn
+          (funcall func sampler :texture-compare-mode
+                   :compare-ref-to-texture)
+          (funcall func sampler :texture-compare-func
+                   (case value
+                     ((:never nil) :never)
+                     ((:always t) :always)
+                     ((:equal := =) :equal)
+                     ((:not-equal :/= /=) :not-equal)
+                     ((:less :< <) :less)
+                     ((:greater :> >) :greater)
+                     ((:lequal :<= <=) :lequal)
+                     ((:gequal :>= >=) :gequal)
+                     (otherwise (error "Invalid compare func for sampler ~a" value)))))))
+  sampler)
 
 
 ;; Sampling parameters

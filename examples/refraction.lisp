@@ -170,7 +170,7 @@
 
 (observe (|window|)
   (when (eq (cepl.events.sdl:action e) :resized)
-    (reshape (vec e))))
+    (reshape (cepl.events.sdl:data e))))
 
 ;;--------------------------------------------------------------
 ;; main loop
