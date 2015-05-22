@@ -42,7 +42,7 @@
 ;; A: I hope not, I think given correct settings the compiler may be able
 ;;    to optimize away this let as nothing uses it.
 (defmacro with-bind-fbo ((fbo &optional (target :framebuffer) (unbind t)
-                              (attachment-for-size :color-0) (with-viewport t))
+                              (attachment-for-size :c0) (with-viewport t))
                          &body body)
   (labels ((inject-map-g-form (fbo-symbol)
              (subst fbo-symbol 'a
@@ -53,6 +53,7 @@
          (let* ((,once-fbo ,fbo)
                 (%current-fbo ,once-fbo))
            (%bind-fbo ,once-fbo ,target)
+           (%fbo-draw-buffers ,once-fbo)
            (prog1 (,@(if with-viewport
                          `(with-fbo-viewport (,once-fbo ,attachment-for-size))
                          '(progn))
@@ -68,10 +69,3 @@
 ;;       '(with-bind-fbo (some-fbo :framebuffer)
 ;;         (let ((jam (map-g #'test a :tex tx)))
 ;;           (print jam))))
-
-
-;; Deliberatly innefficient very of map-g that will create a temporary stream
-;; if you give dont give it one. It will even create a temporary gpu-array
-;; to hold the data, MADNESS!
-;; (defmacro map-g~ (pipeline-func stream &rest uniforms)
-;;   ())

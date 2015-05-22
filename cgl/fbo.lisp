@@ -12,74 +12,118 @@
 (defstruct (fbo (:constructor %make-fbo)
                 (:conc-name %fbo-))
   (id -1 :type fixnum)
-  (attachment-color-0 nil :type (or null gpu-array-t))
-  (attachment-color-1 nil :type (or null gpu-array-t))
-  (attachment-color-2 nil :type (or null gpu-array-t))
-  (attachment-color-3 nil :type (or null gpu-array-t))
-  (attachment-color-4 nil :type (or null gpu-array-t))
-  (attachment-color-5 nil :type (or null gpu-array-t))
-  (attachment-color-6 nil :type (or null gpu-array-t))
-  (attachment-color-7 nil :type (or null gpu-array-t))
-  (attachment-color-8 nil :type (or null gpu-array-t))
-  (attachment-color-9 nil :type (or null gpu-array-t))
-  (attachment-depth nil :type (or null gpu-array-t)))
+  (attachment-color (make-array 16 :element-type 'attachment
+                                :initial-element (make-attachment))
+                    :type (array attachment *))
+  (draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count 16
+                                  :initial-element :none))
+  (attachment-depth nil :type (or null attachment)))
+
+(defstruct attachment
+  (gpu-array nil :type (or null gpu-array-t))
+  (override-blending nil :type boolean)
+  (source-rgb :one :type keyword)
+  (source-alpha :one :type keyword)
+  (destination-rgb :zero :type keyword)
+  (destination-alpha :zero :type keyword))
+
+(defun update-draw-buffer-map (fbo)
+  (let ((ptr (%fbo-draw-buffer-map fbo)))
+    (loop :for i :from 0 :for attachment :across (%fbo-attachment-color fbo) :do
+       (setf (mem-ref ptr 'cl-opengl-bindings:enum i)
+             (if (attachment-gpu-array attachment)
+                 (+ i 36064)
+                 :none)))))
+;;{TODO} magic-num is gl enum for color-attachment0
+;;       needs an assert somewhere
+
+(defmethod print-object ((object fbo) stream)
+  (format stream "#<FBO~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENTS ~a~]>"
+          (loop :for i :from 0 :for j :across (%fbo-attachment-color object)
+             :when (attachment-gpu-array j) :collect i)
+          (not (null (%fbo-attachment-depth object)))))
 
 ;;--------------------------------------------------------------
 ;; Macro to write the helper func and compiler macro
 
-(defmacro case-attachment (var keyform col-count
-                           &optional (for-macro nil) (setf nil))
-  (assert (not (and for-macro setf)))
-  `(case ,keyform
-     ,@(loop :for i :below col-count :collect
-          (let* ((s (symb-package :cgl :%fbo-attachment-color- i) )
-                 (tmp (if for-macro
-                          (cons 'list `(',s ,var))
-                          (if setf
-                              `(setf (,s ,var) value)
-                              `(,s ,var)))))
-            `((,(kwd :color-attachment i)
-                ,(kwd :color-attachment- i)
-                ,(kwd :color- i)
-                ,(kwd :color i)
-                ,(kwd :c i)
-                ,(kwd :c- i)
-                ,@(when (= i 0) '(:c)))
-              ,tmp)))
-     ((:depth-attachment :depth :d)
-      ,(if for-macro
-           `(list '%fbo-attachment-depth ,var)
-           (if setf
-               `(setf (%fbo-attachment-depth ,var) value)
-               `(%fbo-attachment-depth ,var))))
-     (otherwise (error "invalid fbo attachment pattern ~s" ',keyform))))
-
-(define-compiler-macro attachment (&whole whole fbo attachment-name)
-  (if (keywordp attachment-name)
-      (case-attachment fbo attachment-name 10 t)
-      whole))
+(defun replace-attachment-array (gpu-array attachment)
+  (make-attachment
+   :gpu-array gpu-array
+   :override-blending (attachment-override-blending attachment)
+   :source-rgb (attachment-source-rgb attachment)
+   :source-alpha (attachment-source-alpha attachment)
+   :destination-rgb (attachment-destination-rgb attachment)
+   :destination-alpha (attachment-destination-alpha attachment)))
 
 (defun attachment (fbo attachment-name)
-  (case-attachment fbo attachment-name 10))
+  (case attachment-name
+    (:d (%fbo-attachment-depth fbo))
+    ;; (:s (%fbo-attachment-depth fbo))
+    ;; (:ds (%fbo-attachment-depth fbo))
+    (otherwise (aref (%fbo-attachment-color fbo) attachment-name))))
 
 (defun (setf attachment) (value fbo attachment-name)
-  (case-attachment fbo attachment-name 10 nil t))
+  ;;{TODO} add support for :S and :ds
+  (typecase value
+    (gpu-array-t
+     (if (eq :d attachment-name)
+         (setf (%fbo-attachment-depth fbo)
+               (replace-attachment-array
+                value
+                (%fbo-attachment-depth fbo)))
+         (setf (aref (%fbo-attachment-color fbo) attachment-name)
+               (replace-attachment-array
+                value
+                (aref (%fbo-attachment-color fbo) attachment-name)))))
+    (attachment
+     (if (eq :d attachment-name)
+         (setf (%fbo-attachment-depth fbo) value)
+         (setf (aref (%fbo-attachment-color fbo) attachment-name)
+               value)))
+    (otherwise (error "invalid value from attachment ~a" value)))
+  (update-draw-buffer-map fbo)
+  value)
 
+(defparameter *attachments*
+  '(:color-attachment0 :color-attachment1 :color-attachment2 :color-attachment3
+    :color-attachment4 :color-attachment5 :color-attachment6 :color-attachment7
+    :color-attachment8 :color-attachment9 :color-attachment10
+    :color-attachment11 :color-attachment12 :color-attachment13
+    :color-attachment14 :color-attachment15))
 
+(let ((attachments (make-array 16 :element-type 'keyword
+                               :initial-contents *attachments*)))
+  (defun get-gl-attachment-keyword (x)
+    (cond ((eq x :c) :color-attachment0)
+          ((eq x :d) :depth-attachment)
+          ((eq x :s) :stencil-attachment)
+          ((eq x :ds) :depth-stencil-attachment)
+          (t (aref attachments x)))))
 
-(defmacro %symb-attachment (keyform col-count)
-  `(case ,keyform
-     ,@(loop :for i :below col-count :collect
-          `((,(kwd :color-attachment i)
-              ,(kwd :color-attachment- i)
-              ,(kwd :color- i)
-              ,(kwd :c i)
-              ,(kwd :c- i)
-              ,@(when (= i 0) '(:c)))
-            ,(kwd :color-attachment i)))
-     ((:depth-attachment :depth :d) :depth-attachment)))
+(define-compiler-macro get-gl-attachment-keyword (&whole whole x)
+  (cond ((numberp x) (nth x *attachments*))
+        ((eq x :c) :color-attachment0)
+        ((eq x :d) :depth-attachment)
+        ((eq x :s) :stencil-attachment)
+        ((eq x :ds) :depth-stencil-attachment)
+        (t whole)))
 
-(defun get-gl-attachment-keyword (x) (%symb-attachment x 10))
+(defun binding-shorthand (x)
+  (when (symbolp x)
+    (cond ((string-equal x "C") 0)
+          ((string-equal x "D") :d)
+          ((string-equal x "S") :s)
+          ((string-equal x "ds") :ds)
+          (t (let ((name (symbol-name x)))
+               (when (and (>= (length name) 2) (char= #\C (aref name 0)))
+                 (let ((num (parse-integer name :start 1)))
+                   (when (and (>= num 0) (< num 16)) num))))))))
+
+;;--------------------------------------------------------------
+
+(defun %fbo-draw-buffers (fbo)
+  (cl-opengl-bindings:draw-buffers 16 (%fbo-draw-buffer-map fbo)))
+
 ;;--------------------------------------------------------------
 
 (defmacro with-fbo-slots (attachment-bindings expression &body body)
@@ -89,8 +133,10 @@
                  (if (listp var-form)
                      `(,(second var-form) (attachment ,expr
                                                       ,(kwd (first var-form))))
-                     `(,var-form (attachment ,expr ,(kwd var-form))))))
+                     `(,var-form (attachment ,expr
+                                             ,(binding-shorthand var-form))))))
        ,@body)))
+
 
 ;; (with-fbo-slots (c0 d)
 ;;     (with-bind-fbo (fbo :framebuffer)
@@ -153,7 +199,7 @@
 (defun fbo-attach (fbo tex-array attachment &optional (target :draw-framebuffer))
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target can be '(:framebuffer :read-framebuffer :draw-framebuffer)
-  (with-bind-fbo (fbo target t :color-0 nil)
+  (with-bind-fbo (fbo target t :c0 nil)
     ;; FBOs have the following attachment points:
     ;; GL_COLOR_ATTACHMENTi: These are an implementation-dependent number of
     ;; attachment points. You can query GL_MAX_COLOR_ATTACHMENTS to determine the
@@ -284,7 +330,7 @@
   (let ((target (%extract-target (first args))))
     (mapcar (lambda (x y) (fbo-attach fbo x y target))
             (mapcar #'%gen-textures args)
-            (mapcar (lambda (x) (get-gl-attachment-keyword (first x)))
+            (mapcar (lambda (x) (binding-shorthand (first x)))
                     (mapcar #'listify args)))))
 
 (defun %extract-target (x)
@@ -318,9 +364,9 @@
 
 (defun attachment-compatible (attachment internal-format)
   (case attachment
-    (:depth-attachment (depth-formatp internal-format))
-    (:stencil-attachment (stencil-formatp internal-format))
-    (:depth-stencil-attachment (depth-stencil-formatp internal-format))
+    ((:d :depth-attachment) (depth-formatp internal-format))
+    ((:s :stencil-attachment) (stencil-formatp internal-format))
+    ((:ds :depth-stencil-attachment) (depth-stencil-formatp internal-format))
     (otherwise (color-renderable-formatp internal-format))))
 
 (defun fbo-detach (fbo attachment)

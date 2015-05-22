@@ -45,6 +45,23 @@
 
 ;;------------------------------------------------------------
 
+(defvar *on-context-funcall* nil)
+
+(cells:defobserver gl-initialized ((context gl-context) new)
+  (when (and new *on-context-funcall*)
+    (mapcar #'funcall *on-context-funcall*)
+    (setf *on-context-funcall* nil)))
+
+(defmacro def-g (var &optional val doc)
+  `(progn
+     (defparameter ,var nil ,doc)
+     (if cgl::*gl-context*
+         (setf ,var ,val)
+         (push (lambda () (setf ,var ,val))
+               cgl::*on-context-funcall*))))
+
+;;------------------------------------------------------------
+
 (defparameter *context-defaults* nil)
 
 (defun set-context-defaults (context)
