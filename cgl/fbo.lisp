@@ -37,18 +37,19 @@
         (cffi:foreign-bitfield-value
          '%gl::ClearBufferMask 
          `(:color-buffer-bit
-           ,@(list (and (attachment-gpu-array (%fbo-attachment-depth fbo))
-                        :depth-buffer-bit))
+           ,@(and (attachment-gpu-array (%fbo-attachment-depth fbo))
+                  '(:depth-buffer-bit))
            ;; ,@(list (and (attachment-gpu-array (%fbo-attachment-stencil object))
            ;;              :stencil-buffer-bit))
            ))))
 
+;;*attachments*
 (defun update-draw-buffer-map (fbo)
   (let ((ptr (%fbo-draw-buffer-map fbo)))
     (loop :for i :from 0 :for attachment :across (%fbo-attachment-color fbo) :do
-       (setf (mem-ref ptr 'cl-opengl-bindings:enum i)
+       (setf (mem-aref ptr 'cl-opengl-bindings:enum i)
              (if (attachment-gpu-array attachment)
-                 (+ i 36064)
+                 (nth i *attachments*)                 
                  :none)))))
 ;;{TODO} magic-num is gl enum for color-attachment0
 ;;       needs an assert somewhere
@@ -145,8 +146,8 @@
 ;;--------------------------------------------------------------
 
 (defun %fbo-draw-buffers (fbo)
-  (cl-opengl-bindings:draw-buffers (max-draw-buffers *gl-context*)
-                                   (%fbo-draw-buffer-map fbo)))
+  (%gl:draw-buffers (max-draw-buffers *gl-context*)
+                    (%fbo-draw-buffer-map fbo)))
 
 ;;--------------------------------------------------------------
 
@@ -440,4 +441,5 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defun clear-fbo (&optional fbo)
   (if (or (null fbo) (eq fbo *default-framebuffer*))
       (gl:clear :color-buffer-bit :depth-buffer-bit)
-      (gl:clear (%fbo-clear-mask fbo))))
+      (%gl:clear (%fbo-clear-mask fbo))))
+

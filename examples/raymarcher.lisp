@@ -25,10 +25,16 @@
        (length (max d 0.0)))))
 
 (defun-g thing2 ((p :vec3) (r :float) (l :float))
-  (+ (* 0.1 (+ (y p)
-               (sin (+ (* (+ (cos l) 8.0)
-                          (* 2 (x p))) l))))
+  (+ (* 0.2 (+ (y p)
+               (mod (cos (+ (* (+ (cos l) 8.0)
+                               (* 2 (x p))) l))
+                    (* 3 (sin l)))))
      (- (length p) r)))
+
+(defun-g ok ((p :vec3) (r :float) (l :float))
+  (+ (min (- (length (+ (v! 0.8 0 0) p)) r)
+          (- (length (+ (v! -0.8 0 0) p)) r))
+     (sin (+ l (* 4 (x p))))))
 
 (defun-g ray-vert ((position :vec4))
   (values position
@@ -40,9 +46,9 @@
          (e eye-pos)
          (output (v! 0.0 0.0 0.0)))
     (for (i 0) (< i 20) (++ i)
-         (let ((d (thing2 e 1.4 loop)))
+         (let ((d (ok e 1.4 loop)))
            (if (<= d 0.0)
-               (let ((norm (density-normal (thing2 e 1.4 loop) 0)))
+               (let ((norm (density-normal (ok e 1.4 loop) 0)))
                  (setf output (v! (+ 0.3 (* 0.5 (y norm)))
                                   0.0
                                   (+ 0.5 (* 0.2 (mix (y norm) (x norm)

@@ -103,12 +103,13 @@
   :post #'reshape)
 
 (defpipeline two-pass (&uniform model-to-cam2)
-    (g-> (scene (clear-fbo scene)
+    (g-> (scene (cgl::clear-fbo scene)
                 (standard-pass :light-intensity (v! 1 1 1 0)
                                :textur *wib-tex*
                                :ambient-intensity (v! 0.2 0.2 0.2 1.0)))
          (nil (refract-pass :model-to-cam model-to-cam2
-                            :fbo-tex (slot-value (cgl::attachment scene :c)
+                            :fbo-tex (slot-value (cgl::attachment-gpu-array
+                                                  (cgl::attachment scene 0))
                                                  'cgl::texture)
                             :textur *bird-tex*
                             :bird-tex *bird-tex2*
@@ -130,7 +131,8 @@
     (map-g #'two-pass (gstream *wibble*) (gstream *bird*)
           :model-to-cam (m4:m* world-to-cam-matrix (entity-matrix *wibble*))
           :model-to-cam2 (m4:m* world-to-cam-matrix (entity-matrix *bird*))
-          :model-space-light-pos (v:s~ cam-light-vec :xyz)))
+          :model-space-light-pos (v:s~ cam-light-vec :xyz))
+    )
   (cgl:update-display))
 
 

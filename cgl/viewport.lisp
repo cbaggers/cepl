@@ -2,9 +2,7 @@
 
 (defconstant +restorable-viewport+ t)
 (defparameter +default-resolution+ (list 640 480))
-
-(defparameter *viewport-size* (v! (first cgl:+default-resolution+)
-                                  (second cgl:+default-resolution+)))
+(defparameter *viewport-size* cgl:+default-resolution+)
 (defparameter *viewport-origin* (v! 0 0))
 
 
@@ -29,9 +27,7 @@
 
 
 (defmacro with-fbo-viewport ((fbo &optional (attachment :color-0)) &body body)
-  (let ((tex-array (gensym "tx-array"))
-        (size (gensym "size")))
-    `(let* ((,tex-array (attachment ,fbo ,attachment))
-            (,size (dimensions ,tex-array)))
-       (with-viewport ((v! (first ,size) (second ,size)))
+  (let ((tex-array (gensym "tx-array")))
+    `(let* ((,tex-array (attachment-gpu-array (attachment ,fbo ,attachment))))
+       (with-viewport ((dimensions ,tex-array))
          ,@body))))

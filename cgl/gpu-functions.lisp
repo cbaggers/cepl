@@ -62,14 +62,11 @@
 
 
 (defun %recompile-gpu-function (name)
-  (format t "#### RECOMPILE ~s ####" name)
   ;; recompile gpu-funcs that depends on name
   (mapcar #'%recompile-gpu-function (funcs-that-use-this-func name))
   ;; and recompile pipelines that depend on name
   (mapcar λ(let ((recompile-pipeline-name (recompile-name _)))
-             (format t "#### CHECK RECOMPILE PIPELINE ~s ####" _)
              (when (fboundp recompile-pipeline-name)
-               (format t "#### RECOMPILE PIPELINE ~s ####" _)
                (funcall (symbol-function recompile-pipeline-name))))
           (pipelines-that-use-this-func name)))
 
@@ -94,9 +91,7 @@
   (with-slots (name) spec
     (%unsubscibe-from-all name)
     (mapcar (fn_ #'%subscribe-to-gpu-func name) depends-on)
-    (setf (gpu-func-spec name) spec)
-    ;(%recompile-gpu-function name)
-    ))
+    (setf (gpu-func-spec name) spec)))
 
 (defun %gpu-func-compiles-in-some-context (spec)
   (declare (ignorable spec))

@@ -28,17 +28,19 @@
                (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
                (def-dummy-func ,name ,stage-pairs ,pass-key))
              (defun ,(recompile-name name) ()
-               (print ,(format nil "in ~s" (recompile-name name)))
-               (if (equal
-                    (slot-value (pipeline-spec ',name) 'change-spec)
-                    (make-pipeline-change-signature ',stage-names))
-                   (format t "skip recompile~%")
-                   (progn 
-                          (format t "~&; recompile triggered on ~a~&"
-                                  ',(make-func-description name stage-pairs))
-                          (eval (%defpipeline-gfuncs ',name ',args
-                                                     ',gpipe-args ',options t)))))
+               (unless(equal (slot-value (pipeline-spec ',name) 'change-spec)
+                             (make-pipeline-change-signature ',stage-names))
+                 (let ((*standard-output* (make-string-output-stream)))
+                   (handler-bind ((warning #'muffle-warning))
+                     (eval (%defpipeline-gfuncs
+                            ',name ',args ',gpipe-args ',options t))))))
              ,(unless suppress-compile `(,(recompile-name name)))))))))
+
+(defun quiet-warning-handler (c)
+   (when *all-quiet*
+     (let ((r (find-restart 'muffle-warning c)))
+       (when r   
+         (invoke-restart r)))))
 
 (defun make-func-description (name stage-pairs)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
