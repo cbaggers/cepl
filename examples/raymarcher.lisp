@@ -25,7 +25,7 @@
        (length (max d 0.0)))))
 
 (defun-g thing2 ((p :vec3) (r :float) (l :float))
-  (+ (* 0.2 (+ (y p)
+  (+ (* 0.1 (+ (y p)
                (sin (+ (* (+ (cos l) 8.0)
                           (* 2 (x p))) l))))
      (- (length p) r)))

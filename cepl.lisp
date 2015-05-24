@@ -83,3 +83,6 @@
 
 (defun quit ()
   (sdl2:quit))
+
+(defun ceprel (relative-path)
+  (asdf:system-relative-pathname 'cepl relative-path))

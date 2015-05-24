@@ -2,7 +2,8 @@
 
 ;; {TODO} move this to gl-context.lisp
 (defstruct default-framebuffer)
-(defparameter %current-fbo (make-default-framebuffer))
+(defvar *default-framebuffer* (make-default-framebuffer))
+(defvar %current-fbo *default-framebuffer*)
 
 ;; {TODO} need to put this in some macros utils package
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -41,8 +42,9 @@
 ;; Q: is this moot because of having to set %current-fbo
 ;; A: I hope not, I think given correct settings the compiler may be able
 ;;    to optimize away this let as nothing uses it.
-(defmacro with-bind-fbo ((fbo &optional (target :framebuffer) (unbind t)
-                              (attachment-for-size :c0) (with-viewport t))
+(defmacro with-bind-fbo ((fbo &key (target :framebuffer) (unbind t)
+                              (with-viewport t) (attachment-for-size 0)
+                              (draw-buffers t))
                          &body body)
   (labels ((inject-map-g-form (fbo-symbol)
              (subst fbo-symbol 'a
@@ -53,7 +55,7 @@
          (let* ((,once-fbo ,fbo)
                 (%current-fbo ,once-fbo))
            (%bind-fbo ,once-fbo ,target)
-           (%fbo-draw-buffers ,once-fbo)
+           ,(when draw-buffers `(%fbo-draw-buffers ,once-fbo))
            (prog1 (,@(if with-viewport
                          `(with-fbo-viewport (,once-fbo ,attachment-for-size))
                          '(progn))
@@ -66,6 +68,6 @@
 ;; (map-g #'test a :tex tx)
 ;;
 ;; (macroexpand-dammit:macroexpand-dammit
-;;       '(with-bind-fbo (some-fbo :framebuffer)
+;;       '(with-bind-fbo (some-fbo)
 ;;         (let ((jam (map-g #'test a :tex tx)))
 ;;           (print jam))))

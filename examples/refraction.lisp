@@ -45,12 +45,12 @@
   (setf *light* (make-instance 'light))
   (setf *camera* (make-camera cgl:+default-resolution+))
   (reshape cgl:+default-resolution+)
-  (setf *wibble* (load-model "./wibble.3ds" 0 (v! pi 0 0)))
+  (setf *wibble* (load-model (ceprel "examples/wibble.3ds") 0 (v! pi 0 0)))
   (setf (v:z (pos *wibble*)) -3.0)
-  (setf *bird* (load-model "./bird/bird.3ds" 1 (v! pi 0 0)))
-  (setf *bird-tex* (devil-helper:load-image-to-texture "./water.jpg"))
-  (setf *bird-tex2* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
-  (setf *wib-tex* (devil-helper:load-image-to-texture "./brick/col.png")))
+  (setf *bird* (load-model (ceprel "examples/bird/bird.3ds") 1 (v! pi 0 0)))
+  (setf *bird-tex* (devil-helper:load-image-to-texture (ceprel "examples/water.jpg")))
+  (setf *bird-tex2* (devil-helper:load-image-to-texture (ceprel "examples/bird/char_bird_col.png")))
+  (setf *wib-tex* (devil-helper:load-image-to-texture (ceprel "examples/brick/col.png"))))
 
 ;;--------------------------------------------------------------
 ;; drawing
@@ -103,7 +103,7 @@
   :post #'reshape)
 
 (defpipeline two-pass (&uniform model-to-cam2)
-    (g-> (scene (gl:clear :color-buffer-bit :depth-buffer-bit)
+    (g-> (scene (clear-fbo scene)
                 (standard-pass :light-intensity (v! 1 1 1 0)
                                :textur *wib-tex*
                                :ambient-intensity (v! 0.2 0.2 0.2 1.0)))

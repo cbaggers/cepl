@@ -13,37 +13,45 @@
               (stage-names (mapcar #'cdr stage-pairs)))
           (update-pipeline-spec
            (make-shader-pipeline-spec
-            name stage-names (make-change-signature stage-names)
+            name stage-names (make-pipeline-change-signature stage-names)
             (or gpipe-context context)))
           `(progn
              (let-pipeline-vars (,stage-pairs ,pass-key)
                (eval-when (:compile-toplevel :load-toplevel :execute)
                  (update-pipeline-spec
                   (make-shader-pipeline-spec
-                   ',name ',stage-names ',(make-change-signature stage-names)
+                   ',name ',stage-names ',(make-pipeline-change-signature
+                                           stage-names)
                    ',(or gpipe-context context))))
                (def-pipeline-invalidate ,name)
                (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
                (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
                (def-dummy-func ,name ,stage-pairs ,pass-key))
              (defun ,(recompile-name name) ()
-               (unless (equal
-                        (slot-value (pipeline-spec ',name) 'change-spec)
-                        (make-change-signature ',stage-names))
-                 (format t "~&; recompile triggered on ~a~&"
-                         ',(make-func-description name stage-pairs))
-                 (eval (%defpipeline-gfuncs ',name ',args
-                                            ',gpipe-args ',options t))))
+               (print ,(format nil "in ~s" (recompile-name name)))
+               (if (equal
+                    (slot-value (pipeline-spec ',name) 'change-spec)
+                    (make-pipeline-change-signature ',stage-names))
+                   (format t "skip recompile~%")
+                   (progn 
+                          (format t "~&; recompile triggered on ~a~&"
+                                  ',(make-func-description name stage-pairs))
+                          (eval (%defpipeline-gfuncs ',name ',args
+                                                     ',gpipe-args ',options t)))))
              ,(unless suppress-compile `(,(recompile-name name)))))))))
 
 (defun make-func-description (name stage-pairs)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (cons name (append in-args uniforms))))
 
-(defun make-change-signature (stage-names)
-  (mapcar λ(with-gpu-func-spec (gpu-func-spec _ t)
-             (list in-args uniforms body))
-          stage-names))
+(defun make-pipeline-change-signature (stage-names)
+  (mapcar #'make-change-signature stage-names))
+
+(defun make-change-signature (stage-name)
+  (with-gpu-func-spec (gpu-func-spec stage-name t)
+    (list in-args uniforms body
+          (mapcar #'make-change-signature
+                  (funcs-this-func-uses stage-name)))))
 
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
   (let ((stage-names (mapcar #'cdr stage-pairs)))
