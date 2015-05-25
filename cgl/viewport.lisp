@@ -14,7 +14,7 @@
 (defmacro with-viewport ((size &optional (origin (v! 0 0))) &body body)
   (let ((tmp-o (gensym "origin"))
         (tmp-s (gensym "size")))
-    `(progn
+    `(prog1
        (let* ((,tmp-s ,size)
               (,tmp-o ,origin)
               ,@(when +restorable-viewport+

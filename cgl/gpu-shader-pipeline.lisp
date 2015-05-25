@@ -276,10 +276,10 @@
                                (format nil "~a[~a]" glsl-name-path i)
                                byte-offset)
         :else :collect
-        (list (make-simple-assigner element-type
-                                    (format nil "~a[~a]" glsl-name-path i)
-                                    byte-offset))
-        :do (incf byte-offset (gl-type-size element-type))))))
+        (make-simple-assigner arg-name element-type
+                              (format nil "~a[~a]" glsl-name-path i)
+                              byte-offset)
+        :do (incf byte-offset (gl-type-size (type->spec element-type)))))))
 
 (defun make-eq-type-assigner (arg-name type varjo-type glsl-name qualifiers)
   (let* ((local-var (gensym (symbol-name arg-name)))

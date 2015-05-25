@@ -24,6 +24,9 @@
                '%gl::ClearBufferMask '(:color-buffer-bit))
               :type fixnum))
 
+(defmethod gl-free ((thing fbo))
+  (print "FREE FBO NOT IMPLEMENTED - LEAKING"))
+
 (defstruct attachment
   (gpu-array nil :type (or null gpu-array-t))
   (override-blending nil :type boolean)
@@ -72,12 +75,18 @@
    :destination-rgb (attachment-destination-rgb attachment)
    :destination-alpha (attachment-destination-alpha attachment)))
 
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; NOTE: The following seperation is to allow shadowing in compose-pipelines
 (defun attachment (fbo attachment-name)
+  (%attachment fbo attachment-name))
+
+(defun %attachment (fbo attachment-name)
   (case attachment-name
     (:d (%fbo-attachment-depth fbo))
     ;; (:s (%fbo-attachment-depth fbo))
     ;; (:ds (%fbo-attachment-depth fbo))
     (otherwise (aref (%fbo-attachment-color fbo) attachment-name))))
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun (setf attachment) (value fbo attachment-name)
   ;;{TODO} add support for :S and :ds
@@ -148,6 +157,15 @@
 (defun %fbo-draw-buffers (fbo)
   (%gl:draw-buffers (max-draw-buffers *gl-context*)
                     (%fbo-draw-buffer-map fbo)))
+
+;;--------------------------------------------------------------
+
+(defmacro with-fbo ((var-name fbo) &body body)
+  `(let ((,var-name ,fbo))
+     (unwind-protect
+          (with-bind-fbo (,var-name)
+            ,@body)
+       (gl-free ,var-name))))
 
 ;;--------------------------------------------------------------
 
@@ -400,20 +418,60 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       x
       :draw-framebuffer))
 
+(defvar %possible-texture-keys '(:dimensions :internal-format :mipmap
+                                 :layer-count :cubes :rectangle 
+                                 :multisample :immutable :buffer-storage
+                                 :lod-bias :min-lod :max-lod :minify-filter
+                                 :magnify-filter :wrap :compare))
+(defvar %valid-texture-subset '(:dimensions :internal-format :mipmap
+                                :immutable :lod-bias :min-lod :max-lod
+                                :minify-filter :magnify-filter :wrap :compare))
+
 (defun %gen-textures (pattern)
   (assert (or (listp pattern) (keywordp pattern)))
   (cond
+    ;; simple keyword pattern to texture
     ((keywordp pattern)
      (texref
       (make-texture nil :dimensions +default-resolution+
                     :internal-format (%get-default-texture-format pattern))))
+    ;; pattern with args for make-texture
+    ((some (lambda (x) (member x %possible-texture-keys)) pattern)
+     (when (some (lambda (x) (and (member x %possible-texture-keys)
+                                  (not (member x %valid-texture-subset)))) 
+                 pattern)
+         (error "Only the following args to make-texture are allowed inside a make-fbo ~s"
+                %valid-texture-subset))         
+     (destructuring-bind
+           (&key (dimensions +default-resolution+)
+                 (internal-format (%get-default-texture-format (first pattern)))
+                 mipmap (immutable t) lod-bias min-lod max-lod minify-filter 
+                 magnify-filter wrap compare)          
+         (rest pattern)
+       (assert (attachment-compatible (first pattern) internal-format))
+       (texref
+        (make-texture nil
+                      :dimensions dimensions
+                      :internal-format internal-format
+                      :mipmap mipmap
+                      :immutable immutable
+                      :lod-bias lod-bias
+                      :min-lod min-lod
+                      :max-lod max-lod
+                      :minify-filter minify-filter
+                      :magnify-filter magnify-filter
+                      :wrap wrap
+                      :compare compare))))
+    ;; take the resolution from a camera
     ((typep (second pattern) 'cepl-camera:camera)
      (texref
       (make-texture nil :dimensions (let ((fs (cepl-camera:frame-size (second pattern))))
                                       (list (aref fs 0) (aref fs 1)))
                     :internal-format (%get-default-texture-format
                                       (first pattern)))))
+    ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t) (second pattern))
+    ;; use the first gpu-array in texture
     ((typep (second pattern) 'gl-texture) (texref (second pattern)))
     (t (error "Invalid pattern in %gen-textures"))))
 

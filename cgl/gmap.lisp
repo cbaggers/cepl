@@ -59,7 +59,7 @@
            (prog1 (,@(if with-viewport
                          `(with-fbo-viewport (,once-fbo ,attachment-for-size))
                          '(progn))
-                    ,@body)
+                     ,@body)
              (when ,unbind (%unbind-fbo))))))))
 
 
