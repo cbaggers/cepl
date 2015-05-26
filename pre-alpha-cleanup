@@ -1,0 +1,36 @@
+Ok so we are going to kill as many of the cases where :: is used
+
+* find your targets with grep -nHIir -e "::" *
+- done, can justify all of them now
+
+* expose +default-resolution+
+- done :)
+
+* remove cepl.lisp
+- Done! took a lot of shuffling to get most of the logic into context.lisp
+
+* camera 'frame-size is a vector, this doesnt match other resolutions
+* I actually dont like the resolutions being lists rather than vectors
+  but I hate not bein able to #'apply the resolution to a function.
+  What if EVERYTHING in cepl that took a resolution could take either
+  vector or list? Would it hurt our ability to optimize anywhere?
+- Done the 'make it a list bit' but not the second bullet point
+
+* should v:x->w be exposed in cepl? it feels like something we would do so
+  often that it should be there...maybe leave that to users/ceplive
+
+* default-resolution doesnt know about viewport calls on default framebuffer
+  This is a shame. We can start by making viewport set this, but then we get
+  issue where we are hoping all state is managed through cepl...may add it for
+  now and re-examine it later.
+
+* sdl.evt sucks, just make it evt
+
+* #'clear-fbo should be #'clear with optional fbo arg
+
+* mesh.lisp has package cgl..why?
+
+* add %px to def-compose-dispatch. It is a symbolmacro that expands to (%view-pixel-size)
+  which is a local func that
+
+* what in examples specifies a package, why? Mainly interested in cgl:

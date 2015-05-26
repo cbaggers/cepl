@@ -18,8 +18,8 @@
   ((cam->clip :type (simple-array single-float (16)) :reader cam->clip)
    (cam->clip-func :initform nil :initarg :cam->clip-func )
    (frame-size :reader frame-size :initarg :frame-size
-               :initform (v! (nth 0 cgl::+default-resolution+)
-                             (nth 1 cgl::+default-resolution+)))
+               :initform (list (nth 0 cgl:+default-resolution+)
+                               (nth 1 cgl:+default-resolution+)))
    (near :type single-float :reader near :initarg :near)
    (far :type single-float :reader far :initarg :far)
    (fov :type single-float :reader fov :initarg :fov)))
@@ -45,13 +45,11 @@
   (update-cam->clip camera))
 
 (defmethod (setf frame-size) (frame-size (camera camera))
-  (let ((frame-size-vec2
+  (let ((frame-size-list
          (if (typep frame-size '(simple-array single-float (2)))
-             frame-size
-             (make-array 2 :element-type 'single-float :initial-contents
-                         (list (float (elt frame-size 0))
-                               (float (elt frame-size 1)))))))
-    (setf (slot-value camera 'frame-size) frame-size-vec2))
+             (list (aref frame-size 0) (aref frame-size 1))
+             frame-size)))
+    (setf (slot-value camera 'frame-size) frame-size-list))
   (update-cam->clip camera))
 
 (defgeneric world->cam (camera))
@@ -89,8 +87,8 @@
       result)))
 
 (defun perspective-projection (camera)
-  (let* ((aspect-ratio (/ (aref (frame-size camera) 0)
-                          (aref (frame-size camera) 1)))
+  (let* ((aspect-ratio (/ (first (frame-size camera))
+                          (second (frame-size camera))))
          (near (near camera))
          (far (far camera))
          (fov (fov camera))
@@ -106,10 +104,10 @@
      0.0 0.0 (/ (* 2.0 far near) (- near far)) 0.0)))
 
 (defun orthographic-projection (camera)
-  (let ((left (- (/ (aref (frame-size camera) 0) 2.0)))
-        (right (/ (aref (frame-size camera) 0) 2.0))
-        (top (/ (aref (frame-size camera) 1) 2.0))
-        (bottom (- (/ (aref (frame-size camera) 1) 2.0)))
+  (let ((left (- (/ (first (frame-size camera)) 2.0)))
+        (right (/ (first (frame-size camera)) 2.0))
+        (top (/ (second (frame-size camera)) 2.0))
+        (bottom (- (/ (second (frame-size camera)) 2.0)))
         (near (near camera))
         (far (far camera)))
     (matrix4:make-matrix4
@@ -118,17 +116,15 @@
      0.0 0.0 (- (/ (- far near))) (- (/ (+ far near) (- far near)))
      0.0 0.0 0.0 1.0)))
 
-(defun make-camera (&optional (frame-size cgl::+default-resolution+)
+(defun make-camera (&optional (frame-size cgl:+default-resolution+)
                       (near 1.0) (far 1000.0) (fov 120.0)
                       (cam->clip-function #'perspective-projection))
-  (let* ((frame-size-vec2 (if (typep frame-size '(simple-array single-float (2)))
-                              frame-size
-                              (make-array 2 :element-type 'single-float :initial-contents
-                                          (list (float (elt frame-size 0))
-                                                (float (elt frame-size 1))))))
+  (let* ((frame-size-list (if (typep frame-size '(simple-array single-float (2)))
+                              (list (aref frame-size 0) (aref frame-size 1))
+                              frame-size))
          (camera (make-instance 'pos-dir-cam :cam->clip-func cam->clip-function
                                 :near near :far far :fov fov
-                                :frame-size frame-size-vec2)))
+                                :frame-size frame-size-list)))
     (update-cam->clip camera)
     camera))
 

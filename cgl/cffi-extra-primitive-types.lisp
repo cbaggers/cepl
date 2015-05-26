@@ -77,9 +77,9 @@
                           `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))
                    ,(when (< len 5)
                           (let ((components (utils:kwd (subseq "RGBA" 0 len))))
-                            (when (cgl::valid-pixel-format-p components comp-type t nil)
-                              `(defmethod cgl::lisp-type->pixel-format ((comp-type (eql ,type)))
-                                 (cgl::pixel-format ,components ',comp-type)))))
+                            (when (cgl:valid-pixel-format-p components comp-type t nil)
+                              `(defmethod cgl:lisp-type->pixel-format ((comp-type (eql ,type)))
+                                 (cgl:pixel-format ,components ',comp-type)))))
                    (autowrap:define-foreign-record
                        ',name
                        :struct

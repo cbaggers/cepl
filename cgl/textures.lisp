@@ -26,6 +26,11 @@
                                   :texture-cube-map-positive-z
                                   :texture-cube-map-negative-z))
 
+(cells:defobserver gl-initialized ((context gl-context) new)
+  (when new
+    (unless (has-feature "GL_ARB_texture_storage")
+      (setf *immutable-available* nil))))
+
 ;;------------------------------------------------------------
 
 (defun texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
@@ -355,7 +360,7 @@
                      &key dimensions internal-format (mipmap nil)
                        (layer-count 1) (cubes nil) (rectangle nil)
                        (multisample nil) (immutable t) (buffer-storage nil)
-                       lod-bias min-lod max-lod minify-filter magnify-filter 
+                       lod-bias min-lod max-lod minify-filter magnify-filter
                        wrap compare)
   (cond
     (multisample (error "cepl: Multisample textures are not supported"))
@@ -393,7 +398,7 @@
 
 (defun %make-texture (dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
-                      internal-format lod-bias min-lod max-lod minify-filter 
+                      internal-format lod-bias min-lod max-lod minify-filter
                       magnify-filter wrap compare)
   (let* ((dimensions (%texture-dimensions initial-contents dimensions)))
     ;; check for power of two - handle or warn
@@ -446,7 +451,7 @@
                 (when max-lod
                   (setf (max-lod texture) max-lod))
                 (when minify-filter
-                  (setf (minify-filter texture) minify-filter)) 
+                  (setf (minify-filter texture) minify-filter))
                 (when magnify-filter
                   (setf (magnify-filter texture) magnify-filter))
                 (when wrap
@@ -458,7 +463,7 @@
 
 (defun %make-buffer-texture (dimensions element-format mipmap layer-count cubes
                              rectangle multisample immutable initial-contents
-                             lod-bias min-lod max-lod minify-filter 
+                             lod-bias min-lod max-lod minify-filter
                              magnify-filter wrap compare)
   (declare (ignore immutable))
   (when (gpuarray-p initial-contents)
@@ -469,7 +474,7 @@
     (error "Buffer-backed textures cannot have mipmaps, multiple layers or be cube rectangle or multisample"))
   (unless (or (null initial-contents) (typep initial-contents 'c-array))
     (error "Invalid initial-contents for making a buffer-backed texture"))
-  (when (or lod-bias min-lod max-lod minify-filter 
+  (when (or lod-bias min-lod max-lod minify-filter
             magnify-filter wrap compare)
     (error "Do not currently support setting any textrue sample parameters on construction"))
   (let* ((dimensions (listify dimensions))
@@ -570,8 +575,8 @@
 (defmethod push-g ((object list) (destination gpu-array-t))
   (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
-                                   :element-type (cgl::internal-format->pixel-format
-                                                  (cgl::internal-format destination))))
+                                   :element-type (internal-format->pixel-format
+                                                  (internal-format destination))))
     (push-g c-a destination)))
 
 ;; [TODO] This feels like could create non-optimal solutions

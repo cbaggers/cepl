@@ -16,7 +16,7 @@
 (defun reshape (&optional (new-dimensions cgl:+default-resolution+))
   (apply #'gl:viewport 0 0 new-dimensions))
 
-(evt:observe (evt.sdl::*window*)
+(evt:observe (evt.sdl:|window|)
   (when (eq (evt.sdl:action e) :resized)
     (reshape (evt.sdl:vec e))))
 
@@ -52,7 +52,7 @@
 
 (defun stop-demo () (setf *running* nil))
 
-(evt:observe (evt.sdl::*sys*)
+(evt:observe (evt.sdl:|sys|)
   (when (typep e 'evt.sdl:will-quit)
     (stop-demo)))
 

@@ -146,7 +146,7 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 
 (defmethod pull-g ((asset-name symbol))
   (if +cache-last-pipeline-compile-result+
-      (mapcar #'varjo::glsl-code
+      (mapcar #'varjo:glsl-code
               (slot-value (pipeline-spec asset-name) 'cached-compile-results))
       "CEPL has been set to not cache the results of pipeline compilation.
 See the +cache-last-pipeline-compile-result+ constant for more details"))

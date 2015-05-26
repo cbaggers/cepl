@@ -4,7 +4,6 @@
 
 (defparameter *entities* nil)
 (defparameter *camera* nil)
-(defparameter *resolution* cgl:+default-resolution+)
 
 (defstruct-g vert-data ()
   (position :vec3)
@@ -34,7 +33,7 @@
 
 
 (defun init ()
-  (setf *camera* (make-camera *resolution*))
+  (setf *camera* (make-camera +default-resolution+))
   (setf (pos *camera*) (v! 0 8 0))
   (render-widgets nil :cam *camera*)
   (let* ((verts (make-gpu-array `((,(v! +1  +1  +1)  ,(v! 0  1  0  1))
@@ -86,9 +85,9 @@
 
   (defun stop-demo () (setf running nil))
 
-  (evt:observe (evt.sdl::|sys|)
+  (evt:observe (evt.sdl:|sys|)
     (setf running (typep e 'evt.sdl:will-quit))))
 
-(evt:observe (evt.sdl::|window|)
+(evt:observe (evt.sdl:|window|)
   (when (eq (evt.sdl:action e) :resized)
     (reshape (evt.sdl:data e))))

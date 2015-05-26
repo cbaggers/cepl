@@ -465,8 +465,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; take the resolution from a camera
     ((typep (second pattern) 'cepl-camera:camera)
      (texref
-      (make-texture nil :dimensions (let ((fs (cepl-camera:frame-size (second pattern))))
-                                      (list (aref fs 0) (aref fs 1)))
+      (make-texture nil :dimensions (cepl-camera:frame-size (second pattern))
                     :internal-format (%get-default-texture-format
                                       (first pattern)))))
     ;; use an existing gpu-array

@@ -1,8 +1,5 @@
 (in-package :cgl)
 
-;; [TODO] Find anything that uses hidden symbols (::) and justify that usage or
-;;        fix it
-
 ;;------------------------------------------------------------
 (defclass c-array ()
   ((pointer :initarg :pointer :reader pointer)

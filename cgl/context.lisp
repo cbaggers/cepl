@@ -14,13 +14,63 @@
 ;; it employs caching for any of the areas where the data won't change during
 ;; the execution or where the changes would be known.
 
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;   :width width :height height :title "CEPL REPL" :resizable t
+
+(defun make-context (backend &key (width 640) (height 480) (title "") fullscreen
+                               no-frame (alpha-size 0) (depth-size 16) (stencil-size 8)
+                               (red-size 8) (green-size 8) (blue-size 8) (buffer-size 32)
+                               (double-buffer t) hidden (resizable t))
+  (destructuring-bind (context window)
+      (cepl-backend:init backend width height title fullscreen
+                         no-frame alpha-size depth-size stencil-size
+                         red-size green-size blue-size buffer-size
+                         double-buffer hidden resizable)
+    (setf +default-resolution+ (list width height))
+    (make-instance 'cgl:gl-context :handle context :window window)))
+
+(defmethod initialize-instance :after ((context gl-context) &key)
+  (ensure-cepl-compatible-setup)
+  (apply #'gl:viewport 0 0 cgl:+default-resolution+)
+  (%set-default-gl-options)
+  (setf *gl-context* context)
+  (setf *gl-window* (window context))
+  (setf (gl-initialized context) t))
+
+(let ((available-extensions nil))
+  (defun has-feature (x)
+    (unless available-extensions
+      (if (<= 3 (gl:major-version))
+          (loop :for i :below (gl:get-integer :num-extensions)
+             :collect (%gl:get-string-i :extensions i))
+          ;; OpenGL version < 3
+          (cl-utilities:split-sequence #\space (gl:get-string :extensions)
+                                       :remove-empty-subseqs t)))
+    (find x available-extensions :test #'equal)))
+
+(defun ensure-cepl-compatible-setup ()
+  (unless (>= (gl:major-version) 3)
+    (error "Cepl requires OpenGL 3.1 or higher")))
+
+(defun %set-default-gl-options ()
+  (print "Setting default options")
+  (cgl:clear-color 0.0 0.0 0.0 0.0)
+  (gl:enable :cull-face)
+  (gl:cull-face :back)
+  (gl:front-face :ccw)
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (gl:depth-func :lequal)
+  (gl:depth-range 0.0 1.0)
+  (gl:enable :depth-clamp))
+
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 (cells:defmodel gl-context ()
   ((cache :cell nil :initform (make-hash-table))
    (handle :cell nil :initarg :handle :reader handle)
+   (window :cell nil :initarg :window :reader window)
    (gl-initialized :cell t :initform (cells:c-in nil) :reader gl-initialized)))
-
-(defmethod initialize-instance :after ((context gl-context) &key)
-  (setf (gl-initialized context) t))
 
 (defmethod clear-gl-context-cache ((object gl-context))
   (clrhash (slot-value object 'cache)))
@@ -55,7 +105,7 @@
 (defmacro def-g (var &optional val doc)
   `(progn
      (defparameter ,var nil ,doc)
-     (if cgl::*gl-context*
+     (if cgl:*gl-context*
          (setf ,var ,val)
          (push (lambda () (setf ,var ,val))
                cgl::*on-context-funcall*))))

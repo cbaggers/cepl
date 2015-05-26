@@ -1,6 +1,6 @@
 ;; Simple refraction example
 (in-package :cepl)
-(named-readtables:in-readtable fn_::fn_lambda)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 ;;--------------------------------------------------------------
 ;; setup
@@ -29,15 +29,15 @@
   (let* ((imp-mesh (elt (classimp:meshes (classimp:import-into-lisp file-path))
                         nth-mesh))
          (result (model-parsers:mesh->gpu imp-mesh))
-         (mesh (make-instance 'cgl::mesh
+         (mesh (make-instance 'cgl:mesh
                               :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
          (mesh~1 (if hard-rotate
-                     (cgl::transform-mesh mesh :rotation hard-rotate)
+                     (cgl:transform-mesh mesh :rotation hard-rotate)
                      mesh)))
     (let ((gstream (make-buffer-stream
-                    (cgl::vertices mesh) :index-array (cgl::indicies mesh))))
+                    (cgl:vertices mesh) :index-array (cgl:indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.4 -1) :mesh mesh~1))))
 
@@ -45,12 +45,17 @@
   (setf *light* (make-instance 'light))
   (setf *camera* (make-camera cgl:+default-resolution+))
   (reshape cgl:+default-resolution+)
-  (setf *wibble* (load-model (ceprel "examples/wibble.3ds") 0 (v! pi 0 0)))
+  (setf *wibble* (load-model (devil-helper:load-image-to-texture
+                              (merge-pathnames "wibble.3ds" *examples-dir*))
+                             0 (v! pi 0 0)))
   (setf (v:z (pos *wibble*)) -3.0)
-  (setf *bird* (load-model (ceprel "examples/bird/bird.3ds") 1 (v! pi 0 0)))
-  (setf *bird-tex* (devil-helper:load-image-to-texture (ceprel "examples/water.jpg")))
-  (setf *bird-tex2* (devil-helper:load-image-to-texture (ceprel "examples/bird/char_bird_col.png")))
-  (setf *wib-tex* (devil-helper:load-image-to-texture (ceprel "examples/brick/col.png"))))
+  (setf *bird* (load-model (merge-pathnames "bird.3ds" *examples-dir*) 1 (v! pi 0 0)))
+  (setf *bird-tex* (devil-helper:load-image-to-texture
+                    (merge-pathnames "water.jpg" *examples-dir*)))
+  (setf *bird-tex2* (devil-helper:load-image-to-texture
+                     (merge-pathnames "char_bird_col.png" *examples-dir*)))
+  (setf *wib-tex* (devil-helper:load-image-to-texture
+                   (merge-pathnames "col.png" *examples-dir*))))
 
 ;;--------------------------------------------------------------
 ;; drawing
@@ -103,14 +108,12 @@
   :post #'reshape)
 
 (defpipeline two-pass (&uniform model-to-cam2)
-    (g-> (scene (cgl::clear-fbo scene)
+    (g-> (scene (cgl:clear-fbo scene)
                 (standard-pass :light-intensity (v! 1 1 1 0)
                                :textur *wib-tex*
                                :ambient-intensity (v! 0.2 0.2 0.2 1.0)))
          (nil (refract-pass :model-to-cam model-to-cam2
-                            :fbo-tex (slot-value (cgl::attachment-gpu-array
-                                                  (cgl::attachment scene 0))
-                                                 'cgl::texture)
+                            :fbo-tex (cgl:attachment scene 0)
                             :textur *bird-tex*
                             :bird-tex *bird-tex2*
                             :loop *loop-pos*)))
@@ -131,8 +134,7 @@
     (map-g #'two-pass (gstream *wibble*) (gstream *bird*)
           :model-to-cam (m4:m* world-to-cam-matrix (entity-matrix *wibble*))
           :model-to-cam2 (m4:m* world-to-cam-matrix (entity-matrix *bird*))
-          :model-space-light-pos (v:s~ cam-light-vec :xyz))
-    )
+          :model-space-light-pos (v:s~ cam-light-vec :xyz)))
   (cgl:update-display))
 
 

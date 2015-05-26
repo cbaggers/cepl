@@ -11,13 +11,6 @@ wrapper for that type
 
 -----
 
-* merge in the time and data abstraction changes
-* we should then have the then & repeat macros as tlambda shorthand
-  also add macros for before, after, between. This completes the
-  full circle of designing the time api.
-
------
-
 * clean up osx code
 * clean up window and context creation
 * update struct to be clean and use c-ref
@@ -43,11 +36,6 @@ wrapper for that type
   seems to be when created using defparameter...so it doesnt like
   top level for some reason?
 
-* We need a representation of frame buffers...or whatever those
-   things are! I kind of feel that running a shader should return
-   one. At the very least we will need it later for targets and
-   for defining feedback within pipelines.
-
 * add set culling? combined enabling, setting winding-order and
   cull-face in one move.
 
@@ -67,3 +55,14 @@ wrapper for that type
 
 * work through the glossaries of arc-synth and check args names
    in cepl-gl for conformance
+
+* Render buffers...not urgent in any way but we should support them
+  I'm thinking that if a strict subset of the commands that work on
+  fbos work on render buffers, then I will make them a special case
+  of fbo.
+
+* Default framebuffer should appear to be a user fbo including attachment names
+  No sense having this forward backward crap unless it provides something
+  real I dont know about yet.
+
+* GL-Free for attachments

@@ -1,5 +1,5 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn_::fn_lambda)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 (defun parse-compose-gpipe-args (args)
   `(,(mapcar (fn+ #'car #'last1) args)
@@ -13,7 +13,7 @@
         (parse-options options)
       (destructuring-bind (pipeline-names gpipe-context)
           (parse-compose-gpipe-args gpipe-args)
-        (assert (not (and gpipe-context context)))        
+        (assert (not (and gpipe-context context)))
         (let* ((uniform-args (make-pipeline-uniform-args
                               pipeline-names
                               gpipe-args))
@@ -40,14 +40,15 @@
 
 (defmacro def-compose-dispatch (name args uniforms context
                                 gpipe-args fbos post)
-  (declare (ignore context))  
+  (declare (ignore context))
   `(defun ,(dispatch-func-name name)
        (,@args ,@(when uniforms `(&key ,@uniforms)))
      (unless initd
        ,@(mapcar #'fbo-comp-form fbos)
        (setf initd t)
        ,(when post `(funcall ,post)))
-     (labels ((at (fbo attachment-name)
+     ;; symbol-macrolet will go here
+     (labels ((cgl:attachment (fbo attachment-name)
                 (slot-value (cgl::attachment-gpu-array
                              (cgl::%attachment fbo attachment-name))
                             'cgl::texture)))
@@ -147,14 +148,6 @@
                           (collate-args pipeline-names)
                           pipeline-stream-overrides)))
       (if flatten (apply #'append result) result))))
-
-
-;; (cepl-gl::make-pipeline-uniform-args
-;;  '(cepl::blit cepl::blit cepl::blit cepl::blit)
-;;  '((p1 (cepl::blit :tex guy))
-;;    (p2 (cepl::blit stream :tex p1))
-;;    (p3 (cepl::blit stream :test p2))
-;;    (nil (cepl::blit stream :tex p3))))
 
 ;;{TODO} handle equivalent types
 (defun make-pipeline-uniform-args (pipeline-names gpipe-args)

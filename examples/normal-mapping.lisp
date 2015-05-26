@@ -1,6 +1,6 @@
 ;; fragment point light - unfinished
 (in-package :cepl)
-(named-readtables:in-readtable fn_::fn_lambda)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 ;;--------------------------------------------------------------
 ;; setup
@@ -25,15 +25,15 @@
 
 (defun load-model (filename &optional hard-rotate)
   (let* ((result (first (model-parsers:load-file filename)))
-         (mesh (make-instance 'cgl::mesh
+         (mesh (make-instance 'cgl:mesh
                               :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
          (mesh~1 (if hard-rotate
-                     (cgl::transform-mesh mesh :rotation hard-rotate)
+                     (cgl:transform-mesh mesh :rotation hard-rotate)
                      mesh)))
     (let ((gstream (make-buffer-stream
-                    (cgl::vertices mesh) :index-array (cgl::indicies mesh))))
+                    (cgl:vertices mesh) :index-array (cgl:indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.3 -3) :mesh mesh~1))))
 
@@ -104,13 +104,13 @@
 
 (evt:observe (|mouse|)
   (when (and (typep e 'evt.sdl:mouse-motion)
-             (eq (evt.sdl::button-state self :left) :down))
+             (eq (evt.sdl:button-state self :left) :down))
     (let ((d (evt.sdl:delta e)))
       (cond
-        ((eq (evt.sdl::key-state |keyboard| :lshift) :down)
+        ((eq (evt.sdl:key-state |keyboard| :lshift) :down)
          (v3:incf (pos *wibble*)
                   (v! 0 0 (/ (v:y d) 100.0))))
-        ((eq (evt.sdl::key-state |keyboard| :lctrl) :down)
+        ((eq (evt.sdl:key-state |keyboard| :lctrl) :down)
          (v3:incf (pos *wibble*)
                   (v! 0 (/ (v:y d) -100.0) 0)))
         (t

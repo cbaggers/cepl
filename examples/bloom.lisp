@@ -1,7 +1,9 @@
 (in-package :cepl)
 
-(defvar guy (devil-helper:load-image-to-texture (ceprel "examples/guy.png")))
-(defvar cols (devil-helper:load-image-to-texture (ceprel "examples/c.png")))
+(defvar guy (devil-helper:load-image-to-texture
+             (merge-pathnames "guy.png" *examples-dir*)))
+(defvar cols (devil-helper:load-image-to-texture
+              (merge-pathnames "c.png" *examples-dir*)))
 
 (defun-g vert ((quad g-pt))
   (values (v! (pos quad) 1)
@@ -35,18 +37,18 @@
          (c1 (blit stream :tex tx))
          (c2 (blit stream :tex tx))
          (c3 (blit stream :tex tx))
-         (h0 (qsmood stream :tex (cgl::at c0 0) :offset (v! (/ 1.2 512) 0)))
-         (h1 (qsmood stream :tex (cgl::at c1 0) :offset (v! (/ 1.2 256) 0)))
-         (h2 (qsmood stream :tex (cgl::at c2 0) :offset (v! (/ 1.2 128) 0)))
-         (h3 (qsmood stream :tex (cgl::at c3 0) :offset (v! (/ 1.2 64) 0)))
-         (c0 (qsmood stream :tex (cgl::at h0 0) :offset (v! 0 (/ 1.2 512))))
-         (c1 (qsmood stream :tex (cgl::at h1 0) :offset (v! 0 (/ 1.2 256))))
-         (c2 (qsmood stream :tex (cgl::at h2 0) :offset (v! 0 (/ 1.2 128))))
-         (c3 (qsmood stream :tex (cgl::at h3 0) :offset (v! 0 (/ 1.2 64))))
+         (h0 (qsmood stream :tex (attachment c0 0) :offset (v! (/ 1.2 512) 0)))
+         (h1 (qsmood stream :tex (attachment c1 0) :offset (v! (/ 1.2 256) 0)))
+         (h2 (qsmood stream :tex (attachment c2 0) :offset (v! (/ 1.2 128) 0)))
+         (h3 (qsmood stream :tex (attachment c3 0) :offset (v! (/ 1.2 64) 0)))
+         (c0 (qsmood stream :tex (attachment h0 0) :offset (v! 0 (/ 1.2 512))))
+         (c1 (qsmood stream :tex (attachment h1 0) :offset (v! 0 (/ 1.2 256))))
+         (c2 (qsmood stream :tex (attachment h2 0) :offset (v! 0 (/ 1.2 128))))
+         (c3 (qsmood stream :tex (attachment h3 0) :offset (v! 0 (/ 1.2 64))))
          (nil (cgl:viewport '(512 512))
               (combine stream
-                       :t0 (cgl::at c0 0) :t1 (cgl::at c1 0)
-                       :t2 (cgl::at c2 0) :t3 (cgl::at c3 0))))
+                       :t0 (attachment c0 0) :t1 (attachment c1 0)
+                       :t2 (attachment c2 0) :t3 (attachment c3 0))))
   :fbos
   (c0 '(:c :dimensions (512 512) :magnify-filter :linear))
   (c1 '(:c :dimensions (256 256) :magnify-filter :linear))

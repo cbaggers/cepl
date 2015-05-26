@@ -19,6 +19,11 @@
            :tex
            :col))
 
+(defpackage :cepl-backend
+  (:use :cl)
+  (:export :init
+           :shutdown))
+
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
@@ -245,9 +250,14 @@
   ;;(:export :things)
   )
 
-(defpackage :cepl-gl
+
+(defpackage :%cgl
   (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
         :fn_ :split-sequence)
+  )
+(defpackage :cepl-gl
+  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
+        :fn_ :split-sequence :%cgl)
   (:nicknames :cgl)
   (:import-from :cl-opengl
                 :clear-color
@@ -267,6 +277,67 @@
                 :print-mem)
   (:shadow :float)
   (:export :gl-context
+           ;;- - - - - - - -
+           :make-context
+           :has-feature
+           :*gl-context*
+           :%context-flags
+           :major-version
+           :minor-version
+           :max-server-wait-timeout
+           :min-map-buffer-alignment
+           :extension-count
+           :supported-shading-versions-count
+           :timestamp
+           :%draw-indirect-buffer-binding
+           :%element-array-buffer-binding
+           :%query-buffer-binding
+           :%texture-buffer-binding
+           :%vertex-array-binding
+           :color-clear-value
+           :color-writemask
+           :depth-clear-value
+           :depth-func~1
+           :depth-test
+           :depth-writemask
+           :doublebuffer
+           :draw-buffer
+           :draw-bufferi
+           :draw-framebuffer-binding
+           :max-color-attachments
+           :max-color-texture-samples
+           :max-depth-texture-samples
+           :max-draw-buffers
+           :max-dual-source-draw-buffers
+           :max-framebuffer-height
+           :max-framebuffer-layers
+           :max-framebuffer-samples
+           :max-framebuffer-width
+           :max-integer-samples
+           :max-samples
+           :read-buffer
+           :read-framebuffer-binding
+           :renderbuffer-binding
+           :stencil-back-fail
+           :stencil-back-func
+           :stencil-back-pass-depth-fail
+           :stencil-back-pass-depth-pass
+           :stencil-back-ref
+           :stencil-back-value-mask
+           :stencil-back-writemask
+           :stencil-clear-value
+           :stencil-fail
+           :stencil-func
+           :stencil-pass-depth-fail
+           :stencil-pass-depth-pass
+           :stencil-ref
+           :stencil-test
+           :stencil-value-mask
+           :stencil-writemask
+           :stereo
+           ;;- - - - - - - -
+           :*viewport-size*
+           :*viewport-origin*
            :viewport
            :with-viewport
            :with-fbo-viewport
@@ -341,6 +412,7 @@
            :g->
            :defun-g
            :defmacro-g
+           :define-compiler-macro-g
            :with-instances
            :free-managed-resources
            :free-buffer
@@ -391,17 +463,23 @@
            :ubo-index
            ;;----------
            :def-equivalent-type
-           ))
+           ;;----------
+           :mesh
+           :vertices
+           :indicies
+           :primitive-type
+           :transform-mesh
+           :transform-mesh-with-matrix
+           :polygonize
+           :flatten-index
+           :clear-fbo))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
 
-(defpackage :%cgl
-  (:use :cl :varjo :cgl))
-
 (defpackage :cepl-camera
   (:nicknames :ccam)
-  (:use :cl :cepl-generics)
+  (:use :cl :cepl-generics :base-vectors)
   (:export :camera
            :make-camera
            :orthographic-projection
@@ -433,7 +511,8 @@
            :mesh->lists
            :mesh-list->gpu
            :mesh->gpu
-           :scene-meshes->gpu)
+           :scene-meshes->gpu
+           :calc-type)
   (:import-from :vector2
                 :make-vector2)
   (:import-from :vector3
@@ -544,6 +623,14 @@
                 :update-swank
                 :peek)
   (:import-from :cepl-gl
+                :pos
+                :rot
+                :dir
+                :vec
+                :size
+                :norm
+                :tex
+                :col
                 :cls
                 :pixel-format
                 :describe-pixel-format
@@ -592,6 +679,12 @@
                 :fbo-attach
                 :attachment-compatible
                 :fbo-detach
+                :*viewport-size*
+                :*viewport-origin*
+                :viewport
+                :with-viewport
+                :with-fbo-viewport
+                :+default-resolution+
                 ;;---
                 :def-equivalent-type
                 ;;---
@@ -720,6 +813,12 @@
            :fbo-attach
            :attachment-compatible
            :fbo-detach
+           :*viewport-size*
+           :*viewport-origin*
+           :viewport
+           :with-viewport
+           :with-fbo-viewport
+           :+default-resolution+
            :def-equivalent-type
            ;;---
            :make-ubo
