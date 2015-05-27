@@ -19,7 +19,8 @@
 ;; window
 
 (defun reshape (&optional (new-dimensions cgl:+default-resolution+))
-  (apply #'gl:viewport 0 0 new-dimensions))
+  (setf (viewport-resolution (viewport *gl-context*))
+        new-dimensions))
 
 (evt:observe (evt:|window|)
   (when (eq (evt:action e) :resized)

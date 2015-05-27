@@ -39,5 +39,5 @@
 (defun stop-demo ()
   (setf *running* nil))
 
-(evt:observe (cepl.events.sdl:|sys|)
-  (when (typep e 'cepl.events.sdl:will-quit) (stop-demo)))
+(evt:observe (evt:|sys|)
+  (when (typep e 'evt:will-quit) (stop-demo)))

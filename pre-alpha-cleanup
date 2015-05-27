@@ -1,5 +1,9 @@
 Ok so we are going to kill as many of the cases where :: is used
 
+* find all defmethods. Pull everything truely generic into cepl-generics
+* establish a type for the return, lets get an established grammer going
+
+
 * find your targets with grep -nHIir -e "::" *
 - done, can justify all of them now
 
@@ -15,6 +19,11 @@ Ok so we are going to kill as many of the cases where :: is used
   What if EVERYTHING in cepl that took a resolution could take either
   vector or list? Would it hurt our ability to optimize anywhere?
 - Done the 'make it a list bit' but not the second bullet point
+- Ok so what I have gone for is to make #'v! be able to take lists
+  this gives a really easy way to transform a result to a vec.
+  The optimization case is bogus as for things like viewport we should
+  use the struct to pack the data well and then have internal functions
+  we can use to get the values fast, and a use facing func to make it pretty
 
 * should v:x->w be exposed in cepl? it feels like something we would do so
   often that it should be there...maybe leave that to users/ceplive
@@ -38,6 +47,13 @@ Ok so we are going to kill as many of the cases where :: is used
   which is a local func that
 
 * what in examples specifies a package, why? Mainly interested in cgl:
+- Nearly golden :)
 
 * remove cls
 - done
+
+* add syntax to compose pipelines to make the draw-arrays mask
+
+* add (declare) to defpipeline so you can ignore certain uniforms.
+  is this even needed? I dont think uniforms get added to the arg list
+  Check it! 

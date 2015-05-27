@@ -45,8 +45,7 @@
          (c1 (qsmood stream :tex (attachment h1 0) :offset (v! 0 (/ 1.2 256))))
          (c2 (qsmood stream :tex (attachment h2 0) :offset (v! 0 (/ 1.2 128))))
          (c3 (qsmood stream :tex (attachment h3 0) :offset (v! 0 (/ 1.2 64))))
-         (nil (viewport '(512 512))
-              (combine stream
+         (nil (combine stream
                        :t0 (attachment c0 0) :t1 (attachment c1 0)
                        :t2 (attachment c2 0) :t3 (attachment c3 0))))
   :fbos
@@ -77,6 +76,6 @@
 (defun stop-demo ()
   (setf *running* nil))
 
-(evt:observe (cepl.events.sdl:|sys|)
-  (when (typep e 'cepl.events.sdl:will-quit) (stop-demo)))
+(evt:observe (evt:|sys|)
+  (when (typep e 'evt:will-quit) (stop-demo)))
 ;;-------------------------------------------------------

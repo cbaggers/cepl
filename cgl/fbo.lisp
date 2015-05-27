@@ -35,6 +35,11 @@
   (destination-rgb :zero :type keyword)
   (destination-alpha :zero :type keyword))
 
+;; this is pretty wasteful but will do for now
+(defun attachment-viewport (attachment)
+  (make-viewport (slot-value (attachment-gpu-array attachment) 'dimensions)
+                 (v! 0 0)))
+
 (defun update-clear-mask (fbo)
   (setf (%fbo-clear-mask fbo)
         (cffi:foreign-bitfield-value

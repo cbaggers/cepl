@@ -32,8 +32,8 @@
 
 (let ((running nil))
   (defun run-demo ()
-    (setf running t)
-    (apply #'gl:viewport 0 0 +default-resolution+)
+    (setf running t
+          (viewport-resolution (viewport *gl-context*)) +default-resolution+)
     (setf *array* (make-gpu-array (list (v!  0.0   0.2  0.0  1.0)
                                         (v! -0.2  -0.2  0.0  1.0)
                                         (v!  0.2  -0.2  0.0  1.0))
@@ -43,5 +43,5 @@
     (loop :while running :do (continuable (step-demo))))
   (defun stop-demo () (setf running nil)))
 
-(evt:observe (cepl.events.sdl:|sys|)
-  (when (typep e 'cepl.events.sdl:will-quit) (stop-demo)))
+(evt:observe (evt:|sys|)
+  (when (typep e 'evt:will-quit) (stop-demo)))

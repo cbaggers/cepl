@@ -166,14 +166,14 @@
 ;; window
 
 (defun reshape (&optional (new-dimensions +default-resolution+))
-  (setf (frame-size *camera*) new-dimensions)
-  (apply #'gl:viewport 0 0 new-dimensions)
+  (setf (frame-size *camera*) new-dimensions
+        (viewport-resolution (viewport *gl-context*)) new-dimensions)
   (standard-pass nil :cam-to-clip (cam->clip *camera*))
   (refract-pass nil :cam-to-clip (cam->clip *camera*)))
 
 (observe (|window|)
-  (when (eq (cepl.events.sdl:action e) :resized)
-    (reshape (cepl.events.sdl:data e))))
+  (when (eq (evt:action e) :resized)
+    (reshape (evt:data e))))
 
 ;;--------------------------------------------------------------
 ;; main loop

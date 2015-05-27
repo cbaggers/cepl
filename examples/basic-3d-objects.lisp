@@ -72,7 +72,8 @@
 (defun reshape (dimensions)
   (setf (frame-size *camera*) dimensions)
   (render-widgets nil :cam *camera*)
-  (apply #'gl:viewport 0 0 dimensions))
+  (setf (viewport-resolution (viewport *gl-context*))
+        dimensions))
 
 (let ((running nil))
   (defun run-demo ()

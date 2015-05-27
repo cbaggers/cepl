@@ -44,13 +44,13 @@
     (case-events (event)
       (:quit (:timestamp ts)
              (cl:push
-              (make-instance 'will-quit :timestamp ts)
+              (make-instance 'evt:will-quit :timestamp ts)
               results))
 
       (:windowevent (:timestamp ts :event e :data1 x :data2 y)
                     (let ((action (window-action-lookup e)))
                       (cl:push
-                       (make-instance 'win
+                       (make-instance 'evt:win
                                       :timestamp (sdl->lisp-time ts)
                                       :action action
                                       :data (list x y))
@@ -58,7 +58,7 @@
 
       (:mousewheel (:timestamp ts :which id :x x :y y)
                    (cl:push
-                    (make-instance 'mouse-scroll
+                    (make-instance 'evt:mouse-scroll
                                    :timestamp (sdl->lisp-time ts)
                                    :source-id id
                                    :vec (base-vectors:v! x y))
@@ -67,7 +67,7 @@
       ((:mousebuttondown :mousebuttonup)
        (:timestamp ts :which id :button b :state s
                    :clicks c :x x :y y)
-       (cl:push (make-instance 'mouse-button
+       (cl:push (make-instance 'evt:mouse-button
                                :timestamp (sdl->lisp-time ts)
                                :source-id id
                                :button (mouse-button-lookup b)
@@ -79,7 +79,7 @@
       (:mousemotion
        (:timestamp ts :which id :state s :x x :y y
                    :xrel xrel :yrel yrel)
-       (cl:push (make-instance 'mouse-motion
+       (cl:push (make-instance 'evt:mouse-motion
                                :timestamp (sdl->lisp-time ts)
                                :source-id id
                                :state s
@@ -89,7 +89,7 @@
 
       ((:keydown :keyup)
        (:type typ :timestamp ts :state s :repeat r :keysym keysym)
-       (cl:push (make-instance 'key
+       (cl:push (make-instance 'evt:key
                                :timestamp (sdl->lisp-time ts)
                                :etype (key-type-lookup typ)
                                :state (key-state-lookup s)

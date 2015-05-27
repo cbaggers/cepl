@@ -30,12 +30,13 @@
     (make-instance 'gl-context :handle context :window window)))
 
 (defmethod initialize-instance :after ((context gl-context) &key)
-  (ensure-cepl-compatible-setup)
-  (apply #'gl:viewport 0 0 +default-resolution+)
+  (ensure-cepl-compatible-setup)  
   (%set-default-gl-options)
-  (setf *gl-context* context)
-  (setf *gl-window* (window context))
-  (setf (gl-initialized context) t))
+  (setf *gl-context* context
+        *gl-window* (window context)
+        (slot-value context 'viewport) (%make-default-viewport
+                                        (list width height))
+        (gl-initialized context) t))
 
 (let ((available-extensions nil))
   (defun has-feature (x)

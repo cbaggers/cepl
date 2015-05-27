@@ -17,7 +17,21 @@
            :size
            :norm
            :tex
-           :col))
+           :col
+           :action
+           :button
+           :button-state
+           :clicks
+           :data
+           :delta
+           :etype
+           :id
+           :key
+           :key-state
+           :pos
+           :repeating
+           :state
+           :timestamp))
 
 (defpackage :cepl-backend
   (:use :cl)
@@ -326,8 +340,7 @@
            :stencil-writemask
            :stereo
            ;;- - - - - - - -
-           :*viewport-size*
-           :*viewport-origin*
+
            :viewport
            :with-viewport
            :with-fbo-viewport
@@ -528,7 +541,7 @@
   (:export :rqpos))
 
 (defpackage :cepl.events
-  (:use :cl :cepl-utils :cells)
+  (:use :cl :cepl-utils :cells :cepl-generics)
   (:nicknames :evt)
   (:export :event
            :event-cell
@@ -548,6 +561,7 @@
            :key-state
            :will-quit
            :window
+           :win
            :mouse-scroll
            :mouse-button
            :mouse-motion
@@ -792,8 +806,6 @@
            :attachment
            :attachment-compatible
            :fbo-detach
-           :*viewport-size*
-           :*viewport-origin*
            :viewport
            :with-viewport
            :with-fbo-viewport

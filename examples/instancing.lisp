@@ -126,10 +126,11 @@
 
 (defun reshape (new-dimensions)
   (setf (frame-size *camera*) new-dimensions)
-  (apply #'gl:viewport 0 0 new-dimensions)
+  (setf (viewport-resolution (viewport *gl-context*))
+        new-dimensions)  
   (instanced-birds nil :cam-to-clip (cam->clip *camera*)))
 
-(observe (|window|) (when (eq (cepl.events.sdl:action e) :resized) (reshape (vec e))))
+(observe (|window|) (when (eq (evt:action e) :resized) (reshape (vec e))))
 
 ;;--------------------------------------------------------------
 ;; main loop

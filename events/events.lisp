@@ -27,9 +27,9 @@
 (def-event-node |sys| (:parent |all-events|) (typep (event :parent) 'will-quit))
 
 (def-event-node |mouse| (:parent |all-events|) (mouse0-eventp (event :parent))
-  (pos :cell t :initform
+  (cepl-generics:pos :cell t :initform
        (c? (when (typep (event self) 'mouse-motion)
-             (pos (event self)))))
+             (cepl-generics:pos (event self)))))
   (state-tracker
    :cell t :initform (c? (when (typep (event self) 'mouse-button)
                            (setf (gethash (button (event self))

@@ -38,22 +38,31 @@
 
 ;;--------------------------------------------------
 
+(defconstant +db-ptr-sym+ '%--dbuffer-master-ptr*)
+(defconstant +db-pass-ptr-sym+ '%--dbuffer-master-ptr*)
+
 (defmacro def-compose-dispatch (name args uniforms context
                                 gpipe-args fbos post)
   (declare (ignore context))
-  `(defun ,(dispatch-func-name name)
-       (,@args ,@(when uniforms `(&key ,@uniforms)))
-     (unless initd
-       ,@(mapcar #'fbo-comp-form fbos)
-       (setf initd t)
-       ,(when post `(funcall ,post)))
-     ;; symbol-macrolet will go here
-     (labels ((cgl:attachment (fbo attachment-name)
-                (slot-value (cgl::attachment-gpu-array
-                             (cgl::%attachment fbo attachment-name))
-                            'cgl::texture)))
-       ,@(mapcar #'make-map-g-pass gpipe-args
-                 (make-pipeline-stream-args gpipe-args nil t)))))
+  (let* ((pass-data (mapcar #'make-map-g-pass gpipe-args
+                            (make-pipeline-stream-args gpipe-args nil t)))
+         (pass-code (mapcar #'first pass-data))
+         (all-draw-buffers (apply #'append (mapcar #'second pass-data))))    
+    `(let ((,+db-ptr-sym+ (foreign-alloc 'cl-opengl-bindings:enum :count
+                                         (length all-draw-buffers)
+                                         :initial-element ',all-draw-buffers)))
+       (defun ,(dispatch-func-name name)
+           (,@args ,@(when uniforms `(&key ,@uniforms)))
+         (unless initd
+           ,@(mapcar #'fbo-comp-form fbos)
+           (setf initd t)
+           ,(when post `(funcall ,post)))
+         ;; symbol-macrolet will go here     
+         (labels ((cgl:attachment (fbo attachment-name)
+                    (slot-value (cgl::attachment-gpu-array
+                                 (cgl::%attachment fbo attachment-name))
+                                'cgl::texture)))
+           ,@pass-code)))))
 
 (defun fbo-comp-form (form)
   (destructuring-bind (name . make-fbo-args) form
@@ -71,18 +80,36 @@
                                ,@(mapcat #'%uniform-arg-to-call
                                        (get-pipeline-uniforms func-name
                                                               call-form)))))
+      ;; the return sig is a list of '(the-code the-draw-buffers)
       (if fbo
-          `(with-bind-fbo (,@(listify fbo))
-             ,@lisp-forms
-             ,map-g-form)
+          (%gen-with-bind-fbo-result fbo lisp-forms map-g-form)
           (if lisp-forms
-              `(progn
-                 ,@lisp-forms
-                 ,map-g-form)
-              map-g-form)))))
+              (list `(progn ,@lisp-forms ,map-g-form) nil)
+              (list map-g-form nil))))))
 
 (defun %uniform-arg-to-call (uniform-arg)
   `(,(kwd (first uniform-arg)) ,(first uniform-arg)))
+
+(defun %gen-with-bind-fbo-result (fbo-pattern lisp-forms map-g-form)
+  (let* ((fbo-pattern (listify fbo-pattern))
+         (key-start (or (position-if #'keywordp fbo-pattern)
+                        (1- (length fbo-pattern))))
+         (fbo (first fbo-pattern))
+         (buffer-pattern (subseq fbo-pattern 1 key-start))
+         (keys (subseq fbo-pattern key-start)))
+    (when (and (member :draw-buffers keys) buffer-pattern)
+      (error "defpipeline: You must not specify an fbo target with buffers and a :draw-buffers keyword argument"))
+    (when (and (not buffer-pattern) (not (member :draw-buffers keys)))
+      (setf keys (append keys '(:draw-buffers t))))
+    (list
+     `(with-bind-fbo
+          (,fbo
+           ,@keys
+           ,@(when buffer-pattern
+                   `(:draw-buffers '(,+db-ptr-sym+ ,(length buffer-pattern)))))
+        ,@lisp-forms
+        ,map-g-form)
+     buffer-pattern)))
 
 ;;--------------------------------------------------
 

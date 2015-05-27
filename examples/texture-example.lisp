@@ -35,8 +35,8 @@
 
 (let ((running nil))
   (defun run-demo ()
-    (setf running t)
-    (apply #'gl:viewport 0 0 +default-resolution+)
+    (setf running t
+          (viewport-resolution (viewport *gl-context*)) +default-resolution+)
     (let* ((img-data (loop :for i :below 64 :collect
                         (loop :for j :below 64 :collect (random 254)))))
       (setf *v-stream*

@@ -45,6 +45,6 @@
 
 (observe (|window|) (when (eq (action e) :resized) (reshape (vec e))))
 (defun reshape (&optional (dims +default-resolution+))
-  (apply #'gl:viewport 0 0 dims))
+  (setf (viewport-resolution (viewport *gl-context*)) dims))
 
 (live:main-loop :init init :step step-demo)

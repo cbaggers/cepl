@@ -123,7 +123,8 @@
 
 (defun reshape (new-dimensions)
   (setf (frame-size *camera*) new-dimensions)
-  (apply #'gl:viewport 0 0 new-dimensions)
+  (setf (viewport-resolution (viewport *gl-context*))
+        new-dimensions)
   (frag-point-light nil :cam-to-clip (cam->clip *camera*)))
 
 (observe (|window|) (when (eq (action e) :resized) (reshape (vec e))))
