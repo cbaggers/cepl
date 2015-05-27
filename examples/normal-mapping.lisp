@@ -25,22 +25,22 @@
 
 (defun load-model (filename &optional hard-rotate)
   (let* ((result (first (model-parsers:load-file filename)))
-         (mesh (make-instance 'cgl:mesh
+         (mesh (make-instance 'meshes:mesh
                               :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
          (mesh~1 (if hard-rotate
-                     (cgl:transform-mesh mesh :rotation hard-rotate)
+                     (meshes:transform-mesh mesh :rotation hard-rotate)
                      mesh)))
     (let ((gstream (make-buffer-stream
-                    (cgl:vertices mesh) :index-array (cgl:indicies mesh))))
+                    (meshes:vertices mesh) :index-array (meshes:indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.3 -3) :mesh mesh~1))))
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera cgl:+default-resolution+))
-  (reshape cgl:+default-resolution+)
+  (setf *camera* (make-camera +default-resolution+))
+  (reshape +default-resolution+)
   (setf *wibble* (load-model "./wibble.3ds" (v! pi 0 0)))
   (setf *tex* (devil-helper:load-image-to-texture "./brick/col.png"))
   (setf *normal-map* (devil-helper:load-image-to-texture "./brick/norm.png")))
@@ -49,11 +49,11 @@
 ;; drawing
 
 (defun-g nm-vert ((data g-pnt) &uniform (model-to-cam :mat4) (cam-to-clip :mat4))
-  (values (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0)))
+  (values (* cam-to-clip (* model-to-cam (v! (pos data) 1.0)))
           (pos data)
-          (cgl:norm data)
+          (norm data)
           (v! 0.4 0 0.4 0)
-          (cgl:tex data)))
+          (tex data)))
 
 (defun-g nm-frag ((model-space-pos :vec3) (vertex-normal :vec3)
                   (diffuse-color :vec4) (tex-coord :vec2) &uniform
@@ -72,7 +72,7 @@
        (* t-col ambient-intensity))))
 
 (defpipeline frag-point-light () (g-> #'nm-vert #'nm-frag))
-;;(:post-compile (reshape cgl:+default-resolution+))
+;;(:post-compile (reshape +default-resolution+))
 
 
 (defun entity-matrix (entity)
@@ -81,7 +81,6 @@
                         (m4:scale (scale entity)))))
 
 (defun draw ()
-  (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (let* ((world-to-cam-matrix (world->cam *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix
@@ -97,20 +96,20 @@
           :ambient-intensity (v! 0.2 0.2 0.2 1.0)
           :textur *tex*))
   (gl:flush)
-  (cgl:update-display))
+  (update-display))
 
 ;;--------------------------------------------------------------
 ;; controls
 
 (evt:observe (|mouse|)
-  (when (and (typep e 'evt.sdl:mouse-motion)
-             (eq (evt.sdl:button-state self :left) :down))
-    (let ((d (evt.sdl:delta e)))
+  (when (and (typep e 'evt:mouse-motion)
+             (eq (evt:button-state self :left) :down))
+    (let ((d (evt:delta e)))
       (cond
-        ((eq (evt.sdl:key-state |keyboard| :lshift) :down)
+        ((eq (evt:key-state |keyboard| :lshift) :down)
          (v3:incf (pos *wibble*)
                   (v! 0 0 (/ (v:y d) 100.0))))
-        ((eq (evt.sdl:key-state |keyboard| :lctrl) :down)
+        ((eq (evt:key-state |keyboard| :lctrl) :down)
          (v3:incf (pos *wibble*)
                   (v! 0 (/ (v:y d) -100.0) 0)))
         (t
@@ -142,10 +141,10 @@
          (update-swank))))
   (defun stop-demo () (setf running nil))
   (evt:observe (|sys|)
-    (setf running (typep e 'evt.sdl:will-quit))))
+    (setf running (typep e 'evt:will-quit))))
 
 (defun step-demo ()
-  (evt.sdl:pump-events)
+  (evt:pump-events)
   (setf *loop-pos* (+ *loop-pos* 0.02))
   (setf (pos *light*) (v! (* 10 (sin *loop-pos*))
                           10

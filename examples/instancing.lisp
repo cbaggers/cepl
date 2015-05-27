@@ -25,22 +25,22 @@
 
 (defun load-model (filename &optional hard-rotate)
   (let* ((result (second (model-parsers:load-file filename)))
-         (mesh (make-instance 'cgl:mesh
+         (mesh (make-instance 'meshes:mesh
                               :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
          (mesh~1 (if hard-rotate
-                     (cgl:transform-mesh mesh :rotation hard-rotate)
+                     (meshes:transform-mesh mesh :rotation hard-rotate)
                      mesh)))
     (let ((gstream (make-buffer-stream
-                    (cgl:vertices mesh) :index-array (cgl:indicies mesh))))
+                    (meshes:vertices mesh) :index-array (meshes:indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.4 -1) :mesh mesh~1))))
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera cgl:+default-resolution+))
-  (reshape cgl:+default-resolution+)
+  (setf *camera* (make-camera +default-resolution+))
+  (reshape +default-resolution+)
   (setf *wibble* (load-model "./bird/bird.3ds" (v! pi 0 0)))
   (setf *tex* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
   (setf *pos-tex* (make-texture nil :dimensions 1000
@@ -57,13 +57,13 @@
 (defun-g instance-vert ((data g-pnt) &uniform (model-to-cam :mat4)
                         (cam-to-clip :mat4) (offsets :sampler-buffer))
   (values (let ((tpos (texel-fetch offsets gl-instance-id)))
-            (+ (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0)))
+            (+ (* cam-to-clip (* model-to-cam (v! (pos data) 1.0)))
                tpos
                (v! 0 0 -4 7)))
           (pos data)
-          (cgl:norm data)
+          (norm data)
           (v! 0.4 0 0.4 0)
-          (cgl:tex data)))
+          (tex data)))
 
 (defun-g instance-frag ((model-space-pos :vec3) (vertex-normal :vec3)
                   (diffuse-color :vec4) (tex-coord :vec2) &uniform
@@ -82,7 +82,7 @@
        (* t-col ambient-intensity))))
 
 (defpipeline instanced-birds () (g-> #'instance-vert #'instance-frag))
-;;(:post-compile (reshape cgl:+default-resolution+))
+;;(:post-compile (reshape +default-resolution+))
 
 
 
@@ -92,7 +92,6 @@
                         (m4:scale (scale entity)))))
 
 (defun draw ()
-  (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (let* ((world-to-cam-matrix (world->cam *camera*))
          (model-to-cam-matrix (m4:m* world-to-cam-matrix
@@ -110,14 +109,14 @@
             :textur *tex*
             :offsets *pos-tex*)))
   (gl:flush)
-  (cgl:update-display))
+  (update-display))
 
 ;;--------------------------------------------------------------
 ;; controls
 
 (evt:observe (|mouse|)
-  (when (typep e 'evt.sdl:mouse-motion)
-    (let ((d (evt.sdl:delta e)))
+  (when (typep e 'evt:mouse-motion)
+    (let ((d (evt:delta e)))
       (setf (rot *wibble*) (v:+ (rot *wibble*) (v! (/ (v:y d) -100.0)
                                                    (/ (v:x d) -100.0)
                                                    0.0))))))
@@ -145,10 +144,10 @@
          (update-swank))))
   (defun stop-demo () (setf running nil))
   (evt:observe (|sys|)
-    (setf running (typep e 'evt.sdl:will-quit))))
+    (setf running (typep e 'evt:will-quit))))
 
 (defun step-demo ()
-  (evt.sdl:pump-events)
+  (evt:pump-events)
   (setf *loop-pos* (+ *loop-pos* 0.04))
   (setf (pos *light*) (v! (* 10 (sin *loop-pos*))
                           10

@@ -62,7 +62,6 @@
 
 (let ((running nil))
   (defun run-demo ()
-    (cgl:clear-color 0.0 0.0 0.0 0.0)
     (setf *gpu-array* (make-gpu-array (list (v! -1.0  -1.0  0.0  1.0)
                                             (v!  1.0  -1.0  0.0  1.0)
                                             (v!  1.0   1.0  0.0  1.0)
@@ -76,13 +75,13 @@
     (loop :while running :do (continuable (draw))))
   (defun stop-demo () (setf running nil)))
 
-(evt:observe (|sys|) (when (typep e 'evt.sdl:will-quit) (stop-demo)))
+(evt:observe (|sys|) (when (typep e 'evt:will-quit) (stop-demo)))
 
 (defun draw ()
-  (evt.sdl:pump-events)
+  (evt:pump-events)
   (update-swank)
   (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (map-g #'raymarcher *vertex-stream* :loop *loop* :eye-pos (v! 0 0 -5))
   (gl:flush)
-  (cgl:update-display))
+  (update-display))

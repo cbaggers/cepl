@@ -2,12 +2,12 @@
 
 (defconstant +restorable-viewport+ t)
 (defparameter +default-resolution+ (list 640 480))
-(defparameter *viewport-size* cgl:+default-resolution+)
+(defparameter *viewport-size* +default-resolution+)
 (defparameter *viewport-origin* (v! 0 0))
 
 
 ;; {TODO} add declarations
-(defun viewport (&optional (size cgl:+default-resolution+) (origin (v! 0 0)))
+(defun viewport (&optional (size +default-resolution+) (origin (v! 0 0)))
   (gl:viewport (v:x origin) (v:y origin) (first size) (second size)))
 
 
@@ -26,8 +26,8 @@
                '((viewport *viewport-size* *viewport-origin*))))))
 
 
-(defmacro with-fbo-viewport ((fbo &optional (attachment :color-0)) &body body)
+(defmacro with-fbo-viewport ((fbo &optional (attachment 0)) &body body)
   (let ((tex-array (gensym "tx-array")))
-    `(let* ((,tex-array (attachment-gpu-array (attachment ,fbo ,attachment))))
+    `(let* ((,tex-array (attachment-gpu-array (%attachment ,fbo ,attachment))))
        (with-viewport ((dimensions ,tex-array))
          ,@body))))

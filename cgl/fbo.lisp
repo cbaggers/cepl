@@ -38,7 +38,7 @@
 (defun update-clear-mask (fbo)
   (setf (%fbo-clear-mask fbo)
         (cffi:foreign-bitfield-value
-         '%gl::ClearBufferMask 
+         '%gl::ClearBufferMask
          `(:color-buffer-bit
            ,@(and (attachment-gpu-array (%fbo-attachment-depth fbo))
                   '(:depth-buffer-bit))
@@ -52,7 +52,7 @@
     (loop :for i :from 0 :for attachment :across (%fbo-attachment-color fbo) :do
        (setf (mem-aref ptr 'cl-opengl-bindings:enum i)
              (if (attachment-gpu-array attachment)
-                 (nth i *attachments*)                 
+                 (nth i *attachments*)
                  :none)))))
 ;;{TODO} magic-num is gl enum for color-attachment0
 ;;       needs an assert somewhere
@@ -273,7 +273,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 ;; each individual mipmap level can contain one or more images.
 
 ;; {TODO} Ensure image formats are color-renderable for color attachments
-;;  
+;;
 (defun fbo-attach (fbo tex-array attachment &optional (target :framebuffer))
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target can be '(:framebuffer :read-framebuffer :draw-framebuffer)
@@ -419,7 +419,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       :draw-framebuffer))
 
 (defvar %possible-texture-keys '(:dimensions :internal-format :mipmap
-                                 :layer-count :cubes :rectangle 
+                                 :layer-count :cubes :rectangle
                                  :multisample :immutable :buffer-storage
                                  :lod-bias :min-lod :max-lod :minify-filter
                                  :magnify-filter :wrap :compare))
@@ -438,15 +438,15 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; pattern with args for make-texture
     ((some (lambda (x) (member x %possible-texture-keys)) pattern)
      (when (some (lambda (x) (and (member x %possible-texture-keys)
-                                  (not (member x %valid-texture-subset)))) 
+                                  (not (member x %valid-texture-subset))))
                  pattern)
          (error "Only the following args to make-texture are allowed inside a make-fbo ~s"
-                %valid-texture-subset))         
+                %valid-texture-subset))
      (destructuring-bind
            (&key (dimensions +default-resolution+)
                  (internal-format (%get-default-texture-format (first pattern)))
-                 mipmap (immutable t) lod-bias min-lod max-lod minify-filter 
-                 magnify-filter wrap compare)          
+                 mipmap (immutable t) lod-bias min-lod max-lod minify-filter
+                 magnify-filter wrap compare)
          (rest pattern)
        (assert (attachment-compatible (first pattern) internal-format))
        (texref
@@ -495,8 +495,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (setf (attachment fbo attachment) nil)
   (%gl:framebuffer-texture-layer :draw-framebuffer attachment 0 0 0))
 
-(defun clear-fbo (&optional fbo)
+(defun clear (&optional fbo)
   (if (or (null fbo) (eq fbo *default-framebuffer*))
       (gl:clear :color-buffer-bit :depth-buffer-bit)
       (%gl:clear (%fbo-clear-mask fbo))))
-

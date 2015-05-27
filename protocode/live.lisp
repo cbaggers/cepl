@@ -83,7 +83,7 @@
                         ,(make-entity :pos (v!  0 0 -15) :e-stream e-stream)
                         ,(make-entity :pos (v! -5 0 -20) :e-stream e-stream))))
   ;;set options
-  (cgl:clear-color 0.0 0.0 0.0 0.0)
+  (gl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
   (gl:front-face :cw)
@@ -99,8 +99,8 @@
                         (m4:scale (scale entity)))))
 
 (defun draw ()
-  (cgl:clear-depth 1.0)
-  (cgl:clear :color-buffer-bit :depth-buffer-bit)
+  (gl:clear-depth 1.0)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
   (prog-2 nil :world-to-cam (calculate-cam-look-at-w2c-matrix *camera*))
   (loop :for entity :in *entities* :do
      (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))

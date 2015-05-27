@@ -27,11 +27,11 @@
                          red-size green-size blue-size buffer-size
                          double-buffer hidden resizable)
     (setf +default-resolution+ (list width height))
-    (make-instance 'cgl:gl-context :handle context :window window)))
+    (make-instance 'gl-context :handle context :window window)))
 
 (defmethod initialize-instance :after ((context gl-context) &key)
   (ensure-cepl-compatible-setup)
-  (apply #'gl:viewport 0 0 cgl:+default-resolution+)
+  (apply #'gl:viewport 0 0 +default-resolution+)
   (%set-default-gl-options)
   (setf *gl-context* context)
   (setf *gl-window* (window context))
@@ -54,7 +54,7 @@
 
 (defun %set-default-gl-options ()
   (print "Setting default options")
-  (cgl:clear-color 0.0 0.0 0.0 0.0)
+  (gl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
   (gl:front-face :ccw)
@@ -65,12 +65,6 @@
   (gl:enable :depth-clamp))
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-(cells:defmodel gl-context ()
-  ((cache :cell nil :initform (make-hash-table))
-   (handle :cell nil :initarg :handle :reader handle)
-   (window :cell nil :initarg :window :reader window)
-   (gl-initialized :cell t :initform (cells:c-in nil) :reader gl-initialized)))
 
 (defmethod clear-gl-context-cache ((object gl-context))
   (clrhash (slot-value object 'cache)))
@@ -105,7 +99,7 @@
 (defmacro def-g (var &optional val doc)
   `(progn
      (defparameter ,var nil ,doc)
-     (if cgl:*gl-context*
+     (if *gl-context*
          (setf ,var ,val)
          (push (lambda () (setf ,var ,val))
                cgl::*on-context-funcall*))))

@@ -1,4 +1,4 @@
-(in-package :cgl)
+(in-package :meshes)
 
 (defclass region () ())
 

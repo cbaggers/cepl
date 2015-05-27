@@ -1,9 +1,9 @@
 (in-package :cepl)
 
-(defvar guy (devil-helper:load-image-to-texture
-             (merge-pathnames "guy.png" *examples-dir*)))
-(defvar cols (devil-helper:load-image-to-texture
-              (merge-pathnames "c.png" *examples-dir*)))
+;; (defvar guy (devil-helper:load-image-to-texture
+;;              (merge-pathnames "guy.png" *examples-dir*)))
+;; (defvar cols (devil-helper:load-image-to-texture
+;;               (merge-pathnames "c.png" *examples-dir*)))
 
 (defun-g vert ((quad g-pt))
   (values (v! (pos quad) 1)
@@ -25,10 +25,10 @@
                   (t2 :sampler-2d) (t3 :sampler-2d))
   (let ((tc (* tc (v! 1 -1))))
     (+ (v! 0 0 0 0)
-       (* (texture t0 tc) 1)
-       (* (texture t1 tc) 0.6)
-       (* (texture t2 tc) 0.6)
-       (* (texture t3 tc) 0.6))))
+       (* (texture t0 tc) 0.6)
+       (* (texture t1 tc) 0.1)
+       (* (texture t2 tc) 0.2)
+       (* (texture t3 tc) 0.3))))
 
 (defpipeline combine () (g-> #'vert #'fourtex))
 
@@ -45,7 +45,7 @@
          (c1 (qsmood stream :tex (attachment h1 0) :offset (v! 0 (/ 1.2 256))))
          (c2 (qsmood stream :tex (attachment h2 0) :offset (v! 0 (/ 1.2 128))))
          (c3 (qsmood stream :tex (attachment h3 0) :offset (v! 0 (/ 1.2 64))))
-         (nil (cgl:viewport '(512 512))
+         (nil (viewport '(512 512))
               (combine stream
                        :t0 (attachment c0 0) :t1 (attachment c1 0)
                        :t2 (attachment c2 0) :t3 (attachment c3 0))))
@@ -64,8 +64,8 @@
   (evt:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (map-g #'bloom cgl::*quad-stream* :tx cols)
-  (cgl:update-display))
+  (map-g #'bloom *quad-stream* :tx guy)
+  (update-display))
 
 ;;-------------------------------------------------------
 (defparameter *running* nil)

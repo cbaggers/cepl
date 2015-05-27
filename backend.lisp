@@ -1,5 +1,7 @@
 (in-package :cepl-backend)
 
+(defvar *backend* nil)
+
 ;; ultimately need to be able to support more backends than sdl
 ;; first candidate for this is glop.
 
@@ -11,6 +13,7 @@
                   red-size green-size blue-size buffer-size
                   double-buffer hidden resizable))
 (defgeneric shutdown (backend-name))
+(defgeneric get-event-pump (backend-name))
 
 ;; #+sb-thread
 ;; (defmacro on-main (&body b)
@@ -32,6 +35,7 @@
                  no-frame alpha-size depth-size stencil-size
                  red-size green-size blue-size buffer-size
                  double-buffer hidden resizable)
+  (setf *backend* :sdl)
   #+(and ccl darwin)
   (setf cl-opengl-bindings::*gl-get-proc-address* #'sdl2::gl-get-proc-address)
   (unless (sdl2:init) (error "Failed to initialise SDL"))
@@ -64,3 +68,6 @@
 
 (defmethod shutdown ((backend-name (eql :sdl)))
   (sdl2:quit))
+
+(defmethod get-event-pump ((backend-name (eql :sdl)))
+  #'cepl.events.sdl:pump-events)

@@ -29,22 +29,22 @@
   (let* ((imp-mesh (elt (classimp:meshes (classimp:import-into-lisp file-path))
                         nth-mesh))
          (result (model-parsers:mesh->gpu imp-mesh))
-         (mesh (make-instance 'cgl:mesh
+         (mesh (make-instance 'meshes:mesh
                               :primitive-type :triangles
                               :vertices (first result)
                               :index (second result)))
          (mesh~1 (if hard-rotate
-                     (cgl:transform-mesh mesh :rotation hard-rotate)
+                     (meshes:transform-mesh mesh :rotation hard-rotate)
                      mesh)))
     (let ((gstream (make-buffer-stream
-                    (cgl:vertices mesh) :index-array (cgl:indicies mesh))))
+                    (meshes:vertices mesh) :index-array (meshes:indicies mesh))))
       (make-instance 'entity :rot (v! 1.57079633 1 0) :gstream gstream
                      :pos (v! 0 -0.4 -1) :mesh mesh~1))))
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera cgl:+default-resolution+))
-  (reshape cgl:+default-resolution+)
+  (setf *camera* (make-camera +default-resolution+))
+  (reshape +default-resolution+)
   (setf *wibble* (load-model (devil-helper:load-image-to-texture
                               (merge-pathnames "wibble.3ds" *examples-dir*))
                              0 (v! pi 0 0)))
@@ -62,11 +62,11 @@
 
 (defun-g standard-vert ((data g-pnt) &uniform (model-to-cam :mat4)
                         (cam-to-clip :mat4))
-  (values (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0)))
-          (cgl:pos data)
-          (cgl:norm data)
+  (values (* cam-to-clip (* model-to-cam (v! (pos data) 1.0)))
+          (pos data)
+          (norm data)
           (v! 0.4 0 0.4 0)
-          (cgl:tex data)))
+          (tex data)))
 
 (defun-g standard-frag
     ((model-space-pos :vec3) (vertex-normal :vec3) (diffuse-color :vec4)
@@ -83,8 +83,8 @@
 
 (defun-g refract-vert ((data g-pnt) &uniform (model-to-cam :mat4)
                        (cam-to-clip :mat4))
-  (values (* cam-to-clip (* model-to-cam (v! (cgl:pos data) 1.0)))
-          (cgl:tex data)))
+  (values (* cam-to-clip (* model-to-cam (v! (pos data) 1.0)))
+          (tex data)))
 
 (defun-g refract-frag ((tex-coord :vec2) &uniform (textur :sampler-2d)
                        (bird-tex :sampler-2d) (fbo-tex :sampler-2d)
@@ -108,19 +108,18 @@
   :post #'reshape)
 
 (defpipeline two-pass (&uniform model-to-cam2)
-    (g-> (scene (cgl:clear-fbo scene)
+    (g-> (scene (clear scene)
                 (standard-pass :light-intensity (v! 1 1 1 0)
                                :textur *wib-tex*
                                :ambient-intensity (v! 0.2 0.2 0.2 1.0)))
          (nil (refract-pass :model-to-cam model-to-cam2
-                            :fbo-tex (cgl:attachment scene 0)
+                            :fbo-tex (attachment scene 0)
                             :textur *bird-tex*
                             :bird-tex *bird-tex2*
                             :loop *loop-pos*)))
   :fbos (scene :c))
 
 (defun draw ()
-  (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (let* ((world-to-cam-matrix (world->cam *camera*))
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
@@ -135,7 +134,7 @@
           :model-to-cam (m4:m* world-to-cam-matrix (entity-matrix *wibble*))
           :model-to-cam2 (m4:m* world-to-cam-matrix (entity-matrix *bird*))
           :model-space-light-pos (v:s~ cam-light-vec :xyz)))
-  (cgl:update-display))
+  (update-display))
 
 
 
@@ -148,15 +147,15 @@
 ;; controls
 
 (evt:observe (|mouse|)
-  (when (typep e 'evt.sdl:mouse-motion)
-    (when (eq (evt.sdl:button-state |mouse| :left) :down)
-      (let ((d (evt.sdl:delta e)))
+  (when (typep e 'evt:mouse-motion)
+    (when (eq (evt:button-state |mouse| :left) :down)
+      (let ((d (evt:delta e)))
         (cond
-          ((eq (evt.sdl:key-state |keyboard| :lctrl) :down)
+          ((eq (evt:key-state |keyboard| :lctrl) :down)
            (v3:incf (pos *bird*) (v! (/ (v:x d) 480.0)
                                      (/ (v:y d) -640.0)
                                      0)))
-          ((eq (evt.sdl:key-state |keyboard| :lshift) :down)
+          ((eq (evt:key-state |keyboard| :lshift) :down)
            (v3:incf (pos *bird*) (v! 0 0 (/ (v:y d) 300.0))))
           (t
            (setf (rot *bird*) (v:+ (rot *bird*) (v! (/ (v:y d) -100.0)
@@ -166,7 +165,7 @@
 ;;--------------------------------------------------------------
 ;; window
 
-(defun reshape (&optional (new-dimensions cgl:+default-resolution+))
+(defun reshape (&optional (new-dimensions +default-resolution+))
   (setf (frame-size *camera*) new-dimensions)
   (apply #'gl:viewport 0 0 new-dimensions)
   (standard-pass nil :cam-to-clip (cam->clip *camera*))
@@ -190,11 +189,11 @@
   (defun stop-demo () (setf running nil)))
 
 (evt:observe (|sys|)
-  (when (typep e 'evt.sdl:will-quit)
+  (when (typep e 'evt:will-quit)
     (stop-demo)))
 
 (defun step-demo ()
-  (evt.sdl:pump-events)
+  (evt:pump-events)
   (setf *loop-pos* (+ *loop-pos* 0.04))
   (setf (pos *light*) (v! (* 10 (sin (* 0.01 *loop-pos*)))
                           10

@@ -22,13 +22,13 @@
               (live:continuable
                 ,@(when (not own-pump)
                         '((update-swank)
-                          (evt.sdl:pump-events)))
+                          (evt:pump-events)))
                 ,(when step `(,step))))
            (print "-shutting down-")
            nil)
          (defun ,stop-symb () (setf running nil)))
-       (evt:observe (evt.sdl:|sys|)
-         (when (typep ,(symb 'e) 'evt.sdl:will-quit)
+       (evt:observe (evt:|sys|)
+         (when (typep ,(symb 'e) 'evt:will-quit)
            (,stop-symb))))))
 
 (defmacro continuable (&body body)

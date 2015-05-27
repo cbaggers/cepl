@@ -18,6 +18,7 @@ Ok so we are going to kill as many of the cases where :: is used
 
 * should v:x->w be exposed in cepl? it feels like something we would do so
   often that it should be there...maybe leave that to users/ceplive
+- yeah that is for others to decide
 
 * default-resolution doesnt know about viewport calls on default framebuffer
   This is a shame. We can start by making viewport set this, but then we get
@@ -25,12 +26,18 @@ Ok so we are going to kill as many of the cases where :: is used
   now and re-examine it later.
 
 * sdl.evt sucks, just make it evt
+- done
 
 * #'clear-fbo should be #'clear with optional fbo arg
+- done (kinda)
 
 * mesh.lisp has package cgl..why?
+- now in "meshes" package
 
 * add %px to def-compose-dispatch. It is a symbolmacro that expands to (%view-pixel-size)
   which is a local func that
 
 * what in examples specifies a package, why? Mainly interested in cgl:
+
+* remove cls
+- done

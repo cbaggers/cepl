@@ -22,7 +22,9 @@
 (defpackage :cepl-backend
   (:use :cl)
   (:export :init
-           :shutdown))
+           :shutdown
+           :get-event-pump
+           :*backend*))
 
 (defpackage :cepl-utils
   (:use :cl)
@@ -34,7 +36,6 @@
            :listify
            :replace-nth
            :hash-values
-           :lambda-list-split
            :hash-keys
            :intersperse
            :walk-replace
@@ -259,24 +260,13 @@
   (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
         :fn_ :split-sequence :%cgl)
   (:nicknames :cgl)
-  (:import-from :cl-opengl
-                :clear-color
-                :enable
-                :disable
-                :cull-face
-                :front-face
-                :depth-mask
-                :depth-func
-                :depth-range
-                :clear
-                :clear-depth
-                :flush
-                :delete-shader)
   (:import-from :utils
                 :deferror
                 :print-mem)
   (:shadow :float)
   (:export :gl-context
+           :*quad*
+           :*quad-stream*
            ;;- - - - - - - -
            :make-context
            :has-feature
@@ -432,20 +422,6 @@
            :norm
            :tex
            ;;----------
-           :delete-shader
-           :clear-color
-           :cls
-           :enable
-           :disable
-           :cull-face
-           :front-face
-           :depth-mask
-           :depth-func
-           :depth-range
-           :clear
-           :clear-depth
-           :flush
-           ;;----------
            :map-g
            ;;----------
            :make-fbo
@@ -464,15 +440,7 @@
            ;;----------
            :def-equivalent-type
            ;;----------
-           :mesh
-           :vertices
-           :indicies
-           :primitive-type
-           :transform-mesh
-           :transform-mesh-with-matrix
-           :polygonize
-           :flatten-index
-           :clear-fbo))
+           :clear))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
@@ -520,6 +488,18 @@
   (:import-from :vector4
                 :make-vector4))
 
+(defpackage :meshes
+  (:use :cl :cffi :base-macros :cepl-utils :base-vectors :cepl-generics
+        :fn_ :split-sequence)
+  (:export :mesh
+           :vertices
+           :indicies
+           :primitive-type
+           :transform-mesh
+           :transform-mesh-with-matrix
+           :polygonize
+           :flatten-index))
+
 (defpackage :devil-helper
   (:use :cl)
   (:export :load-image-to-c-array
@@ -563,25 +543,14 @@
            :|mouse|
            :|sys|
            :|window|
-           :|keyboard|))
-
-(defpackage :cepl.events.sdl
-  (:use :cl :cepl-utils :cepl.events :cells :cepl-generics)
-  (:nicknames :evt.sdl)
-  (:shadow :pump-events)
-  (:export :pump-events
-           :case-events
+           :|keyboard|
+           :button-state
+           :key-state
            :will-quit
            :window
            :mouse-scroll
            :mouse-button
            :mouse-motion
-           :key
-           :terminal
-           :|mouse|
-           :|sys|
-           :|window|
-           :|keyboard|
            :action
            :button
            :clicks
@@ -589,15 +558,17 @@
            :etype
            :id
            :key
-           :pos
            :repeating
            :source-id
            :state
            :timestamp
-           :vec
-           :data
-           :button-state
-           :key-state))
+           :data))
+
+(defpackage :cepl.events.sdl
+  (:use :cl :cepl-utils :cepl.events :cells :cepl-generics)
+  (:shadow :pump-events)
+  (:export :pump-events
+           :case-events))
 
 (defpackage :live
   (:use :cl :cepl-utils)
@@ -623,6 +594,8 @@
                 :update-swank
                 :peek)
   (:import-from :cepl-gl
+                :clear
+                :update-display
                 :pos
                 :rot
                 :dir
@@ -631,7 +604,6 @@
                 :norm
                 :tex
                 :col
-                :cls
                 :pixel-format
                 :describe-pixel-format
                 :lisp-type->pixel-format
@@ -669,6 +641,8 @@
                 :g-pnt
                 :g-pntc
                 :texref
+                :*quad*
+                :*quad-stream*
                 ;;---
                 :map-g
                 ;;---
@@ -677,6 +651,7 @@
                 :with-bind-fbo
                 :with-fbo-slots
                 :fbo-attach
+                :attachment
                 :attachment-compatible
                 :fbo-detach
                 :*viewport-size*
@@ -768,7 +743,10 @@
            :update-swank
            :peek
            ;;---
-           :cls
+           :*quad*
+           :*quad-stream*
+           :clear
+           :update-display
            :pixel-format
            :lisp-type->pixel-format
            :pixel-format->lisp-type
@@ -811,6 +789,7 @@
            :with-bind-fbo
            :with-fbo-slots
            :fbo-attach
+           :attachment
            :attachment-compatible
            :fbo-detach
            :*viewport-size*
