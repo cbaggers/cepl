@@ -1,4 +1,4 @@
-(in-package :cgl)
+(in-package :meshes)
 
 (defclass region () ())
 
@@ -62,7 +62,7 @@
 (defmethod polygonize ((region linear-region) primitive-type
                        &key index-data normals texture-coords)
   (let* ((points (points region))
-         (element-type (model-parsers::calc-type
+         (element-type (model-parsers:calc-type
                         points normals texture-coords)))
     (make-instance
      'mesh

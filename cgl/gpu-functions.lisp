@@ -1,5 +1,5 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn_::fn_lambda)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 ;; defun-gpu is at the bottom of this file
 
@@ -14,7 +14,7 @@
                         (pop body))))
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-        (varjo::lambda-list-split '(:&uniform :&context :&instancing) args)
+        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
       (let ((in-args (swap-equivalent-types in-args))
             (uniforms (swap-equivalent-types uniforms))
             (equivalent-inargs (mapcar λ(when (equivalent-typep _) _)
@@ -35,8 +35,8 @@
 (defun %test-compile (in-args uniforms context body depends-on)
   (when (every #'gpu-func-spec depends-on)
     (let ((body (labels-form-from-func-names depends-on body)))
-      (varjo::translate in-args uniforms (union '(:vertex :fragment :330) context)
-                        body))))
+      (varjo:translate in-args uniforms (union '(:vertex :fragment :330) context)
+                       body))))
 
 ;;--------------------------------------------------
 
@@ -91,9 +91,7 @@
   (with-slots (name) spec
     (%unsubscibe-from-all name)
     (mapcar (fn_ #'%subscribe-to-gpu-func name) depends-on)
-    (setf (gpu-func-spec name) spec)
-    ;(%recompile-gpu-function name)
-    ))
+    (setf (gpu-func-spec name) spec)))
 
 (defun %gpu-func-compiles-in-some-context (spec)
   (declare (ignorable spec))
@@ -101,11 +99,11 @@
 
 (defun %expand-all-macros (spec)
   (with-gpu-func-spec spec
-    (let ((env (make-instance 'varjo::environment)))
+    (let ((env (make-instance 'varjo:environment)))
       (%%expand-all-macros body context env))))
 
 (defun %%expand-all-macros (body context env)
-  (varjo::pipe-> (nil nil context body env)
+  (varjo:pipe-> (nil nil context body env)
     #'varjo::split-input-into-env
     #'varjo::process-context
     (equal #'varjo::symbol-macroexpand-pass
@@ -259,7 +257,7 @@
        (let ((args (subseq args 0 cut-pos)))
          (if (and (= (length args) 2) (not (some #'keywordp args)))
              `((:vertex . ,(cadar args)) (:fragment . ,(cadadr args)))
-             (let* ((stages (copy-list varjo::*stage-types*))
+             (let* ((stages (copy-list varjo:*stage-types*))
                     (results (loop :for a :in args
                                 :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
                                 :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
@@ -282,7 +280,7 @@
       (progn
         (when (keywordp previous)
           (error "Invalid gpipe arguments: ~s follows ~s" current previous))
-        (unless (member current varjo::*stage-types*)
+        (unless (member current varjo:*stage-types*)
           (error "Invalid gpipe arguments: ~s is not the name of a stage" current))
         current)
       (if (symbolp current)

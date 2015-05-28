@@ -24,7 +24,7 @@
   (update-swank)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (map-g #'prog-1 *stream*)
-  (cgl:update-display))
+  (update-display))
 
 (defun run-demo ()
   (setf *running* t
@@ -39,5 +39,5 @@
 (defun stop-demo ()
   (setf *running* nil))
 
-(evt:observe (cepl.events.sdl:|sys|)
-  (when (typep e 'cepl.events.sdl:will-quit) (stop-demo)))
+(evt:observe (evt:|sys|)
+  (when (typep e 'evt:will-quit) (stop-demo)))

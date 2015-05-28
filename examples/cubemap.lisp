@@ -11,7 +11,7 @@
 (defun-g frag ((tc :vec3) &uniform (tex :sampler-cube))
   (texture tex tc))
 
-(defpipeline skybox () (cgl:g-> #'vert #'frag))
+(defpipeline skybox () (g-> #'vert #'frag))
 
 (defun make-cubemap-tex (&rest paths)
   (with-c-arrays (ca (mapcar #'devil-helper:load-image-to-c-array paths))
@@ -31,12 +31,12 @@
 (defun step-demo ()
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (map-g #'skybox strm :tex tx :mod-clip (m4:m* (cam->clip cam) (world->cam cam)))
-  (cgl:update-display))
+  (update-display))
 
 (defvar mouse-ang (v! 0 0))
 (evt:observe (evt:|mouse|)
-  (when (typep e 'evt.sdl:mouse-motion)
-    (let ((d (evt.sdl:delta e)))
+  (when (typep e 'evt:mouse-motion)
+    (let ((d (evt:delta e)))
       (setf mouse-ang (v2:v+ (v! (/ (v:x d) -100.0) (/ (v:y d) -100.0))
                              mouse-ang)
             (dir cam) (v! (sin (v:x mouse-ang))
@@ -44,7 +44,7 @@
                           (cos (v:x mouse-ang)))))))
 
 (observe (|window|) (when (eq (action e) :resized) (reshape (vec e))))
-(defun reshape (&optional (dims cgl:+default-resolution+))
-  (apply #'gl:viewport 0 0 dims))
+(defun reshape (&optional (dims +default-resolution+))
+  (setf (viewport-resolution (viewport *gl-context*)) dims))
 
 (live:main-loop :init init :step step-demo)

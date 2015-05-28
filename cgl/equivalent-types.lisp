@@ -33,7 +33,7 @@
 ;; (def-equivalent-type 'single-float :float)
 (defun det-simple-mapping (lisp-type-name varjo-type)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (varjo::add-type-shadow ',lisp-type-name ',varjo-type)))
+     (varjo:add-type-shadow ',lisp-type-name ',varjo-type)))
 
 
 ;; uses existing type
@@ -47,7 +47,7 @@
   `(progn
      (eval-when (:compile-toplevel :load-toplevel :execute)
        (setf (equiv-spec ,lisp-type-name) ,(list varjo-type slots)))
-     (let ((vsn (mapcar #'first (varjo::v-slots (varjo:type-spec->type
+     (let ((vsn (mapcar #'first (varjo:v-slots (varjo:type-spec->type
                                                 ',varjo-type))))
            (sn ',(remove-duplicates (mapcar #'first slots))))
        (assert (and (= (length vsn) ,(length slots))

@@ -2,7 +2,8 @@
 
 ;; {TODO} move this to gl-context.lisp
 (defstruct default-framebuffer)
-(defparameter %current-fbo (make-default-framebuffer))
+(defvar *default-framebuffer* (make-default-framebuffer))
+(defvar %current-fbo *default-framebuffer*)
 
 ;; {TODO} need to put this in some macros utils package
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -41,8 +42,9 @@
 ;; Q: is this moot because of having to set %current-fbo
 ;; A: I hope not, I think given correct settings the compiler may be able
 ;;    to optimize away this let as nothing uses it.
-(defmacro with-bind-fbo ((fbo &optional (target :framebuffer) (unbind t)
-                              (attachment-for-size :color-0) (with-viewport t))
+(defmacro with-bind-fbo ((fbo &key (target :framebuffer) (unbind t)
+                              (with-viewport t) (attachment-for-size 0)
+                              (draw-buffers t))
                          &body body)
   (labels ((inject-map-g-form (fbo-symbol)
              (subst fbo-symbol 'a
@@ -53,25 +55,33 @@
          (let* ((,once-fbo ,fbo)
                 (%current-fbo ,once-fbo))
            (%bind-fbo ,once-fbo ,target)
+           ,(when draw-buffers
+                  (cond ((equal draw-buffers t) `(%fbo-draw-buffers ,once-fbo))
+                        ((listp draw-buffers)
+                         (%write-draw-buffer-pattern-call draw-buffers))))
            (prog1 (,@(if with-viewport
                          `(with-fbo-viewport (,once-fbo ,attachment-for-size))
                          '(progn))
-                    ,@body)
+                     ,@body)
              (when ,unbind (%unbind-fbo))))))))
-
 
 ;; EXAMPLES
 ;;
 ;; (map-g #'test a :tex tx)
 ;;
 ;; (macroexpand-dammit:macroexpand-dammit
-;;       '(with-bind-fbo (some-fbo :framebuffer)
+;;       '(with-bind-fbo (some-fbo)
 ;;         (let ((jam (map-g #'test a :tex tx)))
 ;;           (print jam))))
 
 
-;; Deliberatly innefficient very of map-g that will create a temporary stream
-;; if you give dont give it one. It will even create a temporary gpu-array
-;; to hold the data, MADNESS!
-;; (defmacro map-g~ (pipeline-func stream &rest uniforms)
-;;   ())
+(defun %write-draw-buffer-pattern-call (pattern)
+  "This plays with the dispatch call from compose-pipelines
+   The idea is that the dispatch func can preallocate one array
+   with the draw-buffers patterns for ALL the passes in it, then
+   we just upload from that one block of memory.
+   All of this can be decided at compile time. It's gonna go fast!"
+  (destructuring-bind (pointer len) pattern
+    `(progn (%gl:draw-buffers ,len ,pointer)
+            (cffi:incf-pointer
+             ,pointer (* ,len (foreign-type-size 'cl-opengl-bindings:enum))))))

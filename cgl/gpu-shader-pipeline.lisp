@@ -1,5 +1,5 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn_::fn_lambda)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 (defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
@@ -13,37 +13,47 @@
               (stage-names (mapcar #'cdr stage-pairs)))
           (update-pipeline-spec
            (make-shader-pipeline-spec
-            name stage-names (make-change-signature stage-names)
+            name stage-names (make-pipeline-change-signature stage-names)
             (or gpipe-context context)))
           `(progn
              (let-pipeline-vars (,stage-pairs ,pass-key)
                (eval-when (:compile-toplevel :load-toplevel :execute)
                  (update-pipeline-spec
                   (make-shader-pipeline-spec
-                   ',name ',stage-names ',(make-change-signature stage-names)
+                   ',name ',stage-names ',(make-pipeline-change-signature
+                                           stage-names)
                    ',(or gpipe-context context))))
                (def-pipeline-invalidate ,name)
                (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
                (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
                (def-dummy-func ,name ,stage-pairs ,pass-key))
              (defun ,(recompile-name name) ()
-               (unless (equal
-                        (slot-value (pipeline-spec ',name) 'change-spec)
-                        (make-change-signature ',stage-names))
-                 (format t "~&; recompile triggered on ~a~&"
-                         ',(make-func-description name stage-pairs))
-                 (eval (%defpipeline-gfuncs ',name ',args
-                                            ',gpipe-args ',options t))))
+               (unless(equal (slot-value (pipeline-spec ',name) 'change-spec)
+                             (make-pipeline-change-signature ',stage-names))
+                 (let ((*standard-output* (make-string-output-stream)))
+                   (handler-bind ((warning #'muffle-warning))
+                     (eval (%defpipeline-gfuncs
+                            ',name ',args ',gpipe-args ',options t))))))
              ,(unless suppress-compile `(,(recompile-name name)))))))))
+
+(defun quiet-warning-handler (c)
+   (when *all-quiet*
+     (let ((r (find-restart 'muffle-warning c)))
+       (when r
+         (invoke-restart r)))))
 
 (defun make-func-description (name stage-pairs)
   (with-processed-func-specs (mapcar #'cdr stage-pairs)
     (cons name (append in-args uniforms))))
 
-(defun make-change-signature (stage-names)
-  (mapcar λ(with-gpu-func-spec (gpu-func-spec _ t)
-             (list in-args uniforms body))
-          stage-names))
+(defun make-pipeline-change-signature (stage-names)
+  (mapcar #'make-change-signature stage-names))
+
+(defun make-change-signature (stage-name)
+  (with-gpu-func-spec (gpu-func-spec stage-name t)
+    (list in-args uniforms body
+          (mapcar #'make-change-signature
+                  (funcs-this-func-uses stage-name)))))
 
 (defmacro let-pipeline-vars ((stage-pairs pass-key) &body body)
   (let ((stage-names (mapcar #'cdr stage-pairs)))
@@ -57,8 +67,8 @@
   `(defun ,(invalidate-func-name name) () (setf prog-id nil)))
 
 (defun %gl-make-shader-from-varjo (compiled-stage)
-  (make-shader (varjo->gl-stage-names (varjo::stage-type compiled-stage))
-               (varjo::glsl-code compiled-stage)))
+  (make-shader (varjo->gl-stage-names (varjo:stage-type compiled-stage))
+               (varjo:glsl-code compiled-stage)))
 
 (defmacro def-pipeline-init (name stage-pairs post pass-key)
   (let* ((stage-names (mapcar #'cdr stage-pairs))
@@ -191,9 +201,9 @@
 (defun dispatch-make-assigner (arg-name type glsl-name qualifiers)
   (assert (not (null glsl-name)))
   (let* ((is-equiv (equivalent-typep type))
-         (varjo-type (varjo::type-spec->type
+         (varjo-type (varjo:type-spec->type
                       (if is-equiv (equivalent-type type) type)))
-         (struct-arg (varjo::v-typep varjo-type 'varjo::v-user-struct))
+         (struct-arg (varjo:v-typep varjo-type 'varjo:v-user-struct))
          (array-length (when (v-typep varjo-type 'v-array)
                          (apply #'* (v-dimensions varjo-type))))
          (sampler (sampler-typep varjo-type))
@@ -228,7 +238,7 @@
 
 (defun make-ubo-assigner (arg-name varjo-type glsl-name)
   (let ((id-name (gensym))
-        (type-spec (varjo::type->type-spec varjo-type)))
+        (type-spec (varjo:type->type-spec varjo-type)))
     (make-assigner
      :let-forms
      `((,id-name (get-uniform-block-index
@@ -236,7 +246,7 @@
      :uploaders
      `((when (>= ,id-name 0)
           (if (and (typep ,arg-name 'ubo)
-                   (v-type-eq (varjo::type-spec->type ',type-spec)
+                   (v-type-eq (varjo:type-spec->type ',type-spec)
                               (ubo-data-type ,arg-name)))
               (%gl:uniform-block-binding prog-id ,id-name (ubo-id ,arg-name))
               (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
@@ -256,24 +266,24 @@
               `(,(get-uniform-function-name (type->spec type)) ,id-name ,arg-name)))))))
 
 (defun make-array-assigners (arg-name type glsl-name-path &optional (byte-offset 0))
-  (let ((element-type (varjo::v-element-type type))
+  (let ((element-type (varjo:v-element-type type))
         (array-length (apply #'* (v-dimensions type))))
     (merge-into-assigner
      t
      (loop :for i :below array-length
-        :if (varjo::v-typep element-type 'varjo::v-user-struct) :append
+        :if (varjo:v-typep element-type 'varjo::v-user-struct) :append
         (make-struct-assigners arg-name element-type
                                (format nil "~a[~a]" glsl-name-path i)
                                byte-offset)
         :else :collect
-        (list (make-simple-assigner element-type
-                                    (format nil "~a[~a]" glsl-name-path i)
-                                    byte-offset))
-        :do (incf byte-offset (gl-type-size element-type))))))
+        (make-simple-assigner arg-name element-type
+                              (format nil "~a[~a]" glsl-name-path i)
+                              byte-offset)
+        :do (incf byte-offset (gl-type-size (type->spec element-type)))))))
 
 (defun make-eq-type-assigner (arg-name type varjo-type glsl-name qualifiers)
   (let* ((local-var (gensym (symbol-name arg-name)))
-         (varjo-type-spec (varjo::type->type-spec varjo-type))
+         (varjo-type-spec (varjo:type->type-spec varjo-type))
          (assigner (dispatch-make-assigner `(autowrap:ptr ,local-var)
                                            varjo-type-spec
                                            glsl-name
@@ -298,7 +308,7 @@
   (merge-into-assigner
    t
    (loop
-      :for (l-slot-name v-slot-type) :in (varjo::v-slots type)
+      :for (l-slot-name v-slot-type) :in (varjo:v-slots type)
       :for (pslot-type array-length . rest) := (listify v-slot-type)
       :append
       (let* ((pslot-type (type-spec->type pslot-type))
@@ -309,7 +319,7 @@
           (array-length (make-array-assigners arg-name v-slot-type
                                               glsl-name-path byte-offset))
           ;;
-          ((varjo::v-typep pslot-type 'v-user-struct)
+          ((varjo:v-typep pslot-type 'v-user-struct)
            (make-struct-assigners arg-name pslot-type glsl-name-path
                                   byte-offset))
           ;;

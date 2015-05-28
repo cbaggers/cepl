@@ -4,7 +4,6 @@
 
 (defparameter *entities* nil)
 (defparameter *camera* nil)
-(defparameter *resolution* cgl:+default-resolution+)
 
 (defstruct-g vert-data ()
   (position :vec3)
@@ -14,15 +13,14 @@
   (values (* (cam->clip cam)
              (* (world->cam cam)
                 (* model->world
-                   (v! (cgl:pos vert) 1.0))))
-          (:smooth (cgl:col vert))))
+                   (v! (pos vert) 1.0))))
+          (:smooth (col vert))))
 
 (defun-g b3d-frag ((interp-color :vec4))
   interp-color)
 
 (defpipeline render-widgets ()
     (g-> #'b3d-vert #'b3d-frag))
-;;(:post-compile (reshape cgl:+default-resolution+))
 
 (defclass entity ()
   ((e-stream :initform nil :initarg :e-stream :accessor e-stream)
@@ -34,7 +32,7 @@
 
 
 (defun init ()
-  (setf *camera* (make-camera *resolution*))
+  (setf *camera* (make-camera +default-resolution+))
   (setf (pos *camera*) (v! 0 8 0))
   (render-widgets nil :cam *camera*)
   (let* ((verts (make-gpu-array `((,(v! +1  +1  +1)  ,(v! 0  1  0  1))
@@ -63,32 +61,32 @@
     (map-g #'render-widgets (e-stream entity) :model->world m2w)))
 
 (defun step-demo ()
-  (evt.sdl:pump-events)
+  (evt:pump-events)
   (update-swank)
-  (cgl:clear-depth 1.0)
-  (cgl:clear :color-buffer-bit :depth-buffer-bit)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
   (render-widgets nil :cam *camera*)
   (map nil #'update-entity *entities*)
   (gl:flush)
-  (cgl:update-display))
+  (update-display))
 
 (defun reshape (dimensions)
   (setf (frame-size *camera*) dimensions)
   (render-widgets nil :cam *camera*)
-  (apply #'gl:viewport 0 0 dimensions))
+  (setf (viewport-resolution (viewport *gl-context*))
+        dimensions))
 
 (let ((running nil))
   (defun run-demo ()
     (init)
-    (reshape cgl:+default-resolution+)
+    (reshape +default-resolution+)
     (setf running t)
     (loop :while running :do (continuable (step-demo))))
 
   (defun stop-demo () (setf running nil))
 
-  (evt:observe (evt.sdl::|sys|)
-    (setf running (typep e 'evt.sdl:will-quit))))
+  (evt:observe (evt:|sys|)
+    (setf running (typep e 'evt:will-quit))))
 
-(evt:observe (evt.sdl::|window|)
-  (when (eq (evt.sdl:action e) :resized)
-    (reshape (evt.sdl:data e))))
+(evt:observe (evt:|window|)
+  (when (eq (evt:action e) :resized)
+    (reshape (evt:data e))))

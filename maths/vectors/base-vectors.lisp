@@ -1,31 +1,43 @@
 (in-package :base-vectors)
 
 (defmacro def-v! (name type)
-  `(progn
-     (defun ,name (&rest components)
-       (let* ((components (loop :for c :in components 
-                             :if (typep c 'array)
-                             :append (loop :for e :across c :collect
-                                        (coerce e ',type))
-                             :else :collect (coerce c ',type)))
-              (len (length components)))
-         (when (or (> len 4) (< len 2))
-           (error "Incorrect number of components for a vector: ~a ~a"
-                  len components))
-         (make-array (length components)
-                     :element-type ',type
-                     :initial-contents components)))
-     (define-compiler-macro ,name (&whole form &rest components)
-       (if (every #'numberp components)
-           (let ((components (loop :for c :in components :collect
-                                (coerce c ',type)))
-                 (len (length components)))
-             (when (or (> len 4) (< len 2))
-               (error "Incorrect number of components for a vector: ~a ~a"
-                      len components))
-             (list 'make-array len :element-type '',type
-                   :initial-contents (list 'quote components)))
-           form))))
+  (let ((one-arg (gensym "v!one-arg")))
+    `(labels ((convert (x) (coerce x ',type)))
+       (defun ,name (&rest components)
+         (let* ((components
+                 (loop :for c :in components
+                    :if (listp c) :append 
+                    (loop :for e :in c :collect (coerce e ',type))
+                    :else :if (typep c 'array)
+                    :append (loop :for e :across c :collect (coerce e ',type))
+                    :else :collect (coerce c ',type)))
+                (len (length components)))
+           (when (or (> len 4) (< len 2))
+             (error "Incorrect number of components for a vector: ~a ~a"
+                    len components))
+           (make-array (length components)
+                       :element-type ',type
+                       :initial-contents components)))
+       (defun ,one-arg (x)
+         (if (listp x)
+             (make-array (length x) :element-type ',type
+                         :initial-contents (mapcar #'convert x))
+             (make-array (length x) :element-type ',type :initial-contents
+                         (loop for i across x collect (convert i)))))
+       (define-compiler-macro ,name (&whole form &rest components)
+         (cond
+           ((every #'numberp components)
+            (let ((components (loop :for c :in components :collect
+                                 (coerce c ',type)))
+                  (len (length components)))
+              (when (or (> len 4) (< len 2))
+                (error "Incorrect number of components for a vector: ~a ~a"
+                       len components))
+              (list 'make-array len :element-type '',type
+                    :initial-contents (list 'quote components))))
+           ((= (length components) 1)
+            (list ',one-arg ,'(first components)))
+           (t form))))))
 
 (def-v! v! single-float)
 (def-v! v!int fixnum)

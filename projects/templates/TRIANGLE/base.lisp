@@ -19,19 +19,20 @@
 ;; window
 
 (defun reshape (&optional (new-dimensions cgl:+default-resolution+))
-  (apply #'gl:viewport 0 0 new-dimensions))
+  (setf (viewport-resolution (viewport *gl-context*))
+        new-dimensions))
 
-(evt:observe (evt.sdl::*window*)
-  (when (eq (evt.sdl:action e) :resized)
-    (reshape (evt.sdl:vec e))))
+(evt:observe (evt:|window|)
+  (when (eq (evt:action e) :resized)
+    (reshape (evt:vec e))))
 
 ;;--------------------------------------------------------------
 ;; controls
 
-;; (evt:observe (evt.sdl:*mouse*)
+;; (evt:observe (evt:*mouse*)
 ;;   )
 
-;; (evt:observe (evt.sdl:*keyboard*)
+;; (evt:observe (evt:*keyboard*)
 ;;   )
 
 ;;--------------------------------------------------------------
@@ -39,7 +40,7 @@
 
 (defun step-demo ()
   (update-swank)
-  (evt.sdl:pump-events)
+  (evt:pump-events)
   (draw))
 
 ;;--------------------------------------------------------------
@@ -57,8 +58,8 @@
 
 (defun stop-demo () (setf *running* nil))
 
-(evt:observe (evt.sdl::*sys*)
-  (when (typep e 'evt.sdl:will-quit)
+(evt:observe (evt:|sys|)
+  (when (typep e 'evt:will-quit)
     (stop-demo)))
 
 

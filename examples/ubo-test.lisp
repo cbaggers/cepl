@@ -23,7 +23,7 @@
   (update-swank)
   (gl:clear :color-buffer-bit)
   (map-g #'prog-1 *stream*) ;; :hmm *ubo*
-  (cgl:update-display))
+  (update-display))
 
 (defun run-demo ()
   (setf *running* t

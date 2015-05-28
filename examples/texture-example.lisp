@@ -25,19 +25,18 @@
 (defpipeline ripple-with-wobble () (g-> #'tex-vert #'tex-frag))
 
 (defun step-demo ()
-  (evt.sdl:pump-events)
+  (evt:pump-events)
   (update-swank)
-  (cgl:clear :color-buffer-bit)
+  (gl:clear :color-buffer-bit)
   (map-g #'ripple-with-wobble *v-stream*
         :texture *texture* :count *count* :pos-offset (v! 0 0 0 0))
   (incf *count* 0.08)
-  (cgl:update-display))
+  (update-display))
 
 (let ((running nil))
   (defun run-demo ()
-    (setf running t)
-    (cgl:clear-color 0.0 0.0 0.0 0.0)
-    (apply #'gl:viewport 0 0 cgl:+default-resolution+)
+    (setf running t
+          (viewport-resolution (viewport *gl-context*)) +default-resolution+)
     (let* ((img-data (loop :for i :below 64 :collect
                         (loop :for j :below 64 :collect (random 254)))))
       (setf *v-stream*
@@ -53,6 +52,6 @@
                         (make-texture temp)))
       (loop :while running :do (continuable (step-demo)))))
   (defun stop-demo () (setf running nil)))
-(evt:observe (|sys|) (when (typep e 'evt.sdl:will-quit) (stop-demo)))
+(evt:observe (|sys|) (when (typep e 'evt:will-quit) (stop-demo)))
 (observe (|window|))
 (evt:observe (evt:|mouse|))

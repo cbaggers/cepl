@@ -18,8 +18,9 @@
   vs fs)
 
 (defun run-demo ()
-  (cgl:clear-color 0.0 0.0 0.0 0.0)
-  (gl:viewport 0 0 1024 768)
+  (gl:clear-color 0.0 0.0 0.0 0.0)
+  (setf (viewport-resolution (viewport *gl-context*))
+        '(1024 768))
   (let* ((data (make-gpu-array
                 (list (list (v!  0.0    0.5 0.0 1.0) (v! 1.0 0.0 0.0 1.0))
                       (list (v!  0.5 -0.366 0.0 1.0) (v! 0.0 1.0 0.0 1.0))

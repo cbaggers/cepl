@@ -9,12 +9,12 @@
     :sampler-2d-Array :sampler-2d-Array-Shadow :sampler-2d-MS
     :sampler-2d-MS-Array :sampler-2d-Rect :sampler-2d-Rect-Shadow
     :sampler-2d-Shadow :sampler-3d :sampler-Buffer :sampler-Cube
-    :sampler-Cube-Array :sampler-Cube-Array-Shadow 
+    :sampler-Cube-Array :sampler-Cube-Array-Shadow
     :sampler-Cube-Shadow :usampler-1D :usampler-1d-Array
     :usampler-2D :usampler-2d-Array :usampler-2d-MS
-    :usampler-2d-MS-Array :usampler-2d-Rect :usampler-3d 
+    :usampler-2d-MS-Array :usampler-2d-Rect :usampler-3d
     :usampler-Buffer :usampler-Cube :usampler-Cube-Array
-    :isampler-1D-arb :isampler-1d-Array-arb :isampler-2D-arb 
+    :isampler-1D-arb :isampler-1d-Array-arb :isampler-2D-arb
     :isampler-2d-Array-arb
     :isampler-2d-MS-arb :isampler-2d-MS-Array-arb :isampler-2d-Rect-arb
     :isampler-3d-arb :isampler-Buffer-arb :isampler-Cube-arb
@@ -31,7 +31,7 @@
 
 (defun sampler-typep (type)
   (or (member type *sampler-types*)
-      (varjo::v-typep type 'v-sampler)))
+      (varjo:v-typep type 'v-sampler)))
 
 ;;;--------------------------------------------------------------
 ;;; UNIFORMS ;;;
@@ -126,6 +126,6 @@
     ((:vec4 :float-vec4 :float-vec4-arb) 'uniform-4f)
     ((:mat2 :float-mat2 :float-mat2-arb) 'uniform-matrix-2ft)
     ((:mat3 :float-mat3 :float-mat3-arb) 'uniform-matrix-3ft)
-    ((:mat4 :float-mat4 :float-mat4-arb) 'uniform-matrix-4ft)    
+    ((:mat4 :float-mat4 :float-mat4-arb) 'uniform-matrix-4ft)
     (t (if (sampler-typep (type-spec->type type)) 'uniform-sampler
            (error "Sorry cepl doesnt handle that type yet")))))

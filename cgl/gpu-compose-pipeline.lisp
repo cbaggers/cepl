@@ -1,9 +1,9 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn_::fn_lambda)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 (defun parse-compose-gpipe-args (args)
   `(,(mapcar (fn+ #'car #'last1) args)
-    nil))
+     nil))
 
 (defun %defpipeline-compose (name args options gpipe-args)
   (assert (and (every #'symbolp args) (not (some #'keywordp args))))
@@ -16,12 +16,10 @@
         (assert (not (and gpipe-context context)))
         (let* ((uniform-args (make-pipeline-uniform-args
                               pipeline-names
-                              (get-overidden-uniforms gpipe-args)))
+                              gpipe-args))
                (uniforms
                 (append (mapcar #'first uniform-args)
-                        user-uniforms))
-               (stream-args (%number-args (collate-args pipeline-names)))
-               (args (append (apply #'append stream-args) args)))
+                        user-uniforms)))
           `(progn
              (eval-when (:compile-toplevel :load-toplevel :execute)
                  (update-pipeline-spec
@@ -30,34 +28,41 @@
                    ',(or gpipe-context context))))
              (let (,@(when fbos (mapcar #'car fbos))
                    (initd nil))
-               (def-compose-dispatch ,name ,args ,uniforms ,context
-                                     ,gpipe-args ,pipeline-names ,fbos ,post))
-             (def-compose-dummy ,name ,args ,uniforms)))))))
-
-(defun %number-args (collated-args)
-  (mapcar #'second
-          (reverse
-           (reduce (lambda (c x)
-                     (let ((len (+ (apply #'+ (mapcar #'first c)) (length x))))
-                       (cons (list len (loop for i from (or (caar c) 0)
-                                          below len collect (symb 'stream i)))
-                             c)))
-                   collated-args
-                   :initial-value nil))))
+               (def-compose-dispatch
+                   ,name ,(append args (make-pipeline-stream-args gpipe-args))
+                 ,uniforms ,context
+                 ,gpipe-args ,fbos ,post))
+             (def-compose-dummy
+                 ,name ,(append args (make-pipeline-stream-args gpipe-args))
+               ,uniforms)))))))
 
 ;;--------------------------------------------------
 
+(defconstant +db-ptr-sym+ '%--dbuffer-master-ptr*)
+(defconstant +db-pass-ptr-sym+ '%--dbuffer-master-ptr*)
+
 (defmacro def-compose-dispatch (name args uniforms context
-                                gpipe-args pipeline-names fbos post)
+                                gpipe-args fbos post)
   (declare (ignore context))
-  `(defun ,(dispatch-func-name name)
-       (,@args ,@(when uniforms `(&key ,@uniforms)))
-     (unless initd
-       ,@(mapcar #'fbo-comp-form fbos)
-       (setf initd t)
-       ,(when post `(funcall ,post)))
-     ,@(mapcar #'make-map-g-pass gpipe-args
-               (%number-args (collate-args pipeline-names)))))
+  (let* ((pass-data (mapcar #'make-map-g-pass gpipe-args
+                            (make-pipeline-stream-args gpipe-args nil t)))
+         (pass-code (mapcar #'first pass-data))
+         (all-draw-buffers (apply #'append (mapcar #'second pass-data))))    
+    `(let ((,+db-ptr-sym+ (foreign-alloc 'cl-opengl-bindings:enum :count
+                                         (length all-draw-buffers)
+                                         :initial-element ',all-draw-buffers)))
+       (defun ,(dispatch-func-name name)
+           (,@args ,@(when uniforms `(&key ,@uniforms)))
+         (unless initd
+           ,@(mapcar #'fbo-comp-form fbos)
+           (setf initd t)
+           ,(when post `(funcall ,post)))
+         ;; symbol-macrolet will go here     
+         (labels ((cgl:attachment (fbo attachment-name)
+                    (slot-value (cgl::attachment-gpu-array
+                                 (cgl::%attachment fbo attachment-name))
+                                'cgl::texture)))
+           ,@pass-code)))))
 
 (defun fbo-comp-form (form)
   (destructuring-bind (name . make-fbo-args) form
@@ -68,22 +73,43 @@
     (let* ((lisp-forms (butlast call-forms))
            (call-form (last1 call-forms))
            (func-name (first call-form))
-           (map-g-form `(map-g #',func-name ,@stream-args ,@(rest call-form)
-                             ,@(mapcat #'%uniform-arg-to-call
+           (override-offset (or (position-if #'keywordp call-form)
+                                1))
+           (map-g-form `(map-g #',func-name ,@stream-args
+                               ,@(subseq call-form override-offset)
+                               ,@(mapcat #'%uniform-arg-to-call
                                        (get-pipeline-uniforms func-name
                                                               call-form)))))
+      ;; the return sig is a list of '(the-code the-draw-buffers)
       (if fbo
-          `(with-bind-fbo (,@(listify fbo))
-             ,@lisp-forms
-             ,map-g-form)
+          (%gen-with-bind-fbo-result fbo lisp-forms map-g-form)
           (if lisp-forms
-              `(progn
-                 ,@lisp-forms
-                 ,map-g-form)
-              map-g-form)))))
+              (list `(progn ,@lisp-forms ,map-g-form) nil)
+              (list map-g-form nil))))))
 
 (defun %uniform-arg-to-call (uniform-arg)
   `(,(kwd (first uniform-arg)) ,(first uniform-arg)))
+
+(defun %gen-with-bind-fbo-result (fbo-pattern lisp-forms map-g-form)
+  (let* ((fbo-pattern (listify fbo-pattern))
+         (key-start (or (position-if #'keywordp fbo-pattern)
+                        (1- (length fbo-pattern))))
+         (fbo (first fbo-pattern))
+         (buffer-pattern (subseq fbo-pattern 1 key-start))
+         (keys (subseq fbo-pattern key-start)))
+    (when (and (member :draw-buffers keys) buffer-pattern)
+      (error "defpipeline: You must not specify an fbo target with buffers and a :draw-buffers keyword argument"))
+    (when (and (not buffer-pattern) (not (member :draw-buffers keys)))
+      (setf keys (append keys '(:draw-buffers t))))
+    (list
+     `(with-bind-fbo
+          (,fbo
+           ,@keys
+           ,@(when buffer-pattern
+                   `(:draw-buffers '(,+db-ptr-sym+ ,(length buffer-pattern)))))
+        ,@lisp-forms
+        ,map-g-form)
+     buffer-pattern)))
 
 ;;--------------------------------------------------
 
@@ -106,18 +132,61 @@
 
 (defun get-overidden-uniforms (pass-forms)
   (let* ((forms (mapcar #'last1 pass-forms)))
-    (mapcar λ(remove-if-not #'keywordp _) forms)))
+    (mapcar (lambda (_) (remove-if-not #'keywordp _)) forms)))
+
+(defun get-overidden-uniforms2 (pass-forms)
+  (let* ((forms (mapcar #'last1 pass-forms)))
+    (mapcar (lambda (_)
+              (group
+               (subseq _ (or (position-if #'keywordp _)
+                             (length _)))
+               2))
+            forms)))
+
+
+(defun uniquify-names (names)
+  (let ((seen nil)
+        (final nil))
+    (loop for name in names do
+         (if (assoc name seen)
+             (let* ((count (+ 1 (cdr (assoc name seen))))
+                    (new-name (symb-package (symbol-package name) name count)))
+               (push (cons name count) seen)
+               (push new-name final))
+             (progn
+               (push (cons name 0) seen)
+               (push name final))))
+    (reverse final)))
+
+(defun make-pipeline-stream-args (gpipe-forms &optional (flatten t)
+                                                (include-overriden nil))
+  (destructuring-bind (pipeline-names pipeline-stream-overrides)
+      (loop :for fbo-form :in gpipe-forms
+         :for call-form = (last1 fbo-form)
+         :collect (first call-form) :into pipeline-names
+         :collect (let ((args (rest call-form)))
+                    (subseq args 0 (or (position-if #'keywordp args)
+                                       (length args)))) :into streams
+         :finally (return (list pipeline-names streams)))
+    (let ((result (mapcar (lambda (x y)
+                            (append
+                             (when include-overriden y)
+                             (subseq (mapcar #'car x) (length y))))
+                          (collate-args pipeline-names)
+                          pipeline-stream-overrides)))
+      (if flatten (apply #'append result) result))))
 
 ;;{TODO} handle equivalent types
-(defun make-pipeline-uniform-args (pipeline-names overriden-uniforms)
-  (let ((all-uniforms
-         (mapcat (lambda (uniforms overriden)
-                   (loop :for uniform :in uniforms
-                      :if (not (member (first uniform) overriden
-                                       :test #'string-equal))
-                      :collect uniform))
-                 (mapcar #'get-pipeline-uniforms pipeline-names)
-                 overriden-uniforms)))
+(defun make-pipeline-uniform-args (pipeline-names gpipe-args)
+  (let* ((overriden-uniforms (get-overidden-uniforms gpipe-args))
+         (all-uniforms
+           (mapcat (lambda (uniforms overriden)
+                     (loop :for uniform :in uniforms
+                        :if (not (member (first uniform) overriden
+                                         :test #'string-equal))
+                        :collect uniform))
+                   (mapcar #'get-pipeline-uniforms pipeline-names)
+                   overriden-uniforms)))
     (%aggregate-uniforms all-uniforms)))
 
 (defun get-pipeline-uniforms (pipeline-name &optional call-form)
@@ -127,14 +196,14 @@
     ((pipeline-spec shader-pipeline-spec) call-form)
   (let ((result (aggregate-uniforms (slot-value pipeline-spec 'stages)))
         (overriden-uniforms (remove-if-not #'keywordp call-form)))
-    (remove-if λ(member _ overriden-uniforms
-                        :test (lambda (x y) (string-equal (car x) y)))
+    (remove-if (lambda (_) (member _ overriden-uniforms
+                                   :test (lambda (x y) (string-equal (car x) y))))
                result)))
 
 (defmethod %get-pipeline-uniforms
     ((pipeline-spec compose-pipeline-spec) call-form)
   (let ((result (slot-value pipeline-spec 'uniforms))
         (overriden-uniforms (remove-if-not #'keywordp call-form)))
-    (remove-if λ(member _ overriden-uniforms
-                        :test (lambda (x y) (string-equal (car x) y)))
+    (remove-if (lambda (_) (member _ overriden-uniforms
+                                   :test (lambda (x y) (string-equal (car x) y))))
                result)))
