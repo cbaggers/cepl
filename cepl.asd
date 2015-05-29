@@ -27,6 +27,7 @@
                #:quickproject)
   :components ((:file "package")
                (:file "utils")
+               (:file "static")
                (:file "generics")
                (:file "base-macros")
                (:file "maths/base-maths")

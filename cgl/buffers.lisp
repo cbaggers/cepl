@@ -13,7 +13,7 @@
    `((data-type data-index-length offset-in-bytes-into-buffer))
    for example:
    `((:float 12 0) ('vert-data 140 12))"
-  (buffer-id (gen-buffer))
+  (buffer-id 0)
   (format nil)
   (managed nil))
 
@@ -21,7 +21,7 @@
   (free-buffer object))
 
 (defun blank-buffer-object (buffer)
-  (setf (glbuffer-buffer-id buffer) -1)
+  (setf (glbuffer-buffer-id buffer) 0)
   (setf (glbuffer-format buffer) nil)
   (setf (glbuffer-managed buffer) nil)
   buffer)
@@ -62,8 +62,16 @@
     (setf buffer-id-cache 0)
     (setf buffer-target-cache :array-buffer)))
 
-(defun make-buffer-from-gl-object (gl-object &key managed)
-  (make-glbuffer :buffer-id gl-object :managed managed))
+(defun make-buffer-from-id (gl-object &key initial-contents
+                                        (buffer-target :array-buffer)
+                                        (usage :static-draw)
+                                        (managed nil))
+  (declare (symbol buffer-target usage))
+  (let ((new-buffer (make-glbuffer :buffer-id gl-object :managed managed)))
+    (if initial-contents
+        (buffer-data new-buffer initial-contents buffer-target
+                     usage)
+        new-buffer)))
 
 (defun make-buffer (&key initial-contents
                      (buffer-target :array-buffer)
@@ -73,11 +81,9 @@
   "Creates a new opengl buffer object.
    Optionally you can provide a c-array as the :initial-contents
    to have the buffer populated with the contents of the array"
-  (let ((new-buffer (make-buffer-from-gl-object (gen-buffer) :managed managed)))
-    (if initial-contents
-        (buffer-data new-buffer initial-contents buffer-target
-                     usage)
-        new-buffer)))
+  (make-buffer-from-id (gen-buffer) :initial-contents initial-contents
+                       :buffer-target buffer-target :usage usage
+                       :managed managed))
 
 (defun buffer-data-raw (data-pointer data-type data-byte-size
                         buffer buffer-target usage &optional (byte-offset 0))

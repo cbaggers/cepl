@@ -356,6 +356,22 @@
           (dimensions initial-contents))
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
+(defun make-texture-from-id (gl-object &key base-dimensions texture-type
+                                         internal-format sampler-type
+                                         mipmap-levels layer-count cubes
+                                         allocated)
+  (make-instance 'gl-texture
+                 :texture-id gl-object
+                 :base-dimensions base-dimensions
+                 :texture-type texture-type
+                 :internal-format internal-format
+                 :sampler-type sampler-type
+                 :mipmap-levels mipmap-levels
+                 :layer-count layer-count
+                 :cubes cubes
+                 :allocated allocated))
+
+
 (defun make-texture (initial-contents
                      &key dimensions internal-format (mipmap nil)
                        (layer-count 1) (cubes nil) (rectangle nil)

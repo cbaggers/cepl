@@ -57,7 +57,29 @@
                   ,(gpu-sub-array monster-col-data 1000 2000))
      :index-array monster-index-array
      :length 1000)"
-  (let* ((gpu-arrays (if (gpuarray-p gpu-arrays) (list gpu-arrays) gpu-arrays))
+  (let* ((gpu-arrays (listify gpu-arrays)))
+    (make-buffer-stream-from-id (make-vao gpu-arrays index-array)
+                                gpu-arrays
+                                :index-array index-array
+                                :start start
+                                :length length
+                                :retain-arrays retain-arrays)))
+
+(defun make-buffer-stream-from-id (vao-gl-object gpu-arrays
+                                   &key index-array (start 0) length
+                                     retain-arrays)
+  "This function simplifies making the vertex-stream if you are
+   storing the data in gpu-arrays.
+
+   Remember that you can also use gpu-sub-arrays in here if you
+   want to limit the data you are using, for example the
+   following is perfectly legal code:
+   (make-buffer-stream
+     :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
+                  ,(gpu-sub-array monster-col-data 1000 2000))
+     :index-array monster-index-array
+     :length 1000)"
+  (let* ((gpu-arrays (listify gpu-arrays))
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
          ;; OF TRIANGLES
@@ -67,7 +89,7 @@
                                           gpu-arrays)))))
     (if (and (every #'1d-p gpu-arrays) (if index-array (1d-p index-array) t))
         (make-raw-vertex-stream
-         :vao (make-vao gpu-arrays index-array)
+         :vao (make-vao-from-id vao-gl-object gpu-arrays index-array)
          :start start
          :length length
          :index-type (when index-array (element-type index-array))

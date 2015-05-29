@@ -668,8 +668,6 @@
                 :attachment
                 :attachment-compatible
                 :fbo-detach
-                :*viewport-size*
-                :*viewport-origin*
                 :viewport
                 :with-viewport
                 :with-fbo-viewport

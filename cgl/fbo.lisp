@@ -194,10 +194,19 @@
 
 ;;--------------------------------------------------------------
 
+(defun make-fbo-from-id (gl-object &key color-attachments depth-attachment)
+  "Will create an fbo and optionally attach the arguments using
+   #'fbo-gen-attach"
+  (let ((fbo (%make-fbo :id gl-object)))
+    (loop :for c :in color-attachments :for i :from 0 :do
+       (when c (setf (attachment fbo i) c)))
+    (when depth-attachment
+      (setf (attachment fbo :d) depth-attachment))))
+
 (defun make-fbo (&rest fuzzy-attach-args)
   "Will create an fbo and optionally attach the arguments using
    #'fbo-gen-attach"
-  (let ((fbo (%make-fbo :id (first (gl:gen-framebuffers 1)))))
+  (let ((fbo (make-fbo-from-id (first (gl:gen-framebuffers 1)))))
     (when fuzzy-attach-args (apply #'fbo-gen-attach fbo fuzzy-attach-args))
     (check-framebuffer-status fbo)
     fbo))
