@@ -1,9 +1,5 @@
 Ok so we are going to kill as many of the cases where :: is used
 
-* find all defmethods. Pull everything truely generic into cepl-generics
-* establish a type for the return, lets get an established grammer going
-
-
 * find your targets with grep -nHIir -e "::" *
 - done, can justify all of them now
 
@@ -38,13 +34,13 @@ Ok so we are going to kill as many of the cases where :: is used
 - done
 
 * #'clear-fbo should be #'clear with optional fbo arg
-- done (kinda)
+- done
 
 * mesh.lisp has package cgl..why?
-- now in "meshes" package
+- done, now in "meshes" package
 
 * add %px to def-compose-dispatch. It is a symbolmacro that expands to (%view-pixel-size)
-  which is a local func that
+  which is a local func that calcs and caches this
 
 * what in examples specifies a package, why? Mainly interested in cgl:
 - Nearly golden :)
@@ -56,4 +52,14 @@ Ok so we are going to kill as many of the cases where :: is used
 
 * add (declare) to defpipeline so you can ignore certain uniforms.
   is this even needed? I dont think uniforms get added to the arg list
-  Check it! 
+  Check it!
+
+* dont 'use' cl-opengl in cgl
+- oh.. we dont
+
+* find all defmethods. Pull everything truely generic into cepl-generics
+* establish a type for the return, lets get an established grammer going
+
+* clear needs to handle default-fbo properly.
+* Context needs a fbo slot
+* we need to unify default fbo and user defined fbos

@@ -1,10 +1,5 @@
 (in-package :cgl)
 
-;; {TODO} move this to gl-context.lisp
-(defstruct default-framebuffer)
-(defvar *default-framebuffer* (make-default-framebuffer))
-(defvar %current-fbo *default-framebuffer*)
-
 ;; {TODO} need to put this in some macros utils package
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun function-formp (x) x))

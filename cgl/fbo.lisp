@@ -9,6 +9,10 @@
 
 ;; Framebuffer Object Structure
 
+(defstruct default-framebuffer)
+(defvar *default-framebuffer* (make-default-framebuffer))
+(defvar %current-fbo *default-framebuffer*)
+
 (defstruct (fbo (:constructor %make-fbo)
                 (:conc-name %fbo-))
   (id -1 :type fixnum)
