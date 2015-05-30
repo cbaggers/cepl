@@ -115,3 +115,5 @@
 
 (defun test1 (state-cache)
   (setf (gl-state-cache-vars state-cache) 100))
+
+;; Look at glspec 2.6.2

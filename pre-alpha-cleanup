@@ -55,7 +55,7 @@ Ok so we are going to kill as many of the cases where :: is used
   Check it!
 
 * dont 'use' cl-opengl in cgl
-- oh.. we dont
+- oh.. we dont wonder where the clashes were coming from.
 
 * find all defmethods. Pull everything truely generic into cepl-generics
 * establish a type for the return, lets get an established grammer going
