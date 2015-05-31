@@ -28,7 +28,7 @@
                '%gl::ClearBufferMask '(:color-buffer-bit))
               :type fixnum))
 
-(defmethod gl-free ((thing fbo))
+(defmethod free-g ((thing fbo))
   (print "FREE FBO NOT IMPLEMENTED - LEAKING"))
 
 (defstruct attachment
@@ -174,7 +174,7 @@
      (unwind-protect
           (with-bind-fbo (,var-name)
             ,@body)
-       (gl-free ,var-name))))
+       (free-g ,var-name))))
 
 ;;--------------------------------------------------------------
 

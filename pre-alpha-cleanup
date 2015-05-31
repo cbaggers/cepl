@@ -68,4 +68,5 @@ Ok so we are going to kill as many of the cases where :: is used
 * +default-resolution+ is gone, replace with correct code
 * find the *current-viewport* res
 * grep cepl for +default-resolution+
-* update code 
+* update code
+- Done

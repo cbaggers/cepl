@@ -1,4 +1,4 @@
-CEPL (Code Evaluate Play Loop) - [PRE-ALPHA]
+CEPL (Code Evaluate Play Loop) - [ALPHA]
 ============================================
 
 *"Lisp isn't a language, it's a building material." - Alan Kay*

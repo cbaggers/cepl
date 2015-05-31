@@ -1,6 +1,6 @@
 (in-package :cgl)
 
-(defgeneric gl-free (object))
+(defgeneric free-g (object))
 (defgeneric free-gpu-array (gpu-array))
 (defgeneric push-g (object destination))
 (defgeneric pull-g (object))

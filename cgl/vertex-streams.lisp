@@ -26,7 +26,7 @@
   (gpu-arrays nil)
   (managed nil))
 
-(defmethod gl-free ((object vertex-stream))
+(defmethod free-g ((object vertex-stream))
   (free-vertex-stream object))
 
 (defun blank-vertex-stream (vertex-stream)

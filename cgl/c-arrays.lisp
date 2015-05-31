@@ -22,7 +22,7 @@
           row-alignment nil
           element-pixel-format nil)))
 
-(defmethod gl-free ((object c-array))
+(defmethod free-g ((object c-array))
   (free-c-array object))
 
 (defun free-c-array (c-array)

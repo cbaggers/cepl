@@ -346,7 +346,7 @@
            :with-fbo-viewport
            :viewport-resolution
            :clear-gl-context-cache
-           :gl-free
+           :free-g
            :update-display
            :valid-pixel-format-p
            :pixel-format
@@ -445,6 +445,12 @@
            :attachment
            :with-fbo-slots
            :attachment-compatible
+           :attachment-gpu-array
+           :attachment-override-blending
+           :attachment-source-rgb
+           :attachment-source-alpha
+           :attachment-destination-rgb
+           :attachment-destination-alpha
            :fbo-detach
            ;;----------
            :make-ubo

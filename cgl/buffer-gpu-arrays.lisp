@@ -28,7 +28,7 @@
 (defmethod backed-by ((object gpuarray))
   :buffer)
 
-(defmethod gl-free ((object gpuarray))
+(defmethod free-g ((object gpuarray))
   (free-gpu-array-b object))
 
 (defmethod free-gpu-array ((gpu-array gpuarray))

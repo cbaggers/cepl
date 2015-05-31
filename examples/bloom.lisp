@@ -1,7 +1,4 @@
 (in-package :cepl)
-
-;; (defvar guy (devil-helper:load-image-to-texture
-;;              (merge-pathnames "guy.png" *examples-dir*)))
 (defvar cols nil)
 (defvar *loop* 0)
 
@@ -9,10 +6,14 @@
   (values (v! (pos quad) 1)
           (tex quad)))
 
-(defun-g frag ((tc :vec2) &uniform (tex :sampler-2d) (kernal (:float 25)))
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+(defun-g frag ((tc :vec2) &uniform (tex :sampler-2d))
   (texture tex tc))
 
 (defpipeline blit () (g-> #'vert #'frag))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 (defun-g qkern ((tc :vec2) &uniform (tex :sampler-2d) (offset :vec2))
   (+ (* (texture tex (- tc offset)) 0.3125)
@@ -21,16 +22,19 @@
 
 (defpipeline qsmood () (g-> #'vert #'qkern))
 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 (defun-g fourtex ((tc :vec2) &uniform (t0 :sampler-2d) (t1 :sampler-2d)
                   (t2 :sampler-2d) (t3 :sampler-2d) (scale-effect :float))
   (let ((tc (* tc (v! 1 -1))))
-    (+ (v! 0 0 0 0)
-       (* (texture t0 tc) 1)
+    (+ (* (texture t0 tc) 1)
        (* (texture t1 tc) scale-effect)
        (* (texture t2 tc) scale-effect)
        (* (texture t3 tc) scale-effect))))
 
 (defpipeline combine () (g-> #'vert #'fourtex))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 (defpipeline bloom (stream &uniform tx)
     (g-> (c0 (blit stream :tex tx))
@@ -63,7 +67,8 @@
   (evt:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (map-g #'bloom *quad-stream* :tx cols :scale-effect (abs (sin *loop*)))
+  (map-g #'blit *quad-stream* :tex cols)
+  ;;(map-g #'bloom *quad-stream* :tx cols :scale-effect (abs (sin *loop*)))
   (update-display))
 
 ;;-------------------------------------------------------
