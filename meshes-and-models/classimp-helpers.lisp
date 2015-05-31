@@ -1,5 +1,5 @@
 (in-package :model-parsers)
-(named-readtables:in-readtable fn_:fn_lambda)
+(named-readtables:in-readtable fn:fn-reader)
 
 (defun meshes->lists (scene)
   (map 'list #'mesh->lists (classimp:meshes scene)))

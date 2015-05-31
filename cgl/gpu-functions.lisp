@@ -1,5 +1,5 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn_:fn_lambda)
+(named-readtables:in-readtable fn:fn-reader)
 
 ;; defun-gpu is at the bottom of this file
 
@@ -90,7 +90,7 @@
 (defun %update-gpu-function-data (spec depends-on)
   (with-slots (name) spec
     (%unsubscibe-from-all name)
-    (mapcar (fn_ #'%subscribe-to-gpu-func name) depends-on)
+    (mapcar (fn~ #'%subscribe-to-gpu-func name) depends-on)
     (setf (gpu-func-spec name) spec)))
 
 (defun %gpu-func-compiles-in-some-context (spec)

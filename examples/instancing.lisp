@@ -1,6 +1,6 @@
 ;; fragment point light - unfinished
 (in-package :cepl)
-(named-readtables:in-readtable fn_:fn_lambda)
+(named-readtables:in-readtable fn:fn-reader)
 
 ;;--------------------------------------------------------------
 ;; setup

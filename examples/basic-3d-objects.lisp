@@ -1,6 +1,6 @@
 ;; More 3D - Multiple objects rotating
 (in-package :cepl)
-(in-readtable fn_:fn_lambda)
+(in-readtable fn:fn-reader)
 
 (defparameter *entities* nil)
 (defparameter *camera* nil)

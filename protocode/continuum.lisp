@@ -38,9 +38,9 @@
 
 #'sin
 
-(fn_ λ(elt '(1 2 3 4) (floor _)))
+(fn~ λ(elt '(1 2 3 4) (floor _)))
 
-(fn_ λ(lerp (elt '(1 2 3 4) (floor _))
+(fn~ λ(lerp (elt '(1 2 3 4) (floor _))
             (elt '(1 2 3 4) (1+ (floor _)))))
 
 ;; three parts, data, sample-transform, result transform

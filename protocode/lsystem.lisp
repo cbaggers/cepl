@@ -1,5 +1,5 @@
 (in-package :cepl)
-(in-readtable fn_:fn_lambda)
+(in-readtable fn:fn-reader)
 
 
 ;; recurse n times

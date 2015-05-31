@@ -7,7 +7,7 @@
 ;; known as the LLGPL.
 ;;
 (in-package :cgl)
-(named-readtables:in-readtable fn_:fn_lambda)
+(named-readtables:in-readtable fn:fn-reader)
 
 ;; Most of the code that uses blend modes will be in other files
 ;; as it is most needed in map-g and fbos

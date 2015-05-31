@@ -1,5 +1,5 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn_:fn_lambda)
+(named-readtables:in-readtable fn:fn-reader)
 
 (defvar *equivalent-type-specs* (make-hash-table))
 (defun equiv-spec (lisp-type) (gethash lisp-type *equivalent-type-specs*))

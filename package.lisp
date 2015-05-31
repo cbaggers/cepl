@@ -268,11 +268,11 @@
 
 (defpackage :%cgl
   (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
-        :fn_ :split-sequence)
+        :fn :split-sequence)
   )
 (defpackage :cepl-gl
   (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
-        :fn_ :split-sequence :%cgl)
+        :fn :split-sequence :%cgl)
   (:nicknames :cgl)
   (:import-from :utils
                 :deferror
@@ -509,7 +509,7 @@
 
 (defpackage :meshes
   (:use :cl :cffi :base-macros :cepl-utils :base-vectors :cepl-generics
-        :fn_ :split-sequence :cgl)
+        :fn :split-sequence :cgl)
   (:export :mesh
            :vertices
            :indicies

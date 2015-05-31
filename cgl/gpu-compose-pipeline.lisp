@@ -1,5 +1,5 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn_:fn_lambda)
+(named-readtables:in-readtable fn:fn-reader)
 
 (defun parse-compose-gpipe-args (args)
   `(,(mapcar (fn+ #'car #'last1) args)

@@ -1,5 +1,5 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn_:fn_lambda)
+(named-readtables:in-readtable fn:fn-reader)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass gl-struct-slot ()

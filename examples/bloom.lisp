@@ -1,10 +1,10 @@
 (in-package :cepl)
+
 (defvar cols nil)
 (defvar *loop* 0)
 
 (defun-g vert ((quad g-pt))
-  (values (v! (pos quad) 1)
-          (tex quad)))
+  (values (v! (pos quad) 1) (tex quad)))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -20,7 +20,7 @@
      (* (texture tex tc) 0.375)
      (* (texture tex (+ tc offset)) 0.3125)))
 
-(defpipeline qsmood () (g-> #'vert #'qkern))
+(defpipeline smooth () (g-> #'vert #'qkern))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -41,14 +41,14 @@
          (c1 (blit stream :tex tx))
          (c2 (blit stream :tex tx))
          (c3 (blit stream :tex tx))
-         (h0 (qsmood stream :tex (attachment c0 0) :offset (v! (/ 1.2 512) 0)))
-         (h1 (qsmood stream :tex (attachment c1 0) :offset (v! (/ 1.2 256) 0)))
-         (h2 (qsmood stream :tex (attachment c2 0) :offset (v! (/ 1.2 128) 0)))
-         (h3 (qsmood stream :tex (attachment c3 0) :offset (v! (/ 1.2 64) 0)))
-         (c0 (qsmood stream :tex (attachment h0 0) :offset (v! 0 (/ 1.2 512))))
-         (c1 (qsmood stream :tex (attachment h1 0) :offset (v! 0 (/ 1.2 256))))
-         (c2 (qsmood stream :tex (attachment h2 0) :offset (v! 0 (/ 1.2 128))))
-         (c3 (qsmood stream :tex (attachment h3 0) :offset (v! 0 (/ 1.2 64))))
+         (h0 (smooth stream :tex (attachment c0 0) :offset (v! (/ 1.2 512) 0)))
+         (h1 (smooth stream :tex (attachment c1 0) :offset (v! (/ 1.2 256) 0)))
+         (h2 (smooth stream :tex (attachment c2 0) :offset (v! (/ 1.2 128) 0)))
+         (h3 (smooth stream :tex (attachment c3 0) :offset (v! (/ 1.2 64) 0)))
+         (c0 (smooth stream :tex (attachment h0 0) :offset (v! 0 (/ 1.2 512))))
+         (c1 (smooth stream :tex (attachment h1 0) :offset (v! 0 (/ 1.2 256))))
+         (c2 (smooth stream :tex (attachment h2 0) :offset (v! 0 (/ 1.2 128))))
+         (c3 (smooth stream :tex (attachment h3 0) :offset (v! 0 (/ 1.2 64))))
          (nil (combine stream
                        :t0 (attachment c0 0) :t1 (attachment c1 0)
                        :t2 (attachment c2 0) :t3 (attachment c3 0))))
@@ -63,12 +63,11 @@
   (h3 '(:c :dimensions (64 64))))
 
 (defun step-demo ()
-  (incf *loop* 0.008)
+  (incf *loop* 0.02)
   (evt:pump-events)
   (update-swank)
-  (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (map-g #'blit *quad-stream* :tex cols)
-  ;;(map-g #'bloom *quad-stream* :tx cols :scale-effect (abs (sin *loop*)))
+  (clear)
+  (map-g #'bloom *quad-stream* :tx cols :scale-effect (abs (sin *loop*)))
   (update-display))
 
 ;;-------------------------------------------------------

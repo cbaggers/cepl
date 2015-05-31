@@ -34,7 +34,8 @@
 (defun-g ok ((p :vec3) (r :float) (l :float))
   (+ (min (- (length (+ (v! 0.8 0 0) p)) r)
           (- (length (+ (v! -0.8 0 0) p)) r))
-     (sin (+ l (* 4 (x p))))))
+     (let ((n (sin (+ l (* 4 (x p))))))
+       (* n n n))))
 
 (defun-g ray-vert ((position :vec4))
   (values position

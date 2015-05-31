@@ -23,7 +23,7 @@
                #:cells
                #:named-readtables
                #:classimp
-               #:fn_
+               #:fn
                #:quickproject)
   :components ((:file "package")
                (:file "utils")
