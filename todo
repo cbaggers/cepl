@@ -1,8 +1,13 @@
 
-* merge in the time and data abstraction changes
-* we should then have the then & repeat macros as tlambda shorthand
-  also add macros for before, after, between. This completes the 
-  full circle of designing the time api.
+Add *-from-id functions.
+They will call gl's gl_is_* and if true then will make a cepl
+wrapper for that type
+
+-----
+
+* check qualifiers are valid in varjo
+* inherit qualifiers from previous stage
+* uniforms saying arg incompatible for basic changes...merge 'em
 
 -----
 
@@ -19,29 +24,24 @@
 
 * Object that represents the opengl state machine. Directly address slots etc
 * Copy between buffer (gpu-arrays)
-* Research safe foreign data initialisation so an error does cause a memrory leak 
+* Research safe foreign data initialisation so an error does cause a memrory leak
   look at with-foreign-object for hints
 * read http://www.opengl.org/wiki/Buffer_Object and look at the buffer corruption section
 * base-macros....what is in here and why
 
 -----
 
-* make-gpu-array with list is failing 
+* make-gpu-array with list is failing
   ok at really odd  times so is from gl-array... this is odd
   seems to be when created using defparameter...so it doesnt like
   top level for some reason?
-
-* We need a representation of frame buffers...or whatever those 
-   things are! I kind of feel that running a shader should return
-   one. At the very least we will need it later for targets and
-   for defining feedback within pipelines.
 
 * add set culling? combined enabling, setting winding-order and
   cull-face in one move.
 
 * stream could have base offset so draw-element-base thingy works
 
-* enable is odd.... can things be made better by spinning out 
+* enable is odd.... can things be made better by spinning out
   it's functionality to other functions?
 
 * uniform buffer objects
@@ -55,3 +55,14 @@
 
 * work through the glossaries of arc-synth and check args names
    in cepl-gl for conformance
+
+* Render buffers...not urgent in any way but we should support them
+  I'm thinking that if a strict subset of the commands that work on
+  fbos work on render buffers, then I will make them a special case
+  of fbo.
+
+* Default framebuffer should appear to be a user fbo including attachment names
+  No sense having this forward backward crap unless it provides something
+  real I dont know about yet.
+
+* GL-Free for attachments

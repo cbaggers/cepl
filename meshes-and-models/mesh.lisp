@@ -1,4 +1,4 @@
-(in-package :cgl)
+(in-package :meshes)
 
 (defclass region () ())
 
@@ -28,10 +28,10 @@
                ((or (eq rotation-type :quat)
                     (eq rotation-type :quaternion))
                 (q:rotate n rotation)))))
-    (let ((verts (gl-pull (vertices mesh)))
+    (let ((verts (pull-g (vertices mesh)))
           (has-normals (member (vert-layout mesh)
                                '(:g-pn :g-pnc :g-pnt :g-pntc))))
-      (gl-push
+      (push-g
        (loop :for v :in verts :collect
          (if has-normals
              (append (list (v3:v* (v3:v+1 (first v) translation)
@@ -45,10 +45,10 @@
 
 (defun transform-mesh-with-matrix (mesh matrix &optional normal-matrix)
   ;;{TODO} need to add cpu side caching to mesh, is it object that lives on gpu?
-  (let ((verts (gl-pull (vertices mesh)))
+  (let ((verts (pull-g (vertices mesh)))
         (has-normals (member (vert-layout mesh)
                              '(:g-pn :g-pnc :g-pnt :g-pntc))))
-      (gl-push
+      (push-g
        (loop :for v :in verts :collect
          (if has-normals
              (append (list (m3:m*vec matrix (first v))
@@ -62,7 +62,7 @@
 (defmethod polygonize ((region linear-region) primitive-type
                        &key index-data normals texture-coords)
   (let* ((points (points region))
-         (element-type (model-parsers::calc-type
+         (element-type (model-parsers:calc-type
                         points normals texture-coords)))
     (make-instance
      'mesh

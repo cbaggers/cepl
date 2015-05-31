@@ -1,123 +1,77 @@
 (in-package :cgl)
+(named-readtables:in-readtable fn_:fn_lambda)
 
-;; needed by varjo
-(defclass l-type (v-type) ())
+(defvar *equivalent-type-specs* (make-hash-table))
+(defun equiv-spec (lisp-type) (gethash lisp-type *equivalent-type-specs*))
+(defun (setf equiv-spec) (value lisp-type)
+  (setf (gethash lisp-type *equivalent-type-specs*) value))
+(defun equivalent-typep (lisp-type)
+  (not (null (gethash lisp-type *equivalent-type-specs*))))
+(defun equivalent-type (lisp-type)
+  (first (equiv-spec lisp-type)))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *gl-equivalent-type-data* (make-hash-table)))
+(defun swap-equivalent-types (args)
+  (mapcar #'swap-equivalent-type args))
+(defun swap-equivalent-type (arg)
+  (let ((type (second arg)))
+    (if (equivalent-typep type)
+        `(,(car arg) ,(first (equiv-spec type)) ,@(cddr arg))
+        arg)))
 
-(defmacro def-gl-equivalent (lisp-type &body body)
-  (unless lisp-type (error 'null-lisp-type))
-  (let ((bridge-name (symbol-to-bridge-symbol lisp-type)))
-    (multiple-value-bind (spec shader-forms)
-       (if (symbolp (first body))
-           (apply #'process-direct bridge-name lisp-type body)
-           (process-compound lisp-type bridge-name body))
-     `(progn (eval-when (:compile-toplevel :load-toplevel :execute)     
-               (setf (gethash ',lisp-type *gl-equivalent-type-data*) ',spec)
-               ,@shader-forms)))))
+;; {TODO} Currently equivalent types cannot be used in the same file
+;;        as they are defined. Try fixing this
+(defmacro def-equivalent-type (lisp-type-name &body options)
+  (if (symbolp (first options))
+      (if (null (rest options))
+          (det-simple-mapping lisp-type-name (first options))
+          (apply #'det-exisiting-type lisp-type-name options))
+      (apply #'det-new-type lisp-type-name options)))
 
-(defun symbol-to-bridge-symbol (x)
-  (symb (package-name (symbol-package x)) '-- (symbol-name x)))
-(defun bridge-symbol-to-symbol (x)
-  (destructuring-bind (package name)
-      (split-seq-by-seq "--" (symbol-name x))
-    (symb-package package name)))
-
-(defun process-direct (bridge-name lisp-type &key type converter)
-  (unless type (error 'direct-type-nil))
-  (values `(:direct ,lisp-type ,type ,converter)
-          `((defclass ,bridge-name (l-type) ()))))
-
-(defun process-compound (lisp-type bridge-name fields)
-  (values
-   `(:compound
-     ,lisp-type
-     ,(loop :for f :in fields :collect
-         (destructuring-bind (name &key type converter) f
-           `(,name 
-             ,type
-             ,(if converter
-                  (if (valid-convertorp converter)
-                      converter
-                      (error 'invalid-converter-form :form converter))
-                  `(function ,name))))))
-   (cons
-    `(defclass ,bridge-name (l-type) 
-       ((varjo::uniform-string-gen :initform #'equiv-uniform-string-gen
-                            :initarg :uniform-expansion)))
-    (loop :for (name &key type converter) :in fields :collect
-       (if type
-           `(v-defun ,name (x)
-              ,(format nil "~~a_~a" (varjo::safe-glsl-name-string name)) 
-              (,bridge-name)
-              ,type :glsl-spec-matching nil)          
-           (if converter
-               (error 'converter-for-nil-field)
-               `(v-defun ,name (x) 
-                         ,(format nil "<invalid lisp field access>~~a-~a" name)
-                         (,bridge-name) ,type :glsl-spec-matching nil)))))))
-
-(defun equiv-uniform-string-gen (name type)
-  (let* ((lisp-type (bridge-symbol-to-symbol type))
-         (fields (cgl::expand-equivalent-type `(,name ,lisp-type))))
-    (loop :for ((name _1 _2) gl-type) :in fields :collect
-       `(,name ,gl-type ,(varjo::gen-uniform-decl-string
-                          name (type-spec->type gl-type))))))
-
-(defun resolve-var-name (x &optional top)
-  (cond ((symbolp x) x)
-        ((and (= 2 (length x)) (first x) (symbolp (first x)) (listp x))
-         (symb (resolve-var-name (cadr x) (if (null top) x top)) '- (first x)))
-        (t (error 'invalid-accessor-for-arg :code (or top x)))))
+;; simple mapping from one to another, unshadowing is actually done
+;; in defpipeline so the uniform can be ascertained
+;;
+;; (def-equivalent-type 'single-float :float)
+(defun det-simple-mapping (lisp-type-name varjo-type)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (varjo:add-type-shadow ',lisp-type-name ',varjo-type)))
 
 
-(defun valid-type (x)
-  (handler-case (progn (typep t x) t) (error () nil)))
+;; uses existing type
+;;
+;; (def-equivalent-type 'pos-norm
+;;   'g-pn
+;;   (position (pos %))
+;;   (normal (norm %)))
+(defun det-exisiting-type (lisp-type-name varjo-type &rest slots)
+  (assert (every λ(= (length _) 2) slots))
+  `(progn
+     (eval-when (:compile-toplevel :load-toplevel :execute)
+       (setf (equiv-spec ,lisp-type-name) ,(list varjo-type slots)))
+     (let ((vsn (mapcar #'first (varjo:v-slots (varjo:type-spec->type
+                                                ',varjo-type))))
+           (sn ',(remove-duplicates (mapcar #'first slots))))
+       (assert (and (= (length vsn) ,(length slots))
+                    (every (lambda (x) (member x sn)) vsn))))))
 
-(defun valid-convertorp (x)
-  (and (listp x)
-       (let ((y (first x)))
-         (or (eq y 'function)
-             (eq y 'lambda)))))
 
-(defun expand-equivalent-types (args)
-  (mapcan #'expand-equivalent-type args))
-
-(defun expand-equivalent-type (arg-form)
-  (destructuring-bind (name type) arg-form
-    (multiple-value-bind (type-data exists)
-        (gethash type *gl-equivalent-type-data*)
-      (if exists
-          (case (first type-data)
-            (:direct (expand-direct name (rest type-data)))
-            (:compound (expand-compound name (rest type-data))))
-          (list (list (list name) type))))))
-
-(defun expand-direct (arg-name type-data)
-  (destructuring-bind (lisp-type type converter) type-data
-    (declare (ignore lisp-type))
-    (list (list (list arg-name arg-name converter) type))))
-
-(defun expand-compound (arg-name type-data)
-  (destructuring-bind (lisp-type fields) type-data
-    (declare (ignore lisp-type))
-    (loop :for (name type converter) :in fields :collect
-       (let ((expanded-arg-name (symb arg-name '- name)))
-         (list (list expanded-arg-name arg-name converter) type)))))
-
-(deferror null-lisp-type (:prefix "CEPL: Equivalent Types") ()
-    "lisp-type may not be null")
-
-(deferror direct-type-nil (:prefix "CEPL: Equivalent Types") ()
-    "Field type may be nil in the fields of a compound~%equivalent type but not in this case as it is a direct equivalentB type~%")
-
-(deferror invalid-converter-form (:prefix "CEPL: Equivalent Types") (form)
-    "Invalid form for converter, must be sharp-quoted function or lambda:~%~s" 
-  form)
-
-(deferror converter-for-nil-field (:prefix "CEPL: Equivalent Types") ()
-    "Invalid form for converter, must be sharp-quoted function or lambda")
-
-(deferror invalid-accessor-for-arg (:prefix "Varjo") (code)
-    "Varjo: Accessor is not valid for this argument:~%~a" code)
+;; makes new varjo type
+;;
+;; (def-equivalent-type cepl:camera
+;;   (cam->clip :mat4 (slot-value % 'cam->clip) :accessor cam->clip)
+;;   (world->cam :mat4 (world->cam %) :accessor world->cam))
+(defun det-new-type (lisp-type-name &rest slots)
+  (let ((alt-type (symb lisp-type-name '-)))
+    `(progn
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (setf (equiv-spec ',lisp-type-name)
+               ',(list alt-type
+                       (mapcar λ(destructuring-bind (name _ form &key accessor)
+                                    _
+                                  (declare (ignore _))
+                                  (list (or accessor name) form)) slots))))
+       (defstruct-g ,alt-type
+           (:constructor nil :varjo-constructor ,lisp-type-name :populate nil
+                         :attribs nil :readers nil :pull-push nil)
+         ,@(mapcar λ(append (subseq _ 0 2) (subseq _ 3))
+                   slots))
+       ',lisp-type-name)))

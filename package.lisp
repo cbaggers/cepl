@@ -8,6 +8,38 @@
 
 ;;;; package.lisp
 
+(defpackage :cepl-generics
+  (:use :cl)
+  (:export :pos
+           :rot
+           :dir
+           :vec
+           :size
+           :norm
+           :tex
+           :col
+           :action
+           :button
+           :button-state
+           :clicks
+           :data
+           :delta
+           :etype
+           :id
+           :key
+           :key-state
+           :pos
+           :repeating
+           :state
+           :timestamp))
+
+(defpackage :cepl-backend
+  (:use :cl)
+  (:export :init
+           :shutdown
+           :get-event-pump
+           :*backend*))
+
 (defpackage :cepl-utils
   (:use :cl)
   (:nicknames :utils)
@@ -18,7 +50,6 @@
            :listify
            :replace-nth
            :hash-values
-           :lambda-list-split
            :hash-keys
            :intersperse
            :walk-replace
@@ -41,13 +72,15 @@
            :arangei
            :mapcat
            :deferror
-           :split-seq-by-seq           
-           :print-mem))
+           :split-seq-by-seq
+           :print-mem
+           :map-hash
+           :last1
+           :p->))
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
   (:export :once-only
-           :continuable
            :apply-across-elements))
 
 (defpackage :base-maths
@@ -228,45 +261,110 @@
 (defpackage :base-space
   (:use :cl :base-macros :base-vectors :base-matrices)
   (:nicknames :cspace)
+  (:shadow :space)
   ;;(:export :things)
   )
 
+
+(defpackage :%cgl
+  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
+        :fn_ :split-sequence)
+  )
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors)
+  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
+        :fn_ :split-sequence :%cgl)
   (:nicknames :cgl)
-  (:import-from :cl-opengl
-                :clear-color
-                :enable
-                :disable
-                :cull-face
-                :front-face
-                :depth-mask
-                :depth-func
-                :depth-range
-                :clear
-                :clear-depth
-                :flush
-                :delete-shader)
   (:import-from :utils
                 :deferror
                 :print-mem)
   (:shadow :float)
   (:export :gl-context
-           :+default-resolution+
+           :*quad*
+           :*quad-stream*
+           ;;- - - - - - - -
+           :make-context
+           :has-feature
+           :*gl-context*
+           :%context-flags
+           :major-version
+           :minor-version
+           :max-server-wait-timeout
+           :min-map-buffer-alignment
+           :extension-count
+           :supported-shading-versions-count
+           :timestamp
+           :%draw-indirect-buffer-binding
+           :%element-array-buffer-binding
+           :%query-buffer-binding
+           :%texture-buffer-binding
+           :%vertex-array-binding
+           :color-clear-value
+           :color-writemask
+           :depth-clear-value
+           :depth-func~1
+           :depth-test
+           :depth-writemask
+           :doublebuffer
+           :draw-buffer
+           :draw-bufferi
+           :draw-framebuffer-binding
+           :max-color-attachments
+           :max-color-texture-samples
+           :max-depth-texture-samples
+           :max-draw-buffers
+           :max-dual-source-draw-buffers
+           :max-framebuffer-height
+           :max-framebuffer-layers
+           :max-framebuffer-samples
+           :max-framebuffer-width
+           :max-integer-samples
+           :max-samples
+           :read-buffer
+           :read-framebuffer-binding
+           :renderbuffer-binding
+           :stencil-back-fail
+           :stencil-back-func
+           :stencil-back-pass-depth-fail
+           :stencil-back-pass-depth-pass
+           :stencil-back-ref
+           :stencil-back-value-mask
+           :stencil-back-writemask
+           :stencil-clear-value
+           :stencil-fail
+           :stencil-func
+           :stencil-pass-depth-fail
+           :stencil-pass-depth-pass
+           :stencil-ref
+           :stencil-test
+           :stencil-value-mask
+           :stencil-writemask
+           :stereo
+           ;;- - - - - - - -
+           :*current-viewport*
+           :viewport
+           :with-viewport
+           :with-fbo-viewport
+           :viewport-resolution
            :clear-gl-context-cache
            :gl-free
            :update-display
            :valid-pixel-format-p
            :pixel-format
+           :lisp-type->pixel-format
+           :pixel-format->lisp-type
+           :pixel-format->internal-format
+           :internal-format->pixel-format
+           :internal-format->lisp-type
+           :lisp-type->internal-format
            :internal-format-from-pixel-format
            :pixel-format-from-internal-format
-           :pixel-format-of
            :describe-pixel-format
-           :defglstruct
+           :defstruct-g
            :c-array-byte-size
            :gl-calc-byte-size
            :make-c-array-from-pointer
            :with-c-array
+           :with-c-arrays
            :free-c-array
            :clone-c-array
            :make-c-array
@@ -274,9 +372,9 @@
            :%aref-c
            :c-populate
            :gl-subseq
-           :gl-pull
-           :gl-pull-1
-           :gl-push
+           :pull-g
+           :pull1-g
+           :push-g
            :dimensions ; [TODO] this isnt really inline with array-dimensions
            :backed-by ; [TODO] is this the right name for the job?
            :element-type
@@ -301,7 +399,7 @@
            :make-vao-from-formats
            :make-vao
            :make-raw-vertex-stream
-           :make-vertex-stream
+           :make-buffer-stream
            :make-texture
            :bind-texture
            :with-texture-bound
@@ -314,12 +412,10 @@
            :gpu-array-t
            :texref
            :defpipeline
-           :defvshader
-           :deffshader
-           :defgshader
-           :defshader
-           :defsmacro
-           :defsfun
+           :g->
+           :defun-g
+           :defmacro-g
+           :define-compiler-macro-g
            :with-instances
            :free-managed-resources
            :free-buffer
@@ -339,21 +435,7 @@
            :norm
            :tex
            ;;----------
-           :delete-shader
-           :clear-color
-           :cls
-           :enable
-           :disable
-           :cull-face
-           :front-face
-           :depth-mask
-           :depth-func
-           :depth-range
-           :clear
-           :clear-depth
-           :flush
-           ;;----------
-           :gmap
+           :map-g
            ;;----------
            :make-fbo
            :make-fbos
@@ -364,21 +446,21 @@
            :with-fbo-slots
            :attachment-compatible
            :fbo-detach
-           ;;----------           
-           :def-gl-equivalent
-           :make-swatch
-           :draw-swatch
-           :with-swatch-bound))
+           ;;----------
+           :make-ubo
+           :ubo-data
+           :ubo-index
+           ;;----------
+           :def-equivalent-type
+           ;;----------
+           :clear))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
 
-(defpackage :%cgl
-  (:use :cl :varjo :cgl))
-
 (defpackage :cepl-camera
   (:nicknames :ccam)
-  (:use :cl)
+  (:use :cl :cepl-generics :base-vectors)
   (:export :camera
            :make-camera
            :orthographic-projection
@@ -410,13 +492,26 @@
            :mesh->lists
            :mesh-list->gpu
            :mesh->gpu
-           :scene-meshes->gpu)
+           :scene-meshes->gpu
+           :calc-type)
   (:import-from :vector2
                 :make-vector2)
   (:import-from :vector3
                 :make-vector3)
   (:import-from :vector4
                 :make-vector4))
+
+(defpackage :meshes
+  (:use :cl :cffi :base-macros :cepl-utils :base-vectors :cepl-generics
+        :fn_ :split-sequence :cgl)
+  (:export :mesh
+           :vertices
+           :indicies
+           :primitive-type
+           :transform-mesh
+           :transform-mesh-with-matrix
+           :polygonize
+           :flatten-index))
 
 (defpackage :devil-helper
   (:use :cl)
@@ -435,7 +530,8 @@
            :box-data
            :equilateral-triangle-data
            :sphere-data
-           :prim-array))
+           :prim-array
+           :swap-winding-order))
 
 (defpackage :tools
   (:use :cl
@@ -445,47 +541,30 @@
   (:export :rqpos))
 
 (defpackage :cepl.events
-  (:use :cl :cepl-utils :cells)
-  (:nicknames :evt)  
+  (:use :cl :cepl-utils :cells :cepl-generics)
+  (:nicknames :evt)
   (:export :event
            :event-cell
            :map-evt
            :merge-evt
            :filter-evt
-           :all-events
-           :*map-evt*
-           :*merge-evt*
-           :*filter-evt*
-           :*all-events*
+           :pump-events
+           :|all-events|
            :observe
            :undefobserver
-           :def-event-node))
-
-(defpackage :cepl.events.sdl
-  (:use :cl :cepl-utils :cepl.events :cells)
-  (:nicknames :evt.sdl)
-  (:export :pump-events
-           :case-events
-
+           :def-event-node
+           :|mouse|
+           :|sys|
+           :|window|
+           :|keyboard|
+           :button-state
+           :key-state
            :will-quit
            :window
+           :win
            :mouse-scroll
            :mouse-button
            :mouse-motion
-           :key
-           :terminal
-
-           :all-events
-           :mouse
-           :sys
-           :window
-           :keyboard
-           :*all-events*
-           :*mouse*
-           :*sys*
-           :*window*
-           :*keyboard*
-
            :action
            :button
            :clicks
@@ -493,104 +572,142 @@
            :etype
            :id
            :key
-           :pos
-           :repeat
+           :repeating
            :source-id
            :state
            :timestamp
-           :vec
-           :data
-           
-           :button-state
-           :key-state))
+           :data))
+
+(defpackage :cepl.events.sdl
+  (:use :cl :cepl-utils :cepl.events :cells :cepl-generics)
+  (:shadow :pump-events)
+  (:export :pump-events
+           :case-events))
 
 (defpackage :live
   (:use :cl :cepl-utils)
-  (:export :defdemo
+  (:export :main-loop
            :update-swank
-           :peek))
+           :peek
+           :continuable))
 
 (defpackage :cepl
   (:use :cl
+        :cepl-generics
         :base-vectors
         :base-matrices
         :base-maths
         :base-macros
         :temporal-functions
         :cepl-camera
-        :live)
-  (:import-from :cepl-gl
-                :cls
-                :pixel-format
-                :pixel-format-of
-                :describe-pixel-format
-                :with-instances
-                :defpipeline
-                :defvshader
-                :deffshader
-                :defgshader
-                :defshader
-                :defsfun
-                :defsmacro
-                :defglstruct
-                :gl-pull
-                :gl-pull-1
-                :gl-push
-                :make-c-array
-                :with-c-array
-                :free-c-array
-                :aref-c
-                :c-populate
-                :make-gpu-array
-                :make-gpu-arrays
-                :gl-subseq
-                :with-gpu-array-as-c-array
-                :make-vertex-stream
-                :make-texture
-                :with-texture-bound
-                :g-pn
-                :g-pc
-                :g-pt
-                :g-pnc
-                :g-pnt
-                :g-pntc
-                :texref
-                ;;---
-                :gmap
-                ;;---
-                :make-fbo
-                :make-fbos
-                :with-bind-fbo
-                :with-fbo-slots
-                :fbo-attach
-                :attachment-compatible
-                :fbo-detach
-                ;;---
-                :def-gl-equivalent)
+        :cl-fad
+        :cepl.events
+        :named-readtables
+        :cepl-gl)
+  (:import-from :live
+                :continuable
+                :update-swank
+                :peek)  
   (:import-from :utils
                 :deferror
-                :print-mem)
-  (:import-from :cepl.events.sdl
-                :case-events)
-  (:export :cepl-gl
-           :cls
+                :print-mem
+                :p->)
+  (:export :repl
+           :make-project
+           ;----
+           :pos
+           :rot
+           :dir
+           :vec
+           :size
+           :norm
+           :tex
+           :col
+           ;;---
+           :map-evt
+           :merge-evt
+           :filter-evt
+           :|all-events|
+           :observe
+           :undefobserver
+           :def-event-node
+           ;;---
+           :update-swank
+           :peek
+           :*examples-directory*
+           ;;---
+           :v! :v-x :v-y :v-z :v-w
+           :v!byte :v!ubyte :v!int
+           ;;---
+           :m!
+           ;;---
+           :rqpos
+           :continuable
+           ;;---
+           :def-time-units
+           :milliseconds
+           :seconds
+           :minutes
+           :hours
+           :tlambda
+           :tdefun
+           :before
+           :after
+           :between
+           :each
+           :then
+           :repeat
+           :whilst
+           :%progress%
+           :signal-expired
+           :expiredp
+           :expiredp+
+           :make-stepper
+           ;;---
+           :camera
+           :make-camera
+           :orthographic-projection
+           :perspective-projection
+           :world->cam
+           :look-at
+           :world-up
+           :pos
+           :dir
+           :frame-size
+           :fov
+           :far
+           :near
+           :cam->clip-func
+           :cam->clip
+           :world->cam
+           :make-cam-clip-matrix
+           ;;---
+           :update-swank
+           :peek
+           ;;---
+           :*quad*
+           :*quad-stream*
+           :clear
+           :update-display
            :pixel-format
-           :pixel-format-of
+           :lisp-type->pixel-format
+           :pixel-format->lisp-type
+           :pixel-format->internal-format
+           :internal-format->pixel-format
+           :internal-format->lisp-type
+           :lisp-type->internal-format
            :describe-pixel-format
            :with-instances
            :defpipeline
-           :defvshader
-           :deffshader
-           :defgshader
-           :defshader
-           :defsfun
-           :defsmacro
-           :defglstruct
-           :gl-pull
-           :gl-pull-1
-           :gl-push
+           :defun-g
+           :defmacro-g
+           :defstruct-g
+           :pull-g
+           :pull1-g
+           :push-g
            :make-c-array
            :with-c-array
+           :with-c-arrays
            :free-c-array
            :aref-c
            :c-populate
@@ -598,7 +715,7 @@
            :make-gpu-arrays
            :gl-subseq
            :with-gpu-array-as-c-array
-           :make-vertex-stream
+           :make-buffer-stream
            :make-texture
            :with-texture-bound
            :g-pn
@@ -608,23 +725,21 @@
            :g-pnt
            :g-pntc
            :texref
-           ;;---
-           :gmap
-           ;;---
+           :map-g
            :make-fbo
            :make-fbos
            :with-bind-fbo
            :with-fbo-slots
            :fbo-attach
+           :attachment
            :attachment-compatible
            :fbo-detach
+           :*current-viewport*
+           :viewport
+           :with-viewport
+           :with-fbo-viewport
+           :def-equivalent-type
            ;;---
-           :def-gl-equivalent
-           :repl
-           ;;---
-           :case-events
-           :collect-event-types
-           :evt+>
-           :evt->
-           :update-swank
-           :peek))
+           :make-ubo
+           :ubo-data
+           :ubo-index))

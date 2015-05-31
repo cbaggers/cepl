@@ -9,30 +9,72 @@
 (in-package :cgl)
 
 (defparameter *gl-context* nil)
-(defparameter +default-resolution+ 
-  (make-array 2 :element-type 'single-float :initial-contents '(640.0 480.0)))
 
 ;; This is an object which can be used to access data about the gl-context
-;; it employs caching for any of the areas where the data won't change during 
+;; it employs caching for any of the areas where the data won't change during
 ;; the execution or where the changes would be known.
 
-(cells:defmodel gl-context ()
-  ((cache :cell nil :initform (make-hash-table))
-   (handle :cell nil :initarg :handle :reader handle)
-   (gl-initialized :cell t :initform (cells:c-in nil) :reader gl-initialized)))
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;   :width width :height height :title "CEPL REPL" :resizable t
 
-(defmethod initialize-instance :after ((context gl-context) &key)
-  (setf (gl-initialized context) t))
+(defun make-context (backend &key (width 640) (height 480) (title "") fullscreen
+                               no-frame (alpha-size 0) (depth-size 16) (stencil-size 8)
+                               (red-size 8) (green-size 8) (blue-size 8) (buffer-size 32)
+                               (double-buffer t) hidden (resizable t))
+  (destructuring-bind (context-handle window)
+      (cepl-backend:init backend width height title fullscreen
+                         no-frame alpha-size depth-size stencil-size
+                         red-size green-size blue-size buffer-size
+                         double-buffer hidden resizable)
+    (let ((context (make-instance
+                    'gl-context :handle context-handle :window window)))
+      (ensure-cepl-compatible-setup)
+      (%set-default-gl-options)
+      (setf *gl-context* context
+            *gl-window* (window context)
+            (slot-value context 'viewport)
+            (%make-default-viewport (list width height))
+            (gl-initialized context) t))))
 
-(defmethod clear-gl-context-cache ((object gl-context)) 
+
+(let ((available-extensions nil))
+  (defun has-feature (x)
+    (unless available-extensions
+      (if (<= 3 (gl:major-version))
+          (loop :for i :below (gl:get-integer :num-extensions)
+             :collect (%gl:get-string-i :extensions i))
+          ;; OpenGL version < 3
+          (cl-utilities:split-sequence #\space (gl:get-string :extensions)
+                                       :remove-empty-subseqs t)))
+    (find x available-extensions :test #'equal)))
+
+(defun ensure-cepl-compatible-setup ()
+  (unless (>= (gl:major-version) 3)
+    (error "Cepl requires OpenGL 3.1 or higher")))
+
+(defun %set-default-gl-options ()
+  (print "Setting default options")
+  (gl:clear-color 0.0 0.0 0.0 0.0)
+  (gl:enable :cull-face)
+  (gl:cull-face :back)
+  (gl:front-face :ccw)
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (gl:depth-func :lequal)
+  (gl:depth-range 0.0 1.0)
+  (gl:enable :depth-clamp))
+
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+(defmethod clear-gl-context-cache ((object gl-context))
   (clrhash (slot-value object 'cache)))
 
 (defmacro def-cached-context-reader (name &key (enum-name name) index)
   (let ((kwd-name (kwd enum-name)))
     `(defmethod ,name ((context gl-context))
        (with-slots (cache) context
-         (or (gethash ,kwd-name cache) 
-             (setf (gethash ,kwd-name cache) 
+         (or (gethash ,kwd-name cache)
+             (setf (gethash ,kwd-name cache)
                    (gl:get* ,kwd-name ,@(when index (list index)))))))))
 (defmacro def-context-reader (name &key (enum-name name) index)
   (let ((kwd-name (kwd enum-name)))
@@ -44,6 +86,23 @@
        ;;   (declare (ignore args))
        ;;   '(gl:get* ,kwd-name ,@(when index (list index))))
        )))
+
+;;------------------------------------------------------------
+
+(defvar *on-context-funcall* nil)
+
+(cells:defobserver gl-initialized ((context gl-context) new)
+  (when (and new *on-context-funcall*)
+    (mapcar #'funcall *on-context-funcall*)
+    (setf *on-context-funcall* nil)))
+
+(defmacro def-g (var &optional val doc)
+  `(progn
+     (defparameter ,var nil ,doc)
+     (if *gl-context*
+         (setf ,var ,val)
+         (push (lambda () (setf ,var ,val))
+               cgl::*on-context-funcall*))))
 
 ;;------------------------------------------------------------
 
@@ -61,7 +120,7 @@
 (def-cached-context-reader %context-flags :enum-name :context-flags)
 
 ;; GL_MAJOR_VERSION (integer)
-;; The major version number of the OpenGL API supported by the current 
+;; The major version number of the OpenGL API supported by the current
 ;; context.
 (def-cached-context-reader major-version)
 
@@ -74,18 +133,18 @@
 (def-cached-context-reader max-server-wait-timeout)
 
 ;; GL_MIN_MAP_BUFFER_ALIGNMENT (integer, at least 64)
-;; The minimum alignment in basic machine units of pointers returned 
+;; The minimum alignment in basic machine units of pointers returned
 ;; from glMapBuffer and glMapBufferRange.
 (def-cached-context-reader min-map-buffer-alignment)
 
 ;; GL_NUM_EXTENSIONS (integer, see glGetString)
-;; The number of extensions supported by the GL implementation for the current 
+;; The number of extensions supported by the GL implementation for the current
 ;; context.
 (def-cached-context-reader extension-count :enum-name :num-extensions)
 
 ;; GL_NUM_SHADING_LANGUAGE_VERSIONS (integer, at least 3, see glGetString)
 ;; The number of supported GLSL versions.
-(def-cached-context-reader supported-shading-versions-count 
+(def-cached-context-reader supported-shading-versions-count
     :enum-name :num-shading-language-versions)
 
 ;; GL_TIMESTAMP (GLint64, see glQueryCounter)
@@ -95,7 +154,7 @@
 ;;------------------------------------------------------------
 
 ;; GL_ARRAY_BUFFER_BINDING (GLint, initially 0, see glBindBuffer)
-;; The name of the buffer object currently bound to the target GL_ARRAY_BUFFER. 
+;; The name of the buffer object currently bound to the target GL_ARRAY_BUFFER.
 ;; If no buffer object is bound to this target, 0 is returned.
 (def-context-reader %array-buffer-binding :enum-name :array-buffer-binding)
 
@@ -104,23 +163,23 @@
 (def-context-reader %read-buffer-binding :enum-name :read-buffer-binding)
 
 ;; GL_COPY_WRITE_BUFFER_BINDING (name, initially 0, see glBufferBinding)
-;; The buffer that is currently bound to the copy write bind point, or 0 for 
+;; The buffer that is currently bound to the copy write bind point, or 0 for
 ;; none.
-(def-context-reader %copy-write-buffer-binding 
+(def-context-reader %copy-write-buffer-binding
     :enum-name :copy-write-buffer-binding)
 
 ;; GL_DRAW_INDIRECT_BUFFER_BINDING (GLint, initially 0, see glBindBuffer)
 ;; The name of the buffer object currently bound to the target
-;;  GL_DRAW_INDIRECT_BUFFER. If no buffer object is bound to this target, 0 is 
+;;  GL_DRAW_INDIRECT_BUFFER. If no buffer object is bound to this target, 0 is
 ;; returned.
-(def-context-reader %draw-indirect-buffer-binding 
+(def-context-reader %draw-indirect-buffer-binding
     :enum-name :draw-indirect-buffer-binding)
 
 ;; GL_ELEMENT_ARRAY_BUFFER_BINDING (GLint, initially 0, see glBindBuffer)
-;; The name of the buffer object currently bound to the target 
+;; The name of the buffer object currently bound to the target
 ;; GL_ELEMENT_ARRAY_BUFFER. If no buffer object is bound to this target, 0 is
 ;; returned.
-(def-context-reader %element-array-buffer-binding 
+(def-context-reader %element-array-buffer-binding
     :enum-name :element-array-buffer-binding)
 
 ;; GL_QUERY_BUFFER_BINDING (name, initially 0, see glBufferBinding)
@@ -128,12 +187,12 @@
 (def-context-reader %query-buffer-binding :enum-name :query-buffer-binding)
 
 ;; GL_TEXTURE_BUFFER_BINDING (name, initially 0, see glBufferBinding)
-;; The buffer that is currently bound to the generic texture bind point, or 0 
+;; The buffer that is currently bound to the generic texture bind point, or 0
 ;; for none.
 (def-context-reader %texture-buffer-binding :enum-name :texture-buffer-binding)
 
 ;; GL_VERTEX_ARRAY_BINDING (GLint, initially 0, see glBindVertexArray)
-;; The name of the vertex array object currently bound to the context, or 0 if 
+;; The name of the vertex array object currently bound to the context, or 0 if
 ;; none is bound.
 (def-context-reader %vertex-array-binding :enum-name :vertex-array-binding)
 
@@ -302,5 +361,5 @@
 (def-context-reader stencil-writemask)
 
 ;; GL_STEREO (boolean)
-;;     Whether stereo buffers (left and right) are supported. 
+;;     Whether stereo buffers (left and right) are supported.
 (def-context-reader stereo)

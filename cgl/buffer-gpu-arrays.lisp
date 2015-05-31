@@ -1,7 +1,7 @@
 (in-package :cgl)
 
 ;; [TODO] Justify your use of the gl- prefix everywhere.
-;; [TODO] alignment, what the hell do we do with that? I'm a bit 
+;; [TODO] alignment, what the hell do we do with that? I'm a bit
 ;;        drunk to make these choices right now
 ;; [TODO] How do we free these? Tag buffer format type as :free and handle?
 
@@ -9,7 +9,7 @@
 ;;; GPUARRAYS ;;;
 ;;;-----------;;;
 
-(defstruct gpuarray 
+(defstruct gpuarray
   buffer
   format-index
   (start 0)
@@ -50,7 +50,7 @@
     (setf (first (nth (gpuarray-format-index gpu-array) buffer-formats))
           :UNDEFINED)
     (when (and (glbuffer-managed buffer)
-               (loop :for format :in buffer-formats :always 
+               (loop :for format :in buffer-formats :always
                   (eq (car format) :UNDEFINED)))
       (free-buffer buffer)))
   (blank-gpu-array-b-object gpu-array))
@@ -77,7 +77,7 @@
   "Returns the offset in bytes from the beginning of the buffer
    that this gpuarray is stored at"
   (let ((format (gpuarray-format gpu-array)))
-   (+ (third format) (gl-calc-byte-size (first format) 
+   (+ (third format) (gl-calc-byte-size (first format)
                                         (list (gpuarray-start gpu-array))))))
 
 ;;---------------------------------------------------------------
@@ -88,11 +88,11 @@
 ;; [TODO] Check to see we have all the data we need
 ;; [TODO] all make-gpu-array need the start argument specified
 ;; [TODO] all dimensions need checking for sanity..some clearly dont have any :D
-(defmethod make-gpu-array ((initial-contents null) 
+(defmethod make-gpu-array ((initial-contents null)
                            &key element-type dimensions
                              (access-style :static-draw))
   (declare (ignore initial-contents))
-  (let ((buffer (gen-buffer :managed t)))
+  (let ((buffer (make-buffer :managed t)))
     (make-gpuarray :buffer (buffer-reserve-block
                             buffer element-type dimensions
                             :array-buffer access-style)
@@ -100,17 +100,17 @@
                    :dimensions dimensions
                    :access-style access-style)))
 
-(defmethod make-gpu-array ((initial-contents t) 
-                           &key dimensions element-type (access-style :static-draw) 
+(defmethod make-gpu-array ((initial-contents t)
+                           &key dimensions element-type (access-style :static-draw)
                              (alignment 1))
   (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
                                        :element-type element-type
                                        :alignment alignment))
     (make-gpu-array c-array :access-style access-style)))
 
-(defmethod make-gpu-array ((initial-contents c-array) 
+(defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw))
-  (let ((buffer (gen-buffer :managed t)))
+  (let ((buffer (make-buffer :managed t)))
     (make-gpuarray :buffer (buffer-data buffer initial-contents
                                         :array-buffer access-style)
                    :format-index 0
@@ -119,22 +119,22 @@
 
 (defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
   "This function creates a list of gpu-arrays residing in a
-   single buffer in opengl. It create one gpu-array for each 
+   single buffer in opengl. It create one gpu-array for each
    c-array in the list passed in.
 
-   Access style is optional but if you are comfortable with 
+   Access style is optional but if you are comfortable with
    opengl, and know what type of usage pattern thsi array will
    have, you can set this to any of the following:
-   (:stream-draw :stream-read :stream-copy :static-draw 
+   (:stream-draw :stream-read :stream-copy :static-draw
     :static-read :static-copy :dynamic-draw :dynamic-read
     :dynamic-copy)
 
    Finally you can provide an existing buffer if you want to
-   use it rather than creating a new buffer. Note that all 
+   use it rather than creating a new buffer. Note that all
    existing data in the buffer will be destroyed in the process"
-  (let ((buffer (multi-buffer-data (gen-buffer :managed t) c-arrays 
+  (let ((buffer (multi-buffer-data (make-buffer :managed t) c-arrays
                                    :array-buffer access-style)))
-    (loop :for c-array :in c-arrays :for i :from 0 :collecting 
+    (loop :for c-array :in c-arrays :for i :from 0 :collecting
        (make-gpuarray :buffer buffer
                       :format-index i
                       :dimensions (dimensions c-array)
@@ -157,12 +157,12 @@
               (error "Invalid subseq start or end for c-array"))))))
 
 ;; [TODO] Dont require a temporary name, just use the one it has
-;;        this makes it feel more magical to me and also it is 
+;;        this makes it feel more magical to me and also it is
 ;;        in-line with things like with-slots
 ;; [TODO] Need to unmap if something goes wrong
-(defmacro with-gpu-array-as-c-array ((gpu-array 
-                                      &key (access-type :read-write) 
-                                      temp-name) 
+(defmacro with-gpu-array-as-c-array ((gpu-array
+                                      &key (access-type :read-write)
+                                      temp-name)
                                      &body body)
   "This macro is really handy if you need to have random access
    to the data on the gpu. It takes a gpu-array and maps it
@@ -174,7 +174,7 @@
    (with-gpu-array-as-c-array (mygpuarray)
      (setf (aref-c mygpuarray 2) 5.0))
 
-   The valid values for access are :read-only :write-only & 
+   The valid values for access are :read-only :write-only &
    :read-write"
   (unless (find access-type '(:read-write :read-only :write-only))
     (error "The access argument must be set to :read-write :read-only or :write-only"))
@@ -188,7 +188,7 @@
            (,target :array-buffer)
            (,ggpu-array ,gpu-array))
        (force-bind-buffer ,buffer-sym ,target)
-       (gl:with-mapped-buffer (,glarray-pointer 
+       (gl:with-mapped-buffer (,glarray-pointer
                                ,target
                                ,access-type)
          (if (pointer-eq ,glarray-pointer (null-pointer))
@@ -204,19 +204,19 @@
 (defun gpu-array-pull-1 (gpu-array)
   "This function returns the contents of the gpu array as a c-array
    Note that you often dont need to use this as the generic
-   function gl-pull will call this function if given a gpu-array"
+   function pull-g will call this function if given a gpu-array"
   (with-gpu-array-as-c-array (gpu-array :access-type :read-only)
     (clone-c-array gpu-array)))
 
 ;; allignmetn
-(defmethod gl-push ((object list) (destination gpuarray))
+(defmethod push-g ((object list) (destination gpuarray))
   (with-c-array (tmp (make-c-array object
                                    :dimensions (dimensions destination)
-                                   :element-type (element-type destination) 
+                                   :element-type (element-type destination)
                                    :alignment 1))
-    (gl-push tmp destination)))
+    (push-g tmp destination)))
 
-(defmethod gl-push ((object c-array) (destination gpuarray))
+(defmethod push-g ((object c-array) (destination gpuarray))
   (let* ((buffer (gpuarray-buffer destination))
          (format (gpuarray-format destination))
          (type (first format))
@@ -230,16 +230,16 @@
               (buffer-sub-data buffer object (gpuarray-offset destination)
                                :array-buffer))
         (error "If the arrays are 1D then the length of the source array must
-be <= length of the destination array. If the arrays have more than 1 
+be <= length of the destination array. If the arrays have more than 1
 dimension then their sizes must match exactly"))
     destination))
 
-(defmethod gl-pull-1 ((object gpuarray)) 
+(defmethod pull1-g ((object gpuarray))
   (gpu-array-pull-1 object))
 
-(defmethod gl-pull ((object gpuarray))
+(defmethod pull-g ((object gpuarray))
   (with-gpu-array-as-c-array (object :access-type :read-only)
-    (gl-pull-1 object)))
+    (pull1-g object)))
 
 ;; copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData

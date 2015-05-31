@@ -9,7 +9,7 @@
 ;; This package provides a generic interface to all the vector
 ;; functions provided in vector2,3 & 4.
 ;; It is here to make programming more pleasent.
-;; Also see the reader macro for creating vectors 
+;; Also see the reader macro for creating vectors
 
 ;; DO NOT ':USE' THIS PACKAGE IN YOUR PROGRAMS AS IT REDEFINES
 ;; VARIOUS MATHEMATICAL SYMBOLS
@@ -57,14 +57,14 @@
         (z (vector3:make-vector3 (float x) (float y) (float z)))
         (t (vector2:make-vector2 (float x) (float y)))))
 
-;; 
+;;
 (defun merge-into-vector (&rest vectors)
   "Takes a list of vectors and combines them into a new vector"
-  (labels ((seqify (x) 
+  (labels ((seqify (x)
              (if (or (listp x) (arrayp x))
                  x
                  (list x))))
-    (let ((combined (mapcar #'(lambda (x) 
+    (let ((combined (mapcar #'(lambda (x)
                                 (coerce x 'single-float))
                             (apply #'concatenate 'list
                                    (mapcar #'seqify vectors)))))
@@ -108,17 +108,17 @@
 ;;----------------------------------------------------------------
 
 (defun = (&rest vecs)
-  "Returns either t if the vectors are equal. 
+  "Returns either t if the vectors are equal.
    Otherwise it returns nil."
   (let ((vec-a (first vecs)))
-    (loop :for vec :in (cdr vecs)       
+    (loop :for vec :in (cdr vecs)
        :when (not (v:eq vec vec-a)) :do (return nil)
        :finally (return t))))
 
 ;;----------------------------------------------------------------
 
-(defun v/= (&rest vecs)
-  "Returns either t if the two vectors are equal. 
+(defun /= (&rest vecs)
+  "Returns either t if the two vectors are equal.
    Otherwise it returns nil."
   (let ((vec-a (first vecs)))
     (loop :for vec :in (cdr vecs)
@@ -299,17 +299,17 @@
 (declaim (inline lerp)
          (ftype (function ((or (simple-array single-float (2))
                                (simple-array single-float (3))
-                               (simple-array single-float (4))) 
+                               (simple-array single-float (4)))
                            (or (simple-array single-float (2))
                                (simple-array single-float (3))
                                (simple-array single-float (4)))
-                           (or (integer) (single-float))) 
+                           (or (integer) (single-float)))
                           (or (simple-array single-float (2))
                               (simple-array single-float (3))
-                              (simple-array single-float (4)))) 
+                              (simple-array single-float (4))))
                 lerp))
-(defun lerp (vector-a vector-b ammount) 
-  (declare ((or (simple-array single-float (2)) 
+(defun lerp (vector-a vector-b ammount)
+  (declare ((or (simple-array single-float (2))
                 (simple-array single-float (3))
                 (simple-array single-float (4)))
             vector-a vector-b))
@@ -322,17 +322,17 @@
 (declaim (inline mix)
          (ftype (function ((or (simple-array single-float (2))
                                (simple-array single-float (3))
-                               (simple-array single-float (4))) 
+                               (simple-array single-float (4)))
                            (or (simple-array single-float (2))
                                (simple-array single-float (3))
                                (simple-array single-float (4)))
-                           (or (integer) (single-float))) 
+                           (or (integer) (single-float)))
                           (or (simple-array single-float (2))
                               (simple-array single-float (3))
-                              (simple-array single-float (4)))) 
+                              (simple-array single-float (4))))
                 mix))
 (defun mix (vector-a vector-b ammount)
-  (declare ((or (simple-array single-float (2)) 
+  (declare ((or (simple-array single-float (2))
                 (simple-array single-float (3))
                 (simple-array single-float (4)))
             vector-a vector-b))
@@ -345,7 +345,7 @@
 
 ;----------------------------------------------------------------
 
-;; {TODO} inline these
+;; {TODO} compiler macro these
 (defun x (vec)
   "Returns the x component of the vector"
   (aref vec 0))
@@ -356,7 +356,7 @@
   "Returns the z component of the vector"
   (aref vec 2))
 (defun w (vec)
-  "Returns the w component of the vector"  
+  "Returns the w component of the vector"
   (aref vec 3))
 
 (defun (setf x) (value vec)
@@ -369,7 +369,7 @@
   "Returns the z component of the vector"
   (setf (aref vec 2) (float value)))
 (defun (setf w) (value vec)
-  "Returns the w component of the vector"  
+  "Returns the w component of the vector"
   (setf (aref vec 3) (float value)))
 
 ;;----------------------------------------------------------------

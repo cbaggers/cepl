@@ -2,16 +2,16 @@
 
 (defgeneric gl-free (object))
 (defgeneric free-gpu-array (gpu-array))
-(defgeneric gl-push (object destination))
-(defgeneric gl-pull (object))
-(defgeneric gl-pull-1 (object))
+(defgeneric push-g (object destination))
+(defgeneric pull-g (object))
+(defgeneric pull1-g (object))
 (defgeneric dimensions (object))
 (defgeneric backed-by (object))
 (defgeneric make-vao (gpu-arrays &optional index-array))
-(defgeneric pixel-format-of (type))
+(defgeneric lisp-type->pixel-format (type))
 
-(defmethod gl-pull ((object t)) object)
-(defmethod gl-pull-1 ((object t)) object)
+(defmethod pull-g ((object t)) object)
+(defmethod pull1-g ((object t)) object)
 
 (defun 1d-p (object)
   (= 1 (length (dimensions object))))
@@ -26,20 +26,20 @@
 
    Imagine we have one gpu-array with the vertex data for 10
    different monsters inside it and each monster is made of 100
-   vertices. The first mosters vertex data will be in the 
-   sub-array (gpu-sub-array bigarray 0 1000) and the vertex 
-   data for the second monster would be at 
+   vertices. The first mosters vertex data will be in the
+   sub-array (gpu-sub-array bigarray 0 1000) and the vertex
+   data for the second monster would be at
    (gpu-sub-array bigarray 1000 2000)
 
    This *view* (for lack of a better term) into our array can
-   be really damn handy. Prehaps, for example, we want to 
+   be really damn handy. Prehaps, for example, we want to
    replace the vertex data of monster 2 with the data in my
    c-array newmonster. We can simply do the following:
-   (gl-push (gpu-sub-array bigarray 1000 2000) newmonster)
+   (push-g (gpu-sub-array bigarray 1000 2000) newmonster)
 
    Obviously be aware that any changes you make to the parent
    array affect the child sub-array. This can really bite you
-   in the backside if you change how the data in the array is 
+   in the backside if you change how the data in the array is
    laid out."))
 
 (defgeneric gl-assign-attrib-pointers (array-type &optional attrib-num
@@ -51,8 +51,8 @@
                                                        (pointer-offset 0)
                                                        stride-override
                                                        normalised)
-  (let ((type (varjo::type-spec->type array-type)))    
-    (if (and (varjo::core-typep type) (not (varjo::v-typep type 'v-sampler)))
+  (let ((type (varjo:type-spec->type array-type)))
+    (if (and (varjo:core-typep type) (not (varjo::v-typep type 'v-sampler)))
         (let ((slot-layout (expand-slot-to-layout nil type normalised))
               (stride 0))
           (loop :for attr :in slot-layout
@@ -71,16 +71,16 @@
 
 (defgeneric make-gpu-array (initial-contents &key)
   (:documentation "This function creates a gpu-array which is very similar
-   to a c-array except that the data is located in the memory 
+   to a c-array except that the data is located in the memory
    of the graphics card and so is accessible to shaders.
-   You can either provide and type and length or you can 
-   provide a c-array and the data from that will be used to 
+   You can either provide and type and length or you can
+   provide a c-array and the data from that will be used to
    populate the gpu-array with.
 
-   Access style is optional but if you are comfortable with 
+   Access style is optional but if you are comfortable with
    opengl, and know what type of usage pattern thsi array will
    have, you can set this to any of the following:
-   (:stream-draw :stream-read :stream-copy :static-draw 
+   (:stream-draw :stream-read :stream-copy :static-draw
     :static-read :static-copy :dynamic-draw :dynamic-read
     :dynamic-copy)"))
 

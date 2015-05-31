@@ -1,6 +1,6 @@
 (in-package :cgl)
 
-;; [TODO] The terminology in here seems inconsistant, need to 
+;; [TODO] The terminology in here seems inconsistant, need to
 ;; nail this down
 
 ;;--------------------------------------------------------------
@@ -8,7 +8,7 @@
 ;;------;;
 
 (defun free-vao (vao)
-  (with-foreign-object (id :uint) 
+  (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) vao)
     (%gl:delete-vertex-arrays 1 id)))
 
@@ -29,14 +29,14 @@
   (defun force-bind-vao (vao)
     (gl:bind-vertex-array vao)
     (setf vao-cache vao)))
-(setf (documentation 'bind-vao 'function) 
+(setf (documentation 'bind-vao 'function)
       "Binds the vao specfied")
 (setf (symbol-function 'bind-vertex-array) #'bind-vao)
 
-;; [TODO] Types need full support. Read glVertexAttribPointer and work out 
+;; [TODO] Types need full support. Read glVertexAttribPointer and work out
 ;;        what to do with gl_half_float, gl_double, gl_fixed, gl_int_2_10_10_10_rev
 ;;        & gl_unsigned_int_2_10_10_10_rev
-;; [TODO] Read about glVertexAttribLPointer 
+;; [TODO] Read about glVertexAttribLPointer
 
 ;; [TODO] Use suitable-array-for-index-p
 ;; [TODO] Sanity check dimensions of buffer contents?
@@ -56,12 +56,12 @@
     (loop for format in formats
        :do (let ((buffer (first format)))
              (force-bind-buffer buffer :array-buffer)
-             (loop :for (type normalized stride pointer) 
+             (loop :for (type normalized stride pointer)
                 :in (rest format)
                 :do (setf attr-num
                           (+ attr-num
                              (gl-assign-attrib-pointers
-                              type pointer stride))))))   
+                              type pointer stride))))))
     (when element-buffer
       (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
@@ -73,20 +73,32 @@
        (find (element-type array) '(:ubyte :ushort :uint :unsigned-short
                                     :unsigned-byte :unsigned-int))))
 
-(defmethod make-vao ((gpu-arrays gpuarray) &optional index-array)
-  (make-vao (list gpu-arrays) index-array))
-
-(defmethod make-vao ((gpu-arrays list) &optional index-array)
+(defun make-vao (gpu-arrays &optional index-array)
   "makes a vao using a list of gpu-arrays as the source data
    (remember that you can also use gpu-sub-array here if you
    need a subsection of a gpu-array).
    You can also specify an index-array which will be used as
    the indicies when rendering"
-  (unless (and (every #'1d-p gpu-arrays) 
+  (let ((gpu-arrays (listify gpu-arrays)))
+    (make-vao-from-id
+     (progn (assert (and (every #'1d-p gpu-arrays)
+                         (or (null index-array)
+                             (suitable-array-for-index-p
+                              index-array))))
+            (gl:gen-vertex-array))
+     gpu-arrays index-array)))
+
+(defmethod make-vao-from-id (gl-object (gpu-arrays list) &optional index-array)
+  "makes a vao using a list of gpu-arrays as the source data
+   (remember that you can also use gpu-sub-array here if you
+   need a subsection of a gpu-array).
+   You can also specify an index-array which will be used as
+   the indicies when rendering"
+  (unless (and (every #'1d-p gpu-arrays)
                (or (null index-array) (suitable-array-for-index-p
                                        index-array))))
   (let ((element-buffer (when index-array (gpuarray-buffer index-array)))
-        (vao (gl:gen-vertex-array))
+        (vao gl-object)
         (attr 0))
     (force-bind-vao vao)
     (loop :for gpu-array :in gpu-arrays :do
@@ -98,9 +110,9 @@
                                (if (listp type) (second type) type))
                              attr
                              (+ (third format)
-                                (gl-calc-byte-size (first format) 
+                                (gl-calc-byte-size (first format)
                                                    (list (gpuarray-start
-                                                          gpu-array))))))))) 
+                                                          gpu-array)))))))))
     (when element-buffer
       (force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)

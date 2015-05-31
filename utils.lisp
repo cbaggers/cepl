@@ -1,47 +1,12 @@
 ;; This is a stack of useful functions not really thought of as
 ;; tools for writing games specifically, but rather for writing
-;; cepl. 
+;; cepl.
 ;; Saying that though, any use is wonderful so enjoy.
 
 (in-package :cepl-utils)
 
-(defun lambda-list-split (template lam-list)
-  (labels ((kwd (x) (intern (format nil "~a" x) :keyword))
-           (symbol-name= (x y) (equal (symbol-name x) (symbol-name y)))
-           (collector (lam-list &optional current-modifier accum)
-                (let ((item (first lam-list)))
-                  (cond ((null lam-list) accum) 
-                        ((and (symbolp item) (eql (elt (symbol-name item) 0) #\&))
-                         (collector (rest lam-list)
-                                    (kwd item)
-                                    accum))
-                        (t (collector (rest lam-list)
-                                      current-modifier
-                                      (acons current-modifier 
-                                             (cons item 
-                                                   (cdr (assoc current-modifier
-                                                               accum)))
-                                             accum))))))
-           (clean-alist (alist &optional accum)
-             (let ((item (first alist)))
-               (cond ((null alist) accum)
-                     ((atom item) (clean-alist (rest alist) accum))
-                     ((not (assoc (first item) accum))
-                      (clean-alist (rest alist) (cons item accum)))
-                     (t (clean-alist (rest alist) accum)))))
-           (first-in-template-p (x) (or (null (first x)) 
-                                        (member (first x) template 
-                                                :test #'symbol-name= ))))
-    (let ((template (when template (cons nil (mapcar #'kwd template))))
-          (split (collector lam-list)))
-      (if (or (null template)
-              (every #'first-in-template-p split))
-          (clean-alist split)
-          (error "'&' symbol found that was not specified in template ~s"
-                 (mapcar #'first split))))))
-
 (defmacro gdefun (name lambda-list &body body/options)
-  (if (or (null body/options) 
+  (if (or (null body/options)
           (consp (car body/options))
           (keywordp (car body/options)))
       `(defgeneric ,name ,lambda-list ,@body/options)
@@ -53,14 +18,16 @@
   `(destructuring-bind ,lambda-list ,expressions ,@body))
 
 (defmacro assoc-bind (lambda-list alist &body body)
-  (let ((g (gensym "alist")))
+  (let* ((g (gensym "alist"))
+         (bindings (loop :for l :in lambda-list :collect
+                      (let ((var (if (listp l) (first l) l))
+                            (key (if (listp l)
+                                     (second l)
+                                     l)))
+                        `(,var (cdr (assoc ',key ,g)))))))
     `(let ((,g ,alist))
-       (let ,(loop :for l :in lambda-list :collect
-                (let ((var (if (listp l) (first l) l))
-                      (key (if (listp l)
-                               (second l)
-                               l)))
-                  `(,var (cdr (assoc ',key ,g)))))
+       (let ,bindings
+         (declare (cl:ignorable ,@(mapcar #'first bindings)))
          ,@body))))
 
 (defun sn-equal (a b) (equal (symbol-name a) (symbol-name b)))
@@ -79,27 +46,27 @@
 
 ;; This will be pretty inefficient, but shoudl be fine for code trees
 ;; {TODO} how is this not subst?
-(defun walk-replace (to-replace replace-with form 
+(defun walk-replace (to-replace replace-with form
 		     &key (test #'eql))
-  "This walks a list tree ('form') replacing all occurences of 
+  "This walks a list tree ('form') replacing all occurences of
    'to-replace' with 'replace-with'. This is pretty inefficent
    but will be fine for macros."
   (cond ((null form) nil)
 	((atom form) (if (funcall test form to-replace)
 			 replace-with
 			 form))
-	(t (cons (walk-replace to-replace 
-			       replace-with 
+	(t (cons (walk-replace to-replace
+			       replace-with
 			       (car form)
-			       :test test) 
-		 (walk-replace to-replace 
-			       replace-with 
+			       :test test)
+		 (walk-replace to-replace
+			       replace-with
 			       (cdr form)
 			       :test test)))))
 
 (defun file-to-string (path)
-  "Sucks up an entire file from PATH into a freshly-allocated 
-   string, returning two values: the string and the number of 
+  "Sucks up an entire file from PATH into a freshly-allocated
+   string, returning two values: the string and the number of
    bytes read."
   (with-open-file (s path)
     (let* ((len (file-length s))
@@ -107,7 +74,7 @@
       (values data (read-sequence data s)))))
 
 (defun flatten (x)
-  "Walks a list tree and flattens it (returns a 1d list 
+  "Walks a list tree and flattens it (returns a 1d list
    containing all the elements from the tree)"
   (labels ((rec (x acc)
              (cond ((null x) acc)
@@ -137,7 +104,7 @@
     (dolist (a args) (princ a s))))
 
 (defun symb (&rest args)
-  "This takes a list of symbols (or strings) and outputs one 
+  "This takes a list of symbols (or strings) and outputs one
    symbol.
    If the input is symbol/s then the output is a regular symbol
    If the input is string/s, then the output is
@@ -148,7 +115,7 @@
   (values (intern (apply #'cepl-utils:mkstr args) package)))
 
 (defun make-keyword (&rest args)
-  "This takes a list of symbols (or strings) and outputs one 
+  "This takes a list of symbols (or strings) and outputs one
    keyword symbol.
    If the input is symbol/s then the output is a regular keyword
    If the input is string/s, then the output is
@@ -156,7 +123,7 @@
   (values (intern (apply #'mkstr args) "KEYWORD")))
 
 (defun kwd (&rest args)
-  "This takes a list of symbols (or strings) and outputs one 
+  "This takes a list of symbols (or strings) and outputs one
    keyword symbol.
    If the input is symbol/s then the output is a regular keyword
    If the input is string/s, then the output is
@@ -173,8 +140,8 @@
 		   (rec rest (cons (subseq source 0 n)
 				   acc))
 		   (nreverse (cons source acc))))))
-    (if source 
-	(rec source nil) 
+    (if source
+	(rec source nil)
 	nil)))
 
 (defvar safe-read-from-string-blacklist
@@ -257,7 +224,7 @@
                     (if (> y x) (fun x y z) (fun-down x y z))))
         (function (if (> x 0) (fun 0 x y) (fun-down 0 x y)))))))
 
-(defun arange (x &optional y z u v)  
+(defun arange (x &optional y z u v)
   (let ((step (or (and (eq y :step) z)
                   (and (eq z :step) u)
                   (and (eq u :step) v)
@@ -271,7 +238,7 @@
              (fun-down (start end fun) (loop :for i :from start :above end
                                           :by step :collect (funcall fun i))))
       (typecase y
-        ((or symbol null) 
+        ((or symbol null)
          (make-array x :initial-contents
                      (if (> x 0) (basic 0 x) (basic-down 0 x))))
         (number (make-array (abs (- y x))
@@ -282,7 +249,7 @@
         (function (make-array x :initial-contents
                               (if (> x 0) (fun 0 x y) (fun-down 0 x y))))))))
 
-(defun arangei (x &optional y z u v)  
+(defun arangei (x &optional y z u v)
   (let ((step (or (and (eq y :step) z)
                   (and (eq z :step) u)
                   (and (eq u :step) v)
@@ -296,7 +263,7 @@
              (fun-down (start end fun) (loop :for i :from start :downto end
                                           :by step :collect (funcall fun i))))
       (typecase y
-        ((or symbol null) 
+        ((or symbol null)
          (make-array (1+ x) :initial-contents
                      (if (> x 0) (basic 0 x) (basic-down 0 x))))
         (number (make-array (1+ (abs (- y x)))
@@ -335,7 +302,7 @@
                    last (1+ i)))))))
 
 ;; (defmacro dbg (form)
-;;   (unless (and (listp form) (symbolp (first form)) 
+;;   (unless (and (listp form) (symbolp (first form))
 ;;                (not (member (first form) '(quote function))))
 ;;     (error "Doesnt look like a function call does it?"))
 ;;   (let ((gensyms (loop for i in (rest form) collect (gensym))))
@@ -359,7 +326,7 @@
            `(,arg :initarg ,(kwd arg) :reader ,arg)))
      (:report (lambda (condition stream)
                 (declare (ignorable condition))
-                (format stream ,(format nil "~@[~a:~] ~a" prefix error-string) 
+                (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
                         ,@body)))))
 
 
@@ -370,13 +337,13 @@
 
 (defmethod print-mem ((thing t) &optional (size-in-bytes 64) (offset 0))
   (typecase thing
-    (cffi:foreign-pointer 
+    (cffi:foreign-pointer
      (%print-mem (cffi:inc-pointer thing offset)
                  size-in-bytes))
     (autowrap:wrapper
      (%print-mem (cffi:inc-pointer (autowrap:ptr thing) offset)
                  size-in-bytes))
-    (otherwise (format t "Error - Unsure how to print memory of object of type: ~a" 
+    (otherwise (format t "Error - Unsure how to print memory of object of type: ~a"
                        (type-of thing))))
   nil)
 
@@ -385,9 +352,9 @@
          (data (loop :for i :below size :collect
                   (cffi:mem-ref pointer :uchar i)))
          (batched (utils:group data 16))
-         (batched-chars (mapcar 
+         (batched-chars (mapcar
                          (lambda (x)
-                           (mapcar 
+                           (mapcar
                             (lambda (c)
                               (if (and (> c 31) (< c 126))
                                   (code-char c)
@@ -400,7 +367,51 @@
          (format t "~%87654321    0011 2233 4455 6677 8899 aabb ccdd eeff    0123456789abcdef~%")
          (format t "-----------------------------------------------------------------------~%"))
        (format t "~8,'0X    ~{~@[~2,'0X~]~@[~2,'0X ~]~}   " i batch)
-       (format t "~{~a~}~{~c~}~%" 
+       (format t "~{~a~}~{~c~}~%"
                (loop :for i :below (max 0 (floor (/ (- 16 (length batch)) 2)))
-                  :collect "     ") 
+                  :collect "     ")
                chars))))
+
+
+(defun map-hash (function hash-table)
+  "map through a hash and actually return something"
+  (let* ((head (list nil))
+         (tail head))
+    (labels ((do-it (k v)
+               (rplacd tail (setq tail (list (funcall function k v))))))
+      (maphash #'do-it hash-table))
+    (cdr head)))
+
+(defun last1 (list) (car (last list)))
+
+
+(defmacro p-> (args &body stages)
+  "\(p-> \(1 2 3\) #'a #'b #'c #'d\)
+   Calls first function with args provided and uses result as
+   arguments for next function. Uses multiple-value-call so you
+   can use (values) to specify complex lambda-args."
+  (let ((stages (reverse stages)))
+    (when stages
+      (let ((stage (first stages)))
+        (if (eq 'function (first stage))
+            `(multiple-value-call ,stage
+               ,(if (rest stages)
+                    `(p-> ,args ,@(reverse (rest stages)))
+                    (if (listp args)
+                        `(values ,@args)
+                        `(values-list ,args))))
+            (destructuring-bind (check-func &rest steps) stage
+              `(let ((rest (multiple-value-list
+                            ,(if (rest stages)
+                                 `(p-> ,args ,@(reverse (rest stages)))
+                                 (if (listp args)
+                                     `(values ,@args)
+                                     `(values-list ,args))))))
+                 (let ((args rest))
+                   (let ((passes nil))
+                     (loop :do (let ((results (multiple-value-list
+                                               (p-> ,@(cons 'args steps)))))
+                                 (setf args results)
+                                 (push results passes))
+                        :until (,check-func (first passes) (second passes))))
+                   (values-list args)))))))))

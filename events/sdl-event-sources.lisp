@@ -1,99 +1,11 @@
 (in-package #:cepl.events.sdl)
 
 ;;--------------------------------------------
-;; Lisp sdl events
-
-(defclass sdl-event ()
-  ((timestamp :initform 0 :initarg :timestamp :reader timestamp
-              :type fixnum)))
-
-(defclass will-quit (sdl-event) ())
-
-(defclass win (sdl-event)
-  ((action :initarg :action :initform 0 :reader action
-           :type keyword)
-   (data :initarg :data :reader data :type list)))
-
-(defclass mouse-scroll (sdl-event)
-  ((source-id :initform 0 :reader id
-              :type fixnum)
-   (vec :initarg :vec :reader vec
-        :type (simple-array (single-float 3)))))
-
-(defclass mouse-button (sdl-event)
-  ((source-id :initarg :source-id :initform 0 :reader id
-              :type fixnum)
-   (button :initarg :button :initform 0 :reader button
-           :type keyword)
-   (state :initarg :state :initform 0 :reader state
-          :type keyword)
-   (clicks :initarg :clicks :initform 0 :reader clicks
-           :type fixnum)
-   (pos :initarg :pos :reader pos
-        :type (simple-array (single-float 3)))))
-
-(defclass mouse-motion (sdl-event)
-  ((source-id :initarg :source-id :initform 0 :reader id
-              :type fixnum)
-   (state :initarg :state :initform 0 :reader state
-          :type fixnum)
-   (pos :initarg :pos :reader pos
-        :type (simple-array (single-float 3)))
-   (delta :initarg :delta :reader delta
-          :type (simple-array (single-float 3)))))
-
-(defclass key (sdl-event)
-  ((etype :initarg :etype :reader etype 
-          :type keyword)
-   (state :initarg :state :initform 0  :reader state
-          :type keyword)
-   (repeat :initarg :repeat :initform 0 :reader repeat
-           :type boolean)
-   (key :initarg :key :initform 0 :reader key
-        :type keyword)))
-
-;;--------------------------------------------
 ;; sources
-
-(defun mouse0-eventp (x)
-  (or (and (typep x 'mouse-scroll) (= (id x) 0))
-      (and (typep x 'mouse-button) (= (id x) 0))
-      (and (typep x 'mouse-motion) (= (id x) 0))))
 
 (defun pump-events ()
   (let ((events (collect-sdl-events)))
-    (loop :for e :in events :do (setf (event cepl.events:*all-events*) e))))
-
-(def-event-node sys (:parent all-events) (typep (event :parent) 'will-quit))
-
-(def-event-node mouse (:parent all-events) (mouse0-eventp (event :parent))
-  (pos :cell t :initform
-       (c? (when (typep (event self) 'mouse-motion)
-             (pos (event self)))))
-  (state-tracker 
-   :cell t :initform (c? (when (typep (event self) 'mouse-button)
-                           (setf (gethash (button (event self))
-                                          (slot-value self 'button-state))
-                                 (state (event self))))))
-  (button-state :cell nil :initform (make-hash-table)))
-
-(defmethod button-state ((target mouse) button-id)
-  (gethash button-id (slot-value target 'button-state) 
-           :up))
-
-(def-event-node keyboard (:parent all-events) (typep (event :parent) 'key)
-  (state-tracker 
-   :cell t :initform (c? (when (typep (event self) 'key)
-                           (setf (gethash (key (event self))
-                                          (slot-value self 'key-state))
-                                 (state (event self))))))
-  (key-state :cell nil :initform (make-hash-table)))
-
-(defmethod key-state ((target keyboard) key)
-  (gethash key (slot-value target 'key-state) 
-           :up))
-
-(def-event-node window (:parent all-events) (typep (event :parent) 'win))
+    (loop :for e :in events :do (setf (event cepl.events:|all-events|) e))))
 
 ;;--------------------------------------------
 ;; sdl timestamp conversion
@@ -119,7 +31,7 @@
   `(let (,(when (symbolp event) `(,event (sdl2:new-event))))
      (loop :until (= 0  (sdl2:next-event ,event ,method ,timeout)) :do
         (case (sdl2::get-event-type ,event)
-          ,@(loop :for (type params . forms) :in event-handlers               
+          ,@(loop :for (type params . forms) :in event-handlers
                :append (let ((type (listify type)))
                          (loop :for typ :in type :collect
                             (sdl2::expand-handler event typ params forms)))
@@ -132,57 +44,57 @@
     (case-events (event)
       (:quit (:timestamp ts)
              (cl:push
-              (make-instance 'will-quit :timestamp ts)
+              (make-instance 'evt:will-quit :timestamp ts)
               results))
 
       (:windowevent (:timestamp ts :event e :data1 x :data2 y)
                     (let ((action (window-action-lookup e)))
                       (cl:push
-                       (make-instance 'win
+                       (make-instance 'evt:win
                                       :timestamp (sdl->lisp-time ts)
                                       :action action
                                       :data (list x y))
                        results)))
-      
+
       (:mousewheel (:timestamp ts :which id :x x :y y)
                    (cl:push
-                    (make-instance 'mouse-scroll
+                    (make-instance 'evt:mouse-scroll
                                    :timestamp (sdl->lisp-time ts)
                                    :source-id id
                                    :vec (base-vectors:v! x y))
                     results))
 
-      ((:mousebuttondown :mousebuttonup) 
-       (:timestamp ts :which id :button b :state s 
+      ((:mousebuttondown :mousebuttonup)
+       (:timestamp ts :which id :button b :state s
                    :clicks c :x x :y y)
-       (cl:push (make-instance 'mouse-button
+       (cl:push (make-instance 'evt:mouse-button
                                :timestamp (sdl->lisp-time ts)
-                               :source-id id 
-                               :button (mouse-button-lookup b) 
+                               :source-id id
+                               :button (mouse-button-lookup b)
                                :state (mouse-button-state-lookup s)
-                               :clicks c 
+                               :clicks c
                                :pos (base-vectors:v! x y))
                 results))
 
       (:mousemotion
        (:timestamp ts :which id :state s :x x :y y
                    :xrel xrel :yrel yrel)
-       (cl:push (make-instance 'mouse-motion
+       (cl:push (make-instance 'evt:mouse-motion
                                :timestamp (sdl->lisp-time ts)
                                :source-id id
                                :state s
                                :pos (base-vectors:v! x y)
                                :delta (base-vectors:v! xrel yrel))
                 results))
-      
+
       ((:keydown :keyup)
        (:type typ :timestamp ts :state s :repeat r :keysym keysym)
-       (cl:push (make-instance 'key 
+       (cl:push (make-instance 'evt:key
                                :timestamp (sdl->lisp-time ts)
                                :etype (key-type-lookup typ)
                                :state (key-state-lookup s)
-                               :repeat (= r 0)
-                               :key (sdl-scancode-lookup 
+                               :repeating (= r 0)
+                               :key (sdl-scancode-lookup
                                      (plus-c:c-ref keysym sdl2-ffi:sdl-keysym :scancode)))
                 results)))
     (reverse results)))
@@ -194,7 +106,7 @@
 
 (defun key-state-lookup (num) (aref #(:up :down) num))
 
-(defun mouse-button-lookup (num) (aref #(:0 :left :middle :right) num))
+(defun mouse-button-lookup (num) (aref #(:0 :left :middle :right :other0 :other1 :other2 :other3 :other4) num))
 
 (defun mouse-button-state-lookup (num) (aref #(:up :down) num))
 
@@ -222,7 +134,7 @@
     :close))
 
 
-(defparameter *sdl-scan-lookup* 
+(defparameter *sdl-scan-lookup*
   #(:unknown nil nil nil :a :b
     :c :d :e :f
     :g :h :i :j
@@ -341,4 +253,3 @@
 
 ;; :userevent
 ;; :lastevent
-

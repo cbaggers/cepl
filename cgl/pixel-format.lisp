@@ -1,6 +1,6 @@
 (in-package :cgl)
 
-;; This has many lookup vars which a quite ugly and will need to be 
+;; This has many lookup vars which a quite ugly and will need to be
 ;; consolidated with other such tables in cepl. For now I am still hashing
 ;; out the feel of this library so this is scheduled for once I can be
 ;; sure that this approach will feel right
@@ -8,16 +8,29 @@
 ;;--------------------------------------------------------------
 ;; PIXEL FORMAT
 ;;--------------
+;; The pixel format struct is a more explorable representation of the
+;; internal-format of gl textures. Also they also help with the ugliness
+;; of the texture api, where different parts want the texture information
+;; in different ways. For example when defining a texture to hold :ubyte's the
+;; system calls the format :R8, but when uploading data to the texture it
+;; wants the format specified as :RED :UNSIGNED-BYTE.
+
+;; There are also so many combinations of this crap that memorizing it all is
+;; too damn hard. So we have conversion functions to switch between a subset of
+;; the permutations. It's a subset as not everything maps 1 to 1
+
+;;--------------------------------------------------------------
+
 ;; [TODO] Need 3rd option for normalised?..:na for floats
 ;; [TODO] Add guaranteed flags to formats
 ;; [TODO] add half float
 ;; [TODO] add :stencil-only
 (defparameter *valid-pixel-components*
   '(:r :g :b :rg :rgb :rgba :bgr :bgra :depth :depth-stencil))
-(defparameter *valid-pixel-types* 
+(defparameter *valid-pixel-types*
   '(:ubyte :byte :ushort :short :uint :int :float))
-(defparameter *valid-pixel-packed-sizes* 
-  '(((3 3 2) :ubyte) ((:r 2 3 3) :ubyte) 
+(defparameter *valid-pixel-packed-sizes*
+  '(((3 3 2) :ubyte) ((:r 2 3 3) :ubyte)
     ((5 6 5) :ushort) ((:r 5 6 5) :ushort)
     ((4 4 4 4) :ushort) ((:r 4 4 4 4) :ushort)
     ((5 5 5 1) :ushort) ((:r 1 5 5 5) :ushort)
@@ -41,9 +54,9 @@
 (defparameter *stencil-formats*
   '(:stencil-index8))
 (defparameter *depth-stencil-formats* '())
-(defparameter *gl-integral-pixel-types* 
+(defparameter *gl-integral-pixel-types*
   '(:ubyte :byte :ushort :short :uint :int))
-(defparameter *expanded-gl-type-names* 
+(defparameter *expanded-gl-type-names*
   '((:uint :unsigned-int) (:ubyte :unsigned-byte)
     (:ubyte :unsigned-byte) (:ushort :unsigned-short)))
 (defparameter *gl-pixel-to-internal-map*
@@ -102,15 +115,13 @@
     ((:RGBA t :short (5 5 5 1)) :RGB5-A1)
     ((:RGB t :ubyte (3 3 2)) :R3-G3-B2)))
 
-;; [TODO] Does this need to be a structure? could it be a list with the 
-;;        we could have a compiler macro to eval this at compile time,
-;;        this would mean other functions could transform and inline this
-;;        value
 (defstruct pixel-format
   components type normalise sizes reversed comp-length)
 
 (defun describe-pixel-format (object)
-  (let ((pf (if (pixel-format-p object) object (pixel-format-of object))))
+  (let ((pf (if (pixel-format-p object)
+                object
+                (lisp-type->pixel-format object))))
     (print "---------------")
     (when pf
       (print pf)
@@ -124,14 +135,14 @@
   (describe-pixel-format (internal-format->pixel-format format)))
 
 (defun get-component-length (components)
-  (case components 
-    (:depth 1) (:depth-stencil 2) 
+  (case components
+    (:depth 1) (:depth-stencil 2)
     (t (length (symbol-name components)))))
 
 (defun valid-pixel-format-p (components type normalise reversed)
   (let ((component-length (get-component-length components)))
     (when (and (find components *valid-pixel-components*)
-               (if (listp type) (eql component-length (length type)) t)) 
+               (if (listp type) (eql component-length (length type)) t))
       (destructuring-bind (sizes type)
           (if (keywordp type)
               (list nil (find type *valid-pixel-types*))
@@ -141,7 +152,7 @@
                        (or (assoc (if reversed (cons :r type) type)
                                   *valid-pixel-packed-sizes* :test #'equal)
                            '(nil nil)))))
-        (when (and type (not (and (not normalise) 
+        (when (and type (not (and (not normalise)
                                   (not (find type *gl-integral-pixel-types*)))))
           (list components type (if reversed (rest sizes) sizes)
                 normalise reversed component-length))))))
@@ -168,10 +179,10 @@
             normalise reversed component-length))))
 
 (defun pixel-format (components &optional (type :ubyte) (normalise t) reversed)
-  (destructuring-bind 
+  (destructuring-bind
         (components type sizes normalise reversed component-length)
       (process-pixel-format components type normalise reversed)
-    (make-pixel-format :components components :type type 
+    (make-pixel-format :components components :type type
                        :sizes (if reversed (rest sizes) sizes)
                        :normalise normalise :reversed reversed
                        :comp-length component-length)))
@@ -180,37 +191,40 @@
 (defun compile-pixel-format (pixel-format)
   (let* ((components (pixel-format-components pixel-format))
          (components (if (eq components :depth) :depth-component components))
-         (gl-comps (or (rest (assoc components '((:r . :red) (:g . :green) 
+         (gl-comps (or (rest (assoc components '((:r . :red) (:g . :green)
                                                  (:b . :blue))))
                        components))
          (sizes (pixel-format-sizes pixel-format))
          (type (pixel-format-type pixel-format))
-         (expanded-type (or (second (assoc type *expanded-gl-type-names*)) 
+         (expanded-type (or (second (assoc type *expanded-gl-type-names*))
                             type)))
     (let ((format (if (pixel-format-normalise pixel-format)
                       gl-comps
                       (intern (format nil "~a-INTEGER" gl-comps) 'keyword)))
           (type (if sizes
                     (intern (format nil "~a~{-~a~}~@[-REV~]" expanded-type sizes
-                                    (pixel-format-reversed pixel-format)) 
+                                    (pixel-format-reversed pixel-format))
                             'keyword)
                     expanded-type)))
       (list format type))))
 
-(defun pixel-format->element-type (pixel-format)
+(defun pixel-format->lisp-type (pixel-format)
   (if (pixel-format-sizes pixel-format)
       (pixel-format-type pixel-format)
       (let ((len (pixel-format-comp-length pixel-format))
             (type (pixel-format-type pixel-format)))
         (values (if (> len 1)
-                    (intern (format nil "~@[~a-~]VEC~a" 
+                    (intern (format nil "~@[~a-~]VEC~a"
                                     (unless (eq type :float) type)
                                     len) 'keyword)
                     type)))))
 
-(defun internal-format->element-type (internal-format)
-  (pixel-format->element-type 
+(defun internal-format->lisp-type (internal-format)
+  (pixel-format->lisp-type
    (internal-format->pixel-format internal-format)))
+
+(defun lisp-type->internal-format (lisp-type)
+  (pixel-format->internal-format (lisp-type->pixel-format lisp-type)))
 
 ;;--------------------------------------------------------------
 ;; INTERNAL-FORMATS
@@ -221,16 +235,16 @@
   (let ((result (second (assoc (list (pixel-format-components pixel-format)
                                      (pixel-format-normalise pixel-format)
                                      (pixel-format-type pixel-format)
-                                     (pixel-format-sizes pixel-format)) 
+                                     (pixel-format-sizes pixel-format))
                                *gl-pixel-to-internal-map*
                                :test #'equal))))
     (or result
         (when error-if-missing
-          (error "Cannot find internal format for pixel format: ~a" 
+          (error "Cannot find internal format for pixel format: ~a"
                  pixel-format)))))
 
 ;; [TODO] REVERSED??
-(defun internal-format->pixel-format 
+(defun internal-format->pixel-format
     (internal-format &key (error-if-missing t))
   (let ((pf (first (rassoc internal-format *gl-pixel-to-internal-map*
                            :key #'car :test #'eq))))
@@ -242,7 +256,7 @@
            :sizes sizes :reversed nil
            :comp-length (get-component-length components)))
         (when error-if-missing
-          (error "Cannot find pixel format for internal format: ~a" 
+          (error "Cannot find pixel format for internal format: ~a"
                  internal-format)))))
 
 
@@ -250,7 +264,7 @@
 ;; LOOKUPS
 ;;---------
 
-(defmethod pixel-format-of ((type t))
+(defmethod lisp-type->pixel-format ((type t))
   (when (find type *valid-pixel-types*)
     (pixel-format :r type)))
 

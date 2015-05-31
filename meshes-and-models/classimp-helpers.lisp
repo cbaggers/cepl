@@ -1,5 +1,5 @@
 (in-package :model-parsers)
-(named-readtables:in-readtable fn_::fn_lambda)
+(named-readtables:in-readtable fn_:fn_lambda)
 
 (defun meshes->lists (scene)
   (map 'list #'mesh->lists (classimp:meshes scene)))
@@ -20,11 +20,11 @@
 
 (defun calc-type (v n tc)
   (apply #'utils:symb-package :cgl
-         (remove nil (cons :g- (list (and v :p) 
+         (remove nil (cons :g- (list (and v :p)
                                      (and (> (length n) 0) :n)
                                      (and (> (length tc) 0) :t))))))
 (defun mesh-list->gpu (mesh-list)
-  (list 
+  (list
    (destructuring-bind (_ type data) (assoc :data mesh-list)
      (declare (ignore _))
      (cgl:make-gpu-array data :element-type type))

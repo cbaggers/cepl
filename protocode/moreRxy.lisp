@@ -47,9 +47,9 @@
 (setf a (e-list (e! eid)
                 (e! eid)
                 (e! esplit (lambda (x) (random 3))
-                    (e! emap λ(print (list "1" %))) 
-                    (e! emap λ(print (list "2" %)))
-                    (e! emap λ(print (list "3" %))))))
+                    (e! emap λ(print (list "1" _))) 
+                    (e! emap λ(print (list "2" _)))
+                    (e! emap λ(print (list "3" _))))))
 
 (defun elog (x) (print (list "1" x)))
 
