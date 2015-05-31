@@ -61,7 +61,7 @@
 (defpipeline raymarcher () (g-> #'ray-vert #'ray-frag))
 
 (let ((running nil))
-  (defun run-demo ()
+  (defun run-loop ()
     (setf *gpu-array* (make-gpu-array (list (v! -1.0  -1.0  0.0  1.0)
                                             (v!  1.0  -1.0  0.0  1.0)
                                             (v!  1.0   1.0  0.0  1.0)
@@ -73,9 +73,9 @@
     (setf *vertex-stream* (make-buffer-stream *gpu-array*))
     (setf running t)
     (loop :while running :do (continuable (draw))))
-  (defun stop-demo () (setf running nil)))
+  (defun stop-loop () (setf running nil)))
 
-(evt:observe (|sys|) (when (typep e 'evt:will-quit) (stop-demo)))
+(evt:observe (|sys|) (when (typep e 'evt:will-quit) (stop-loop)))
 
 (defun draw ()
   (evt:pump-events)

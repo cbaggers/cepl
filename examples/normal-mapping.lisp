@@ -39,8 +39,8 @@
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera +default-resolution+))
-  (reshape +default-resolution+)
+  (setf *camera* (make-camera *current-viewport*))
+  (reshape *current-viewport*)
   (setf *wibble* (load-model "./wibble.3ds" (v! pi 0 0)))
   (setf *tex* (devil-helper:load-image-to-texture "./brick/col.png"))
   (setf *normal-map* (devil-helper:load-image-to-texture "./brick/norm.png")))
@@ -71,8 +71,8 @@
     (+ (* t-col light-intensity cos-ang-incidence)
        (* t-col ambient-intensity))))
 
-(defpipeline frag-point-light () (g-> #'nm-vert #'nm-frag))
-;;(:post-compile (reshape +default-resolution+))
+(defpipeline frag-point-light () (g-> #'nm-vert #'nm-frag)
+  :post #'reshape)
 
 
 (defun entity-matrix (entity)
@@ -121,7 +121,7 @@
 ;;--------------------------------------------------------------
 ;; window
 
-(defun reshape (new-dimensions)
+(defun reshape (&optional (new-dimensions *current-viewport*))
   (setf (frame-size *camera*) new-dimensions)
   (setf (viewport-resolution (viewport *gl-context*))
         new-dimensions)
@@ -133,14 +133,14 @@
 ;; main loop
 
 (let ((running nil))
-  (defun run-demo ()
+  (defun run-loop ()
     (init)
     (setf running t)
     (loop :while running :do
        (continuable
          (step-demo)
          (update-swank))))
-  (defun stop-demo () (setf running nil))
+  (defun stop-loop () (setf running nil))
   (evt:observe (|sys|)
     (setf running (typep e 'evt:will-quit))))
 

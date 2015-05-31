@@ -205,7 +205,8 @@
     (loop :for c :in color-attachments :for i :from 0 :do
        (when c (setf (attachment fbo i) c)))
     (when depth-attachment
-      (setf (attachment fbo :d) depth-attachment))))
+      (setf (attachment fbo :d) depth-attachment))
+    fbo))
 
 (defun make-fbo (&rest fuzzy-attach-args)
   "Will create an fbo and optionally attach the arguments using
@@ -416,8 +417,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 (defun fbo-gen-attach (fbo &rest args)
   "The are 3 kinds of valid argument:
-   - keyword naming an attachment: This makes a new texture at
-     +default-resolution+ and attaches
+   - keyword naming an attachment: This makes a new texture 
+     with size of *current-viewport* and attaches
    - (keyword camera) creates a new texture at the framesize of
      the camera and attaches it to attachment named by keyword
    - (keyword vector2): creates a new texture sized by the vector
@@ -451,7 +452,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; simple keyword pattern to texture
     ((keywordp pattern)
      (texref
-      (make-texture nil :dimensions +default-resolution+
+      (make-texture nil :dimensions (viewport-resolution *current-viewport*)
                     :internal-format (%get-default-texture-format pattern))))
     ;; pattern with args for make-texture
     ((some (lambda (x) (member x %possible-texture-keys)) pattern)
@@ -461,7 +462,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
          (error "Only the following args to make-texture are allowed inside a make-fbo ~s"
                 %valid-texture-subset))
      (destructuring-bind
-           (&key (dimensions +default-resolution+)
+           (&key (dimensions (viewport-resolution *current-viewport*))
                  (internal-format (%get-default-texture-format (first pattern)))
                  mipmap (immutable t) lod-bias min-lod max-lod minify-filter
                  magnify-filter wrap compare)

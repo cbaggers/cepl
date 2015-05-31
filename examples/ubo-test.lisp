@@ -22,21 +22,22 @@
   (evt:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit)
-  (map-g #'prog-1 *stream*) ;; :hmm *ubo*
+  (map-g #'prog-1 *stream*)
   (update-display))
 
-(defun run-demo ()
+(defun run-loop ()
   (setf *running* t
         *ubo* (make-ubo (make-gpu-array '((1.2)) :element-type 'test))
         *array* (make-gpu-array (list (list (v!  0.5 -0.36 0) (v! 0 1 0 1))
                                       (list (v!    0   0.5 0) (v! 1 0 0 1))
                                       (list (v! -0.5 -0.36 0) (v! 0 0 1 1)))
                                 :element-type 'g-pc)
-   *stream* (make-buffer-stream *array*))
+        *stream* (make-buffer-stream *array*))
+  (prog-1 nil :hmm *ubo*)
   (loop :while *running* :do (continuable (step-demo))))
 
-(defun stop-demo ()
+(defun stop-loop ()
   (setf *running* nil))
 
-(evt:observe (cepl.events.sdl:|sys|)
-  (when (typep e 'cepl.events.sdl:will-quit) (stop-demo)))
+(evt:observe (evt:|sys|)
+  (when (typep e 'evt:will-quit) (stop-loop)))

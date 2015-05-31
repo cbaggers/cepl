@@ -27,16 +27,15 @@
 (defun step-demo ()
   (evt:pump-events)
   (update-swank)
-  (gl:clear :color-buffer-bit)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
   (map-g #'ripple-with-wobble *v-stream*
         :texture *texture* :count *count* :pos-offset (v! 0 0 0 0))
   (incf *count* 0.08)
   (update-display))
 
 (let ((running nil))
-  (defun run-demo ()
-    (setf running t
-          (viewport-resolution (viewport *gl-context*)) +default-resolution+)
+  (defun run-loop ()
+    (setf running t)
     (let* ((img-data (loop :for i :below 64 :collect
                         (loop :for j :below 64 :collect (random 254)))))
       (setf *v-stream*
@@ -51,7 +50,5 @@
                                               :element-type :ubyte))
                         (make-texture temp)))
       (loop :while running :do (continuable (step-demo)))))
-  (defun stop-demo () (setf running nil)))
-(evt:observe (|sys|) (when (typep e 'evt:will-quit) (stop-demo)))
-(observe (|window|))
-(evt:observe (evt:|mouse|))
+  (defun stop-loop () (setf running nil)))
+(evt:observe (|sys|) (when (typep e 'evt:will-quit) (stop-loop)))

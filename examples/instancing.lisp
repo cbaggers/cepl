@@ -39,8 +39,7 @@
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera +default-resolution+))
-  (reshape +default-resolution+)
+  (setf *camera* (make-camera *current-viewport*))
   (setf *wibble* (load-model "./bird/bird.3ds" (v! pi 0 0)))
   (setf *tex* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
   (setf *pos-tex* (make-texture nil :dimensions 1000
@@ -77,14 +76,12 @@
          (cos-ang-incidence
           (clamp (dot (normalize (* (+ vertex-normal t-norm) 0.5)) light-dir)
                  0.0 1.0))
-         (t-col (texture textur tex-coord)))
+         (t-col (texture textur (* (v! 1 -1) tex-coord))))
     (+ (* t-col light-intensity cos-ang-incidence)
        (* t-col ambient-intensity))))
 
-(defpipeline instanced-birds () (g-> #'instance-vert #'instance-frag))
-;;(:post-compile (reshape +default-resolution+))
-
-
+(defpipeline instanced-birds () (g-> #'instance-vert #'instance-frag)
+  :post #'reshape)
 
 (defun entity-matrix (entity)
   (reduce #'m4:m* (list (m4:translation (pos entity))
@@ -99,16 +96,15 @@
          ;;(normal-to-cam-matrix (m4:to-matrix3 model-to-cam-matrix))
          (cam-light-vec (m4:mcol*vec4 (entity-matrix *wibble*)
                                       (v! (pos *light*) 1.0))))
-    (with-instances (1000)
+    (with-instances 1000
       (map-g #'instanced-birds (gstream *wibble*)
-            :model-space-light-pos (v:s~ cam-light-vec :xyz)
-            :light-intensity (v! 1 1 1 0)
-            :model-to-cam model-to-cam-matrix
-            ;; :normal-model-to-cam normal-to-cam-matrix
-            :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-            :textur *tex*
-            :offsets *pos-tex*)))
-  (gl:flush)
+             :model-space-light-pos (v:s~ cam-light-vec :xyz)
+             :light-intensity (v! 1 1 1 0)
+             :model-to-cam model-to-cam-matrix
+             ;; :normal-model-to-cam normal-to-cam-matrix
+             :ambient-intensity (v! 0.2 0.2 0.2 1.0)
+             :textur *tex*
+             :offsets *pos-tex*)))
   (update-display))
 
 ;;--------------------------------------------------------------
@@ -124,26 +120,26 @@
 ;;--------------------------------------------------------------
 ;; window
 
-(defun reshape (new-dimensions)
+(defun reshape (&optional (new-dimensions *current-viewport*))
   (setf (frame-size *camera*) new-dimensions)
   (setf (viewport-resolution (viewport *gl-context*))
         new-dimensions)  
   (instanced-birds nil :cam-to-clip (cam->clip *camera*)))
 
-(observe (|window|) (when (eq (evt:action e) :resized) (reshape (vec e))))
+(observe (|window|) (when (eq (evt:action e) :resized) (reshape (data e))))
 
 ;;--------------------------------------------------------------
 ;; main loop
 
 (let ((running nil))
-  (defun run-demo ()
+  (defun run-loop ()
     (init)
     (setf running t)
     (loop :while running :do
        (continuable
          (step-demo)
          (update-swank))))
-  (defun stop-demo () (setf running nil))
+  (defun stop-loop () (setf running nil))
   (evt:observe (|sys|)
     (setf running (typep e 'evt:will-quit))))
 

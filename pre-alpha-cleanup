@@ -5,6 +5,7 @@ Ok so we are going to kill as many of the cases where :: is used
 
 * expose +default-resolution+
 - done :)
+- and..we have removed it now :D
 
 * remove cepl.lisp
 - Done! took a lot of shuffling to get most of the logic into context.lisp
@@ -63,3 +64,8 @@ Ok so we are going to kill as many of the cases where :: is used
 * clear needs to handle default-fbo properly.
 * Context needs a fbo slot
 * we need to unify default fbo and user defined fbos
+
+* +default-resolution+ is gone, replace with correct code
+* find the *current-viewport* res
+* grep cepl for +default-resolution+
+* update code 

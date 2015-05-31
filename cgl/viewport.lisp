@@ -28,8 +28,8 @@
                       :origin-y (second origin))
       (%make-viewport :resolution-x (first resolution)
                       :resolution-y (second resolution)
-                      :origin-x (v:x origin)
-                      :origin-y (v:y origin))))
+                      :origin-x (ceiling (v:x origin))
+                      :origin-y (ceiling (v:y origin)))))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -55,11 +55,14 @@
   (when (eq *current-viewport* viewport)
     (%viewport viewport)))
 
-(defun (setf viewport-resolution) (value viewport)  
-  (%set-resolution viewport (first value) (second value)))
+(defun (setf viewport-resolution) (value viewport)
+  (let ((value (if (typep value 'viewport)
+                   (viewport-resolution value)
+                   value)))
+    (%set-resolution viewport (first value) (second value))))
 
 (defmethod (setf cepl-generics:size) (value (object viewport))
-  (%set-resolution object (v:x value) (v:y value)))
+  (%set-resolution object (ceiling (v:x value)) (ceiling (v:y value))))
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 (defun %viewport (viewport)
@@ -86,7 +89,7 @@
 ;;       to make them current, then rendering with render to that viewport
 
 (defmacro with-fbo-viewport ((fbo &optional (attachment 0)) &body body)
-  `(with-viewport (attachment-viewport ,fbo ,attachment)
+  `(with-viewport (attachment-viewport (%attachment ,fbo ,attachment))
      ,@body))
 
 (defmacro %with-fbo-viewport ((fbo &optional (attachment 0)) &body body)

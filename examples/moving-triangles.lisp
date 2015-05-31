@@ -31,9 +31,8 @@
   (update-display))
 
 (let ((running nil))
-  (defun run-demo ()
-    (setf running t
-          (viewport-resolution (viewport *gl-context*)) +default-resolution+)
+  (defun run-loop ()
+    (setf running t)
     (setf *array* (make-gpu-array (list (v!  0.0   0.2  0.0  1.0)
                                         (v! -0.2  -0.2  0.0  1.0)
                                         (v!  0.2  -0.2  0.0  1.0))
@@ -41,7 +40,7 @@
                                       :dimensions 3))
     (setf *vertex-stream* (make-buffer-stream *array*))
     (loop :while running :do (continuable (step-demo))))
-  (defun stop-demo () (setf running nil)))
+  (defun stop-loop () (setf running nil)))
 
 (evt:observe (evt:|sys|)
-  (when (typep e 'evt:will-quit) (stop-demo)))
+  (when (typep e 'evt:will-quit) (stop-loop)))

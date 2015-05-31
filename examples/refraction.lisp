@@ -43,19 +43,17 @@
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera +default-resolution+))
-  (reshape +default-resolution+)
-  (setf *wibble* (load-model (devil-helper:load-image-to-texture
-                              (merge-pathnames "wibble.3ds" *examples-dir*))
+  (setf *camera* (make-camera *current-viewport*))
+  (setf *wibble* (load-model (merge-pathnames "wibble.3ds" *examples-dir*)
                              0 (v! pi 0 0)))
   (setf (v:z (pos *wibble*)) -3.0)
-  (setf *bird* (load-model (merge-pathnames "bird.3ds" *examples-dir*) 1 (v! pi 0 0)))
+  (setf *bird* (load-model (merge-pathnames "bird/bird.3ds" *examples-dir*) 1 (v! pi 0 0)))
   (setf *bird-tex* (devil-helper:load-image-to-texture
                     (merge-pathnames "water.jpg" *examples-dir*)))
   (setf *bird-tex2* (devil-helper:load-image-to-texture
-                     (merge-pathnames "char_bird_col.png" *examples-dir*)))
+                     (merge-pathnames "bird/char_bird_col.png" *examples-dir*)))
   (setf *wib-tex* (devil-helper:load-image-to-texture
-                   (merge-pathnames "col.png" *examples-dir*))))
+                   (merge-pathnames "brick/col.png" *examples-dir*))))
 
 ;;--------------------------------------------------------------
 ;; drawing
@@ -165,9 +163,9 @@
 ;;--------------------------------------------------------------
 ;; window
 
-(defun reshape (&optional (new-dimensions +default-resolution+))
+(defun reshape (&optional (new-dimensions *current-viewport*))
   (setf (frame-size *camera*) new-dimensions
-        (viewport-resolution (viewport *gl-context*)) new-dimensions)
+        (viewport-resolution *current-viewport*) new-dimensions)
   (standard-pass nil :cam-to-clip (cam->clip *camera*))
   (refract-pass nil :cam-to-clip (cam->clip *camera*)))
 
@@ -179,18 +177,18 @@
 ;; main loop
 
 (let ((running nil))
-  (defun run-demo ()
+  (defun run-loop ()
     (init)
     (setf running t)
     (loop :while running :do
        (continuable
          (step-demo)
          (update-swank))))
-  (defun stop-demo () (setf running nil)))
+  (defun stop-loop () (setf running nil)))
 
 (evt:observe (|sys|)
   (when (typep e 'evt:will-quit)
-    (stop-demo)))
+    (stop-loop)))
 
 (defun step-demo ()
   (evt:pump-events)

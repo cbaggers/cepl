@@ -197,7 +197,7 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 ;;--------------------------------------------------
 
 (defvar |*instance-count*| 0)
-(defmacro with-instances ((count) &body body)
+(defmacro with-instances (count &body body)
   `(let ((|*instance-count*| ,count))
      (unless (> |*instance-count*| 0)
        (error "Instance count must be greater than 0"))

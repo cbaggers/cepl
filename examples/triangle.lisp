@@ -26,7 +26,7 @@
   (map-g #'prog-1 *stream*)
   (update-display))
 
-(defun run-demo ()
+(defun run-loop ()
   (setf *running* t
         *array* (make-gpu-array
                  (list (list (v!  0.5 -0.36 0) (v! 0 1 0 1) (v! -1 1))
@@ -36,8 +36,8 @@
    *stream* (make-buffer-stream *array*))
   (loop :while *running* :do (continuable (step-demo))))
 
-(defun stop-demo ()
+(defun stop-loop ()
   (setf *running* nil))
 
 (evt:observe (evt:|sys|)
-  (when (typep e 'evt:will-quit) (stop-demo)))
+  (when (typep e 'evt:will-quit) (stop-loop)))

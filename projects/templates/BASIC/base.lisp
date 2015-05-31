@@ -13,7 +13,7 @@
 ;;--------------------------------------------------------------
 ;; window
 
-(defun reshape (&optional (new-dimensions cgl:+default-resolution+))
+(defun reshape (&optional (new-dimensions *current-viewport*))
   (setf (viewport-resolution (viewport *gl-context*))
         new-dimensions))
 

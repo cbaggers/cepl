@@ -2,8 +2,8 @@
 
 ;; (defvar guy (devil-helper:load-image-to-texture
 ;;              (merge-pathnames "guy.png" *examples-dir*)))
-;; (defvar cols (devil-helper:load-image-to-texture
-;;               (merge-pathnames "c.png" *examples-dir*)))
+(defvar cols nil)
+(defvar *loop* 0)
 
 (defun-g vert ((quad g-pt))
   (values (v! (pos quad) 1)
@@ -22,13 +22,13 @@
 (defpipeline qsmood () (g-> #'vert #'qkern))
 
 (defun-g fourtex ((tc :vec2) &uniform (t0 :sampler-2d) (t1 :sampler-2d)
-                  (t2 :sampler-2d) (t3 :sampler-2d))
+                  (t2 :sampler-2d) (t3 :sampler-2d) (scale-effect :float))
   (let ((tc (* tc (v! 1 -1))))
     (+ (v! 0 0 0 0)
-       (* (texture t0 tc) 0.6)
-       (* (texture t1 tc) 0.1)
-       (* (texture t2 tc) 0.2)
-       (* (texture t3 tc) 0.3))))
+       (* (texture t0 tc) 1)
+       (* (texture t1 tc) scale-effect)
+       (* (texture t2 tc) scale-effect)
+       (* (texture t3 tc) scale-effect))))
 
 (defpipeline combine () (g-> #'vert #'fourtex))
 
@@ -58,24 +58,27 @@
   (h2 '(:c :dimensions (128 128)))
   (h3 '(:c :dimensions (64 64))))
 
-
 (defun step-demo ()
+  (incf *loop* 0.008)
   (evt:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-  (map-g #'bloom *quad-stream* :tx guy)
+  (map-g #'bloom *quad-stream* :tx cols :scale-effect (abs (sin *loop*)))
   (update-display))
 
 ;;-------------------------------------------------------
 (defparameter *running* nil)
 
-(defun run-demo ()
+(defun run-loop ()
   (setf *running* t)
+  (unless cols
+    (setf cols (devil-helper:load-image-to-texture
+                (merge-pathnames "ThickCloudsWater/front.png" *examples-dir*))))
   (loop :while *running* :do (continuable (step-demo))))
 
-(defun stop-demo ()
+(defun stop-loop ()
   (setf *running* nil))
 
 (evt:observe (evt:|sys|)
-  (when (typep e 'evt:will-quit) (stop-demo)))
+  (when (typep e 'evt:will-quit) (stop-loop)))
 ;;-------------------------------------------------------

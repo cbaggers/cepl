@@ -32,7 +32,7 @@
 
 
 (defun init ()
-  (setf *camera* (make-camera +default-resolution+))
+  (setf *camera* (make-camera *current-viewport*))
   (setf (pos *camera*) (v! 0 8 0))
   (render-widgets nil :cam *camera*)
   (let* ((verts (make-gpu-array `((,(v! +1  +1  +1)  ,(v! 0  1  0  1))
@@ -71,18 +71,16 @@
 
 (defun reshape (dimensions)
   (setf (frame-size *camera*) dimensions)
-  (render-widgets nil :cam *camera*)
-  (setf (viewport-resolution (viewport *gl-context*))
-        dimensions))
+  (render-widgets nil :cam *camera*))
 
 (let ((running nil))
-  (defun run-demo ()
+  (defun run-loop ()
     (init)
-    (reshape +default-resolution+)
+    (reshape *current-viewport*)
     (setf running t)
     (loop :while running :do (continuable (step-demo))))
 
-  (defun stop-demo () (setf running nil))
+  (defun stop-loop () (setf running nil))
 
   (evt:observe (evt:|sys|)
     (setf running (typep e 'evt:will-quit))))

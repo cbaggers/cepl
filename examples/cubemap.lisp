@@ -14,12 +14,19 @@
 (defpipeline skybox () (g-> #'vert #'frag))
 
 (defun make-cubemap-tex (&rest paths)
-  (with-c-arrays (ca (mapcar #'devil-helper:load-image-to-c-array paths))
+  (with-c-arrays (ca (mapcar (lambda (p)
+                               (devil-helper:load-image-to-c-array
+                                (merge-pathnames p *examples-dir*)))
+                             paths))
     (make-texture ca :internal-format :rgb8 :cubes t)))
 
 (defun init ()
-  (setf tx (make-cubemap-tex "left.png" "right.png" "up.png"
-                             "down.png" "front.png" "back.png"))
+  (setf tx (make-cubemap-tex "ThickCloudsWater/left.png"
+                             "ThickCloudsWater/right.png"
+                             "ThickCloudsWater/up.png"
+                             "ThickCloudsWater/down.png"
+                             "ThickCloudsWater/front.png"
+                             "ThickCloudsWater/back.png"))
   (let* ((bx (primitives:box-data))
          (data (make-gpu-array (first bx) :element-type 'g-pnt))
          (ind (make-gpu-array (primitives:swap-winding-order (second bx))
@@ -37,14 +44,15 @@
 (evt:observe (evt:|mouse|)
   (when (typep e 'evt:mouse-motion)
     (let ((d (evt:delta e)))
-      (setf mouse-ang (v2:v+ (v! (/ (v:x d) -100.0) (/ (v:y d) -100.0))
+      (setf mouse-ang (v2:v+ (v! (/ (v:x d) -150.0)
+                                 (/ (v:y d) -150.0))
                              mouse-ang)
             (dir cam) (v! (sin (v:x mouse-ang))
                           (sin (v:y mouse-ang))
                           (cos (v:x mouse-ang)))))))
 
 (observe (|window|) (when (eq (action e) :resized) (reshape (vec e))))
-(defun reshape (&optional (dims +default-resolution+))
+(defun reshape (dims)
   (setf (viewport-resolution (viewport *gl-context*)) dims))
 
 (live:main-loop :init init :step step-demo)

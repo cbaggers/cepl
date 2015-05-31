@@ -7,7 +7,7 @@
 
 (defun %defpipeline-compose (name args options gpipe-args)
   (assert (and (every #'symbolp args) (not (some #'keywordp args))))
-  (destructuring-bind (args &optional user-uniforms)
+  (destructuring-bind (user-args &optional user-uniforms)
       (split-sequence :&uniform args :test #'string-equal)
     (assoc-bind ((fbos :fbos) (context :context) (post :post))
         (parse-options options)
@@ -22,18 +22,20 @@
                         user-uniforms)))
           `(progn
              (eval-when (:compile-toplevel :load-toplevel :execute)
-                 (update-pipeline-spec
-                  (make-compose-pipeline-spec
-                   ',name ',pipeline-names ',args ',uniform-args
-                   ',(or gpipe-context context))))
+               (update-pipeline-spec
+                (make-compose-pipeline-spec
+                 ',name ',pipeline-names ',user-args ',uniform-args
+                 ',(or gpipe-context context))))
              (let (,@(when fbos (mapcar #'car fbos))
                    (initd nil))
                (def-compose-dispatch
-                   ,name ,(append args (make-pipeline-stream-args gpipe-args))
+                   ,name
+                   ,(append user-args (make-pipeline-stream-args gpipe-args))
                  ,uniforms ,context
                  ,gpipe-args ,fbos ,post))
              (def-compose-dummy
-                 ,name ,(append args (make-pipeline-stream-args gpipe-args))
+                 ,name
+                 ,(append user-args (make-pipeline-stream-args gpipe-args))
                ,uniforms)))))))
 
 ;;--------------------------------------------------
@@ -48,9 +50,11 @@
                             (make-pipeline-stream-args gpipe-args nil t)))
          (pass-code (mapcar #'first pass-data))
          (all-draw-buffers (apply #'append (mapcar #'second pass-data))))    
-    `(let ((,+db-ptr-sym+ (foreign-alloc 'cl-opengl-bindings:enum :count
-                                         (length all-draw-buffers)
-                                         :initial-element ',all-draw-buffers)))
+    `(let (,@(when all-draw-buffers
+                   `((,+db-ptr-sym+
+                       (foreign-alloc 'cl-opengl-bindings:enum :count
+                                      ,(length all-draw-buffers)
+                                      :initial-contents ',all-draw-buffers)))))
        (defun ,(dispatch-func-name name)
            (,@args ,@(when uniforms `(&key ,@uniforms)))
          (unless initd
@@ -93,7 +97,7 @@
 (defun %gen-with-bind-fbo-result (fbo-pattern lisp-forms map-g-form)
   (let* ((fbo-pattern (listify fbo-pattern))
          (key-start (or (position-if #'keywordp fbo-pattern)
-                        (1- (length fbo-pattern))))
+                        (length fbo-pattern)))
          (fbo (first fbo-pattern))
          (buffer-pattern (subseq fbo-pattern 1 key-start))
          (keys (subseq fbo-pattern key-start)))
@@ -143,7 +147,6 @@
                2))
             forms)))
 
-
 (defun uniquify-names (names)
   (let ((seen nil)
         (final nil))
@@ -168,12 +171,15 @@
                     (subseq args 0 (or (position-if #'keywordp args)
                                        (length args)))) :into streams
          :finally (return (list pipeline-names streams)))
-    (let ((result (mapcar (lambda (x y)
-                            (append
-                             (when include-overriden y)
-                             (subseq (mapcar #'car x) (length y))))
-                          (collate-args pipeline-names)
-                          pipeline-stream-overrides)))
+    ;; '(standard-pass refract-pass) '(nil nil)
+    (let* ((count -1)
+           (result (mapcar (lambda (x y)
+                             (append
+                              (when include-overriden y)
+                              (subseq (mapcar λ(symb (car _) (incf count)) x)
+                                      (length y))))
+                           (collate-args pipeline-names)
+                           pipeline-stream-overrides)))
       (if flatten (apply #'append result) result))))
 
 ;;{TODO} handle equivalent types

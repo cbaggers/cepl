@@ -340,11 +340,11 @@
            :stencil-writemask
            :stereo
            ;;- - - - - - - -
-
+           :*current-viewport*
            :viewport
            :with-viewport
            :with-fbo-viewport
-           :+default-resolution+
+           :viewport-resolution
            :clear-gl-context-cache
            :gl-free
            :update-display
@@ -503,7 +503,7 @@
 
 (defpackage :meshes
   (:use :cl :cffi :base-macros :cepl-utils :base-vectors :cepl-generics
-        :fn_ :split-sequence)
+        :fn_ :split-sequence :cgl)
   (:export :mesh
            :vertices
            :indicies
@@ -602,82 +602,12 @@
         :cepl-camera
         :cl-fad
         :cepl.events
-        :named-readtables)
+        :named-readtables
+        :cepl-gl)
   (:import-from :live
                 :continuable
                 :update-swank
-                :peek)
-  (:import-from :cepl-gl
-                :clear
-                :update-display
-                :pos
-                :rot
-                :dir
-                :vec
-                :size
-                :norm
-                :tex
-                :col
-                :pixel-format
-                :describe-pixel-format
-                :lisp-type->pixel-format
-                :pixel-format->lisp-type
-                :pixel-format->internal-format
-                :internal-format->pixel-format
-                :internal-format->lisp-type
-                :lisp-type->internal-format
-                :with-instances
-                :defpipeline
-                :g->
-                :defun-g
-                :defmacro-g
-                :defstruct-g
-                :pull-g
-                :pull1-g
-                :push-g
-                :make-c-array
-                :with-c-array
-                :with-c-arrays
-                :free-c-array
-                :aref-c
-                :c-populate
-                :make-gpu-array
-                :make-gpu-arrays
-                :gl-subseq
-                :with-gpu-array-as-c-array
-                :make-buffer-stream
-                :make-texture
-                :with-texture-bound
-                :g-pn
-                :g-pc
-                :g-pt
-                :g-pnc
-                :g-pnt
-                :g-pntc
-                :texref
-                :*quad*
-                :*quad-stream*
-                ;;---
-                :map-g
-                ;;---
-                :make-fbo
-                :make-fbos
-                :with-bind-fbo
-                :with-fbo-slots
-                :fbo-attach
-                :attachment
-                :attachment-compatible
-                :fbo-detach
-                :viewport
-                :with-viewport
-                :with-fbo-viewport
-                :+default-resolution+
-                ;;---
-                :def-equivalent-type
-                ;;---
-                :make-ubo
-                :ubo-data
-                :ubo-index)
+                :peek)  
   (:import-from :utils
                 :deferror
                 :print-mem
@@ -804,10 +734,10 @@
            :attachment
            :attachment-compatible
            :fbo-detach
+           :*current-viewport*
            :viewport
            :with-viewport
            :with-fbo-viewport
-           :+default-resolution+
            :def-equivalent-type
            ;;---
            :make-ubo
