@@ -1,4 +1,4 @@
-;; Raymarcher! -currently broken-
+;; Raymarcher!
 
 (defparameter *gpu-array* nil)
 (defparameter *vertex-stream* nil)
