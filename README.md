@@ -42,10 +42,6 @@ These three will hopefully be in quicklisp soon, until then download them at the
 * fn                 (which you can find at https://github.com/cbaggers/fn)
 * temporal-functions (which you can find at https://github.com/cbaggers/temporal-functions)
 
-If you are using quicklisp then drop this in your local-projects directory and run the following in your repl:
-    (ql:quickload :cepl)
-    (cepl:repl)
-
 **Running on OSX**
 Doesnt work yet. If anyone can lend a hand I would be very greatful
 
