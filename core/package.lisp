@@ -575,7 +575,7 @@
   (:import-from :live
                 :continuable
                 :update-swank
-                :peek)  
+                :peek)
   (:import-from :utils
                 :deferror
                 :print-mem

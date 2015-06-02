@@ -7,7 +7,6 @@
 (defgeneric pull1-g (object))
 (defgeneric dimensions (object))
 (defgeneric backed-by (object))
-(defgeneric make-vao (gpu-arrays &optional index-array))
 (defgeneric lisp-type->pixel-format (type))
 
 (defmethod pull-g ((object t)) object)

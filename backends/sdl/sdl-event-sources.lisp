@@ -10,6 +10,9 @@
 (defmethod cepl-backend:get-event-pump ((backend-name (eql :sdl)))
   #'pump-events)
 
+(defmethod cepl-backend:get-swap-func ((backend-name (eql :sdl)))
+  (lambda (x) (sdl2::sdl-gl-swap-window x)))
+
 ;;--------------------------------------------
 ;; sdl timestamp conversion
 

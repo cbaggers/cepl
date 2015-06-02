@@ -25,7 +25,7 @@
                #:named-readtables
                #:fn)
   :components ((:file "core/package")
-               (:file "core/backend")               
+               (:file "core/backend")
                (:file "core/utils")
                (:file "core/static")
                (:file "core/generics")
@@ -79,6 +79,7 @@
                (:file "core/events/events")
                (:file "core/live/live-macros")
                (:file "core/live/bootstrapping")
-               (:file "core/time/time")                              
+               (:file "core/time/time")
+               (:file "core/primitives/primitives")
                (:file "core/repl")
                (:file "core/examples/examples-data")))

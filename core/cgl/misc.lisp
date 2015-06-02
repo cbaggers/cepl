@@ -4,4 +4,4 @@
   (defun update-display ()
     (unless swap-func
       (setf swap-func (cepl-backend:get-swap-func cepl-backend:*backend*)))
-    (funcall swap-func)))
+    (funcall swap-func *gl-window*)))

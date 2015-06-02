@@ -1,13 +1,17 @@
-(in-package :cepl)
+(in-package :cepl-project)
 
-(defparameter *template-directory* 
-  (asdf:system-relative-pathname :cepl #p"projects/templates"))
 (defparameter *depends* '(#:cepl))
+
+(let ((dir nil))
+  (defun get-template-directory ()
+    (unless dir
+      (setf dir (asdf:system-relative-pathname :cepl #p"projects/templates")))
+    dir))
 
 (defun template-name-to-path (name)
   (assert (keywordp name))
-  (merge-pathnames-as-directory 
-   *template-directory* #p"templates/" 
+  (merge-pathnames-as-directory
+   (get-template-directory) #p"templates/"
    (format nil "~a/" (symbol-name name))))
 
 (defun template-exists-p (name)
@@ -29,8 +33,8 @@
     (quickproject:make-project
      processed-name
      :depends-on *depends*
-     :template-directory (print quickproject::*template-directory*))
+     :template-directory quickproject::*template-directory*)
     (rename-file (merge-pathnames-as-file
                   (quickproject::pathname-as-directory processed-name)
-                  "base.lisp")                 
+                  "base.lisp")
                  (format nil "~a.lisp" processed-name))))

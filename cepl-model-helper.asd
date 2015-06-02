@@ -11,6 +11,6 @@
 (asdf:defsystem #:cepl-model-helper
   :serial t
   :depends-on (#:cepl #:classimp)
-  :components ((:file "meshes-and-models/primitives")
+  :components ((:file "meshes-and-models/package")
                (:file "meshes-and-models/mesh")
                (:file "meshes-and-models/classimp-helpers")))
