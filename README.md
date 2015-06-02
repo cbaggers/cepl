@@ -38,24 +38,26 @@ All of the following will be download automatically by quicklisp
 
 These three will hopefully be in quicklisp soon, until then download them at the links provided.
 
-* varjo              (which you can find at https://github.com/cbaggers/varjo)
-* fn                 (which you can find at https://github.com/cbaggers/fn)
-* temporal-functions (which you can find at https://github.com/cbaggers/temporal-functions)
+* varjo - https://github.com/cbaggers/varjo
+* fn - https://github.com/cbaggers/fn
+* temporal-functions - https://github.com/cbaggers/temporal-functions
 
 **Running on OSX**
+
 Doesnt work yet. If anyone can lend a hand I would be very greatful
 
-**Windows C Library Hack*
+**Windows C Library Hack**
+
 If you are having issues getting the c libraries to load and just need to rule out whether lisp can find them, try putting them in the same folder as the lisp exe. For example `C:\Program Files\sbcl\`. At
 
 -----------------------------------------------------------------------------------------
 
 Getting Started
 ===============
-- cd to your quicklisp/local-projects folder
-- clone this repo, varjo, fn and temporal-functions
+- `cd` to your quicklisp/local-projects folder
+- clone `this repo`, `varjo`, `fn` and `temporal-functions`
 
-Now most days you will use `(ql:quickload :cepl-default)` to load everything at this point but the first time do the following. The reason for following these steps is to make it easy to see where the issues are.
+Now most days you will use `(ql:quickload :cepl-default)` to load all of cepl and it's supporting libs. However this first time please do the following. The reason for following these longer steps is to make it easy to see where the issues are.
 
 Step 1
 ------
@@ -112,11 +114,11 @@ In your repl evaluate `(cepl:repl)` You should see a 320x240 pixel window appear
 
 Step 2
 ------
-Evaluate `(in-package :cepl)
+Evaluate `(in-package :cepl)`
 
 Step 3
 ------
-Open the `moving-triangles.lisp` file in the examples directory and C-k to compile the whole file
+Open the `moving-triangles.lisp` file in the examples directory and `C-c C-k` to compile the whole file
 
 Step 4
 ------
@@ -133,4 +135,5 @@ Baggers
 -----------------------------------------------------------------------------------------
 
 **Driving Ideas**
+
 (making (making a game) a game)
