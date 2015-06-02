@@ -38,6 +38,7 @@
   (:export :init
            :shutdown
            :get-event-pump
+           :get-swap-func
            :*backend*))
 
 (defpackage :cepl-utils
@@ -491,39 +492,6 @@
   (:import-from :vector4
                 :make-vector4))
 
-(defpackage :model-parsers
-  (:use :cl)
-  (:export :load-file
-           :meshes->lists
-           :mesh->lists
-           :mesh-list->gpu
-           :mesh->gpu
-           :scene-meshes->gpu
-           :calc-type)
-  (:import-from :vector2
-                :make-vector2)
-  (:import-from :vector3
-                :make-vector3)
-  (:import-from :vector4
-                :make-vector4))
-
-(defpackage :meshes
-  (:use :cl :cffi :base-macros :cepl-utils :base-vectors :cepl-generics
-        :fn :split-sequence :cgl)
-  (:export :mesh
-           :vertices
-           :indicies
-           :primitive-type
-           :transform-mesh
-           :transform-mesh-with-matrix
-           :polygonize
-           :flatten-index))
-
-(defpackage :devil-helper
-  (:use :cl)
-  (:export :load-image-to-c-array
-           :load-image-to-texture))
-
 (defpackage :primitives
   (:use :cl
         :base-vectors
@@ -583,12 +551,6 @@
            :state
            :timestamp
            :data))
-
-(defpackage :cepl.events.sdl
-  (:use :cl :cepl-utils :cepl.events :cells :cepl-generics)
-  (:shadow :pump-events)
-  (:export :pump-events
-           :case-events))
 
 (defpackage :live
   (:use :cl :cepl-utils)
