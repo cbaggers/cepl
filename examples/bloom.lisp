@@ -1,19 +1,21 @@
 (in-package :cepl)
 
+;; NOTE: Ensure you have loaded cepl-image-helper (or cepl-default)
+
 (defvar cols nil)
 (defvar *loop* 0)
 
 (defun-g vert ((quad g-pt))
   (values (v! (pos quad) 1) (tex quad)))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun-g frag ((tc :vec2) &uniform (tex :sampler-2d))
   (texture tex tc))
 
 (defpipeline blit () (g-> #'vert #'frag))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun-g qkern ((tc :vec2) &uniform (tex :sampler-2d) (offset :vec2))
   (+ (* (texture tex (- tc offset)) 0.3125)
@@ -22,7 +24,7 @@
 
 (defpipeline smooth () (g-> #'vert #'qkern))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun-g fourtex ((tc :vec2) &uniform (t0 :sampler-2d) (t1 :sampler-2d)
                   (t2 :sampler-2d) (t3 :sampler-2d) (scale-effect :float))
@@ -34,7 +36,7 @@
 
 (defpipeline combine () (g-> #'vert #'fourtex))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defpipeline bloom (stream &uniform tx)
     (g-> (c0 (blit stream :tex tx))

@@ -82,4 +82,4 @@
                (:file "core/time/time")
                (:file "core/primitives/primitives")
                (:file "core/repl")
-               (:file "core/examples/examples-data")))
+               (:file "examples/examples-data")))

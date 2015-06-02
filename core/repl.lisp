@@ -11,6 +11,6 @@
 (defun repl (&optional (width 320) (height 240) (backend :sdl))
   (cgl:make-context backend :width width :height height :resizable t
                     :title "CEPL REPL")
-  (format t "-----------------~%    CEPL-REPL    ~%-----------------"))
+  (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%"))
 
 (defun quit () (cepl-backend:shutdown cepl-backend:*backend*))

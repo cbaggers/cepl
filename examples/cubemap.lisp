@@ -1,5 +1,7 @@
 (in-package :cepl)
 
+;; NOTE: Ensure you have loaded cepl-image-helper (or cepl-default)
+
 (defvar tx)
 (defvar strm nil)
 (defvar cam)
