@@ -1,7 +1,7 @@
 (in-package :cgl)
 
 (defun parse-compose-gpipe-args (args)
-  `(,(mapcar (fn+ #'car #'last1) args)
+  `(,(mapcar (lambda (_) (car (last1 _))) args)
      nil))
 
 (defun %defpipeline-compose (name args options gpipe-args)

@@ -92,7 +92,7 @@
 (defun %update-gpu-function-data (spec depends-on)
   (with-slots (name) spec
     (%unsubscibe-from-all name)
-    (mapcar (fn~ #'%subscribe-to-gpu-func name) depends-on)
+    (mapcar (lambda (_) (%subscribe-to-gpu-func name _)) depends-on)
     (setf (gpu-func-spec name) spec)))
 
 (defun %gpu-func-compiles-in-some-context (spec)
