@@ -1,6 +1,5 @@
 ;; Simple refraction example
 (in-package :cepl)
-(named-readtables:in-readtable fn:fn-reader)
 
 ;; NOTE: Ensure you have loaded cepl-image-helper & cepl-model-helper
 ;;       (or just load cepl-default)

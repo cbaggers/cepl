@@ -36,10 +36,9 @@ All of the following will be download automatically by quicklisp
 * cells
 * named-readtables
 
-These three will hopefully be in quicklisp soon, until then download them at the links provided.
+These two will hopefully be in quicklisp soon, until then download them at the links provided.
 
 * varjo - https://github.com/cbaggers/varjo
-* fn - https://github.com/cbaggers/fn
 * temporal-functions - https://github.com/cbaggers/temporal-functions
 
 **Running on OSX**
@@ -55,7 +54,7 @@ If you are having issues getting the c libraries to load and just need to rule o
 Getting Started
 ===============
 - `cd` to your quicklisp/local-projects folder
-- clone `this repo`, `varjo`, `fn` and `temporal-functions`
+- clone `this repo`, `varjo` and `temporal-functions`
 
 Now most days you will use `(ql:quickload :cepl-default)` to load all of cepl and it's supporting libs. However this first time please do the following. The reason for following these longer steps is to make it easy to see where the issues are.
 

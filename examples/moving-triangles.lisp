@@ -37,7 +37,7 @@
                                         (v! -0.2  -0.2  0.0  1.0)
                                         (v!  0.2  -0.2  0.0  1.0))
                                   :element-type :vec4
-                                      :dimensions 3))
+                                  :dimensions 3))
     (setf *vertex-stream* (make-buffer-stream *array*))
     (loop :while running :do (continuable (step-demo))))
   (defun stop-loop () (setf running nil)))

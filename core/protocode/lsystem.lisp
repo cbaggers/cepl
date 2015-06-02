@@ -1,7 +1,6 @@
 (in-package :cepl)
 (in-readtable fn:fn-reader)
 
-
 ;; recurse n times
 (defun rec-n (func n d)
   (if (> n 0)

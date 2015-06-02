@@ -1,5 +1,4 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn:fn-reader)
 
 (defvar *equivalent-type-specs* (make-hash-table))
 (defun equiv-spec (lisp-type) (gethash lisp-type *equivalent-type-specs*))
@@ -43,7 +42,8 @@
 ;;   (position (pos %))
 ;;   (normal (norm %)))
 (defun det-exisiting-type (lisp-type-name varjo-type &rest slots)
-  (assert (every λ(= (length _) 2) slots))
+  (assert (every (lambda (_) (= (length _) 2))
+                 slots))
   `(progn
      (eval-when (:compile-toplevel :load-toplevel :execute)
        (setf (equiv-spec ,lisp-type-name) ,(list varjo-type slots)))
@@ -65,13 +65,15 @@
        (eval-when (:compile-toplevel :load-toplevel :execute)
          (setf (equiv-spec ',lisp-type-name)
                ',(list alt-type
-                       (mapcar λ(destructuring-bind (name _ form &key accessor)
-                                    _
-                                  (declare (ignore _))
-                                  (list (or accessor name) form)) slots))))
+                       (mapcar (lambda (_)
+                                 (destructuring-bind (name _ form &key accessor)
+                                     _
+                                   (declare (ignore _))
+                                   (list (or accessor name) form))) slots))))
        (defstruct-g ,alt-type
            (:constructor nil :varjo-constructor ,lisp-type-name :populate nil
                          :attribs nil :readers nil :pull-push nil)
-         ,@(mapcar λ(append (subseq _ 0 2) (subseq _ 3))
+         ,@(mapcar (lambda (_)
+                     (append (subseq _ 0 2) (subseq _ 3)))
                    slots))
        ',lisp-type-name)))

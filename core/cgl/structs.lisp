@@ -1,5 +1,4 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn:fn-reader)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass gl-struct-slot ()
@@ -56,9 +55,9 @@
                                   (readers t) (writers t) (pull-push t)
                                   (attribs t) (populate t))
                        &body slot-descriptions)
-  (let ((slots (mapcar λ(normalize-slot-description
-                         _ name (and readers accesors)
-                         (and writers accesors))
+  (let ((slots (mapcar (lambda (_) (normalize-slot-description
+                                    _ name (and readers accesors)
+                                    (and writers accesors)))
                        slot-descriptions))
         (autowrap-name name))
     (when (validate-defstruct-g-form name slots)
@@ -70,10 +69,12 @@
          ,(make-varjo-struct-def name slots varjo-constructor)
          ,(when constructor (make-make-struct name autowrap-name slots))
          ,@(when (and readers accesors)
-                 (remove nil (mapcar λ(make-slot-getter _ name autowrap-name)
+                 (remove nil (mapcar (lambda (_)
+                                       (make-slot-getter _ name autowrap-name))
                                      slots)))
          ,@(when (and writers accesors)
-                 (remove nil (mapcar λ(make-slot-setter _ name autowrap-name)
+                 (remove nil (mapcar (lambda (_)
+                                       (make-slot-setter _ name autowrap-name))
                                      slots)))
          ,(when attribs (make-struct-attrib-assigner name slots))
          ,(make-struct-pixel-format name slots)

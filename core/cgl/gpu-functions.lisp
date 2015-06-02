@@ -1,5 +1,4 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn:fn-reader)
 
 ;; defun-gpu is at the bottom of this file
 
@@ -17,9 +16,11 @@
         (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
       (let ((in-args (swap-equivalent-types in-args))
             (uniforms (swap-equivalent-types uniforms))
-            (equivalent-inargs (mapcar λ(when (equivalent-typep _) _)
+            (equivalent-inargs (mapcar (lambda (_)
+                                         (when (equivalent-typep _) _))
                                        (mapcar #'second in-args)))
-            (equivalent-uniforms (mapcar λ(when (equivalent-typep _) _)
+            (equivalent-uniforms (mapcar (lambda (_)
+                                           (when (equivalent-typep _) _))
                                          (mapcar #'second uniforms))))
         (assert (every #'null equivalent-inargs))
         (%def-gpu-function name in-args uniforms context body instancing
@@ -65,9 +66,10 @@
   ;; recompile gpu-funcs that depends on name
   (mapcar #'%recompile-gpu-function (funcs-that-use-this-func name))
   ;; and recompile pipelines that depend on name
-  (mapcar λ(let ((recompile-pipeline-name (recompile-name _)))
-             (when (fboundp recompile-pipeline-name)
-               (funcall (symbol-function recompile-pipeline-name))))
+  (mapcar (lambda (_)
+            (let ((recompile-pipeline-name (recompile-name _)))
+                       (when (fboundp recompile-pipeline-name)
+                         (funcall (symbol-function recompile-pipeline-name)))))
           (pipelines-that-use-this-func name)))
 
 
@@ -184,7 +186,8 @@
 
 (defun %uniforms-pre-equiv (spec)
   (with-gpu-func-spec spec
-    (mapcar λ(if _ `(,(car _1) ,_ ,@(cddr _1)) _1)
+    (mapcar (lambda (_ _1)
+              (if _ `(,(car _1) ,_ ,@(cddr _1)) _1))
             equivalent-uniforms uniforms)))
 
 (defun aggregate-uniforms (names &optional accum)
@@ -241,7 +244,9 @@
     (destructuring-bind (in-args uniforms context code)
         (get-func-as-stage-code stage-name)
       ;; ensure context doesnt specify a stage or that it matches
-      (let ((n (count-if λ(member _ varjo::*stage-types*) context)))
+      (let ((n (count-if (lambda (_)
+                           (member _ varjo::*stage-types*))
+                         context)))
         (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
       (list in-args
             uniforms

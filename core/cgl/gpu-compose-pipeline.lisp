@@ -1,5 +1,4 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn:fn-reader)
 
 (defun parse-compose-gpipe-args (args)
   `(,(mapcar (fn+ #'car #'last1) args)
@@ -49,7 +48,7 @@
   (let* ((pass-data (mapcar #'make-map-g-pass gpipe-args
                             (make-pipeline-stream-args gpipe-args nil t)))
          (pass-code (mapcar #'first pass-data))
-         (all-draw-buffers (apply #'append (mapcar #'second pass-data))))    
+         (all-draw-buffers (apply #'append (mapcar #'second pass-data))))
     `(let (,@(when all-draw-buffers
                    `((,+db-ptr-sym+
                        (foreign-alloc 'cl-opengl-bindings:enum :count
@@ -61,7 +60,7 @@
            ,@(mapcar #'fbo-comp-form fbos)
            (setf initd t)
            ,(when post `(funcall ,post)))
-         ;; symbol-macrolet will go here     
+         ;; symbol-macrolet will go here
          (labels ((cgl:attachment (fbo attachment-name)
                     (slot-value (cgl::attachment-gpu-array
                                  (cgl::%attachment fbo attachment-name))
@@ -176,7 +175,9 @@
            (result (mapcar (lambda (x y)
                              (append
                               (when include-overriden y)
-                              (subseq (mapcar λ(symb (car _) (incf count)) x)
+                              (subseq (mapcar (lambda (_)
+                                                (symb (car _) (incf count)))
+                                              x)
                                       (length y))))
                            (collate-args pipeline-names)
                            pipeline-stream-overrides)))

@@ -1,5 +1,4 @@
 (in-package :cgl)
-(named-readtables:in-readtable fn:fn-reader)
 
 (defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
@@ -60,7 +59,8 @@
     (let ((uniform-assigners (stages->uniform-assigners stage-names pass-key)))
       `(let ((prog-id nil)
              ,@(let ((u-lets (mapcat #'first uniform-assigners)))
-                    (mapcar λ`(,(first _) -1) u-lets)))
+                    (mapcar (lambda (_)
+                              `(,(first _) -1)) u-lets)))
          ,@body))))
 
 (defmacro def-pipeline-invalidate (name)
@@ -166,7 +166,9 @@
 ;;;---------------;;;
 
 (defun stages->uniform-assigners (stage-names &optional pass-key)
-  (mapcar λ(make-arg-assigners _ pass-key) (aggregate-uniforms stage-names)))
+  (mapcar (lambda (_)
+            (make-arg-assigners _ pass-key))
+          (aggregate-uniforms stage-names)))
 
 (let ((cached-data nil)
       (cached-key -1))
@@ -290,12 +292,14 @@
                                            qualifiers))
          (eq-spec (equiv-spec type))
          (varjo-type-name (first eq-spec))
-         (updaters `((progn
-                       ,@(loop :for x :in (second eq-spec) :collect
-                            `(setf (,(first x) ,local-var)
-                                   ,(subst arg-name '% (second x)
-                                           :test λ(when (symbolp _1)
-                                                    (string-equal _ _1)))))))))
+         (updaters
+          `((progn
+              ,@(loop :for x :in (second eq-spec) :collect
+                   `(setf (,(first x) ,local-var)
+                          ,(subst arg-name '% (second x)
+                                  :test (lambda (_)
+                                          (when (symbolp _1)
+                                            (string-equal _ _1))))))))))
     (make-assigner
      :let-forms (cons `(,local-var (autowrap:alloc ',varjo-type-name))
                       (let-forms assigner))

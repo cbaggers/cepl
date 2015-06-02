@@ -22,8 +22,7 @@
                #:cl-ppcre
                #:symbol-munger
                #:cells
-               #:named-readtables
-               #:fn)
+               #:named-readtables)
   :components ((:file "core/package")
                (:file "core/backend")
                (:file "core/utils")

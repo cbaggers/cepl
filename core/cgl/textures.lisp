@@ -7,8 +7,6 @@
 ;; known as the LLGPL.
 ;;
 (in-package :cepl-gl)
-(named-readtables:in-readtable fn:fn-reader)
-
 
 ;;{TODO} While I see why I started abstracting this using classes
 ;;       We cannot extend core functionality of gl, thus uses
@@ -389,7 +387,8 @@
     ((and initial-contents cubes)
      (assert (= 6 (length initial-contents)))
      (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
-            (dim (if (every λ(equal target-dim (dimensions _)) initial-contents)
+            (dim (if (every (lambda (_) (equal target-dim (dimensions _)))
+                            initial-contents)
                      target-dim
                      (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
                             initial-contents)))

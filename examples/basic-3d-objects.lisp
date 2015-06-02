@@ -1,6 +1,5 @@
 ;; More 3D - Multiple objects rotating
 (in-package :cepl)
-(in-readtable fn:fn-reader)
 
 (defparameter *entities* nil)
 (defparameter *camera* nil)
@@ -49,7 +48,7 @@
                     :dimensions 24 :element-type :unsigned-short))
          (e-stream (make-buffer-stream verts :index-array indicies)))
     (setf *entities*
-          (mapcar λ(make-entity :pos _ :e-stream e-stream)
+          (mapcar (lambda (_) (make-entity :pos _ :e-stream e-stream))
                   (list (v!  0 0 -20) (v!  0 0 -25) (v!  5 0 -20)
                         (v!  0 0 -15) (v! -5 0 -20))))))
 
