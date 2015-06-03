@@ -17,7 +17,7 @@
   (format nil)
   (managed nil))
 
-(defmethod free-g ((object glbuffer))
+(defmethod free ((object glbuffer))
   (free-buffer object))
 
 (defun blank-buffer-object (buffer)

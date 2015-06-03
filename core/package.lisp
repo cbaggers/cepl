@@ -347,7 +347,7 @@
            :with-fbo-viewport
            :viewport-resolution
            :clear-gl-context-cache
-           :free-g
+           :free
            :update-display
            :valid-pixel-format-p
            :pixel-format
@@ -373,7 +373,8 @@
            :aref-c
            :%aref-c
            :c-populate
-           :gl-subseq
+           :subseq-g
+           :subseq-c
            :pull-g
            :pull1-g
            :push-g
@@ -683,7 +684,8 @@
            :c-populate
            :make-gpu-array
            :make-gpu-arrays
-           :gl-subseq
+           :subseq-g
+           :subseq-c
            :with-gpu-array-as-c-array
            :make-buffer-stream
            :make-texture

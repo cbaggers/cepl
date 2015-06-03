@@ -106,7 +106,7 @@
           (slot-value object 'texture-type)
           (slot-value object 'base-dimensions)))
 
-(defmethod free-g ((object gl-texture))
+(defmethod free ((object gl-texture))
   (free-texture object))
 
 (defun blank-texture-object (texture)
@@ -134,7 +134,7 @@
   (with-foreign-object (id :uint)
     (with-slots (owns-array backing-array) texture
       (when owns-array
-        (free-g backing-array)
+        (free backing-array)
         (setf owns-array nil
               backing-array nil)))
     (setf (mem-ref id :uint) (texture-id texture))
@@ -162,7 +162,7 @@
           (internal-format object)
           (dimensions object)))
 
-(defmethod free-g ((object gpu-array-t))
+(defmethod free ((object gpu-array-t))
   (declare (ignore object))
   (free-gpu-array-t))
 
@@ -171,7 +171,7 @@
   (free-gpu-array-t))
 
 (defun free-gpu-array-t ()
-  (error "Cannot free a texture backed gpu-array. free-g the texture containing this array "))
+  (error "Cannot free a texture backed gpu-array. free the texture containing this array "))
 
 ;; [TODO] use with safe-exit thingy?
 (defmacro with-texture-bound ((texture &optional type) &body body)

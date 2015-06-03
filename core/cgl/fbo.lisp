@@ -28,7 +28,7 @@
                '%gl::ClearBufferMask '(:color-buffer-bit))
               :type fixnum))
 
-(defmethod free-g ((thing fbo))
+(defmethod free ((thing fbo))
   (print "FREE FBO NOT IMPLEMENTED - LEAKING"))
 
 (defstruct attachment
@@ -174,7 +174,7 @@
      (unwind-protect
           (with-bind-fbo (,var-name)
             ,@body)
-       (free-g ,var-name))))
+       (free ,var-name))))
 
 ;;--------------------------------------------------------------
 
@@ -417,7 +417,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 (defun fbo-gen-attach (fbo &rest args)
   "The are 3 kinds of valid argument:
-   - keyword naming an attachment: This makes a new texture 
+   - keyword naming an attachment: This makes a new texture
      with size of *current-viewport* and attaches
    - (keyword camera) creates a new texture at the framesize of
      the camera and attaches it to attachment named by keyword

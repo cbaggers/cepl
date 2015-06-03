@@ -28,7 +28,7 @@
 (defmethod backed-by ((object gpuarray))
   :buffer)
 
-(defmethod free-g ((object gpuarray))
+(defmethod free ((object gpuarray))
   (free-gpu-array-b object))
 
 (defmethod free-gpu-array ((gpu-array gpuarray))
@@ -140,7 +140,7 @@
                       :dimensions (dimensions c-array)
                       :access-style access-style))))
 
-(defmethod gl-subseq ((array gpuarray) start &optional end)
+(defun subseq-g (array start &optional end)
   (let ((dimensions (dimensions array)))
     (if (> (length dimensions) 1)
         (error "Cannot take subseq of multidimensional array")
