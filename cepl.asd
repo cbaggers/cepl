@@ -14,7 +14,6 @@
                #:cl-plus-c
                #:cl-fad
                #:cl-opengl
-               #:cl-devil
                #:swank
                #:varjo
                #:temporal-functions
