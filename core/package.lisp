@@ -396,6 +396,7 @@
            :make-gpu-array
            :make-gpu-arrays
            :with-gpu-array-as-c-array
+           :with-gpu-array-as-pointer
            :suitable-array-for-index-p
            :bind-vao
            :bind-vertex-array
@@ -687,6 +688,7 @@
            :subseq-g
            :subseq-c
            :with-gpu-array-as-c-array
+           :with-gpu-array-as-pointer
            :make-buffer-stream
            :make-texture
            :with-texture-bound

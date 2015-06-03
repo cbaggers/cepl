@@ -22,8 +22,8 @@
           (gpuarray-dimensions object)))
 
 (defmethod print-mem ((thing gpuarray) &optional (size-in-bytes 64) (offset 0))
-  (with-gpu-array-as-c-array (thing :access-type :read-only :temp-name a)
-    (print-mem (cffi:inc-pointer (pointer a) offset) size-in-bytes)))
+  (with-gpu-array-as-pointer (a thing :access-type :read-only)
+    (print-mem (cffi:inc-pointer a offset) size-in-bytes)))
 
 (defmethod backed-by ((object gpuarray))
   :buffer)
@@ -160,10 +160,8 @@
 ;;        this makes it feel more magical to me and also it is
 ;;        in-line with things like with-slots
 ;; [TODO] Need to unmap if something goes wrong
-(defmacro with-gpu-array-as-c-array ((gpu-array
-                                      &key (access-type :read-write)
-                                      temp-name)
-                                     &body body)
+(defmacro with-gpu-array-as-c-array
+    ((temp-name gpu-array &key (access-type :read-write)) &body body)
   "This macro is really handy if you need to have random access
    to the data on the gpu. It takes a gpu-array and maps it
    as a c-array which allows you to run any of the c-array
@@ -176,37 +174,44 @@
 
    The valid values for access are :read-only :write-only &
    :read-write"
+  (let ((ggpu-array (gensym "gpu-array")))
+    `(let ((,ggpu-array ,gpu-array))
+       (with-gpu-array-as-pointer (,temp-name ,ggpu-array :access-type ,access-type)
+         (let ((,temp-name
+                (make-c-array-from-pointer
+                 (gpuarray-dimensions ,ggpu-array)
+                 (element-type ,ggpu-array)
+                 (cffi:inc-pointer ,temp-name (gpuarray-offset ,ggpu-array)))))
+           ,@body)))))
+
+(defmacro with-gpu-array-as-pointer
+    ((temp-name gpu-array &key (access-type :read-write)) &body body)
+  "This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   giving you the pointer"
   (unless (find access-type '(:read-write :read-only :write-only))
     (error "The access argument must be set to :read-write :read-only or :write-only"))
-  (when (and (not temp-name) (not (symbolp gpu-array)))
-    (error "The gpu array argument must be a symbol naming a gpu-array unless you specify a temp-name"))
   (let ((glarray-pointer (gensym "POINTER"))
         (buffer-sym (gensym "BUFFER"))
-        (target (gensym "target"))
-        (ggpu-array (gensym "gpu-array")))
+        (target (gensym "target")))
     `(let ((,buffer-sym (gpuarray-buffer ,gpu-array))
-           (,target :array-buffer)
-           (,ggpu-array ,gpu-array))
+           (,target :array-buffer))
        (force-bind-buffer ,buffer-sym ,target)
        (gl:with-mapped-buffer (,glarray-pointer
                                ,target
                                ,access-type)
          (if (pointer-eq ,glarray-pointer (null-pointer))
-             (error "with-gpu-array-as-c-array: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
+             (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
                     ,glarray-pointer)
-             (let ((,(or temp-name gpu-array)
-                    (make-c-array-from-pointer
-                     (gpuarray-dimensions ,ggpu-array)
-                     (element-type ,ggpu-array)
-                     (cffi:inc-pointer ,glarray-pointer (gpuarray-offset ,ggpu-array)))))
+             (let ((,temp-name ,glarray-pointer))
                ,@body))))))
 
 (defun gpu-array-pull-1 (gpu-array)
   "This function returns the contents of the gpu array as a c-array
    Note that you often dont need to use this as the generic
    function pull-g will call this function if given a gpu-array"
-  (with-gpu-array-as-c-array (gpu-array :access-type :read-only)
-    (clone-c-array gpu-array)))
+  (with-gpu-array-as-c-array (x gpu-array :access-type :read-only)
+    (clone-c-array x)))
 
 ;; allignmetn
 (defmethod push-g ((object list) (destination gpuarray))
@@ -238,8 +243,8 @@ dimension then their sizes must match exactly"))
   (gpu-array-pull-1 object))
 
 (defmethod pull-g ((object gpuarray))
-  (with-gpu-array-as-c-array (object :access-type :read-only)
-    (pull1-g object)))
+  (with-gpu-array-as-c-array (x object :access-type :read-only)
+    (pull1-g x)))
 
 ;; copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData
