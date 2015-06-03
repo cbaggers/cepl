@@ -369,6 +369,7 @@
            :free-c-array
            :clone-c-array
            :make-c-array
+           :c-array-pointer
            :aref-c
            :%aref-c
            :c-populate
@@ -678,6 +679,7 @@
            :with-c-arrays
            :free-c-array
            :aref-c
+           :c-array-pointer
            :c-populate
            :make-gpu-array
            :make-gpu-arrays

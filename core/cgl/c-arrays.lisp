@@ -30,6 +30,9 @@
   (foreign-free (pointer c-array))
   (blank-c-array-object c-array))
 
+(defun c-array-pointer (c-array)
+  (slot-value c-array 'pointer))
+
 (defmethod print-object ((object c-array) stream)
   (format stream "#<C-ARRAY :element-type ~s :dimensions ~a>"
           (slot-value object 'element-type)
@@ -61,7 +64,8 @@
                                    &optional (alignment 1))
   (unless dimensions
     (error "dimensions are not optional when making an array from a pointer"))
-  (let* ((p-format (pixel-format-p element-type))
+  (let* ((dimensions (listify dimensions))
+         (p-format (pixel-format-p element-type))
          (element-type2 (if p-format
                             (pixel-format->lisp-type element-type)
                             element-type))
