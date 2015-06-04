@@ -36,6 +36,7 @@
 (defpackage :cepl-backend
   (:use :cl)
   (:export :init
+           :start
            :shutdown
            :get-event-pump
            :get-swap-func

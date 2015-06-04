@@ -21,11 +21,12 @@
                                no-frame (alpha-size 0) (depth-size 16) (stencil-size 8)
                                (red-size 8) (green-size 8) (blue-size 8) (buffer-size 32)
                                (double-buffer t) hidden (resizable t))
+  (cepl-backend:init backend)
   (destructuring-bind (context-handle window)
-      (cepl-backend:init backend width height title fullscreen
-                         no-frame alpha-size depth-size stencil-size
-                         red-size green-size blue-size buffer-size
-                         double-buffer hidden resizable)
+      (cepl-backend:start backend width height title fullscreen
+                          no-frame alpha-size depth-size stencil-size
+                          red-size green-size blue-size buffer-size
+                          double-buffer hidden resizable)
     (let ((context (make-instance
                     'gl-context :handle context-handle :window window)))
       (ensure-cepl-compatible-setup)
@@ -50,7 +51,8 @@
 
 (defun ensure-cepl-compatible-setup ()
   (unless (>= (gl:major-version) 3)
-    (error "Cepl requires OpenGL 3.1 or higher")))
+    (error "Cepl requires OpenGL 3.1 or higher. Found: ~a.~a"
+           (gl:major-version) (gl:minor-version))))
 
 (defun %set-default-gl-options ()
   (print "Setting default options")

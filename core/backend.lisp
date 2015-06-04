@@ -8,7 +8,8 @@
 ;; Very little here as the seperation in cepl isnt well defined yet
 ;; this is one of goals for getting to beta
 
-(defgeneric init (backend-name width height title fullscreen
+(defgeneric init (backend-name))
+(defgeneric start (backend-name width height title fullscreen
                   no-frame alpha-size depth-size stencil-size
                   red-size green-size blue-size buffer-size
                   double-buffer hidden resizable))
