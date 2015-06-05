@@ -47,8 +47,8 @@ If this is your first time running cepl, use the 'Getting Started' instructions 
 
 **Running on Linux or Windows**
 - Start slime
-- (ql:quickload :cepl-default)
-- (cepl:repl)
+- `(ql:quickload :cepl-default)`
+- `(cepl:repl)`
 
 **Running on OSX**
 
@@ -56,17 +56,17 @@ If using sbcl
 
 - run platform-specific/osx-sbcl-launch.sh from the terminal
 - slime-connect
-- (ql:quickload :cepl-default)
-- (cepl:repl)
+- `(ql:quickload :cepl-default)`
+- `(cepl:repl)`
 
 else
 
 - Start your lisp's repl in the terminal
-- (ql:quickload :cepl-osx)
-- (cepl-osx:start)
+- `(ql:quickload :cepl-osx)`
+- `(cepl-osx:start)`
 - slime-connect
-- (ql:quickload :cepl-default)
-- (cepl:repl)
+- `(ql:quickload :cepl-default)`
+- `(cepl:repl)`
 
 -----------------------------------------------------------------------------------------
 
