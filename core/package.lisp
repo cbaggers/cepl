@@ -577,6 +577,7 @@
         :cepl.events
         :named-readtables
         :cepl-gl)
+  (:shadow :quit)
   (:import-from :live
                 :continuable
                 :update-swank
@@ -586,6 +587,7 @@
                 :print-mem
                 :p->)
   (:export :repl
+           :quit
            :make-project
            ;----
            :pos
