@@ -43,7 +43,10 @@ These two will hopefully be in quicklisp soon, until then download them at the l
 
 **Running on OSX**
 
-Doesnt work yet. If anyone can lend a hand I would be very greatful
+WORKS! Instructions on how to do this are coming, but boils down to.
+- run osx-sbcl-launch.sh from the terminal
+- slime-connect
+- (in-package :cepl)
 
 **Windows C Library Hack**
 
@@ -78,7 +81,7 @@ raymarcher.lisp
 
 Step 3
 ------
-`(ql:quickload :cepl-image-helper)` This uses the equally excellent cl-devil wrapper around the devil c library. You can guess the steps by now... Linux or OSx -> Package Manager, Windows -> http://openil.sourceforge.net/download.php
+`(ql:quickload :cepl-image-helper)` This uses the equally excellent cl-devil wrapper around the devil c library. You can guess the steps by now... Linux or osx -> Package Manager, Windows -> http://openil.sourceforge.net/download.php
 
 At this point you should be able to run the following examples
 ```
