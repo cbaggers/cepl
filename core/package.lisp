@@ -523,6 +523,7 @@
   (:nicknames :evt)
   (:export :event
            :event-cell
+           :case-events
            :map-evt
            :merge-evt
            :filter-evt
@@ -596,6 +597,7 @@
            :tex
            :col
            ;;---
+           :case-events
            :map-evt
            :merge-evt
            :filter-evt
