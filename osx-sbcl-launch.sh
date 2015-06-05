@@ -1,1 +1,0 @@
-sbcl --eval "(asdf:load-system :cffi)" --eval "(asdf:load-system :cl-fad)" --eval "(let ((port-dir (cl-fad:directory-exists-p \"/opt/local/lib/\"))) (when port-dir (push port-dir cffi:*foreign-library-directories*)))" --eval "(asdf:load-system :cepl-default)" --load osx-sbcl-launch.lisp

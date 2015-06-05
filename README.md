@@ -41,16 +41,32 @@ These two will hopefully be in quicklisp soon, until then download them at the l
 * varjo - https://github.com/cbaggers/varjo
 * temporal-functions - https://github.com/cbaggers/temporal-functions
 
+-----------------------------------------------------------------------------------------
+
+If this is your first time running cepl, use the 'Getting Started' instructions below. Whilst not neccesary it really does help debugging if one of the steps goes wrong.
+
+**Running on Linux or Windows**
+- Start slime
+- (ql:quickload :cepl-default)
+- (cepl:repl)
+
 **Running on OSX**
 
-WORKS! Instructions on how to do this are coming, but boils down to.
-- run osx-sbcl-launch.sh from the terminal
+If using sbcl
+
+- run platform-specific/osx-sbcl-launch.sh from the terminal
 - slime-connect
-- (in-package :cepl)
+- (ql:quickload :cepl-default)
+- (cepl:repl)
 
-**Windows C Library Hack**
+else
 
-If you are having issues getting the c libraries to load and just need to rule out whether lisp can find them, try putting them in the same folder as the lisp exe. For example `C:\Program Files\sbcl\`. At
+- Start your lisp's repl in the terminal
+- (ql:quickload :cepl-osx)
+- (cepl-osx:start)
+- slime-connect
+- (ql:quickload :cepl-default)
+- (cepl:repl)
 
 -----------------------------------------------------------------------------------------
 
@@ -103,6 +119,10 @@ refraction.lisp
 DONE
 ----
 Let's run an example :)
+
+**Windows C Library Hack**
+
+If you are having issues getting the c libraries to load and just need to rule out whether lisp can find them, try putting them in the same folder as the lisp exe. For example `C:\Program Files\sbcl\`.
 
 -----------------------------------------------------------------------------------------
 
