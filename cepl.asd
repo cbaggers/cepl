@@ -8,6 +8,10 @@
 
 ;;;; cepl.asd
 
+#+(and darwin sbcl)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (sb-int:set-floating-point-modes :traps nil))
+
 (asdf:defsystem #:cepl
   :serial t
   :depends-on (#:cl-autowrap

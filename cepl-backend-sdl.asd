@@ -10,7 +10,7 @@
 
 (asdf:defsystem #:cepl-backend-sdl
   :serial t
-  :depends-on (#:cepl #:sdl2 :sb-cga)
+  :depends-on (#:cepl #:sdl2)
   :components ((:file "backends/sdl/package")
                (:file "backends/sdl/sdl-event-sources")
                (:file "backends/sdl/cepl-sdl")))
