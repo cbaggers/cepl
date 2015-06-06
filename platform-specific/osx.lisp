@@ -6,4 +6,4 @@
                (not (member port-dir cffi:*foreign-library-directories*)))
       (push port-dir cffi:*foreign-library-directories*)
       (sdl2:make-this-thread-main
-       (lambda () (swank:create-server :style nil))))))
+       (lambda () (swank:create-server :style nil :dont-close t))))))
