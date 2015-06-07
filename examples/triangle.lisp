@@ -41,3 +41,7 @@
 
 (evt:observe (evt:|sys|)
   (when (typep e 'evt:will-quit) (stop-loop)))
+
+(evt:observe (evt:|window|)
+  (when (eq (evt:action e) :resized)
+    (setf (viewport-resolution *current-viewport*) (evt:data e))))

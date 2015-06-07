@@ -82,8 +82,7 @@
 
 (defpackage :base-macros
   (:use :cl :cepl-utils)
-  (:export :once-only
-           :apply-across-elements))
+  (:export :once-only))
 
 (defpackage :base-maths
   (:use :cl)
@@ -120,53 +119,49 @@
 (defpackage :vector2
   (:use :cl)
   (:nicknames :v2)
-  (:export :make-vector2 :v+ :v+1 :v- :v-1 :v* :v-eq
-           :v*vec :v/ :v/vec :negate :vlength-squared
-           :vlength :distance-squared :distance :dot
+  (:shadow :eql :+ :- :* :/ :length :zerop)
+  (:export :make-vector2 :+ :- :* :eql
+           :*vec :/ :/vec :negate :length-squared
+           :length :distance-squared :distance :dot
            :absolute-dot :normalize :perp-dot
            :*unit-x* :*unit-y* :*unit-scale*
-           :vzerop :unitp :cross :face-foreward :lerp
+           :zerop :unitp :cross :face-foreward :lerp
            :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
-  (:import-from :base-macros
-                :apply-across-elements)
   (:import-from :base-vectors :v-x :v-y))
 
 (defpackage :vector3
   (:use :cl)
   (:nicknames :v3)
-  (:shadow :incf)
-  (:export :make-vector3 :v+ :v+1 :v- :v-1 :v* :v-eq
-           :v*vec :v/ :v/vec :negate :vlength-squared
-           :vlength :distance-squared :distance :dot
+  (:shadow :incf :eql :+ :- :* :/ :length :zerop)
+  (:export :make-vector3 :eql :+ :- :* :/
+           :*vec :/vec :negate :length-squared
+           :length :distance-squared :distance :dot
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
-           :vzerop :unitp :cross :face-foreward :lerp
+           :zerop :unitp :cross :face-foreward :lerp
            :bezier :spline :incf)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
-  (:import-from :base-macros
-                :apply-across-elements)
   (:import-from :base-vectors :v-x :v-y :v-z))
 
 (defpackage :vector4
   (:use :cl)
   (:nicknames :v4)
-  (:export :make-vector4 :v+ :v+1 :v- :v-1 :v* :v3* :v-eq
-           :v*vec :v/ :v/vec :negate :vlength-squared
-           :vlength :distance-squared :distance :dot
+  (:shadow :eql :+ :- :* :/ :length :zerop)
+  (:export :make-vector4 :+ :- :* :/ :v3* :eql
+           :*vec :/vec :negate :length-squared
+           :length :distance-squared :distance :dot
            :absolute-dot :normalize :cross
            :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*
-           :vzerop :unitp :face-foreward :lerp
+           :zerop :unitp :face-foreward :lerp
            :bezier :spline)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
-  (:import-from :base-macros
-                :apply-across-elements)
   (:import-from :base-vectors :v-x :v-y :v-z :v-w))
 
 (defpackage :vectors
@@ -174,10 +169,10 @@
   (:nicknames :v)
   (:export :v :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
            :/ :length :length-squared :distance :distance-squared
-           :dot :absolute-dot :perp-dot :normalize :cross :eq
+           :dot :absolute-dot :perp-dot :normalize :cross :eql
            :swizzle :s~ :merge-into-vector :negate :face-foreward :lerp
            :mix :bezier :x :y :z :w)
-  (:shadow :zerop :+ :eq := :/= :1+ :1- :- :* :/ :length)
+  (:shadow :zerop :+ :eql := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
   (:import-from :vector3
@@ -188,30 +183,30 @@
 (defpackage :matrix3
   (:use :cl)
   (:nicknames :m3)
+  (:shadow :eql)
   (:export :melm :identity-matrix3 :zero-matrix3
            :make-matrix3 :make-from-rows :get-rows
            :get-row :make-from-columns :get-columns
            :get-column :determinate-cramer :inverse
-           :mzerop :identityp :meql :transpose :adjoint
+           :mzerop :identityp :transpose :adjoint
            :mtrace :rotation-from-euler
            :rotation-from-axis-angle :scale
            :rotation-x :rotation-y :rotation-z
            :get-fixed-angles :get-axis-angle :m+ :m- :negate
-           :m* :m*vec :mcol*vec3 :mrow*vec3 :m*scalar)
+           :m* :m*vec :mcol*vec3 :mrow*vec3 :m*scalar :eql)
   (:import-from :base-maths :float-zero
                 :c-sqrt)
   (:import-from :vector3
                 :make-vector3)
-  (:import-from :base-macros
-                :apply-across-elements)
   (:import-from :base-vectors :v-x :v-y :v-z :v-w))
 
 (defpackage :matrix4
   (:use :cl)
   (:nicknames :m4)
+  (:shadow :eql)
   (:export :melm :identity-matrix4 :zero-matrix4
            :2dclipspace-to-imagespace-matrix4 :make-matrix4
-           :mzerop :identityp :meql :minor :adjoint
+           :mzerop :identityp :minor :adjoint
            :determinant :affine-inverse :transpose
            :translation :rotation-from-matrix3
            :rotation-from-euler :rotation-from-axis-angle
@@ -220,27 +215,25 @@
            :get-axis-angle :m+ :m- :negate :m*scalar
            :mcol*vec4 :mrow*vec4 :m* :transform
            :to-matrix3 :get-row :get-rows :get-column
-           :get-columns)
+           :get-columns :eql)
   (:import-from :base-maths :float-zero
                 :c-sqrt)
   (:import-from :vector3
                 :make-vector3)
   (:import-from :vector4
                 :make-vector4)
-  (:import-from :base-macros
-                :apply-across-elements)
   (:import-from :base-vectors :v-x :v-y :v-z :v-w))
 
 
 (defpackage :matrices
   (:use :cl)
   (:nicknames :m)
-  (:export :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
+  (:export :zerop :unitp :+ :eql := :/= :1+ :1- :- :*
            :identityp :elt :elm :get-rows :get-row
            :get-columns :get-column :determinant
            :inverse :transpose :trace :negate
-           :print-matrix)
-  (:shadow :zerop :unitp :+ :eq := :/= :1+ :1- :- :*
+           :to-string)
+  (:shadow :zerop :unitp :+ :eql := :/= :1+ :1- :- :*
            :elt :trace))
 
 (defpackage :quaternions

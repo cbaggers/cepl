@@ -48,7 +48,7 @@
          (etypecase frame
             ((simple-array single-float (2)) (list (aref frame 0)
                                                    (aref frame 1)))
-            
+
             (cgl:viewport (cgl:viewport-resolution frame))
             (list frame))))
     (setf (slot-value camera 'frame-size) frame))
@@ -72,13 +72,13 @@
 
 (defmethod look-at ((camera pos-dir-cam) point-vec3)
   (with-slots (world-up position direction) camera
-    (setf direction (v3:normalize (v3:v-1 point-vec3 position)))))
+    (setf direction (v3:normalize (v3:- point-vec3 position)))))
 
 (defmethod world->cam ((camera pos-dir-cam))
   (with-slots (world-up position direction) camera
     (let* ((up (v3:normalize
-                (v3:v-1 world-up
-                        (v3:v* direction (v3:dot world-up direction)))))
+                (v3:- world-up
+                        (v3:* direction (v3:dot world-up direction)))))
            (side (v3:cross direction up))
            (rotate (m3:make-from-rows side up (v3:negate direction)))
            (eye-inv (v3:negate (m3:mcol*vec3 rotate position)))
@@ -125,7 +125,7 @@
           (etypecase frame
             ((simple-array single-float (2)) (list (aref frame 0)
                                                    (aref frame 1)))
-            
+
             (cgl:viewport (cgl:viewport-resolution frame))
             (list frame)))
          (camera (make-instance 'pos-dir-cam

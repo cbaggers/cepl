@@ -297,7 +297,7 @@
               ,@(loop :for x :in (second eq-spec) :collect
                    `(setf (,(first x) ,local-var)
                           ,(subst arg-name '% (second x)
-                                  :test (lambda (_)
+                                  :test (lambda (_ _1)
                                           (when (symbolp _1)
                                             (string-equal _ _1))))))))))
     (make-assigner

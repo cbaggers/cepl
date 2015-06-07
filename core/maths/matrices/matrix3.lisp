@@ -6,9 +6,9 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-;; This is the 3x3 matrix functionality. 
+;; This is the 3x3 matrix functionality.
 ;; There will be a generic function-set to make this as easy
-;; as possible for people writing the games but this will 
+;; as possible for people writing the games but this will
 ;; be in a seperate package (prehaps the base-maths one)
 
 (in-package :matrix3)
@@ -18,17 +18,17 @@
 ;;   RX =    1       0       0
 ;;           0     cos(t) -sin(t)
 ;;           0     sin(t)  cos(t)
-;; where t > 0 indicates a counterclockwise rotation in the 
+;; where t > 0 indicates a counterclockwise rotation in the
 ;; yz-plane
 ;;   RY =  cos(t)    0     sin(t)
 ;;           0       1       0
 ;;        -sin(t)    0     cos(t)
-;; where t > 0 indicates a counterclockwise rotation in the 
+;; where t > 0 indicates a counterclockwise rotation in the
 ;; zx-plane
 ;;   RZ =  cos(t) -sin(t)    0
 ;;         sin(t)  cos(t)    0
 ;;           0       0       1
-;; where t > 0 indicates a counterclockwise rotation in the 
+;; where t > 0 indicates a counterclockwise rotation in the
 ;; xy-plane.
 
 ;; All matrices are stored in column-major format, but these functions
@@ -37,13 +37,13 @@
 
 
 (declaim (inline melm)
-	 (ftype (function ((simple-array single-float (9)) (integer 0 3) (integer 0 3)) 
-                      single-float) 
+	 (ftype (function ((simple-array single-float (9)) (integer 0 3) (integer 0 3))
+                      single-float)
 		melm))
 (defun melm (mat-a row col)
   "Provides access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in
-   column major order, but this abstraction means we only have 
+   column major order, but this abstraction means we only have
    to think in row major order which is how most mathematical
    texts and online tutorials choose to show matrices"
   (declare ((simple-array single-float (9)) mat-a)
@@ -53,7 +53,7 @@
 (defun (setf melm) (value mat-a row col)
   "Provides access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in
-   column major order, but this abstraction means we only have 
+   column major order, but this abstraction means we only have
    to think in row major order which is how most mathematical
    texts and online tutorials choose to show matrices"
   (declare ((simple-array single-float (9)) mat-a)
@@ -64,10 +64,10 @@
 (define-compiler-macro melm (mat-a row col)
   "Provide access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in
-   column major order, but this abstraction means we only have 
+   column major order, but this abstraction means we only have
    to think in row major order which is how most mathematical
    texts and online tutorials choose to show matrices"
-  (cond ((and (numberp row) (numberp col)) 
+  (cond ((and (numberp row) (numberp col))
          `(aref ,mat-a ,(+ row (* col 3))))
         ((numberp col)
          `(aref ,mat-a (+ ,row ,(* col 3))))
@@ -82,8 +82,8 @@
 (defun identity-matrix3 ()
   "Return a 3x3 identity matrix"
   (make-matrix3
-   1.0 0.0 0.0 
-   0.0 1.0 0.0 
+   1.0 0.0 0.0
+   0.0 1.0 0.0
    0.0 0.0 1.0))
 
 (declaim
@@ -101,7 +101,7 @@
  (ftype (function
          (single-float single-float single-float
                        single-float single-float single-float
-                       single-float single-float single-float) 
+                       single-float single-float single-float)
          (simple-array single-float (9)))
         make-matrix3))
 (defun make-matrix3 ( a b c d e f g h i )
@@ -131,7 +131,7 @@
   "Make a 3x3 matrix using the data in the 3 vector3s provided
    to populate the rows"
   (declare ((simple-array single-float (3)) row-1 row-2 row-3))
-  (make-matrix3 (v-x row-1) (v-y row-1) (v-z row-1) 
+  (make-matrix3 (v-x row-1) (v-y row-1) (v-z row-1)
                 (v-x row-2) (v-y row-2)	(v-z row-2)
                 (v-x row-3) (v-y row-3) (v-z row-3)))
 
@@ -180,7 +180,7 @@
   (declare ((simple-array single-float (3)) col-1 col-2 col-3))
   (make-matrix3 (v-x col-1)
                 (v-x col-2)
-                (v-x col-3) 
+                (v-x col-3)
                 (v-y col-1)
                 (v-y col-2)
                 (v-y col-3)
@@ -227,7 +227,7 @@
                   boolean)
         mzerop))
 (defun mzerop (mat-a)
-  "Returns 't' if this is a zero matrix (as contents of the 
+  "Returns 't' if this is a zero matrix (as contents of the
    matrix are floats the values have an error bound as defined
    in base-maths"
   (declare ((simple-array single-float (9)) mat-a))
@@ -245,7 +245,7 @@
                   boolean)
         identityp))
 (defun identityp (mat-a)
-  "Returns 't' if this is an identity matrix (as contents of the 
+  "Returns 't' if this is an identity matrix (as contents of the
    matrix are floats the values have an error bound as defined
    in base-maths"
   (declare ((simple-array single-float (9)) mat-a))
@@ -262,12 +262,12 @@
 ;;----------------------------------------------------------------
 
 (declaim
- (inline meql)
+ (inline eql)
  (ftype (function ((simple-array single-float (9)) (simple-array single-float (9)))
                   boolean)
-        meql))
-(defun meql (mat-a mat-b)
-  "Returns t if all elements of both matrices provided are 
+        eql))
+(defun eql (mat-a mat-b)
+  "Returns t if all elements of both matrices provided are
    equal"
   (declare ((simple-array single-float (9)) mat-a mat-b))
   (loop :for i :below 9 :always (= (aref mat-a i) (aref mat-b i))))
@@ -313,7 +313,7 @@
     (if (float-zero det)
         (error "Matrix Inverse: Singular Matrix (determinate is 0)"))
     (let ((inv-det (/ 1.0 det)))
-      (make-matrix3 
+      (make-matrix3
        (* inv-det cofactor-0)
        (* inv-det cofactor-3)
        (* inv-det cofactor-6)
@@ -340,7 +340,7 @@
 (defun transpose (mat-a)
   "Returns the transpose of the provided matrix"
   (declare ((simple-array single-float (9))))
-  (make-matrix3 
+  (make-matrix3
    (melm mat-a 0 0) (melm mat-a 1 0) (melm mat-a 2 0)
    (melm mat-a 0 1) (melm mat-a 1 1) (melm mat-a 2 1)
    (melm mat-a 0 2) (melm mat-a 1 2) (melm mat-a 2 2)))
@@ -429,7 +429,7 @@
          (sy (* s-a (v-y norm-axis)))
          (sz (* s-a (v-z norm-axis)))
          (txy (* tx (v-y norm-axis)))
-         (tyz (* ty (v-z norm-axis))) 
+         (tyz (* ty (v-z norm-axis)))
          (txz (* tx (v-z norm-axis))))
     (make-matrix3
      (+ c-a (* tx (v-x norm-axis)))  (- txy sz)                      (+ txz sy)
@@ -537,7 +537,7 @@
                   (simple-array single-float (3)))
         get-axis-angle))
 (defun get-axis-angle (mat-a)
-  "Gets one possible axis-angle pair that will generate this 
+  "Gets one possible axis-angle pair that will generate this
    matrix. Assumes that this is a rotation matrix"
   (declare ((simple-array single-float (9)) mat-a))
   (let* ((c-a (* 0.5 (- (mtrace mat-a) 1.0)))
@@ -546,7 +546,7 @@
            (make-vector3 1.0 0.0 0.0))
           ((< angle (- base-maths:+pi+ base-maths:+float-threshold+))
                                         ;its not 180 degrees
-           (let ((axis (make-vector3 
+           (let ((axis (make-vector3
                         (- (melm mat-a 1 2) (melm mat-a 2 1))
                         (- (melm mat-a 2 0) (melm mat-a 0 2))
                         (- (melm mat-a 0 1) (melm mat-a 1 0)))))
@@ -622,7 +622,7 @@
 ;;----------------------------------------------------------------
 
 (defun mcol*vec3 (mat-a vec)
-  (make-vector3 
+  (make-vector3
    (+ (* (v-x vec) (melm mat-a 0 0)) (* (v-y vec) (melm mat-a 0 1))
       (* (v-z vec) (melm mat-a 0 2)))
 
@@ -635,7 +635,7 @@
 ;----------------------------------------------------------------
 
 (defun mrow*vec3 (vec mat-a)
-  (make-vector3 
+  (make-vector3
    (+ (* (v-x vec) (melm mat-a 0 0)) (* (v-y vec) (melm mat-a 1 0))
       (* (v-z vec) (melm mat-a 2 0)))
 
@@ -647,7 +647,7 @@
 
 ;----------------------------------------------------------------
 (defun m* (mat-a mat-b)
-  "Multiplies 2 matrices and returns the result as a new 
+  "Multiplies 2 matrices and returns the result as a new
    matrix"
   (make-matrix3 (+ (* (melm mat-a 0 0) (melm mat-b 0 0))
                    (* (melm mat-a 0 1) (melm mat-b 1 0))
@@ -696,7 +696,7 @@
 ;;----------------------------------------------------------------
 
 (defun m*scalar (mat-a scalar)
-  "Multiplies the components of the matrix by the scalar 
+  "Multiplies the components of the matrix by the scalar
    provided"
   (let ((result (zero-matrix3)))
     (loop for i below 9

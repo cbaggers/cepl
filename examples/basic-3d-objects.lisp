@@ -65,7 +65,6 @@
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (render-widgets nil :cam *camera*)
   (map nil #'update-entity *entities*)
-  (gl:flush)
   (update-display))
 
 (defun reshape (dimensions)

@@ -27,7 +27,6 @@
   (loop :for i :below 37 :do
      (let ((i (/ i 2.0)))
        (map-g #'prog-1 *vertex-stream* :i i :loop *loop*)))
-  (gl:flush)
   (update-display))
 
 (let ((running nil))

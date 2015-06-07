@@ -82,9 +82,9 @@
   "Returns t if the vector is of zero length"
   (let ((vec-a (floatify vec-a)))
     (case (cl:length vec-a)
-      (2 (v2:vzerop vec-a))
-      (3 (v3:vzerop vec-a))
-      (4 (v4:vzerop vec-a)))))
+      (2 (v2:zerop vec-a))
+      (3 (v3:zerop vec-a))
+      (4 (v4:zerop vec-a)))))
 
 ;;----------------------------------------------------------------
 
@@ -97,13 +97,13 @@
 
 ;;----------------------------------------------------------------
 
-(defun eq (vec-a vec-b)
+(defun eql (vec-a vec-b)
   (let ((vec-a (floatify vec-a))
         (vec-b (floatify vec-b)))
     (case (cl:length vec-a)
-      (2 (v2:v-eq vec-a vec-b))
-      (3 (v3:v-eq vec-a vec-b))
-      (4 (v4:v-eq vec-a vec-b)))))
+      (2 (v2:eql vec-a vec-b))
+      (3 (v3:eql vec-a vec-b))
+      (4 (v4:eql vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
@@ -112,7 +112,7 @@
    Otherwise it returns nil."
   (let ((vec-a (first vecs)))
     (loop :for vec :in (cdr vecs)
-       :when (not (v:eq vec vec-a)) :do (return nil)
+       :when (not (v:eql vec vec-a)) :do (return nil)
        :finally (return t))))
 
 ;;----------------------------------------------------------------
@@ -122,48 +122,26 @@
    Otherwise it returns nil."
   (let ((vec-a (first vecs)))
     (loop :for vec :in (cdr vecs)
-       :when (eq vec-a vec) :do (return nil)
+       :when (eql vec-a vec) :do (return nil)
        :finally (return t))))
-
-;;----------------------------------------------------------------
-
-(defun 1+ (vec-a vec-b)
-  "Adds two vectors together and returns the result as a new vector of the same type"
-  (let ((vec-a (floatify vec-a))
-        (vec-b (floatify vec-b)))
-    (case (cl:length vec-a)
-      (2 (v2:v+1 vec-a vec-b))
-      (3 (v3:v+1 vec-a vec-b))
-      (4 (v4:v+1 vec-a vec-b)))))
-
-;;----------------------------------------------------------------
-
-(defun 1- (vec-a vec-b)
-  "Adds two vectors together and returns the result as a new vector of the same type"
-  (let ((vec-a (floatify vec-a))
-        (vec-b (floatify vec-b)))
-    (case (cl:length vec-a)
-      (2 (v2:v-1 vec-a vec-b))
-      (3 (v3:v-1 vec-a vec-b))
-      (4 (v4:v-1 vec-a vec-b)))))
 
 ;;----------------------------------------------------------------
 
 (defun + (&rest vecs)
   (let ((vecs (mapcar #'floatify vecs)))
     (case (cl:length (first vecs))
-      (2 (apply #'v2:v+ vecs))
-      (3 (apply #'v3:v+ vecs))
-      (4 (apply #'v4:v+ vecs)))))
+      (2 (apply #'v2:+ vecs))
+      (3 (apply #'v3:+ vecs))
+      (4 (apply #'v4:+ vecs)))))
 
 ;;----------------------------------------------------------------
 
 (defun - (&rest vecs)
   (let ((vecs (mapcar #'floatify vecs)))
     (case (cl:length (first vecs))
-      (2 (apply #'v2:v- vecs))
-      (3 (apply #'v3:v- vecs))
-      (4 (apply #'v4:v- vecs)))))
+      (2 (apply #'v2:- vecs))
+      (3 (apply #'v3:- vecs))
+      (4 (apply #'v4:- vecs)))))
 
 ;;----------------------------------------------------------------
 
@@ -171,9 +149,9 @@
   "Adds two vectors together and returns the result as a new vector of the same type"
   (let ((vec-a (floatify vec-a)))
     (case (cl:length vec-a)
-      (2 (v2:v*vec vec-a scalar-or-vec))
-      (3 (v3:v*vec vec-a scalar-or-vec))
-      (4 (v4:v*vec vec-a scalar-or-vec)))))
+      (2 (v2:*vec vec-a scalar-or-vec))
+      (3 (v3:*vec vec-a scalar-or-vec))
+      (4 (v4:*vec vec-a scalar-or-vec)))))
 
 ;;----------------------------------------------------------------
 
@@ -182,32 +160,32 @@
     (if (typep scalar-or-vec 'number)
         (let ((scalar (float scalar-or-vec)))
           (case (cl:length vec-a)
-            (2 (v2:v/ vec-a scalar))
-            (3 (v3:v/ vec-a scalar))
-            (4 (v4:v/ vec-a scalar))))
+            (2 (v2:/ vec-a scalar))
+            (3 (v3:/ vec-a scalar))
+            (4 (v4:/ vec-a scalar))))
         (let ((vec-b (floatify scalar-or-vec)))
           (case (cl:length vec-a)
-            (2 (v2:v/vec vec-a vec-b))
-            (3 (v3:v/vec vec-a vec-b))
-            (4 (v4:v/vec vec-a vec-b)))))))
+            (2 (v2:/vec vec-a vec-b))
+            (3 (v3:/vec vec-a vec-b))
+            (4 (v4:/vec vec-a vec-b)))))))
 
 ;;----------------------------------------------------------------
 
 (defun length (vec-a)
   (let ((vec-a (floatify vec-a)))
     (case (cl:length vec-a)
-      (2 (v2:vlength vec-a))
-      (3 (v3:vlength vec-a))
-      (4 (v4:vlength vec-a)))))
+      (2 (v2:length vec-a))
+      (3 (v3:length vec-a))
+      (4 (v4:length vec-a)))))
 
 ;;----------------------------------------------------------------
 
 (defun length-squared (vec-a)
   (let ((vec-a (floatify vec-a)))
     (case (cl:length vec-a)
-     (2 (v2:vlength-squared vec-a))
-     (3 (v3:vlength-squared vec-a))
-     (4 (v4:vlength-squared vec-a)))))
+     (2 (v2:length-squared vec-a))
+     (3 (v3:length-squared vec-a))
+     (4 (v4:length-squared vec-a)))))
 
 ;;----------------------------------------------------------------
 

@@ -46,7 +46,7 @@
 (evt:observe (evt:|mouse|)
   (when (typep e 'evt:mouse-motion)
     (let ((d (evt:delta e)))
-      (setf mouse-ang (v2:v+ (v! (/ (v:x d) -150.0)
+      (setf mouse-ang (v2:+ (v! (/ (v:x d) -150.0)
                                  (/ (v:y d) -150.0))
                              mouse-ang)
             (dir cam) (v! (sin (v:x mouse-ang))

@@ -26,16 +26,10 @@
 
 (defun-g thing2 ((p :vec3) (r :float) (l :float))
   (+ (* 0.2 (+ (y p)
-               (mod (cos (+ (* (+ (cos l) 8.0)
-                               (* 2 (x p))) l))
-                    (* 3 (sin l)))))
+               (cos (+ (* (+ (cos l) 8.0)
+                          (* 2 (x p))) l))
+               (* 3 (sin (* 3 l)))))
      (- (length p) r)))
-
-(defun-g ok ((p :vec3) (r :float) (l :float))
-  (+ (min (- (length (+ (v! 0.8 0 0) p)) r)
-          (- (length (+ (v! -0.8 0 0) p)) r))
-     (let ((n (sin (+ l (* 4 (x p))))))
-       (* n n n))))
 
 (defun-g ray-vert ((position :vec4))
   (values position
@@ -47,9 +41,9 @@
          (e eye-pos)
          (output (v! 0.0 0.0 0.0)))
     (for (i 0) (< i 20) (++ i)
-         (let ((d (ok e 1.4 loop)))
+         (let ((d (thing2 e 1.4 loop)))
            (if (<= d 0.0)
-               (let ((norm (density-normal (ok e 1.4 loop) 0)))
+               (let ((norm (density-normal (thing2 e 1.4 loop) 0)))
                  (setf output (v! (+ 0.3 (* 0.5 (y norm)))
                                   0.0
                                   (+ 0.5 (* 0.2 (mix (y norm) (x norm)
@@ -77,6 +71,9 @@
   (defun stop-loop () (setf running nil)))
 
 (evt:observe (|sys|) (when (typep e 'evt:will-quit) (stop-loop)))
+(evt:observe (|window|)
+  (when (eq (evt:action e) :resized)
+    (setf (viewport-resolution *current-viewport*) (evt:data e))))
 
 (defun draw ()
   (evt:pump-events)
@@ -84,5 +81,4 @@
   (setf *loop* (+ 0.01 *loop*))
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (map-g #'raymarcher *vertex-stream* :loop *loop* :eye-pos (v! 0 0 -5))
-  (gl:flush)
   (update-display))

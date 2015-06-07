@@ -46,8 +46,8 @@
                       (m4:rotation-from-matrix3
                        (m3:make-from-rows right-dir
                                           perp-up-dir
-                                          (v3:v-1 (v! 0 0 0) look-dir)))))
-         (trans-matrix (m4:translation (v3:v-1 (v! 0 0 0) (pos camera)))))
+                                          (v3:- (v! 0 0 0) look-dir)))))
+         (trans-matrix (m4:translation (v3:- (v! 0 0 0) (pos camera)))))
     (m4:m* rot-matrix trans-matrix)))
 
 (defun resolve-cam-position (sphere-cam-rel-pos cam-target)
@@ -57,7 +57,7 @@
          (dir-to-cam (v! (* sin-theta (cos phi))
                          (cos theta)
                          (* sin-theta (sin phi)))))
-    (v3:v+ cam-target (v3:v* dir-to-cam (v-z sphere-cam-rel-pos)))))
+    (v3:+ cam-target (v3:* dir-to-cam (v-z sphere-cam-rel-pos)))))
 
 (defun init ()
   (setf *camera* (make-instance 'camera :pos (v! 0 9 0)))

@@ -34,11 +34,11 @@
       (push-g
        (loop :for v :in verts :collect
          (if has-normals
-             (append (list (v3:v* (v3:v+1 (first v) translation)
+             (append (list (v3:* (v3:+ (first v) translation)
                                   linear-scale)
                            (transform-normal (second v)))
                      (subseq v 2))
-             (cons (v3:v* (v3:v+1 (first v) translation) linear-scale)
+             (cons (v3:* (v3:+ (first v) translation) linear-scale)
                    (subseq v 1))))
        (vertices mesh))
       mesh)))

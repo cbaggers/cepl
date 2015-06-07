@@ -8,7 +8,7 @@
 
 ;;; This package is for all the quaternion math functions
 
-;;; [TODO] NEED TO GO THROUGH ALL OF THIS AND DOUBLE CHECK 
+;;; [TODO] NEED TO GO THROUGH ALL OF THIS AND DOUBLE CHECK
 ;;;        THE SQRT v INV-SQRT AS I HAVE A FEW WRONG
 
 (in-package #:quaternions)
@@ -19,7 +19,7 @@
 ;----------------------------------------------------------------
 
 (defun w (quat)
-  "Returns the w component of the quaternion"  
+  "Returns the w component of the quaternion"
   (aref quat 0))
 
 (defun x (quat)
@@ -58,29 +58,29 @@
 
 ;;[TODO] base quaternions? what about q:* like v:*
 (declaim (inline q!)
-         (ftype (function ((single-float) (single-float) 
-                           (single-float) (single-float)) 
-                          (simple-array single-float (4))) 
+         (ftype (function ((single-float) (single-float)
+                           (single-float) (single-float))
+                          (simple-array single-float (4)))
                 q!))
 (defun q! (w x y z)
   "This takes 4 floats and give back a vector4, this is just an
-   array but it specifies the array type and populates it. 
-   For speed reasons it will not accept integers so make sure 
+   array but it specifies the array type and populates it.
+   For speed reasons it will not accept integers so make sure
    you hand it floats."
   (declare (single-float x y z w))
   (make-quat w x y z))
 
 (declaim (inline make-quat)
-         (ftype (function ((single-float) 
-                           (single-float) 
+         (ftype (function ((single-float)
                            (single-float)
-                           (single-float)) 
-                          (simple-array single-float (4))) 
+                           (single-float)
+                           (single-float))
+                          (simple-array single-float (4)))
                 make-quat))
 (defun make-quat (w x y z)
   "This takes 4 floats and give back a vector4, this is just an
-   array but it specifies the array type and populates it. 
-   For speed reasons it will not accept integers so make sure 
+   array but it specifies the array type and populates it.
+   For speed reasons it will not accept integers so make sure
    you hand it floats."
   (declare (single-float x y z w))
   (let ((q (make-array 4 :element-type `single-float)))
@@ -96,9 +96,9 @@
 (defun make-quat-from-rotation-matrix3 (mat3)
   (let ((trace (m3:mtrace mat3)))
     (if (> trace 0.0)
-        (let* ((s (c-sqrt (+ 1.0 trace)))               
+        (let* ((s (c-sqrt (+ 1.0 trace)))
                (recip (/ 0.5 s)))
-          (make-quat (* s 0.5) 
+          (make-quat (* s 0.5)
                      (* (- (m3:melm mat3 2 1) (m3:melm mat3 1 2)) recip)
                      (* (- (m3:melm mat3 0 2) (m3:melm mat3 2 0)) recip)
                      (* (- (m3:melm mat3 1 0) (m3:melm mat3 0 1)) recip)))
@@ -108,11 +108,11 @@
                (k (mod (+ 1 j) 3))
                (s (c-sqrt (+ (- (m3:melm mat3 i i)
                                 (m3:melm mat3 j j)
-                                (m3:melm mat3 k k)) 
+                                (m3:melm mat3 k k))
                              1.0)))
                (recip (/ 0.5 s))
-               (quat (make-quat (* (- (m3:melm mat3 k j) 
-                                      (m3:melm mat3 j k)) 
+               (quat (make-quat (* (- (m3:melm mat3 k j)
+                                      (m3:melm mat3 j k))
                                    recip) 0.0 0.0 0.0)))
           (setf (aref quat i) (* s 0.5)
                 (aref quat j) (* (+ (m3:melm mat3 j i) (m3:melm mat3 i j))
@@ -121,7 +121,7 @@
                                  recip))))))
 
 (defun make-quat-from-axis-angle (axis-vec3 angle)
-  (let ((length (v3:vlength-squared axis-vec3)))
+  (let ((length (v3:length-squared axis-vec3)))
     (if (float-zero length)
         (identity-quat)
         (let* ((half-angle (/ angle 2.0))
@@ -133,13 +133,13 @@
                            (* scale-factor (aref axis-vec3 1))
                            (* scale-factor (aref axis-vec3 2)))))))
 
-;;[TODO] Need to use destructive operations in here to stop multiple quats 
+;;[TODO] Need to use destructive operations in here to stop multiple quats
 ;;       being created
 (defun make-quat-from-vectors (from3 to3)
   (let* ((axis (v3:cross from3 to3))
          (quat (normalize (make-quat (v3:dot from3 to3) (aref axis 0) (aref axis 1)
                                      (aref axis 2))))
-         (w (+ 1.0 (aref quat 0))))    
+         (w (+ 1.0 (aref quat 0))))
     (if (<= w +float-threshold+)
         (if (> (* (aref from3 2) (aref from3 2))
                (* (aref from3 0) (aref from3 0)))
@@ -187,13 +187,13 @@
   (make-quat (w quat) (x quat) (y quat) (z quat)))
 
 (defun get-axis-angle (quat)
-  (list 
+  (list
    (let ((length (c-sqrt (- 1.0 (* (w quat) (w quat))))))
      (if (float-zero length)
          (v3:make-vector3 0.0 0.0 0.0)
          (let ((length (/ 1.0 length)))
-           (v3:make-vector3 (* length (x quat)) 
-                            (* length (y quat)) 
+           (v3:make-vector3 (* length (x quat))
+                            (* length (y quat))
                             (* length (z quat))))))
    (* 2.0 (acos (w quat)))))
 
@@ -221,19 +221,19 @@
                      (- (* norm-recip (z quat))))))))
 
 (defun q+1 (quat-a quat-b)
-  (v4:v+1 quat-a quat-b))
+  (v4:+ quat-a quat-b))
 
 (defun q+ (&rest quats)
-  (apply #'v4:v+ quats))
+  (apply #'v4:+ quats))
 
 (defun q-1 (quat-a quat-b)
-  (v4:v-1 quat-a quat-b))
+  (v4:- quat-a quat-b))
 
 (defun q- (&rest quats)
-  (apply v4:v- quats))
+  (apply v4:- quats))
 
 (defun q* (quat-a scalar)
-  (v4:v* quat-a scalar))
+  (v4:* quat-a scalar))
 
 (defun q*quat (quat-a quat-b)
   (make-quat (- (* (w quat-a) (w quat-b))
@@ -260,7 +260,7 @@
             (xx (* x x2))  (xy (* x y2))  (xz (* x z2))
             (yy (* y y2))  (yz (* y z2))
             (zz (* z z2)))
-        (m3:make-matrix3 
+        (m3:make-matrix3
          (- 1.0 (+ yy zz)) (- xy wz)         (+ xz wy)
          (+ xy wz)         (- 1.0 (+ xx zz)) (- yz wx)
          (- xz wy)         (+ yz wx)         (- 1.0 (+ xx yy)))))))
@@ -291,17 +291,17 @@
          (p-mult (- (* cross-mult (w quat)) 1.0)))
     (v3:make-vector3 (+ (* p-mult (aref vec3 0))
                         (* v-mult (x quat))
-                        (* cross-mult 
+                        (* cross-mult
                            (- (* (y quat) (aref vec3 2))
                               (* (z quat) (aref vec3 1)))))
                      (+ (* p-mult (aref vec3 1))
                         (* v-mult (y quat))
-                        (* cross-mult 
+                        (* cross-mult
                            (- (* (z quat) (aref vec3 0))
                               (* (x quat) (aref vec3 2)))))
                      (+ (* p-mult (aref vec3 2))
                         (* v-mult (z quat))
-                        (* cross-mult 
+                        (* cross-mult
                            (- (* (x quat) (aref vec3 1))
                               (* (y quat) (aref vec3 0))))))))
 
@@ -329,7 +329,7 @@
             (if (float-greater-than-zero (- 1.0 cos-angle))
                 (let* ((angle (acos cos-angle))
                        (recip-sin-angle (/ 1.0 (sin angle))))
-                  (list (* (sin (* (- 1.0 pos) angle)) 
+                  (list (* (sin (* (- 1.0 pos) angle))
                            recip-sin-angle)
                         (* (sin (* pos angle))
                            recip-sin-angle)))
@@ -340,7 +340,7 @@
             (if (float-greater-than-zero (+ 1.0 cos-angle))
                 (let* ((angle (acos (- cos-angle)))
                        (recip-sin-angle (/ 1.0 (sin angle))))
-                  (list (* (sin (* (- pos 1.0) angle)) 
+                  (list (* (sin (* (- pos 1.0) angle))
                            recip-sin-angle)
                         (* (sin (* pos angle))
                            recip-sin-angle)))

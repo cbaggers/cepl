@@ -6,9 +6,9 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-;; This is the 4x4 matrix functionality. 
+;; This is the 4x4 matrix functionality.
 ;; There will be a generic function-set to make this as easy
-;; as possible for people writing the games but this will 
+;; as possible for people writing the games but this will
 ;; be in a seperate package (prehaps the base-maths one)
 
 (in-package :matrix4)
@@ -16,13 +16,13 @@
 ;----------------------------------------------------------------
 
 (declaim (inline melm)
-	 (ftype (function ((simple-array single-float (16)) (integer 0 4) (integer 0 4)) 
-                      (single-float)) 
+	 (ftype (function ((simple-array single-float (16)) (integer 0 4) (integer 0 4))
+                      (single-float))
 		melm))
 (defun melm (mat-a row col)
   "Provides access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in
-   column major order, but this abstraction means we only have 
+   column major order, but this abstraction means we only have
    to think in row major order which is how most mathematical
    texts and online tutorials choose to show matrices"
   (declare ((simple-array single-float (16)) mat-a)
@@ -32,7 +32,7 @@
 (defun (setf melm) (value mat-a row col)
   "Provides access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in
-   column major order, but this abstraction means we only have 
+   column major order, but this abstraction means we only have
    to think in row major order which is how most mathematical
    texts and online tutorials choose to show matrices"
   (declare ((simple-array single-float (16)) mat-a)
@@ -43,10 +43,10 @@
 (define-compiler-macro melm (mat-a row col)
   "Provide access to data in the matrix by row
    and column number. The actual data is stored in a 1d list in
-   column major order, but this abstraction means we only have 
+   column major order, but this abstraction means we only have
    to think in row major order which is how most mathematical
    texts and online tutorials choose to show matrices"
-  (cond ((and (numberp row) (numberp col)) 
+  (cond ((and (numberp row) (numberp col))
          `(aref ,mat-a ,(+ row (* col 4))))
         ((numberp col)
          `(aref ,mat-a (+ ,row ,(* col 4))))
@@ -55,8 +55,8 @@
 ;----------------------------------------------------------------
 
 (declaim (inline identity-matrix4)
-	 (ftype (function () 
-                      (simple-array single-float (16))) 
+	 (ftype (function ()
+                      (simple-array single-float (16)))
 		identity-matrix4))
 (defun identity-matrix4 ()
   "Return a 4x4 identity matrix"
@@ -79,7 +79,7 @@
          (single-float single-float single-float single-float
                        single-float single-float single-float single-float
                        single-float single-float single-float single-float
-                       single-float single-float single-float single-float) 
+                       single-float single-float single-float single-float)
          (simple-array single-float (16)))
         make-matrix4))
 (defun make-matrix4 (a b c d e f g h i j k l m n o p)
@@ -87,7 +87,7 @@
   (declare (single-float a b c d e f g h i j k l m n o p))
   ;; as you can see it is stored in column major order
   (make-array 16 :element-type 'single-float
-              :initial-contents (list a e i m 
+              :initial-contents (list a e i m
                                       b f j n
                                       c g k o
                                       d h l p)))
@@ -97,7 +97,7 @@
 (declaim
  (inline to-matrix3)
  (ftype (function
-         ((simple-array single-float (16))) 
+         ((simple-array single-float (16)))
          (simple-array single-float (9)))
         to-matrix3))
 (defun to-matrix3 (mat4)
@@ -110,7 +110,7 @@
 (defun make-from-rows (row-1 row-2 row-3 row-4)
   "Make a 4x4 matrix using the data in the 4 vector4s provided
    to populate the rows"
-  (make-matrix4 (v-x row-1) (v-y row-1) (v-z row-1) (v-w row-1) 
+  (make-matrix4 (v-x row-1) (v-y row-1) (v-z row-1) (v-w row-1)
                 (v-x row-2) (v-y row-2)	(v-z row-2) (v-w row-2)
                 (v-x row-3) (v-y row-3) (v-z row-3) (v-w row-3)
                 (v-x row-4) (v-y row-4) (v-z row-4) (v-w row-4)))
@@ -201,7 +201,7 @@
 ;----------------------------------------------------------------
 
 (defun mzerop (mat-a)
-  "Returns 't' if this is a zero matrix (as contents of the 
+  "Returns 't' if this is a zero matrix (as contents of the
    matrix are floats the values have an error bound as defined
    in base-maths"
   (loop for i below 16
@@ -213,7 +213,7 @@
 
 ;[TODO] should the checks for '1.0' also have the error bounds?
 (defun identityp (mat-a)
-  "Returns 't' if this is an identity matrix (as contents of the 
+  "Returns 't' if this is an identity matrix (as contents of the
    matrix are floats the values have an error bound as defined
    in base-maths"
   (and (float-zero (- (melm mat-a 0 0) 1.0))
@@ -235,10 +235,10 @@
 
 ;----------------------------------------------------------------
 
-(defun meql (mat-a mat-b)
-  "Returns t if all elements of both matrices provided are 
+(defun eql (mat-a mat-b)
+  "Returns t if all elements of both matrices provided are
    equal"
-  (loop for i 
+  (loop for i
      below 16
      if (/= (aref mat-a i) (aref mat-b i))
      do (return nil)
@@ -246,15 +246,15 @@
 
 ;----------------------------------------------------------------
 
-;; Ok so the determinant is of an element in the matrix is the 
-;; value of that element multiplied by the determinant of the 
+;; Ok so the determinant is of an element in the matrix is the
+;; value of that element multiplied by the determinant of the
 ;; submatrix formed when you remove the row and column the element
 ;; lie in.
 ;; The minor is the 'determinant of the submatrix' mentioned above
 ;; If you create a matrix B from Matrix A where evey element in
 ;; B is the minor of the corrosponding element in A then
-;; Matrix B is the matrix of cofactors. 
-;; If Matrix B is tranposed then the new Matrix (we will call 
+;; Matrix B is the matrix of cofactors.
+;; If Matrix B is tranposed then the new Matrix (we will call
 ;; Matrix C) is known as the adjoint matrix
 ;; The Inverse of a matrix can be calculated as:
 ;; (* (adjoint matrix-a) (/ 1.0 (determinant matrix-a)))
@@ -262,15 +262,15 @@
 ;; for 3x3 and 4x4 matrices. Thus we can use it for games.
 
 (defun minor (mat-a row-0 row-1 row-2 col-0 col-1 col-2)
-  (+ (* (melm mat-a row-0 col-0) 
+  (+ (* (melm mat-a row-0 col-0)
         (- (* (melm mat-a row-1 col-1) (melm mat-a row-2 col-2))
            (* (melm mat-a row-2 col-1) (melm mat-a row-1 col-2))))
 
-     (* (melm mat-a row-0 col-2) 
+     (* (melm mat-a row-0 col-2)
         (- (* (melm mat-a row-1 col-0) (melm mat-a row-2 col-1))
            (* (melm mat-a row-2 col-0) (melm mat-a row-1 col-1))))
 
-     (- (* (melm mat-a row-0 col-1) 
+     (- (* (melm mat-a row-0 col-1)
            (- (* (melm mat-a row-1 col-0) (melm mat-a row-2 col-2))
               (* (melm mat-a row-2 col-0) (melm mat-a row-1 col-2)))))))
 
@@ -324,12 +324,12 @@
          (det (+ (* (melm mat-a 0 0) cofac-0)
                  (* (melm mat-a 0 1) cofac-4)
                  (* (melm mat-a 0 2) cofac-8))))
-    (if 
+    (if
      (float-zero det)
      (error "Matrix4 Inverse: Singular Matrix")
-     (let* 
+     (let*
          ((inv-det (/ 1.0 det))
-          (r00 (* inv-det cofac-0)) 
+          (r00 (* inv-det cofac-0))
           (r10 (* inv-det cofac-0))
           (r20 (* inv-det cofac-0))
           (r01 (* inv-det (- (* (melm mat-a 2 1) (melm mat-a 0 2))
@@ -345,18 +345,18 @@
           (r22 (* inv-det (- (* (melm mat-a 0 0) (melm mat-a 1 1))
                              (* (melm mat-a 1 0) (melm mat-a 0 1)))))
           )
-       (make-matrix4 r00 r01 r02 
-                     (- 0.0 
+       (make-matrix4 r00 r01 r02
+                     (- 0.0
                         (* (melm mat-a 0 0) (melm mat-a 0 3))
                         (* (melm mat-a 0 1) (melm mat-a 1 3))
                         (* (melm mat-a 0 2) (melm mat-a 2 3)))
-                     r10 r11 r12 
-                     (- 0.0 
+                     r10 r11 r12
+                     (- 0.0
                         (* (melm mat-a 1 0) (melm mat-a 0 3))
                         (* (melm mat-a 1 1) (melm mat-a 1 3))
                         (* (melm mat-a 1 2) (melm mat-a 2 3)))
-                     r20 r21 r22 
-                     (- 0.0 
+                     r20 r21 r22
+                     (- 0.0
                         (* (melm mat-a 2 0) (melm mat-a 0 3))
                         (* (melm mat-a 2 1) (melm mat-a 1 3))
                         (* (melm mat-a 2 2) (melm mat-a 2 3)))
@@ -366,7 +366,7 @@
 ;; could just feed straight from array into make
 (defun transpose (m-a)
   "Returns the transpose of the provided matrix"
-  (make-matrix4 
+  (make-matrix4
    (melm m-a 0 0) (melm m-a 1 0) (melm m-a 2 0) (melm m-a 3 0)
    (melm m-a 0 1) (melm m-a 1 1) (melm m-a 2 1) (melm m-a 3 1)
    (melm m-a 0 2) (melm m-a 1 2) (melm m-a 2 2) (melm m-a 3 2)
@@ -377,7 +377,7 @@
 (defun translation (vec3-a)
   "Takes a vector3 and returns a matrix4 which will translate
    by the specified amount"
-  (make-matrix4 
+  (make-matrix4
    1.0  0.0  0.0  (v-x vec3-a)
    0.0  1.0  0.0  (v-y vec3-a)
    0.0  0.0  1.0  (v-z vec3-a)
@@ -392,9 +392,9 @@
 
 (defun rotation-from-matrix3 (m-a)
   "Takes a 3x3 rotation matrix and returns a 4x4 rotation matrix
-   with the same values. The 4th component is filled as an 
+   with the same values. The 4th component is filled as an
    identity matrix would be."
-  (make-matrix4 
+  (make-matrix4
    (m3:melm m-a 0 0)  (m3:melm m-a 0 1)  (m3:melm m-a 0 2)  0.0
    (m3:melm m-a 1 0)  (m3:melm m-a 1 1)  (m3:melm m-a 1 2)  0.0
    (m3:melm m-a 2 0)  (m3:melm m-a 2 1)  (m3:melm m-a 2 2)  0.0
@@ -413,17 +413,17 @@
                     (+ (* sx sy cz) (* cx sz))
                     (- (* sx sz) (* cx sy cz))
                     0.0
-                    
+
                     (- (* cy sz))
                     (- (* cx cz) (* sx sy sz)) ;is this right?
                     (+ (* cx sy sz) (* sx cz))
                     0.0
-                    
+
                     sy
                     (- (* sx cy))
                     (* cx cy)
                     0.0
-                    
+
                     0.0 0.0 0.0 1.0))))
 
 ;----------------------------------------------------------------
@@ -433,8 +433,8 @@
 (defun rotation-from-axis-angle (axis3 angle)
   "Returns a matrix which will rotate a point about the axis
    specified by the angle provided"
-  (let* ((c-a (cos angle)) 
-         (s-a (sin angle)) 
+  (let* ((c-a (cos angle))
+         (s-a (sin angle))
          (tt (- 1.0 c-a))
          (norm-axis (vector3:normalize axis3))
          (tx (* tt (v-x norm-axis)))
@@ -525,7 +525,7 @@
 
 (defun mtrace (mat-a)
   "Returns the trace of the matrix (That is the diagonal values)"
-  (+ (melm mat-a 0 0) (melm mat-a 1 1) 
+  (+ (melm mat-a 0 0) (melm mat-a 1 1)
      (melm mat-a 2 2) (melm mat-a 3 3)))
 
 ;----------------------------------------------------------------
@@ -534,15 +534,15 @@
 ;; [TODO] Comment the fuck out of this and work out how it works
 
 (defun get-axis-angle (mat-a)
-  "Gets one possible axis-angle pair that will generate this 
+  "Gets one possible axis-angle pair that will generate this
    matrix. Assumes that this is a rotation matrix"
-  (let* ((trace-a (+ (melm mat-a 0 0) (melm mat-a 1 1) 
+  (let* ((trace-a (+ (melm mat-a 0 0) (melm mat-a 1 1)
                      (melm mat-a 2 2)))
          (cos-theta (* 0.5 (- trace-a 1.0)))
          (angle (acos cos-theta)))
     (cond ((float-zero angle) (values vector3:*unit-x* angle))
           ((float-zero (- base-maths:+pi+ angle))
-           (values 
+           (values
             (vector3:normalize
              (make-vector3 (- (melm mat-a 2 1) (melm mat-a 1 2))
                            (- (melm mat-a 0 2) (melm mat-a 2 0))
@@ -562,7 +562,7 @@
                                            (melm mat-a j j)
                                            (melm mat-a k k)))))
                       (recip (/ 1.0 s)))
-                 (values (make-vector3 
+                 (values (make-vector3
                           (* 0.5 s)
                           (* recip (aref mat-a (+ i (* 4 j))))
                           (* recip (aref mat-a (+ k (* 4 i)))))
@@ -601,7 +601,7 @@
 ;----------------------------------------------------------------
 
 (defun m*scalar (mat-a scalar)
-  "Multiplies the components of the matrix by the scalar 
+  "Multiplies the components of the matrix by the scalar
    provided"
   (let ((result (zero-matrix4)))
     (loop for i below 16
@@ -611,7 +611,7 @@
 ;----------------------------------------------------------------
 
 (defun mcol*vec4 (mat-a vec)
-  (make-vector4 
+  (make-vector4
    (+ (* (v-x vec) (melm mat-a 0 0)) (* (v-y vec) (melm mat-a 0 1))
       (* (v-z vec) (melm mat-a 0 2)) (* (v-w vec) (melm mat-a 0 3)))
 
@@ -628,7 +628,7 @@
 ;----------------------------------------------------------------
 
 (defun mrow*vec4 (vec mat-a)
-  (make-vector4 
+  (make-vector4
    (+ (* (v-x vec) (melm mat-a 0 0)) (* (v-y vec) (melm mat-a 1 0))
       (* (v-z vec) (melm mat-a 2 0)) (* (v-w vec) (melm mat-a 3 0)))
 
@@ -645,71 +645,71 @@
 ;----------------------------------------------------------------
 
 (defun m* (mat-a mat-b)
-  "Multiplies 2 matrices and returns the result as a new 
+  "Multiplies 2 matrices and returns the result as a new
    matrix"
-  (make-matrix4 (+ (* (melm mat-a 0 0) (melm mat-b 0 0)) 
+  (make-matrix4 (+ (* (melm mat-a 0 0) (melm mat-b 0 0))
                    (* (melm mat-a 0 1) (melm mat-b 1 0))
-                   (* (melm mat-a 0 2) (melm mat-b 2 0)) 
+                   (* (melm mat-a 0 2) (melm mat-b 2 0))
                    (* (melm mat-a 0 3) (melm mat-b 3 0)))
                 (+ (* (melm mat-a 0 0) (melm mat-b 0 1))
-                   (* (melm mat-a 0 1) (melm mat-b 1 1)) 
-                   (* (melm mat-a 0 2) (melm mat-b 2 1)) 
+                   (* (melm mat-a 0 1) (melm mat-b 1 1))
+                   (* (melm mat-a 0 2) (melm mat-b 2 1))
                    (* (melm mat-a 0 3) (melm mat-b 3 1)))
-                (+ (* (melm mat-a 0 0) (melm mat-b 0 2)) 
-                   (* (melm mat-a 0 1) (melm mat-b 1 2)) 
-                   (* (melm mat-a 0 2) (melm mat-b 2 2)) 
+                (+ (* (melm mat-a 0 0) (melm mat-b 0 2))
+                   (* (melm mat-a 0 1) (melm mat-b 1 2))
+                   (* (melm mat-a 0 2) (melm mat-b 2 2))
                    (* (melm mat-a 0 3) (melm mat-b 3 2)))
-                (+ (* (melm mat-a 0 0) (melm mat-b 0 3)) 
-                   (* (melm mat-a 0 1) (melm mat-b 1 3)) 
-                   (* (melm mat-a 0 2) (melm mat-b 2 3)) 
+                (+ (* (melm mat-a 0 0) (melm mat-b 0 3))
+                   (* (melm mat-a 0 1) (melm mat-b 1 3))
+                   (* (melm mat-a 0 2) (melm mat-b 2 3))
                    (* (melm mat-a 0 3) (melm mat-b 3 3)))
-                (+ (* (melm mat-a 1 0) (melm mat-b 0 0)) 
-                   (* (melm mat-a 1 1) (melm mat-b 1 0)) 
-                   (* (melm mat-a 1 2) (melm mat-b 2 0)) 
+                (+ (* (melm mat-a 1 0) (melm mat-b 0 0))
+                   (* (melm mat-a 1 1) (melm mat-b 1 0))
+                   (* (melm mat-a 1 2) (melm mat-b 2 0))
                    (* (melm mat-a 1 3) (melm mat-b 3 0)))
-                (+ (* (melm mat-a 1 0) (melm mat-b 0 1)) 
-                   (* (melm mat-a 1 1) (melm mat-b 1 1)) 
-                   (* (melm mat-a 1 2) (melm mat-b 2 1)) 
+                (+ (* (melm mat-a 1 0) (melm mat-b 0 1))
+                   (* (melm mat-a 1 1) (melm mat-b 1 1))
+                   (* (melm mat-a 1 2) (melm mat-b 2 1))
                    (* (melm mat-a 1 3) (melm mat-b 3 1)))
-                (+ (* (melm mat-a 1 0) (melm mat-b 0 2)) 
-                   (* (melm mat-a 1 1) (melm mat-b 1 2)) 
-                   (* (melm mat-a 1 2) (melm mat-b 2 2)) 
+                (+ (* (melm mat-a 1 0) (melm mat-b 0 2))
+                   (* (melm mat-a 1 1) (melm mat-b 1 2))
+                   (* (melm mat-a 1 2) (melm mat-b 2 2))
                    (* (melm mat-a 1 3) (melm mat-b 3 2)))
-                (+ (* (melm mat-a 1 0) (melm mat-b 0 3)) 
-                   (* (melm mat-a 1 1) (melm mat-b 1 3)) 
-                   (* (melm mat-a 1 2) (melm mat-b 2 3)) 
+                (+ (* (melm mat-a 1 0) (melm mat-b 0 3))
+                   (* (melm mat-a 1 1) (melm mat-b 1 3))
+                   (* (melm mat-a 1 2) (melm mat-b 2 3))
                    (* (melm mat-a 1 3) (melm mat-b 3 3)))
-                (+ (* (melm mat-a 2 0) (melm mat-b 0 0)) 
-                   (* (melm mat-a 2 1) (melm mat-b 1 0)) 
-                   (* (melm mat-a 2 2) (melm mat-b 2 0)) 
+                (+ (* (melm mat-a 2 0) (melm mat-b 0 0))
+                   (* (melm mat-a 2 1) (melm mat-b 1 0))
+                   (* (melm mat-a 2 2) (melm mat-b 2 0))
                    (* (melm mat-a 2 3) (melm mat-b 3 0)))
-                (+ (* (melm mat-a 2 0) (melm mat-b 0 1)) 
-                   (* (melm mat-a 2 1) (melm mat-b 1 1)) 
-                   (* (melm mat-a 2 2) (melm mat-b 2 1)) 
+                (+ (* (melm mat-a 2 0) (melm mat-b 0 1))
+                   (* (melm mat-a 2 1) (melm mat-b 1 1))
+                   (* (melm mat-a 2 2) (melm mat-b 2 1))
                    (* (melm mat-a 2 3) (melm mat-b 3 1)))
-                (+ (* (melm mat-a 2 0) (melm mat-b 0 2)) 
-                   (* (melm mat-a 2 1) (melm mat-b 1 2)) 
-                   (* (melm mat-a 2 2) (melm mat-b 2 2)) 
+                (+ (* (melm mat-a 2 0) (melm mat-b 0 2))
+                   (* (melm mat-a 2 1) (melm mat-b 1 2))
+                   (* (melm mat-a 2 2) (melm mat-b 2 2))
                    (* (melm mat-a 2 3) (melm mat-b 3 2)))
-                (+ (* (melm mat-a 2 0) (melm mat-b 0 3)) 
-                   (* (melm mat-a 2 1) (melm mat-b 1 3)) 
-                   (* (melm mat-a 2 2) (melm mat-b 2 3)) 
+                (+ (* (melm mat-a 2 0) (melm mat-b 0 3))
+                   (* (melm mat-a 2 1) (melm mat-b 1 3))
+                   (* (melm mat-a 2 2) (melm mat-b 2 3))
                    (* (melm mat-a 2 3) (melm mat-b 3 3)))
-                (+ (* (melm mat-a 3 0) (melm mat-b 0 0)) 
-                   (* (melm mat-a 3 1) (melm mat-b 1 0)) 
-                   (* (melm mat-a 3 2) (melm mat-b 2 0)) 
+                (+ (* (melm mat-a 3 0) (melm mat-b 0 0))
+                   (* (melm mat-a 3 1) (melm mat-b 1 0))
+                   (* (melm mat-a 3 2) (melm mat-b 2 0))
                    (* (melm mat-a 3 3) (melm mat-b 3 0)))
-                (+ (* (melm mat-a 3 0) (melm mat-b 0 1)) 
-                   (* (melm mat-a 3 1) (melm mat-b 1 1)) 
-                   (* (melm mat-a 3 2) (melm mat-b 2 1)) 
+                (+ (* (melm mat-a 3 0) (melm mat-b 0 1))
+                   (* (melm mat-a 3 1) (melm mat-b 1 1))
+                   (* (melm mat-a 3 2) (melm mat-b 2 1))
                    (* (melm mat-a 3 3) (melm mat-b 3 1)))
-                (+ (* (melm mat-a 3 0) (melm mat-b 0 2)) 
-                   (* (melm mat-a 3 1) (melm mat-b 1 2)) 
-                   (* (melm mat-a 3 2) (melm mat-b 2 2)) 
+                (+ (* (melm mat-a 3 0) (melm mat-b 0 2))
+                   (* (melm mat-a 3 1) (melm mat-b 1 2))
+                   (* (melm mat-a 3 2) (melm mat-b 2 2))
                    (* (melm mat-a 3 3) (melm mat-b 3 2)))
                 (+ (* (melm mat-a 3 0) (melm mat-b 0 3))
-                   (* (melm mat-a 3 1) (melm mat-b 1 3)) 
-                   (* (melm mat-a 3 2) (melm mat-b 2 3)) 
+                   (* (melm mat-a 3 1) (melm mat-b 1 3))
+                   (* (melm mat-a 3 2) (melm mat-b 2 3))
                    (* (melm mat-a 3 3) (melm mat-b 3 3)))))
 
 ;----------------------------------------------------------------
