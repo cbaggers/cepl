@@ -6,7 +6,7 @@
        (defun ,name (&rest components)
          (let* ((components
                  (loop :for c :in components
-                    :if (listp c) :append 
+                    :if (listp c) :append
                     (loop :for e :in c :collect (coerce e ',type))
                     :else :if (typep c 'array)
                     :append (loop :for e :across c :collect (coerce e ',type))
@@ -59,7 +59,7 @@
   "Returns the z component of the vector"
   (aref vec 2))
 (defun v-w (vec)
-  "Returns the w component of the vector"  
+  "Returns the w component of the vector"
   (aref vec 3))
 
 (defun (setf v-x) (value vec)
@@ -72,5 +72,5 @@
   "Returns the z component of the vector"
   (setf (aref vec 2) (float value)))
 (defun (setf v-w) (value vec)
-  "Returns the w component of the vector"  
+  "Returns the w component of the vector"
   (setf (aref vec 3) (float value)))

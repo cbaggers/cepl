@@ -104,7 +104,7 @@
                        single-float single-float single-float)
          (simple-array single-float (9)))
         make-matrix3))
-(defun make-matrix3 ( a b c d e f g h i )
+(defun make-matrix3 (a b c d e f g h i)
   "Make a 3x3 matrix. Data must be provided in row major order"
   (let ((result (zero-matrix3)))
     (setf (melm result 0 0) a)
