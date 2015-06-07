@@ -1,6 +1,6 @@
 (in-package :cepl-project)
 
-(defparameter *depends* '(#:cepl))
+(defvar *depends* '(#:cepl))
 
 (let ((dir nil))
   (defun get-template-directory ()

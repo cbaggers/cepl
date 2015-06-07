@@ -4,7 +4,7 @@
 ;;--------------------------------------------------------
 ;; space tree system
 
-(defparameter *space-tree* nil)
+(defvar *space-tree* nil)
 (defvar *heart-beat-byte* 0) ;; will be used in GC
 
 ;;--------------------------------------------------------
@@ -13,11 +13,11 @@
 ;; Pool of worlds. Needed as only +max-child+ children allowd
 ;; id of worldspace node is always 0
 
-(defparameter *next-world-id* 0)
+(defvar *next-world-id* 0)
 (progn
-  (defparameter *world-pool* (make-array 32 :initial-element nil))
+  (defvar *world-pool* (make-array 32 :initial-element nil))
   (new-world-space)
-  (defparameter /WORLD/ (aref *world-pool* 0)))
+  (defvar /WORLD/ (aref *world-pool* 0)))
 
 (defun world-spacep (space) (= (space-id space) 0))
 
@@ -69,7 +69,7 @@
 
 (defun batch-make-space (make-space-function parent-space arg-lists)
   (let ((parent-space parent-space))
-    (loop :for args :in arg-lists 
+    (loop :for args :in arg-lists
        :for new-space := (apply make-space-function parent-space args)
        :do (setf parent-space (space-parent new-space))
        :collect new-space)))

@@ -30,7 +30,7 @@
          (gstream (make-buffer-stream data)))
     (loop :until (find :quit-event (sdl:collect-event-types)) :do
        (cepl-utils:update-swank)
-       (base-macros:continuable (progn (gl:clear :color-buffer-bit)
+       (continuable (progn (gl:clear :color-buffer-bit)
                                        (prog-1 gstream)
                                        (gl:flush)
                                        (sdl:update-display))))))

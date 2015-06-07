@@ -2,7 +2,7 @@
 
 ;;{TODO} Almost everything in here could really benefit from being optimized
 
-(defparameter *gl-window* nil)
+(defvar *gl-window* nil)
 (defvar *gpu-func-specs* (make-hash-table :test #'eq))
 (defvar *dependent-gpu-functions* (make-hash-table :test #'eq))
 (defvar *gpu-program-cache* (make-hash-table :test #'eq))

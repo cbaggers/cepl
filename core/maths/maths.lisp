@@ -22,7 +22,7 @@
 (defun pulse (a b x)
   (- (stepv a x) (stepv b x)))
 
-(defparameter *coef*
+(defvar *coef*
   (make-array 16 :element-type 'single-float
               :initial-contents '(-0.5  1.5 -1.5  0.5
                                   1.0  -2.5  2.0 -0.5
@@ -65,4 +65,3 @@
   (if (< x 0.5)
       (/ (bias (- 1 g) (* 2 x)) 2)
       (- 1 (/ (bias (- 1 g) (- 2 (* 2 x))) 2))))
-

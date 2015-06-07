@@ -3,7 +3,7 @@
 ;; {TODO} need to add info for autowrap
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *extra-primitive-types*
+  (defvar *extra-primitive-types*
     '((:vec2 2 :float)
       (:vec3 3 :float)
       (:vec4 4 :float)

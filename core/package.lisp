@@ -80,10 +80,6 @@
            :last1
            :p->))
 
-(defpackage :base-macros
-  (:use :cl :cepl-utils)
-  (:export :once-only))
-
 (defpackage :base-maths
   (:use :cl)
   (:export :clamp
@@ -254,7 +250,7 @@
            :to-matrix3 :to-matrix4))
 
 (defpackage :base-space
-  (:use :cl :base-macros :base-vectors :base-matrices)
+  (:use :cl :base-vectors :base-matrices)
   (:nicknames :cspace)
   (:shadow :space)
   ;;(:export :things)
@@ -262,11 +258,11 @@
 
 
 (defpackage :%cgl
-  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
+  (:use :cl :cffi :cepl-utils :varjo :base-vectors :cepl-generics
         :split-sequence)
   )
 (defpackage :cepl-gl
-  (:use :cl :cffi :base-macros :cepl-utils :varjo :base-vectors :cepl-generics
+  (:use :cl :cffi :cepl-utils :varjo :base-vectors :cepl-generics
         :split-sequence :%cgl)
   (:nicknames :cgl)
   (:import-from :utils
@@ -563,7 +559,6 @@
         :base-vectors
         :base-matrices
         :base-maths
-        :base-macros
         :temporal-functions
         :cepl-camera
         :cl-fad

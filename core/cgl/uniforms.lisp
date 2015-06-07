@@ -1,6 +1,6 @@
 (in-package :cgl)
 
-(defparameter *sampler-types*
+(defvar *sampler-types*
   '(:isampler-1D :isampler-1d-Array :isampler-2D :isampler-2d-Array
     :isampler-2d-MS :isampler-2d-MS-Array :isampler-2d-Rect
     :isampler-3d :isampler-Buffer :isampler-Cube

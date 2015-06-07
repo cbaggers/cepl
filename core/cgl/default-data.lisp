@@ -4,7 +4,7 @@
   (when new (init-data)))
 
 (defvar *quad* nil)
-(defparameter *quad-stream* nil)
+(defvar *quad-stream* nil)
 
 (defun init-data ()
   (unless *quad*

@@ -8,7 +8,7 @@
 
 (in-package :cgl)
 
-(defparameter *gl-context* nil)
+(defvar *gl-context* nil)
 
 ;; This is an object which can be used to access data about the gl-context
 ;; it employs caching for any of the areas where the data won't change during
@@ -100,7 +100,7 @@
 
 (defmacro def-g (var &optional val doc)
   `(progn
-     (defparameter ,var nil ,doc)
+     (defvar ,var nil ,doc)
      (if *gl-context*
          (setf ,var ,val)
          (push (lambda () (setf ,var ,val))
@@ -108,7 +108,7 @@
 
 ;;------------------------------------------------------------
 
-(defparameter *context-defaults* nil)
+(defvar *context-defaults* nil)
 
 (defun set-context-defaults (context)
   (loop :for setting :in *context-defaults* :do

@@ -338,16 +338,16 @@
   (aref vec 3))
 
 (defun (setf x) (value vec)
-  "Returns the x component of the vector"
+  "Sets the x component of the vector"
   (setf (aref vec 0) (float value)))
 (defun (setf y) (value vec)
-  "Returns the y component of the vector"
+  "Sets the y component of the vector"
   (setf (aref vec 1) (float value)))
 (defun (setf z) (value vec)
-  "Returns the z component of the vector"
+  "Sets the z component of the vector"
   (setf (aref vec 2) (float value)))
 (defun (setf w) (value vec)
-  "Returns the w component of the vector"
+  "Sets the w component of the vector"
   (setf (aref vec 3) (float value)))
 
 ;;----------------------------------------------------------------

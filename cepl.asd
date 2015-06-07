@@ -31,7 +31,6 @@
                (:file "core/utils")
                (:file "core/static")
                (:file "core/generics")
-               (:file "core/base-macros")
                (:file "core/maths/base-maths")
                (:file "core/maths/maths")
                (:file "core/maths/vectors/base-vectors")

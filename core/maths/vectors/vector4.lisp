@@ -58,12 +58,12 @@
 ;; Not sure what I'm going to do with these. I don't belive this
 ;; is the best way to do this as it doesnt give a new vector
 ;; not that lispy
-(defparameter *unit-x* (vector 1.0 0.0 0.0 0.0))
-(defparameter *unit-y* (vector 0.0 1.0 0.0 0.0))
-(defparameter *unit-z* (vector 0.0 0.0 1.0 0.0))
-(defparameter *unit-w* (vector 0.0 0.0 0.0 1.0))
-(defparameter *unit-scale* (vector 1.0 1.0 1.0 1.0))
-(defparameter *origin* (vector 0.0 0.0 0.0 0.0))
+(defvar *unit-x* (vector 1.0 0.0 0.0 0.0))
+(defvar *unit-y* (vector 0.0 1.0 0.0 0.0))
+(defvar *unit-z* (vector 0.0 0.0 1.0 0.0))
+(defvar *unit-w* (vector 0.0 0.0 0.0 1.0))
+(defvar *unit-scale* (vector 1.0 1.0 1.0 1.0))
+(defvar *origin* (vector 0.0 0.0 0.0 0.0))
 
 ;;----------------------------------------------------------------
 

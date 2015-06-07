@@ -25,11 +25,11 @@
 ;; [TODO] Add guaranteed flags to formats
 ;; [TODO] add half float
 ;; [TODO] add :stencil-only
-(defparameter *valid-pixel-components*
+(defvar *valid-pixel-components*
   '(:r :g :b :rg :rgb :rgba :bgr :bgra :depth :depth-stencil))
-(defparameter *valid-pixel-types*
+(defvar *valid-pixel-types*
   '(:ubyte :byte :ushort :short :uint :int :float))
-(defparameter *valid-pixel-packed-sizes*
+(defvar *valid-pixel-packed-sizes*
   '(((3 3 2) :ubyte) ((:r 2 3 3) :ubyte)
     ((5 6 5) :ushort) ((:r 5 6 5) :ushort)
     ((4 4 4 4) :ushort) ((:r 4 4 4 4) :ushort)
@@ -37,29 +37,29 @@
     ((8 8 8 8) :uint) ((:r 8 8 8 8) :uint)
     ((10 10 10 2) :uint) ((:r 2 10 10 10) :uint)
     ((24 8) :uint) ((:r 10 11 11) :uint) ((:r 5 9 9 9) :uint)))
-(defparameter *valid-internal-formats-for-buffer-backed-texture*
+(defvar *valid-internal-formats-for-buffer-backed-texture*
   '(:r16 :r16f :r16i :r16ui :r32f :r32i :r32ui :r8 :r8i :r8ui :rg16 :rg16f
     :rg16i :rg16ui :rg32f :rg32i :rg32ui :rg8 :rg8i :rg8ui :rgb32f :rgb32i
     :rgb32ui :rgba16 :rgba16f :rgba16i :rgba16ui :rgba32f :rgba32i :rgba8
     :rgba8i :rgba8ui :rgba32ui))
-(defparameter *color-renderable-formats*
+(defvar *color-renderable-formats*
   '(:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm :rgb8
     :rgb8-snorm :rgb16-snorm :rgba8 :rgba8-snorm :rgba16 :r32f :rg32f :rgb32f
     :rgba32f :r8i :r8ui :r16i :r16ui :r32i :r32ui :rg8i :rg8ui :rg16i :rg16ui
     :rg32i :rg32ui :rgb8i :rgb8ui :rgb16i :rgb16ui :rgb32i :rgb32ui :rgba8i
     :rgba8ui :rgba16i :rgba16ui :rgba32i :rgba32ui :srgb8 :srgb8-alpha8 :rgba2
     :rgba4 :r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui))
-(defparameter *depth-formats*
+(defvar *depth-formats*
   '(:depth-component16 :depth-component24 :depth-component32 :depth-component32f))
-(defparameter *stencil-formats*
+(defvar *stencil-formats*
   '(:stencil-index8))
-(defparameter *depth-stencil-formats* '())
-(defparameter *gl-integral-pixel-types*
+(defvar *depth-stencil-formats* '())
+(defvar *gl-integral-pixel-types*
   '(:ubyte :byte :ushort :short :uint :int))
-(defparameter *expanded-gl-type-names*
+(defvar *expanded-gl-type-names*
   '((:uint :unsigned-int) (:ubyte :unsigned-byte)
     (:ubyte :unsigned-byte) (:ushort :unsigned-short)))
-(defparameter *gl-pixel-to-internal-map*
+(defvar *gl-pixel-to-internal-map*
   '(((:DEPTH t :short nil) :DEPTH-COMPONENT16)
     ((:DEPTH t :int nil) :DEPTH-COMPONENT32)
     ((:DEPTH t :float nil) :DEPTH-COMPONENT32F)

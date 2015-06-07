@@ -120,7 +120,7 @@
   (update-clear-mask fbo)
   value)
 
-(defparameter *attachments*
+(defvar *attachments*
   '(:color-attachment0 :color-attachment1 :color-attachment2 :color-attachment3
     :color-attachment4 :color-attachment5 :color-attachment6 :color-attachment7
     :color-attachment8 :color-attachment9 :color-attachment10

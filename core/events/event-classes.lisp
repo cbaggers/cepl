@@ -3,7 +3,7 @@
 ;;--------------------------------------------
 ;; Lisp events
 
-(defparameter *event-class-names*
+(defvar *event-class-names*
   '(will-quit win mouse-scroll mouse-button mouse-motion key))
 
 (defclass cepl-event ()

@@ -15,24 +15,13 @@ defun-g should check if arg types are quoted, error if they are
 
 -----
 
-Add *-from-id functions.
-They will call gl's gl_is_* and if true then will make a cepl
-wrapper for that type
-
------
-
 * check qualifiers are valid in varjo
 * inherit qualifiers from previous stage
 * uniforms saying arg incompatible for basic changes...merge 'em
 
 -----
 
-* clean up osx code
-* clean up window and context creation
-* update struct to be clean and use c-ref
-* create foreign data extraction tool
 * get gamepad input stable
-* expand stupid macro in matrix
 * optimize the vector/matrix/quaternion functions
 * live version of tdefun
 
@@ -40,10 +29,9 @@ wrapper for that type
 
 * Object that represents the opengl state machine. Directly address slots etc
 * Copy between buffer (gpu-arrays)
-* Research safe foreign data initialisation so an error does cause a memrory leak
+* Research safe foreign data initialisation so an error doesnt cause a memrory leak
   look at with-foreign-object for hints
 * read http://www.opengl.org/wiki/Buffer_Object and look at the buffer corruption section
-* base-macros....what is in here and why
 
 -----
 
@@ -51,6 +39,7 @@ wrapper for that type
   ok at really odd  times so is from gl-array... this is odd
   seems to be when created using defparameter...so it doesnt like
   top level for some reason?
+- Something to do with null lexical environment
 
 * add set culling? combined enabling, setting winding-order and
   cull-face in one move.

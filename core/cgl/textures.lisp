@@ -16,8 +16,8 @@
 
 ;;------------------------------------------------------------
 
-(defparameter *immutable-available* t)
-(defparameter *cube-face-order* '(:texture-cube-map-positive-x
+(defvar *immutable-available* t)
+(defvar *cube-face-order* '(:texture-cube-map-positive-x
                                   :texture-cube-map-negative-x
                                   :texture-cube-map-positive-y
                                   :texture-cube-map-negative-y
@@ -289,8 +289,8 @@
 
 ;;------------------------------------------------------------
 
-(defparameter *mipmap-max-levels* 20)
-(defparameter *valid-texture-storage-options*
+(defvar *mipmap-max-levels* 20)
+(defvar *valid-texture-storage-options*
   ;; mipmap layers cubes dimensions multisample buffer rectangle
   '(((t nil nil 1 nil nil nil) :texture-1d)
     ((t nil nil 2 nil nil nil) :texture-2d)

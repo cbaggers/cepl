@@ -1,6 +1,6 @@
 (in-package :cepl-backend)
 
-(defparameter *initd* nil)
+(defvar *initd* nil)
 
 (defmethod cepl-backend:init ((backend-name (eql :sdl)))
   (setf *backend* :sdl)

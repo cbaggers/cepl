@@ -1,8 +1,8 @@
 ;; More 3D - Multiple objects rotating
 (in-package :cepl)
 
-(defparameter *entities* nil)
-(defparameter *camera* nil)
+(defvar *entities* nil)
+(defvar *camera* nil)
 
 (defstruct-g vert-data ()
   (position :vec3)

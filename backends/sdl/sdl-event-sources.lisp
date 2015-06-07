@@ -133,7 +133,7 @@
 (defun sdl-scancode-lookup (scancode)
   (aref *sdl-scan-lookup* scancode))
 
-(defparameter *window-events*
+(defvar *window-events*
   #(:none
     :shown
     :hidden
@@ -151,7 +151,7 @@
     :close))
 
 
-(defparameter *sdl-scan-lookup*
+(defvar *sdl-scan-lookup*
   #(:unknown nil nil nil :a :b
     :c :d :e :f
     :g :h :i :j

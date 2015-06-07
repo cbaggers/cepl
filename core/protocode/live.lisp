@@ -15,10 +15,10 @@
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480)))
 
-(defparameter *frustrum-scale* nil)
-(defparameter *cam-clip-matrix* nil)
-(defparameter *entities* nil)
-(defparameter *camera* nil)
+(defvar *frustrum-scale* nil)
+(defvar *cam-clip-matrix* nil)
+(defvar *entities* nil)
+(defvar *camera* nil)
 
 (defclass entity ()
   ((e-stream :initform nil :initarg :e-stream :accessor e-stream)

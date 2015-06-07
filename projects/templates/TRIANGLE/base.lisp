@@ -65,8 +65,8 @@
 ;;--------------------------------------------------------------
 ;; setup
 
-(defparameter *array* nil)
-(defparameter *stream* nil)
+(defvar *array* nil)
+(defvar *stream* nil)
 
 (defun init ()
   (setf *array* (make-gpu-array

@@ -37,7 +37,7 @@
 ;; srcRGB​ is GL_SRC_ALPHA​, dstRGB​ is GL_ONE_MINUS_SRC_ALPHA​, and As0 is
 ;; equal to 1, the equations reduce to simple replacement:
 
-(defparameter *blend-color* (v! 0 0 0 0))
+(defvar *blend-color* (v! 0 0 0 0))
 
 (defun blend-func-namep (keyword)
   (not (null (member keyword '(:zero
