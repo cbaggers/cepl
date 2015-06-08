@@ -102,7 +102,7 @@
 ;;--------------------------------------------------------------
 ;; controls
 
-(evt:observe (|mouse|)
+(evt:observe (e |mouse|)
   (when (and (typep e 'evt:mouse-motion)
              (eq (evt:button-state self :left) :down))
     (let ((d (evt:delta e)))
@@ -128,7 +128,7 @@
         new-dimensions)
   (frag-point-light nil :cam-to-clip (cam->clip *camera*)))
 
-(observe (|window|) (when (eq (action e) :resized) (reshape (vec e))))
+(observe (e |window|) (when (eq (action e) :resized) (reshape (vec e))))
 
 ;;--------------------------------------------------------------
 ;; main loop
@@ -142,7 +142,7 @@
          (step-demo)
          (update-swank))))
   (defun stop-loop () (setf running nil))
-  (evt:observe (|sys|)
+  (evt:observe (e |sys|)
     (setf running (typep e 'evt:will-quit))))
 
 (defun step-demo ()

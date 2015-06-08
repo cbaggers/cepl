@@ -80,9 +80,9 @@
 
   (defun stop-loop () (setf running nil))
 
-  (evt:observe (evt:|sys|)
+  (evt:observe (e evt:|sys|)
     (setf running (typep e 'evt:will-quit))))
 
-(evt:observe (evt:|window|)
+(evt:observe (e evt:|window|)
   (when (eq (evt:action e) :resized)
     (reshape (evt:data e))))

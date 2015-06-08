@@ -39,5 +39,5 @@
 (defun stop-loop ()
   (setf *running* nil))
 
-(evt:observe (evt:|sys|)
+(evt:observe (e evt:|sys|)
   (when (typep e 'evt:will-quit) (stop-loop)))

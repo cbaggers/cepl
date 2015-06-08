@@ -43,7 +43,7 @@
   (update-display))
 
 (defvar mouse-ang (v! 0 0))
-(evt:observe (evt:|mouse|)
+(evt:observe (e evt:|mouse|)
   (when (typep e 'evt:mouse-motion)
     (let ((d (evt:delta e)))
       (setf mouse-ang (v2:+ (v! (/ (v:x d) -150.0)
@@ -53,7 +53,7 @@
                           (sin (v:y mouse-ang))
                           (cos (v:x mouse-ang)))))))
 
-(observe (|window|) (when (eq (action e) :resized) (reshape (vec e))))
+(observe (e |window|) (when (eq (action e) :resized) (reshape (vec e))))
 (defun reshape (dims)
   (setf (viewport-resolution (viewport *gl-context*)) dims))
 

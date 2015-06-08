@@ -16,17 +16,17 @@
   (setf (viewport-resolution (viewport *gl-context*))
         new-dimensions))
 
-(evt:observe (evt:|window|)
+(evt:observe (e evt:|window|)
   (when (eq (evt:action e) :resized)
     (reshape (evt:vec e))))
 
 ;;--------------------------------------------------------------
 ;; controls
 
-;; (evt:observe (evt:*mouse*)
+;; (evt:observe (e evt:*mouse*)
 ;;   )
 
-;; (evt:observe (evt:*keyboard*)
+;; (evt:observe (e evt:*keyboard*)
 ;;   )
 
 ;;--------------------------------------------------------------
@@ -52,7 +52,7 @@
 
 (defun stop-demo () (setf *running* nil))
 
-(evt:observe (evt:|sys|)
+(evt:observe (e evt:|sys|)
   (when (typep e 'evt:will-quit)
     (stop-demo)))
 

@@ -400,6 +400,7 @@
            :mutable-texturep
            :upload-c-array-to-gpuarray-t ; this is a crap name
            :calc-sampler-type
+           :sampler-type
            :dimensions-at-mipmap-level
            :establish-texture-type
            :gl-texture
@@ -684,6 +685,7 @@
            :with-gpu-array-as-pointer
            :make-buffer-stream
            :make-texture
+           :sampler-type
            :with-texture-bound
            :g-pn
            :g-pc

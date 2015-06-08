@@ -146,7 +146,7 @@
 ;;--------------------------------------------------------------
 ;; controls
 
-(evt:observe (|mouse|)
+(evt:observe (e |mouse|)
   (when (typep e 'evt:mouse-motion)
     (when (eq (evt:button-state |mouse| :left) :down)
       (let ((d (evt:delta e)))
@@ -171,7 +171,7 @@
   (standard-pass nil :cam-to-clip (cam->clip *camera*))
   (refract-pass nil :cam-to-clip (cam->clip *camera*)))
 
-(observe (|window|)
+(observe (e |window|)
   (when (eq (evt:action e) :resized)
     (reshape (evt:data e))))
 
@@ -188,7 +188,7 @@
          (update-swank))))
   (defun stop-loop () (setf running nil)))
 
-(evt:observe (|sys|)
+(evt:observe (e |sys|)
   (when (typep e 'evt:will-quit)
     (stop-loop)))
 

@@ -183,6 +183,11 @@
          (unbind-texture (slot-value ,tex 'texture-type))
          ,res))))
 
+(defun generate-mipmaps (texture)
+  (let ((type (slot-value texture 'texture-type)))
+    (with-texture-bound (texture)
+      (gl:generate-mipmap type))))
+
 (defun error-on-invalid-upload-formats (target internal-format pixel-format pixel-type)
   (unless (and internal-format pixel-type pixel-format)
     (error "Could not establish all the required formats for the pixel transfer"))
@@ -375,7 +380,7 @@
                        (layer-count 1) (cubes nil) (rectangle nil)
                        (multisample nil) (immutable t) (buffer-storage nil)
                        lod-bias min-lod max-lod minify-filter magnify-filter
-                       wrap compare)
+                       wrap compare (generate-mipmaps t))
   (cond
     (multisample (error "cepl: Multisample textures are not supported"))
     (buffer-storage
@@ -395,7 +400,8 @@
             (result (%make-texture dim mipmap layer-count cubes buffer-storage
                                    rectangle multisample immutable nil
                                    internal-format lod-bias min-lod max-lod
-                                   minify-filter magnify-filter wrap compare)))
+                                   minify-filter magnify-filter wrap compare
+                                   generate-mipmaps)))
        (loop :for data :in initial-contents :for i :from 0 :do
           (push-g data (texref result :cube-face i)))
        result))
@@ -405,16 +411,18 @@
          (make-texture tmp :mipmap mipmap
                        :layer-count layer-count :cubes cubes :rectangle rectangle
                        :multisample multisample :immutable immutable
-                       :buffer-storage buffer-storage))))
+                       :buffer-storage buffer-storage
+                       :generate-mipmaps generate-mipmaps))))
     (t (%make-texture dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
                       internal-format lod-bias min-lod max-lod
-                      minify-filter magnify-filter wrap compare))))
+                      minify-filter magnify-filter wrap compare
+                      generate-mipmaps))))
 
 (defun %make-texture (dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
                       internal-format lod-bias min-lod max-lod minify-filter
-                      magnify-filter wrap compare)
+                      magnify-filter wrap compare generate-mipmaps)
   (let* ((dimensions (%texture-dimensions initial-contents dimensions)))
     ;; check for power of two - handle or warn
     (let* ((pixel-format (when initial-contents
@@ -429,9 +437,18 @@
                       (error "Could not infer the internal-format")))))
            (texture-type (establish-texture-type
                           (if (listp dimensions) (length dimensions) 1)
-                          mipmap (> layer-count 1) cubes
+                          (not (null mipmap)) (> layer-count 1) cubes
                           (every #'po2p dimensions) multisample
-                          buffer-storage rectangle)))
+                          buffer-storage rectangle))
+           (mipmap-levels (let ((max-levels (floor (log (apply #'max dimensions) 2))))
+                            (if (typep mipmap 'integer)
+                                (if (<= mipmap max-levels)
+                                    mipmap
+                                    (error "Invalid number of mipmap levels specified (~a) for dimensions ~a"
+                                           mipmap dimensions))
+                                (if mipmap
+                                    max-levels
+                                    1)))))
       (if texture-type
           (if (and cubes (not (apply #'= dimensions)))
               (error "Cube textures must be square")
@@ -442,10 +459,7 @@
                               :texture-id (gen-texture)
                               :base-dimensions dimensions
                               :texture-type texture-type
-                              :mipmap-levels
-                              (if mipmap
-                                  (floor (log (apply #'max dimensions) 2))
-                                  1)
+                              :mipmap-levels mipmap-levels
                               :layer-count layer-count
                               :cubes cubes
                               :internal-format internal-format
@@ -458,7 +472,9 @@
                         (compile-pixel-format pixel-format)
                       (upload-c-array-to-gpuarray-t
                        (texref texture) initial-contents
-                       pformat ptype))))
+                       pformat ptype)))
+                  (when (and generate-mipmaps (> mipmap-levels 1))
+                    (generate-mipmaps texture)))
                 (when lod-bias
                   (setf (lod-bias texture) lod-bias))
                 (when min-lod

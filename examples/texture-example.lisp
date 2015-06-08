@@ -51,4 +51,4 @@
                         (make-texture temp)))
       (loop :while running :do (continuable (step-demo)))))
   (defun stop-loop () (setf running nil)))
-(evt:observe (|sys|) (when (typep e 'evt:will-quit) (stop-loop)))
+(evt:observe (e |sys|) (when (typep e 'evt:will-quit) (stop-loop)))

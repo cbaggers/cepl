@@ -15,7 +15,6 @@
                                double-buffer hidden resizable)
   "Initializes the backend and returns a list containing: (context window)"
   (setf *backend* :sdl)
-  (print -1)
   (let ((win (sdl2:create-window
               :title title :w width :h height
               :flags (remove nil `(:shown :opengl
