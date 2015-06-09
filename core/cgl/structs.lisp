@@ -67,7 +67,6 @@
          (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
            :constructor ,(symb '%make- name))
          ,(make-varjo-struct-def name slots varjo-constructor)
-         ,(when constructor (make-make-struct name autowrap-name slots))
          ,@(when (and readers accesors)
                  (remove nil (mapcar (lambda (_)
                                        (make-slot-getter _ name autowrap-name))
@@ -76,6 +75,7 @@
                  (remove nil (mapcar (lambda (_)
                                        (make-slot-setter _ name autowrap-name))
                                      slots)))
+         ,(when constructor (make-make-struct name autowrap-name slots))
          ,(when attribs (make-struct-attrib-assigner name slots))
          ,(make-struct-pixel-format name slots)
          ,(when populate (make-populate autowrap-name slots))
