@@ -236,6 +236,7 @@
                        (error "incorrect texture type passed to shader"))
                      (active-texture-num ,i-unit)
                      (bind-texture ,arg-name)
+                     (gl:bind-sampler ,i-unit (slot-value ,arg-name 'sampler-object-id))
                      (uniform-sampler ,id-name ,i-unit))))))
 
 (defun make-ubo-assigner (arg-name varjo-type glsl-name)

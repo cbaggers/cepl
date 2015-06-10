@@ -401,6 +401,7 @@
            :upload-c-array-to-gpuarray-t ; this is a crap name
            :calc-sampler-type
            :make-sampler
+           :with-sampling
            :lod-bias
            :min-lod
            :max-lod
@@ -698,6 +699,7 @@
            :sampler-type
            :calc-sampler-type
            :make-sampler
+           :with-sampling
            :lod-bias
            :min-lod
            :max-lod
