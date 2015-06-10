@@ -400,6 +400,16 @@
            :mutable-texturep
            :upload-c-array-to-gpuarray-t ; this is a crap name
            :calc-sampler-type
+           :make-sampler
+           :lod-bias
+           :min-lod
+           :max-lod
+           :magnify-filter
+           :minify-filter
+           :set-minify-filter
+           :calc-minify-filter
+           :wrap
+           :compare
            :sampler-type
            :dimensions-at-mipmap-level
            :establish-texture-type
@@ -686,6 +696,17 @@
            :make-buffer-stream
            :make-texture
            :sampler-type
+           :calc-sampler-type
+           :make-sampler
+           :lod-bias
+           :min-lod
+           :max-lod
+           :magnify-filter
+           :minify-filter
+           :set-minify-filter
+           :calc-minify-filter
+           :wrap
+           :compare
            :with-texture-bound
            :g-pn
            :g-pc

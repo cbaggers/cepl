@@ -142,15 +142,17 @@
       (%gl:delete-samplers (length ids) array))))
 
 
-(defun make-sampler ()
+(defun make-sampler (&key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
+                       (minify-filter :linear) (magnify-filter :linear)
+                       (wrap #(:repeat :repeat :repeat)) (compare :none))
   (let ((self (%make-sampler :id (first (gl::gen-samplers 1)))))
-    (setf (lod-bias self) (lod-bias self)
-          (min-lod self) (min-lod self)
-          (max-lod self) (max-lod self)
-          (minify-filter self) (minify-filter self)
-          (magnify-filter self) (magnify-filter self)
-          (wrap self) (wrap self)
-          (compare self) (compare self))
+    (setf (lod-bias self) lod-bias
+          (min-lod self) min-lod
+          (max-lod self) max-lod
+          (minify-filter self) minify-filter
+          (magnify-filter self) magnify-filter
+          (wrap self) wrap
+          (compare self) compare)
     self))
 
 (defun lod-bias (sampler) (%sampler-lod-bias sampler))
@@ -270,7 +272,7 @@
   (cond ((sampler-p sampler)
          (setf (%sampler-compare sampler)
                (or value :none))
-         (if value
+         (if (and value (not (eq :none value)))
              (progn
                (%gl:sampler-parameter-i
                 (%sampler-id sampler) :texture-compare-mode
