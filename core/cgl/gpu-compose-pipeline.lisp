@@ -27,11 +27,11 @@
                  ',(or gpipe-context context))))
              (let (,@(when fbos (mapcar #'car fbos))
                    (initd nil))
-               (def-compose-dispatch
-                   ,name
-                   ,(append user-args (make-pipeline-stream-args gpipe-args))
-                 ,uniforms ,context
-                 ,gpipe-args ,fbos ,post))
+               ,(def-compose-dispatch
+                 name
+                 (append user-args (make-pipeline-stream-args gpipe-args))
+                 uniforms context
+                 gpipe-args fbos post))
              (def-compose-dummy
                  ,name
                  ,(append user-args (make-pipeline-stream-args gpipe-args))
@@ -42,8 +42,8 @@
 (defconstant +db-ptr-sym+ '%--dbuffer-master-ptr*)
 (defconstant +db-pass-ptr-sym+ '%--dbuffer-master-ptr*)
 
-(defmacro def-compose-dispatch (name args uniforms context
-                                gpipe-args fbos post)
+(defun def-compose-dispatch (name args uniforms context
+                             gpipe-args fbos post)
   (declare (ignore context))
   (let* ((pass-data (mapcar #'make-map-g-pass gpipe-args
                             (make-pipeline-stream-args gpipe-args nil t)))

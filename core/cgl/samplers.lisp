@@ -326,23 +326,19 @@
 ;; This is how you use samplers.
 (defmacro with-sampling (bindings-pairs &body body)
   (let* ((tex-syms (loop for i in bindings-pairs collect (gensym "texture")))
-         (sampler-syms (loop for i in bindings-pairs collect
-                            (gensym "sampler")))
          (revert-syms (loop for i in bindings-pairs collect
                            (gensym "original-id")))
          (letting (loop for b in bindings-pairs
                      for ts in tex-syms
-                     for ss in sampler-syms
                      for rs in revert-syms
                      do (assert (symbolp (first b)))
-                     append `((,ts ,(first b)) (,ss ,(second b))
+                     append `((,ts ,(first b))
                               (,rs (slot-value ,ts 'sampler-object-id)))))
-         (setting (loop for ts in tex-syms
-                     for ss in sampler-syms
+         (setting (loop for b in bindings-pairs
+                     for ts in tex-syms
                      collect `(setf (slot-value ,ts 'sampler-object-id)
-                                    (%sampler-id ,ss))))
+                                    (%sampler-id ,(second b)))))
          (reverting (loop for ts in tex-syms
-                       for ss in sampler-syms
                        for rs in revert-syms
                        collect `(setf (slot-value ,ts 'sampler-object-id) ,rs))))
     `(let* ,letting
