@@ -158,10 +158,10 @@
   (cond
     ((sampler-p sampler)
      (setf (%sampler-lod-bias sampler) value)
-     (gl::sampler-parameter (%sampler-id sampler) :texture-lod-bias value))
+     (%gl:sampler-parameter-f (%sampler-id sampler) :texture-lod-bias value))
     ((typep sampler 'gl-texture)
      (with-texture-bound (sampler)
-       (gl::tex-parameter (texture-type sampler) :texture-lod-bias value)))
+       (%gl:tex-parameter-f (texture-type sampler) :texture-lod-bias value)))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
   sampler)
 
@@ -170,10 +170,10 @@
   (cond
     ((sampler-p sampler)
      (setf (%sampler-min-lod sampler) value)
-     (gl::sampler-parameter (%sampler-id sampler) :texture-min-lod value))
+     (%gl:sampler-parameter-f (%sampler-id sampler) :texture-min-lod value))
     ((typep sampler 'gl-texture)
      (with-texture-bound (sampler)
-       (gl::tex-parameter (texture-type sampler) :texture-min-lod value)))
+       (%gl:tex-parameter-f (texture-type sampler) :texture-min-lod value)))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
   sampler)
 
@@ -182,10 +182,10 @@
   (cond
     ((sampler-p sampler)
      (setf (%sampler-max-lod sampler) value)
-     (gl::sampler-parameter (%sampler-id sampler) :texture-max-lod value))
+     (%gl:sampler-parameter-f (%sampler-id sampler) :texture-max-lod value))
     ((typep sampler 'gl-texture)
      (with-texture-bound (sampler)
-       (gl::tex-parameter (texture-type sampler) :texture-max-lod value)))
+       (%gl:tex-parameter-f (texture-type sampler) :texture-max-lod value)))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
   sampler)
 
@@ -195,10 +195,12 @@
   (cond
     ((sampler-p sampler)
      (setf (%sampler-magnify-filter sampler) value)
-     (gl::sampler-parameter (%sampler-id sampler) :texture-mag-filter value))
+     (%gl::sampler-parameter-i (%sampler-id sampler) :texture-mag-filter
+                               (%gl::foreign-enum-value '%gl:enum value)))
     ((typep sampler 'gl-texture)
      (with-texture-bound (sampler)
-       (gl::tex-parameter (texture-type sampler) :texture-mag-filter value)))
+       (%gl::tex-parameter-i (texture-type sampler) :texture-mag-filter
+                             (%gl::foreign-enum-value '%gl:enum value))))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
   sampler)
 
@@ -210,10 +212,12 @@
                            :linear-mipmap-nearest :nearest-mipmap-nearest))
        (setf (%sampler-expects-mipmap sampler) t) )
      (setf (%sampler-minify-filter sampler) value)
-     (gl::sampler-parameter (%sampler-id sampler) :texture-min-filter value))
+     (%gl::sampler-parameter-i (%sampler-id sampler) :texture-min-filter
+                               (%gl::foreign-enum-value '%gl:enum value)))
     ((typep sampler 'gl-texture)
      (with-texture-bound (sampler)
-       (gl::tex-parameter (texture-type sampler) :texture-min-filter value)))
+       (%gl::tex-parameter-i (texture-type sampler) :texture-min-filter
+                             (%gl::foreign-enum-value '%gl:enum value))))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
   sampler)
 
@@ -243,35 +247,63 @@
     (assert (and (vectorp value) (every (lambda (x) (member x options)) value)))
     (cond
       ((sampler-p sampler)
-       (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-s (aref value 0))
-       (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-t (aref value 1))
-       (gl::sampler-parameter (%sampler-id sampler) :texture-wrap-r (aref value 2))
+       (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-s
+                                 (%gl::foreign-enum-value '%gl:enum (aref value 0)))
+       (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-t
+                                 (%gl::foreign-enum-value '%gl:enum (aref value 1)))
+       (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-r
+                                 (%gl::foreign-enum-value '%gl:enum (aref value 2)))
        (setf (%sampler-wrap sampler) value))
       ((typep sampler 'gl-texture)
        (with-texture-bound (sampler)
-         (gl::tex-parameter (texture-type sampler) :texture-wrap-s (aref value 0))
-         (gl::tex-parameter (texture-type sampler) :texture-wrap-t (aref value 1))
-         (gl::tex-parameter (texture-type sampler) :texture-wrap-r (aref value 2))))
+         (%gl::tex-parameter-i (texture-type sampler) :texture-wrap-s
+                               (%gl::foreign-enum-value '%gl:enum (aref value 0)))
+         (%gl::tex-parameter-i (texture-type sampler) :texture-wrap-t
+                               (%gl::foreign-enum-value '%gl:enum (aref value 1)))
+         (%gl::tex-parameter-i (texture-type sampler) :texture-wrap-r
+                               (%gl::foreign-enum-value '%gl:enum (aref value 2)))))
       (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler))))
   sampler)
 
 (defun compare (sampler) (%sampler-compare sampler))
 (defun (setf compare) (value sampler)
-  (let ((func (cond ((sampler-p sampler)
-                     (setf (%sampler-compare sampler) value)
-                     #'gl::sampler-parameter)
-                    ((typep sampler 'gl-texture)
-                     (lambda (sampler x y)
-                       (with-texture-bound (sampler)
-                         (gl::tex-parameter (texture-type sampler) x y))))
-                    (t (error "Invalid type ~a of ~a for lod-bias"
-                              (type-of sampler) sampler)))))
-    (if value
-        (funcall func sampler :texture-compare-mode :none)
-        (progn
-          (funcall func sampler :texture-compare-mode
-                   :compare-ref-to-texture)
-          (funcall func sampler :texture-compare-func
+  (cond ((sampler-p sampler)
+         (setf (%sampler-compare sampler)
+               (or value :none))
+         (if value
+             (progn
+               (%gl:sampler-parameter-i
+                (%sampler-id sampler) :texture-compare-mode
+                (%gl::foreign-enum-value '%gl:enum :compare-ref-to-texture))
+               (%gl:sampler-parameter-i
+                (%sampler-id sampler) :texture-compare-func
+                (%gl::foreign-enum-value
+                 '%gl:enum
+                 (case value
+                   ((:never nil) :never)
+                   ((:always t) :always)
+                   ((:equal := =) :equal)
+                   ((:not-equal :/= /=) :not-equal)
+                   ((:less :< <) :less)
+                   ((:greater :> >) :greater)
+                   ((:lequal :<= <=) :lequal)
+                   ((:gequal :>= >=) :gequal)
+                   (otherwise (error "Invalid compare func for sampler ~a" value))))))
+             (%gl:sampler-parameter-i
+              (%sampler-id sampler) :texture-compare-mode
+              (%gl::foreign-enum-value '%gl:enum :none))))
+        ((typep sampler 'gl-texture)
+         (with-texture-bound (sampler)
+           (if value
+               (progn
+                 (%gl:tex-parameter-i
+                  (texture-type sampler) :texture-compare-mode
+                  (%gl::foreign-enum-value
+                   '%gl:enum :compare-ref-to-texture))
+                 (%gl:tex-parameter-i
+                  (texture-type sampler) :texture-compare-func
+                  (%gl::foreign-enum-value
+                   '%gl:enum
                    (case value
                      ((:never nil) :never)
                      ((:always t) :always)
@@ -281,9 +313,33 @@
                      ((:greater :> >) :greater)
                      ((:lequal :<= <=) :lequal)
                      ((:gequal :>= >=) :gequal)
-                     (otherwise (error "Invalid compare func for sampler ~a" value)))))))
+                     (otherwise (error "Invalid compare func for sampler ~a" value))))))
+               (%gl:tex-parameter-i
+                (texture-type sampler) :texture-compare-mode
+                (%gl::foreign-enum-value '%gl:enum :none)))))
+        (t (error "Invalid type ~a of ~a for lod-bias"
+                  (type-of sampler) sampler)))
   sampler)
 
+;; This is how you use samplers.
+(defmacro with-sampling (bindings-pairs &body body)
+  (let* ((tex-syms (loop for i in bindings-pairs collect (gensym "texture")))
+         (sampler-syms (loop for i in bindings-pairs collect (gensym "sampler")))
+         (letting (loop for b in bindings-pairs
+                     for ts in tex-syms
+                     for ss in sampler-syms
+                     append `((,ts ,(first b)) (,ss ,(second b)))))
+         (setting (loop for ts in tex-syms
+                     for ss in sampler-syms
+                     collect `(setf (slot-value ,ts 'sampler-object-id)
+                                   (%sampler-id ,ss))))
+         (reverting (loop for ts in tex-syms
+                       for ss in sampler-syms
+                       collect `(setf (slot-value ,ts 'sampler-object-id) 0))))
+    `(let ,letting
+       ,@setting
+       ,@body
+       ,@reverting)))
 
 ;; Sampling parameters
 

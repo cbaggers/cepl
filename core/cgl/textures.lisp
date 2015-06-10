@@ -68,7 +68,8 @@
    (mipmap-levels :initarg :mipmap-levels)
    (layer-count :initarg :layer-count)
    (cubes :initarg :cubes)
-   (allocated :initform nil :reader allocatedp)))
+   (allocated :initform nil :reader allocatedp)
+   (sampler-object-id :initform 0)))
 
 (defclass immutable-texture (gl-texture) ())
 (defclass mutable-texture (gl-texture) ())
