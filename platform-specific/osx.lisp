@@ -1,7 +1,7 @@
 (in-package :cepl-osx)
 
 (defun start ()
-  (let ((extra-package-dirs '("/opt/local/lib/" "/usr/local/lib")))
+  (let ((extra-package-dirs '("/opt/local/lib/" "/usr/local/")))
     (mapcar
      (lambda (raw-path)
        (let ((port-dir (cl-fad:directory-exists-p raw-path)))
