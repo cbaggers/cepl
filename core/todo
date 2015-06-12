@@ -1,4 +1,5 @@
 
+unless overriden, when creating a cube map texture set the wrapping to clamp-to-edge
 
 -----
 
