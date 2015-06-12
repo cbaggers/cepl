@@ -14,3 +14,6 @@
 
 (defun active-texture-num (num)
   (gl:active-texture (+ #x84C0 num)))
+
+(defun color-attachment-enum (attachment-num)
+  (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :color-attachment0)))

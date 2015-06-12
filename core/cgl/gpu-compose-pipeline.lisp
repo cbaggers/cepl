@@ -50,10 +50,13 @@
          (pass-code (mapcar #'first pass-data))
          (all-draw-buffers (apply #'append (mapcar #'second pass-data))))
     `(let (,@(when all-draw-buffers
-                   `((,+db-ptr-sym+
-                       (foreign-alloc 'cl-opengl-bindings:enum :count
-                                      ,(length all-draw-buffers)
-                                      :initial-contents ',all-draw-buffers)))))
+                   (let ((fbo-draw-buffers
+                          (mapcar #'color-attachment-enum
+                                  all-draw-buffers)))
+                     `((,+db-ptr-sym+
+                        (foreign-alloc 'cl-opengl-bindings:enum :count
+                                       ,(length all-draw-buffers)
+                                       :initial-contents ',fbo-draw-buffers))))))
        (defun ,(dispatch-func-name name)
            (,@args ,@(when uniforms `(&key ,@uniforms)))
          (unless initd

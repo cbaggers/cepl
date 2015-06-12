@@ -660,6 +660,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (setf (attachment fbo attachment) nil)
   (%gl:framebuffer-texture-layer :draw-framebuffer attachment 0 0 0))
 
+;; {TODO} wait..the fbo holds the clear mask?..huh then how to we clear single
+;;        attachments, that seems dumb
 (defun clear (&optional fbo)
   (if (or (null fbo) (eq fbo *default-framebuffer*))
       (gl:clear :color-buffer-bit :depth-buffer-bit)

@@ -85,59 +85,79 @@
 ;;        Do it.
 (defmacro %with-blending (fbo pattern &body body)
   (cond
+    ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ((null pattern) (error "invalid blending pattern"))
+    ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ((eq pattern t)
-     `(progn
-        ;; dont know which attachments from pattern so
-        ;; use attachment data
-        (if (per-attachment-blending-available-p)
-            (%loop-setting-attachment-blend-params ,fbo)
-            (%loop-setting-shared-blending ,fbo))
-        ,@body))
-    (t
-     `(progn
-        ;; use pattern to pick attachments from fbo
-        ,(%gen-attachment-blend pattern fbo)
-        ,@body))))
+     ;; We cant, at compile time, tell which attachments will be used so loop
+     ;; through the attachment list and set everything up
+     `(let ((attachments (%fbo-attachment-color ,fbo))
+            (per-attachment-blendingp (per-attachment-blending-available-p)))
+        ;; if we dont support per attachemnt blend params then we use the
+        ;; params from the fbo
+        (when (not per-attachment-blendingp) (%blend-fbo ,fbo))
+        ;; enable all the attachment that have requested blending
+        (%loop-enabling-attachments attachments)
+        ;; if we support per attachment blending then we go set their params
+        (when per-attachment-blendingp
+          (%loop-setting-per-attachment-blend-params ,fbo))
+        ;; the important bit :)
+        ,@body
+        ;; go disable all the attachments that were enabled
+        (%loop-disabling-attachments attachments)))
+    ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    (t ;; We have a pattern that tells us which attachments will be drawn into
+     ;;   This means we dont have to loop and search for attachments, so we
+     ;;   call unroll the loop.
+     (%gen-attachment-blend pattern fbo body))))
 
-(defun %gen-attachment-blend (attachments fbo)
+(defun %gen-attachment-blend (attachments fbo body)
   (let ((a-syms (loop for a in attachments collect (gensym "attachment")))
         (override-syms (loop for a in attachments collect (gensym "override"))))
+    ;; First we want to get all the lookups of attachment state done
     `(let* ,(loop :for a :in attachments :for s :in a-syms
                :for o :in override-syms :append
                `((,s (%attachment ,fbo ,a))
                  (,o (%attachment-override-blending ,s))))
-       (unless (and ,@override-syms) (%blend-fbo ,fbo))
-       (if (per-attachment-blending-available-p)
-           (progn
-             ,@(loop :for a :in a-syms :for i :from 0 :append
-                  `((%blend ,a ,i)
-                    (if (%attachment-override-blending ,a)
-                        (%blend-attachment-i ,a ,i)
-                        (%blend-fbo-i ,fbo ,i)))))
-           (progn
-             ,@(loop :for a :in a-syms :for i :from 0 :collect
-                  `(%blend ,a ,i)))))))
+       (let ((per-attachment-blendingp (per-attachment-blending-available-p)))
+         ;; If any of the attachments are inheriting the blending from the fbo
+         ;; or if we cant provide per attachment blending, when we need to
+         ;; use the fbo params
+         (unless (or per-attachment-blendingp (and ,@override-syms))
+           (%blend-fbo ,fbo))
+         ;; Enable and set up any blend params needed
+         (if per-attachment-blendingp
+             (progn
+               ,@(loop :for a :in a-syms :for o :in override-syms
+                    :for i :from 0 :collect
+                    `(when (blending ,a)
+                       (%gl:enable-i :blend ,i)
+                       (if ,o
+                           (%blend-attachment-i ,a ,i)
+                           (%blend-fbo-i ,fbo ,i)))))
+             (progn
+               ,@(loop :for a :in a-syms :for i :from 0 :collect
+                    `(when (blending ,a) (%gl:enable-i :blend ,i))))))
+       ;; The meat
+       ,@body
+       ;; go disable all the attachments that were enabled
+       ,@(loop :for a :in a-syms :for i :from 0 :collect
+            `(when (blending ,a) (%gl:disable-i :blend ,i))))))
 
-(defun %loop-setting-shared-blending (fbo)
-  (%blend-fbo fbo)
+(defmacro %loop-enabling-attachments (attachments)
+  `(loop :for a :across ,attachments :for i :from 0 :do
+      (when (blending a) (%gl:enable-i :blend i))))
+
+(defmacro %loop-disabling-attachments (attachments)
+  `(loop :for a :across ,attachments :for i :from 0 :do
+      (when (blending a) (%gl:disable-i :blend i))))
+
+(defun %loop-setting-per-attachment-blend-params (fbo)
   (loop :for a :across (%fbo-attachment-color fbo) :for i :from 0 :do
-     (%blend a i)))
-
-(defun %loop-setting-attachment-blend-params (fbo)
-  (loop :for a :across (%fbo-attachment-color fbo) :for i :from 0 :do
-     (if (blending a)
-         (progn
-           (%gl:enable-i :blend i)
-           (if (%attachment-override-blending a)
-               (%blend-attachment-i a i)
-               (%blend-fbo-i fbo i)))
-         (%gl:disable-i :blend i))))
-
-(defun %blend (attachment i)
-  (if (blending attachment)
-      (%gl:enable-i :blend i)
-      (%gl:disable-i :blend i)))
+     (when (blending a)
+       (if (%attachment-override-blending a)
+           (%blend-attachment-i a i)
+           (%blend-fbo-i fbo i)))))
 
 (defun %blend-fbo (fbo)
   (%gl:blend-equation-separate (%fbo-mode-rgb fbo) (%fbo-mode-alpha fbo))

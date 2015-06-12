@@ -415,3 +415,7 @@
                                  (push results passes))
                         :until (,check-func (first passes) (second passes))))
                    (values-list args)))))))))
+
+(defmacro ---block-doc--- (doc-string &body body)
+  (declare (ignore doc-string))
+  `(progn ,@body))

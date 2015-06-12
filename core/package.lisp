@@ -453,11 +453,14 @@
            :with-fbo-slots
            :attachment-compatible
            :attachment-gpu-array
-           :attachment-override-blending
-           :attachment-source-rgb
-           :attachment-source-alpha
-           :attachment-destination-rgb
-           :attachment-destination-alpha
+           :mode-rgb
+           :mode-alpha
+           :source-rgb
+           :source-alpha
+           :destination-rgb
+           :destination-alpha
+           :blending
+           :per-attachment-blending-available-p
            :fbo-detach
            ;;----------
            :make-ubo
@@ -726,6 +729,15 @@
            :fbo-attach
            :attachment
            :attachment-compatible
+           :attachment-gpu-array
+           :mode-rgb
+           :mode-alpha
+           :source-rgb
+           :source-alpha
+           :destination-rgb
+           :destination-alpha
+           :blending
+           :per-attachment-blending-available-p
            :fbo-detach
            :*current-viewport*
            :viewport
