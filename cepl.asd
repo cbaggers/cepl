@@ -71,6 +71,7 @@
                (:file "core/cgl/samplers")
                (:file "core/cgl/gmap")
                (:file "core/cgl/fbo")
+               (:file "core/cgl/blending-modes")
                (:file "core/cgl/default-data")
                (:file "core/camera/camera")
                ;; (:file "core/space/base-space")

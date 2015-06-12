@@ -130,6 +130,13 @@
 ;; The minor version number of the OpenGL API supported by the current context.
 (def-cached-context-reader minor-version)
 
+(let ((version 0.0))
+  (defun version-float (context)
+    (unless (> version 0.0)
+      (setf version (+ (major-version context)
+                       (/ (minor-version context) 10))))
+    (coerce version 'single-float)))
+
 ;; GL_MAX_SERVER_WAIT_TIMEOUT (64-bit integer, at least 0, see glWaitSync)
 ;; The maximum glWaitSync timeout interval.
 (def-cached-context-reader max-server-wait-timeout)

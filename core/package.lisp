@@ -279,6 +279,7 @@
            :%context-flags
            :major-version
            :minor-version
+           :version-float
            :max-server-wait-timeout
            :min-map-buffer-alignment
            :extension-count

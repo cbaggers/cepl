@@ -18,30 +18,43 @@
   (id -1 :type fixnum)
   (attachment-color (make-array (max-draw-buffers *gl-context*)
                                 :element-type 'attachment
-                                :initial-element (make-attachment))
+                                :initial-element (%make-attachment))
                     :type (array attachment *))
   (draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
                                   (max-draw-buffers *gl-context*)
                                   :initial-element :none))
-  (attachment-depth (make-attachment) :type attachment)
+  (attachment-depth (%make-attachment) :type attachment)
   (clear-mask (cffi:foreign-bitfield-value
                '%gl::ClearBufferMask '(:color-buffer-bit))
-              :type fixnum))
-
-(defmethod free ((thing fbo))
-  (print "FREE FBO NOT IMPLEMENTED - LEAKING"))
-
-(defstruct attachment
-  (gpu-array nil :type (or null gpu-array-t))
-  (override-blending nil :type boolean)
+              :type fixnum)
+  (mode-rgb :func-add :type keyword)
+  (mode-alpha :func-add :type keyword)
   (source-rgb :one :type keyword)
   (source-alpha :one :type keyword)
   (destination-rgb :zero :type keyword)
   (destination-alpha :zero :type keyword))
 
-;; this is pretty wasteful but will do for now
+
+(defmethod free ((thing fbo))
+  (print "FREE FBO NOT IMPLEMENTED - LEAKING"))
+
+(defstruct (attachment (:constructor %make-attachment)
+                       (:conc-name %attachment-))
+  (fbo nil :type (or null fbo))
+  (gpu-array nil :type (or null gpu-array-t))
+  (owns-gpu-array nil :type boolean)
+  (blending-enabled nil :type boolean)
+  (override-blending nil :type boolean)
+  (mode-rgb :func-add :type keyword)
+  (mode-alpha :func-add :type keyword)
+  (source-rgb :one :type keyword)
+  (source-alpha :one :type keyword)
+  (destination-rgb :zero :type keyword)
+  (destination-alpha :zero :type keyword))
+
+;; {TODO} this is pretty wasteful but will do for now
 (defun attachment-viewport (attachment)
-  (make-viewport (slot-value (attachment-gpu-array attachment) 'dimensions)
+  (make-viewport (slot-value (%attachment-gpu-array attachment) 'dimensions)
                  (v! 0 0)))
 
 (defun update-clear-mask (fbo)
@@ -49,7 +62,7 @@
         (cffi:foreign-bitfield-value
          '%gl::ClearBufferMask
          `(:color-buffer-bit
-           ,@(and (attachment-gpu-array (%fbo-attachment-depth fbo))
+           ,@(and (%attachment-gpu-array (%fbo-attachment-depth fbo))
                   '(:depth-buffer-bit))
            ;; ,@(list (and (attachment-gpu-array (%fbo-attachment-stencil object))
            ;;              :stencil-buffer-bit))
@@ -60,7 +73,7 @@
   (let ((ptr (%fbo-draw-buffer-map fbo)))
     (loop :for i :from 0 :for attachment :across (%fbo-attachment-color fbo) :do
        (setf (mem-aref ptr 'cl-opengl-bindings:enum i)
-             (if (attachment-gpu-array attachment)
+             (if (%attachment-gpu-array attachment)
                  (nth i *attachments*)
                  :none)))))
 ;;{TODO} magic-num is gl enum for color-attachment0
@@ -69,20 +82,147 @@
 (defmethod print-object ((object fbo) stream)
   (format stream "#<FBO~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENTS ~a~]>"
           (loop :for i :from 0 :for j :across (%fbo-attachment-color object)
-             :when (attachment-gpu-array j) :collect i)
-          (and (attachment-gpu-array (%fbo-attachment-depth object)) t)))
+             :when (%attachment-gpu-array j) :collect i)
+          (and (%attachment-gpu-array (%fbo-attachment-depth object)) t)))
 
 ;;--------------------------------------------------------------
 ;; Macro to write the helper func and compiler macro
 
 (defun replace-attachment-array (gpu-array attachment)
-  (make-attachment
+  (%make-attachment
    :gpu-array gpu-array
-   :override-blending (attachment-override-blending attachment)
-   :source-rgb (attachment-source-rgb attachment)
-   :source-alpha (attachment-source-alpha attachment)
-   :destination-rgb (attachment-destination-rgb attachment)
-   :destination-alpha (attachment-destination-alpha attachment)))
+   :owns-gpu-array (%attachment-owns-gpu-array attachment)
+   :blending-enabled (%attachment-blending-enabled attachment)
+   :override-blending (%attachment-override-blending attachment)
+   :mode-rgb (%attachment-mode-rgb attachment)
+   :mode-alpha (%attachment-mode-alpha attachment)
+   :source-rgb (%attachment-source-rgb attachment)
+   :source-alpha (%attachment-source-alpha attachment)
+   :destination-rgb (%attachment-destination-rgb attachment)
+   :destination-alpha (%attachment-destination-alpha attachment)))
+
+(defun attachment-gpu-array (attachment)
+  (%attachment-gpu-array attachment))
+
+(defun (setf attachment-gpu-array) (value attachment)
+  (setf (%attachment-gpu-array attachment) value)
+  (%update-fbo-state (%attachment-fbo attachment))
+  attachment)
+
+;; doco for mode-rgb and mode-alpha, I need doco files
+;; "Choices are:
+;;
+;; :func-add - The source and destination colors are added to each other.
+;;             O = sS + dD. The The s and d are blending parameters that are
+;;             multiplied into each of S and D before the addition.
+;;
+;; :func-subtract - Subtracts the destination from the source. O = sS - dD.
+;;                  The source and dest are again multiplied by blending
+;;                  parameters.
+;;
+;; :func-reverse-subtract - Subtracts the source from the destination.
+;;                          O = sD - dS. The source and dest are multiplied by
+;;                          blending parameters.
+;;
+;; :min - The output color is the component-wise minimum value of the source
+;;            and dest colors. So performing :min in the RGB equation means that
+;;            Or = min(Sr, Dr), Og = min(Sg, Dg), and so forth.
+;;            The parameters s and d are ignored for this equation.
+;;
+;; :max - The output color is the component-wise maximum value of the source and
+;;        dest colors. The parameters s and d are ignored for this equation."
+
+(defun mode-rgb (attachment)
+  (typecase attachment
+    (attachment (%attachment-mode-rgb attachment))
+    (fbo (%fbo-mode-rgb attachment))))
+
+(defun mode-alpha (attachment)
+  (typecase attachment
+    (attachment (%attachment-mode-alpha attachment))
+    (fbo (%fbo-mode-alpha attachment))))
+
+(defun source-rgb (attachment)
+  (typecase attachment
+    (attachment (%attachment-source-rgb attachment))
+    (fbo (%fbo-source-rgb attachment))))
+
+(defun source-alpha (attachment)
+  (typecase attachment
+    (attachment (%attachment-source-alpha attachment))
+    (fbo (%fbo-source-alpha attachment))))
+
+(defun destination-rgb (attachment)
+  (typecase attachment
+    (attachment (%attachment-destination-rgb attachment))
+    (fbo (%fbo-destination-rgb attachment))))
+
+(defun destination-alpha (attachment)
+  (typecase attachment
+    (attachment (%attachment-destination-alpha attachment))
+    (fbo (%fbo-destination-alpha attachment))))
+
+(defun blending (attachment)
+  (%attachment-blending-enabled attachment))
+
+(defun (setf blending) (value attachment)
+  (setf (%attachment-blending-enabled attachment) (not (null value))))
+
+(let ((major-v 0))
+  (defun per-attachment-blending-available-p ()
+    (when (= major-v 0) (setf major-v (cl-opengl:get* :major-version)))
+    (>= major-v 4))
+  (labels ((check-version-for-per-attachment-params ()
+             (unless (per-attachment-blending-available-p)
+               (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0" (version-float *gl-context*)))))
+
+    (defun (setf mode-rgb) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (setf (%attachment-override-blending attachment) t
+                            (%attachment-mode-rgb attachment) value)))
+        (fbo (setf (%fbo-mode-rgb attachment) value))))
+
+    (defun (setf mode-alpha) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (setf (%attachment-override-blending attachment) t
+                            (%attachment-mode-alpha attachment) value)))
+        (fbo (setf (%fbo-mode-alpha attachment) value))))
+
+    (defun (setf source-rgb) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (setf (%attachment-override-blending attachment) t
+                            (%attachment-source-rgb attachment) value)))
+        (fbo (setf (%fbo-source-rgb attachment) value))))
+
+    (defun (setf source-alpha) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (setf (%attachment-override-blending attachment) t
+                            (%attachment-source-alpha attachment) value)))
+        (fbo (setf (%fbo-source-alpha attachment) value))))
+
+    (defun (setf destination-rgb) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (setf (%attachment-override-blending attachment) t
+                            (%attachment-destination-rgb attachment) value)))
+        (fbo (setf (%fbo-destination-rgb attachment) value))))
+
+    (defun (setf destination-alpha) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (setf (%attachment-override-blending attachment) t
+                            (%attachment-destination-alpha attachment) value)))
+        (fbo (setf (%fbo-destination-alpha attachment) value))))))
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
@@ -96,6 +236,13 @@
     ;; (:ds (%fbo-attachment-depth fbo))
     (otherwise (aref (%fbo-attachment-color fbo) attachment-name))))
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+(defun %update-fbo-state (fbo)
+  (update-draw-buffer-map fbo)
+  (update-clear-mask fbo)
+  (loop :for a :across (%fbo-attachment-color fbo) :do
+     (setf (%attachment-fbo a) fbo))
+  (setf (%attachment-fbo (%fbo-attachment-depth fbo)) fbo))
 
 (defun (setf attachment) (value fbo attachment-name)
   ;;{TODO} add support for :S and :ds
@@ -116,8 +263,7 @@
          (setf (aref (%fbo-attachment-color fbo) attachment-name)
                value)))
     (otherwise (error "invalid value from attachment ~a" value)))
-  (update-draw-buffer-map fbo)
-  (update-clear-mask fbo)
+  (%update-fbo-state fbo)
   value)
 
 (defvar *attachments*
@@ -250,7 +396,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defun make-fbos (&optional (count 1))
   (unless (> count 0)
     (error "Attempting to create invalid number of framebuffers: ~s" count))
-  (mapcar (lambda (x) (%make-fbo :id x))
+  (mapcar (lambda (x) (let ((f (%make-fbo :id x))) (%update-fbo-state f) f))
           (gl:gen-framebuffers count)))
 
 (defun %delete-fbo (fbo)

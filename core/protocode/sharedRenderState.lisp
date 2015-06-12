@@ -117,3 +117,17 @@
   (setf (gl-state-cache-vars state-cache) 100))
 
 ;; Look at glspec 2.6.2
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+;; What if the default behaviour was never to clean up? never to unbind?
+;; if we always assume the state dirty unless have the state-cache as a
+;; guarentee?
+;; Sounds good at first, makes more sense with foreign libs as who knows
+;; what is happening. However it seems unneccesarily extreme. not unbinding
+;; is for speed, and we wont be doing that when we use the state-cache
+;; anyway. The advantages are we likely avoid odd side effects when doing shit
+;; like making vaos (or even just bindings textures/samplers).
+
+;; I do believe that the state shouldnt be trusted per se, but there isnt a
+;; good reason not to make it harder for ourselves :)

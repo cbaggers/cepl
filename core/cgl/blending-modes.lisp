@@ -61,9 +61,111 @@
                                :one-minus-src1-alpha)))))
 
 
+;; We have another case to deal with. Per buffer blending params
+;; is a >v4.0 feature, before that we could only enable for disable
+;; blending per buffer.
+;; Hmm, we need a flag for this in the attachment
+;; see fbo.lisp's #'replace-attachment-array for the catch logic
+;; hmm we need to draw down the permutations
 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; - can enable or disable blend per attachment
+;; - >v4 can set params per attachment
+
+;; default blend disable
+;; if enabled, default param-override = nil
+
+;; blend disabled - nothing to see here :)
+;; blend enabled, no override - just call (gl:enable :blend *)
+;; blend enabled, override - only valid >v4, (gl:enable :blend *) and then set
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+;; {TODO} Huge performance costs will be made here, unneccesary enable/disable
+;;        all over the place. However will be VERY easy to fix with state-cache
+;;        Do it.
+(defmacro %with-blending (fbo pattern &body body)
+  (cond
+    ((null pattern) (error "invalid blending pattern"))
+    ((eq pattern t)
+     `(progn
+        ;; dont know which attachments from pattern so
+        ;; use attachment data
+        (if (per-attachment-blending-available-p)
+            (%loop-setting-attachment-blend-params ,fbo)
+            (%loop-setting-shared-blending ,fbo))
+        ,@body))
+    (t
+     `(progn
+        ;; use pattern to pick attachments from fbo
+        ,(%gen-attachment-blend pattern fbo)
+        ,@body))))
+
+(defun %gen-attachment-blend (attachments fbo)
+  (let ((a-syms (loop for a in attachments collect (gensym "attachment")))
+        (override-syms (loop for a in attachments collect (gensym "override"))))
+    `(let* ,(loop :for a :in attachments :for s :in a-syms
+               :for o :in override-syms :append
+               `((,s (%attachment ,fbo ,a))
+                 (,o (%attachment-override-blending ,s))))
+       (unless (and ,@override-syms) (%blend-fbo ,fbo))
+       (if (per-attachment-blending-available-p)
+           (progn
+             ,@(loop :for a :in a-syms :for i :from 0 :append
+                  `((%blend ,a ,i)
+                    (if (%attachment-override-blending ,a)
+                        (%blend-attachment-i ,a ,i)
+                        (%blend-fbo-i ,fbo ,i)))))
+           (progn
+             ,@(loop :for a :in a-syms :for i :from 0 :collect
+                  `(%blend ,a ,i)))))))
+
+(defun %loop-setting-shared-blending (fbo)
+  (%blend-fbo fbo)
+  (loop :for a :across (%fbo-attachment-color fbo) :for i :from 0 :do
+     (%blend a i)))
+
+(defun %loop-setting-attachment-blend-params (fbo)
+  (loop :for a :across (%fbo-attachment-color fbo) :for i :from 0 :do
+     (if (blending a)
+         (progn
+           (%gl:enable-i :blend i)
+           (if (%attachment-override-blending a)
+               (%blend-attachment-i a i)
+               (%blend-fbo-i fbo i)))
+         (%gl:disable-i :blend i))))
+
+(defun %blend (attachment i)
+  (if (blending attachment)
+      (%gl:enable-i :blend i)
+      (%gl:disable-i :blend i)))
+
+(defun %blend-fbo (fbo)
+  (%gl:blend-equation-separate (%fbo-mode-rgb fbo) (%fbo-mode-alpha fbo))
+  (%gl:blend-func-separate (%fbo-source-rgb fbo)
+                           (%fbo-source-alpha fbo)
+                           (%fbo-destination-rgb fbo)
+                           (%fbo-destination-alpha fbo)))
+
+(defun %blend-fbo-i (fbo i)
+  (%gl:blend-equation-separate-i i (%fbo-mode-rgb fbo) (%fbo-mode-alpha fbo))
+  (%gl:blend-func-separate-i
+   i (%fbo-source-rgb fbo) (%fbo-source-alpha fbo)
+   (%fbo-destination-rgb fbo) (%fbo-destination-alpha fbo)))
+
+(defun %blend-attachment-i (attachment i)
+  (%gl:blend-equation-separate-i
+   i (%attachment-mode-rgb attachment) (%attachment-mode-alpha attachment))
+  (%gl:blend-func-separate-i
+   i (%attachment-source-rgb attachment)
+   (%attachment-source-alpha attachment)
+   (%attachment-destination-rgb attachment)
+   (%attachment-destination-alpha attachment)))
 
 ;; functions below were written to help me understand the blending process
+;; they are not something to use in attachments. I'm not sure how to expose
+;; these (or if I should). I like the idea of cpu side debugging using this
+;; but in issolation it doesnt really mean much. Probably only makes sense in
+;; a software renderer.
 
 (defun zero
     (source destination &key (target-rgb t) (blend-color *blend-color*))

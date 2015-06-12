@@ -50,15 +50,13 @@
          (let* ((,once-fbo ,fbo)
                 (%current-fbo ,once-fbo))
            (%bind-fbo ,once-fbo ,target)
-           ,(when draw-buffers
-                  (cond ((equal draw-buffers t) `(%fbo-draw-buffers ,once-fbo))
-                        ((listp draw-buffers)
-                         (%write-draw-buffer-pattern-call draw-buffers))))
-           (prog1 (,@(if with-viewport
-                         `(with-fbo-viewport (,once-fbo ,attachment-for-size))
-                         '(progn))
-                     ,@body)
-             (when ,unbind (%unbind-fbo))))))))
+           ,(%write-draw-buffer-pattern-call
+             draw-buffers once-fbo
+             `(prog1 (,@(if with-viewport
+                            `(with-fbo-viewport (,once-fbo ,attachment-for-size))
+                            '(progn))
+                        ,@body)
+                (when ,unbind (%unbind-fbo)))))))))
 
 ;; EXAMPLES
 ;;
@@ -69,14 +67,20 @@
 ;;         (let ((jam (map-g #'test a :tex tx)))
 ;;           (print jam))))
 
-
-(defun %write-draw-buffer-pattern-call (pattern)
+(defun %write-draw-buffer-pattern-call (pattern fbo &rest body)
   "This plays with the dispatch call from compose-pipelines
    The idea is that the dispatch func can preallocate one array
    with the draw-buffers patterns for ALL the passes in it, then
    we just upload from that one block of memory.
    All of this can be decided at compile time. It's gonna go fast!"
-  (destructuring-bind (pointer len) pattern
-    `(progn (%gl:draw-buffers ,len ,pointer)
-            (cffi:incf-pointer
-             ,pointer (* ,len (foreign-type-size 'cl-opengl-bindings:enum))))))
+  (cond ((null pattern) `(progn ,@body))
+        ((equal pattern t)
+         `(progn
+            (%fbo-draw-buffers ,fbo)
+            (%with-blending ,fbo t ,@body)))
+        ((listp pattern)
+         (destructuring-bind (pointer len attachments) pattern
+           `(progn (%gl:draw-buffers ,len ,pointer)
+                   (%with-blending ,fbo ,attachments ,@body)
+                   (cffi:incf-pointer
+                    ,pointer (* ,len (foreign-type-size 'cl-opengl-bindings:enum))))))))

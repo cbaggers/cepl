@@ -40,7 +40,7 @@
 ;;--------------------------------------------------
 
 (defconstant +db-ptr-sym+ '%--dbuffer-master-ptr*)
-(defconstant +db-pass-ptr-sym+ '%--dbuffer-master-ptr*)
+(defconstant +db-pass-ptr-sym+ '%--dbuffer-pass-ptr*)
 
 (defun def-compose-dispatch (name args uniforms context
                              gpipe-args fbos post)
@@ -62,10 +62,11 @@
            ,(when post `(funcall ,post)))
          ;; symbol-macrolet will go here
          (labels ((cgl:attachment (fbo attachment-name)
-                    (slot-value (cgl::attachment-gpu-array
+                    (slot-value (cgl::%attachment-gpu-array
                                  (cgl::%attachment fbo attachment-name))
                                 'cgl::texture)))
-           ,@pass-code)))))
+           (let ,(when all-draw-buffers `((,+db-pass-ptr-sym+ ,+db-ptr-sym+)))
+             ,@pass-code))))))
 
 (defun fbo-comp-form (form)
   (destructuring-bind (name . make-fbo-args) form
@@ -98,21 +99,21 @@
          (key-start (or (position-if #'keywordp fbo-pattern)
                         (length fbo-pattern)))
          (fbo (first fbo-pattern))
-         (buffer-pattern (subseq fbo-pattern 1 key-start))
+         (attachments (subseq fbo-pattern 1 key-start))
          (keys (subseq fbo-pattern key-start)))
-    (when (and (member :draw-buffers keys) buffer-pattern)
+    (when (and (member :draw-buffers keys) attachments)
       (error "defpipeline: You must not specify an fbo target with buffers and a :draw-buffers keyword argument"))
-    (when (and (not buffer-pattern) (not (member :draw-buffers keys)))
-      (setf keys (append keys '(:draw-buffers t))))
     (list
      `(with-bind-fbo
-          (,fbo
-           ,@keys
-           ,@(when buffer-pattern
-                   `(:draw-buffers '(,+db-ptr-sym+ ,(length buffer-pattern)))))
+          (,fbo ,@keys
+                ,@(if attachments
+                      `(:draw-buffers
+                        (,+db-pass-ptr-sym+ ,(length attachments) ,attachments))
+                      (when (not (member :draw-buffers keys))
+                        '(:draw-buffers t))))
         ,@lisp-forms
         ,map-g-form)
-     buffer-pattern)))
+     attachments)))
 
 ;;--------------------------------------------------
 
