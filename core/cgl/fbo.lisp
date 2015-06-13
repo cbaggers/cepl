@@ -1,21 +1,14 @@
 (in-package :cgl)
 
-;; :color-attachmenti :depth-attachment :stencil-attachment :depth-stencil-attachment
+;; {TODO} A fragment shader can output different data to any of these by
+;;        linking out variables to attachments with the glBindFragDataLocation
+;;        function
 
-;; NOTE: The second parameter implies that you can have multiple color
-;; attachments. A fragment shader can output different data to any of these by
-;; linking out variables to attachments with the glBindFragDataLocation
-;; function
-
-;; Framebuffer Object Structure
-
-(defstruct default-framebuffer)
-(defvar *default-framebuffer* (make-default-framebuffer))
-(defvar %current-fbo *default-framebuffer*)
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defstruct (fbo (:constructor %make-fbo)
                 (:conc-name %fbo-))
-  (id -1 :type fixnum)
+  (id 0 :type fixnum)
   (attachment-color (make-array (max-draw-buffers *gl-context*)
                                 :element-type 'attachment
                                 :initial-element (%make-attachment))
@@ -32,11 +25,8 @@
   (source-rgb :one :type keyword)
   (source-alpha :one :type keyword)
   (destination-rgb :zero :type keyword)
-  (destination-alpha :zero :type keyword))
-
-
-(defmethod free ((thing fbo))
-  (print "FREE FBO NOT IMPLEMENTED - LEAKING"))
+  (destination-alpha :zero :type keyword)
+  (is-default nil :type boolean))
 
 (defstruct (attachment (:constructor %make-attachment)
                        (:conc-name %attachment-))
@@ -52,10 +42,72 @@
   (destination-rgb :zero :type keyword)
   (destination-alpha :zero :type keyword))
 
+(defmethod print-object ((object fbo) stream)
+  (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENTS ~a~]>"
+          (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
+          (loop :for i :from 0 :for j :across (%fbo-attachment-color object)
+             :when (%attachment-gpu-array j) :collect i)
+          (and (%attachment-gpu-array (%fbo-attachment-depth object)) t)))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+(defvar %default-framebuffer (%make-default-framebuffer))
+(defvar %current-fbo %default-framebuffer)
+
+(defun %make-default-framebuffer (&optional (double-buffering t) (depth t))
+  (%update-fbo-state
+   (%make-fbo
+    :id -1
+    :is-default t
+    :attachment-color
+    (make-array 4 :element-type 'attachment :initial-element
+                (list (%make-default-attachment t dimensions)
+                      (%make-default-attachment double-buffering dimensions)
+                      (%make-default-attachment nil dimensions)
+                      (%make-default-attachment nil dimensions)))
+    :attachment-depth (%make-default-attachment depth dimensions))))
+
+(defun %make-default-attachment (enabled dimensions)
+  (%make-attachment
+   :gpu-array (when enabled (%make-default-attachment-gpu-array dimensions))))
+
+(defun %make-default-attachment-gpu-array (dimensions)
+  (make-instance 'gpu-array-t
+                 :texture nil
+                 :texture-type :gl-internal
+                 :dimensions dimensions
+                 :level-num 0
+                 :layer-num 0
+                 :face-num 0
+                 :internal-format :gl-internal))
+
+(defun %set-default-fbo-viewport (new-dimensions)
+  (let ((fbo %default-framebuffer))
+    (loop :for c :across (%fbo-attachment-color fbo) :do
+       (with-slots (dimensions) (%attachment-gpu-array c)
+         (setf dimensions new-dimensions)))
+    (with-slots (dimensions) (%attachment-gpu-array (%fbo-attachment-depth fbo))
+      (setf dimensions new-dimensions))))
+
 ;; {TODO} this is pretty wasteful but will do for now
 (defun attachment-viewport (attachment)
-  (make-viewport (slot-value (%attachment-gpu-array attachment) 'dimensions)
-                 (v! 0 0)))
+  (if (%fbo-is-default (%attachment-fbo attachment))
+      (slot-value *gl-context* 'viewport)
+      (make-viewport (slot-value (%attachment-gpu-array attachment) 'dimensions)
+                     (v! 0 0))))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+(defun %update-fbo-state (fbo)
+  (update-draw-buffer-map fbo)
+  (update-clear-mask fbo)
+  (update-parent-for-all-attachments fbo))
+
+(defun update-parent-for-all-attachments (fbo)
+  (loop :for a :across (%fbo-attachment-color fbo) :do
+     (setf (%attachment-fbo a) fbo))
+  (setf (%attachment-fbo (%fbo-attachment-depth fbo)) fbo)
+  fbo)
 
 (defun update-clear-mask (fbo)
   (setf (%fbo-clear-mask fbo)
@@ -66,24 +118,21 @@
                   '(:depth-buffer-bit))
            ;; ,@(list (and (attachment-gpu-array (%fbo-attachment-stencil object))
            ;;              :stencil-buffer-bit))
-           ))))
+           )))
+  fbo)
 
-;;*attachments*
 (defun update-draw-buffer-map (fbo)
-  (let ((ptr (%fbo-draw-buffer-map fbo)))
+  (let ((ptr (%fbo-draw-buffer-map fbo))
+        (default-fbo (%fbo-is-default fbo)))
     (loop :for i :from 0 :for attachment :across (%fbo-attachment-color fbo) :do
        (setf (mem-aref ptr 'cl-opengl-bindings:enum i)
              (if (%attachment-gpu-array attachment)
-                 (nth i *attachments*)
-                 :none)))))
-;;{TODO} magic-num is gl enum for color-attachment0
-;;       needs an assert somewhere
+                 (if default-fbo
+                     (default-fbo-attachment-enum i)
+                     (color-attachment-enum i))
+                 :none))))
+  fbo)
 
-(defmethod print-object ((object fbo) stream)
-  (format stream "#<FBO~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENTS ~a~]>"
-          (loop :for i :from 0 :for j :across (%fbo-attachment-color object)
-             :when (%attachment-gpu-array j) :collect i)
-          (and (%attachment-gpu-array (%fbo-attachment-depth object)) t)))
 
 ;;--------------------------------------------------------------
 ;; Macro to write the helper func and compiler macro
@@ -105,9 +154,25 @@
   (%attachment-gpu-array attachment))
 
 (defun (setf attachment-gpu-array) (value attachment)
-  (setf (%attachment-gpu-array attachment) value)
-  (%update-fbo-state (%attachment-fbo attachment))
-  attachment)
+  (let* ((fbo (%attachment-fbo attachment))
+         (color-index (or (find attachment (%fbo-attachment-color fbo)) -1))
+         (is-depth (eq attachment (%fbo-attachment-depth fbo)))
+         ;;{TODO} add is-stencil here
+         (attachment-enum (cond (is-depth :depth-attachment)
+                                ;;(is-stencil :stencil-attachment)
+                                (t (color-attachment-enum color-index)))))
+
+    (when (%fbo-is-default fbo) (error "Cannot modify attachments of default-framebuffer"))
+    (unless (or (>= color-index 0) is-depth)
+      (error "FBO Internal state mismatch - Attachment thinks it belongs to an fbo, the fbo disagrees."))
+    ;; update gl
+    (fbo-detach fbo attachment-enum)
+    (fbo-attach fbo value attachment-enum)
+    ;; update structs
+    (setf (%attachment-gpu-array attachment) value)
+    (%update-fbo-state (%attachment-fbo attachment))
+    ;; and we're done
+    attachment))
 
 ;; doco for mode-rgb and mode-alpha, I need doco files
 ;; "Choices are:
@@ -237,15 +302,9 @@
     (otherwise (aref (%fbo-attachment-color fbo) attachment-name))))
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun %update-fbo-state (fbo)
-  (update-draw-buffer-map fbo)
-  (update-clear-mask fbo)
-  (loop :for a :across (%fbo-attachment-color fbo) :do
-     (setf (%attachment-fbo a) fbo))
-  (setf (%attachment-fbo (%fbo-attachment-depth fbo)) fbo))
-
 (defun (setf attachment) (value fbo attachment-name)
   ;;{TODO} add support for :S and :ds
+  (when (%fbo-is-default) (error "Cannot modify attachments on the default framebuffer"))
   (typecase value
     (gpu-array-t
      (if (eq :d attachment-name)
@@ -266,32 +325,26 @@
   (%update-fbo-state fbo)
   value)
 
-(defvar *attachments*
-  '(:color-attachment0 :color-attachment1 :color-attachment2 :color-attachment3
-    :color-attachment4 :color-attachment5 :color-attachment6 :color-attachment7
-    :color-attachment8 :color-attachment9 :color-attachment10
-    :color-attachment11 :color-attachment12 :color-attachment13
-    :color-attachment14 :color-attachment15))
-
-(let (attachments)
+(let ((max-draw-buffers -1))
   (defun get-gl-attachment-keyword (x)
-    (unless attachments
-      (setf attachments
-            (let ((len (max-draw-buffers *gl-context*)))
-              (make-array len :element-type 'keyword
-                          :initial-contents (subseq *attachments* 0 len)))))
-    (cond ((eq x :c) :color-attachment0)
-          ((eq x :d) :depth-attachment)
-          ((eq x :s) :stencil-attachment)
-          ((eq x :ds) :depth-stencil-attachment)
-          (t (aref attachments x)))))
+    (unless (> max-draw-buffers 0)
+      (setf max-draw-buffers (max-draw-buffers *gl-context*)))
+    (cond ((eq x :c) (color-attachment-enum 0))
+          ((eq x :d) #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
+          ((eq x :s) #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
+          ((eq x :ds) #.(cffi:foreign-enum-value
+                         '%gl:enum :depth-stencil-attachment))
+          (t (if (<= x max-draw-buffers)
+                 (color-attachment-enum x)
+                 (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
+                        x max-draw-buffers))))))
 
 (define-compiler-macro get-gl-attachment-keyword (&whole whole x)
-  (cond ((numberp x) (nth x *attachments*))
-        ((eq x :c) :color-attachment0)
-        ((eq x :d) :depth-attachment)
-        ((eq x :s) :stencil-attachment)
-        ((eq x :ds) :depth-stencil-attachment)
+  (cond ((eq x :c) (color-attachment-enum 0))
+        ((eq x :d) #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
+        ((eq x :s) #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
+        ((eq x :ds) #.(cffi:foreign-enum-value
+                       '%gl:enum :depth-stencil-attachment))
         (t whole)))
 
 (defun binding-shorthand (x)
@@ -399,11 +452,20 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (mapcar (lambda (x) (let ((f (%make-fbo :id x))) (%update-fbo-state f) f))
           (gl:gen-framebuffers count)))
 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 (defun %delete-fbo (fbo)
   (gl:delete-framebuffers (listify (%fbo-id fbo))))
 
 (defun %delete-fbos (&rest fbos)
   (gl:delete-framebuffers (mapcar #'%fbo-id fbos)))
+
+(defmethod free ((thing fbo))
+  (if (%fbo-is-default)
+      (error "Cannot free the default framebuffer")
+      (print "FREE FBO NOT IMPLEMENTED - LEAKING")))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun %bind-fbo (fbo target)
   ;; The target parameter for this object can take one of 3 values:
@@ -424,13 +486,39 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (gl:bind-framebuffer :framebuffer 0))
 
 
-;; NOTE: The with-bind-fbo macro lives in the gmap.lisp file, this is because
-;;       of the crazy macro relationship they have for performance reasons
-;; defmacro with-bind-fbo ((fbo &key (target :framebuffer) (unbind t)
-;;                              (attachment-for-size :c0) (with-viewport t))
-;;                         &body body)
-;;   ... Sorry mario, the macro you are looking for is in another file ...
-;;   )
+(defmacro with-bind-fbo ((fbo &key (target :framebuffer) (unbind t)
+                              (with-viewport t) (attachment-for-size 0)
+                              (draw-buffers t))
+                         &body body)
+  `(let* ((%current-fbo ,fbo))
+     (%bind-fbo %current-fbo ,target)
+     ,(%write-draw-buffer-pattern-call
+       draw-buffers '%current-fbo
+       `(,@(if with-viewport
+               `(with-fbo-viewport (%current-fbo ,attachment-for-size))
+               '(progn))
+           ,@body
+           (when ,unbind (%unbind-fbo))
+           %current-fbo))))
+
+(defun %write-draw-buffer-pattern-call (pattern fbo &rest body)
+  "This plays with the dispatch call from compose-pipelines
+   The idea is that the dispatch func can preallocate one array
+   with the draw-buffers patterns for ALL the passes in it, then
+   we just upload from that one block of memory.
+   All of this can be decided at compile time. It's gonna go fast!"
+  (cond ((null pattern) `(progn ,@body))
+        ((equal pattern t)
+         `(progn
+            (%fbo-draw-buffers ,fbo)
+            (%with-blending ,fbo t ,@body)))
+        ((listp pattern)
+         (destructuring-bind (pointer len attachments) pattern
+           (assert (numberp len))
+           `(progn (%gl:draw-buffers ,len ,pointer)
+                   (%with-blending ,fbo ,attachments ,@body)
+                   (cffi:incf-pointer
+                    ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum))))))))
 
 ;; Attaching Images
 
@@ -662,7 +750,5 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;; {TODO} wait..the fbo holds the clear mask?..huh then how to we clear single
 ;;        attachments, that seems dumb
-(defun clear (&optional fbo)
-  (if (or (null fbo) (eq fbo *default-framebuffer*))
-      (gl:clear :color-buffer-bit :depth-buffer-bit)
-      (%gl:clear (%fbo-clear-mask fbo))))
+(defun clear (&optional (fbo %current-fbo))
+  (%gl:clear (%fbo-clear-mask fbo)))

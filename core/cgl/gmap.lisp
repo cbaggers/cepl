@@ -1,60 +1,12 @@
 (in-package :cgl)
 
-
-
-;; {TODO} need to put this in some macros utils package
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun function-formp (x) x))
-
 (defmacro map-g (pipeline-func stream &rest uniforms)
-  (assert (function-formp pipeline-func))
+  (labels ((function-formp (x) (eq (first x) 'function)))
+    (assert (function-formp pipeline-func)))
   (let ((pipeline-name (second pipeline-func)))
     `(progn
        (,(symb-package :cgl :$$-dispatch- pipeline-name) ,stream ,@uniforms)
        cgl::%current-fbo)))
-
-
-(defmacro with-bind-fbo ((fbo &key (target :framebuffer) (unbind t)
-                              (with-viewport t) (attachment-for-size 0)
-                              (draw-buffers t))
-                         &body body)
-  `(let* ((%current-fbo ,fbo))
-     (%bind-fbo %current-fbo ,target)
-     ,(%write-draw-buffer-pattern-call
-       draw-buffers '%current-fbo
-       `(,@(if with-viewport
-               `(with-fbo-viewport (%current-fbo ,attachment-for-size))
-               '(progn))
-           ,@body
-           (when ,unbind (%unbind-fbo))
-           %current-fbo))))
-
-(defun %write-draw-buffer-pattern-call (pattern fbo &rest body)
-  "This plays with the dispatch call from compose-pipelines
-   The idea is that the dispatch func can preallocate one array
-   with the draw-buffers patterns for ALL the passes in it, then
-   we just upload from that one block of memory.
-   All of this can be decided at compile time. It's gonna go fast!"
-  (cond ((null pattern) `(progn ,@body))
-        ((equal pattern t)
-         `(progn
-            (%fbo-draw-buffers ,fbo)
-            (%with-blending ,fbo t ,@body)))
-        ((listp pattern)
-         (destructuring-bind (pointer len attachments) pattern
-           (assert (numberp len))
-           `(progn (%gl:draw-buffers ,len ,pointer)
-                   (%with-blending ,fbo ,attachments ,@body)
-                   (cffi:incf-pointer
-                    ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum))))))))
-
-
-
-
-
-
-
-
 
 ;; ------------------------------------------
 ;; THIS IS MASSIVELY PREMATURE OPTIMIZATION

@@ -528,6 +528,7 @@
   (:nicknames :evt)
   (:export :event
            :event-cell
+           :inject-event
            :case-events
            :map-evt
            :merge-evt

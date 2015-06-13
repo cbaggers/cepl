@@ -17,3 +17,6 @@
 
 (defun color-attachment-enum (attachment-num)
   (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :color-attachment0)))
+
+(defun default-fbo-attachment-enum (attachment-num)
+  (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :front-left)))

@@ -25,8 +25,8 @@
     #+darwin
     (progn
       (setf cl-opengl-bindings::*gl-get-proc-address* #'sdl2::gl-get-proc-address)
-      (sdl2:gl-set-attr :context-major-version 3)
-      (sdl2:gl-set-attr :context-minor-version 2)
+      (sdl2:gl-set-attr :context-major-version 4)
+      (sdl2:gl-set-attr :context-minor-version 1)
       (sdl2:gl-set-attr :context-profile-mask sdl2-ffi::+SDL-GL-CONTEXT-PROFILE-CORE+))
     (sdl2:gl-set-attr :context-profile-mask 1)
     (sdl2:gl-set-attr :alpha-size alpha-size)
