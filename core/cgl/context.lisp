@@ -28,14 +28,15 @@
                           red-size green-size blue-size buffer-size
                           double-buffer hidden resizable)
     (let ((context (make-instance
-                    'gl-context :handle context-handle :window window)))
+                    'gl-context :handle context-handle :window window))
+          (dimensions (list width height)))
       (ensure-cepl-compatible-setup)
       (%set-default-gl-options)
       (setf *gl-context* context
             *gl-window* (window context)
-            (slot-value context 'viewport)
-            (%make-default-viewport (list width height))
-            (gl-initialized context) t))))
+            (gl-initialized context) t
+            (slot-value context 'fbo) (%make-default-framebuffer
+                                       dimensions t t)))))
 
 
 (let ((available-extensions nil))

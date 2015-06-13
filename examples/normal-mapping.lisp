@@ -41,8 +41,8 @@
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera *current-viewport*))
-  (reshape *current-viewport*)
+  (setf *camera* (make-camera))
+  (reshape (current-viewport))
   (setf *wibble* (load-model "./wibble.3ds" (v! pi 0 0)))
   (setf *tex* (devil-helper:load-image-to-texture "./brick/col.png"))
   (setf *normal-map* (devil-helper:load-image-to-texture "./brick/norm.png")))
@@ -122,10 +122,8 @@
 ;;--------------------------------------------------------------
 ;; window
 
-(defun reshape (&optional (new-dimensions *current-viewport*))
+(defun reshape (&optional (new-dimensions (current-viewport)))
   (setf (frame-size *camera*) new-dimensions)
-  (setf (viewport-resolution (viewport *gl-context*))
-        new-dimensions)
   (frag-point-light nil :cam-to-clip (cam->clip *camera*)))
 
 (observe (e |window|) (when (eq (action e) :resized) (reshape (vec e))))

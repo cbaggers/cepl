@@ -71,9 +71,6 @@
   (defun stop-loop () (setf running nil)))
 
 (evt:observe (e |sys|) (when (typep e 'evt:will-quit) (stop-loop)))
-(evt:observe (e |window|)
-  (when (eq (evt:action e) :resized)
-    (setf (viewport-resolution *current-viewport*) (evt:data e))))
 
 (defun draw ()
   (evt:pump-events)

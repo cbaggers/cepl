@@ -45,7 +45,7 @@
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera *current-viewport*))
+  (setf *camera* (make-camera))
   (setf *wibble* (load-model (merge-pathnames "wibble.3ds" *examples-dir*)
                              0 (v! pi 0 0)))
   (setf (v:z (pos *wibble*)) -3.0)
@@ -117,7 +117,7 @@
                             :textur *bird-tex*
                             :bird-tex *bird-tex2*
                             :loop *loop-pos*)))
-  :fbos (scene :c))
+  :fbos (scene :c :d))
 
 (defun draw ()
   (gl:clear :color-buffer-bit :depth-buffer-bit)
@@ -165,9 +165,8 @@
 ;;--------------------------------------------------------------
 ;; window
 
-(defun reshape (&optional (new-dimensions *current-viewport*))
-  (setf (frame-size *camera*) new-dimensions
-        (viewport-resolution *current-viewport*) new-dimensions)
+(defun reshape (&optional (new-dimensions (current-viewport)))
+  (setf (frame-size *camera*) new-dimensions)
   (standard-pass nil :cam-to-clip (cam->clip *camera*))
   (refract-pass nil :cam-to-clip (cam->clip *camera*)))
 

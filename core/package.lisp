@@ -272,6 +272,7 @@
   (:export :gl-context
            :*quad*
            :*quad-stream*
+           :current-viewport
            ;;- - - - - - - -
            :make-context
            :has-feature
@@ -332,7 +333,6 @@
            :stencil-writemask
            :stereo
            ;;- - - - - - - -
-           :*current-viewport*
            :viewport
            :with-viewport
            :with-fbo-viewport
@@ -740,8 +740,8 @@
            :blending
            :per-attachment-blending-available-p
            :fbo-detach
-           :*current-viewport*
            :viewport
+           :current-viewport
            :with-viewport
            :with-fbo-viewport
            :def-equivalent-type

@@ -18,7 +18,7 @@
   ((cam->clip :type (simple-array single-float (16)) :reader cam->clip)
    (cam->clip-func :initform nil :initarg :cam->clip-func )
    (frame-size :reader frame-size :initarg :frame-size
-               :initform (cgl:viewport-resolution cgl:*current-viewport*))
+               :initform (cgl:viewport-resolution (cgl:current-viewport)))
    (near :type single-float :reader near :initarg :near)
    (far :type single-float :reader far :initarg :far)
    (fov :type single-float :reader fov :initarg :fov)))
@@ -118,7 +118,7 @@
      0.0 0.0 (- (/ (- far near))) (- (/ (+ far near) (- far near)))
      0.0 0.0 0.0 1.0)))
 
-(defun make-camera (&optional (frame cgl:*current-viewport*)
+(defun make-camera (&optional (frame (cgl:current-viewport))
                       (near 1.0) (far 1000.0) (fov 120.0)
                       (cam->clip-function #'perspective-projection))
   (let* ((frame

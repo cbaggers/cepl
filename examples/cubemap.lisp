@@ -53,8 +53,4 @@
                           (sin (v:y mouse-ang))
                           (cos (v:x mouse-ang)))))))
 
-(observe (e |window|) (when (eq (action e) :resized) (reshape (vec e))))
-(defun reshape (dims)
-  (setf (viewport-resolution (viewport *gl-context*)) dims))
-
 (live:main-loop :init init :step step-demo)

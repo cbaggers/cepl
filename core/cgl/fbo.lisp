@@ -51,21 +51,26 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defvar %default-framebuffer (%make-default-framebuffer))
-(defvar %current-fbo %default-framebuffer)
+(defvar %default-framebuffer nil)
+(defvar %current-fbo nil)
 
-(defun %make-default-framebuffer (&optional (double-buffering t) (depth t))
-  (%update-fbo-state
-   (%make-fbo
-    :id -1
-    :is-default t
-    :attachment-color
-    (make-array 4 :element-type 'attachment :initial-element
-                (list (%make-default-attachment t dimensions)
-                      (%make-default-attachment double-buffering dimensions)
-                      (%make-default-attachment nil dimensions)
-                      (%make-default-attachment nil dimensions)))
-    :attachment-depth (%make-default-attachment depth dimensions))))
+(defun %make-default-framebuffer (dimensions &optional (double-buffering t) (depth t))
+  (let ((result
+         (%update-fbo-state
+          (%make-fbo
+           :id -1
+           :is-default t
+           :attachment-color
+           (make-array 4 :element-type 'attachment :initial-contents
+                       (list (%make-default-attachment t dimensions)
+                             (%make-default-attachment double-buffering
+                                                       dimensions)
+                             (%make-default-attachment nil dimensions)
+                             (%make-default-attachment nil dimensions)))
+           :attachment-depth (%make-default-attachment depth dimensions)))))
+    (setf %default-framebuffer result
+          %current-fbo result)
+    result))
 
 (defun %make-default-attachment (enabled dimensions)
   (%make-attachment
@@ -84,17 +89,17 @@
 (defun %set-default-fbo-viewport (new-dimensions)
   (let ((fbo %default-framebuffer))
     (loop :for c :across (%fbo-attachment-color fbo) :do
-       (with-slots (dimensions) (%attachment-gpu-array c)
-         (setf dimensions new-dimensions)))
+       (let ((garray (%attachment-gpu-array c)))
+         (when garray
+           (with-slots (dimensions) garray
+             (setf dimensions new-dimensions)))))
     (with-slots (dimensions) (%attachment-gpu-array (%fbo-attachment-depth fbo))
       (setf dimensions new-dimensions))))
 
 ;; {TODO} this is pretty wasteful but will do for now
 (defun attachment-viewport (attachment)
-  (if (%fbo-is-default (%attachment-fbo attachment))
-      (slot-value *gl-context* 'viewport)
-      (make-viewport (slot-value (%attachment-gpu-array attachment) 'dimensions)
-                     (v! 0 0))))
+  (make-viewport (slot-value (%attachment-gpu-array attachment) 'dimensions)
+                 (v! 0 0)))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -304,7 +309,7 @@
 
 (defun (setf attachment) (value fbo attachment-name)
   ;;{TODO} add support for :S and :ds
-  (when (%fbo-is-default) (error "Cannot modify attachments on the default framebuffer"))
+  (when (%fbo-is-default fbo) (error "Cannot modify attachments on the default framebuffer"))
   (typecase value
     (gpu-array-t
      (if (eq :d attachment-name)
@@ -461,7 +466,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (gl:delete-framebuffers (mapcar #'%fbo-id fbos)))
 
 (defmethod free ((thing fbo))
-  (if (%fbo-is-default)
+  (if (%fbo-is-default thing)
       (error "Cannot free the default framebuffer")
       (print "FREE FBO NOT IMPLEMENTED - LEAKING")))
 
@@ -501,24 +506,25 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
            (when ,unbind (%unbind-fbo))
            %current-fbo))))
 
-(defun %write-draw-buffer-pattern-call (pattern fbo &rest body)
-  "This plays with the dispatch call from compose-pipelines
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun %write-draw-buffer-pattern-call (pattern fbo &rest body)
+    "This plays with the dispatch call from compose-pipelines
    The idea is that the dispatch func can preallocate one array
    with the draw-buffers patterns for ALL the passes in it, then
    we just upload from that one block of memory.
    All of this can be decided at compile time. It's gonna go fast!"
-  (cond ((null pattern) `(progn ,@body))
-        ((equal pattern t)
-         `(progn
-            (%fbo-draw-buffers ,fbo)
-            (%with-blending ,fbo t ,@body)))
-        ((listp pattern)
-         (destructuring-bind (pointer len attachments) pattern
-           (assert (numberp len))
-           `(progn (%gl:draw-buffers ,len ,pointer)
-                   (%with-blending ,fbo ,attachments ,@body)
-                   (cffi:incf-pointer
-                    ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum))))))))
+    (cond ((null pattern) `(progn ,@body))
+          ((equal pattern t)
+           `(progn
+              (%fbo-draw-buffers ,fbo)
+              (%with-blending ,fbo t ,@body)))
+          ((listp pattern)
+           (destructuring-bind (pointer len attachments) pattern
+             (assert (numberp len))
+             `(progn (%gl:draw-buffers ,len ,pointer)
+                     (%with-blending ,fbo ,attachments ,@body)
+                     (cffi:incf-pointer
+                      ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum)))))))))
 
 ;; Attaching Images
 
@@ -652,7 +658,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defun fbo-gen-attach (fbo &rest args)
   "The are 3 kinds of valid argument:
    - keyword naming an attachment: This makes a new texture
-     with size of *current-viewport* and attaches
+     with size of (current-viewport) and attaches
    - (keyword camera) creates a new texture at the framesize of
      the camera and attaches it to attachment named by keyword
    - (keyword vector2): creates a new texture sized by the vector
@@ -686,7 +692,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; simple keyword pattern to texture
     ((keywordp pattern)
      (texref
-      (make-texture nil :dimensions (viewport-resolution *current-viewport*)
+      (make-texture nil :dimensions (viewport-resolution (current-viewport))
                     :internal-format (%get-default-texture-format pattern))))
     ;; pattern with args for make-texture
     ((some (lambda (x) (member x %possible-texture-keys)) pattern)
@@ -696,7 +702,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
          (error "Only the following args to make-texture are allowed inside a make-fbo ~s"
                 %valid-texture-subset))
      (destructuring-bind
-           (&key (dimensions (viewport-resolution *current-viewport*))
+           (&key (dimensions (viewport-resolution (current-viewport)))
                  (internal-format (%get-default-texture-format (first pattern)))
                  mipmap (immutable t) lod-bias min-lod max-lod minify-filter
                  magnify-filter wrap compare)

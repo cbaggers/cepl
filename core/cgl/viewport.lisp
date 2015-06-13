@@ -1,8 +1,12 @@
 (in-package :cgl)
 
-(defvar *current-viewport* nil)
+(defvar %current-viewport nil)
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(defun current-viewport ()
+  (or %current-viewport
+      (cgl::attachment-viewport (attachment cgl::%default-framebuffer 0))))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ;;{NOTE} if optimization called for it this could easily be an
 ;;       array of 16bit ints (or whatever works)
@@ -12,16 +16,10 @@
   (origin-x 0 :type fixnum)
   (origin-y 0 :type fixnum))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
-(defun %make-default-viewport (&optional (resolution '(320 240)) (origin '(0 0)))
-  (let ((viewport (make-viewport resolution origin)))
-    (setf *current-viewport* viewport)
-    (%viewport viewport)
-    viewport))
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun make-viewport (&optional (resolution '(320 240)) (origin '(0 0)))
-  (if (listp origin)      
+  (if (listp origin)
       (%make-viewport :resolution-x (first resolution)
                       :resolution-y (second resolution)
                       :origin-x (first origin)
@@ -31,7 +29,7 @@
                       :origin-x (ceiling (v:x origin))
                       :origin-y (ceiling (v:y origin)))))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun viewport-resolution (viewport)
   (list (%viewport-resolution-x viewport)
@@ -52,7 +50,7 @@
 (defun %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
-  (when (eq *current-viewport* viewport)
+  (when (eq (current-viewport) viewport)
     (%viewport viewport)))
 
 (defun (setf viewport-resolution) (value viewport)
@@ -63,7 +61,7 @@
 
 (defmethod (setf cepl-generics:size) (value (object viewport))
   (%set-resolution object (ceiling (v:x value)) (ceiling (v:y value))))
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun %viewport (viewport)
   (gl:viewport
@@ -79,9 +77,9 @@
   (let ((once (gensym "viewport")))
     `(prog1
          (let* ((,once ,viewport)
-                (*current-viewport* ,once))
+                (%current-viewport ,once))
            (%with-viewport ,once ,@body))
-       (%viewport *current-viewport*))))
+       (%viewport (current-viewport)))))
 
 ;;{TODO} how are we meant to set origin?
 ;;       Well attachments dont have position so it wouldnt make sense
@@ -93,7 +91,7 @@
      ,@body))
 
 (defmacro %with-fbo-viewport ((fbo &optional (attachment 0)) &body body)
-  "To be used by code than is managing the viewport state itself. 
+  "To be used by code than is managing the viewport state itself.
    composed dispatch would be an example"
   `(%with-viewport (attachment-viewport (%attachment ,fbo ,attachment))
      ,@body))

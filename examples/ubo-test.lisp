@@ -22,7 +22,7 @@
   (evt:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit)
-  (map-g #'prog-1 *stream*)
+  (map-g #'prog-1 *stream* :hmm *ubo*)
   (update-display))
 
 (defun run-loop ()

@@ -12,5 +12,5 @@
   ((cache :cell nil :initform (make-hash-table))
    (handle :cell nil :initarg :handle :reader handle)
    (window :cell nil :initarg :window :reader window)
-   (viewport :cell nil :initarg :window :reader viewport)
+   (fbo :cell nil :initarg :window :reader fbo)
    (gl-initialized :cell t :initform (cells:c-in nil) :reader gl-initialized)))

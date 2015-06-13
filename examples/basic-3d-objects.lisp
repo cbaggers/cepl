@@ -31,7 +31,7 @@
 
 
 (defun init ()
-  (setf *camera* (make-camera *current-viewport*))
+  (setf *camera* (make-camera))
   (setf (pos *camera*) (v! 0 8 0))
   (render-widgets nil :cam *camera*)
   (let* ((verts (make-gpu-array `((,(v! +1  +1  +1)  ,(v! 0  1  0  1))
@@ -74,7 +74,7 @@
 (let ((running nil))
   (defun run-loop ()
     (init)
-    (reshape *current-viewport*)
+    (reshape (current-viewport))
     (setf running t)
     (loop :while running :do (continuable (step-demo))))
 

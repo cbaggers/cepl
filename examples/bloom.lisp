@@ -65,7 +65,7 @@
   (h3 '(:c :dimensions (64 64))))
 
 (defun step-demo ()
-  (incf *loop* 0.02)
+  (incf *loop* 0.01)
   (evt:pump-events)
   (update-swank)
   (clear)

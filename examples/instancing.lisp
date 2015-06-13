@@ -41,7 +41,7 @@
 
 (defun init ()
   (setf *light* (make-instance 'light))
-  (setf *camera* (make-camera *current-viewport*))
+  (setf *camera* (make-camera))
   (setf *wibble* (load-model "./bird/bird.3ds" (v! pi 0 0)))
   (setf *tex* (devil-helper:load-image-to-texture "./bird/char_bird_col.png"))
   (setf *pos-tex* (make-texture nil :dimensions 1000
@@ -122,10 +122,8 @@
 ;;--------------------------------------------------------------
 ;; window
 
-(defun reshape (&optional (new-dimensions *current-viewport*))
+(defun reshape (&optional (new-dimensions (current-viewport)))
   (setf (frame-size *camera*) new-dimensions)
-  (setf (viewport-resolution (viewport *gl-context*))
-        new-dimensions)
   (instanced-birds nil :cam-to-clip (cam->clip *camera*)))
 
 (observe (e |window|) (when (eq (evt:action e) :resized) (reshape (data e))))
