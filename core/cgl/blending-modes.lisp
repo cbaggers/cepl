@@ -208,17 +208,20 @@
 (defun %blend-fbo-i (fbo i)
   (with-blending-param-slots (:fbo fbo)
     (%gl:blend-equation-separate-i i (mode-rgb fbo) (mode-alpha fbo))
-    (%gl:blend-func-separate-i
-     i (source-rgb fbo) (source-alpha fbo)
-     (destination-rgb fbo) (destination-alpha fbo))))
+    (%gl:blend-func-separate-i i
+                               (source-rgb fbo)
+                               (destination-rgb fbo)
+                               (source-alpha fbo)
+                               (destination-alpha fbo))))
 
 (defun %blend-attachment-i (attachment i)
   (with-blending-param-slots (:attachment attachment)
     (%gl:blend-equation-separate-i i (mode-rgb attachment)
                                    (mode-alpha attachment))
-    (%gl:blend-func-separate-i i (source-rgb attachment)
-                               (source-alpha attachment)
+    (%gl:blend-func-separate-i i
+                               (source-rgb attachment)
                                (destination-rgb attachment)
+                               (source-alpha attachment)
                                (destination-alpha attachment))))
 
 ;; functions below were written to help me understand the blending process
