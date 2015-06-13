@@ -8,7 +8,7 @@
 
 (defstruct (fbo (:constructor %make-fbo)
                 (:conc-name %fbo-))
-  (id 0 :type fixnum)
+  (id -1 :type fixnum)
   (attachment-color (make-array (max-draw-buffers *gl-context*)
                                 :element-type 'attachment
                                 :initial-element (%make-attachment))
@@ -20,13 +20,14 @@
   (clear-mask (cffi:foreign-bitfield-value
                '%gl::ClearBufferMask '(:color-buffer-bit))
               :type fixnum)
-  (mode-rgb :func-add :type keyword)
-  (mode-alpha :func-add :type keyword)
-  (source-rgb :one :type keyword)
-  (source-alpha :one :type keyword)
-  (destination-rgb :zero :type keyword)
-  (destination-alpha :zero :type keyword)
-  (is-default nil :type boolean))
+  (is-default nil :type boolean)
+  (blending-params (make-blending-params
+                           :mode-rgb :func-add
+                           :mode-alpha :func-add
+                           :source-rgb :one
+                           :source-alpha :one
+                           :destination-rgb :zero
+                           :destination-alpha :zero) :type blending-params))
 
 (defstruct (attachment (:constructor %make-attachment)
                        (:conc-name %attachment-))
@@ -35,19 +36,71 @@
   (owns-gpu-array nil :type boolean)
   (blending-enabled nil :type boolean)
   (override-blending nil :type boolean)
-  (mode-rgb :func-add :type keyword)
-  (mode-alpha :func-add :type keyword)
-  (source-rgb :one :type keyword)
-  (source-alpha :one :type keyword)
-  (destination-rgb :zero :type keyword)
-  (destination-alpha :zero :type keyword))
+  (blending-params (make-blending-params
+                           :mode-rgb :func-add
+                           :mode-alpha :func-add
+                           :source-rgb :one
+                           :source-alpha :one
+                           :destination-rgb :zero
+                           :destination-alpha :zero) :type blending-params))
 
 (defmethod print-object ((object fbo) stream)
-  (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENTS ~a~]>"
+  (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENT ~a~]>"
           (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
           (loop :for i :from 0 :for j :across (%fbo-attachment-color object)
              :when (%attachment-gpu-array j) :collect i)
           (and (%attachment-gpu-array (%fbo-attachment-depth object)) t)))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+(defun blending-params (target)
+  (typecase target
+    (fbo (%fbo-blending-params target))
+    (attachment (make-blending-params
+                 :mode-rgb (mode-rgb target)
+                 :mode-alpha (mode-alpha target)
+                 :source-rgb (source-rgb target)
+                 :source-alpha (source-alpha target)
+                 :destination-rgb (destination-rgb target)
+                 :destination-alpha (destination-alpha target)))))
+
+(defun (setf blending-params) (value target)
+  (typecase target
+    (fbo (setf (%fbo-blending-params target) value))
+    (attachment (setf (%attachment-blending-params target) value))))
+
+(defmacro with-blending-param-slots ((&key fbo attachment) &body body)
+  (cond
+    (fbo
+     `(macrolet
+          ((mode-rgb (x)
+            `(blending-params-mode-rgb (%fbo-blending-params ,x)))
+           (mode-alpha (x)
+            `(blending-params-mode-alpha (%fbo-blending-params ,x)))
+           (source-rgb (x)
+            `(blending-params-source-rgb (%fbo-blending-params ,x)))
+           (source-alpha (x)
+            `(blending-params-source-alpha (%fbo-blending-params ,x)))
+           (destination-rgb (x) `(blending-params-destination-rgb
+                                  (%fbo-blending-params ,x)))
+           (destination-alpha (x) `(blending-params-destination-alpha
+                                    (%fbo-blending-params ,x))))
+        ,@body))
+    (attachment
+     `(macrolet
+          ((mode-rgb (x) `(blending-params-mode-rgb
+                           (%attachment-blending-params ,x)))
+           (mode-alpha (x) `(blending-params-mode-alpha
+                             (%attachment-blending-params ,x)))
+           (source-rgb (x) `(blending-params-source-rgb
+                             (%attachment-blending-params ,x)))
+           (source-alpha (x) `(blending-params-source-alpha
+                               (%attachment-blending-params ,x)))
+           (destination-rgb (x) `(blending-params-destination-rgb
+                                  (%attachment-blending-params ,x)))
+           (destination-alpha (x) `(blending-params-destination-alpha
+                                    (%attachment-blending-params ,x))))
+        ,@body))))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -58,7 +111,7 @@
   (let ((result
          (%update-fbo-state
           (%make-fbo
-           :id -1
+           :id 0
            :is-default t
            :attachment-color
            (make-array 4 :element-type 'attachment :initial-contents
@@ -148,12 +201,9 @@
    :owns-gpu-array (%attachment-owns-gpu-array attachment)
    :blending-enabled (%attachment-blending-enabled attachment)
    :override-blending (%attachment-override-blending attachment)
-   :mode-rgb (%attachment-mode-rgb attachment)
-   :mode-alpha (%attachment-mode-alpha attachment)
-   :source-rgb (%attachment-source-rgb attachment)
-   :source-alpha (%attachment-source-alpha attachment)
-   :destination-rgb (%attachment-destination-rgb attachment)
-   :destination-alpha (%attachment-destination-alpha attachment)))
+   :blending-params (copy-blending-params
+                            (%attachment-blending-params
+                             attachment))))
 
 (defun attachment-gpu-array (attachment)
   (%attachment-gpu-array attachment))
@@ -204,33 +254,45 @@
 
 (defun mode-rgb (attachment)
   (typecase attachment
-    (attachment (%attachment-mode-rgb attachment))
-    (fbo (%fbo-mode-rgb attachment))))
+    (attachment (with-blending-param-slots (:attachment attachment)
+                  (mode-rgb attachment)))
+    (fbo (with-blending-param-slots (:fbo attachment)
+           (mode-rgb attachment)))))
 
 (defun mode-alpha (attachment)
   (typecase attachment
-    (attachment (%attachment-mode-alpha attachment))
-    (fbo (%fbo-mode-alpha attachment))))
+    (attachment (with-blending-param-slots (:attachment attachment)
+                  (mode-alpha attachment)))
+    (fbo (with-blending-param-slots (:fbo attachment)
+           (mode-alpha attachment)))))
 
 (defun source-rgb (attachment)
   (typecase attachment
-    (attachment (%attachment-source-rgb attachment))
-    (fbo (%fbo-source-rgb attachment))))
+    (attachment (with-blending-param-slots (:attachment attachment)
+                  (source-rgb attachment)))
+    (fbo (with-blending-param-slots (:fbo attachment)
+           (source-rgb attachment)))))
 
 (defun source-alpha (attachment)
   (typecase attachment
-    (attachment (%attachment-source-alpha attachment))
-    (fbo (%fbo-source-alpha attachment))))
+    (attachment (with-blending-param-slots (:attachment attachment)
+                  (source-alpha attachment)))
+    (fbo (with-blending-param-slots (:fbo attachment)
+           (source-alpha attachment)))))
 
 (defun destination-rgb (attachment)
   (typecase attachment
-    (attachment (%attachment-destination-rgb attachment))
-    (fbo (%fbo-destination-rgb attachment))))
+    (attachment (with-blending-param-slots (:attachment attachment)
+                  (destination-rgb attachment)))
+    (fbo (with-blending-param-slots (:fbo attachment)
+           (destination-rgb attachment)))))
 
 (defun destination-alpha (attachment)
   (typecase attachment
-    (attachment (%attachment-destination-alpha attachment))
-    (fbo (%fbo-destination-alpha attachment))))
+    (attachment (with-blending-param-slots (:attachment attachment)
+                  (destination-alpha attachment)))
+    (fbo (with-blending-param-slots (:fbo attachment)
+           (destination-alpha attachment)))))
 
 (defun blending (attachment)
   (%attachment-blending-enabled attachment))
@@ -250,49 +312,61 @@
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (setf (%attachment-override-blending attachment) t
-                            (%attachment-mode-rgb attachment) value)))
-        (fbo (setf (%fbo-mode-rgb attachment) value))))
+                      (with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (mode-rgb attachment) value))))
+        (fbo (with-blending-param-slots (:fbo attachment)
+               (setf (mode-rgb attachment) value)))))
 
     (defun (setf mode-alpha) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (setf (%attachment-override-blending attachment) t
-                            (%attachment-mode-alpha attachment) value)))
-        (fbo (setf (%fbo-mode-alpha attachment) value))))
+                      (with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (mode-alpha attachment) value))))
+        (fbo (with-blending-param-slots (:fbo attachment)
+               (setf (mode-alpha attachment) value)))))
 
     (defun (setf source-rgb) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (setf (%attachment-override-blending attachment) t
-                            (%attachment-source-rgb attachment) value)))
-        (fbo (setf (%fbo-source-rgb attachment) value))))
+                      (with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (source-rgb attachment) value))))
+        (fbo (with-blending-param-slots (:fbo attachment)
+               (setf (source-rgb attachment) value)))))
 
     (defun (setf source-alpha) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (setf (%attachment-override-blending attachment) t
-                            (%attachment-source-alpha attachment) value)))
-        (fbo (setf (%fbo-source-alpha attachment) value))))
+                      (with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (source-alpha attachment) value))))
+        (fbo (with-blending-param-slots (:fbo attachment)
+               (setf (source-alpha attachment) value)))))
 
     (defun (setf destination-rgb) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (setf (%attachment-override-blending attachment) t
-                            (%attachment-destination-rgb attachment) value)))
-        (fbo (setf (%fbo-destination-rgb attachment) value))))
+                      (with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (destination-rgb attachment) value))))
+        (fbo (with-blending-param-slots (:fbo attachment)
+               (setf (destination-rgb attachment) value)))))
 
     (defun (setf destination-alpha) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (setf (%attachment-override-blending attachment) t
-                            (%attachment-destination-alpha attachment) value)))
-        (fbo (setf (%fbo-destination-alpha attachment) value))))))
+                      (with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (destination-alpha attachment) value))))
+        (fbo (with-blending-param-slots (:fbo attachment)
+               (setf (destination-alpha attachment) value)))))))
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
@@ -368,8 +442,10 @@
 ;;--------------------------------------------------------------
 
 (defun %fbo-draw-buffers (fbo)
-  (%gl:draw-buffers (max-draw-buffers *gl-context*)
-                    (%fbo-draw-buffer-map fbo)))
+  (let ((len (if (%fbo-is-default fbo)
+                 1
+                 (max-draw-buffers *gl-context*))))
+    (%gl:draw-buffers len (%fbo-draw-buffer-map fbo))))
 
 ;;--------------------------------------------------------------
 
@@ -493,12 +569,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 (defmacro with-bind-fbo ((fbo &key (target :framebuffer) (unbind t)
                               (with-viewport t) (attachment-for-size 0)
-                              (draw-buffers t))
+                              (with-blending t) (draw-buffers t))
                          &body body)
   `(let* ((%current-fbo ,fbo))
      (%bind-fbo %current-fbo ,target)
      ,(%write-draw-buffer-pattern-call
-       draw-buffers '%current-fbo
+       draw-buffers '%current-fbo with-blending
        `(,@(if with-viewport
                `(with-fbo-viewport (%current-fbo ,attachment-for-size))
                '(progn))
@@ -507,7 +583,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
            %current-fbo))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun %write-draw-buffer-pattern-call (pattern fbo &rest body)
+  (defun %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)
     "This plays with the dispatch call from compose-pipelines
    The idea is that the dispatch func can preallocate one array
    with the draw-buffers patterns for ALL the passes in it, then
@@ -517,12 +593,14 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
           ((equal pattern t)
            `(progn
               (%fbo-draw-buffers ,fbo)
-              (%with-blending ,fbo t ,@body)))
+              ,@(if with-blending
+                    `((%with-blending ,fbo t nil ,@body))
+                    body)))
           ((listp pattern)
            (destructuring-bind (pointer len attachments) pattern
              (assert (numberp len))
              `(progn (%gl:draw-buffers ,len ,pointer)
-                     (%with-blending ,fbo ,attachments ,@body)
+                     (%with-blending ,fbo ,attachments nil ,@body)
                      (cffi:incf-pointer
                       ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum)))))))))
 

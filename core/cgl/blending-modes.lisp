@@ -80,19 +80,52 @@
 ;; blend enabled, override - only valid >v4, (gl:enable :blend *) and then set
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+(defstruct blending-params
+  (mode-rgb :func-add :type keyword)
+  (mode-alpha :func-add :type keyword)
+  (source-rgb :src-alpha :type keyword)
+  (source-alpha :src-alpha :type keyword)
+  (destination-rgb :one-minus-src-alpha :type keyword)
+  (destination-alpha :one-minus-src-alpha :type keyword))
+
+(defvar %current-blend-params nil)
+
+(defun current-blend-params ()
+  (copy-blending-params
+   (or %current-blend-params
+       (cgl::attachment-viewport (attachment cgl::%default-framebuffer 0)))))
+
+(defmacro with-blending (blending-params &body body)
+  (let ((b-params (gensym "blending-params")))
+    `(let* ((,b-params ,blending-params))
+       (%with-blending nil nil ,b-params
+         ,@body))))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 ;; {TODO} Huge performance costs will be made here, unneccesary enable/disable
 ;;        all over the place. However will be VERY easy to fix with state-cache
 ;;        Do it.
-(defmacro %with-blending (fbo pattern &body body)
+(defmacro %with-blending (fbo pattern explicit-blend-params &body body)
+  (assert (not (and explicit-blend-params (or fbo pattern))))
   (cond
     ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    ((null pattern) (error "invalid blending pattern"))
+    ((and (null pattern) (null explicit-blend-params))
+     (error "invalid blending pattern"))
     ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    (explicit-blend-params
+     ;; The user wants blending to be set by a blending params struct
+     `(let ((%current-blend-params ,explicit-blend-params))
+        (%gl:enable :blend)
+        (%blend-using-params ,explicit-blend-params)
+        ,@body
+        (%gl:disable :blend)))
     ((eq pattern t)
      ;; We cant, at compile time, tell which attachments will be used so loop
      ;; through the attachment list and set everything up
      `(let ((attachments (%fbo-attachment-color ,fbo))
-            (per-attachment-blendingp (per-attachment-blending-available-p)))
+            (per-attachment-blendingp (per-attachment-blending-available-p))
+            (%current-blend-params (%fbo-blending-params ,fbo)))
         ;; if we dont support per attachemnt blend params then we use the
         ;; params from the fbo
         (when (not per-attachment-blendingp) (%blend-fbo ,fbo))
@@ -115,10 +148,12 @@
   (let ((a-syms (loop for a in attachments collect (gensym "attachment")))
         (override-syms (loop for a in attachments collect (gensym "override"))))
     ;; First we want to get all the lookups of attachment state done
-    `(let* ,(loop :for a :in attachments :for s :in a-syms
-               :for o :in override-syms :append
-               `((,s (%attachment ,fbo ,a))
-                 (,o (%attachment-override-blending ,s))))
+    `(let* ,(cons
+             `(%current-blend-params (%fbo-blending-params ,fbo))
+             (loop :for a :in attachments :for s :in a-syms
+                :for o :in override-syms :append
+                `((,s (%attachment ,fbo ,a))
+                  (,o (%attachment-override-blending ,s)))))
        (let ((per-attachment-blendingp (per-attachment-blending-available-p)))
          ;; If any of the attachments are inheriting the blending from the fbo
          ;; or if we cant provide per attachment blending, when we need to
@@ -160,26 +195,31 @@
            (%blend-fbo-i fbo i)))))
 
 (defun %blend-fbo (fbo)
-  (%gl:blend-equation-separate (%fbo-mode-rgb fbo) (%fbo-mode-alpha fbo))
-  (%gl:blend-func-separate (%fbo-source-rgb fbo)
-                           (%fbo-source-alpha fbo)
-                           (%fbo-destination-rgb fbo)
-                           (%fbo-destination-alpha fbo)))
+  (%blend-using-params (%fbo-blending-params fbo)))
+
+(defun %blend-using-params (params)
+  (%gl:blend-equation-separate (blending-params-mode-rgb params)
+                               (blending-params-mode-alpha params))
+  (%gl:blend-func-separate (blending-params-source-rgb params)
+                           (blending-params-destination-rgb params)
+                           (blending-params-source-alpha params)
+                           (blending-params-destination-alpha params)))
 
 (defun %blend-fbo-i (fbo i)
-  (%gl:blend-equation-separate-i i (%fbo-mode-rgb fbo) (%fbo-mode-alpha fbo))
-  (%gl:blend-func-separate-i
-   i (%fbo-source-rgb fbo) (%fbo-source-alpha fbo)
-   (%fbo-destination-rgb fbo) (%fbo-destination-alpha fbo)))
+  (with-blending-param-slots (:fbo fbo)
+    (%gl:blend-equation-separate-i i (mode-rgb fbo) (mode-alpha fbo))
+    (%gl:blend-func-separate-i
+     i (source-rgb fbo) (source-alpha fbo)
+     (destination-rgb fbo) (destination-alpha fbo))))
 
 (defun %blend-attachment-i (attachment i)
-  (%gl:blend-equation-separate-i
-   i (%attachment-mode-rgb attachment) (%attachment-mode-alpha attachment))
-  (%gl:blend-func-separate-i
-   i (%attachment-source-rgb attachment)
-   (%attachment-source-alpha attachment)
-   (%attachment-destination-rgb attachment)
-   (%attachment-destination-alpha attachment)))
+  (with-blending-param-slots (:attachment attachment)
+    (%gl:blend-equation-separate-i i (mode-rgb attachment)
+                                   (mode-alpha attachment))
+    (%gl:blend-func-separate-i i (source-rgb attachment)
+                               (source-alpha attachment)
+                               (destination-rgb attachment)
+                               (destination-alpha attachment))))
 
 ;; functions below were written to help me understand the blending process
 ;; they are not something to use in attachments. I'm not sure how to expose

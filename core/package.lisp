@@ -269,12 +269,14 @@
                 :deferror
                 :print-mem)
   (:shadow :float)
-  (:export :gl-context
+  (:export :cls
+           :gl-context
            :*quad*
            :*quad-stream*
            :current-viewport
            ;;- - - - - - - -
            :make-context
+           :fbo
            :has-feature
            :*gl-context*
            :%context-flags
@@ -460,6 +462,8 @@
            :destination-rgb
            :destination-alpha
            :blending
+           :make-blending-params
+           :with-blending
            :per-attachment-blending-available-p
            :fbo-detach
            ;;----------
@@ -723,6 +727,7 @@
            :g-pntc
            :texref
            :map-g
+           :fbo
            :make-fbo
            :make-fbos
            :with-bind-fbo
@@ -738,6 +743,8 @@
            :destination-rgb
            :destination-alpha
            :blending
+           :make-blending-params
+           :with-blending
            :per-attachment-blending-available-p
            :fbo-detach
            :viewport
@@ -748,4 +755,5 @@
            ;;---
            :make-ubo
            :ubo-data
-           :ubo-index))
+           :ubo-index
+           :cls))

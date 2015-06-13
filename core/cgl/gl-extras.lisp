@@ -18,5 +18,9 @@
 (defun color-attachment-enum (attachment-num)
   (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :color-attachment0)))
 
-(defun default-fbo-attachment-enum (attachment-num)
-  (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :front-left)))
+(let ((vals #(#.(cffi:foreign-enum-value '%gl:enum :back-left)
+              #.(cffi:foreign-enum-value '%gl:enum :front-left)
+              #.(cffi:foreign-enum-value '%gl:enum :back-right)
+              #.(cffi:foreign-enum-value '%gl:enum :front-right))))
+  (defun default-fbo-attachment-enum (attachment-num)
+    (aref vals attachment-num)))

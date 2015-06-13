@@ -159,9 +159,12 @@
     (setf (slot-value array 'internal-format) (internal-format texture))))
 
 (defmethod print-object ((object gpu-array-t) stream)
-  (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :TEXTURE>"
+  (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by ~s>"
           (internal-format object)
-          (dimensions object)))
+          (dimensions object)
+          (if (eq (internal-format object) :gl-internal)
+              :internal
+              :texture)))
 
 (defmethod free ((object gpu-array-t))
   (declare (ignore object))
