@@ -1,6 +1,10 @@
 (in-package :cgl)
 
 (defmacro map-g (pipeline-func stream &rest uniforms)
+  `(with-viewport (current-viewport)
+     (%map-g ,pipeline-func ,stream ,@uniforms)))
+
+(defmacro %map-g (pipeline-func stream &rest uniforms)
   (labels ((function-formp (x) (eq (first x) 'function)))
     (assert (function-formp pipeline-func)))
   (let ((pipeline-name (second pipeline-func)))

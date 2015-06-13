@@ -82,11 +82,11 @@
            (func-name (first call-form))
            (override-offset (or (position-if #'keywordp call-form)
                                 1))
-           (map-g-form `(map-g #',func-name ,@stream-args
-                               ,@(subseq call-form override-offset)
-                               ,@(mapcat #'%uniform-arg-to-call
-                                       (get-pipeline-uniforms func-name
-                                                              call-form)))))
+           (map-g-form `(%map-g #',func-name ,@stream-args
+                                ,@(subseq call-form override-offset)
+                                ,@(mapcat #'%uniform-arg-to-call
+                                          (get-pipeline-uniforms func-name
+                                                                 call-form)))))
       ;; the return sig is a list of '(the-code the-draw-buffers)
       (if fbo
           (%gen-with-bind-fbo-result fbo lisp-forms map-g-form)
