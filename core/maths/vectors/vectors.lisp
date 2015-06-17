@@ -148,10 +148,16 @@
 (defun * (vec-a scalar-or-vec)
   "Adds two vectors together and returns the result as a new vector of the same type"
   (let ((vec-a (floatify vec-a)))
-    (case (cl:length vec-a)
-      (2 (v2:*vec vec-a scalar-or-vec))
-      (3 (v3:*vec vec-a scalar-or-vec))
-      (4 (v4:*vec vec-a scalar-or-vec)))))
+    (typecase scalar-or-vec
+      (number (let ((num (coerce scalar-or-vec 'single-float)))
+                (case (cl:length vec-a)
+                  (2 (v2:* vec-a num))
+                  (3 (v3:* vec-a num))
+                  (4 (v4:* vec-a num)))))
+      (array (case (cl:length vec-a)
+               (2 (v2:*vec vec-a scalar-or-vec))
+               (3 (v3:*vec vec-a scalar-or-vec))
+               (4 (v4:*vec vec-a scalar-or-vec)))))))
 
 ;;----------------------------------------------------------------
 
