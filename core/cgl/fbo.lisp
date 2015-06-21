@@ -815,7 +815,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (assert (keywordp attachment))
   (let ((char (char-downcase (aref (symbol-name attachment) 0))))
     (cond ((char= char #\c) :rgba8)
-          ((char= char #\d) :depth-component16)
+          ((char= char #\d) :depth-component24)
           (t (error "No default texture format for attachment: ~s" attachment)))))
 
 (defun attachment-compatible (attachment internal-format)

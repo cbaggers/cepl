@@ -63,7 +63,7 @@
   (gl:front-face :ccw)
   (gl:enable :depth-test)
   (gl:depth-mask :true)
-  (gl:depth-func :lequal)
+  (gl:depth-func :less)
   (gl:depth-range 0.0 1.0)
   (gl:enable :depth-clamp))
 
