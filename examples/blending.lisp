@@ -36,8 +36,8 @@
           (norm vert)
           (tex vert)))
 
-(defun-g box-frag ((norm :vec3) (tc :vec2) &uniform (tex :sampler-2d) (factor :float))
-  (v! (s~ (texture tex tc) :xyz) factor))
+(defun-g box-frag ((norm :vec3) (tc :vec2) &uniform (tex :sampler-2d) (f :float))
+  (v! (s~ (texture tex tc) :xyz) f))
 
 (defpipeline draw-box () (g-> #'box-vert #'box-frag))
 
@@ -58,7 +58,7 @@
     (map-g #'draw-box box-stream
            :model->clip (model->clip box-b camera)
            :tex brick
-           :factor (+ 0.7 (* (sin factor) 0.3))))
+           :f (+ 0.7 (* (sin factor) 0.3))))
 
   (update-display))
 
