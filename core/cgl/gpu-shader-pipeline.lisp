@@ -24,8 +24,7 @@
                    ',(or gpipe-context context))))
                (def-pipeline-invalidate ,name)
                (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
-               (def-dispatch-func ,name ,stage-pairs ,context ,pass-key)
-               (def-dummy-func ,name ,stage-pairs ,pass-key))
+               (def-dispatch-func ,name ,stage-pairs ,context ,pass-key))
              (defun ,(recompile-name name) ()
                (unless(equal (slot-value (pipeline-spec ',name) 'change-spec)
                              (make-pipeline-change-signature ',stage-names))
@@ -100,30 +99,12 @@
             (mapcar #'first (aggregate-uniforms stage-names)))
            (prim-type (varjo::get-primitive-type-from-context context))
            (u-uploads (mapcar #'second uniform-assigners)))
-      `(defun ,(dispatch-func-name name)
-           (stream ,@(when uniform-names `(&key ,@uniform-names)))
-         (declare (ignorable ,@uniform-names))
-         (unless prog-id (setf prog-id (,(init-func-name name))))
-         (use-program prog-id)
-         ,@u-uploads
-         (when stream (draw-expander stream ,prim-type))
-         (use-program 0)
-         stream))))
-
-(defmacro def-dummy-func (name stage-pairs pass-key)
-  (let ((stage-names (mapcar #'cdr stage-pairs)))
-    (let* ((uniform-assigners
-            (stages->uniform-assigners stage-names pass-key))
-           (uniform-names
-            (mapcar #'first (aggregate-uniforms stage-names)))
-           (u-uploads (mapcar #'second uniform-assigners)))
       `(defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
          (unless prog-id (setf prog-id (,(init-func-name name))))
          (use-program prog-id)
          ,@u-uploads
-         (when stream
-           (error "Pipelines do not take a stream directly, the stream must be map-g'd over the pipeline"))
+         (when stream (draw-expander stream ,prim-type))
          (use-program 0)
          stream))))
 

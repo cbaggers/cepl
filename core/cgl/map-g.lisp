@@ -6,15 +6,15 @@
 
 (defmacro %map-g (pipeline-func stream &rest uniforms)
   (labels ((function-formp (x) (eq (first x) 'function)))
-    (assert (function-formp pipeline-func)))
-  (let ((pipeline-name (second pipeline-func)))
     `(progn
-       (,(symb-package :cgl :$$-dispatch- pipeline-name) ,stream ,@uniforms)
+       ,(if (function-formp pipeline-func)
+            `(,(second pipeline-func) ,stream ,@uniforms)
+            `(funcall ,pipeline-func ,stream ,@uniforms))
        cgl::%current-fbo)))
 
 ;; ------------------------------------------
-;; THIS IS MASSIVELY PREMATURE OPTIMIZATION
-;; MEASURE THE CODE AND THEN CHANGE IT
+;; THIS IS MASSIVELY PREMATURE OPTIMIZATION.
+;; MEASURE THE CODE AND THEN CHANGE IT.
 ;; CURRENTLY IS MAKES THINGS UGLIER AND WE
 ;; DONT KNOW IF IT HELPS AT ALL
 ;; ------------------------------------------
