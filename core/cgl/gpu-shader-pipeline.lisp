@@ -3,30 +3,40 @@
 (defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
   (when args (warn "defpipeline: extra args are not used in pipelines composed of g-functions"))
-  (let ((pass-key (%gen-pass-key)) ;; used as key for memoization
-        (init-func-name (gensym "init")))
+  (let ((pass-key (%gen-pass-key))) ;; used as key for memoization
     (assoc-bind ((context :context) (post :post)) (parse-options options)
       (destructuring-bind (stage-pairs gpipe-context)
           (parse-gpipe-args gpipe-args)
         (assert (not (and gpipe-context context)))
-        (let ((context (or context gpipe-context))
-              (stage-names (mapcar #'cdr stage-pairs)))
+        (let* ((context (or context gpipe-context))
+               (stage-names (mapcar #'cdr stage-pairs))
+               ;; we generate the func that compiles & uploads the pipeline
+               ;; and also populates the pipeline's local-vars
+               (init-func (gen-pipeline-init name stage-pairs post pass-key)))
+
+          ;; update the spec immediately (macro-expansion time)
           (%update-spec name stage-names context gpipe-context)
           `(progn
+             ;; macro that expands to the local vars for the pipeline
              (let-pipeline-vars (,stage-pairs ,pass-key)
+               ;; we upload the spec at compile time
                ,(gen-update-spec name stage-names context gpipe-context)
-               (labels (,(def-pipeline-init name init-func-name stage-pairs
-                                            post pass-key))
-                 ,(def-dispatch-func name init-func-name stage-pairs context
+               (labels (,init-func)
+                 ;; generate the code that actually renders
+                 ,(def-dispatch-func name (first init-func) stage-pairs context
                                      pass-key)))
-             (defun ,(recompile-name name) ()
-               (unless (equal (slot-value (pipeline-spec ',name) 'change-spec)
-                              (make-pipeline-change-signature ',stage-names))
-                 (let ((*standard-output* (make-string-output-stream)))
-                   (handler-bind ((warning #'muffle-warning))
-                     (eval (%defpipeline-gfuncs
-                            ',name ',args ',gpipe-args ',options t))))))
+             ;; generate the function that recompiles this pipeline
+             ,(gen-recompile-func name args gpipe-args stage-names options)
              ,(unless suppress-compile `(,(recompile-name name)))))))))
+
+(defun gen-recompile-func (name args gpipe-args stage-names options)
+  `(defun ,(recompile-name name) ()
+     (unless (equal (slot-value (pipeline-spec ',name) 'change-spec)
+                    (make-pipeline-change-signature ',stage-names))
+       (let ((*standard-output* (make-string-output-stream)))
+         (handler-bind ((warning #'muffle-warning))
+           (eval (%defpipeline-gfuncs
+                  ',name ',args ',gpipe-args ',options t)))))))
 
 (defun %update-spec (name stage-names context gpipe-context)
   (update-pipeline-spec
@@ -87,10 +97,16 @@
     (mapcar #'%gl:delete-shader stages-objects)
     prog-id))
 
-(defun def-pipeline-init (name init-func-name stage-pairs post pass-key)
+(defun %post-init (func)
+  (unbind-buffer)
+  (force-bind-vao 0)
+  (force-use-program 0)
+  (when func (funcall func)))
+
+(defun gen-pipeline-init (name stage-pairs post pass-key)
   (let* ((stage-names (mapcar #'cdr stage-pairs))
          (uniform-assigners (stages->uniform-assigners stage-names pass-key)))
-    `(,init-func-name
+    `(,(gensym "init")
       ()
       (let ((image-unit -1))
         (declare (ignorable image-unit))
@@ -98,10 +114,7 @@
         (%compile-link-and-upload ',name prog-id ',stage-pairs)
         ,@(let ((u-lets (mapcat #'first uniform-assigners)))
                (loop for u in u-lets collect (cons 'setf u)))
-        (unbind-buffer)
-        (force-bind-vao 0)
-        (force-use-program 0)
-        ,(when post `(funcall ,(car post)))
+        (%post-init ,(car post))
         prog-id))))
 
 (defun def-dispatch-func (name init-func-name stage-pairs context pass-key)
