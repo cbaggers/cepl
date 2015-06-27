@@ -205,8 +205,6 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 
 ;;--------------------------------------------------
 
-(defun init-func-name (name) (symb-package :cgl '%%- name))
-(defun invalidate-func-name (name) (symb-package :cgl '££- name))
 (defun recompile-name (name) (symb-package :cgl '~~- name))
 
 ;;--------------------------------------------------

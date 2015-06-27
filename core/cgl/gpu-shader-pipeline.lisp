@@ -3,36 +3,44 @@
 (defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
   (when args (warn "defpipeline: extra args are not used in pipelines composed of g-functions"))
-  (let ((pass-key (%gen-pass-key))) ;; used as key for memoization
+  (let ((pass-key (%gen-pass-key)) ;; used as key for memoization
+        (init-func-name (gensym "init")))
     (assoc-bind ((context :context) (post :post)) (parse-options options)
       (destructuring-bind (stage-pairs gpipe-context)
           (parse-gpipe-args gpipe-args)
         (assert (not (and gpipe-context context)))
         (let ((context (or context gpipe-context))
               (stage-names (mapcar #'cdr stage-pairs)))
-          (update-pipeline-spec
-           (make-shader-pipeline-spec
-            name stage-names (make-pipeline-change-signature stage-names)
-            (or gpipe-context context)))
+          (%update-spec name stage-names context gpipe-context)
           `(progn
              (let-pipeline-vars (,stage-pairs ,pass-key)
-               (eval-when (:compile-toplevel :load-toplevel :execute)
-                 (update-pipeline-spec
-                  (make-shader-pipeline-spec
-                   ',name ',stage-names ',(make-pipeline-change-signature
-                                           stage-names)
-                   ',(or gpipe-context context))))
-               (def-pipeline-invalidate ,name)
-               (def-pipeline-init ,name ,stage-pairs ,post ,pass-key)
-               (def-dispatch-func ,name ,stage-pairs ,context ,pass-key))
+               ,(gen-update-spec name stage-names context gpipe-context)
+               (labels (,(def-pipeline-init name init-func-name stage-pairs
+                                            post pass-key))
+                 ,(def-dispatch-func name init-func-name stage-pairs context
+                                     pass-key)))
              (defun ,(recompile-name name) ()
-               (unless(equal (slot-value (pipeline-spec ',name) 'change-spec)
-                             (make-pipeline-change-signature ',stage-names))
+               (unless (equal (slot-value (pipeline-spec ',name) 'change-spec)
+                              (make-pipeline-change-signature ',stage-names))
                  (let ((*standard-output* (make-string-output-stream)))
                    (handler-bind ((warning #'muffle-warning))
                      (eval (%defpipeline-gfuncs
                             ',name ',args ',gpipe-args ',options t))))))
              ,(unless suppress-compile `(,(recompile-name name)))))))))
+
+(defun %update-spec (name stage-names context gpipe-context)
+  (update-pipeline-spec
+   (make-shader-pipeline-spec
+    name stage-names (make-pipeline-change-signature stage-names)
+    (or gpipe-context context))))
+
+(defun gen-update-spec (name stage-names context gpipe-context)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (update-pipeline-spec
+      (make-shader-pipeline-spec
+       ',name ',stage-names
+       ,(make-pipeline-change-signature stage-names)
+       ',(or gpipe-context context)))))
 
 (defun quiet-warning-handler (c)
    (when *all-quiet*
@@ -45,7 +53,9 @@
     (cons name (append in-args uniforms))))
 
 (defun make-pipeline-change-signature (stage-names)
-  (mapcar #'make-change-signature stage-names))
+  (sxhash
+   (format nil "~s"
+           (mapcar #'make-change-signature stage-names))))
 
 (defun make-change-signature (stage-name)
   (with-gpu-func-spec (gpu-func-spec stage-name t)
@@ -62,37 +72,39 @@
                               `(,(first _) -1)) u-lets)))
          ,@body))))
 
-(defmacro def-pipeline-invalidate (name)
-  `(defun ,(invalidate-func-name name) () (setf prog-id nil)))
-
 (defun %gl-make-shader-from-varjo (compiled-stage)
   (make-shader (varjo->gl-stage-names (varjo:stage-type compiled-stage))
                (varjo:glsl-code compiled-stage)))
 
-(defmacro def-pipeline-init (name stage-pairs post pass-key)
+(defun %compile-link-and-upload (name prog-id stage-pairs)
+  (let* ((compiled-stages (%varjo-compile-as-pipeline stage-pairs))
+         (stages-objects (mapcar #'%gl-make-shader-from-varjo
+                                 compiled-stages)))
+    (format t "~&; uploading (~a ...)~&" name)
+    (link-shaders stages-objects prog-id compiled-stages)
+    (when +cache-last-pipeline-compile-result+
+      (add-compile-results-to-pipeline name compiled-stages))
+    (mapcar #'%gl:delete-shader stages-objects)
+    prog-id))
+
+(defun def-pipeline-init (name init-func-name stage-pairs post pass-key)
   (let* ((stage-names (mapcar #'cdr stage-pairs))
          (uniform-assigners (stages->uniform-assigners stage-names pass-key)))
-    `(defun ,(init-func-name name) ()
-       (let* ((compiled-stages (%varjo-compile-as-pipeline ',stage-pairs))
-              (stages-objects (mapcar #'%gl-make-shader-from-varjo
-                                      compiled-stages))
-              (image-unit -1))
-         (declare (ignorable image-unit))
-         (setf prog-id (request-program-id-for ',name))
-         (format t ,(format nil "~&; uploading (~a ...)~&" name))
-         (link-shaders stages-objects prog-id compiled-stages)
-         (when +cache-last-pipeline-compile-result+
-           (add-compile-results-to-pipeline ',name compiled-stages))
-         (mapcar #'%gl:delete-shader stages-objects)
-         ,@(let ((u-lets (mapcat #'first uniform-assigners)))
-                (loop for u in u-lets collect (cons 'setf u)))
-         (unbind-buffer)
-         (force-bind-vao 0)
-         (force-use-program 0)
-         ,(when post `(funcall ,(car post)))
-         prog-id))))
+    `(,init-func-name
+      ()
+      (let ((image-unit -1))
+        (declare (ignorable image-unit))
+        (setf prog-id (request-program-id-for ',name))
+        (%compile-link-and-upload ',name prog-id ',stage-pairs)
+        ,@(let ((u-lets (mapcat #'first uniform-assigners)))
+               (loop for u in u-lets collect (cons 'setf u)))
+        (unbind-buffer)
+        (force-bind-vao 0)
+        (force-use-program 0)
+        ,(when post `(funcall ,(car post)))
+        prog-id))))
 
-(defmacro def-dispatch-func (name stage-pairs context pass-key)
+(defun def-dispatch-func (name init-func-name stage-pairs context pass-key)
   (let ((stage-names (mapcar #'cdr stage-pairs)))
     (let* ((uniform-assigners (stages->uniform-assigners stage-names pass-key))
            (uniform-names
@@ -101,7 +113,7 @@
            (u-uploads (mapcar #'second uniform-assigners)))
       `(defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignorable ,@uniform-names))
-         (unless prog-id (setf prog-id (,(init-func-name name))))
+         (unless prog-id (setf prog-id (,init-func-name)))
          (use-program prog-id)
          ,@u-uploads
          (when stream (draw-expander stream ,prim-type))
