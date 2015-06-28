@@ -27,7 +27,7 @@
            (print "-shutting down-")
            nil)
          (defun ,stop-symb () (setf running nil)))
-       (evt:observe (e evt:|sys|)
+       (evt:observe (,(symb 'e) evt:|sys|)
          (when (typep ,(symb 'e) 'evt:will-quit)
            (,stop-symb))))))
 

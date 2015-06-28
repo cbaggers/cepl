@@ -68,7 +68,7 @@
                (:file "core/cgl/ubo")
                (:file "core/cgl/textures")
                (:file "core/cgl/samplers")
-               (:file "core/cgl/gmap")
+               (:file "core/cgl/map-g")
                (:file "core/cgl/fbo")
                (:file "core/cgl/blending-modes")
                (:file "core/cgl/default-data")
