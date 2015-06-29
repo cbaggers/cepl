@@ -97,6 +97,7 @@
   (let ((angle (/ (* pi 2) segments))
         (cap-data (when cap (cap-data :segments segments
                                       :y-pos 0
+                                      :up-norm t
                                       :radius radius
                                       :normals normals
                                       :tex-coords tex-coords

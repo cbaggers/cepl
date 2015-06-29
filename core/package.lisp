@@ -517,6 +517,7 @@
            :box-data
            :equilateral-triangle-data
            :sphere-data
+           :cone-data
            :prim-array
            :swap-winding-order))
 
@@ -683,6 +684,7 @@
            :lisp-type->internal-format
            :describe-pixel-format
            :with-instances
+           :g->
            :defpipeline
            :defun-g
            :defmacro-g
