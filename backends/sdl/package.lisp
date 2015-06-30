@@ -1,2 +1,2 @@
 (defpackage :cepl.events.sdl
-  (:use :cl :cepl-utils :cepl.events :cells :cepl-generics))
+  (:use :cl :cepl-utils :cepl.events :cepl-generics))

@@ -70,7 +70,8 @@
     (loop :while running :do (continuable (draw))))
   (defun stop-loop () (setf running nil)))
 
-(evt:observe (e |sys|) (when (typep e 'evt:will-quit) (stop-loop)))
+(evt:def-event-listener sys-listener (e :sys)
+  (when (typep e 'evt:will-quit) (stop-loop)))
 
 (defun draw ()
   (evt:pump-events)

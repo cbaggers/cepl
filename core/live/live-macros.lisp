@@ -27,9 +27,9 @@
            (print "-shutting down-")
            nil)
          (defun ,stop-symb () (setf running nil)))
-       (evt:observe (,(symb 'e) evt:|sys|)
-         (when (typep ,(symb 'e) 'evt:will-quit)
-           (,stop-symb))))))
+       (evt:def-event-listener (event :sys)
+           (when (typep ,(symb 'event) 'evt:will-quit)
+             (,stop-symb))))))
 
 (defmacro continuable (&body body)
   "Helper macro that we can use to allow us to continue from an

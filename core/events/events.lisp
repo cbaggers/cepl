@@ -8,7 +8,7 @@
 
 (defun inject-event (event)
   (cepl-event-hook event)
-  (setf (event cepl.events:|all-events|) event))
+  (|all-events| event))
 
 (defun cepl-event-hook (event)
   "CEPL gets the first look at events so it can maintain some internal data.
@@ -16,52 +16,54 @@
   (when (and (typep event 'win) (eq (slot-value event 'action) :resized))
     (cgl::%set-default-fbo-viewport (slot-value event 'data))))
 
-(defun map-evt (function event-source)
-  (make-instance 'event-cell
-                 :event (cells:c? (funcall function (event event-source)))))
 
-(defun filter-evt (predicate event-source)
-  (make-instance 'event-celln
-                 :event (cells:c? (when (funcall predicate (event event-source))
-                              (event event-source)))))
-
-(defun merge-evt (evt-source-a evt-source-b)
-  (make-instance 'event-cell
-                 :event (cells:c? (or (event evt-source-a) (event evt-source-b)))))
-
-;;--------------------------------------------
-;; root nodes
-
-(def-event-node |all-events| () :in)
-
-(def-event-node |sys| (:parent |all-events|) (typep (event :parent) 'will-quit))
-
-(def-event-node |mouse| (:parent |all-events|) (mouse0-eventp (event :parent))
-  (cepl-generics:pos :cell t :initform
-       (c? (when (typep (event self) 'mouse-motion)
-             (cepl-generics:pos (event self)))))
-  (state-tracker
-   :cell t :initform (c? (when (typep (event self) 'mouse-button)
-                           (setf (gethash (button (event self))
-                                          (slot-value self 'button-state))
-                                 (state (event self))))))
-  (button-state :cell nil :initform (make-hash-table)))
-
-(def-event-node |keyboard| (:parent |all-events|) (typep (event :parent) 'key)
-  (state-tracker
-   :cell t :initform (c? (when (typep (event self) 'key)
-                           (setf (gethash (key (event self))
-                                          (slot-value self 'key-state))
-                                 (state (event self))))))
-  (key-state :cell nil :initform (make-hash-table)))
-
-(def-event-node |window| (:parent |all-events|) (typep (event :parent) 'win))
+;; all events
+(def-special-event-listener |all-events| (:parent nil :filter nil))
 
 
-(defmethod key-state ((target |keyboard|) key)
-  (gethash key (slot-value target 'key-state)
-           :up))
+;; system events
+(def-special-event-listener |sys|
+    (:parent :all-events :filter #'will-quit-eventp))
 
-(defmethod button-state ((target |mouse|) button-id)
-  (gethash button-id (slot-value target 'button-state)
-           :up))
+(defun will-quit-eventp (event) (typep event 'will-quit))
+
+
+;; context events
+(def-special-event-listener |context|
+    (:parent :all-events :filter #'context-eventp))
+
+(defun context-eventp (event) (typep event 'context-created))
+
+;; keyboard events
+(let ((key-state (make-hash-table)))
+
+  (def-special-event-listener |keyboard|
+      (:parent :all-events :filter #'keyboard-eventp)
+    ;; update key state
+    (setf (gethash (key event) key-state) (state event)))
+
+  (defun key-state (key) (gethash key key-state :up)))
+
+(defun keyboard-eventp (event) (typep event 'key))
+
+
+;; mouse events
+(let ((button-state (make-hash-table)))
+  (def-special-event-listener |mouse|
+      (:parent :all-events :filter #'mouse0-eventp)
+    ;; update button state
+    (when (typep event 'mouse-button)
+      (setf (gethash (button event) button-state) (state event))))
+
+  (defun mouse-button-state (button) (gethash button button-state :up)))
+
+(defun mouse0-eventp (x)
+  (or (and (typep x 'mouse-scroll) (= (id x) 0))
+      (and (typep x 'mouse-button) (= (id x) 0))
+      (and (typep x 'mouse-motion) (= (id x) 0))))
+
+;; window events
+(def-special-event-listener |window|
+    (:parent :all-events :filter #'window-eventp))
+
+(defun window-eventp (event) (typep event 'win))

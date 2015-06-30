@@ -3,5 +3,4 @@
   :depends-on (#:cepl
                #:cepl-backend-sdl
                #:cepl-image-helper
-               #:cepl-model-helper
-               #:cepl-project-helper))
+               #:cepl-model-helper))

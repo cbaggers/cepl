@@ -34,9 +34,9 @@
       (%set-default-gl-options)
       (setf *gl-context* context
             *gl-window* (window context)
-            (gl-initialized context) t
             (slot-value context 'fbo) (%make-default-framebuffer
-                                       dimensions t t)))))
+                                       dimensions t t))
+      (evt:inject-event (make-instance 'evt:context-created)))))
 
 
 (let ((available-extensions nil))
@@ -89,23 +89,6 @@
        ;;   (declare (ignore args))
        ;;   '(gl:get* ,kwd-name ,@(when index (list index))))
        )))
-
-;;------------------------------------------------------------
-
-(defvar *on-context-funcall* nil)
-
-(cells:defobserver gl-initialized ((context gl-context) new)
-  (when (and new *on-context-funcall*)
-    (mapcar #'funcall *on-context-funcall*)
-    (setf *on-context-funcall* nil)))
-
-(defmacro def-g (var &optional val doc)
-  `(progn
-     (defvar ,var nil ,doc)
-     (if *gl-context*
-         (setf ,var ,val)
-         (push (lambda () (setf ,var ,val))
-               cgl::*on-context-funcall*))))
 
 ;;------------------------------------------------------------
 

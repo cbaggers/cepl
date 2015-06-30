@@ -6,9 +6,22 @@
 (defvar *event-class-names*
   '(will-quit win mouse-scroll mouse-button mouse-motion key))
 
+;; (defmacro evt:case-events (event &body event-handlers)
+;;   (assert (and (symbolp event) (not (keywordp event))))
+;;   `(let ((events (collect-sdl-events)))
+;;      (loop :for ,event :in events :do
+;;         (typecase ,event
+;;           ,@(loop :for form :in event-handlers :collect
+;;                (let ((type-name (first form)))
+;;                  (assert (and (symbolp type-name)
+;;                               (member type-name evt::*event-class-names*)))
+;;                  `(,(symb-package :evt type-name) ,@(rest form))))))))
+
 (defclass cepl-event ()
   ((timestamp :initform 0 :initarg :timestamp :reader timestamp
               :type fixnum)))
+
+(defclass context-created (cepl-event) ())
 
 (defclass will-quit (cepl-event) ())
 
@@ -60,12 +73,3 @@
            :type boolean)
    (key :initarg :key :initform 0 :reader key
         :type keyword)))
-
-;;--------------------------------------------
-;; Event funcs
-;;--------------------------------------------
-
-(defun mouse0-eventp (x)
-  (or (and (typep x 'mouse-scroll) (= (id x) 0))
-      (and (typep x 'mouse-button) (= (id x) 0))
-      (and (typep x 'mouse-motion) (= (id x) 0))))

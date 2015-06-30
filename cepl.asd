@@ -24,7 +24,6 @@
                #:cl-utilities
                #:cl-ppcre
                #:symbol-munger
-               #:cells
                #:named-readtables)
   :components ((:file "core/package")
                (:file "core/backend")
@@ -43,6 +42,9 @@
                (:file "core/maths/matrices/matrix4")
                (:file "core/maths/matrices/matrices")
                (:file "core/maths/quaternions")
+               (:file "core/events/base-events")
+               (:file "core/events/event-classes")
+               (:file "core/events/events")
                (:file "core/cgl/cl-opengl-replacements")
                (:file "core/cgl/viewport")
                (:file "core/cgl/context-classes")
@@ -76,9 +78,6 @@
                (:file "core/camera/camera")
                (:file "core/space/node")
                (:file "core/space/vspace")
-               (:file "core/events/base-events")
-               (:file "core/events/event-classes")
-               (:file "core/events/events")
                (:file "core/live/live-macros")
                (:file "core/live/bootstrapping")
                (:file "core/time/time")

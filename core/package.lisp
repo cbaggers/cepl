@@ -20,14 +20,12 @@
            :col
            :action
            :button
-           :button-state
            :clicks
            :data
            :delta
            :etype
            :id
            :key
-           :key-state
            :pos
            :repeating
            :state
@@ -529,29 +527,21 @@
   (:export :rqpos))
 
 (defpackage :cepl.events
-  (:use :cl :cepl-utils :cells :cepl-generics)
+  (:use :cl :cepl-utils :cepl-generics)
   (:nicknames :evt)
-  (:export :event
-           :event-cell
-           :inject-event
-           :case-events
-           :map-evt
-           :merge-evt
-           :filter-evt
+  (:export :def-event-listener
+           :subscribe
            :pump-events
-           :|all-events|
-           :observe
-           :undefobserver
-           :def-event-node
-           :|mouse|
-           :|sys|
-           :|window|
-           :|keyboard|
-           :button-state
+           :unsubscribe
+           :unsubscribe-all-from
+           :inject-event
+           :event
+           :mouse-button-state
            :key-state
            :will-quit
            :window
            :win
+           :context-created
            :mouse-scroll
            :mouse-button
            :mouse-motion
@@ -584,7 +574,6 @@
         :temporal-functions
         :cepl-camera
         :cl-fad
-        :cepl.events
         :named-readtables
         :cepl-gl)
   (:shadow :quit)
@@ -596,10 +585,15 @@
                 :deferror
                 :print-mem
                 :p->)
+  (:import-from :cepl.events
+                :def-event-listener)
   (:export :repl
+           :init
            :quit
            :make-project
-           ;----
+           ;;----
+           :def-event-listener
+           ;;----
            :pos
            :rot
            :dir
@@ -608,15 +602,6 @@
            :norm
            :tex
            :col
-           ;;---
-           :case-events
-           :map-evt
-           :merge-evt
-           :filter-evt
-           :|all-events|
-           :observe
-           :undefobserver
-           :def-event-node
            ;;---
            :update-swank
            :peek
@@ -754,6 +739,16 @@
            :with-viewport
            :with-fbo-viewport
            :def-equivalent-type
+           ;;---
+           :node
+           :make-node
+           :node-transform
+           :make-pos-quat-node
+           :pqn-pos
+           :pqn-quat
+           :make-axis-angle-node
+           :aan-axis
+           :aan-angle
            ;;---
            :make-ubo
            :ubo-data

@@ -32,17 +32,6 @@
 ;;--------------------------------------------
 ;; sdl event helpers
 
-(defmacro evt:case-events (event &body event-handlers)
-  (assert (and (symbolp event) (not (keywordp event))))
-  `(let ((events (collect-sdl-events)))
-     (loop :for ,event :in events :do
-        (typecase ,event
-          ,@(loop :for form :in event-handlers :collect
-               (let ((type-name (first form)))
-                 (assert (and (symbolp type-name)
-                              (member type-name evt::*event-class-names*)))
-                 `(,(symb-package :evt type-name) ,@(rest form))))))))
-
 (defmacro %case-events ((event &key (method :poll) (timeout nil))
                        &body event-handlers)
   `(let (,(when (symbolp event) `(,event (sdl2:new-event))))

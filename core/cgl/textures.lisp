@@ -24,10 +24,9 @@
                                   :texture-cube-map-positive-z
                                   :texture-cube-map-negative-z))
 
-(cells:defobserver gl-initialized ((context gl-context) new)
-  (when new
-    (unless (has-feature "GL_ARB_texture_storage")
-      (setf *immutable-available* nil))))
+(evt:def-event-listener texture-feature-check (event :context)
+  (unless (has-feature "GL_ARB_texture_storage")
+      (setf *immutable-available* nil)))
 
 ;;------------------------------------------------------------
 

@@ -78,11 +78,11 @@
     (setf running t)
     (loop :while running :do (continuable (step-demo))))
 
-  (defun stop-loop () (setf running nil))
+  (defun stop-loop () (setf running nil)))
 
-  (evt:observe (e evt:|sys|)
-    (setf running (typep e 'evt:will-quit))))
+(evt:def-event-listener sys-listener (e :sys)
+  (when (typep e 'evt:will-quit) (stop-loop)))
 
-(evt:observe (e evt:|window|)
+(evt:def-event-listener window-listener (e :window)
   (when (eq (evt:action e) :resized)
     (reshape (evt:data e))))

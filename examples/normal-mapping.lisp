@@ -102,15 +102,15 @@
 ;;--------------------------------------------------------------
 ;; controls
 
-(evt:observe (e |mouse|)
+(evt:def-event-listener mouse-listener (e :mouse)
   (when (and (typep e 'evt:mouse-motion)
-             (eq (evt:button-state self :left) :down))
+             (eq (evt:mouse-button-state :left) :down))
     (let ((d (evt:delta e)))
       (cond
-        ((eq (evt:key-state |keyboard| :lshift) :down)
+        ((eq (evt:key-state :lshift) :down)
          (v3:incf (pos *wibble*)
                   (v! 0 0 (/ (v:y d) 100.0))))
-        ((eq (evt:key-state |keyboard| :lctrl) :down)
+        ((eq (evt:key-state :lctrl) :down)
          (v3:incf (pos *wibble*)
                   (v! 0 (/ (v:y d) -100.0) 0)))
         (t
@@ -126,7 +126,8 @@
   (setf (frame-size *camera*) new-dimensions)
   (frag-point-light nil :cam-to-clip (cam->clip *camera*)))
 
-(observe (e |window|) (when (eq (action e) :resized) (reshape (vec e))))
+(def-event-listener window-listener (e :window)
+  (when (eq (action e) :resized) (reshape (data e))))
 
 ;;--------------------------------------------------------------
 ;; main loop
@@ -140,8 +141,8 @@
          (step-demo)
          (update-swank))))
   (defun stop-loop () (setf running nil))
-  (evt:observe (e |sys|)
-    (setf running (typep e 'evt:will-quit))))
+  (evt:def-event-listener sys-listener (e :sys)
+    (when (typep e 'evt:will-quit) (stop-loop))))
 
 (defun step-demo ()
   (evt:pump-events)

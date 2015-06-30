@@ -11,6 +11,7 @@
 ;;--------------------------------
 
 (defstruct (node (:constructor %make-node) (:conc-name %node-))
+  (id 0 :type fixnum)
   (transform (m4:identity-matrix4) :type (simple-array single-float (16)))
   (re-calc t :type boolean)
   (update-func #'node-transform
