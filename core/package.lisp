@@ -248,6 +248,11 @@
            :dot :rotate :lerp :slerp :approx-slerp
            :to-matrix3 :to-matrix4))
 
+(defpackage :projection
+  (:use :cl :base-maths)
+  (:shadow :lerp)
+  (:export :perspective :orthographic))
+
 (defpackage :base-space
   (:use :cl :base-vectors :base-matrices)
   (:nicknames :cspace)

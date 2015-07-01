@@ -42,6 +42,7 @@
                (:file "core/maths/matrices/matrix4")
                (:file "core/maths/matrices/matrices")
                (:file "core/maths/quaternions")
+               (:file "core/maths/projection")
                (:file "core/events/base-events")
                (:file "core/events/event-classes")
                (:file "core/events/events")
