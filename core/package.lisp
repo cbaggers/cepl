@@ -522,6 +522,7 @@
            :equilateral-triangle-data
            :sphere-data
            :cone-data
+           :cylinder-data
            :prim-array
            :swap-winding-order))
 

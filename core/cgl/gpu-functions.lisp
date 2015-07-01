@@ -250,7 +250,8 @@
         (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
       (list in-args
             uniforms
-            (cons stage-type (remove stage-type context))
+            (cons :special-stemcells
+                  (cons stage-type (remove stage-type context)))
             code))))
 
 ;;--------------------------------------------------

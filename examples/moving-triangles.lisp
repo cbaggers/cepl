@@ -5,15 +5,19 @@
 (defparameter *array* nil)
 (defparameter *loop* 0.0)
 
-(defun-g vert ((position :vec4) &uniform (i :int) (loop :float))
-  (let ((pos (v! (* (s~ position :xyz) 0.3) 1.0)))
+;; note the use of implicit uniform upload
+;; -> (the :float *loop*)
+(defun-g vert ((position :vec4) &uniform (i :int))
+  (let ((pos (v! (* (s~ position :xyz) 0.3) 1.0))
+        (loop (the :float *loop*)))
     (+ pos (let ((i (/ (+ (float i)) 2)))
              (v! (sin (+ i loop))
                  (cos (* 3 (+ (tan i) loop)))
                  0.0 0.0)))))
 
-(defun-g frag (&uniform (loop :float))
-  (v! (cos loop) (sin loop) 0.4 1.0))
+(defun-g frag ()
+  (let ((loop (the :float *loop*)))
+    (v! (cos loop) (sin loop) 0.4 1.0)))
 
 
 (defpipeline prog-1 ()
@@ -27,7 +31,7 @@
   (ttm:update)
   (loop :for i :below 100 :do
      (let ((i (/ i 2.0)))
-       (map-g #'prog-1 *vertex-stream* :i i :loop *loop*)))
+       (map-g #'prog-1 *vertex-stream* :i i)))
   (update-display))
 
 (let ((running nil))

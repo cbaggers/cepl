@@ -77,6 +77,7 @@
   (let ((stage-names (mapcar #'cdr stage-pairs)))
     (let ((uniform-assigners (stages->uniform-assigners stage-names pass-key)))
       `(let ((prog-id nil)
+             (implicit-uniform-upload-func nil)
              ,@(let ((u-lets (mapcat #'first uniform-assigners)))
                     (mapcar (lambda (_)
                               `(,(first _) -1)) u-lets)))
@@ -95,7 +96,23 @@
     (when +cache-last-pipeline-compile-result+
       (add-compile-results-to-pipeline name compiled-stages))
     (mapcar #'%gl:delete-shader stages-objects)
-    prog-id))
+    compiled-stages))
+
+(defun %create-implicit-uniform-uploader (compiled-stages)
+  (let ((uniforms (mapcat #'varjo:implicit-uniforms compiled-stages)))
+    (when uniforms
+      (let* ((assigners (mapcar #'make-arg-assigners uniforms))
+             (u-lets (mapcat #'first assigners)))
+        (%compile-closure
+         `(let ((initd nil)
+                ,@(mapcar (lambda (_) `(,(first _) -1)) u-lets))
+            (lambda (prog-id)
+              (unless initd
+                ,@(mapcar (lambda (_) (cons 'setf _)) u-lets))
+              ,@(mapcar #'second assigners))))))))
+
+(defun %compile-closure (code)
+  (funcall (compile nil `(lambda () ,code))))
 
 (defun %post-init (func)
   (unbind-buffer)
@@ -111,7 +128,10 @@
       (let ((image-unit -1))
         (declare (ignorable image-unit))
         (setf prog-id (request-program-id-for ',name))
-        (%compile-link-and-upload ',name prog-id ',stage-pairs)
+        (let ((compiled-stages (%compile-link-and-upload ',name prog-id
+                                                         ',stage-pairs)))
+          (setf implicit-uniform-upload-func
+                (%create-implicit-uniform-uploader compiled-stages)))
         ,@(let ((u-lets (mapcat #'first uniform-assigners)))
                (loop for u in u-lets collect (cons 'setf u)))
         (%post-init ,(car post))
@@ -129,6 +149,8 @@
          (unless prog-id (setf prog-id (,init-func-name)))
          (use-program prog-id)
          ,@u-uploads
+         (when implicit-uniform-upload-func
+           (funcall implicit-uniform-upload-func prog-id))
          (when stream (draw-expander stream ,prim-type))
          (use-program 0)
          stream))))
