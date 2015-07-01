@@ -239,7 +239,8 @@
            :make-quat :make-quat-from-vec3
            :make-quat-from-rotation-matrix3
            :make-quat-from-axis-angle
-           :make-quat-from-vectors
+           :make-quat-from-look-at
+           :make-quat-from-axies
            :make-quat-from-fixed-angles
            :magnitude :norm :quat-eql :quat-!eql
            :copy :get-axis-angle :normalize :qconjugate

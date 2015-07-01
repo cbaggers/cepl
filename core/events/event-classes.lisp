@@ -33,7 +33,7 @@
 (defclass mouse-scroll (cepl-event)
   ((source-id :initarg :source-id :initform 0 :reader id
               :type fixnum)
-   (vec :initarg :vec :type (simple-array (single-float 3)))))
+   (vec :initarg :vec :type (simple-array single-float (3)))))
 
 (defmethod cepl-generics::vec ((event mouse-scroll))
   (slot-value event 'vec))

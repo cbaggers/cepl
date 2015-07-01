@@ -103,7 +103,7 @@
                      (* (- (m3:melm mat3 0 2) (m3:melm mat3 2 0)) recip)
                      (* (- (m3:melm mat3 1 0) (m3:melm mat3 0 1)) recip)))
         (let* ((i (if (> (m3:melm mat3 1 1) (m3:melm mat3 0 0)) 1 0))
-               (i (when (> (m3:melm mat3 2 2) (m3:melm mat3 i i)) 2))
+               (i (if (> (m3:melm mat3 2 2) (m3:melm mat3 i i)) 2 i))
                (j (mod (+ 1 i) 3))
                (k (mod (+ 1 j) 3))
                (s (c-sqrt (+ (- (m3:melm mat3 i i)
@@ -118,7 +118,8 @@
                 (aref quat j) (* (+ (m3:melm mat3 j i) (m3:melm mat3 i j))
                                  recip)
                 (aref quat k) (* (+ (m3:melm mat3 k i) (m3:melm mat3 i k))
-                                 recip))))))
+                                 recip))
+          quat))))
 
 (defun make-quat-from-axis-angle (axis-vec3 angle)
   (let ((length (v3:length-squared axis-vec3)))
@@ -133,26 +134,41 @@
                            (* scale-factor (aref axis-vec3 1))
                            (* scale-factor (aref axis-vec3 2)))))))
 
+(defun make-quat-from-axies (x-axies y-axies z-axies)
+  (make-quat-from-rotation-matrix3
+   (m3:make-matrix3
+    (aref x-axies 0) (aref x-axies 0) (aref x-axies 0)
+    (aref y-axies 1) (aref y-axies 1) (aref y-axies 1)
+    (aref z-axies 2) (aref z-axies 2) (aref z-axies 2))))
+
+(defun make-quat-from-look-at (from3 to3)
+  (let* ((dir (v3:- from3 to3))
+         (n-dir (v3:normalize dir))
+         (right (v3:make-vector3 (aref n-dir 2) 0.0 (- (aref n-dir 0))))
+         (n-right (v3:normalize right))
+         (up (v3:cross n-dir n-right)))
+    (q:make-quat-from-axies n-right up n-dir)))
+
 ;;[TODO] Need to use destructive operations in here to stop multiple quats
 ;;       being created
-(defun make-quat-from-vectors (from3 to3)
-  (let* ((axis (v3:cross from3 to3))
-         (quat (normalize (make-quat (v3:dot from3 to3) (aref axis 0) (aref axis 1)
-                                     (aref axis 2))))
-         (w (+ 1.0 (aref quat 0))))
-    (if (<= w +float-threshold+)
-        (if (> (* (aref from3 2) (aref from3 2))
-               (* (aref from3 0) (aref from3 0)))
-            (setf (aref quat 0) 0.0
-                  (aref quat 1) 0.0
-                  (aref quat 2) (aref from3 2)
-                  (aref quat 3) (- (aref from3 1)))
-            (setf (aref quat 0) 0.0
-                  (aref quat 1) (aref from3 1)
-                  (aref quat 2) (- (aref from3 0))
-                  (aref quat 3) 0.0))
-        (setf (aref quat 0) w))
-    (normalize quat)))
+;; (defun make-quat-from-vectors (from3 to3)
+;;   (let* ((axis (v3:cross from3 to3))
+;;          (quat (normalize (make-quat (v3:dot from3 to3) (aref axis 0) (aref axis 1)
+;;                                      (aref axis 2))))
+;;          (w (+ 1.0 (aref quat 0))))
+;;     (if (<= w +float-threshold+)
+;;         (if (> (* (aref from3 2) (aref from3 2))
+;;                (* (aref from3 0) (aref from3 0)))
+;;             (setf (aref quat 0) 0.0
+;;                   (aref quat 1) 0.0
+;;                   (aref quat 2) (aref from3 2)
+;;                   (aref quat 3) (- (aref from3 1)))
+;;             (setf (aref quat 0) 0.0
+;;                   (aref quat 1) (aref from3 1)
+;;                   (aref quat 2) (- (aref from3 0))
+;;                   (aref quat 3) 0.0))
+;;         (setf (aref quat 0) w))
+;;     (normalize quat)))
 
 (defun make-quat-from-fixed-angles (x-rot y-rot z-rot)
   (let ((x-rot (/ x-rot 2.0))
@@ -230,7 +246,7 @@
   (v4:- quat-a quat-b))
 
 (defun q- (&rest quats)
-  (apply v4:- quats))
+  (apply #'v4:- quats))
 
 (defun q* (quat-a scalar)
   (v4:* quat-a scalar))

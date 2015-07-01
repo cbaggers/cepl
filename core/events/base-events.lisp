@@ -29,6 +29,8 @@
   (let ((sym-name (if special (kwd (string-upcase name)) name))
         (subscribers (gensym "subscribers"))
         (var (symb (symbol-name var))))
+    (when (and (fboundp name) parent)
+      (unsubscribe (symbol-function name) parent))
     `(let ,(when allow-subscribers `((,subscribers nil)))
        (defun ,name (,var)
          (declare (ignorable ,var))
