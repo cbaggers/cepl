@@ -99,7 +99,8 @@
     compiled-stages))
 
 (defun %create-implicit-uniform-uploader (compiled-stages)
-  (let ((uniforms (mapcat #'varjo:implicit-uniforms compiled-stages)))
+  (let ((uniforms (%dedup-implicit-uniforms
+                   (mapcat #'varjo:implicit-uniforms compiled-stages))))
     (when uniforms
       (let* ((assigners (mapcar #'make-arg-assigners uniforms))
              (u-lets (mapcat #'first assigners)))
@@ -110,6 +111,16 @@
               (unless initd
                 ,@(mapcar (lambda (_) (cons 'setf _)) u-lets))
               ,@(mapcar #'second assigners))))))))
+
+(defun %implicit-uniforms-dont-have-type-mismatches (uniforms)
+  (loop :for (name type . i) :in uniforms :always
+     (loop :for (n tp . i_)
+        :in (remove-if-not (lambda (x) (equal (car x) name)) uniforms)
+        :always (equal type tp))))
+
+(defun %dedup-implicit-uniforms (uniforms)
+  (assert (%implicit-uniforms-dont-have-type-mismatches uniforms))
+  (remove-duplicates uniforms :test #'equal :key #'first))
 
 (defun %compile-closure (code)
   (funcall (compile nil `(lambda () ,code))))
