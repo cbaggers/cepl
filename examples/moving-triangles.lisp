@@ -6,6 +6,11 @@
 (defparameter *loop* 0.0)
 
 ;; note the use of implicit uniform capture with *loop*
+;; special vars in scope can be used inline. During compilation
+;; cepl will try work out the type, but if it can't it will try
+;; to get this info from the context in which it was used.
+;; At time of writing that means using (the :float *loop*) in
+;; your gpu functions
 (defun-g vert ((position :vec4) &uniform (i :int))
   (let ((pos (v! (* (s~ position :xyz) 0.3) 1.0)))
     (+ pos (let ((i (/ (+ (float i)) 2)))
@@ -13,8 +18,8 @@
                  (cos (* 3 (+ (tan i) *loop*)))
                  0.0 0.0)))))
 
-(defun-g frag () ;; :iuniforms enables implicit uniforms
-  (v! (cos *loop*) (sin *loop*) 0.4 1.0)) ;; use *loop* like any other variable
+(defun-g frag ()
+  (v! (cos *loop*) (sin *loop*) 0.4 1.0))
 
 (defpipeline prog-1 ()
     (g-> #'vert #'frag))

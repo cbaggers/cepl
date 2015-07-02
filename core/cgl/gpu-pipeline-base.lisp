@@ -178,9 +178,7 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 ;;--------------------------------------------------
 
 (defun parse-options (options)
-  (mapcar #'cons
-          (cons nil (remove-if-not #'keywordp options))
-          (split-sequence-if #'keywordp options)))
+  (varjo:lambda-list-split '(:&context :post) options))
 
 ;;--------------------------------------------------
 
