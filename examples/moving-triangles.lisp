@@ -6,15 +6,15 @@
 (defparameter *loop* 0.0)
 
 ;; note the use of implicit uniform capture with *loop*
-(defun-g vert ((position :vec4) &uniform (i :int) &context :iuniforms)
+(defun-g vert ((position :vec4) &uniform (i :int))
   (let ((pos (v! (* (s~ position :xyz) 0.3) 1.0)))
     (+ pos (let ((i (/ (+ (float i)) 2)))
              (v! (sin (+ i *loop*))
                  (cos (* 3 (+ (tan i) *loop*)))
                  0.0 0.0)))))
 
-(defun-g frag (&context :iuniforms)
-  (v! (cos *loop*) (sin *loop*) 0.4 1.0))
+(defun-g frag () ;; :iuniforms enables implicit uniforms
+  (v! (cos *loop*) (sin *loop*) 0.4 1.0)) ;; use *loop* like any other variable
 
 (defpipeline prog-1 ()
     (g-> #'vert #'frag))

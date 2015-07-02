@@ -249,10 +249,13 @@
                            (member _ varjo::*stage-types*))
                          context)))
         (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-      (list in-args
-            uniforms
-            (cons stage-type (remove stage-type context))
-            code))))
+      (let ((context (cons :iuniforms
+                           (cons stage-type
+                                 (remove stage-type context)))))
+        (list in-args
+              uniforms
+              context
+              code)))))
 
 ;;--------------------------------------------------
 
