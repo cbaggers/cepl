@@ -47,7 +47,7 @@
           :type keyword)
    (clicks :initarg :clicks :initform 0 :reader clicks
            :type fixnum)
-   (pos :initarg :pos :type (simple-array (single-float 3)))))
+   (pos :initarg :pos :type (simple-array single-float (3)))))
 
 (defmethod cepl-generics::pos ((event mouse-button))
   (slot-value event 'pos))
@@ -57,9 +57,9 @@
               :type fixnum)
    (state :initarg :state :initform 0 :reader state
           :type fixnum)
-   (pos :initarg :pos :type (simple-array (single-float 3)))
+   (pos :initarg :pos :type (simple-array single-float (3)))
    (delta :initarg :delta :reader delta
-          :type (simple-array (single-float 3)))))
+          :type (simple-array single-float (3)))))
 
 (defmethod cepl-generics::pos ((event mouse-motion))
   (slot-value event 'pos))
