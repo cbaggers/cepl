@@ -85,4 +85,5 @@
 (defun stop-loop ()
   (setf *running* nil))
 
-(evt:def-event-listener sys-listener (e
+(evt:def-event-listener sys-listener (e :sys)
+  (when (typep e 'evt:will-quit) (stop-loop)))

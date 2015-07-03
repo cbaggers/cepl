@@ -42,13 +42,19 @@
 (let ((available-extensions nil))
   (defun has-feature (x)
     (unless available-extensions
-      (if (<= 3 (gl:major-version))
-          (loop :for i :below (gl:get-integer :num-extensions)
-             :collect (%gl:get-string-i :extensions i))
-          ;; OpenGL version < 3
-          (cl-utilities:split-sequence #\space (gl:get-string :extensions)
-                                       :remove-empty-subseqs t)))
-    (find x available-extensions :test #'equal)))
+      (let* ((exts (if (> (gl:major-version) 3)
+                       (loop :for i :below (gl:get-integer :num-extensions)
+                          :collect (%gl:get-string-i :extensions i))
+                       ;; OpenGL version < 3
+                       (cl-utilities:split-sequence
+                        #\space (gl:get-string :extensions)
+                        :remove-empty-subseqs t)))
+             (exts (append exts
+                           (mapcar (lambda (x)
+                                     (utils:kwd (string-upcase (subseq x 3))))
+                                   exts))))
+        (setf available-extensions exts)))
+    (not (null (find x available-extensions :test #'equal)))))
 
 (defun ensure-cepl-compatible-setup ()
   (unless (>= (gl:major-version) 3)
