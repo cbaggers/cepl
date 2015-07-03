@@ -4,7 +4,7 @@
   ;; {TODO} context is now options, need to parse this
   (when args (warn "defpipeline: extra args are not used in pipelines composed of g-functions"))
   (let ((pass-key (%gen-pass-key))) ;; used as key for memoization
-    (assoc-bind ((context :&context) (post :post)) (parse-options options)
+    (assoc-bind ((context :context) (post :post)) (parse-options options)
       (destructuring-bind (stage-pairs gpipe-context)
           (parse-gpipe-args gpipe-args)
         (assert (not (and gpipe-context context)))
