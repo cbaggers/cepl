@@ -7,9 +7,7 @@
 (defmacro %map-g (pipeline-func stream &rest uniforms)
   (labels ((function-formp (x) (eq (first x) 'function)))
     `(progn
-       ,(if (function-formp pipeline-func)
-            `(,(second pipeline-func) ,stream ,@uniforms)
-            `(funcall ,pipeline-func ,stream ,@uniforms))
+       (funcall ,pipeline-func ,stream ,@uniforms)
        cgl::%current-fbo)))
 
 ;; ------------------------------------------

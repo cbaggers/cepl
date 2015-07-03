@@ -177,8 +177,18 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 
 ;;--------------------------------------------------
 
+;; (defun parse-options (options)
+;;   (varjo:lambda-list-split '(:&context :post :fbos) options))
+
 (defun parse-options (options)
-  (varjo:lambda-list-split '(:&context :post) options))
+  (labels ((tokenp (x)
+             (and (symbolp x)
+                  (or (keywordp x)
+                      (char= (aref (symbol-name x) 0)
+                             #\&)))))
+    (mapcar #'cons
+            (cons nil (remove-if-not #'tokenp options))
+            (split-sequence-if #'tokenp options))))
 
 ;;--------------------------------------------------
 

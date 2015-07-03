@@ -63,6 +63,7 @@
                     (slot-value (cgl::%attachment-gpu-array
                                  (cgl::%attachment fbo attachment-name))
                                 'cgl::texture)))
+           (declare (ignorable (function cgl:attachment)))
            (let ,(when all-draw-buffers `((,+db-pass-ptr-sym+ ,+db-ptr-sym+)))
              ,@pass-code))))))
 
