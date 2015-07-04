@@ -11,7 +11,8 @@
 
   (declare (ignore subsystems swank-update-sec))
   (let ((run-symb (symb :run-loop))
-        (stop-symb (symb :stop-loop)))
+        (stop-symb (symb :stop-loop))
+        (listener (symb :--listener--)))
     `(progn
        (let ((running nil))
          (defun ,run-symb ()
@@ -27,7 +28,7 @@
            (print "-shutting down-")
            nil)
          (defun ,stop-symb () (setf running nil)))
-       (evt:def-event-listener (event :sys)
+       (evt:def-event-listener ,listener (,(symb 'event) :sys)
            (when (typep ,(symb 'event) 'evt:will-quit)
              (,stop-symb))))))
 
