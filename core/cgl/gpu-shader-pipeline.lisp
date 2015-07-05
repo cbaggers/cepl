@@ -10,28 +10,30 @@
       (destructuring-bind (stage-pairs gpipe-context)
           (parse-gpipe-args gpipe-args)
         (assert (not (and gpipe-context context)))
+
         (let* ((context (or context gpipe-context))
-               (stage-names (mapcar #'cdr stage-pairs))
-               ;; we generate the func that compiles & uploads the pipeline
-               ;; and also populates the pipeline's local-vars
-               (init-func (gen-pipeline-init name stage-pairs post pass-key
-                                             context)))
+               (stage-names (mapcar #'cdr stage-pairs)))
           (assert-valid-stage-specs stage-names)
-          ;; update the spec immediately (macro-expansion time)
-          (%update-spec name stage-names context gpipe-context)
-          `(progn
-             ;; macro that expands to the local vars for the pipeline
-             (let-pipeline-vars (,stage-names ,pass-key ,context)
-               ;; we upload the spec at compile time
-               ,(gen-update-spec name stage-names context gpipe-context)
-               (labels (,init-func
-                        ,@(fallback-implicit-uniform-func context))
-                 ;; generate the code that actually renders
-                 ,(def-dispatch-func name (first init-func) stage-names context
-                                     pass-key)))
-             ;; generate the function that recompiles this pipeline
-             ,(gen-recompile-func name args gpipe-args stage-names options)
-             ,(unless suppress-compile `(,(recompile-name name)))))))))
+          (let (;; we generate the func that compiles & uploads the pipeline
+                ;; and also populates the pipeline's local-vars
+                (init-func (gen-pipeline-init name stage-pairs post pass-key
+                                              context)))
+
+            ;; update the spec immediately (macro-expansion time)
+            (%update-spec name stage-names context gpipe-context)
+            `(progn
+               ;; macro that expands to the local vars for the pipeline
+               (let-pipeline-vars (,stage-names ,pass-key ,context)
+                 ;; we upload the spec at compile time
+                 ,(gen-update-spec name stage-names context gpipe-context)
+                 (labels (,init-func
+                          ,@(fallback-implicit-uniform-func context))
+                   ;; generate the code that actually renders
+                   ,(def-dispatch-func name (first init-func) stage-names context
+                                       pass-key)))
+               ;; generate the function that recompiles this pipeline
+               ,(gen-recompile-func name args gpipe-args stage-names options)
+               ,(unless suppress-compile `(,(recompile-name name))))))))))
 
 (defun fallback-implicit-uniform-func (context)
   (when (supports-implicit-uniformsp context)

@@ -51,8 +51,7 @@
     (let ((depends-on (%find-gpu-functions-depended-on spec)))
       (assert (not (%find-recursion name depends-on)))
       (when (every #'gpu-func-spec depends-on)
-        (%update-gpu-function-data (%serialize-gpu-func-spec spec)
-                                   depends-on))
+        (%update-gpu-function-data spec depends-on))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
@@ -112,6 +111,11 @@
            #'varjo::macroexpand-pass
            #'varjo::compiler-macroexpand-pass)))
 
+(defun varjo-func-namep (x)
+  (assert (symbolp x))
+  (or (second (multiple-value-list (gethash x varjo::*global-env-funcs*)))
+      (second (multiple-value-list (gethash (kwd x) varjo::*global-env-funcs*)))))
+
 (defun %find-gpu-funcs-in-source (source &optional locally-defined)
   (unless (atom source)
     (remove-duplicates
@@ -144,7 +148,8 @@
           ;; it then record it
           ((and (symbolp s)
                 (not (equal (package-name (symbol-package s)) "VARJO"))
-                (not (member s locally-defined)))
+                (not (member s locally-defined))
+                (not (varjo-func-namep s)))
            (cons s (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
                            (rest source))))
           ;; nothing to see, keep searching
