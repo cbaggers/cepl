@@ -6,13 +6,15 @@
 
 (defun %defpipeline-compose (name args options gpipe-args)
   (assert (and (every #'symbolp args) (not (some #'keywordp args))))
+  (assert-valid-gpipe-form name gpipe-args :compose)
   (destructuring-bind (user-args &optional user-uniforms)
       (split-sequence :&uniform args :test #'string-equal)
     (assoc-bind ((fbos :fbos) (context :context) (post :post))
-        (parse-options options)
+        (parse-options name options :compose)
       (destructuring-bind (pipeline-names gpipe-context)
           (parse-compose-gpipe-args gpipe-args)
         (assert (not (and gpipe-context context)))
+        (assert-valid-pipeline-specs pipeline-names)
         (let* ((uniform-args (make-pipeline-uniform-args
                               pipeline-names
                               gpipe-args))

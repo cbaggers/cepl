@@ -177,18 +177,21 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 
 ;;--------------------------------------------------
 
-;; (defun parse-options (options)
-;;   (varjo:lambda-list-split '(:&context :post :fbos) options))
-
-(defun parse-options (options)
+(defun parse-options (pipeline-name options context)
   (labels ((tokenp (x)
              (and (symbolp x)
                   (or (keywordp x)
                       (char= (aref (symbol-name x) 0)
                              #\&)))))
-    (mapcar #'cons
-            (cons nil (remove-if-not #'tokenp options))
-            (split-sequence-if #'tokenp options))))
+    (let* ((result
+            (mapcar #'cons
+                    (cons nil (remove-if-not #'tokenp options))
+                    (split-sequence-if #'tokenp options)))
+           (result (if (equal (first result) '(nil))
+                       (rest result)
+                       result)))
+      (assert-valid-options pipeline-name result context)
+      result)))
 
 ;;--------------------------------------------------
 
@@ -225,3 +228,5 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 (defmacro g-> (&rest forms)
   (declare (ignore forms))
   (error "Sorry, g-> can currently only be used inside defpipeline"))
+
+;;--------------------------------------------------

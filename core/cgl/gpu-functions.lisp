@@ -267,7 +267,7 @@
          (if (and (= (length args) 2) (not (some #'keywordp args)))
              `((:vertex . ,(cadar args)) (:fragment . ,(cadadr args)))
              (let* ((stages (copy-list varjo:*stage-types*))
-                    (results (loop :for a :in args
+                     (results (loop :for a :in args
                                 :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
                                 :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
                                                      (cadr a)))))

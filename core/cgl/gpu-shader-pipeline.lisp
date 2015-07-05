@@ -2,9 +2,11 @@
 
 (defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
-  (when args (warn "defpipeline: extra args are not used in pipelines composed of g-functions"))
+  (when args (error 'shader-pipeline-non-null-args :pipeline-name name))
+  (assert-valid-gpipe-form name gpipe-args :shader)
   (let ((pass-key (%gen-pass-key))) ;; used as key for memoization
-    (assoc-bind ((context :context) (post :post)) (parse-options options)
+    (assoc-bind ((context :context) (post :post))
+        (parse-options name options :shader)
       (destructuring-bind (stage-pairs gpipe-context)
           (parse-gpipe-args gpipe-args)
         (assert (not (and gpipe-context context)))
@@ -14,18 +16,18 @@
                ;; and also populates the pipeline's local-vars
                (init-func (gen-pipeline-init name stage-pairs post pass-key
                                              context)))
-
+          (assert-valid-stage-specs stage-names)
           ;; update the spec immediately (macro-expansion time)
           (%update-spec name stage-names context gpipe-context)
           `(progn
              ;; macro that expands to the local vars for the pipeline
-             (let-pipeline-vars (,stage-pairs ,pass-key ,context)
+             (let-pipeline-vars (,stage-names ,pass-key ,context)
                ;; we upload the spec at compile time
                ,(gen-update-spec name stage-names context gpipe-context)
                (labels (,init-func
                         ,@(fallback-implicit-uniform-func context))
                  ;; generate the code that actually renders
-                 ,(def-dispatch-func name (first init-func) stage-pairs context
+                 ,(def-dispatch-func name (first init-func) stage-names context
                                      pass-key)))
              ;; generate the function that recompiles this pipeline
              ,(gen-recompile-func name args gpipe-args stage-names options)
@@ -81,16 +83,15 @@
           (mapcar #'make-change-signature
                   (funcs-this-func-uses stage-name)))))
 
-(defmacro let-pipeline-vars ((stage-pairs pass-key context) &body body)
-  (let ((stage-names (mapcar #'cdr stage-pairs)))
-    (let ((uniform-assigners (stages->uniform-assigners stage-names pass-key)))
-      `(let ((prog-id nil)
-             ,@(when (supports-implicit-uniformsp context)
-                     `((implicit-uniform-upload-func nil)))
-             ,@(let ((u-lets (mapcat #'first uniform-assigners)))
-                    (mapcar (lambda (_)
-                              `(,(first _) -1)) u-lets)))
-         ,@body))))
+(defmacro let-pipeline-vars ((stage-names pass-key context) &body body)
+  (let ((uniform-assigners (stages->uniform-assigners stage-names pass-key)))
+    `(let ((prog-id nil)
+           ,@(when (supports-implicit-uniformsp context)
+                   `((implicit-uniform-upload-func nil)))
+           ,@(let ((u-lets (mapcat #'first uniform-assigners)))
+                  (mapcar (lambda (_)
+                            `(,(first _) -1)) u-lets)))
+       ,@body)))
 
 (defun %gl-make-shader-from-varjo (compiled-stage)
   (make-shader (varjo->gl-stage-names (varjo:stage-type compiled-stage))
@@ -163,26 +164,33 @@
         (%post-init ,(car post))
         prog-id))))
 
-(defun def-dispatch-func (name init-func-name stage-pairs context pass-key)
-  (let ((stage-names (mapcar #'cdr stage-pairs)))
-    (let* ((uniform-assigners (stages->uniform-assigners stage-names pass-key))
-           (uniform-names
-            (mapcar #'first (aggregate-uniforms stage-names)))
-           (prim-type (varjo::get-primitive-type-from-context context))
-           (u-uploads (mapcar #'second uniform-assigners)))
-      `(defun ,name (stream ,@(when uniform-names `(&key ,@uniform-names)))
-         (declare (ignorable ,@uniform-names))
-         (unless prog-id (setf prog-id (,init-func-name)))
+(defun def-dispatch-func (name init-func-name stage-names context pass-key)
+  (let* ((uniform-assigners (stages->uniform-assigners stage-names pass-key))
+         (uniform-names
+          (mapcar #'first (aggregate-uniforms stage-names)))
+         (prim-type (varjo::get-primitive-type-from-context context))
+         (u-uploads (mapcar #'second uniform-assigners)))
+    `(progn
+       (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
+         (declare (ignore mapg-context) (ignorable ,@uniform-names))
+         (unless prog-id
+           (setf prog-id (,init-func-name))
+           (unless prog-id (return-from ,name)))
          (use-program prog-id)
          ,@u-uploads
          ,(when (supports-implicit-uniformsp context)
                 `(locally
                      (declare (function implicit-uniform-upload-func)
                               (optimize (speed 3) (safety 1)))
-                     (funcall implicit-uniform-upload-func prog-id)))
+                   (funcall implicit-uniform-upload-func prog-id)))
          (when stream (draw-expander stream ,prim-type))
          (use-program 0)
-         stream))))
+         stream)
+       (define-compiler-macro ,name (&whole whole mapg-context &rest rest)
+         (declare (ignore rest))
+         (unless (mapg-constantp mapg-context)
+           (error 'dispatch-called-outside-of-map-g :name ',name))
+         whole))))
 
 (defmacro draw-expander (stream draw-type)
   "This draws the single stream provided using the currently
