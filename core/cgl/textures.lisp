@@ -379,22 +379,157 @@
 
 
 (defun make-texture (initial-contents
-                     &key dimensions internal-format (mipmap nil)
+                     &key dimensions element-type (mipmap nil)
                        (layer-count 1) (cubes nil) (rectangle nil)
                        (multisample nil) (immutable t) (buffer-storage nil)
                        lod-bias min-lod max-lod minify-filter magnify-filter
                        wrap compare (generate-mipmaps t))
-  (cond
-    (multisample (error "cepl: Multisample textures are not supported"))
-    (buffer-storage
-     (%make-buffer-texture (%texture-dimensions initial-contents dimensions)
-                           internal-format mipmap layer-count cubes
+  (let ((internal-format (calc-internal-format element-type initial-contents)))
+    (cond
+      ;; ms
+      (multisample (error "cepl: Multisample textures are not supported"))
+      ;; initialize content needs to be turned into c-array
+      ((and initial-contents (typep initial-contents 'cepl-uploadable-lisp-seq))
+       (%make-texture-with-lisp-data dimensions mipmap layer-count cubes
+                                     buffer-storage rectangle multisample
+                                     immutable initial-contents lod-bias min-lod
+                                     max-lod minify-filter magnify-filter wrap
+                                     compare generate-mipmaps element-type))
+      ;; buffer backed - note that by now if there were intitial contents, they
+      ;;                 are now a c-array
+      (buffer-storage
+       (%make-buffer-texture (%texture-dimensions initial-contents dimensions)
+                             internal-format mipmap layer-count cubes
+                             rectangle multisample immutable initial-contents
+                             lod-bias min-lod max-lod minify-filter
+                             magnify-filter wrap compare))
+      ;; cube textures
+      ((and initial-contents cubes)
+       (%make-cube-texture dimensions mipmap layer-count cubes buffer-storage
                            rectangle multisample immutable initial-contents
-                           lod-bias min-lod max-lod minify-filter magnify-filter
-                           wrap compare))
-    ((and initial-contents cubes)
-     (assert (= 6 (length initial-contents)))
-     (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
+                           internal-format lod-bias min-lod max-lod
+                           minify-filter magnify-filter wrap compare
+                           generate-mipmaps))
+      ;; all other cases
+      (t (%make-texture dimensions mipmap layer-count cubes buffer-storage
+                        rectangle multisample immutable initial-contents
+                        internal-format lod-bias min-lod max-lod
+                        minify-filter magnify-filter wrap compare
+                        generate-mipmaps)))))
+
+;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+
+(defun calc-dimensions (internal-format dimensions cube-tex)
+  )
+
+;; other
+;; (listify dimensions)
+;;cube
+;; (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
+;;        (dim (if (every (lambda (_) (equal target-dim (dimensions _)))
+;;                        initial-contents)
+;;                 target-dim
+;;                 (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
+;;                        initial-contents)))))
+
+;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+
+(defun calc-internal-format (element-type initial-contents)
+  (cond
+    ;; need to infer the type
+    ((null element-type)
+     (%calc-internal-format-without-declared-format initial-contents))
+    ;; need to ensure nothing conflicts with declaration
+    ((internal-formatp element-type)
+     (%calc-internal-format-with-declared-format element-type
+                                                 element-type
+                                                 initial-contents))
+    ;; need to ensure nothing conflicts with declaration
+    ((pixel-format-p element-type)
+     (%calc-internal-format-with-pixel-format element-type
+                                              initial-contents))
+    ;;
+    (t (%calc-internal-format-with-lisp-type element-type
+                                             initial-contents))))
+
+;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+
+(defun %calc-internal-format-without-declared-format (initial-contents)
+  ;; The user didnt declare an element-type so try and infer one
+  (typecase initial-contents
+    (null (error 'make-tex-no-content-no-type))
+    (c-array (lisp-type->internal-format
+              (element-type initial-contents)))
+    (cepl-uploadable-seq (scan-for-type initial-contents))))
+
+;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+
+(deftype cepl-uploadable-lisp-seq () '(or list vector array))
+
+(defun %calc-internal-format-with-declared-format
+    (element-type internal-format initial-contents)
+  ;; Here the users declared the internal format in :element-type so
+  ;; we need to make sure that no other arguments conflict with this
+  (typecase initial-contents
+    (null internal-format)
+    (c-array (if (equal (lisp-type->internal-format
+                         (element-type initial-contents))
+                        internal-format)
+                 internal-format
+                 (error 'make-tex-array-not-match-type
+                        :element-type element-type
+                        :internal-format internal-format
+                        :array-type (element-type initial-contents))))
+    (cepl-uploadable-lisp-seq internal-format) ;; we cant infer all types so we
+                                             ;; have to trust and then the
+                                             ;; c-array code handle it
+    (t (error 'make-tex-array-not-match-type
+              :element-type element-type
+              :initial-contents initial-contents))))
+
+;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+
+(defun %calc-internal-format-with-pixel-format (pixel-format initial-contents)
+  "Convert the pixel-format to an internal format and delegate to
+   %calc-internal-format"
+  (%calc-internal-format-with-declared-format
+   pixel-format
+   (pixel-format->internal-format pixel-format)
+   initial-contents))
+
+(defun %calc-internal-format-with-lisp-type (element-type initial-contents)
+  "Convert the lisp type to an internal format and delegate to
+   %calc-internal-format"
+  (%calc-internal-format-with-declared-format
+   element-type
+   (lisp-type->internal-format element-type)
+   initial-contents))
+
+;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+
+(defun %make-texture-with-lisp-data
+    (dimensions mipmap layer-count cubes buffer-storage
+     rectangle multisample immutable initial-contents
+     lod-bias min-lod max-lod minify-filter
+     magnify-filter wrap compare generate-mipmaps
+     element-type)
+  (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions
+                                   :element-type element-type))
+    (make-texture tmp :mipmap mipmap
+                  :layer-count layer-count :cubes cubes :rectangle rectangle
+                  :multisample multisample :immutable immutable
+                  :buffer-storage buffer-storage
+                  :generate-mipmaps generate-mipmaps :lod-bias lod-bias
+                  :min-lod min-lod :max-lod max-lod
+                  :minify-filter minify-filter :magnify-filter magnify-filter
+                  :wrap wrap :compare compare)))
+
+(defun %make-cube-texture (dimensions mipmap layer-count cubes buffer-storage
+                           rectangle multisample immutable initial-contents
+                           internal-format lod-bias min-lod max-lod minify-filter
+                           magnify-filter wrap compare generate-mipmaps)
+  (assert (= 6 (length initial-contents)))
+  (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
             (dim (if (every (lambda (_) (equal target-dim (dimensions _)))
                             initial-contents)
                      target-dim
@@ -408,19 +543,6 @@
        (loop :for data :in initial-contents :for i :from 0 :do
           (push-g data (texref result :cube-face i)))
        result))
-    ((and initial-contents (typep initial-contents '(or list vector array)))
-     (return-from make-texture
-       (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions))
-         (make-texture tmp :mipmap mipmap
-                       :layer-count layer-count :cubes cubes :rectangle rectangle
-                       :multisample multisample :immutable immutable
-                       :buffer-storage buffer-storage
-                       :generate-mipmaps generate-mipmaps))))
-    (t (%make-texture dimensions mipmap layer-count cubes buffer-storage
-                      rectangle multisample immutable initial-contents
-                      internal-format lod-bias min-lod max-lod
-                      minify-filter magnify-filter wrap compare
-                      generate-mipmaps))))
 
 (defun %make-texture (dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
@@ -430,14 +552,6 @@
     ;; check for power of two - handle or warn
     (let* ((pixel-format (when initial-contents
                            (lisp-type->pixel-format initial-contents)))
-           (internal-format
-            (if internal-format
-                (if (pixel-format-p internal-format)
-                    (pixel-format->internal-format internal-format)
-                    internal-format)
-                (when initial-contents
-                  (or (pixel-format->internal-format pixel-format)
-                      (error "Could not infer the internal-format")))))
            (texture-type (establish-texture-type
                           (if (listp dimensions) (length dimensions) 1)
                           (not (null mipmap)) (> layer-count 1) cubes
@@ -495,38 +609,29 @@
                 texture))
           (error "This combination of texture features is invalid")))))
 
-(defun %make-buffer-texture (dimensions element-format mipmap layer-count cubes
+;; (when (gpuarray-p initial-contents)
+;;     (error "Cannot currently make a buffer-backed texture with an existing buffer-backed gpu-array"))
+;;   (when (typep initial-contents 'gpu-array-t)
+;;     (error "Cannot make a buffer-backed texture with a texture-backed gpu-array"))
+
+(defun %make-buffer-texture (dimensions internal-format mipmap layer-count cubes
                              rectangle multisample immutable initial-contents
                              lod-bias min-lod max-lod minify-filter
                              magnify-filter wrap compare)
   (declare (ignore immutable))
-  (when (gpuarray-p initial-contents)
-    (error "Cannot currently make a buffer-backed texture with an existing buffer-backed gpu-array"))
-  (when (typep initial-contents 'gpu-array-t)
-    (error "Cannot make a buffer-backed texture with a texture-backed gpu-array"))
-  (when (or mipmap (not (= layer-count 1)) cubes rectangle multisample)
-    (error "Buffer-backed textures cannot have mipmaps, multiple layers or be cube rectangle or multisample"))
-  (unless (or (null initial-contents) (typep initial-contents 'c-array))
-    (error "Invalid initial-contents for making a buffer-backed texture"))
-  (when (or lod-bias min-lod max-lod minify-filter
-            magnify-filter wrap compare)
-    (error "Do not currently support setting any textrue sample parameters on construction"))
   (let* ((dimensions (listify dimensions))
-         (internal-format (%find-tex-internal-format
-                           (if initial-contents
-                               (element-type initial-contents)
-                               element-format)))
          (element-type (if initial-contents
                            (element-type initial-contents)
                            (internal-format->lisp-type internal-format)))
          (texture-type (establish-texture-type
                         (length dimensions)
                         nil nil nil (every #'po2p dimensions) nil t nil)))
-    (unless (valid-internal-format-for-buffer-backed-texturep internal-format)
-      (error "Invalid internal format for use with buffer-backed-texture"))
-    (unless (eq texture-type :texture-buffer)
-      (error "Could not establish the correct texture type for a buffer texture: ~a"
-             texture-type))
+    ;; validation
+    (assert-valid-args-for-buffer-backend-texture
+     internal-format cubes rectangle multisample mipmap layer-count
+     lod-bias min-lod max-lod minify-filter magnify-filter wrap compare
+     texture-type)
+    ;; creation
     (let* ((array (if initial-contents
                       (make-gpu-array initial-contents)
                       (make-gpu-array nil :dimensions dimensions
@@ -544,11 +649,27 @@
                                     texture-type internal-format)
                      :backing-array array
                      :owns-array t)))
+      ;; upload
       (with-texture-bound (new-tex)
         (%gl::tex-buffer :texture-buffer internal-format
                          (glbuffer-buffer-id (gpuarray-buffer array)))
         (setf (slot-value new-tex 'allocated) t)
         new-tex))))
+
+(defun assert-valid-args-for-buffer-backend-texture
+    (internal-format cubes rectangle multisample mipmap layer-count
+     lod-bias min-lod max-lod minify-filter magnify-filter wrap compare
+     texture-type)
+  (when (or mipmap (not (= layer-count 1)) cubes rectangle multisample)
+    (error 'buffer-backed-texture-invalid-args))
+  (when (or lod-bias min-lod max-lod minify-filter magnify-filter wrap compare)
+    (error 'buffer-backed-texture-invalid-samplers))
+  (unless (valid-internal-format-for-buffer-backed-texturep internal-format)
+    (error 'buffer-backed-texture-invalid-internal-format
+           :type-name internal-format))
+  (unless (eq texture-type :texture-buffer)
+    (error 'buffer-backed-texture-establish-internal-format
+           :type-name texture-type)))
 
 (defun %find-tex-internal-format (element-format)
   (if (pixel-format-p element-format)

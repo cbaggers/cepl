@@ -348,14 +348,12 @@
            :update-display
            :valid-pixel-format-p
            :pixel-format
-           :lisp-type->pixel-format
            :pixel-format->lisp-type
            :pixel-format->internal-format
            :internal-format->pixel-format
            :internal-format->lisp-type
+           :lisp-type->pixel-format
            :lisp-type->internal-format
-           :internal-format-from-pixel-format
-           :pixel-format-from-internal-format
            :describe-pixel-format
            :defstruct-g
            :c-array-byte-size

@@ -63,3 +63,53 @@ Example valid forms:
 (deferror shader-pipeline-non-null-args () (pipeline-name)
     "CEPL - defpipeline: In defpipeline for ~a. Args are not needed in pipelines composed of g-functions"
     pipeline-name)
+
+
+(deferror make-tex-no-content-no-type () ()
+    "CEPL - make-texture: Trying to make texture but have element-type and also
+no initial-contents to infer the type from")
+
+(deferror make-tex-array-not-match-type ()
+    (element-type internal-format array-type)
+    "CEPL - make-texture: Trying to make texture but the element-type given was
+~s which implies an internal-format of ~s. This conflicts with the array
+element-type of ~s"
+  element-type internal-format array-type)
+
+(deferror make-tex-array-not-match-type () (element-type initial-contents)
+    "CEPL - make-texture: Trying to make texture with an element-type of ~s,
+however the initial-contents provided do not seem to be compatible:~%~s"
+  element-type initial-contents)
+
+(deferror internal-format->lisp-type-failed () (type-name)
+    "CEPL - make-texture: to find a conversion from the internal-format ~s to a lisp type"
+  type-name)
+
+(deferror lisp-type->internal-format-failed () (type-name)
+    "CEPL - make-texture: to find a suitable conversion from the lisp type ~s to an
+internal texture format"
+  type-name)
+
+(deferror pixel-format->internal-format-failed () (type-name)
+    "CEPL - make-texture: to find a suitable conversion from the pixel format ~s to an
+internal texture format"
+  type-name)
+
+(deferror internal-format->pixel-format-failed () (type-name)
+    "CEPL - make-texture: to find a suitable conversion from the internal texture format ~s
+ to a pixel format"
+  type-name)
+
+(deferror buffer-backed-texture-invalid-args () ()
+    "CEPL - make-texture: Buffer-backed textures cannot have mipmaps, multiple layers or be cube rectangle or multisample")
+
+(deferror buffer-backed-texture-invalid-samplers () ()
+    "CEPL - make-texture: We do not currently support setting any texture sampling parameters on buffer backed textures")
+
+(deferror buffer-backed-texture-invalid-internal-format () (type-name)
+    "CEPL - make-texture: The internal format ~a is invalid for use with buffer-backed-textures"
+  type-name)
+
+(deferror buffer-backed-texture-establish-internal-format () (type-name)
+  "CEPL - make-texture: Could not establish the correct texture type for a buffer texture: ~a"
+  type-name)

@@ -54,66 +54,70 @@
 (defvar *stencil-formats*
   '(:stencil-index8))
 (defvar *depth-stencil-formats* '())
+(defvar *image-formats* (append *color-renderable-formats*
+                                *depth-formats*
+                                *stencil-formats*
+                                *depth-stencil-formats*))
 (defvar *gl-integral-pixel-types*
   '(:ubyte :byte :ushort :short :uint :int))
 (defvar *expanded-gl-type-names*
   '((:uint :unsigned-int) (:ubyte :unsigned-byte)
     (:ubyte :unsigned-byte) (:ushort :unsigned-short)))
 (defvar *gl-pixel-to-internal-map*
-  '(((:DEPTH t :short nil) :DEPTH-COMPONENT16)
-    ((:DEPTH t :int nil) :DEPTH-COMPONENT32)
-    ((:DEPTH t :float nil) :DEPTH-COMPONENT32F)
-    ((:STENCIL-ONLY t :int nil) :STENCIL-INDEX8)
-    ((:R t :ubyte nil) :R8)
-    ((:R t :byte nil) :R8-SNORM)
-    ((:R t :ushort nil) :R16)
-    ((:R t :short nil) :R16-SNORM)
-    ((:RG t :ubyte nil) :RG8)
-    ((:RG t :byte nil) :RG8-SNORM)
-    ((:RG t :ushort nil) :RG16)
-    ((:RG t :short nil) :RG16-SNORM)
-    ((:RGB t :ubyte nil) :RGB8)
-    ((:RGB t :byte nil) :RGB8-SNORM)
-    ((:RGB t :short nil) :RGB16-SNORM)
-    ((:RGBA t :ubyte nil) :RGBA8)
-    ((:RGBA t :byte nil) :RGBA8-SNORM)
-    ((:RGBA t :ushort nil) :RGBA16)
-    ((:R t :float nil) :R32F)
-    ((:RG t :float nil) :RG32F)
-    ((:RGB t :float nil) :RGB32F)
-    ((:RGBA t :float nil) :RGBA32F)
-    ((:R nil :byte nil) :R8I)
-    ((:R nil :ubyte nil) :R8UI)
-    ((:R nil :short nil) :R16I)
-    ((:R nil :ushort nil) :R16UI)
-    ((:R nil :int nil) :R32I)
-    ((:R nil :uint nil) :R32UI)
-    ((:RG nil :byte nil) :RG8I)
-    ((:RG nil :ubyte nil) :RG8UI)
-    ((:RG nil :short nil) :RG16I)
-    ((:RG nil :ushort nil) :RG16UI)
-    ((:RG nil :int nil) :RG32I)
-    ((:RG nil :uint nil) :RG32UI)
-    ((:RGB nil :byte nil) :RGB8I)
-    ((:RGB nil :ubyte nil) :RGB8UI)
-    ((:RGB nil :short nil) :RGB16I)
-    ((:RGB nil :ushort nil) :RGB16UI)
-    ((:RGB nil :int nil) :RGB32I)
-    ((:RGB nil :uint nil) :RGB32UI)
-    ((:RGBA nil :byte nil) :RGBA8I)
-    ((:RGBA nil :ubyte nil) :RGBA8UI)
-    ((:RGBA nil :short nil) :RGBA16I)
-    ((:RGBA nil :ushort nil) :RGBA16UI)
-    ((:RGBA nil :int nil) :RGBA32I)
-    ((:RGBA nil :uint nil) :RGBA32UI)
-    ((:RGB t :ubyte (8 8 8)) :SRGB8)
-    ((:RGBA t :ubyte (8 8 8 8)) :SRGB8-ALPHA8)
-    ((:RGBA t :uint (10 10 10 2)) :RGB10-A2)
-    ((:RGBA nil :uint (10 10 10 2)) :RGB10-A2UI)
-    ((:RGB t :ubyte (2 2 2 2)) :RGBA2)
-    ((:RGB t :ushort (4 4 4 4)) :RGBA4)
-    ((:RGBA t :short (5 5 5 1)) :RGB5-A1)
-    ((:RGB t :ubyte (3 3 2)) :R3-G3-B2)))
+  '(((:depth t :short nil) :depth-component16)
+    ((:depth t :int nil) :depth-component32)
+    ((:depth t :float nil) :depth-component32f)
+    ((:stencil-only t :int nil) :stencil-index8)
+    ((:r t :ubyte nil) :r8)
+    ((:r t :byte nil) :r8-snorm)
+    ((:r t :ushort nil) :r16)
+    ((:r t :short nil) :r16-snorm)
+    ((:rg t :ubyte nil) :rg8)
+    ((:rg t :byte nil) :rg8-snorm)
+    ((:rg t :ushort nil) :rg16)
+    ((:rg t :short nil) :rg16-snorm)
+    ((:rgb t :ubyte nil) :rgb8)
+    ((:rgb t :byte nil) :rgb8-snorm)
+    ((:rgb t :short nil) :rgb16-snorm)
+    ((:rgba t :ubyte nil) :rgba8)
+    ((:rgba t :byte nil) :rgba8-snorm)
+    ((:rgba t :ushort nil) :rgba16)
+    ((:r t :float nil) :r32f)
+    ((:rg t :float nil) :rg32f)
+    ((:rgb t :float nil) :rgb32f)
+    ((:rgba t :float nil) :rgba32f)
+    ((:r nil :byte nil) :r8i)
+    ((:r nil :ubyte nil) :r8ui)
+    ((:r nil :short nil) :r16i)
+    ((:r nil :ushort nil) :r16ui)
+    ((:r nil :int nil) :r32i)
+    ((:r nil :uint nil) :r32ui)
+    ((:rg nil :byte nil) :rg8i)
+    ((:rg nil :ubyte nil) :rg8ui)
+    ((:rg nil :short nil) :rg16i)
+    ((:rg nil :ushort nil) :rg16ui)
+    ((:rg nil :int nil) :rg32i)
+    ((:rg nil :uint nil) :rg32ui)
+    ((:rgb nil :byte nil) :rgb8i)
+    ((:rgb nil :ubyte nil) :rgb8ui)
+    ((:rgb nil :short nil) :rgb16i)
+    ((:rgb nil :ushort nil) :rgb16ui)
+    ((:rgb nil :int nil) :rgb32i)
+    ((:rgb nil :uint nil) :rgb32ui)
+    ((:rgba nil :byte nil) :rgba8i)
+    ((:rgba nil :ubyte nil) :rgba8ui)
+    ((:rgba nil :short nil) :rgba16i)
+    ((:rgba nil :ushort nil) :rgba16ui)
+    ((:rgba nil :int nil) :rgba32i)
+    ((:rgba nil :uint nil) :rgba32ui)
+    ((:rgb t :ubyte (8 8 8)) :srgb8)
+    ((:rgba t :ubyte (8 8 8 8)) :srgb8-alpha8)
+    ((:rgba t :uint (10 10 10 2)) :rgb10-a2)
+    ((:rgba nil :uint (10 10 10 2)) :rgb10-a2ui)
+    ((:rgb t :ubyte (2 2 2 2)) :rgba2)
+    ((:rgb t :ushort (4 4 4 4)) :rgba4)
+    ((:rgba t :short (5 5 5 1)) :rgb5-a1)
+    ((:rgb t :ubyte (3 3 2)) :r3-g3-b2)))
 
 (defstruct pixel-format
   components type normalise sizes reversed comp-length)
@@ -220,11 +224,17 @@
                     type)))))
 
 (defun internal-format->lisp-type (internal-format)
-  (pixel-format->lisp-type
-   (internal-format->pixel-format internal-format)))
+  (let ((pformat (internal-format->pixel-format internal-format)))
+    (if pformat
+        (pixel-format->lisp-type pformat)
+        (error 'internal-format->lisp-type-failed
+               :type-name internal-format))))
 
 (defun lisp-type->internal-format (lisp-type)
-  (pixel-format->internal-format (lisp-type->pixel-format lisp-type)))
+  (let ((pformat (lisp-type->pixel-format lisp-type)))
+    (or (pixel-format->internal-format pformat :error-if-missing nil)
+        (error 'lisp-type->internal-format-failed
+               :type-name lisp-type))))
 
 ;;--------------------------------------------------------------
 ;; INTERNAL-FORMATS
@@ -240,8 +250,8 @@
                                :test #'equal))))
     (or result
         (when error-if-missing
-          (error "Cannot find internal format for pixel format: ~a"
-                 pixel-format)))))
+          (error 'pixel-format->internal-format-failed
+                 :type-name pixel-format)))))
 
 ;; [TODO] REVERSED??
 (defun internal-format->pixel-format
@@ -256,8 +266,8 @@
            :sizes sizes :reversed nil
            :comp-length (get-component-length components)))
         (when error-if-missing
-          (error "Cannot find pixel format for internal format: ~a"
-                 internal-format)))))
+          (error 'internal-format->pixel-format-failed
+                 :type-name internal-format)))))
 
 
 ;;--------------------------------------------------------------
@@ -267,6 +277,9 @@
 (defmethod lisp-type->pixel-format ((type t))
   (when (find type *valid-pixel-types*)
     (pixel-format :r type)))
+
+(defun internal-formatp (format)
+  (not (null (find format *image-formats*))))
 
 (defun valid-internal-format-for-buffer-backed-texturep (format)
   (find format *valid-internal-formats-for-buffer-backed-texture*))
