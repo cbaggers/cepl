@@ -7,30 +7,26 @@
   (values (v! (pos vert) 1) (tex vert)))
 
 (defun-g pass-through-frag ((tc :vec2) &uniform (board :sampler-2d))
-  (texture board tc))
+  (let ((c (x (texture board tc))))
+    (v! c 0 c 0)))
 
 (defun-g the-meat! ((tc :vec2) &uniform (board :sampler-2d))
   (let* ((offset (/ 1.0 1024.0))
-         (score (aref (+ (texture board (+ tc (v! (- offset) (- offset))))
-                         (texture board (+ tc (v! (- offset)  0)))
-                         (texture board (+ tc (v! (- offset)  offset)))
-                         (texture board (+ tc (v!  0 (- offset))))
-                         (texture board (+ tc (v!  0  offset)))
-                         (texture board (+ tc (v!  offset (- offset))))
-                         (texture board (+ tc (v!  offset  0)))
-                         (texture board (+ tc (v!  offset  offset))))
-                      0))
-        (current (texture board tc)))
-    (if (or (< score 2) (> score 3))
-        (v! 0 0 0 0)
-        (if (= score 3)
-            (if (= (x current) 0)
-                (v! 1 0 0 0)
-                current)
-            current))))
+         (score (x (+ (texture board (+ tc (v! (- offset) (- offset))))
+                      (texture board (+ tc (v! (- offset)  0)))
+                      (texture board (+ tc (v! (- offset)  offset)))
+                      (texture board (+ tc (v!  0 (- offset))))
+                      (texture board (+ tc (v!  0  offset)))
+                      (texture board (+ tc (v!  offset (- offset))))
+                      (texture board (+ tc (v!  offset  0)))
+                      (texture board (+ tc (v!  offset  offset))))))
+         (current (texture board tc)))
+    (cond
+      ((or (< score 2) (> score 3)) (v! 0 0 0 0))
+      ((and (= score 3) (= (x current) 0)) (v! 1 0 0 0))
+      (t current))))
 
 (defpipeline copy-pass () (g-> #'pass-through-vert #'pass-through-frag))
-
 (defpipeline gol-pass () (g-> #'pass-through-vert #'the-meat!))
 
 (defpipeline gol-render (fbo-current fbo-new)
@@ -58,4 +54,6 @@
   (game-o-life)
   (cgl:update-display))
 
+;; this macro is a lazy way to get a function called on start (:init)
+;; and a function called every
 (live:main-loop :init init_ :step step)
