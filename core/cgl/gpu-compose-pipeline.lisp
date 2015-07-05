@@ -55,7 +55,8 @@
                         (foreign-alloc 'cl-opengl-bindings:enum :count
                                        ,(length all-draw-buffers)
                                        :initial-contents ',fbo-draw-buffers))))))
-       (defun ,name (,@args ,@(when uniforms `(&key ,@uniforms)))
+       (defun ,name (mapg-context ,@args ,@(when uniforms `(&key ,@uniforms)))
+         (declare (ignore mapg-context))
          (unless initd
            ,@(mapcar #'fbo-comp-form fbos)
            (setf initd t)
