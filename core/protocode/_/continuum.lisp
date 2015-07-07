@@ -44,3 +44,5 @@
             (elt '(1 2 3 4) (1+ (floor _)))))
 
 ;; three parts, data, sample-transform, result transform
+
+;; essentially just invented the function hahaha
