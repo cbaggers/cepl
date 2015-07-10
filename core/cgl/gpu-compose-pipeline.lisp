@@ -31,11 +31,7 @@
                  name
                  (append user-args (make-pipeline-stream-args gpipe-args))
                  uniforms context
-                 gpipe-args fbos post))
-             (def-compose-dummy
-                 ,name
-                 ,(append user-args (make-pipeline-stream-args gpipe-args))
-               ,uniforms)))))))
+                 gpipe-args fbos post))))))))
 
 ;;--------------------------------------------------
 
@@ -57,8 +53,7 @@
                         (foreign-alloc 'cl-opengl-bindings:enum :count
                                        ,(length all-draw-buffers)
                                        :initial-contents ',fbo-draw-buffers))))))
-       (defun ,(dispatch-func-name name)
-           (,@args ,@(when uniforms `(&key ,@uniforms)))
+       (defun ,name (,@args ,@(when uniforms `(&key ,@uniforms)))
          (unless initd
            ,@(mapcar #'fbo-comp-form fbos)
            (setf initd t)
@@ -68,6 +63,7 @@
                     (slot-value (cgl::%attachment-gpu-array
                                  (cgl::%attachment fbo attachment-name))
                                 'cgl::texture)))
+           (declare (ignorable (function cgl:attachment)))
            (let ,(when all-draw-buffers `((,+db-pass-ptr-sym+ ,+db-ptr-sym+)))
              ,@pass-code))))))
 
@@ -117,13 +113,6 @@
         ,@lisp-forms
         ,map-g-form)
      attachments)))
-
-;;--------------------------------------------------
-
-(defmacro def-compose-dummy (name args uniforms)
-  `(defun ,name (,@args ,@(when uniforms `(&key ,@uniforms)))
-     (declare (ignorable ,@uniforms ,@args))
-     (error "Pipelines do not take a stream directly, the stream must be map-g'd over the pipeline")))
 
 ;;--------------------------------------------------
 

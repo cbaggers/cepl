@@ -34,21 +34,27 @@
       (%set-default-gl-options)
       (setf *gl-context* context
             *gl-window* (window context)
-            (gl-initialized context) t
             (slot-value context 'fbo) (%make-default-framebuffer
-                                       dimensions t t)))))
+                                       dimensions t t))
+      (evt:inject-event (make-instance 'evt:context-created)))))
 
 
 (let ((available-extensions nil))
   (defun has-feature (x)
     (unless available-extensions
-      (if (<= 3 (gl:major-version))
-          (loop :for i :below (gl:get-integer :num-extensions)
-             :collect (%gl:get-string-i :extensions i))
-          ;; OpenGL version < 3
-          (cl-utilities:split-sequence #\space (gl:get-string :extensions)
-                                       :remove-empty-subseqs t)))
-    (find x available-extensions :test #'equal)))
+      (let* ((exts (if (> (gl:major-version) 3)
+                       (loop :for i :below (gl:get-integer :num-extensions)
+                          :collect (%gl:get-string-i :extensions i))
+                       ;; OpenGL version < 3
+                       (cl-utilities:split-sequence
+                        #\space (gl:get-string :extensions)
+                        :remove-empty-subseqs t)))
+             (exts (append exts
+                           (mapcar (lambda (x)
+                                     (utils:kwd (string-upcase (subseq x 3))))
+                                   exts))))
+        (setf available-extensions exts)))
+    (not (null (find x available-extensions :test #'equal)))))
 
 (defun ensure-cepl-compatible-setup ()
   (unless (>= (gl:major-version) 3)
@@ -89,23 +95,6 @@
        ;;   (declare (ignore args))
        ;;   '(gl:get* ,kwd-name ,@(when index (list index))))
        )))
-
-;;------------------------------------------------------------
-
-(defvar *on-context-funcall* nil)
-
-(cells:defobserver gl-initialized ((context gl-context) new)
-  (when (and new *on-context-funcall*)
-    (mapcar #'funcall *on-context-funcall*)
-    (setf *on-context-funcall* nil)))
-
-(defmacro def-g (var &optional val doc)
-  `(progn
-     (defvar ,var nil ,doc)
-     (if *gl-context*
-         (setf ,var ,val)
-         (push (lambda () (setf ,var ,val))
-               cgl::*on-context-funcall*))))
 
 ;;------------------------------------------------------------
 

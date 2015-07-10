@@ -8,9 +8,8 @@
 
 (in-package :cgl)
 
-(cells:defmodel gl-context ()
-  ((cache :cell nil :initform (make-hash-table))
-   (handle :cell nil :initarg :handle :reader handle)
-   (window :cell nil :initarg :window :reader window)
-   (fbo :cell nil :initarg :window :reader fbo)
-   (gl-initialized :cell t :initform (cells:c-in nil) :reader gl-initialized)))
+(defclass gl-context ()
+  ((cache :initform (make-hash-table))
+   (handle :initarg :handle :reader handle)
+   (window :initarg :window :reader window)
+   (fbo :initarg :window :reader fbo)))

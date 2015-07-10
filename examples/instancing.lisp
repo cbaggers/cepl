@@ -112,7 +112,7 @@
 ;;--------------------------------------------------------------
 ;; controls
 
-(evt:observe (e |mouse|)
+(evt:def-event-listener mouse-listener (e :mouse)
   (when (typep e 'evt:mouse-motion)
     (let ((d (evt:delta e)))
       (setf (rot *wibble*) (v:+ (rot *wibble*) (v! (/ (v:y d) -100.0)
@@ -126,7 +126,8 @@
   (setf (frame-size *camera*) new-dimensions)
   (instanced-birds nil :cam-to-clip (cam->clip *camera*)))
 
-(observe (e |window|) (when (eq (evt:action e) :resized) (reshape (data e))))
+(def-event-listener window-listener (e :window)
+  (when (eq (evt:action e) :resized) (reshape (data e))))
 
 ;;--------------------------------------------------------------
 ;; main loop
@@ -140,8 +141,8 @@
          (step-demo)
          (update-swank))))
   (defun stop-loop () (setf running nil))
-  (evt:observe (e |sys|)
-    (setf running (typep e 'evt:will-quit))))
+  (evt:def-event-listener sys-listener (e :sys)
+    (when (typep e 'evt:will-quit) (stop-loop))))
 
 (defun step-demo ()
   (evt:pump-events)

@@ -6,10 +6,7 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-;;;; cepl.asd
-
-(asdf:defsystem #:cepl-project-helper
-  :serial t
-  :depends-on (#:cepl #:quickproject)
-  :components ((:file "projects/package")
-               (:file "projects/quickproject")))
+;; This is the non optimized version of spaces, I keep starting
+;; to write the damn thing and get addicted to prematurely optimizing
+;; it rather than focusing on the api. In dump-spaces I am not
+;; allowed to optimize. Let's see if this works :D

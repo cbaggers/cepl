@@ -6,8 +6,7 @@
 
 (defstruct-g pos-col ()
   (position :vec3 :accessor pos)
-  (color :vec4 :accessor col)
-  (tex :vec2))
+  (color :vec4 :accessor col))
 
 (defun-g vert ((vert pos-col))
   (values (v! (pos vert) 1.0)
@@ -28,16 +27,15 @@
 
 (defun run-loop ()
   (setf *running* t
-        *array* (make-gpu-array
-                 (list (list (v!  0.5 -0.36 0) (v! 0 1 0 1) (v! -1 1))
-                       (list (v!    0   0.5 0) (v! 1 0 0 1) (v! 1 1))
-                       (list (v! -0.5 -0.36 0) (v! 0 0 1 1) (v! 0 -1)))
-                 :element-type 'pos-col)
-   *stream* (make-buffer-stream *array*))
+        *array* (make-gpu-array (list (list (v!  0.5 -0.36 0) (v! 0 1 0 1))
+                                      (list (v!    0   0.5 0) (v! 1 0 0 1))
+                                      (list (v! -0.5 -0.36 0) (v! 0 0 1 1)))
+                                :element-type 'pos-col)
+        *stream* (make-buffer-stream *array*))
   (loop :while *running* :do (continuable (step-demo))))
 
 (defun stop-loop ()
   (setf *running* nil))
 
-(evt:observe (e evt:|sys|)
+(evt:def-event-listener sys-listener (e :sys)
   (when (typep e 'evt:will-quit) (stop-loop)))

@@ -234,9 +234,10 @@
 (defun varjo-compile-as-pipeline (args)
   (destructuring-bind (stage-pairs context) (parse-gpipe-args args)
     (declare (ignore context))
-    (%varjo-compile-as-pipeline stage-pairs )))
+    (%varjo-compile-as-pipeline stage-pairs)))
 (defun %varjo-compile-as-pipeline (parsed-gpipe-args)
-  (rolling-translate (mapcar #'prepare-stage parsed-gpipe-args)))
+  (varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
+    (rolling-translate (mapcar #'prepare-stage parsed-gpipe-args))))
 
 (defun prepare-stage (stage-pair)
   (let ((stage-type (car stage-pair))
@@ -248,10 +249,13 @@
                            (member _ varjo::*stage-types*))
                          context)))
         (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-      (list in-args
-            uniforms
-            (cons stage-type (remove stage-type context))
-            code))))
+      (let ((context (cons :iuniforms
+                           (cons stage-type
+                                 (remove stage-type context)))))
+        (list in-args
+              uniforms
+              context
+              code)))))
 
 ;;--------------------------------------------------
 
@@ -291,3 +295,48 @@
       (if (symbolp current)
           current
           (error "Invalid gpipe argument: ~a" current))))
+
+
+;;-----
+
+(defun try-guessing-a-varjo-type-for-symbol (s)
+  ;; only works on specials because of symbol-value
+  (when (boundp s)
+    (guess-a-varjo-type (symbol-value s))))
+
+(defun guess-a-varjo-type (x)
+  (typecase x
+    (number (guess-a-varjo-number-type x))
+    (array (guess-a-varjo-array-type x))
+    (boolean (guess-a-varjo-bool-type x))
+    (t (error "Cant guess a suitable type for ~s" x))))
+
+(defun guess-a-varjo-bool-type (x)
+  (if (eql x t)
+      :bool
+      (error "Cant guess a suitable type for ~s" x)))
+
+(defun guess-a-varjo-array-type (x)
+  (typecase x
+    ((simple-array single-float (2)) :vec2)
+    ((simple-array single-float (3)) :vec3)
+    ((simple-array single-float (4)) :vec4)
+    ((simple-array single-float (9)) :mat3)
+    ((simple-array single-float (16)) :mat4)))
+
+(defun guess-a-varjo-number-type (x)
+  (typecase x
+    ((or single-float double-float) (guess-a-varjo-float-type x))
+    (integer (guess-a-varjo-integer-type x))
+    (t (error "Cant guess a suitable type for ~s" x))))
+
+(defun guess-a-varjo-float-type (x)
+  (if (typep x 'single-float)
+      :float
+      :double))
+
+(defun guess-a-varjo-integer-type (x)
+  (typecase x
+    ((signed-byte 32) :int)
+    ((unsigned-byte 32) :uint)
+    (t (error "Cant guess a suitable type for ~s" x))))

@@ -1,7 +1,7 @@
 (in-package :cgl)
 
-(cells:defobserver gl-initialized ((context gl-context) new)
-  (when new (init-data)))
+(evt:def-event-listener default-data-init (event :context)
+  (init-data))
 
 (defvar *quad* nil)
 (defvar *quad-stream* nil)

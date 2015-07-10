@@ -1,0 +1,26 @@
+Mesh
+----
+
+set of points
+
+a relationship applied to the points (which defined vertices in this case)
+
+a data-view which describes a layout of the data and relationships in memory.
+
+applying a data-view to the members and relationship creates a datastructure in memory
+this could be a no-op if the source already is in the correct for (we can declare this
+to be the case)
+
+----------
+
+ephemeral - conceptual only, the relationship is ephemeral
+concreate - the relationship has to be stored in memory in some way
+            this is the concreate representation of the idea
+
+set - ephemeral
+data - concrete
+
+ephemerals are backed by a concrete instance
+
+hehe and we just reinvented types, but we do need to look into data layour transforms between types
+can these be generated? what research has been done on this?

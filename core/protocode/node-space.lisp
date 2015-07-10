@@ -1,17 +1,6 @@
 (in-package :cepl)
 
-;; Node is the most minimal abstraction of 3d transform above matrix4
-;; A slots of a basic node contain:
-;; - A matrix4
-;; - A flag that says whether that matrix is up to date
-;; - A function that updates the matrix and returns the 'new' matrix4 that
-;;   is up to date. It is not required that the matrix is newly allocated,
-;;   only that the data is correct.
-
-;;--------------------------------
-
 (defstruct (node (:constructor %make-node) (:conc-name %node-))
-  (id 0 :type fixnum)
   (transform (m4:identity-matrix4) :type (simple-array single-float (16)))
   (re-calc t :type boolean)
   (update-func #'node-transform
@@ -19,7 +8,7 @@
 
 (defun make-node () (%make-node))
 
-;;-  -  -  -  -  -  -  -
+;;--------------------------------
 
 (declaim (ftype (function (node) (simple-array single-float (16)))
                 node-transform))
@@ -42,8 +31,6 @@
 (defun make-pos-quat-node ()
   (%make-pqn :update-func #'%pos-quat-update))
 
-;;-  -  -  -  -  -  -  -
-
 (declaim (ftype (function (node) (simple-array single-float (16)))
                 %pos-quat-update))
 (defun %pos-quat-update (node)
@@ -51,8 +38,6 @@
   (setf (%node-re-calc node) nil
         (%node-transform node) (m4:m* (m4:translation (%pqn-pos node))
                                       (q:to-matrix4 (%pqn-quat node)))))
-
-;;-  -  -  -  -  -  -  -
 
 (defun pqn-pos (node) (%pqn-pos node))
 (defun pqn-quat (node) (%pqn-quat node))
@@ -75,8 +60,6 @@
 (defun make-axis-angle-node ()
   (%make-aan :update-func #'%axis-ang-update))
 
-;;-  -  -  -  -  -  -  -
-
 (declaim (ftype (function (node) (simple-array single-float (16)))
                 %axis-ang-update))
 (defun %axis-ang-update (node)
@@ -84,8 +67,6 @@
                                                      (%aan-angle node)))
   ;; trusts %pos-quat-update to set re-calc correctly
   (%pos-quat-update node))
-
-;;-  -  -  -  -  -  -  -
 
 (defun aan-axis (node) (%aan-axis node))
 (defun aan-angle (node) (%aan-angle node))
@@ -99,3 +80,23 @@
         (%aan-angle node) value))
 
 ;;--------------------------------
+
+(defstruct vspace
+  (node (error "node must be specified at construction of space")
+        :type node)
+  (parent nil :type (or null vspace))
+  (cache (make-vspace-cache) :type vspace-cache))
+
+(defstruct vspace-cache
+  (transform (m4:identity-matrix4) :type (simple-array single-float (16))))
+
+(defun get-transform (space)
+  (labels ((inner (space accum)
+             (if space
+                 (inner (vspace-parent space)
+                        (m4:m* (node-transform (vspace-node space)) accum))
+                 accum)))
+    (inner (vspace-parent space) (node-transform (vspace-node space)))))
+
+(defvar *default-vspace*
+  (make-vspace :node (make-node)))

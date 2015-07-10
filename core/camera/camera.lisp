@@ -29,7 +29,12 @@
 
 (defmethod update-cam->clip ((camera camera))
   (setf (slot-value camera 'cam->clip)
-        (funcall (slot-value camera 'cam->clip-func) camera)))
+        (funcall (slot-value camera 'cam->clip-func)
+                 (first (frame-size camera))
+                 (second (frame-size camera))
+                 (near camera)
+                 (far camera)
+                 (fov camera))))
 
 (defmethod (setf near) (distance (camera camera))
   (setf (slot-value camera 'near) distance)
@@ -88,39 +93,9 @@
             (m4:melm result 2 3) (aref eye-inv 2))
       result)))
 
-(defun perspective-projection (camera)
-  (let* ((aspect-ratio (/ (first (frame-size camera))
-                          (second (frame-size camera))))
-         (near (near camera))
-         (far (far camera))
-         (fov (fov camera))
-         (range (tan (/ fov 2.0)))
-         (left (- (* range aspect-ratio)))
-         (right (* range aspect-ratio))
-         (bottom (- range))
-         (top range))
-    (matrix4:make-matrix4
-     (/ (* near 2) (- right left)) 0.0 0.0 0.0
-     0.0 (/ (* near 2) (- top bottom)) 0.0 0.0
-     0.0 0.0 (- (/ (+ far near) (- far near))) -1.0
-     0.0 0.0 (/ (* 2.0 far near) (- near far)) 0.0)))
-
-(defun orthographic-projection (camera)
-  (let ((left (- (/ (first (frame-size camera)) 2.0)))
-        (right (/ (first (frame-size camera)) 2.0))
-        (top (/ (second (frame-size camera)) 2.0))
-        (bottom (- (/ (second (frame-size camera)) 2.0)))
-        (near (near camera))
-        (far (far camera)))
-    (matrix4:make-matrix4
-     (/ 2 (- right left)) 0.0 0.0 (- (/ (+ right left) (- left right)))
-     0.0 (/ 2 (- top bottom)) 0.0 (- (/ (+ top bottom) (- bottom top)))
-     0.0 0.0 (- (/ (- far near))) (- (/ (+ far near) (- far near)))
-     0.0 0.0 0.0 1.0)))
-
 (defun make-camera (&optional (frame (cgl:current-viewport))
                       (near 1.0) (far 1000.0) (fov 120.0)
-                      (cam->clip-function #'perspective-projection))
+                      (cam->clip-function #'projection:perspective))
   (let* ((frame
           (etypecase frame
             ((simple-array single-float (2)) (list (aref frame 0)

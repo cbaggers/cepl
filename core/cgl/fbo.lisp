@@ -509,7 +509,7 @@
                     ((:framebuffer-undefined :framebuffer-undefined-oes :framebuffer-undefined-ext)
                      "target​ is the default framebuffer, but the default framebuffer does not exist.")
                     ((:framebuffer-incomplete-attachment :framebuffer-incomplete-attachment-oes :framebuffer-incomplete-attachment-ext)
-                     "any of the framebuffer attachment points are framebuffer incomplete.")
+                     "one or more of the framebuffer attachment points are framebuffer incomplete.")
                     ((:framebuffer-incomplete-missing-attachment :framebuffer-incomplete-missing-attachment-oes :framebuffer-incomplete-missing-attachment-ext)
                      "the framebuffer does not have at least one image attached to it.")
                     ((:framebuffer-incomplete-draw-buffer :framebuffer-incomplete-draw-buffer-oes :framebuffer-incomplete-draw-buffer-ext)

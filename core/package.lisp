@@ -20,14 +20,12 @@
            :col
            :action
            :button
-           :button-state
            :clicks
            :data
            :delta
            :etype
            :id
            :key
-           :key-state
            :pos
            :repeating
            :state
@@ -241,13 +239,19 @@
            :make-quat :make-quat-from-vec3
            :make-quat-from-rotation-matrix3
            :make-quat-from-axis-angle
-           :make-quat-from-vectors
+           :make-quat-from-look-at
+           :make-quat-from-axies
            :make-quat-from-fixed-angles
            :magnitude :norm :quat-eql :quat-!eql
            :copy :get-axis-angle :normalize :qconjugate
            :inverse :q+1 :q+ :q-1 :q- :q* :q*quat
            :dot :rotate :lerp :slerp :approx-slerp
            :to-matrix3 :to-matrix4))
+
+(defpackage :projection
+  (:use :cl :base-maths)
+  (:shadow :lerp)
+  (:export :perspective :orthographic))
 
 (defpackage :base-space
   (:use :cl :base-vectors :base-matrices)
@@ -517,6 +521,8 @@
            :box-data
            :equilateral-triangle-data
            :sphere-data
+           :cone-data
+           :cylinder-data
            :prim-array
            :swap-winding-order))
 
@@ -528,29 +534,21 @@
   (:export :rqpos))
 
 (defpackage :cepl.events
-  (:use :cl :cepl-utils :cells :cepl-generics)
+  (:use :cl :cepl-utils :cepl-generics)
   (:nicknames :evt)
-  (:export :event
-           :event-cell
-           :inject-event
-           :case-events
-           :map-evt
-           :merge-evt
-           :filter-evt
+  (:export :def-event-listener
+           :subscribe
            :pump-events
-           :|all-events|
-           :observe
-           :undefobserver
-           :def-event-node
-           :|mouse|
-           :|sys|
-           :|window|
-           :|keyboard|
-           :button-state
+           :unsubscribe
+           :unsubscribe-all-from
+           :inject-event
+           :event
+           :mouse-button-state
            :key-state
            :will-quit
            :window
            :win
+           :context-created
            :mouse-scroll
            :mouse-button
            :mouse-motion
@@ -583,7 +581,6 @@
         :temporal-functions
         :cepl-camera
         :cl-fad
-        :cepl.events
         :named-readtables
         :cepl-gl)
   (:shadow :quit)
@@ -595,10 +592,15 @@
                 :deferror
                 :print-mem
                 :p->)
+  (:import-from :cepl.events
+                :def-event-listener)
   (:export :repl
+           :init
            :quit
            :make-project
-           ;----
+           ;;----
+           :def-event-listener
+           ;;----
            :pos
            :rot
            :dir
@@ -607,15 +609,6 @@
            :norm
            :tex
            :col
-           ;;---
-           :case-events
-           :map-evt
-           :merge-evt
-           :filter-evt
-           :|all-events|
-           :observe
-           :undefobserver
-           :def-event-node
            ;;---
            :update-swank
            :peek
@@ -683,6 +676,7 @@
            :lisp-type->internal-format
            :describe-pixel-format
            :with-instances
+           :g->
            :defpipeline
            :defun-g
            :defmacro-g
@@ -752,6 +746,16 @@
            :with-viewport
            :with-fbo-viewport
            :def-equivalent-type
+           ;;---
+           :node
+           :make-node
+           :node-transform
+           :make-pos-quat-node
+           :pqn-pos
+           :pqn-quat
+           :make-axis-angle-node
+           :aan-axis
+           :aan-angle
            ;;---
            :make-ubo
            :ubo-data

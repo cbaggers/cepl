@@ -177,10 +177,18 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 
 ;;--------------------------------------------------
 
+;; (defun parse-options (options)
+;;   (varjo:lambda-list-split '(:&context :post :fbos) options))
+
 (defun parse-options (options)
-  (mapcar #'cons
-          (cons nil (remove-if-not #'keywordp options))
-          (split-sequence-if #'keywordp options)))
+  (labels ((tokenp (x)
+             (and (symbolp x)
+                  (or (keywordp x)
+                      (char= (aref (symbol-name x) 0)
+                             #\&)))))
+    (mapcar #'cons
+            (cons nil (remove-if-not #'tokenp options))
+            (split-sequence-if #'tokenp options))))
 
 ;;--------------------------------------------------
 
@@ -205,9 +213,6 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
 
 ;;--------------------------------------------------
 
-(defun init-func-name (name) (symb-package :cgl '%%- name))
-(defun invalidate-func-name (name) (symb-package :cgl '££- name))
-(defun dispatch-func-name (name) (symb-package :cgl '$$-dispatch- name))
 (defun recompile-name (name) (symb-package :cgl '~~- name))
 
 ;;--------------------------------------------------

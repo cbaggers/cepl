@@ -36,8 +36,8 @@
           (norm vert)
           (tex vert)))
 
-(defun-g box-frag ((norm :vec3) (tc :vec2) &uniform (tex :sampler-2d) (f :float))
-  (v! (s~ (texture tex tc) :xyz) f))
+(defun-g box-frag ((norm :vec3) (tc :vec2) &uniform (tex :sampler-2d) (fac :float))
+  (v! (s~ (texture tex (* tc 1)) :xyz) fac))
 
 (defpipeline draw-box () (g-> #'box-vert #'box-frag))
 
@@ -46,9 +46,9 @@
 (defun step-demo ()
   (incf factor 0.02)
   (setf (box-rot box-a) (q:make-quat-from-axis-angle
-                           (v! (sin factor) (cos factor) 1) 10)
+                         (v! (sin factor) (cos factor) 1) 10)
         (box-rot box-b) (q:make-quat-from-axis-angle
-                           (v! (sin (/ factor 5)) (cos (/ factor -3)) 1) 10))
+                         (v! (sin (/ factor 5)) (cos (/ factor -3)) 1) 10))
   (clear)
 
   (map-g #'draw-box box-stream
@@ -58,8 +58,7 @@
     (map-g #'draw-box box-stream
            :model->clip (model->clip box-b camera)
            :tex brick
-           :f (+ 0.7 (* (sin factor) 0.3))))
-
+           :fac (+ 0.7 (* (sin factor) 0.3))))
   (update-display))
 
 ;;- - - - - - - - - - - - - - - - - -
@@ -82,5 +81,5 @@
          (step-demo))))
   (defun stop-loop () (setf running nil)))
 
-(evt:observe (e evt:|sys|)
+(evt:def-event-listener sys-listener (e :sys)
   (when (typep e 'evt:will-quit) (stop-loop)))

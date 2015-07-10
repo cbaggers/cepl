@@ -33,7 +33,6 @@ All of the following will be download automatically by quicklisp
 * cl-utilities
 * cl-ppcre
 * symbol-munger
-* cells
 * named-readtables
 
 These two will hopefully be in quicklisp soon, until then download them at the links provided.
