@@ -36,8 +36,10 @@
 (defun %test-compile (in-args uniforms context body depends-on)
   (when (every #'gpu-func-spec depends-on)
     (let ((body (labels-form-from-func-names depends-on body)))
-      (varjo:translate in-args uniforms (union '(:vertex :fragment :330) context)
-                       body))))
+      (varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
+        (varjo:translate in-args uniforms
+                         (union '(:vertex :iuniforms :fragment :330) context)
+                         body)))))
 
 ;;--------------------------------------------------
 
@@ -219,11 +221,12 @@
 ;;--------------------------------------------------
 
 (defun labels-form-from-func-names (names body)
-  `(labels ,(mapcar (lambda (spec)
-                         (with-gpu-func-spec spec
-                           `(,name ,in-args ,@body)))
-                    (remove nil (mapcar #'gpu-func-spec names)))
-     ,@body))
+  `(varjo::labels-no-implicit
+    ,(mapcar (lambda (spec)
+               (with-gpu-func-spec spec
+                 `(,name ,in-args ,@body)))
+             (remove nil (mapcar #'gpu-func-spec names)))
+    ,@body))
 
 (defun get-func-as-stage-code (name)
   (with-gpu-func-spec (gpu-func-spec name)
