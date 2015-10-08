@@ -120,7 +120,7 @@
            :absolute-dot :normalize :perp-dot
            :*unit-x* :*unit-y* :*unit-scale*
            :zerop :unitp :cross :face-foreward :lerp
-           :bezier :spline)
+           :bezier :spline :from-complex)
   (:import-from :base-maths :float-zero
                 :c-sqrt
                 :c-inv-sqrt)
@@ -517,6 +517,7 @@
            :cap-data
            :plain-data
            :box-data
+           :cube-data
            :equilateral-triangle-data
            :sphere-data
            :cone-data

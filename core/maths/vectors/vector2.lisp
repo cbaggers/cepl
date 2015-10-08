@@ -373,3 +373,9 @@
 (defun spline (x knots)
   (make-vector2 (maths:spline x (mapcar #'v-x knots))
                 (maths:spline x (mapcar #'v-y knots))))
+
+;;----------------------------------------------------------------
+
+(defun from-complex (c)
+  (make-vector2 (coerce (realpart c) 'single-float)
+                (coerce (imagpart c) 'single-float)))

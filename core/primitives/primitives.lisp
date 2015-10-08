@@ -170,6 +170,10 @@
                  ,@(when tex-coords `(,(v! 0.0 0.0))))))
      '(3 0 1 3 1 2))))
 
+(defun cube-data (&key (size 1.0) (normals t) (tex-coords t))
+  (box-data :width size :height size :depth size :normals normals
+            :tex-coords tex-coords))
+
 (defun box-data (&key (width 1.0) (height 1.0) (depth 1.0)
                    (normals t) (tex-coords t))
   (let ((width (/ width 2.0))
