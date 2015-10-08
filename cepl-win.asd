@@ -8,10 +8,10 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-(defpackage :cepl-osx
-  (:use :cl)
-  (:export :start))
+;;;; cepl.asd
 
-(defpackage :cepl-win
-  (:use :cl)
-  (:export :start))
+(asdf:defsystem #:cepl-win
+  :serial t
+  :depends-on (#:cepl-backend-sdl)
+  :components ((:file "platform-specific/package")
+               (:file "platform-specific/win")))
