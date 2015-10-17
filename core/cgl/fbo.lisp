@@ -771,7 +771,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((keywordp pattern)
      (texref
       (make-texture nil :dimensions (viewport-resolution (current-viewport))
-                    :internal-format (%get-default-texture-format pattern))))
+                    :element-type (%get-default-texture-format pattern))))
     ;; pattern with args for make-texture
     ((some (lambda (x) (member x %possible-texture-keys)) pattern)
      (when (some (lambda (x) (and (member x %possible-texture-keys)
@@ -789,7 +789,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
        (texref
         (make-texture nil
                       :dimensions dimensions
-                      :internal-format internal-format
+                      :element-type internal-format
                       :mipmap mipmap
                       :immutable immutable
                       :lod-bias lod-bias
@@ -803,8 +803,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((typep (second pattern) 'cepl-camera:camera)
      (texref
       (make-texture nil :dimensions (cepl-camera:frame-size (second pattern))
-                    :internal-format (%get-default-texture-format
-                                      (first pattern)))))
+                    :element-type (%get-default-texture-format
+				   (first pattern)))))
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t) (second pattern))
     ;; use the first gpu-array in texture
