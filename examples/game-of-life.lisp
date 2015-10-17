@@ -1,4 +1,4 @@
-(in-package :ceplive)
+(in-package :cepl)
 
 (defvar field-a nil)
 (defvar field-b nil)
@@ -49,11 +49,11 @@
     (setf field-a (make-fbo `(:c ,(make-texture a)))
           field-b (make-fbo `(:c ,(make-texture a))))))
 
-(defun step ()
+(defun step-main ()
   (clear)
   (game-o-life)
   (cgl:update-display))
 
 ;; this macro is a lazy way to get a function called on start (:init)
 ;; and a function called every
-(live:main-loop :init init_ :step step)
+(live:main-loop :init init_ :step step-main)
