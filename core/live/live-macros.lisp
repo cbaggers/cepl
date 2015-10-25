@@ -11,10 +11,13 @@
 
   (declare (ignore subsystems swank-update-sec))
   (let ((run-symb (symb :run-loop))
-        (stop-symb (symb :stop-loop))
-        (listener (symb :--listener--)))
+        (stop-symb (symb :stop-loop)))
     `(progn
-       (let ((running nil))
+       (let ((running nil)
+             (quit-listener (evt:make-event-node
+                             :subscribe-to evt:|sys|
+                             :filter (lambda (e) (typep e 'evt:will-quit))
+                             :body (,stop-symb))))
          (defun ,run-symb ()
            ,(when init `(,init))
            (setf running t)
@@ -27,10 +30,7 @@
                 ,(when step `(,step))))
            (print "-shutting down-")
            nil)
-         (defun ,stop-symb () (setf running nil)))
-       (evt:def-event-listener ,listener (,(symb 'event) :sys)
-           (when (typep ,(symb 'event) 'evt:will-quit)
-             (,stop-symb))))))
+         (defun ,stop-symb () (setf running nil))))))
 
 (defmacro continuable (&body body)
   "Helper macro that we can use to allow us to continue from an

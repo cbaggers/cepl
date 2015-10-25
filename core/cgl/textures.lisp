@@ -18,15 +18,15 @@
 
 (defvar *immutable-available* t)
 (defvar *cube-face-order* '(:texture-cube-map-positive-x
-                                  :texture-cube-map-negative-x
-                                  :texture-cube-map-positive-y
-                                  :texture-cube-map-negative-y
-                                  :texture-cube-map-positive-z
-                                  :texture-cube-map-negative-z))
+                            :texture-cube-map-negative-x
+                            :texture-cube-map-positive-y
+                            :texture-cube-map-negative-y
+                            :texture-cube-map-positive-z
+                            :texture-cube-map-negative-z))
 
-(evt:def-event-listener texture-feature-check (event :context)
+(evt:def-named-event-node default-data-init (event evt:|context|)
   (unless (has-feature "GL_ARB_texture_storage")
-      (setf *immutable-available* nil)))
+    (setf *immutable-available* nil)))
 
 ;;------------------------------------------------------------
 
@@ -481,8 +481,8 @@
                         :internal-format internal-format
                         :array-type (element-type initial-contents))))
     (cepl-uploadable-lisp-seq internal-format) ;; we cant infer all types so we
-                                             ;; have to trust and then the
-                                             ;; c-array code handle it
+    ;; have to trust and then the
+    ;; c-array code handle it
     (t (error 'make-tex-array-not-match-type
               :element-type element-type
               :initial-contents initial-contents))))
@@ -530,19 +530,19 @@
                            magnify-filter wrap compare generate-mipmaps)
   (assert (= 6 (length initial-contents)))
   (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
-            (dim (if (every (lambda (_) (equal target-dim (dimensions _)))
-                            initial-contents)
-                     target-dim
-                     (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
-                            initial-contents)))
-            (result (%make-texture dim mipmap layer-count cubes buffer-storage
-                                   rectangle multisample immutable nil
-                                   internal-format lod-bias min-lod max-lod
-                                   minify-filter magnify-filter wrap compare
-                                   generate-mipmaps)))
-       (loop :for data :in initial-contents :for i :from 0 :do
-          (push-g data (texref result :cube-face i)))
-       result))
+         (dim (if (every (lambda (_) (equal target-dim (dimensions _)))
+                         initial-contents)
+                  target-dim
+                  (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
+                         initial-contents)))
+         (result (%make-texture dim mipmap layer-count cubes buffer-storage
+                                rectangle multisample immutable nil
+                                internal-format lod-bias min-lod max-lod
+                                minify-filter magnify-filter wrap compare
+                                generate-mipmaps)))
+    (loop :for data :in initial-contents :for i :from 0 :do
+       (push-g data (texref result :cube-face i)))
+    result))
 
 (defun %make-texture (dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents

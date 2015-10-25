@@ -43,7 +43,7 @@
   (update-display))
 
 (defvar mouse-ang (v! 0 0))
-(evt:def-event-listener mouse-listener (e :mouse)
+(evt:def-named-event-node mouse-listener (e evt:|mouse|)
   (when (typep e 'evt:mouse-motion)
     (let ((d (evt:delta e)))
       (setf mouse-ang (v2:+ (v! (/ (v:x d) -150.0)

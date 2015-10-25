@@ -146,7 +146,7 @@
 ;;--------------------------------------------------------------
 ;; controls
 
-(evt:def-event-listener mouse-listener (e |mouse|)
+(evt:def-named-event-node mouse-listener (e evt:|mouse|)
   (when (typep e 'evt:mouse-motion)
     (when (eq (evt:mouse-button-state |mouse| :left) :down)
       (let ((d (evt:delta e)))
@@ -170,7 +170,7 @@
   (standard-pass nil :cam-to-clip (cam->clip *camera*))
   (refract-pass nil :cam-to-clip (cam->clip *camera*)))
 
-(def-event-listener window-listener (e |window|)
+(def-named-event-node window-listener (e evt:|window|)
   (when (eq (evt:action e) :resized)
     (reshape (evt:data e))))
 
@@ -187,7 +187,7 @@
          (update-swank))))
   (defun stop-loop () (setf running nil)))
 
-(evt:def-event-listener sys-listener (e :sys)
+(evt:def-named-event-node sys-listener (e evt:|sys|)
   (when (typep e 'evt:will-quit) (stop-loop)))
 
 (defun step-demo ()

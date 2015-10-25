@@ -24,7 +24,9 @@
                #:cl-utilities
                #:cl-ppcre
                #:symbol-munger
-               #:named-readtables)
+               #:named-readtables
+               #:trivial-garbage
+               #:defstruct-plus-methods)
   :components ((:file "core/package")
                (:file "core/errors")
                (:file "core/backend")
@@ -44,9 +46,13 @@
                (:file "core/maths/matrices/matrices")
                (:file "core/maths/quaternions")
                (:file "core/maths/projection")
-               (:file "core/events/base-events")
-               (:file "core/events/event-classes")
-               (:file "core/events/events")
+
+               (:file "core/events/base-types")
+               (:file "core/events/event-nodes")
+               (:file "core/events/event-types")
+               (:file "core/events/event-propagation")
+               (:file "core/events/named-event-nodes")
+
                (:file "core/cgl/errors")
                (:file "core/cgl/cl-opengl-replacements")
                (:file "core/cgl/viewport")

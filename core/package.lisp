@@ -533,9 +533,11 @@
   (:export :rqpos))
 
 (defpackage :cepl.events
-  (:use :cl :cepl-utils :cepl-generics)
+  (:use :cl :cepl-utils :cepl-generics
+        :defstruct-plus-methods)
   (:nicknames :evt)
-  (:export :def-event-listener
+  (:export :def-named-event-node
+           :make-event-node
            :subscribe
            :pump-events
            :unsubscribe
@@ -562,7 +564,25 @@
            :source-id
            :state
            :timestamp
-           :data))
+           :data
+
+           :|all-events|
+           :|sys|
+           :|context|
+           :|window|
+           :|mouse|
+           :|keyboard|
+
+           :make-cpl-backend-event
+           :make-context-created
+           :make-will-quit
+           :make-win
+           :make-cepl-mouse-event
+           :make-mouse-scroll
+           :make-mouse-button
+           :make-mouse-motion
+           :make-cepl-keyboard-event
+           :make-key))
 
 (defpackage :live
   (:use :cl :cepl-utils)
@@ -592,13 +612,13 @@
                 :print-mem
                 :p->)
   (:import-from :cepl.events
-                :def-event-listener)
+                :def-named-event-node)
   (:export :repl
            :init
            :quit
            :make-project
            ;;----
-           :def-event-listener
+           :def-named-event-node
            ;;----
            :pos
            :rot

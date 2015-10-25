@@ -33,7 +33,7 @@
 ;; sdl event helpers
 
 (defmacro %case-events ((event &key (method :poll) (timeout nil))
-                       &body event-handlers)
+                        &body event-handlers)
   `(let (,(when (symbolp event) `(,event (sdl2:new-event))))
      (loop :until (= 0  (sdl2:next-event ,event ,method ,timeout)) :do
         (case (sdl2::get-event-type ,event)
@@ -50,58 +50,58 @@
     (%case-events (event)
       (:quit (:timestamp ts)
              (cl:push
-              (make-instance 'evt:will-quit :timestamp ts)
+              (evt:make-will-quit :timestamp ts)
               results))
 
       (:windowevent (:timestamp ts :event e :data1 x :data2 y)
                     (let ((action (window-action-lookup e)))
                       (cl:push
-                       (make-instance 'evt:win
-                                      :timestamp (sdl->lisp-time ts)
-                                      :action action
-                                      :data (list x y))
+                       (evt:make-win
+                        :timestamp (sdl->lisp-time ts)
+                        :action action
+                        :data (list x y))
                        results)))
 
       (:mousewheel (:timestamp ts :which id :x x :y y)
                    (cl:push
-                    (make-instance 'evt:mouse-scroll
-                                   :timestamp (sdl->lisp-time ts)
-                                   :source-id id
-                                   :vec (base-vectors:v! x y))
+                    (evt:make-mouse-scroll
+                     :timestamp (sdl->lisp-time ts)
+                     :mouse-id id
+                     :vec (base-vectors:v! x y))
                     results))
 
       ((:mousebuttondown :mousebuttonup)
        (:timestamp ts :which id :button b :state s
                    :clicks c :x x :y y)
-       (cl:push (make-instance 'evt:mouse-button
-                               :timestamp (sdl->lisp-time ts)
-                               :source-id id
-                               :button (mouse-button-lookup b)
-                               :state (mouse-button-state-lookup s)
-                               :clicks c
-                               :pos (base-vectors:v! x y))
+       (cl:push (evt:make-mouse-button
+                 :timestamp (sdl->lisp-time ts)
+                 :mouse-id id
+                 :button (mouse-button-lookup b)
+                 :state (mouse-button-state-lookup s)
+                 :clicks c
+                 :pos (base-vectors:v! x y))
                 results))
 
       (:mousemotion
        (:timestamp ts :which id :state s :x x :y y
                    :xrel xrel :yrel yrel)
-       (cl:push (make-instance 'evt:mouse-motion
-                               :timestamp (sdl->lisp-time ts)
-                               :source-id id
-                               :state s
-                               :pos (base-vectors:v! x y)
-                               :delta (base-vectors:v! xrel yrel))
+       (cl:push (evt:make-mouse-motion
+                 :timestamp (sdl->lisp-time ts)
+                 :mouse-id id
+                 :state (mouse-button-state-lookup s)
+                 :pos (base-vectors:v! x y)
+                 :delta (base-vectors:v! xrel yrel))
                 results))
 
       ((:keydown :keyup)
        (:type typ :timestamp ts :state s :repeat r :keysym keysym)
-       (cl:push (make-instance 'evt:key
-                               :timestamp (sdl->lisp-time ts)
-                               :etype (key-type-lookup typ)
-                               :state (key-state-lookup s)
-                               :repeating (= r 0)
-                               :key (sdl-scancode-lookup
-                                     (plus-c:c-ref keysym sdl2-ffi:sdl-keysym :scancode)))
+       (cl:push (evt:make-key
+                 :timestamp (sdl->lisp-time ts)
+                 :etype (key-type-lookup typ)
+                 :state (key-state-lookup s)
+                 :repeating (= r 0)
+                 :key (sdl-scancode-lookup
+                       (plus-c:c-ref keysym sdl2-ffi:sdl-keysym :scancode)))
                 results)))
     (reverse results)))
 

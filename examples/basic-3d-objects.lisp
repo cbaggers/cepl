@@ -80,9 +80,9 @@
 
   (defun stop-loop () (setf running nil)))
 
-(evt:def-event-listener sys-listener (e :sys)
+(evt:def-named-event-node sys-listener (e evt:|sys|)
   (when (typep e 'evt:will-quit) (stop-loop)))
 
-(evt:def-event-listener window-listener (e :window)
+(evt:def-named-event-node window-listener (e evt:|window|)
   (when (eq (evt:action e) :resized)
     (reshape (evt:data e))))

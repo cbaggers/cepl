@@ -1,6 +1,6 @@
 (in-package :cgl)
 
-(evt:def-event-listener default-data-init (event :context)
+(evt:def-named-event-node default-data-init (event evt:|context|)
   (init-data))
 
 (defvar *quad* nil)
