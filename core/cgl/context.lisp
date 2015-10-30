@@ -36,7 +36,8 @@
             *gl-window* (window context)
             (slot-value context 'fbo) (%make-default-framebuffer
                                        dimensions t t))
-      (evt:inject-event (make-instance 'evt:context-created)))))
+      (evt:inject-event (evt:make-context-created))
+      (cls))))
 
 
 (let ((available-extensions nil))
