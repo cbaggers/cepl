@@ -3,6 +3,9 @@
 (deferror invalid-stages () (invalid-names)
     "CEPL - Pipeline: The following stages don't have specifications ~s.~%This most likely means they havent been compiled yet or that the names are incorrect" invalid-names)
 
+(deferror gfun-invalid-arg-format () (gfun-name invalid-pair)
+    "CEPL - defun-g: defun-g expects it's parameter args to be typed in the~%format (var-name type) but instead ~s was found in the definition for ~s" invalid-pair gfun-name)
+
 (deferror dispatch-called-outside-of-map-g () (name)
     "Looks like you tried to call the pipeline ~s without using map-g.~%" name)
 

@@ -14,6 +14,8 @@
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
         (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+      (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
+      (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
       (let ((in-args (swap-equivalent-types in-args))
             (uniforms (swap-equivalent-types uniforms))
             (equivalent-inargs (mapcar (lambda (_)
@@ -26,6 +28,11 @@
         (%def-gpu-function name in-args uniforms context body instancing
                            equivalent-inargs equivalent-uniforms
                            doc-string declarations)))))
+
+(defun assert-arg-format (gfunc-name x)
+  (unless (listp x)
+    (error 'gfun-invalid-arg-format :gfun-name gfunc-name :invalid-pair x))
+  x)
 
 (defun undefine-gpu-function (name)
   (%unsubscibe-from-all name)
