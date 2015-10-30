@@ -49,7 +49,6 @@
 
                (:file "core/events/base-types")
                (:file "core/events/event-nodes")
-               (:file "core/events/event-types")
                (:file "core/events/event-propagation")
                (:file "core/events/named-event-nodes")
 
