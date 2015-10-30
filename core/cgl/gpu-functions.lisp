@@ -177,10 +177,12 @@
 
 (defun %find-gpu-functions-depended-on (spec)
   (with-gpu-func-spec spec
-    (let ((local-depends (%find-gpu-funcs-in-source (%expand-all-macros spec))))
-      (append local-depends
-	      (mapcar #'%funcs-this-func-uses
-		      (mapcar #'gpu-func-spec local-depends))))))
+    (let* ((local-depends (%find-gpu-funcs-in-source (%expand-all-macros spec)))
+	   (all-dependencies (append local-depends
+				     (mapcar #'%funcs-this-func-uses
+					     (mapcar #'gpu-func-spec
+						     local-depends)))))
+      (remove-duplicates all-dependencies :test #'eq))))
 
 (defun %make-stand-in-lisp-func (spec)
   (with-gpu-func-spec spec

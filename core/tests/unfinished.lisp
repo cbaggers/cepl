@@ -1,10 +1,10 @@
 (in-package :cepl)
 
-(defun-g aest ((x :int))
+(defun-g test ((x :int))
   x)
 
-(defun-g aest-2 ((y :int))
-  (aest y))
+(defun-g test-2 ((y :int))
+  (test y))
 
-(defun-g aest-3 ((z :int))
-  (aest-2 z))
+(defun-g test-3 ((z :int))
+  (test-2 z))
