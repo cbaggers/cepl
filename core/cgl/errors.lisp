@@ -7,7 +7,8 @@
     "CEPL - defun-g: defun-g expects it's parameter args to be typed in the~%format (var-name type) but instead ~s was found in the definition for ~s" invalid-pair gfun-name)
 
 (deferror gpu-func-spec-not-found () (spec-name)
-    "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s" spec-name)
+    "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s"
+  spec-name)
 
 (deferror dispatch-called-outside-of-map-g () (name)
     "Looks like you tried to call the pipeline ~s without using map-g.~%" name)

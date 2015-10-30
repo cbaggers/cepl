@@ -84,6 +84,7 @@ names are depended on by the functions named later in the list"
            :key #'car :from-end t)))
 
 (defun %funcs-this-func-uses (name &optional (depth 0))
+  (assert (and (symbolp name) (not (keywordp name))))
   (let ((this-func-calls
          (remove nil (map-hash
                       (lambda (k v)
