@@ -6,6 +6,9 @@
 (deferror gfun-invalid-arg-format () (gfun-name invalid-pair)
     "CEPL - defun-g: defun-g expects it's parameter args to be typed in the~%format (var-name type) but instead ~s was found in the definition for ~s" invalid-pair gfun-name)
 
+(deferror gpu-func-spec-not-found () (spec-name)
+    "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s" spec-name)
+
 (deferror dispatch-called-outside-of-map-g () (name)
     "Looks like you tried to call the pipeline ~s without using map-g.~%" name)
 
@@ -116,3 +119,9 @@ internal texture format"
 (deferror buffer-backed-texture-establish-internal-format () (type-name)
   "CEPL - make-texture: Could not establish the correct texture type for a buffer texture: ~a"
   type-name)
+
+(deferror failed-to-test-compile-gpu-func (:error-type warning) (gfunc-name)
+    "CEPL - defun-g: Failed to test compile the gpu function named '~s
+ due to not all dependent functions having been compiled yet.
+ To disable this warning for future compilations:
+ (setf cgl::*warn-when-cant-test-compile* nil)" gfunc-name)
