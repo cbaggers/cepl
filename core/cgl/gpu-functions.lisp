@@ -58,17 +58,9 @@
                                    equivalent-inargs equivalent-uniforms
                                    doc-string declarations)))
     (assert (%gpu-func-compiles-in-some-context spec))
-    (let ((depends-on
-	   (handler-case
-	       (%find-gpu-functions-depended-on spec)
-	     (gpu-func-spec-not-found (&rest args)
-	       (declare (ignore args))
-	       (when *warn-when-cant-test-compile*
-		 (warn 'failed-to-test-compile-gpu-func
-		       :gfunc-name :todo-pass-name-to-warning))
-	       :cant-resolve-dependencies))))
+    (let ((depends-on (%find-gpu-functions-depended-on spec)))
       (assert (not (%find-recursion name depends-on)))
-      (when (not (eq depends-on :cant-resolve-dependencies))
+      (when (every #'gpu-func-spec depends-on)
         (%update-gpu-function-data spec depends-on))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -77,7 +69,6 @@
          (%test-compile ',in-args ',uniforms ',context ',body ',depends-on)
          ,(%make-stand-in-lisp-func spec)
          (%recompile-gpu-function ',name)))))
-
 
 
 (defun %recompile-gpu-function (name)
@@ -176,13 +167,7 @@
                      (rest source)))))))))
 
 (defun %find-gpu-functions-depended-on (spec)
-  (with-gpu-func-spec spec
-    (let* ((local-depends (%find-gpu-funcs-in-source (%expand-all-macros spec)))
-	   (all-dependencies (append local-depends
-				     (mapcar #'%funcs-this-func-uses
-					     (mapcar #'gpu-func-spec
-						     local-depends)))))
-      (remove-duplicates all-dependencies :test #'eq))))
+  (%find-gpu-funcs-in-source (%expand-all-macros spec)))
 
 (defun %make-stand-in-lisp-func (spec)
   (with-gpu-func-spec spec

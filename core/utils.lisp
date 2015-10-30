@@ -315,6 +315,7 @@
 
 ;------------ERRORS-----------;
 
+;;[TODO] need better arg test
 (defmacro deferror (name (&key (error-type 'error) prefix)
                             (&rest args) error-string &body body)
   (unless (every #'symbolp args) (error "can only take simple args"))

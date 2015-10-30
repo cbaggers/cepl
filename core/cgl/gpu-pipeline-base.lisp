@@ -58,11 +58,6 @@
       (when error-if-missing
         (error 'gpu-func-spec-not-found :spec-name name))))
 
-(defun gpu-func-specs-all-or-none (names)
-  (let ((specs (mapcar #'(lambda (x) (gpu-func-spec x nil)) names)))
-    (unless (member nil specs)
-      specs)))
-
 (defun (setf gpu-func-spec) (value name &optional error-if-missing)
   (when (and error-if-missing (null (gethash name *gpu-func-specs*)))
     (error "gpu-func-spec: gpu function ~a not found" name))
