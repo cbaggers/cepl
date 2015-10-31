@@ -100,7 +100,7 @@
   (symbol-macrolet ((func-specs (funcs-that-use-this-func subscribe-to-name)))
     (when (and (gpu-func-spec subscribe-to-name)
                (not (member name func-specs)))
-      (format t "; func ~s subscribed to ~s" name subscribe-to-name)
+      (format t "; func ~s subscribed to ~s~%" name subscribe-to-name)
       (push name func-specs))))
 
 (defun %unsubscibe-from-all (name)
