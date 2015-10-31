@@ -40,33 +40,42 @@
   (remhash name *dependent-gpu-functions*)
   nil)
 
-(defun %test-compile (in-args uniforms context body depends-on)
-  (when (every #'gpu-func-spec depends-on)
-    (let ((body (labels-form-from-func-names depends-on body)))
-      (varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-        (varjo:translate in-args uniforms
-                         (union '(:vertex :iuniforms :fragment :330) context)
-                         body)))))
+(defvar *warn-when-cant-test-compile* t)
+
+(defun %test-compile (name in-args uniforms context body depends-on)
+  (handler-case
+      (let ((body (labels-form-from-func-names depends-on body)))
+	(varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
+	  (varjo:translate in-args uniforms
+			   (union '(:vertex :fragment :iuniforms :330) context)
+			   body)))
+    (gpu-func-spec-not-found (err)
+      (declare (ignore err))
+      (warn 'failed-to-test-compile-gpu-func :gfunc-name name))))
 
 ;;--------------------------------------------------
 
-(defvar *warn-when-cant-test-compile* nil)
 (defun %def-gpu-function (name in-args uniforms context body instancing
                           equivalent-inargs equivalent-uniforms
                           doc-string declarations)
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
                                    equivalent-inargs equivalent-uniforms
                                    doc-string declarations)))
-    (assert (%gpu-func-compiles-in-some-context spec))
+    ;; this gets the functions used in the body of this function
+    ;; it is *not* recursive
     (let ((depends-on (%find-gpu-functions-depended-on spec)))
+      ;; glsl disallows recursions
       (assert (not (%find-recursion name depends-on)))
+      ;; if there are specs for all the dependencies already then subscribe
+      ;; to those functions and save our spec
       (when (every #'gpu-func-spec depends-on)
         (%update-gpu-function-data spec depends-on))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
                                       ',depends-on))
-         (%test-compile ',in-args ',uniforms ',context ',body ',depends-on)
+         (%test-compile ',name ',in-args ',uniforms ',context ',body
+			',depends-on)
          ,(%make-stand-in-lisp-func spec)
          (%recompile-gpu-function ',name)))))
 
@@ -99,6 +108,7 @@
              *dependent-gpu-functions*)))
 
 (defun %update-gpu-function-data (spec depends-on)
+  "Add or update the spec and also (re)subscribe to all the dependencies"
   (with-slots (name) spec
     (%unsubscibe-from-all name)
     (mapcar (lambda (_) (%subscribe-to-gpu-func name _)) depends-on)
@@ -230,10 +240,12 @@
 
 (defun labels-form-from-func-names (names body)
   `(varjo::labels-no-implicit
-    ,(mapcar (lambda (spec)
-               (with-gpu-func-spec spec
-                 `(,name ,in-args ,@body)))
-             (remove nil (mapcar #'gpu-func-spec names)))
+    ,(mapcar (lambda (x)
+	       (with-gpu-func-spec (gpu-func-spec x t)
+		 `(,name ,in-args ,@body)))
+	     (append (apply #'concatenate 'list
+			    (mapcar #'funcs-this-func-uses names))
+		     names))
     ,@body))
 
 (defun get-func-as-stage-code (name)
