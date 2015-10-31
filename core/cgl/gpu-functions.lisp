@@ -51,7 +51,11 @@
 			   body)))
     (gpu-func-spec-not-found (err)
       (declare (ignore err))
-      (warn 'failed-to-test-compile-gpu-func :gfunc-name name))))
+      (let* ((all-funcs (funcs-these-funcs-use depends-on))
+	     (missing (remove-if (lambda (x) (gpu-func-spec x nil)) all-funcs)))
+	(warn 'failed-to-test-compile-gpu-func
+	      :gfunc-name name
+	      :missing-func-names missing)))))
 
 ;;--------------------------------------------------
 
@@ -243,9 +247,7 @@
     ,(mapcar (lambda (x)
 	       (with-gpu-func-spec (gpu-func-spec x t)
 		 `(,name ,in-args ,@body)))
-	     (append (apply #'concatenate 'list
-			    (mapcar #'funcs-this-func-uses names))
-		     names))
+	     (funcs-these-funcs-use names))
     ,@body))
 
 (defun get-func-as-stage-code (name)

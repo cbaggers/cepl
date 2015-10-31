@@ -69,6 +69,13 @@
 (defun (setf funcs-that-use-this-func) (value name)
   (setf (gethash name *dependent-gpu-functions*) value))
 
+(defun funcs-these-funcs-use (names &optional (include-names t))
+  (remove-duplicates
+   (append (apply #'concatenate 'list
+		  (mapcar #'funcs-this-func-uses names))
+	   (when include-names names))
+   :test #'eq))
+
 (defun funcs-this-func-uses (name)
   "Recursivly searches for functions by this function.
 Sorts the list of function names by dependency so the earlier

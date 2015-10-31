@@ -121,8 +121,9 @@ internal texture format"
   "CEPL - make-texture: Could not establish the correct texture type for a buffer texture: ~a"
   type-name)
 
-(deferror failed-to-test-compile-gpu-func (:error-type warning) (gfunc-name)
+(deferror failed-to-test-compile-gpu-func (:error-type warning) (gfunc-name missing-func-names)
     "CEPL - defun-g: Failed to test compile the gpu function named '~s
  due to not all dependent functions having been compiled yet.
- To disable this warning for future compilations:
- (setf cgl::*warn-when-cant-test-compile* nil)" gfunc-name)
+ Missing funcs: ~s
+ To disable this warning for all future compilations:
+ (setf cgl::*warn-when-cant-test-compile* nil)" gfunc-name missing-func-names)
