@@ -221,7 +221,7 @@
 	       (rest source)))))
 
 (defun %find-gpu-functions-depended-on (spec)
-  (%find-gpu-funcs-in-source (print (%expand-all-macros spec))))
+  (%find-gpu-funcs-in-source (%expand-all-macros spec)))
 
 (defun %make-stand-in-lisp-func (spec)
   (with-gpu-func-spec spec
