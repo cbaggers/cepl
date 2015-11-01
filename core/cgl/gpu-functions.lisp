@@ -141,6 +141,9 @@
       (second (multiple-value-list (gethash (kwd x) varjo::*global-env-funcs*)))))
 
 (defun %find-gpu-funcs-in-source (source &optional locally-defined)
+
+  ;; :switch
+
   (unless (atom source)
     (remove-duplicates
      (alexandria:flatten
@@ -149,39 +152,76 @@
           ;; first element isnt a symbol, keep searching
           ((listp s)
            (append (%find-gpu-funcs-in-source s locally-defined)
-                   (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
+                   (mapcar (lambda (x) (%find-gpu-funcs-in-source
+					x locally-defined))
                            (rest source))))
-          ;; it's a let so ignore the var name
-          ((eq s 'varjo::%glsl-let) (%find-gpu-funcs-in-source (cadadr source)
-                                                        locally-defined))
-          ;; it's a function so skip to the body and
-          ((eq s 'varjo::%make-function)
-           (%find-gpu-funcs-in-source (cddr source) locally-defined))
-          ;; it's a clone-env-block so there could be function definitions in
-          ;; here. check for them and add any names to the locally-defined list
-          ((eq s 'varjo::%clone-env-block)
 
-           (let* (;; labels puts %make-function straight after the clone-env
-                  (count (length (remove 'varjo::%make-function
-                                         (mapcar #'first (rest source))
-                                         :test-not #'eq)))
-                  (names (mapcar #'second (subseq source 1 (1+ count)))))
-             (%find-gpu-funcs-in-source (subseq source (1+ count))
-                                 (append names locally-defined))))
-          ;; its a symbol, just check it isn't varjo's and if we shouldnt ignore
-          ;; it then record it
-          ((and (symbolp s)
-                (not (equal (package-name (symbol-package s)) "VARJO"))
-                (not (member s locally-defined))
-                (not (varjo-func-namep s)))
-           (cons s (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
-                           (rest source))))
+	  ((symbolp s) (%find-gpu-funcs-in-source-symbol
+			s source locally-defined))
+
           ;; nothing to see, keep searching
           (t (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
                      (rest source)))))))))
 
+(defun %find-gpu-funcs-in-source-symbol (s source locally-defined)
+  ;; it's a let so ignore the var name
+  (cond
+    ((eq s 'varjo::%glsl-let)
+     (destructuring-bind (_ (_1 form) &rest _2) source
+       (declare (ignore _ _1 _2))
+       (%find-gpu-funcs-in-source form locally-defined)))
+
+    ;; it's %out so skip the name-and-qualifiers
+    ((eq s 'varjo::%out)
+     (%find-gpu-funcs-in-source (third source) locally-defined))
+
+    ;; it's varjo:for so skip the name-and-qualifiers
+    ((string-equal (symbol-name s) "FOR")
+     (destructuring-bind (_ var-form condition update &rest body)
+	 source
+       (declare (ignore _))
+       (%find-gpu-funcs-in-source
+	(append (list (second var-form) condition update)
+		body)
+	locally-defined)))
+
+    ;; it's varjo:switch so skip the clause conditions
+    ((string-equal (symbol-name s) "FOR")
+     (destructuring-bind (_ test-form clauses) source
+       (declare (ignore _))
+       (%find-gpu-funcs-in-source
+	(cons test-form (mapcar #'rest clauses))
+	locally-defined)))
+
+    ;; it's cl:the so skip the type-name
+    ((eq s 'the)
+     (%find-gpu-funcs-in-source (third source) locally-defined))
+
+    ;; it's %typify so only read form
+    ((eq s 'varjo::%typify)
+     (%find-gpu-funcs-in-source (second source) locally-defined))
+
+
+    ;; it's a function so skip to the body
+    ((eq s 'varjo::%%make-function)
+     (%find-gpu-funcs-in-source (cddr source)
+				(cons (second source) locally-defined)))
+
+    ;; its a symbol, just check it isn't varjo's and if we shouldnt ignore
+    ;; it then record it
+    ((and (not (equal (package-name (symbol-package s)) "VARJO"))
+	  (not (equal (package-name (symbol-package s)) "CL"))
+	  (not (member s locally-defined))
+	  (not (varjo-func-namep s)))
+     (cons s (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
+		     (rest source))))
+
+    ;; Just keep walking
+    (t (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
+	       (rest source)))))
+
 (defun %find-gpu-functions-depended-on (spec)
-  (%find-gpu-funcs-in-source (%expand-all-macros spec)))
+  (%find-gpu-funcs-in-source (print (%expand-all-macros spec))))
 
 (defun %make-stand-in-lisp-func (spec)
   (with-gpu-func-spec spec
