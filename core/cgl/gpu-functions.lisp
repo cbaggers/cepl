@@ -141,9 +141,6 @@
       (second (multiple-value-list (gethash (kwd x) varjo::*global-env-funcs*)))))
 
 (defun %find-gpu-funcs-in-source (source &optional locally-defined)
-
-  ;; :switch
-
   (unless (atom source)
     (remove-duplicates
      (alexandria:flatten
@@ -161,7 +158,8 @@
 
           ;; nothing to see, keep searching
           (t (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
-                     (rest source)))))))))
+                     (rest source))))))
+     :from-end t)))
 
 (defun %find-gpu-funcs-in-source-symbol (s source locally-defined)
   ;; it's a let so ignore the var name

@@ -49,7 +49,7 @@
        (setf (equiv-spec ,lisp-type-name) ,(list varjo-type slots)))
      (let ((vsn (mapcar #'first (varjo:v-slots (varjo:type-spec->type
                                                 ',varjo-type))))
-           (sn ',(remove-duplicates (mapcar #'first slots))))
+           (sn ',(remove-duplicates (mapcar #'first slots) :from-end t)))
        (assert (and (= (length vsn) ,(length slots))
                     (every (lambda (x) (member x sn)) vsn))))))
 

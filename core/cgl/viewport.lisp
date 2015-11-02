@@ -40,8 +40,8 @@
       (%viewport-origin-y viewport)))
 
 (defmethod cepl-generics:size ((object viewport))
-  (v! (%viewport-origin-x object)
-      (%viewport-origin-y object)))
+  (v! (%viewport-resolution-x object)
+      (%viewport-resolution-y object)))
 
 (defmethod cepl-generics:pos ((object viewport))
   (v! (%viewport-origin-x object)

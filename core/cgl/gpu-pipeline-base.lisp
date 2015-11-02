@@ -74,6 +74,7 @@
    (append (apply #'concatenate 'list
 		  (mapcar #'funcs-this-func-uses names))
 	   (when include-names names))
+   :from-end t
    :test #'eq))
 
 (defun funcs-this-func-uses (name)
@@ -83,7 +84,8 @@ names are depended on by the functions named later in the list"
   (mapcar #'car
           (remove-duplicates
            (sort (%funcs-this-func-uses name) #'> :key #'cdr)
-           :key #'car :from-end t)))
+	   :from-end t
+           :key #'car)))
 
 (defun %funcs-this-func-uses (name &optional (depth 0))
   (assert (and (symbolp name) (not (keywordp name))))

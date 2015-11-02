@@ -186,7 +186,9 @@
 		      light-1-color light-2-color
 		      global-time))
 
-(defun-g main-image (&uniform (resolution :vec2) (global-time :float))
+(defun-g main-image (&uniform (resolution :vec2) (global-time :float)
+			      (light-1-pos :vec3) (light-2-pos :vec3)
+			      (light-1-color :vec3) (light-2-color :vec3))
   (let* ((frag-coord (s~ gl-frag-coord :xy))
 	 (pixel-pos (/ (- frag-coord (/ (s~ resolution :xy) 2))
 		       (y resolution)))
@@ -203,13 +205,16 @@
 			    cam-rot-y))
 	 (eye-pos (rotate-y (rotate-x (v! 0 0 -14) cam-rot-x)
 			    cam-rot-y))
-	 (color (background eye-pos eye-dir))
+	 (color (background eye-pos eye-dir
+			    light-1-pos light-2-pos
+			    light-1-color light-2-color
+			    global-time))
 
 	 (max-dis-travelled 40.0)
 	 (dis-travelled 0.0)
 	 (max-interations 160))
     (for (i 0) (< i max-interations) (++ i)
-	 (let* ((d (w (f eye-pos))))
+	 (let* ((d (s-r-d (f eye-pos global-time))))
 	   (%if (<= d .0)
 		(break))
 	   (let ((d (max d .025)))
@@ -218,17 +223,24 @@
 	     (%if (>= dis-travelled max-dis-travelled)
 		  (break)))))
     (%if (< dis-travelled max-dis-travelled)
-	 (let* ((td (tf eye-pos))
+	 (let* ((td (tf eye-pos global-time))
 		(normal (normalize
-			 (v! (- (s-r-d (tf (+ eye-pos (v! .003 0 0)))) (s-r-d td))
-			     (- (s-r-d (tf (+ eye-pos (v! 0 .003 0)))) (s-r-d td))
-			     (- (s-r-d (tf (+ eye-pos (v! 0 0 .003)))) (s-r-d td)))))
+			 (v! (- (s-r-d (tf (+ eye-pos (v! .003 0 0))
+					   global-time))
+				(s-r-d td))
+			     (- (s-r-d (tf (+ eye-pos (v! 0 .003 0))
+					   global-time))
+				(s-r-d td))
+			     (- (s-r-d (tf (+ eye-pos (v! 0 0 .003))
+					   global-time))
+				(s-r-d td)))))
 		(occlusion-term .0))
 	   (for (i 0.0) (< i 4.0) (+ i 1.0)
 		(incf occlusion-term
-		      (/ (max (max (- (f (+ eye-pos (* normal i .1)))))
+		      (/ (max (- (s-r-d (f (+ eye-pos (* normal i .1))
+					   global-time)))
 			      0.0)
-			 (pos 2.0 i))))
+			 (pow 2.0 i))))
 	   (setf occlusion-term (* occlusion-term 2.0))
 	   (let* ((surface-color
 		   (+ (additive-color (s-r-material td))
@@ -238,27 +250,69 @@
 		      (light-contribution eye-pos eye-dir normal
 					  light-2-pos light-2-color
 					  (s-r-material td) occlusion-term)
-		      (* (background eye-pos (reflect eye-dir normal))
+		      (* (background eye-pos (reflect eye-dir normal)
+				     light-1-pos light-2-pos
+				     light-1-color light-2-color
+				     global-time)
 			 (background-ammount (s-r-material td))))))
 	     (setf color (mix color surface-color
 			      (- 1.0 (pow (/ dis-travelled
 					     max-dis-travelled)
 					  2.0)))))))
-    (let ((q (/ (s~ frag-coord :xy) resolution))
-	  (color (pow (* color (v! 1 .99 1.06))
-		      (v! 1.2 1.2 1.2)))
-	  (color ;; Vignette (stolen from iq)
-	   (* color
-	      (+ 0.4 (* 0.6 (pow (* 16.0 q.x q.y (- 1.0 q.x) (- 1.0 q.y))
-				 0.1)))))
-	  (color ;;Cheap "bloom emulation" to better match the actual intro :)
-	   (+ color (* (pow (max (- color .2) 0)
-			    (v! 1.4 1.4 1.4))
-		       .5))))
+    (let* ((q (/ (s~ frag-coord :xy) resolution))
+	   (color (pow (* color (v! 1 .99 1.06))
+		       (v! 1.2 1.2 1.2)))
+	   (color ;; Vignette (stolen from iq)
+	    (* color
+	       (+ 0.4 (* 0.6 (pow (* 16.0 (x q) (y q)
+				     (- 1.0 (x q)) (- 1.0 (y q)))
+				  0.1)))))
+	   (color ;;Cheap "bloom emulation" to better match the actual intro :)
+	    (+ color (* (pow (max (- color (v! .2 .2 .2)) 0)
+			     (v! 1.4 1.4 1.4))
+			.5))))
       (v! color 1))))
 
+(defparameter *gpu-array* nil)
+(defparameter *vertex-stream* nil)
+(defvar +some-origin-time+ (get-internal-real-time))
 
-;; vec3 light1Pos = vec3(sin(iGlobalTime * 1.1), cos(iGlobalTime), 20.0)
-;; vec3 light2Pos = vec3(cos(iGlobalTime * .84), cos(iGlobalTime * .45), 20.0)
-;; vec3 light1Color = vec3(0.7, .85, 1.0)
-;; vec3 light2Color = vec3(1.0, .85, .7)
+(defun-g ray-vert ((position :vec4))
+  (values position (swizzle position :xy)))
+
+(defpipeline raymarcher () (g-> #'ray-vert #'main-image))
+
+(let ((running nil))
+  (defun run-loop ()
+    (setf *gpu-array* (make-gpu-array (list (v! -1.0  -1.0  0.0  1.0)
+                                            (v!  1.0  -1.0  0.0  1.0)
+                                            (v!  1.0   1.0  0.0  1.0)
+                                            (v!  1.0   1.0  0.0  1.0)
+                                            (v! -1.0   1.0  0.0  1.0)
+                                            (v! -1.0  -1.0  0.0  1.0))
+                                      :element-type :vec4
+                                      :dimensions 6))
+    (setf *vertex-stream* (make-buffer-stream *gpu-array*))
+    (setf running t)
+    (loop :while running :do (continuable (draw-step))))
+  (defun stop-loop () (setf running nil)))
+
+(evt:def-named-event-node sys-listener (e evt:|sys|)
+  (when (typep e 'evt:will-quit) (stop-loop)))
+
+
+(defun draw-step ()
+  (evt:pump-events)
+  (update-swank)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
+
+  (let ((time (- (get-internal-real-time) +some-origin-time+)))
+    (map-g #'raymarcher *vertex-stream*
+	   :resolution (size (current-viewport))
+	   :global-time time
+	   :light-1-pos (v! (sin (* time 1.1)) (cos time) 20.0)
+	   :light-2-pos (v! (cos (* time .84)) (cos (* time .45)) 20.0)
+	   :light-1-color (v! 0.7 .85 1.0)
+	   :light-2-color (v! 1.0 .85 .7)))
+
+  (update-display))
