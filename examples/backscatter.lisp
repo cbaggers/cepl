@@ -15,6 +15,9 @@
   (d :float :accessor s-r-d)
   (material material :accessor s-r-material))
 
+(defmacro-g saturate (x)
+  `(clamp ,x 0s0 1s0))
+
 (defun-g mix-materials ((mat-a material) (mat-b material) (amount :float))
   (make-material
    (mix (additive-color mat-a) (additive-color mat-b) amount)
@@ -22,7 +25,6 @@
    (mix (specular-color mat-a) (specular-color mat-b) amount)
    (mix (specular-exponent mat-a) (specular-exponent mat-b) amount)
    (mix (background-ammount mat-a) (background-ammount mat-b) amount)))
-
 
 (defun-g rotate-x ((vec :vec3) (angle :float))
   (let ((c (cos angle))
@@ -82,9 +84,6 @@
   (+ (noise x)
      (let ((x (rotate-y x 0.833)))
        (/ (noise (* x 4s0)) 4s0))))
-
-(defmacro-g saturate (x)
-  `(clamp ,x 0s0 1s0))
 
 (defun-g sphere ((p :vec3) (pos :vec3) (radius :float))
   (- (length (- p pos)) radius))
@@ -305,14 +304,15 @@
   (evt:pump-events)
   (update-swank)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
-
   (let ((time (- (get-internal-real-time) +some-origin-time+)))
+    ;; - Always crashes on resolution
+    ;; - crashes on using time for global-time
     (map-g #'raymarcher *vertex-stream*
-	   :resolution (size (current-viewport))
-	   :global-time time
-	   :light-1-pos (v! (sin (* time 1.1)) (cos time) 20.0)
-	   :light-2-pos (v! (cos (* time .84)) (cos (* time .45)) 20.0)
-	   :light-1-color (v! 0.7 .85 1.0)
-	   :light-2-color (v! 1.0 .85 .7)))
-
+           ;; :resolution (v! 320 240) ;;(size (current-viewport))
+           :global-time 1s0 ;;:global-time time
+           :light-1-pos (v! (sin (* time 1.1)) (cos time) 20.0)
+           :light-2-pos (v! (cos (* time .84)) (cos (* time .45)) 20.0)
+           :light-1-color (v! 0.7 .85 1.0)
+           :light-2-color (v! 1.0 .85 .7)
+           ))
   (update-display))
