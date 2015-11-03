@@ -536,13 +536,33 @@
   (:use :cl :cepl-utils :cepl-generics
         :defstruct-plus-methods)
   (:nicknames :evt)
-  (:export :def-named-event-node
-           :make-event-node
+  (:export :make-event-node
            :subscribe
-           :pump-events
            :unsubscribe
-           :unsubscribe-all-from
-           :inject-event
+	   :unsubscribe-from-all
+	   :push-event
+
+	   :register-thunk-with-pump-events
+	   :pump-events
+	   :inject-backend-event
+
+	   :def-named-event-node
+
+           :backend-events
+           :|sys|
+           :|context|
+           :|window|
+           :|mouse|
+           :|keyboard|
+	   :make-context-created
+           :make-will-quit
+           :make-win
+           :make-cepl-mouse-event
+           :make-mouse-scroll
+           :make-mouse-button
+           :make-mouse-motion
+           :make-cepl-keyboard-event
+           :make-key
            :event
            :mouse-button-state
            :key-state
@@ -564,25 +584,7 @@
            :source-id
            :state
            :timestamp
-           :data
-
-           :|all-events|
-           :|sys|
-           :|context|
-           :|window|
-           :|mouse|
-           :|keyboard|
-
-           :make-cpl-backend-event
-           :make-context-created
-           :make-will-quit
-           :make-win
-           :make-cepl-mouse-event
-           :make-mouse-scroll
-           :make-mouse-button
-           :make-mouse-motion
-           :make-cepl-keyboard-event
-           :make-key))
+           :data))
 
 (defpackage :live
   (:use :cl :cepl-utils)

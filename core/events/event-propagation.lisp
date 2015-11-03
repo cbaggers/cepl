@@ -3,15 +3,14 @@
 ;;----------------------------------------------------------------------
 ;; cepl event pump infrastructure
 
-(let (event-pump)
+(let ((event-pump nil))
+  (defun register-thunk-with-pump-events (thunk)
+    (push thunk event-pump))
   (defun pump-events ()
-    (unless event-pump
-      (setf event-pump (cepl-backend:get-event-pump cepl-backend:*backend*)))
-    (funcall event-pump)))
+    (loop :for p :in event-pump :do (funcall p))))
 
-(defun inject-event (event)
-  (cepl-event-hook event)
-  (push-event-to-subscribers |all-events| event))
+(defun inject-backend-event (event)
+  (push-event backend-events event))
 
 (defun cepl-event-hook (event)
   "CEPL gets the first look at events so it can maintain some internal data.

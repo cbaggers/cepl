@@ -5,7 +5,7 @@
 
 (defun pump-events ()
   (let ((events (collect-sdl-events)))
-    (loop :for e :in events :do (inject-event e))))
+    (loop :for e :in events :do (inject-backend-event e))))
 
 (defmethod cepl-backend:get-event-pump ((backend-name (eql :sdl)))
   #'pump-events)

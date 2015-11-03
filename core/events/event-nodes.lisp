@@ -122,9 +122,9 @@
 ;; Event Nodes
 
 ;;----------------------------------------------------------------------
-;; all events
+;; backend events
 
-(defvar |all-events|
+(defvar backend-events
   (make-event-node
    :name :all-events
    :tags '(:everything :cepl-event-system-meta)))
@@ -136,7 +136,7 @@
   (make-event-node
    :name :cepl-event-system
    :tags :cepl-event-system-meta
-   :subscribe-to |all-events|))
+   :subscribe-to backend-events))
 
 ;;----------------------------------------------------------------------
 ;; cepl system events
@@ -146,7 +146,7 @@
    :name 'cepl-internals
    :tags '(:cepl-internal :system)
    :filter #'will-quit-p
-   :subscribe-to |all-events|))
+   :subscribe-to backend-events))
 
 ;;----------------------------------------------------------------------
 ;; context events
@@ -156,7 +156,7 @@
    :name 'cepl-internals
    :tags '(:context)
    :filter #'context-created-p
-   :subscribe-to |all-events|))
+   :subscribe-to backend-events))
 
 ;;----------------------------------------------------------------------
 ;; cepl window events
@@ -166,7 +166,7 @@
    :name 'cepl-window
    :tags '(:window)
    :filter #'win-p
-   :subscribe-to |all-events|))
+   :subscribe-to backend-events))
 
 ;;----------------------------------------------------------------------
 ;; cepl mouse events
@@ -186,7 +186,7 @@
        :tags '(:mouse)
        :filter #'mouse0-eventp
        :body #'update-mouse-state
-       :subscribe-to |all-events|))))
+       :subscribe-to backend-events))))
 
 ;;----------------------------------------------------------------------
 ;; cepl keyboard events
@@ -200,5 +200,5 @@
        :tags '(:keyboard)
        :filter #'cepl-keyboard-event-p
        :body #'update-key-states
-       :subscribe-to |all-events|)))
+       :subscribe-to backend-events)))
   (defun key-state (key) (gethash key key-state :up)))

@@ -5,8 +5,8 @@
 
 (defstruct+methods cpl-event
   (source-node (error "source-node is mandatory")
-          :type cepl-event-node
-          :read-only t)
+	       :type cepl-event-node
+	       :read-only t)
   (timestamp (get-internal-real-time)
              :type fixnum
              :read-only t
@@ -20,8 +20,8 @@
       (:include cpl-event
                 (source-node event-system-meta-node)))
   (new-node (error "new-node must be provided")
-              :type cepl-event-node
-              :read-only t))
+	    :type cepl-event-node
+	    :read-only t))
 
 ;;----------------------------------------------------------------------
 ;; event nodes
@@ -29,7 +29,7 @@
 (defconstant +default-node-name+ :no-human-name)
 
 (defstruct (cepl-event-node (:constructor %make-cepl-event-node)
-                              (:conc-name ces-))
+			    (:conc-name event-node-))
   (uid (gensym "EVENT-NODE-")
        :type symbol)
   (name +default-node-name+
@@ -37,26 +37,40 @@
   (tags nil
         :type list
         :read-only t)
-  (subscribers (make-event-node-subscribers) ;; weak refs to consumers
-               :type event-node-subscribers
+  (subscribers (cons nil nil) ;; weak refs to consumers
+               :type list
                :read-only t)
-  (subscriptions (make-event-node-subscriptions) ;; strong refs to nodes
-                 :type event-node-subscriptions
+  (subscriptions (cons nil nil) ;; strong refs to nodes
+                 :type list
                  :read-only t)
   (filter #'event-no-filter
           :type function
           :read-only t)
   (body #'event-no-body
-          :type function
-          :read-only t))
+	:type function
+	:read-only t))
+
+(defmacro %get (list)
+  `(cdr ,list))
+
+(defmacro %set (list value)
+  `(setf (cdr ,list) ,value))
+
+(defmacro %push (value list)
+  `(%set ,list (cons ,value (%get ,list))))
+
+(defmacro %delete (value list weak)
+  (if weak
+      `(%set ,list (delete ,value (%get ,list) :key #'subscriber-node))
+      `(%set ,list (delete ,value (%get ,list)))))
 
 (defmethod print-object ((object cepl-event-node) stream)
   (format stream "#<CEPL-EVENT-NODE ~@[:NAME ~S ~]:UID ~s>"
-          (ces-name object)
-          (ces-uid object)))
+          (event-node-name object)
+          (event-node-uid object)))
 
 (defun event-node-eq (node-a node-b)
-  (eq (ces-uid node-a) (ces-uid node-b)))
+  (eq (event-node-uid node-a) (event-node-uid node-b)))
 
 (defun event-no-filter (e)
   (declare (ignore e) (cpl-event e))
@@ -66,11 +80,35 @@
   (declare (ignore e) (cpl-event e))
   nil)
 
-(defstruct (event-node-subscribers (:conc-name cess-))
-  (subscribers nil :type list))
+(defstruct (%event-node-subscriber (:conc-name %ens-))
+  (weak t :type boolean))
 
-(defstruct (event-node-subscriptions (:conc-name cesp-))
-  (subscriptions nil :type list))
+(defstruct (weak-subscriber
+	     (:include %event-node-subscriber)
+	     (:conc-name weak-subscriber-))
+  #+sbcl (node (error "Node must be provided to make subscriber")
+	       :type sb-ext:weak-pointer)
+  #-sbcl (node (error "Node must be provided to make subscriber")
+	       :type t))
+
+(defstruct (strong-subscriber
+	     (:include %event-node-subscriber
+		       (weak nil)))
+  (node (error "Node must be provided to make subscriber")
+	:type cepl-event-node))
+
+(defun make-subscriber (node weak)
+  (if weak
+      (make-weak-subscriber :node (trivial-garbage:make-weak-pointer node))
+      (make-strong-subscriber :node node)))
+
+(defun subscriber-node (node)
+  (declare ((or strong-subscriber weak-subscriber) node))
+  (if (%ens-weak node)
+      (locally (declare (weak-subscriber node))
+	(trivial-garbage:weak-pointer-value (weak-subscriber-node node)))
+      (locally (declare (strong-subscriber node))
+	(strong-subscriber-node node))))
 
 (defun make-event-node (&key name tags (filter #'event-no-filter)
                           (body #'event-no-body)
@@ -79,52 +117,46 @@
   (assert (typep body 'function))
   (assert (or (null subscribe-to) (typep subscribe-to 'cepl-event-node)))
   (let ((new-node (%make-cepl-event-node
-                     :name (or name +default-node-name+)
-                     :tags (if (listp tags) tags (list tags))
-                     :filter filter
-                     :body body)))
+		   :name (or name +default-node-name+)
+		   :tags (if (listp tags) tags (list tags))
+		   :filter filter
+		   :body body)))
     (when (boundp 'event-system-meta-node)
-      (push-event-to-event-node (symbol-value 'event-system-meta-node)
-                                (make-new-event-node-event :new-node new-node)))
+      (%push-event-to-event-node (symbol-value 'event-system-meta-node)
+				 (make-new-event-node-event :new-node new-node)))
     (when subscribe-to (subscribe new-node subscribe-to))
     new-node))
 
 
-(defun subscribe (node source-node)
+(defun subscribe (node source-node &key (weak t))
   (assert (typep node 'cepl-event-node))
   (assert (typep source-node 'cepl-event-node))
   (unless (event-node-already-subscribed node source-node)
-    (push (trivial-garbage:make-weak-pointer node)
-          (cess-subscribers (ces-subscribers source-node)))
-    (push source-node (cesp-subscriptions (ces-subscriptions node))))
+    (%push (make-subscriber node weak) (event-node-subscribers source-node))
+    (%push source-node (event-node-subscriptions node)))
   source-node)
 
 (defun unsubscribe (node source-node)
   (assert (typep node 'cepl-event-node))
   (assert (typep source-node 'cepl-event-node))
-  (let ((subscribers (ces-subscribers source-node)))
-    (setf (cess-subscribers subscribers)
-          (delete node (cess-subscribers subscribers)
-                  :key #'trivial-garbage:weak-pointer-value)))
-  (let ((subscriptions (ces-subscriptions source-node)))
-    (setf (cesp-subscriptions subscriptions)
-          (delete node (cesp-subscriptions subscriptions))))
+  (%delete node (event-node-subscribers source-node) t)
+  (%delete node (event-node-subscriptions source-node) nil)
   source-node)
 
+(defun unsubscribe-from-all (node)
+  (assert (typep node 'cepl-event-node))
+  (mapcar #'(lambda (x) (unsubscribe node x))
+	  (%get (event-node-subscriptions node))))
+
 (defun event-node-already-subscribed (node source-node)
-  (member node (cess-subscribers (ces-subscribers source-node))
-          :test (lambda (x y)
-                  (event-node-eq x
-                                 (trivial-garbage:weak-pointer-value y)))))
+  (member node (%get (event-node-subscribers source-node))
+	  :key #'subscriber-node :test #'event-node-eq))
 
 (defun %move-subscriptions (from to)
+  (assert (and from to))
   (let ((old-subscribers
-             (when from
-               (remove nil (mapcar #'trivial-garbage:weak-pointer-value
-                                   (cess-subscribers
-                                    (ces-subscribers from))))))
-        (old-subscriptions
-         (when from (cesp-subscriptions (ces-subscriptions from)))))
+	 (remove nil (mapcar #'subscriber-node (%get (event-node-subscribers from)))))
+        (old-subscriptions (%get (event-node-subscriptions from))))
     ;; recreate all the old subscriptions to and from new node
     (map nil (lambda (x) (subscribe x to)) old-subscribers)
     (map nil (lambda (x) (subscribe to x)) old-subscriptions)
@@ -136,16 +168,15 @@
 ;;----------------------------------------------------------------------
 ;; pushing events to nodes
 
-(defun push-event-to-event-node (node event)
-  (when (funcall (ces-filter node) event)
-    (funcall (ces-body node) event)
-    (push-event-to-subscribers node event)))
-
-(defun push-event-to-subscribers (node event)
+(defun %push-event-to-event-node (node event)
   (labels ((push-to-subscriber (subscriber)
-             (let ((subscribed-node (trivial-garbage:weak-pointer-value subscriber)))
-               (when subscribed-node
-                   (push-event-to-event-node subscribed-node event)
-                 subscriber))))
-    (let ((subscribers (cess-subscribers (ces-subscribers node))))
-      (mapcar #'push-to-subscriber subscribers))))
+             (let ((destination-node (subscriber-node subscriber)))
+               (when destination-node
+		 (%push-event-to-event-node destination-node event)))))
+    (when (funcall (event-node-filter node) event)
+      (funcall (event-node-body node) event)
+      (mapcar #'push-to-subscriber (%get (event-node-subscribers node))))
+    node))
+
+(defun push-event (to-node event)
+  (%push-event-to-event-node to-node event))
