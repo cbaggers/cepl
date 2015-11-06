@@ -253,13 +253,6 @@
   (:shadow :lerp)
   (:export :perspective :orthographic))
 
-(defpackage :base-space
-  (:use :cl :base-vectors :base-matrices)
-  (:nicknames :cspace)
-  (:shadow :space)
-  ;;(:export :things)
-  )
-
 
 (defpackage :%cgl
   (:use :cl :cffi :cepl-utils :varjo :base-vectors :cepl-generics
@@ -536,7 +529,8 @@
   (:use :cl :cepl-utils :cepl-generics
         :defstruct-plus-methods)
   (:nicknames :evt)
-  (:export :make-event-node
+  (:export :cpl-event
+	   :make-event-node
            :subscribe
            :unsubscribe
 	   :unsubscribe-from-all
@@ -585,6 +579,13 @@
            :state
            :timestamp
            :data))
+
+(defpackage :spaces
+  (:use :cl :base-vectors :base-matrices :cepl.events)
+  (:nicknames :cspace)
+  (:shadow :space)
+  ;;(:export :things)
+  )
 
 (defpackage :live
   (:use :cl :cepl-utils)
