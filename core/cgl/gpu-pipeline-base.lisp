@@ -21,11 +21,12 @@
    (equivalent-inargs :initarg :equivalent-inargs)
    (equivalent-uniforms :initarg :equivalent-uniforms)
    (doc-string :initarg :doc-string)
-   (declarations :initarg :declarations)))
+   (declarations :initarg :declarations)
+   (missing-dependencies :initarg :missing-dependencies)))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
-                            doc-string declarations)
+                            doc-string declarations missing-dependencies)
   (make-instance 'gpu-func-spec
                  :name name
                  :in-args (mapcar #'listify in-args)
@@ -36,22 +37,23 @@
                  :equivalent-inargs equivalent-inargs
                  :equivalent-uniforms equivalent-uniforms
                  :doc-string doc-string
-                 :declarations declarations))
+                 :declarations declarations
+		 :missing-dependencies missing-dependencies))
 
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms context body instancing
                      equivalent-inargs equivalent-uniforms
-                     doc-string declarations) ,func-spec
+                     doc-string declarations missing-dependencies) ,func-spec
      (declare (ignorable name in-args uniforms context body instancing
                          equivalent-inargs equivalent-uniforms
-                         doc-string declarations))
+                         doc-string declarations missing-dependencies))
      ,@body))
 
 (defun %serialize-gpu-func-spec (spec)
   (with-gpu-func-spec spec
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
                           ',instancing ',equivalent-inargs ',equivalent-uniforms
-                          ,doc-string ',declarations)))
+                          ,doc-string ',declarations ',missing-dependencies)))
 
 (defun gpu-func-spec (name &optional error-if-missing)
   (or (gethash name *gpu-func-specs*)
@@ -109,6 +111,13 @@ names are depended on by the functions named later in the list"
                         (member name (slot-value v 'stages)))
                k))
            *gpu-pipeline-specs*)))
+
+(defun update-specs-with-missing-dependencies ()
+  (map-hash λ(with-gpu-func-spec _1
+	       (when missing-dependencies
+		 (%test-&-update-spec _1)
+		 _))
+	    *gpu-func-specs*))
 
 ;;--------------------------------------------------
 

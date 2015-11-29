@@ -16,14 +16,14 @@
         (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
       (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
-      (let ((in-args (swap-equivalent-types in-args))
-            (uniforms (swap-equivalent-types uniforms))
-            (equivalent-inargs (mapcar (lambda (_)
-                                         (when (equivalent-typep _) _))
-                                       (mapcar #'second in-args)))
-            (equivalent-uniforms (mapcar (lambda (_)
-                                           (when (equivalent-typep _) _))
-                                         (mapcar #'second uniforms))))
+      (let* ((in-args (swap-equivalent-types in-args))
+	     (uniforms (swap-equivalent-types uniforms))
+	     (equivalent-inargs (mapcar (lambda (_)
+					  (when (equivalent-typep _) _))
+					(mapcar #'second in-args)))
+	     (equivalent-uniforms (mapcar (lambda (_)
+					    (when (equivalent-typep _) _))
+					  (mapcar #'second uniforms))))
         (assert (every #'null equivalent-inargs))
         (%def-gpu-function name in-args uniforms context body instancing
                            equivalent-inargs equivalent-uniforms
@@ -42,20 +42,26 @@
 
 (defvar *warn-when-cant-test-compile* t)
 
-(defun %test-compile (name in-args uniforms context body depends-on)
-  (handler-case
-      (let ((body (labels-form-from-func-names depends-on body)))
-	(varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-	  (varjo:translate in-args uniforms
-			   (union '(:vertex :fragment :iuniforms :330) context)
-			   body)))
-    (gpu-func-spec-not-found (err)
-      (declare (ignore err))
-      (let* ((all-funcs (funcs-these-funcs-use depends-on))
-	     (missing (remove-if (lambda (x) (gpu-func-spec x nil)) all-funcs)))
-	(warn 'failed-to-test-compile-gpu-func
-	      :gfunc-name name
-	      :missing-func-names missing)))))
+(defun %test-&-update-spec (spec)
+  (with-gpu-func-spec spec
+    (setf missing-dependencies nil)
+    (%update-gpu-function-data
+     spec
+     (handler-case
+    	 (varjo::with-stemcell-infer-hook
+    	     #'try-guessing-a-varjo-type-for-symbol
+    	   (remove-if-not
+    	    #'gpu-func-spec
+    	    (varjo::used-macros
+    	     (varjo:translate in-args uniforms
+    			      (union '(:vertex :fragment :iuniforms :330)
+    				     context)
+    			      `(progn ,@body)))))
+       (varjo::could-not-find-function (e)
+    	 (setf (slot-value spec 'missing-dependencies)
+    	       (list (slot-value e 'varjo::name))))))))
+
+
 
 ;;--------------------------------------------------
 
@@ -64,25 +70,27 @@
                           doc-string declarations)
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
                                    equivalent-inargs equivalent-uniforms
-                                   doc-string declarations)))
+                                   doc-string declarations nil)))
     ;; this gets the functions used in the body of this function
     ;; it is *not* recursive
-    (let ((depends-on (%find-gpu-functions-depended-on spec)))
-      ;; glsl disallows recursions
-      (assert (not (%find-recursion name depends-on)))
-      ;; if there are specs for all the dependencies already then subscribe
-      ;; to those functions and save our spec
-      (when (every #'gpu-func-spec depends-on)
-        (%update-gpu-function-data spec depends-on))
+    (let* ((in-arg-names (mapcar #'first in-args))
+	   (uniform-names (mapcar #'first uniforms))
+	   (macro-func-name (gensym))
+	   (fbody `(list 'varjo::labels-no-implicit
+			 '((,macro-func-name (,@in-args ,@uniforms) ,@body))
+			 (list ',macro-func-name
+			       ,@in-arg-names ,@uniform-names)))
+	   (to-compile `(lambda (,@in-arg-names ,@uniform-names)
+			  ,fbody)))
+      ;;(print to-compile)
+      (varjo::add-macro name (compile nil to-compile)
+       context varjo::*global-env*)
       `(progn
-         (eval-when (:compile-toplevel :load-toplevel :execute)
-           (%update-gpu-function-data ,(%serialize-gpu-func-spec spec)
-                                      ',depends-on))
-         (%test-compile ',name ',in-args ',uniforms ',context ',body
-			',depends-on)
+         (%test-&-update-spec ,(%serialize-gpu-func-spec spec))
          ,(%make-stand-in-lisp-func spec)
-         (%recompile-gpu-function ',name)))))
-
+         (%recompile-gpu-function ',name)
+	 (update-specs-with-missing-dependencies)
+	 ',name))))
 
 (defun %recompile-gpu-function (name)
   ;; recompile gpu-funcs that depends on name
@@ -90,8 +98,8 @@
   ;; and recompile pipelines that depend on name
   (mapcar (lambda (_)
             (let ((recompile-pipeline-name (recompile-name _)))
-                       (when (fboundp recompile-pipeline-name)
-                         (funcall (symbol-function recompile-pipeline-name)))))
+	      (when (fboundp recompile-pipeline-name)
+		(funcall (symbol-function recompile-pipeline-name)))))
           (pipelines-that-use-this-func name)))
 
 
@@ -124,7 +132,7 @@
 
 (defun %expand-all-macros (spec)
   (with-gpu-func-spec spec
-    (let ((env (make-instance 'varjo:environment)))
+    (let ((env (varjo::%make-base-environment)))
       (%%expand-all-macros body context env))))
 
 (defun %%expand-all-macros (body context env)
@@ -139,87 +147,6 @@
   (assert (symbolp x))
   (or (second (multiple-value-list (gethash x varjo::*global-env-funcs*)))
       (second (multiple-value-list (gethash (kwd x) varjo::*global-env-funcs*)))))
-
-(defun %find-gpu-funcs-in-source (source &optional locally-defined)
-  (unless (atom source)
-    (remove-duplicates
-     (alexandria:flatten
-      (let ((s (first source)))
-        (cond
-          ;; first element isnt a symbol, keep searching
-          ((listp s)
-           (append (%find-gpu-funcs-in-source s locally-defined)
-                   (mapcar (lambda (x) (%find-gpu-funcs-in-source
-					x locally-defined))
-                           (rest source))))
-
-	  ((symbolp s) (%find-gpu-funcs-in-source-symbol
-			s source locally-defined))
-
-          ;; nothing to see, keep searching
-          (t (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
-                     (rest source))))))
-     :from-end t)))
-
-(defun %find-gpu-funcs-in-source-symbol (s source locally-defined)
-  ;; it's a let so ignore the var name
-  (cond
-    ((eq s 'varjo::%glsl-let)
-     (destructuring-bind (_ (_1 form) &rest _2) source
-       (declare (ignore _ _1 _2))
-       (%find-gpu-funcs-in-source form locally-defined)))
-
-    ;; it's %out so skip the name-and-qualifiers
-    ((eq s 'varjo::%out)
-     (%find-gpu-funcs-in-source (third source) locally-defined))
-
-    ;; it's varjo:for so skip the name-and-qualifiers
-    ((string-equal (symbol-name s) "FOR")
-     (destructuring-bind (_ var-form condition update &rest body)
-	 source
-       (declare (ignore _))
-       (%find-gpu-funcs-in-source
-	(append (list (second var-form) condition update)
-		body)
-	locally-defined)))
-
-    ;; it's varjo:switch so skip the clause conditions
-    ((string-equal (symbol-name s) "FOR")
-     (destructuring-bind (_ test-form clauses) source
-       (declare (ignore _))
-       (%find-gpu-funcs-in-source
-	(cons test-form (mapcar #'rest clauses))
-	locally-defined)))
-
-    ;; it's cl:the so skip the type-name
-    ((eq s 'the)
-     (%find-gpu-funcs-in-source (third source) locally-defined))
-
-    ;; it's %typify so only read form
-    ((eq s 'varjo::%typify)
-     (%find-gpu-funcs-in-source (second source) locally-defined))
-
-
-    ;; it's a function so skip to the body
-    ((eq s 'varjo::%%make-function)
-     (%find-gpu-funcs-in-source (cddr source)
-				(cons (second source) locally-defined)))
-
-    ;; its a symbol, just check it isn't varjo's and if we shouldnt ignore
-    ;; it then record it
-    ((and (not (equal (package-name (symbol-package s)) "VARJO"))
-	  (not (equal (package-name (symbol-package s)) "CL"))
-	  (not (member s locally-defined))
-	  (not (varjo-func-namep s)))
-     (cons s (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
-		     (rest source))))
-
-    ;; Just keep walking
-    (t (mapcar (lambda (x) (%find-gpu-funcs-in-source x locally-defined))
-	       (rest source)))))
-
-(defun %find-gpu-functions-depended-on (spec)
-  (%find-gpu-funcs-in-source (%expand-all-macros spec)))
 
 (defun %make-stand-in-lisp-func (spec)
   (with-gpu-func-spec spec
@@ -280,21 +207,11 @@
 
 ;;--------------------------------------------------
 
-(defun labels-form-from-func-names (names body)
-  `(varjo::labels-no-implicit
-    ,(mapcar (lambda (x)
-	       (with-gpu-func-spec (gpu-func-spec x t)
-		 `(,name ,in-args ,@body)))
-	     (funcs-these-funcs-use names))
-    ,@body))
+
 
 (defun get-func-as-stage-code (name)
   (with-gpu-func-spec (gpu-func-spec name)
-    (list
-     in-args
-     uniforms
-     context
-     (labels-form-from-func-names (funcs-this-func-uses name) body))))
+    (list in-args uniforms context body)))
 
 (defun varjo-compile-as-stage (name)
   (apply #'varjo:translate (get-func-as-stage-code name)))
