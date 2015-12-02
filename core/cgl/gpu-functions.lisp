@@ -238,9 +238,9 @@
                            (cons stage-type
                                  (remove stage-type context)))))
         (list in-args
-              uniforms
-              context
-              code)))))
+	      uniforms
+	      context
+	      `(progn ,@code))))))
 
 ;;--------------------------------------------------
 
