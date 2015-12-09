@@ -127,7 +127,7 @@
 	      (+ (* (/ (- far near) 2) ndc-z) (/ (+ far near) 2)))))
      ...)
 
-   Where x​, y​, width​, height​, nearVal​, and farVal​ are the viewport parameters."
+   Where x, y, width, height, nearVal, and farVal are the viewport parameters."
   (transform-to +window-space+ (coord vertex)))
 
 (defun-g primitive-assembly

@@ -343,8 +343,7 @@
           (r12 (* inv-det (- (* (melm mat-a 1 0) (melm mat-a 0 2))
                              (* (melm mat-a 0 0) (melm mat-a 1 2)))))
           (r22 (* inv-det (- (* (melm mat-a 0 0) (melm mat-a 1 1))
-                             (* (melm mat-a 1 0) (melm mat-a 0 1)))))
-          )
+                             (* (melm mat-a 1 0) (melm mat-a 0 1))))))
        (make-matrix4 r00 r01 r02
                      (- 0.0
                         (* (melm mat-a 0 0) (melm mat-a 0 3))

@@ -165,7 +165,7 @@
            :/ :length :length-squared :distance :distance-squared
            :dot :absolute-dot :perp-dot :normalize :cross :eql
            :swizzle :s~ :merge-into-vector :negate :face-foreward :lerp
-           :mix :bezier :x :y :z :w)
+           :mix :bezier :x :y :z :w :dvec :dvec*)
   (:shadow :zerop :+ :eql := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
@@ -252,17 +252,6 @@
   (:use :cl :base-maths)
   (:shadow :lerp)
   (:export :perspective :orthographic))
-
-(defpackage :base-space
-  (:use :cl :base-vectors :base-matrices)
-  (:nicknames :cspace)
-  (:shadow :space)
-  ;;(:export :things)
-  )
-
-(defpackage :space-gpu
-  (:use :cl :base-vectors :base-matrices :base-space :cepl-utils
-	:named-readtables :varjo))
 
 (defpackage :%cgl
   (:use :cl :cffi :cepl-utils :varjo :base-vectors :cepl-generics
@@ -539,7 +528,8 @@
   (:use :cl :cepl-utils :cepl-generics
         :defstruct-plus-methods)
   (:nicknames :evt)
-  (:export :make-event-node
+  (:export :cpl-event
+	   :make-event-node
            :subscribe
            :unsubscribe
 	   :unsubscribe-from-all
@@ -589,6 +579,17 @@
            :timestamp
            :data))
 
+(defpackage :spaces
+  (:use :cl :base-vectors :base-matrices :cepl.events)
+  (:nicknames :cspace)
+  (:shadow :space)
+  ;;(:export :things)
+  )
+
+(defpackage :space-gpu
+  (:use :cl :base-vectors :base-matrices :spaces :cepl-utils
+	:named-readtables :varjo))
+
 (defpackage :live
   (:use :cl :cepl-utils)
   (:export :main-loop
@@ -616,6 +617,9 @@
                 :deferror
                 :print-mem
                 :p->)
+  (:import-from :vectors
+		:dvec
+		:dvec*)
   (:import-from :cepl.events
                 :def-named-event-node)
   (:export :repl
@@ -623,6 +627,9 @@
            :quit
            :make-project
            ;;----
+	   :dvec
+	   :dvec*
+	   ;;----
            :def-named-event-node
            ;;----
            :pos
