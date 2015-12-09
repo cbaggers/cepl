@@ -165,7 +165,7 @@
            :/ :length :length-squared :distance :distance-squared
            :dot :absolute-dot :perp-dot :normalize :cross :eql
            :swizzle :s~ :merge-into-vector :negate :face-foreward :lerp
-           :mix :bezier :x :y :z :w)
+           :mix :bezier :x :y :z :w :dvec :dvec*)
   (:shadow :zerop :+ :eql := :/= :1+ :1- :- :* :/ :length)
   (:import-from :vector2
                 :make-vector2)
@@ -614,6 +614,9 @@
                 :deferror
                 :print-mem
                 :p->)
+  (:import-from :vectors
+		:dvec
+		:dvec*)
   (:import-from :cepl.events
                 :def-named-event-node)
   (:export :repl
@@ -621,6 +624,9 @@
            :quit
            :make-project
            ;;----
+	   :dvec
+	   :dvec*
+	   ;;----
            :def-named-event-node
            ;;----
            :pos

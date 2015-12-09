@@ -35,6 +35,10 @@
   (list (%viewport-resolution-x viewport)
         (%viewport-resolution-y viewport)))
 
+(defun viewport-resolution-v! (viewport)
+  (v! (%viewport-resolution-x viewport)
+      (%viewport-resolution-y viewport)))
+
 (defun viewport-origin (viewport)
   (v! (%viewport-origin-x viewport)
       (%viewport-origin-y viewport)))

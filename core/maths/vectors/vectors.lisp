@@ -48,6 +48,25 @@
 (defun s~ (vec pattern) (swizzle vec pattern))
 (define-compiler-macro s~ (vec pattern) `(swizzle ,vec ,pattern))
 
+(defmacro dvec (var-list expression &body body)
+  (when (or (not (listp var-list))
+	    (not (every #'symbolp var-list))
+	    (< (cl:length var-list) 1)
+	    (> (cl:length var-list) 4))
+    (error "dvec: invalid vector destructuring pattern ~s"
+	   var-list))
+  (let ((e (gensym "expression")))
+    `(let ((,e ,expression))
+       (let ,(loop :for v :in var-list :for i :from 0 :collect
+		`(,v (aref ,e ,i)))
+	 ,@body))))
+
+(defmacro dvec* (var-list-expression-pairs &body body)
+  (let ((pairs (append body
+		       (utils:group var-list-expression-pairs 2))))
+    (labels ((m (x y) `(dvec ,@y ,x)))
+      (reduce #'m pairs))))
+
 ;;----------------------------------------------------------------
 
 (defun make-vector (x y &optional z w)

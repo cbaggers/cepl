@@ -124,6 +124,10 @@
 
 (defun %expand-all-macros (spec)
   (with-gpu-func-spec spec
+
+    &&&& this broke as we make and instance of environment here &&&&
+    &&&& stop doing that, use the normal functions like everyone else &&&&
+
     (let ((env (make-instance 'varjo:environment)))
       (%%expand-all-macros body context env))))
 
