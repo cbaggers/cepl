@@ -260,14 +260,17 @@
   ;;(:export :things)
   )
 
+(defpackage :space-gpu
+  (:use :cl :base-vectors :base-matrices :base-space :cepl-utils
+	:named-readtables :varjo))
 
 (defpackage :%cgl
   (:use :cl :cffi :cepl-utils :varjo :base-vectors :cepl-generics
-        :split-sequence)
+        :split-sequence :named-readtables)
   )
 (defpackage :cepl-gl
   (:use :cl :cffi :cepl-utils :varjo :base-vectors :cepl-generics
-        :split-sequence :%cgl)
+        :split-sequence :%cgl :named-readtables)
   (:nicknames :cgl)
   (:import-from :utils
                 :deferror

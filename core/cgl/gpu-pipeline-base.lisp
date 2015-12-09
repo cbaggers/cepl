@@ -1,4 +1,5 @@
 (in-package :cgl)
+(in-readtable fn:fn-reader)
 
 ;;{TODO} Almost everything in here could really benefit from being optimized
 
