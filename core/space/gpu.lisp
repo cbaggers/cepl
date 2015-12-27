@@ -47,19 +47,42 @@
 ;; we need some varjo code to compile
 
 (defun first-pass ()
-  (varjo::defshader test ((vert :vec4) &uniform (ws space-g))
-    (in ws
-      (let ((p (p! vert)))
-	(+ p p)
-	(v! 1 2 3 4)))))
+  (varjo::defshader test ((vert :vec4) &uniform (ws space-g) (cs space-g))
+    (in cs                  ;; this would be implicit
+      (labels ((func () (p! (v! 0 0 0 0)))
+	       (func2 () (func)))
+	(let ((p (p! vert)))
+	  (in ws
+	    (+ p (func2)) ;; these need to be transformed
+	    (v! 1 2 3 4)))))))
 
-(defun returned-flow-id (compile-result flow-id)
-  (find-if λ(and (last1 _) (id= (last1 _) flow-id))
-	   (function-calls compile-result)))
-
+;; for making specific flow ids for testing
 (defun flow-id-n! (&rest ids)
   (make-instance 'varjo::flow-identifier :ids ids))
 
-(defun which-space (compile-result flow-id)
-  (let ((origin (returned-flow-id compile-result flow-id)))
-    (second (second origin))))
+(defun hmm ()
+  (visit-ast-nodes
+   λ(when (v-typep (ast-return-type _) (type-spec->type 'pos4))
+      (let ((origin (caar (ast-flow-id-origin _))))
+	(when (eq (varjo::name (ast-node-kind origin)) '%p!)
+	  (let ((current-space (varjo::get-var *current-space* (ast-starting-env _)))
+		(o-space (varjo::get-var *current-space* (ast-starting-env origin))))
+	    (unless (eq current-space o-space)
+	      (print
+	       (list (ast-node-kind _) (ast-args _)
+		     (varjo::v-glsl-name current-space)
+		     (varjo::v-glsl-name o-space))))))))
+   (first-pass)))
+
+(defun ast->formid (x)
+  (labels ((f (node walk)
+	     (let ((node-kind (ast-node-kind node))
+		   (args (ast-args node))
+		   (flow-id-origin (ast-flow-id-origin node)))
+	       (let ((name (if (typep node-kind 'v-function)
+			       (varjo::name node-kind)
+			       node-kind)))
+		 `(,name ,node ,@(unless (eq node (caar flow-id-origin))
+					 (list flow-id-origin))
+			 ,(mapcar walk args))))))
+    (walk-ast #'f x)))
