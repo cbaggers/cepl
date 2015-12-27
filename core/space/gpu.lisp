@@ -64,7 +64,7 @@
   (visit-ast-nodes
    λ(when (v-typep (ast-return-type _) (type-spec->type 'pos4))
       (let ((origin (caar (ast-flow-id-origin _))))
-	(when (eq (varjo::name (ast-node-kind origin)) '%p!)
+	(when (eq (ast-node-kind origin) '%p!)
 	  (let ((current-space (varjo::get-var *current-space* (ast-starting-env _)))
 		(o-space (varjo::get-var *current-space* (ast-starting-env origin))))
 	    (unless (eq current-space o-space)
