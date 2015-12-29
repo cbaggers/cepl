@@ -9,7 +9,6 @@
 ;; This package provides a generic interface to all the vector
 ;; functions provided in vector2,3 & 4.
 ;; It is here to make programming more pleasent.
-;; Also see the reader macro for creating vectors
 
 ;; DO NOT ':USE' THIS PACKAGE IN YOUR PROGRAMS AS IT REDEFINES
 ;; VARIOUS MATHEMATICAL SYMBOLS
@@ -47,6 +46,9 @@
 
 (defun s~ (vec pattern) (swizzle vec pattern))
 (define-compiler-macro s~ (vec pattern) `(swizzle ,vec ,pattern))
+
+(varjo:add-equivalent-name 'varjo-lang:swizzle 'vectors:swizzle)
+(varjo:add-equivalent-name 'varjo-lang:s~ 'vectors:s~)
 
 (defmacro dvec (var-list expression &body body)
   (when (or (not (listp var-list))
@@ -203,6 +205,8 @@
       (3 (v3:length vec-a))
       (4 (v4:length vec-a)))))
 
+(varjo:add-equivalent-name 'cl:length 'vectors:length)
+
 ;;----------------------------------------------------------------
 
 (defun length-squared (vec-a)
@@ -241,6 +245,8 @@
       (2 (v2:dot vec-a vec-b))
       (3 (v3:dot vec-a vec-b))
       (4 (v4:dot vec-a vec-b)))))
+
+(varjo:add-equivalent-name 'varjo-lang:dot 'vectors:dot)
 
 ;;----------------------------------------------------------------
 
@@ -288,6 +294,8 @@
       (3 (v3:normalize vec-a))
       (4 (v4:normalize vec-a)))))
 
+(varjo:add-equivalent-name 'varjo-lang:normalize 'vectors:normalize)
+
 ;;----------------------------------------------------------------
 
 (defun cross (vec-a vec-b)
@@ -296,6 +304,8 @@
     (case (cl:length vec-a)
       (2 (v2:cross vec-a vec-b))
       (3 (v3:cross vec-a vec-b)))))
+
+(varjo:add-equivalent-name 'varjo-lang:normalize 'vectors:cross)
 
 ;;----------------------------------------------------------------
 

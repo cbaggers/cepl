@@ -46,6 +46,8 @@
 (def-v! v!short (unsigned-byte 16))
 (def-v! v!ushort (signed-byte 16))
 
+(varjo:add-equivalent-name 'varjo-lang:v! 'v!)
+
 ;----------------------------------------------------------------
 
 ;; {TODO} inline these

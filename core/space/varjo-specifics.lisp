@@ -9,12 +9,12 @@
 (def-v-type-class clip-space (v-space) nil)
 (def-v-type-class pos4-clip-space (pos4) nil)
 (v-defun p! (x y) "~a" (v-vec4 clip-space) pos4-clip-space)
-(v-defun :%+ (a b) "(~a + ~a)" (pos4-clip-space pos4-clip-space) 0)
+(v-defun %+ (a b) "(~a + ~a)" (pos4-clip-space pos4-clip-space) 0)
 
 (def-v-type-class world-space (v-space) nil)
 (def-v-type-class pos4-world-space (pos4) nil)
 (v-defun p! (x y) "~a" (v-vec4 world-space) pos4-world-space)
-(v-defun :%+ (a b) "(~a + ~a)" (pos4-world-space pos4-world-space) 0)
+(v-defun %+ (a b) "(~a + ~a)" (pos4-world-space pos4-world-space) 0)
 
 (v-defun make-clip-space () "<make clip space>" () clip-space)
 (v-defun make-world-space () "<make world space>" () world-space)

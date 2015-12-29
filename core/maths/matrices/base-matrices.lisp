@@ -52,3 +52,5 @@
                      components)))))
       ((= (length components) 1) (list 'm!one-arg (first components)))
       (t form))))
+
+(varjo:add-equivalent-name 'varjo-lang:m! 'm!)

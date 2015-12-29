@@ -254,12 +254,13 @@
   (:export :perspective :orthographic))
 
 (defpackage :%cgl
-  (:use :cl :cffi :cepl-utils :varjo :base-vectors :cepl-generics
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :base-vectors :cepl-generics
         :split-sequence :named-readtables)
-  )
+  (:shadowing-import-from :base-vectors :v!))
 (defpackage :cepl-gl
-  (:use :cl :cffi :cepl-utils :varjo :base-vectors :cepl-generics
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :base-vectors :cepl-generics
         :split-sequence :%cgl :named-readtables)
+  (:shadowing-import-from :base-vectors :v!)
   (:nicknames :cgl)
   (:import-from :utils
                 :deferror
@@ -588,7 +589,9 @@
 
 (defpackage :space-gpu
   (:use :cl :base-vectors :base-matrices :spaces :cepl-utils
-	:named-readtables :varjo))
+	:named-readtables :varjo :varjo-lang)
+  (:shadowing-import-from :base-vectors :v!)
+  (:shadowing-import-from :base-matrices :m!))
 
 (defpackage :live
   (:use :cl :cepl-utils)
