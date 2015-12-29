@@ -24,7 +24,6 @@
 
 (varjo:v-defmacro in (space &body body)
   `(let ((,*current-space* ,space))
-     (use-space ,*current-space*)
      ,@body))
 
 ;; and a cpu version for formatting

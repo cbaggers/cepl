@@ -207,37 +207,28 @@
 
 ;;--------------------------------------------------
 
-
-
 (defun get-func-as-stage-code (name)
   (with-gpu-func-spec (gpu-func-spec name)
     (list in-args uniforms context body)))
 
-(defun varjo-compile-as-stage (name)
-  (apply #'varjo:translate (get-func-as-stage-code name)))
+;;--------------------------------------------------
 
-(defun varjo-compile-as-pipeline (args)
-  (destructuring-bind (stage-pairs context) (parse-gpipe-args args)
-    (declare (ignore context))
-    (%varjo-compile-as-pipeline stage-pairs)))
 (defun %varjo-compile-as-pipeline (parsed-gpipe-args)
   (varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
     (rolling-translate (mapcar #'prepare-stage parsed-gpipe-args))))
 
 (defun prepare-stage (stage-pair)
-  (let ((stage-type (car stage-pair))
-        (stage-name (cdr stage-pair)))
-    (destructuring-bind (in-args uniforms context code)
-        (get-func-as-stage-code stage-name)
+  (dbind (stage-type . stage-name) stage-pair
+    (dbind (in-args uniforms context code) (get-func-as-stage-code stage-name)
       ;; ensure context doesnt specify a stage or that it matches
       (let ((n (count-if (lambda (_)
-                           (member _ varjo::*stage-types*))
-                         context)))
-        (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+			   (member _ varjo::*stage-types*))
+			 context)))
+	(assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
       (let ((context (cons :iuniforms
-                           (cons stage-type
-                                 (remove stage-type context)))))
-        (list in-args
+			   (cons stage-type
+				 (remove stage-type context)))))
+	(list in-args
 	      uniforms
 	      context
 	      `(progn ,@code))))))
