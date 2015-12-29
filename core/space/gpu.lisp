@@ -44,6 +44,8 @@
 
 (varjo:v-defun %p! (v s) "#<pos4(~a, ~a)>" (:vec4 space-g) pos4)
 
+;;----------------------------------------------------------------------
+
 ;; we need some varjo code to compile
 
 (defun first-pass ()
@@ -56,33 +58,25 @@
 	    (+ p (func2)) ;; these need to be transformed
 	    (v! 1 2 3 4)))))))
 
-;; for making specific flow ids for testing
-(defun flow-id-n! (&rest ids)
-  (make-instance 'varjo::flow-identifier :ids ids))
+(defun ast-space (node)
+  (get-var *current-space* node))
 
-(defun hmm ()
-  (visit-ast-nodes
-   λ(when (v-typep (ast-return-type _) (type-spec->type 'pos4))
-      (let ((origin (caar (ast-flow-id-origin _))))
-	(when (eq (ast-node-kind origin) '%p!)
-	  (let ((current-space (varjo::get-var *current-space* (ast-starting-env _)))
-		(o-space (varjo::get-var *current-space* (ast-starting-env origin))))
-	    (unless (eq current-space o-space)
-	      (print
-	       (list (ast-node-kind _) (ast-args _)
-		     (varjo::v-glsl-name current-space)
-		     (varjo::v-glsl-name o-space))))))))
-   (first-pass)))
-
-(defun ast->formid (x)
-  (labels ((f (node walk)
-	     (let ((node-kind (ast-node-kind node))
-		   (args (ast-args node))
-		   (flow-id-origin (ast-flow-id-origin node)))
-	       (let ((name (if (typep node-kind 'v-function)
-			       (varjo::name node-kind)
-			       node-kind)))
-		 `(,name ,node ,@(unless (eq node (caar flow-id-origin))
-					 (list flow-id-origin))
-			 ,(mapcar walk args))))))
-    (walk-ast #'f x)))
+(defun analyze-pass (pass)
+  (let* ((nodes (filter-ast-nodes
+		 λ(and (ast-typep _ 'pos4)
+		       (let ((origin (caar (val-origins _))))
+			 (and (ast-kindp origin '%p!)
+			      (not (eq (ast-space _) (ast-space origin))))))
+		 pass))
+	 (count -1)
+	 (transforms (make-hash-table :test #'equal)))
+    (labels ((name! () (symb 'transform- (incf count)))
+	     (get-change (node)
+	       (let* ((node-space (ast-space node))
+		      (origin-space (ast-space (caar (val-origins node))))
+		      (key (concatenate 'string (v-glsl-name node-space)
+					(v-glsl-name origin-space)))
+		      (var-name (or (gethash key transforms)
+				    (setf (gethash key transforms) (name!)))))
+		 `(* ,node ,var-name))))
+      (varjo::ast->code pass :changes (mapcar #'get-change nodes)))))
