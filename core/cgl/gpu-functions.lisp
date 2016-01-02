@@ -1,9 +1,5 @@
 (in-package :cgl)
 
-;; defun-gpu is at the bottom of this file
-
-;;--------------------------------------------------
-
 ;; extract details from args and delegate to %def-gpu-function
 ;; for the main logic
 (defmacro defun-g (name args &body body)
@@ -53,10 +49,11 @@
     	   (remove-if-not
     	    #'gpu-func-spec
     	    (varjo::used-macros
-    	     (varjo:translate in-args uniforms
-    			      (union '(:vertex :fragment :iuniforms :330)
-    				     context)
-    			      `(progn ,@body)))))
+    	     (v-translate in-args uniforms
+			  (union '(:vertex :fragment :iuniforms :330)
+				 context)
+			  `(progn ,@body)
+			  (%get-passes)))))
        (varjo::could-not-find-function (e)
     	 (setf (slot-value spec 'missing-dependencies)
     	       (list (slot-value e 'varjo::name))))))))
@@ -215,9 +212,11 @@
 
 (defun %varjo-compile-as-pipeline (parsed-gpipe-args)
   (varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-    (rolling-translate (mapcar #'prepare-stage parsed-gpipe-args))))
+    (v-rolling-translate
+     (mapcar #'parsed-gpipe-args->v-translate-args parsed-gpipe-args)
+     (%get-passes))))
 
-(defun prepare-stage (stage-pair)
+(defun parsed-gpipe-args->v-translate-args (stage-pair)
   (dbind (stage-type . stage-name) stage-pair
     (dbind (in-args uniforms context code) (get-func-as-stage-code stage-name)
       ;; ensure context doesnt specify a stage or that it matches
@@ -250,30 +249,7 @@
                (remove :context results :key #'car))))
        context))))
 
-(defun get-gpipe-arg (key args)
-  (destructuring-bind (stage-pairs context) (parse-gpipe-args args)
-    (declare (ignore context))
-    (%get-gpipe-arg key stage-pairs)))
-(defun %get-gpipe-arg (key parsed-args)
-  (cdr (assoc key parsed-args)))
-
-(defun validate-gpipe-args (args)
-  (not (null (reduce #'%validate-gpipe-arg args))))
-
-(defun %validate-gpipe-arg (previous current)
-  (if (keywordp current)
-      (progn
-        (when (keywordp previous)
-          (error "Invalid gpipe arguments: ~s follows ~s" current previous))
-        (unless (member current varjo:*stage-types*)
-          (error "Invalid gpipe arguments: ~s is not the name of a stage" current))
-        current)
-      (if (symbolp current)
-          current
-          (error "Invalid gpipe argument: ~a" current))))
-
-
-;;-----
+;;--------------------------------------------------
 
 (defun try-guessing-a-varjo-type-for-symbol (s)
   ;; only works on specials because of symbol-value

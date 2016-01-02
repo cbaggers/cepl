@@ -71,6 +71,7 @@
                (:file "core/cgl/vertex-streams")
                (:file "core/cgl/uniforms")
                (:file "core/cgl/map-g-constant")
+	       (:file "core/cgl/compile-passes")
                (:file "core/cgl/gpu-macros")
                (:file "core/cgl/gpu-pipeline-base")
                (:file "core/cgl/gpu-pipeline-validation")
@@ -85,6 +86,8 @@
                (:file "core/cgl/blending-modes")
                (:file "core/cgl/default-data")
                (:file "core/cgl/misc")
+
+
                (:file "core/camera/camera")
                (:file "core/space/space")
 	       (:file "core/space/space-errors")
@@ -92,6 +95,7 @@
 	       ;; (:file "core/space/space-transforms")
 	       ;; (:file "core/space/predefined-spaces")
 	       (:file "core/space/pos")
+	       (:file "core/space/gpu")
                (:file "core/live/live-macros")
                (:file "core/live/bootstrapping")
                (:file "core/time/time")

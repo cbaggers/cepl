@@ -79,3 +79,11 @@
 				    (setf (gethash key transforms) (name!)))))
 		 `(* ,node ,var-name))))
       (varjo::ast->code pass :changes (mapcar #'get-change nodes)))))
+
+;;----------------------------------------------------------------------
+
+;; now lets define the real compiler pass
+
+(cgl::def-compile-pass test-pass
+ :ast-filter λ(eq (ast-kind _) 'cepl::col)
+ :ast-transform λ(ast~ _ '(v! 1 0 0 0)))
