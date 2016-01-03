@@ -27,3 +27,6 @@
   nil)
 
 ;;----------------------------------------------------------------------
+
+(defun get-transform (from-space to-space)
+  (m4:identity-matrix4))

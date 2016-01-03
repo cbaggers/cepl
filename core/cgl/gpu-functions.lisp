@@ -48,10 +48,10 @@
 		      nil
 		      (%get-passes))))
       (setf missing-dependencies nil
-	    actual-uniforms (print (uniforms compiled))
+	    actual-uniforms (uniforms compiled)
 	    uniform-transforms (with-hash (uv 'uniform-vals)
 				   (third-party-metadata compiled)
-				 (map-hash λ`(,_ ,_1)
+				 (map-hash (lambda (_ _1) `(,_ ,_1))
 					   uv)))
       (%update-gpu-function-data
        spec
@@ -61,7 +61,8 @@
 	     (remove-if-not #'gpu-func-spec (varjo::used-macros compiled)))
 	 (varjo::could-not-find-function (e)
 	   (setf (slot-value spec 'missing-dependencies)
-		 (list (slot-value e 'varjo::name)))))))))
+		 (list (slot-value e 'varjo::name)))))
+       compiled))))
 
 
 
@@ -84,7 +85,6 @@
 			       ,@in-arg-names ,@uniform-names)))
 	   (to-compile `(lambda (,@in-arg-names ,@uniform-names)
 			  ,fbody)))
-      ;;(print to-compile)
       (varjo::add-macro name (compile nil to-compile)
        context varjo::*global-env*)
       `(progn
@@ -121,11 +121,13 @@
     (maphash #'%remove-gpu-function-from-dependancy-table
              *dependent-gpu-functions*)))
 
-(defun %update-gpu-function-data (spec depends-on)
+(defun %update-gpu-function-data (spec depends-on compiled)
   "Add or update the spec and also (re)subscribe to all the dependencies"
   (with-slots (name) spec
     (%unsubscibe-from-all name)
     (mapcar (lambda (_) (%subscribe-to-gpu-func name _)) depends-on)
+    (when +cache-last-compile-result+
+      (setf (slot-value spec 'cached-compile-results) compiled))
     (setf (gpu-func-spec name) spec)))
 
 (defun %gpu-func-compiles-in-some-context (spec)

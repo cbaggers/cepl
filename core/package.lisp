@@ -592,8 +592,7 @@
   (:nicknames :cspace)
   (:shadow :space)
   (:import-from :cgl)
-  (:export :get-transform)
-  )
+  (:export :get-transform :p!))
 
 (defpackage :space-gpu
   (:use :cl :base-vectors :base-matrices :spaces :cepl-utils
@@ -601,7 +600,8 @@
   (:shadowing-import-from :base-vectors :v!)
   (:shadowing-import-from :base-matrices :m!)
   (:import-from :cgl :def-compile-pass :set-uniform :remove-uniform
-		:set-arg-val))
+		:set-arg-val)
+  (:export :space-g :in))
 
 (defpackage :live
   (:use :cl :cepl-utils)
@@ -622,6 +622,8 @@
         :named-readtables
         :cepl-gl)
   (:shadow :quit)
+  (:import-from :spaces :p!)
+  (:import-from :space-gpu :space-g :in)
   (:import-from :live
                 :continuable
                 :update-swank
@@ -804,4 +806,9 @@
            :make-ubo
            :ubo-data
            :ubo-index
-           :cls))
+           :cls
+	   ;;---
+	   :p!
+	   :space-g
+	   :in
+	   ))

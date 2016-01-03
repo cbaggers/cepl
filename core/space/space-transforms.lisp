@@ -27,13 +27,10 @@ n	     (m4:m* (space-inverse-transform space) accum)))
 ;;----------------------------------------------------------------------
 ;; get the matrix that transforms points from one space to another
 
-;; (defun get-transform (from-space to-space)
-;;   (let* ((common-ancestor (find-common-ancestor from-space to-space))
-;; 	 (i (collect-inverse-to from-space common-ancestor))
-;; 	 (f (collect-transform-to common-ancestor to-space)))
-;;     (m4:m* i f)))
-
 (defun get-transform (from-space to-space)
-  (m4:identity-matrix4))
+  (let* ((common-ancestor (find-common-ancestor from-space to-space))
+	 (i (collect-inverse-to from-space common-ancestor))
+	 (f (collect-transform-to common-ancestor to-space)))
+    (m4:m* i f)))
 
 ;;----------------------------------------------------------------------

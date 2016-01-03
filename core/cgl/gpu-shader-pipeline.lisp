@@ -1,4 +1,5 @@
 (in-package :cgl)
+(in-readtable fn:fn-reader)
 
 (defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
@@ -64,6 +65,8 @@
        ,(make-pipeline-change-signature stage-names)
        ',(or gpipe-context context)))))
 
+(defvar *all-quiet* nil)
+
 (defun quiet-warning-handler (c)
    (when *all-quiet*
      (let ((r (find-restart 'muffle-warning c)))
@@ -105,7 +108,7 @@
                                  compiled-stages)))
     (format t "~&; uploading (~a ...)~&" name)
     (link-shaders stages-objects prog-id compiled-stages)
-    (when +cache-last-pipeline-compile-result+
+    (when +cache-last-compile-result+
       (add-compile-results-to-pipeline name compiled-stages))
     (mapcar #'%gl:delete-shader stages-objects)
     compiled-stages))

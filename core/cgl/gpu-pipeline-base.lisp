@@ -25,7 +25,8 @@
    (equivalent-uniforms :initarg :equivalent-uniforms)
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
-   (missing-dependencies :initarg :missing-dependencies)))
+   (missing-dependencies :initarg :missing-dependencies)
+   (cached-compile-results :initform nil)))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
@@ -129,7 +130,7 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defconstant +cache-last-pipeline-compile-result+ t)
+(defconstant +cache-last-compile-result+ t)
 
 (defclass shader-pipeline-spec ()
   ((name :initarg :name)
@@ -166,21 +167,29 @@ names are depended on by the functions named later in the list"
         compiled-results))
 
 (defmethod pull1-g ((asset-name symbol))
-  (if +cache-last-pipeline-compile-result+
-      (slot-value (pipeline-spec asset-name) 'cached-compile-results)
+  (if +cache-last-compile-result+
+      (slot-value (or (pipeline-spec asset-name)
+		      (gpu-func-spec asset-name))
+		  'cached-compile-results)
       "CEPL has been set to not cache the results of pipeline compilation.
-See the +cache-last-pipeline-compile-result+ constant for more details"))
+See the +cache-last-compile-result+ constant for more details"))
 
 (defmethod pull-g ((asset-name symbol))
-  (if +cache-last-pipeline-compile-result+
-      (let ((spec (pipeline-spec asset-name)))
-	(if spec
-	    (mapcar #'varjo:glsl-code
-		    (slot-value spec 'cached-compile-results))
-	    (format nil "Either ~s is not a pipeline or the code for this pipeline
+  (if +cache-last-compile-result+
+
+      (cond
+	((pipeline-spec asset-name)
+	 (mapcar #'varjo:glsl-code
+		 (slot-value (pipeline-spec asset-name)
+			     'cached-compile-results)))
+	((gpu-func-spec asset-name)
+	 (ast->code (slot-value (gpu-func-spec asset-name)
+				'cached-compile-results)))
+	(t (format nil "Either ~s is not a pipeline/gpu-function or the code for this asset
 has not been cached yet" asset-name)))
+
       "CEPL has been set to not cache the results of pipeline compilation.
-See the +cache-last-pipeline-compile-result+ constant for more details"))
+See the +cache-last-compile-result+ constant for more details"))
 
 ;;--------------------------------------------------
 

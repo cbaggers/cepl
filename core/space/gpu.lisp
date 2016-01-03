@@ -109,11 +109,3 @@
 	((cross-space-form-p node) (cross-space->matrix-multiply node env))
 	((p!-form-p node) (p!->v! node))
 	((in-form-p node) (in-form->progn node env)))))
-
-
-(cgl::defun-g blerp ((vert :vec4) &uniform (s space-g) (w space-g))
-  (in s
-    (in w (p! vert))
-    0)
-  (in s vert)
-  (values vert (base-vectors:v! 1 0 0 0)))
