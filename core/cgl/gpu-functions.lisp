@@ -45,8 +45,7 @@
 		      (union '(:vertex :fragment :iuniforms :330)
 			     context)
 		      `(progn ,@body)
-		      nil
-		      (%get-passes))))
+		      nil)))
       (setf missing-dependencies nil
 	    actual-uniforms (uniforms compiled)
 	    uniform-transforms (with-hash (uv 'uniform-vals)
@@ -222,8 +221,7 @@
 (defun %varjo-compile-as-pipeline (parsed-gpipe-args)
   (varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
     (v-rolling-translate
-     (mapcar #'parsed-gpipe-args->v-translate-args parsed-gpipe-args)
-     (%get-passes))))
+     (mapcar #'parsed-gpipe-args->v-translate-args parsed-gpipe-args))))
 
 (defun parsed-gpipe-args->v-translate-args (stage-pair)
   (dbind (stage-type . stage-name) stage-pair
