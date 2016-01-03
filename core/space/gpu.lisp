@@ -39,6 +39,9 @@
 
 (varjo:v-defun %p! (v s) "#<pos4(~a, ~a)>" (:vec4 space-g) pos4)
 
+(varjo:v-defun v! (p) "~a" (pos4) :vec4)
+(varjo:v-defun v! (p) "~a" (:vec4) :vec4)
+
 ;;----------------------------------------------------------------------
 
 ;; now lets define the real compiler pass
@@ -71,17 +74,17 @@
 		 (setf (gethash 'transforms env)
 		       (make-hash-table :test #'equal))))
 	   (node-space (ast-space node))
-	   (origin-space (ast-space (first (val-origins node)))))
+	   (origin-space (ast-space (first (val-origins node))))
+	   (from-name (aref (first (flow-id-origins (flow-ids origin-space)
+						    t node))
+			    1)))
       (unless node-space
-	(error 'spaces::position->no-space :start-space origin-space))
+	(error 'spaces::position->no-space :start-space from-name))
       (let* ((key (concatenate 'string (v-glsl-name node-space)
 			       (v-glsl-name origin-space)))
 	     (var-name (or (gethash key transforms)
 			   (setf (gethash key transforms) (name!))))
-	     (from-name (aref (first (flow-id-origins (flow-ids node-space)
-						      t node))
-			      1))
-	     (to-name (aref (first (flow-id-origins (flow-ids origin-space)
+	     (to-name (aref (first (flow-id-origins (flow-ids node-space)
 						    t node))
 			    1)))
 	(set-uniform var-name :mat4 env)
