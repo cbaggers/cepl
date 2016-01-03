@@ -75,6 +75,8 @@
            :split-seq-by-seq
            :print-mem
            :map-hash
+	   :with-hash
+	   :with-hash*
            :last1
            :p->))
 
@@ -468,7 +470,12 @@
            ;;----------
            :def-equivalent-type
            ;;----------
-           :clear))
+           :clear
+	   ;;----------
+	   :def-compile-pass
+	   :set-uniform
+	   :remove-uniform
+	   :set-arg-val))
 
 (defpackage :varjo-bridge-types
   (:use :cl))
@@ -584,14 +591,17 @@
   (:use :cl :base-vectors :base-matrices :cepl.events)
   (:nicknames :cspace)
   (:shadow :space)
-  ;;(:export :things)
+  (:import-from :cgl)
+  (:export :get-transform)
   )
 
 (defpackage :space-gpu
   (:use :cl :base-vectors :base-matrices :spaces :cepl-utils
 	:named-readtables :varjo :varjo-lang)
   (:shadowing-import-from :base-vectors :v!)
-  (:shadowing-import-from :base-matrices :m!))
+  (:shadowing-import-from :base-matrices :m!)
+  (:import-from :cgl :def-compile-pass :set-uniform :remove-uniform
+		:set-arg-val))
 
 (defpackage :live
   (:use :cl :cepl-utils)

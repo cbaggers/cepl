@@ -372,6 +372,24 @@
                   :collect "     ")
                chars))))
 
+(defmacro with-hash ((var-name key) hash-table &body body)
+  (let ((k (gensym "key"))
+	(ht (gensym "hash-table")))
+    `(let ((,k ,key)
+	   (,ht ,hash-table))
+       (symbol-macrolet ((,var-name (gethash ,k ,ht)))
+	 ,@body))))
+
+(defmacro with-hash* (var-key-pairs hash-table &body body)
+  (let ((keys (loop :for x in var-key-pairs :collect (gensym "key")))
+	(ht (gensym "hash-table")))
+    `(let ((,ht ,hash-table)
+	   ,@(mapcar (lambda (_ _1) `(,_ ,(second _1)))
+		     keys var-key-pairs))
+       (symbol-macrolet
+	   ,(mapcar (lambda (k p) `(,(first p) (gethash ,k ,ht)))
+		    keys var-key-pairs)
+	 ,@body))))
 
 (defun map-hash (function hash-table)
   "map through a hash and actually return something"

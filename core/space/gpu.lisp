@@ -13,10 +13,6 @@
   ((varjo::core :initform nil :reader varjo::core-typep)
    (varjo::glsl-string :initform "#<space>" :reader varjo::v-glsl-string)))
 
-;; we need a function so we can see when a space is set
-
-(varjo:v-defun use-space (s) "#<use-space(~a)>" (space-g) :void)
-
 ;; a name for the space
 (defvar *current-space* (gensym "current-space"))
 
@@ -45,45 +41,79 @@
 
 ;;----------------------------------------------------------------------
 
-;; we need some varjo code to compile
-
-(defun first-pass ()
-  (varjo::defshader test ((vert :vec4) &uniform (ws space-g) (cs space-g))
-    (in cs                  ;; this would be implicit
-      (labels ((func () (p! (v! 0 0 0 0)))
-	       (func2 () (func)))
-	(let ((p (p! vert)))
-	  (in ws
-	    (+ p (func2)) ;; these need to be transformed
-	    (v! 1 2 3 4)))))))
+;; now lets define the real compiler pass
 
 (defun ast-space (node)
   (get-var *current-space* node))
 
-(defun analyze-pass (pass)
-  (let* ((nodes (filter-ast-nodes
-		 λ(and (ast-typep _ 'pos4)
-		       (let ((origin (caar (val-origins _))))
-			 (and (ast-kindp origin '%p!)
-			      (not (eq (ast-space _) (ast-space origin))))))
-		 pass))
-	 (count -1)
-	 (transforms (make-hash-table :test #'equal)))
-    (labels ((name! () (symb 'transform- (incf count)))
-	     (get-change (node)
-	       (let* ((node-space (ast-space node))
-		      (origin-space (ast-space (caar (val-origins node))))
-		      (key (concatenate 'string (v-glsl-name node-space)
-					(v-glsl-name origin-space)))
-		      (var-name (or (gethash key transforms)
-				    (setf (gethash key transforms) (name!)))))
-		 `(* ,node ,var-name))))
-      (varjo::ast->code pass :changes (mapcar #'get-change nodes)))))
+(defun cross-space-form-p (node)
+  (and (ast-typep node 'pos4)
+       (let ((origin (first (val-origins node))))
+	 (and (ast-kindp origin '%p!)
+	      (not (eq (ast-space node) (ast-space origin)))))))
 
-;;----------------------------------------------------------------------
+(defun p!-form-p (node)
+  (ast-kindp node '%p!))
 
-;; now lets define the real compiler pass
+(defun in-form-p (node)
+  (and (ast-kindp node 'let)
+       (dbind (args . body) (ast-args node)
+	 (declare (ignore body))
+	 (eq (caar args) *current-space*))))
 
-(cgl::def-compile-pass test-pass
- :ast-filter λ(eq (ast-kind _) 'cepl::col)
- :ast-transform λ(ast~ _ '(v! 1 0 0 0)))
+(defun cross-space->matrix-multiply (node env)
+  (labels ((name! ()
+	     (symb 'transform-
+		   (setf (gethash 'count env)
+			 (1+ (gethash 'count env -1))))))
+    (let* ((transforms
+	     (or (gethash 'transforms env)
+		 (setf (gethash 'transforms env)
+		       (make-hash-table :test #'equal))))
+	   (node-space (ast-space node))
+	   (origin-space (ast-space (first (val-origins node)))))
+      (unless node-space
+	(error 'spaces::position->no-space :start-space origin-space))
+      (let* ((key (concatenate 'string (v-glsl-name node-space)
+			       (v-glsl-name origin-space)))
+	     (var-name (or (gethash key transforms)
+			   (setf (gethash key transforms) (name!))))
+	     (from-name (aref (first (flow-id-origins (flow-ids node-space)
+						      t node))
+			      1))
+	     (to-name (aref (first (flow-id-origins (flow-ids origin-space)
+						    t node))
+			    1)))
+	(set-uniform var-name :mat4 env)
+	(set-arg-val var-name `(spaces:get-transform ,from-name ,to-name) env)
+	(ast~ node `(* ,var-name ,node))))))
+
+(defun p!->v! (node)
+  (ast~ node (first (ast-args node))))
+
+(defun in-form->progn (node env)
+  (dbind (((% space-form)) . body) (ast-args node)
+    (declare (ignore %))
+    (let* ((origin (val-origins space-form))
+	   (uniform-name (aref (first origin) 1)))
+      (remove-uniform uniform-name env)
+      (ast~ node `(progn ,@body)))))
+
+(def-compile-pass space-pass
+    :ast-filter λ(or (cross-space-form-p _)
+		     (p!-form-p _)
+		     (in-form-p _))
+    :ast-transform
+    (lambda (node env)
+      (cond
+	((cross-space-form-p node) (cross-space->matrix-multiply node env))
+	((p!-form-p node) (p!->v! node))
+	((in-form-p node) (in-form->progn node env)))))
+
+
+(cgl::defun-g blerp ((vert :vec4) &uniform (s space-g) (w space-g))
+  (in s
+    (in w (p! vert))
+    0)
+  (in s vert)
+  (values vert (base-vectors:v! 1 0 0 0)))

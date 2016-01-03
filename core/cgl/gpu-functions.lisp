@@ -53,6 +53,7 @@
 			  (union '(:vertex :fragment :iuniforms :330)
 				 context)
 			  `(progn ,@body)
+			  nil
 			  (%get-passes)))))
        (varjo::could-not-find-function (e)
     	 (setf (slot-value spec 'missing-dependencies)
