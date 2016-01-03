@@ -65,10 +65,8 @@
 	 (eq (caar args) *current-space*))))
 
 (defun cross-space->matrix-multiply (node env)
-  (labels ((name! ()
-	     (symb 'transform-
-		   (setf (gethash 'count env)
-			 (1+ (gethash 'count env -1))))))
+  (labels ((name! (from-name to-name)
+	     (symb from-name '-to- to-name '-transform)))
     (let* ((transforms
 	     (or (gethash 'transforms env)
 		 (setf (gethash 'transforms env)
@@ -82,11 +80,12 @@
 	(error 'spaces::position->no-space :start-space from-name))
       (let* ((key (concatenate 'string (v-glsl-name node-space)
 			       (v-glsl-name origin-space)))
-	     (var-name (or (gethash key transforms)
-			   (setf (gethash key transforms) (name!))))
 	     (to-name (aref (first (flow-id-origins (flow-ids node-space)
 						    t node))
-			    1)))
+			    1))
+	     (var-name (or (gethash key transforms)
+			   (setf (gethash key transforms)
+				 (name! from-name to-name)))))
 	(set-uniform var-name :mat4 env)
 	(set-arg-val var-name `(spaces:get-transform ,from-name ,to-name) env)
 	(ast~ node `(* ,var-name ,node))))))
