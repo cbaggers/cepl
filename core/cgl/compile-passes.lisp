@@ -90,7 +90,7 @@
 	      (varjo:translate in-args uniforms context body tp-meta))))
 	(with-hash (av 'uniform-vals) (third-party-metadata compile-result)
 	  (setf av arg-val-map))
-	(cepl::peek compile-result)))))
+	compile-result))))
 
 (defun v-rolling-translate (stages &optional transform-passes)
   (varjo:rolling-translate stages (fn:fn~r #'v-translate transform-passes)))

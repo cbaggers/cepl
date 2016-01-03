@@ -16,6 +16,8 @@
   ((name :initarg :name)
    (in-args :initarg :in-args)
    (uniforms :initarg :uniforms)
+   (actual-uniforms :initarg :actual-uniforms)
+   (uniform-transforms :initarg :uniform-transforms)
    (context :initarg :context)
    (body :initarg :body)
    (instancing :initarg :instancing)
@@ -27,6 +29,7 @@
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
+			    actual-uniforms uniform-transforms
                             doc-string declarations missing-dependencies)
   (make-instance 'gpu-func-spec
                  :name name
@@ -37,23 +40,27 @@
                  :instancing instancing
                  :equivalent-inargs equivalent-inargs
                  :equivalent-uniforms equivalent-uniforms
+		 :actual-uniforms actual-uniforms
+		 :uniform-transforms uniform-transforms
                  :doc-string doc-string
                  :declarations declarations
 		 :missing-dependencies missing-dependencies))
 
 (defmacro with-gpu-func-spec (func-spec &body body)
-  `(with-slots (name in-args uniforms context body instancing
-                     equivalent-inargs equivalent-uniforms
+  `(with-slots (name in-args uniforms actual-uniforms context body instancing
+                     equivalent-inargs equivalent-uniforms uniform-transforms
                      doc-string declarations missing-dependencies) ,func-spec
-     (declare (ignorable name in-args uniforms context body instancing
-                         equivalent-inargs equivalent-uniforms
-                         doc-string declarations missing-dependencies))
+     (declare (ignorable name in-args uniforms actual-uniforms context body
+			 instancing equivalent-inargs equivalent-uniforms
+                         doc-string declarations missing-dependencies
+			 uniform-transforms))
      ,@body))
 
 (defun %serialize-gpu-func-spec (spec)
   (with-gpu-func-spec spec
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
                           ',instancing ',equivalent-inargs ',equivalent-uniforms
+			  ',actual-uniforms ',uniform-transforms
                           ,doc-string ',declarations ',missing-dependencies)))
 
 (defun gpu-func-spec (name &optional error-if-missing)
@@ -169,9 +176,9 @@ See the +cache-last-pipeline-compile-result+ constant for more details"))
       (let ((spec (pipeline-spec asset-name)))
 	(if spec
 	    (mapcar #'varjo:glsl-code
-		    (slot-value spec 'cached-compile-results)))
-	(format nil "Either ~s is not a pipeline or the code for this pipeline
-has not been cached yet" asset-name))
+		    (slot-value spec 'cached-compile-results))
+	    (format nil "Either ~s is not a pipeline or the code for this pipeline
+has not been cached yet" asset-name)))
       "CEPL has been set to not cache the results of pipeline compilation.
 See the +cache-last-pipeline-compile-result+ constant for more details"))
 

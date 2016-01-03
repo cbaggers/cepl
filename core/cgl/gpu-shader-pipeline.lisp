@@ -170,6 +170,15 @@
   (let* ((uniform-assigners (stages->uniform-assigners stage-names pass-key))
          (uniform-names
           (mapcar #'first (aggregate-uniforms stage-names)))
+	 (actual-uniform-names
+	  (mapcar #'first (aggregate-actual-uniforms stage-names)))
+	 (uniform-transforms
+	  (remove nil
+		  (mapcar λ(when (member (first _) actual-uniform-names)
+			     _)
+			  (with-gpu-func-spec
+			      (gpu-func-spec (first stage-names))
+			    uniform-transforms))))
          (prim-type (varjo::get-primitive-type-from-context context))
          (u-uploads (mapcar #'second uniform-assigners)))
     `(progn
@@ -179,7 +188,8 @@
            (setf prog-id (,init-func-name))
            (unless prog-id (return-from ,name)))
          (use-program prog-id)
-         ,@u-uploads
+	 (let ,uniform-transforms
+	   ,@u-uploads)
          ,(when (supports-implicit-uniformsp context)
                 `(locally
                      (declare (function implicit-uniform-upload-func)
@@ -232,9 +242,8 @@
 ;;;---------------;;;
 
 (defun stages->uniform-assigners (stage-names &optional pass-key)
-  (mapcar (lambda (_)
-            (make-arg-assigners _ pass-key))
-          (aggregate-uniforms stage-names)))
+  (mapcar (lambda (_) (make-arg-assigners _ pass-key))
+          (aggregate-actual-uniforms stage-names)))
 
 (let ((cached-data nil)
       (cached-key -1))

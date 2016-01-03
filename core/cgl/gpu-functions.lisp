@@ -40,24 +40,28 @@
 
 (defun %test-&-update-spec (spec)
   (with-gpu-func-spec spec
-    (setf missing-dependencies nil)
-    (%update-gpu-function-data
-     spec
-     (handler-case
-    	 (varjo::with-stemcell-infer-hook
-    	     #'try-guessing-a-varjo-type-for-symbol
-    	   (remove-if-not
-    	    #'gpu-func-spec
-    	    (varjo::used-macros
-    	     (v-translate in-args uniforms
-			  (union '(:vertex :fragment :iuniforms :330)
-				 context)
-			  `(progn ,@body)
-			  nil
-			  (%get-passes)))))
-       (varjo::could-not-find-function (e)
-    	 (setf (slot-value spec 'missing-dependencies)
-    	       (list (slot-value e 'varjo::name))))))))
+    (let ((compiled
+	 (v-translate in-args uniforms
+		      (union '(:vertex :fragment :iuniforms :330)
+			     context)
+		      `(progn ,@body)
+		      nil
+		      (%get-passes))))
+      (setf missing-dependencies nil
+	    actual-uniforms (print (uniforms compiled))
+	    uniform-transforms (with-hash (uv 'uniform-vals)
+				   (third-party-metadata compiled)
+				 (map-hash λ`(,_ ,_1)
+					   uv)))
+      (%update-gpu-function-data
+       spec
+       (handler-case
+	   (varjo::with-stemcell-infer-hook
+	       #'try-guessing-a-varjo-type-for-symbol
+	     (remove-if-not #'gpu-func-spec (varjo::used-macros compiled)))
+	 (varjo::could-not-find-function (e)
+	   (setf (slot-value spec 'missing-dependencies)
+		 (list (slot-value e 'varjo::name)))))))))
 
 
 
@@ -67,7 +71,7 @@
                           equivalent-inargs equivalent-uniforms
                           doc-string declarations)
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
-                                   equivalent-inargs equivalent-uniforms
+                                   equivalent-inargs equivalent-uniforms nil nil
                                    doc-string declarations nil)))
     ;; this gets the functions used in the body of this function
     ;; it is *not* recursive
@@ -128,19 +132,6 @@
   (declare (ignorable spec))
   t)
 
-(defun %expand-all-macros (spec)
-  (with-gpu-func-spec spec
-    (let ((env (varjo::%make-base-environment)))
-      (%%expand-all-macros body context env))))
-
-(defun %%expand-all-macros (body context env)
-  (varjo:pipe-> (nil nil context body env)
-    #'varjo::split-input-into-env
-    #'varjo::process-context
-    (equal #'varjo::symbol-macroexpand-pass
-           #'varjo::macroexpand-pass
-           #'varjo::compiler-macroexpand-pass)))
-
 (defun varjo-func-namep (x)
   (assert (symbolp x))
   (or (second (multiple-value-list (gethash x varjo::*global-env-funcs*)))
@@ -188,6 +179,21 @@
        (rest names)
        (%aggregate-uniforms (%uniforms-pre-equiv (gpu-func-spec (first names)))
                             accum))
+      accum))
+
+(defun %actual-uniforms-pre-equiv (spec)
+  (with-gpu-func-spec spec
+    (mapcar (lambda (_ _1)
+              (if _ `(,(car _1) ,_ ,@(cddr _1)) _1))
+            equivalent-uniforms actual-uniforms)))
+
+(defun aggregate-actual-uniforms (names &optional accum)
+  (if names
+      (aggregate-actual-uniforms
+       (rest names)
+       (%aggregate-uniforms
+	(%actual-uniforms-pre-equiv (gpu-func-spec (first names)))
+	accum))
       accum))
 
 (defun aggregate-in-args (names &optional (args-accum t))
