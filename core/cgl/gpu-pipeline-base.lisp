@@ -25,7 +25,7 @@
    (equivalent-uniforms :initarg :equivalent-uniforms)
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
-   (missing-dependencies :initarg :missing-dependencies)
+   (missing-dependencies :initarg :missing-dependencies :initform nil)
    (cached-compile-results :initform nil)))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing

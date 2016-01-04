@@ -30,8 +30,8 @@
                  (labels (,init-func
                           ,@(fallback-implicit-uniform-func context))
                    ;; generate the code that actually renders
-                   ,(def-dispatch-func name (first init-func) stage-names context
-                                       pass-key)))
+                   ,(def-dispatch-func name (first init-func) stage-names
+				       context pass-key)))
                ;; generate the function that recompiles this pipeline
                ,(gen-recompile-func name args gpipe-args stage-names options)
                ,(unless suppress-compile `(,(recompile-name name))))))))))
@@ -72,10 +72,6 @@
      (let ((r (find-restart 'muffle-warning c)))
        (when r
          (invoke-restart r)))))
-
-(defun make-func-description (name stage-pairs)
-  (with-processed-func-specs (mapcar #'cdr stage-pairs)
-    (cons name (append in-args uniforms))))
 
 (defun make-pipeline-change-signature (stage-names)
   (sxhash
@@ -174,7 +170,7 @@
          (uniform-names
           (mapcar #'first (aggregate-uniforms stage-names)))
 	 (actual-uniform-names
-	  (mapcar #'first (aggregate-actual-uniforms stage-names)))
+	  (mapcar #'first (aggregate-uniforms stage-names nil t)))
 	 (uniform-transforms
 	  (remove nil
 		  (mapcar λ(when (member (first _) actual-uniform-names)
@@ -246,7 +242,7 @@
 
 (defun stages->uniform-assigners (stage-names &optional pass-key)
   (mapcar (lambda (_) (make-arg-assigners _ pass-key))
-          (aggregate-actual-uniforms stage-names)))
+          (aggregate-uniforms stage-names nil t)))
 
 (let ((cached-data nil)
       (cached-key -1))
