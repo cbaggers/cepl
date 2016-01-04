@@ -166,17 +166,23 @@ names are depended on by the functions named later in the list"
   (setf (slot-value (pipeline-spec name) 'cached-compile-results)
         compiled-results))
 
+(defvar +pull*-g-not-enabled-message+
+  "CEPL has been set to not cache the results of pipeline compilation.
+See the +cache-last-compile-result+ constant for more details")
+
+(defvar +pull-g-not-cached-template+
+  "Either ~s is not a pipeline/gpu-function or the code for this asset
+has not been cached yet")
+
 (defmethod pull1-g ((asset-name symbol))
   (if +cache-last-compile-result+
       (slot-value (or (pipeline-spec asset-name)
 		      (gpu-func-spec asset-name))
 		  'cached-compile-results)
-      "CEPL has been set to not cache the results of pipeline compilation.
-See the +cache-last-compile-result+ constant for more details"))
+      +pull*-g-not-enabled-message+))
 
 (defmethod pull-g ((asset-name symbol))
   (if +cache-last-compile-result+
-
       (cond
 	((pipeline-spec asset-name)
 	 (mapcar #'varjo:glsl-code
@@ -185,11 +191,8 @@ See the +cache-last-compile-result+ constant for more details"))
 	((gpu-func-spec asset-name)
 	 (ast->code (slot-value (gpu-func-spec asset-name)
 				'cached-compile-results)))
-	(t (format nil "Either ~s is not a pipeline/gpu-function or the code for this asset
-has not been cached yet" asset-name)))
-
-      "CEPL has been set to not cache the results of pipeline compilation.
-See the +cache-last-compile-result+ constant for more details"))
+	(t (format nil +pull-g-not-cached-template+ asset-name)))
+      +pull*-g-not-enabled-message+))
 
 ;;--------------------------------------------------
 
