@@ -210,7 +210,7 @@
           (uniform-names (mapcar #'first uniforms)))
       `(defun ,name (,@arg-names
 		     ,@(when uniforms (cons (symb :&key) uniform-names)))
-	 ,doc-string
+	 ,@(when doc-string (list doc-string))
          (declare (ignore ,@arg-names ,@uniform-names))
          (warn "GPU Functions cannot currently be used from the cpu")))))
 
@@ -275,7 +275,8 @@
        (%aggregate-uniforms;;[0]
 	(%splice-in-equivalent-uniform-types;;[1]
 	 (gpu-func-spec (first names)) interal-uniforms-p)
-	accum))
+	accum)
+       interal-uniforms-p)
       accum))
 
 ;;--------------------------------------------------
