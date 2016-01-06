@@ -172,12 +172,17 @@
 	 (actual-uniform-names
 	  (mapcar #'first (aggregate-uniforms stage-names nil t)))
 	 (uniform-transforms
-	  (remove nil
-		  (mapcar λ(when (member (first _) actual-uniform-names)
-			     _)
-			  (with-gpu-func-spec
-			      (gpu-func-spec (first stage-names))
-			    uniform-transforms))))
+	  (remove-duplicates
+	   (remove nil
+		   (mapcar λ(when (member (first _) actual-uniform-names)
+			      _)
+			   (reduce
+			    (lambda (accum name)
+			      (with-gpu-func-spec (gpu-func-spec name)
+				(append accum uniform-transforms)))
+			    stage-names
+			    :initial-value nil)))
+	   :test #'equal))
          (prim-type (varjo::get-primitive-type-from-context context))
          (u-uploads (mapcar #'second uniform-assigners)))
     `(progn

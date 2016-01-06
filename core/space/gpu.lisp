@@ -49,12 +49,6 @@
 (defun ast-space (node)
   (get-var *current-space* node))
 
-(defun cross-space-form-p (node)
-  (and (ast-typep node 'pos4)
-       (let ((origin (first (val-origins node))))
-	 (and (ast-kindp origin '%p!)
-	      (not (eq (ast-space node) (ast-space origin)))))))
-
 (defun p!-form-p (node)
   (ast-kindp node '%p!))
 
@@ -64,7 +58,15 @@
 	 (declare (ignore body))
 	 (eq (caar args) *current-space*))))
 
+(defun cross-space-form-p (node)
+  (and (ast-typep node 'pos4)
+       (let ((origin (first (val-origins node))))
+	 (and (ast-kindp origin '%p!)
+	      (not (id= (flow-ids (ast-space node))
+			(flow-ids (ast-space origin))))))))
+
 (defun cross-space->matrix-multiply (node env)
+  (print 'cross-space->matrix-multiply)
   (labels ((name! (from-name to-name)
 	     (symb from-name '-to- to-name '-transform)))
     (let* ((transforms
@@ -88,26 +90,23 @@
 				 (name! from-name to-name)))))
 	(set-uniform var-name :mat4 env)
 	(set-arg-val var-name `(spaces:get-transform ,from-name ,to-name) env)
-	(ast~ node `(* ,var-name ,node))))))
+	`(* ,var-name ,node)))))
 
-(defun p!->v! (node)
-  (ast~ node (first (ast-args node))))
+(defun p!->v! (node env)
+  (declare (ignore env))
+  (print 'p!->v!)
+  (first (ast-args node)))
 
 (defun in-form->progn (node env)
+  (print 'in-form->progn)
   (dbind (((% space-form)) . body) (ast-args node)
     (declare (ignore %))
     (let* ((origin (val-origins space-form))
 	   (uniform-name (aref (first origin) 1)))
       (remove-uniform uniform-name env)
-      (ast~ node `(progn ,@body)))))
+      `(progn ,@body))))
 
 (def-compile-pass space-pass
-    :ast-filter λ(or (cross-space-form-p _)
-		     (p!-form-p _)
-		     (in-form-p _))
-    :ast-transform
-    (lambda (node env)
-      (cond
-	((cross-space-form-p node) (cross-space->matrix-multiply node env))
-	((p!-form-p node) (p!->v! node))
-	((in-form-p node) (in-form->progn node env)))))
+  (#'cross-space-form-p  #'cross-space->matrix-multiply)
+  (#'p!-form-p  #'p!->v!)
+  (#'in-form-p  #'in-form->progn))

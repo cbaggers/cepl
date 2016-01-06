@@ -13,21 +13,11 @@
 (defclass compile-pass () ())
 
 (defclass ast-transform-compile-pass (compile-pass)
-  ((ast-filter :initarg :ast-filter
-	       :initform nil
-	       :reader ast-filter)
-   (ast-transform :initarg :ast-transform
-		  :initform nil
-		  :reader ast-transform)))
+  ((filter-transform-pairs :initarg :filter-transform-pairs
+			   :initform nil
+			   :reader filter-transform-pairs)))
 
 (defclass %uniform-transform-pass (compile-pass) ())
-
-(defun compile-pass! (ast-filter ast-transform)
-  (assert (and (when ast-transform ast-filter)
-	       (when ast-filter ast-transform)))
-  (make-instance 'ast-transform-compile-pass
-		 :ast-filter ast-filter
-		 :ast-transform ast-transform))
 
 ;;--------------------------------------------------
 
@@ -35,10 +25,18 @@
 (defvar *cepl-passes*
   `((remove-unused-uniforms . ,(make-instance '%uniform-transform-pass))))
 
-(defmacro def-compile-pass (name &key ast-filter ast-transform)
-  (assert (and ast-filter ast-transform))
+(defmacro def-compile-pass (name &body filter-transform-pairs)
+  (assert (and (symbolp name)
+	       (not (keywordp name))
+	       (every #'listp filter-transform-pairs)
+	       (every λ(= (length _) 2) filter-transform-pairs)))
   `(setf *registered-passes*
-	 (cons (cons ',name (compile-pass! ,ast-filter ,ast-transform))
+	 (cons (cons ',name (make-instance
+			     'ast-transform-compile-pass
+			     :filter-transform-pairs
+			     (list
+			      ,@(mapcar λ(cons 'list _)
+					filter-transform-pairs))))
 	       (if (assoc ',name *registered-passes*)
 		   (remove ',name *registered-passes* :key #'car)
 		   *registered-passes*))))
@@ -79,11 +77,11 @@
 			 (append (%get-passes) (%get-internal-passes)))))
     (labels ((on-pass (c-result pass-pair)
 	       (dbind (pass . transform-env) pass-pair
-		 (let ((filtered (filter-pass c-result pass)))
-		   (if filtered
-		       (apply #'varjo:translate
-			      (run-pass c-result pass filtered transform-env
-					in-args uniforms context))
+		 (varjo::vbind (new-pass-args there-were-changes)
+		     (run-pass c-result pass transform-env
+			       in-args uniforms context)
+		   (if there-were-changes
+		       (apply #'varjo:translate new-pass-args)
 		       c-result))))
 	     (once-through (initial)
 	       (reduce #'on-pass passes :initial-value initial))
@@ -104,40 +102,44 @@
 
 ;;--------------------------------------------------
 
-(defmethod filter-pass (v-compile-result (pass ast-transform-compile-pass))
-  (with-slots (ast-filter ast-transform) pass
-    (when (and ast-filter ast-transform)
-      (filter-ast-nodes ast-filter v-compile-result))))
-
-(defmethod run-pass (v-compile-result (pass ast-transform-compile-pass)
-		     filtered-nodes env original-in-args original-uniforms
-		     original-context)
-  (with-slots (ast-transform) pass
-    (let* ((changes (mapcar λ(funcall ast-transform _ env)
-			    filtered-nodes))
-	   (new-body (varjo::ast->code v-compile-result :changes changes))
-	   (new-in-args original-in-args)
-	   (new-uniforms
-	    (remove-duplicates
-	     (append (reduce λ(remove _1 _ :key #'car)
-			     (gethash 'remove-uniforms env)
-			     :initial-value original-uniforms)
-		     (gethash 'set-uniforms env))
-	     :key #'car)))
-      (list new-in-args new-uniforms original-context new-body))))
+(defgeneric run-pass (v-compile-result pass env original-in-args
+		      original-uniforms original-context))
 
 ;;--------------------------------------------------
 
-(defmethod filter-pass (v-compile-result (pass %uniform-transform-pass))
-  (not (null (find-unused-uniforms v-compile-result))))
+(defmethod run-pass (v-compile-result (pass ast-transform-compile-pass)
+		     env original-in-args original-uniforms
+		     original-context)
+  (with-slots (filter-transform-pairs) pass
+    (let* ((pairs+env
+	    (mapcar λ(dbind (filter func) _ `(,filter ,(fn:fn~r func env)))
+		    filter-transform-pairs)))
+      (varjo::vbind (new-body there-were-changes)
+	  (varjo::ast->code v-compile-result :filter-func-pairs pairs+env)
+	(let ((new-uniforms
+		(remove-duplicates
+		 (append (reduce λ(remove _1 _ :key #'car)
+				 (gethash 'remove-uniforms env)
+				 :initial-value original-uniforms)
+			 (gethash 'set-uniforms env))
+		 :key #'car)))
+	  (values (list original-in-args new-uniforms original-context new-body)
+		  there-were-changes))))))
+
+;;--------------------------------------------------
 
 (defmethod run-pass (v-compile-result (pass %uniform-transform-pass)
-		     filtered-nodes env original-in-args original-uniforms
+		     env original-in-args original-uniforms
 		     original-context)
-  (with-slots (uniform-transform) pass
-    (let* ((new-uniforms (remove-unused-uniforms v-compile-result)))
-      (list original-in-args new-uniforms original-context
-	    (varjo::ast->code v-compile-result)))))
+  (let* ((changed (not (null (find-unused-uniforms v-compile-result))))
+	 (new-uniforms
+	  (when changed (remove-unused-uniforms v-compile-result))))
+    (values
+     (with-slots (uniform-transform) pass
+       (list original-in-args (if changed new-uniforms original-uniforms)
+	     original-context
+	     (varjo::ast->code v-compile-result)))
+     changed)))
 
 (defun find-unused-uniforms (compiled)
   (let* ((b-env (varjo::%get-base-env (ast-starting-env (ast compiled))))
