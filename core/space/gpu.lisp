@@ -106,6 +106,18 @@
       (remove-uniform uniform-name env)
       `(progn ,@body))))
 
+;;
+;; FINISH THIS :) goal is remove all 'in forms that are redundent.
+;; will be the only thing in the pass
+;;
+(defun redundent-in-form-p (node)
+  (when (in-form-p node)
+    (dbind (((% space-form)) . body) (ast-args node)
+      (ast-starting-env))))
+
+(def-compile-pass remove-redundent-in-forms
+  (#'redundent-in-form-p  #'in-form->progn))
+
 (def-compile-pass space-pass
   (#'cross-space-form-p  #'cross-space->matrix-multiply)
   (#'p!-form-p  #'p!->v!)
