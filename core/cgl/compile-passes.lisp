@@ -23,31 +23,50 @@
 
 (defvar *registered-passes* nil)
 (defvar *cepl-passes*
-  `((remove-unused-uniforms . ,(make-instance '%uniform-transform-pass))))
+  `((remove-unused-uniforms nil ,(make-instance '%uniform-transform-pass))))
 
-(defmacro def-compile-pass (name &body filter-transform-pairs)
-  (assert (and (symbolp name)
-	       (not (keywordp name))
-	       (every #'listp filter-transform-pairs)
-	       (every λ(= (length _) 2) filter-transform-pairs)))
-  `(setf *registered-passes*
-	 (cons (cons ',name (make-instance
-			     'ast-transform-compile-pass
-			     :filter-transform-pairs
-			     (list
-			      ,@(mapcar λ(cons 'list _)
-					filter-transform-pairs))))
-	       (if (assoc ',name *registered-passes*)
-		   (remove ',name *registered-passes* :key #'car)
-		   *registered-passes*))))
+(defun %add-compile-pass (name instance depends-on)
+  (when depends-on
+    (unless (member depends-on *registered-passes* :key #'first)
+      (error "Compile pass ~s Cannot depend on non-existant pass ~s"
+	     name depends-on)))
+  (let ((taken (find-if λ(and (eq (second _) depends-on)
+			      (not (eq (first _) name)))
+			*registered-passes*)))
+    (when taken
+      (error "~s's dependency (~s) is already taken by ~s "
+	     name depends-on (first taken))))
+  (let* ((new (list name depends-on instance))
+	 (passes (remove name *registered-passes* :key #'first))
+	 (before (position name passes :key #'second))
+	 (pos (or before
+		  (1+ (or (and passes (position depends-on passes :key #'first))
+			  (1- (length passes))))))
+	 (left (when passes (subseq passes 0 pos)))
+	 (right (when passes (subseq passes pos))))
+    (setf *registered-passes* (append left (list new) right))))
+
+(defmacro def-compile-pass (name/options &body filter-transform-pairs)
+  (dbind (name &key depends-on) (listify name/options)
+    (assert (and (symbolp name)
+		 (symbolp depends-on)
+		 (not (keywordp name))
+		 (every #'listp filter-transform-pairs)
+		 (every λ(= (length _) 2) filter-transform-pairs)))
+    `(%add-compile-pass
+      ',name
+      (make-instance 'ast-transform-compile-pass
+		     :filter-transform-pairs
+		     (list ,@(mapcar λ(cons 'list _) filter-transform-pairs)))
+      ',depends-on)))
 
 (defun undef-compile-pass (name)
   (setf *registered-passes*
-	(remove-if λ(eq name (car _)) *registered-passes*))
+	(remove-if λ(eq name (first _)) *registered-passes*))
   t)
 
-(defun %get-passes () (mapcar #'cdr *registered-passes*))
-(defun %get-internal-passes () (mapcar #'cdr *cepl-passes*))
+(defun %get-passes () (mapcar #'third *registered-passes*))
+(defun %get-internal-passes () (mapcar #'third *cepl-passes*))
 
 ;;--------------------------------------------------
 
