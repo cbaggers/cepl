@@ -97,23 +97,33 @@
   (print 'p!->v!)
   (first (ast-args node)))
 
+;; (defun in-form->progn (node env)
+;;   (print 'in-form->progn)
+;;   (dbind (((% space-form)) . body) (ast-args node)
+;;     (declare (ignore %))
+;;     (let* ((origin (val-origins space-form))
+;; 	   (uniform-name (aref (first origin) 1)))
+;;       (remove-uniform uniform-name env)
+;;       `(progn ,@body))))
+
 (defun in-form->progn (node env)
+  (declare (ignore env))
   (print 'in-form->progn)
-  (dbind (((% space-form)) . body) (ast-args node)
+  (dbind (% . body) (ast-args node)
     (declare (ignore %))
-    (let* ((origin (val-origins space-form))
-	   (uniform-name (aref (first origin) 1)))
-      (remove-uniform uniform-name env)
-      `(progn ,@body))))
+    `(progn ,@body)))
 
 ;;
-;; FINISH THIS :) goal is remove all 'in forms that are redundent.
+;; FINISH THIS :) goal is remove all 'in forms that are redundant.
 ;; will be the only thing in the pass
 ;;
 (defun redundent-in-form-p (node)
   (when (in-form-p node)
     (dbind (((% space-form)) . body) (ast-args node)
-      (ast-starting-env))))
+      (declare (ignore % body))
+      (let ((outer-space (flow-ids (get-var *current-space* (ast-starting-env node))))
+            (inner-space (flow-ids space-form)))
+        (id~= outer-space inner-space)))))
 
 (def-compile-pass remove-redundent-in-forms
   (#'redundent-in-form-p  #'in-form->progn))
