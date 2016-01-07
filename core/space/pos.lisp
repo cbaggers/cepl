@@ -31,4 +31,6 @@
 
 ;;----------------------------------------------------------------------
 
-(cgl:def-equivalent-type pos :vec4)
+;; (cgl:def-equivalent-type pos :vec4)
+;;
+;; ^^^ nope we need to pass proper position

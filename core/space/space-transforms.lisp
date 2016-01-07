@@ -5,7 +5,7 @@
 
 (defun collect-inverse-to (start-space ancestor-space)
   (labels ((combine-inverse (accum space)
-n	     (m4:m* (space-inverse-transform space) accum)))
+	     (m4:m* (space-inverse-transform space) accum)))
     (m4:m* (space-inverse-transform ancestor-space)
 	   (reduce-ancestors #'combine-inverse start-space ancestor-space))))
 
@@ -26,6 +26,10 @@ n	     (m4:m* (space-inverse-transform space) accum)))
 
 ;;----------------------------------------------------------------------
 ;; get the matrix that transforms points from one space to another
+
+;; ;; was used for testing while working out logic for gpu spaces
+;; (defun get-transform (from-space to-space)
+;;   (m4:identity-matrix4))
 
 (defun get-transform (from-space to-space)
   (let* ((common-ancestor (find-common-ancestor from-space to-space))

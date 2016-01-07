@@ -86,16 +86,16 @@
                (:file "core/cgl/blending-modes")
                (:file "core/cgl/default-data")
                (:file "core/cgl/misc")
-
-
                (:file "core/camera/camera")
+
                (:file "core/space/space")
 	       (:file "core/space/space-errors")
 	       (:file "core/space/space-walking")
-	       ;; (:file "core/space/space-transforms")
+	       (:file "core/space/space-transforms")
 	       ;; (:file "core/space/predefined-spaces")
 	       (:file "core/space/pos")
 	       (:file "core/space/gpu")
+
                (:file "core/live/live-macros")
                (:file "core/live/bootstrapping")
                (:file "core/time/time")

@@ -51,5 +51,5 @@
 (define-compiler-macro reduce-ancestors
     (function of-space &optional (until-space nil supplied))
   (if (and supplied (not (null until-space)))
-    `(%reduce-ancestors-until-space ,function ,of-space ,until-space)
-    `(%reduce-ancestors ,function ,of-space)))
+      `(%reduce-ancestors-until-space ,function ,of-space ,until-space)
+      `(%reduce-ancestors ,function ,of-space)))

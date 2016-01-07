@@ -21,12 +21,9 @@
 ;;----------------------------------------------------------------------
 
 (defun parent-space (space)
-  (first (evt::event-node-subscribers space)))
+  (first (evt::event-node-subscriptions space)))
 
 (defun space-inverse-transform (space)
   nil)
 
 ;;----------------------------------------------------------------------
-
-(defun get-transform (from-space to-space)
-  (m4:identity-matrix4))
