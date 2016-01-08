@@ -15,8 +15,15 @@
 (evt::def-event-node-type space
   (transform (m4:identity-matrix4)
 	     :type (simple-array single-float (16)))
-  (has-propagated nil :type boolean)
-  (cpu t :type boolean))
+  (has-propagated nil :type boolean))
+
+(defmethod print-object ((object space) stream)
+  (format stream "#<SPACE ~s>" (%uid object)))
+
+(defun space! (transform &optional parent-space)
+  (assert (typep transform '(simple-array single-float (16))))
+  (assert (or (null parent-space) (typep parent-space 'space)))
+  (make-space :transform transform :subscribe-to parent-space))
 
 ;;----------------------------------------------------------------------
 
