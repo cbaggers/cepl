@@ -461,11 +461,11 @@
   "Returns a matrix which would rotate a point around the x axis
    by the specified amount"
   (declare (single-float angle))
-  (let ((c-a (cos angle))
-        (s-a (sin angle)))
-    (make-matrix3 1.0    0.0       0.0
-                  0.0    c-a       s-a
-                  0.0    (- s-a)   c-a)))
+  (let ((s-a (sin angle))
+        (c-a (cos angle)))
+    (make-matrix3 1.0  0.0  0.0
+                  0.0  c-a  (- s-a)
+                  0.0  s-a  c-a)))
 
 ;;----------------------------------------------------------------
 
@@ -478,11 +478,11 @@
   "Returns a matrix which would rotate a point around the y axis
    by the specified amount"
   (declare (single-float angle))
-  (let ((c-a (cos angle))
-        (s-a (sin angle)))
-    (make-matrix3 c-a    0.0    (- s-a)
-                  0.0    1.0    0.0
-                  s-a    0.0    c-a)))
+  (let ((s-a (sin angle))
+        (c-a (cos angle)))
+    (make-matrix3 c-a      0.0    s-a
+                  0.0      1.0    0.0
+                  (- s-a)  0.0    c-a)))
 
 ;;----------------------------------------------------------------
 
@@ -495,11 +495,11 @@
   "Returns a matrix which would rotate a point around the z axis
    by the specified amount"
   (declare (single-float angle))
-  (let ((c-a (cos angle))
-        (s-a (sin angle)))
-    (make-matrix3 c-a      s-a    0.0
-                  (- s-a)  c-a    0.0
-                  0.0      0.0    1.0)))
+  (let ((s-a (sin angle))
+        (c-a (cos angle)))
+    (make-matrix3 c-a  (- s-a)  0.0
+                  s-a  c-a      0.0
+                  0.0  0.0      1.0)))
 
 ;;----------------------------------------------------------------
 
