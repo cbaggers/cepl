@@ -409,21 +409,20 @@
           (sy (sin y)) (cy (cos y))
           (sz (sin z)) (cz (cos z)))
       (make-matrix4 (* cy cz)
-                    (+ (* sx sy cz) (* cx sz))
-                    (- (* sx sz) (* cx sy cz))
-                    0.0
+		    (- (* cy sz))
+		    sy
+		    0.0
 
-                    (- (* cy sz))
-                    (- (* cx cz) (* sx sy sz)) ;is this right?
-                    (+ (* cx sy sz) (* sx cz))
-                    0.0
+		    (+ (* sx sy cz) (* cx sz))
+		    (- (* cx cz) (* sx sy sz))
+		    (- (* sx cy))
+		    0.0
 
-                    sy
-                    (- (* sx cy))
-                    (* cx cy)
-                    0.0
+		    (- (* sx sz) (* cx sy cz))
+		    (+ (* cx sy sz) (* sx cz))
+		    (* cx cy)
 
-                    0.0 0.0 0.0 1.0))))
+		    0.0 0.0 0.0 0.0 1.0))))
 
 ;----------------------------------------------------------------
 
