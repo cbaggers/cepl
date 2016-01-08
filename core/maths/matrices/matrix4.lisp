@@ -426,29 +426,26 @@
 
 ;----------------------------------------------------------------
 
-;; {TODO} broken!
-
 (defun rotation-from-axis-angle (axis3 angle)
   "Returns a matrix which will rotate a point about the axis
    specified by the angle provided"
-  (let* ((c-a (cos angle))
-         (s-a (sin angle))
-         (tt (- 1.0 c-a))
-         (norm-axis (vector3:normalize axis3))
-         (tx (* tt (v-x norm-axis)))
-         (ty (* tt (v-x norm-axis)))
-         (tz (* tt (v-x norm-axis)))
-         (sx (* s-a (v-x norm-axis)))
-         (sy (* s-a (v-x norm-axis)))
-         (sz (* s-a (v-x norm-axis)))
-         (txy (* tx (v-y norm-axis)))
-         (tyz (* ty (v-z norm-axis)))
-         (txz (* tx (v-z norm-axis))))
-    (make-matrix4
-     (+ c-a (* tx (v-x norm-axis))) (- txy sz) (+ txz sy) 0.0
-     (+ txy sz) (+ c-a (* ty (v-y norm-axis))) (- tyz sx) 0.0
-     (- txz sy) (+ tyz sx) (+ c-a (* tz (v-z norm-axis))) 0.0
-     0.0   0.0   0.0   1.0)))
+  (cond ((v3:eql axis3 (v3:make-vector3 1f0 0f0 0f0)) (rotation-x angle))
+        ((v3:eql axis3 (v3:make-vector3 0f0 1f0 0f0)) (rotation-y angle))
+        ((v3:eql axis3 (v3:make-vector3 0f0 0f0 1f0)) (rotation-z angle))
+        (t
+         (let ((c (cos angle))
+               (s (sin angle))
+               (g (- 1f0 (cos angle))))
+           (let* ((x (aref axis3 0))
+                  (y (aref axis3 1))
+                  (z (aref axis3 2))
+                  (gxx (* g x x)) (gxy (* g x y)) (gxz (* g x z))
+                  (gyy (* g y y)) (gyz (* g y z)) (gzz (* g z z)))
+             (m4:make-matrix4
+              (+ gxx c)        (- gxy (* s z))  (+ gxz (* s y)) 0f0
+              (+ gxy (* s z))  (+ gyy c)        (- gyz (* s x)) 0f0
+              (- gxz (* s y))  (+ gyz (* s x))  (+ gzz c)       0f0
+              0f0              0f0              0f0             1f0))))))
 
 ;----------------------------------------------------------------
 
