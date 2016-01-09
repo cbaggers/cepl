@@ -268,61 +268,64 @@
 
 ;;----------------------------------------------------------------
 
-;;[TODO] should definately inline this ....should we? why?
-;;[TODO] Would it be faster not to have to cofactors too?
-(defun determinate-cramer (mat-a)
-  "Returns the determinate of the matrix
-   (uses the cramer method)"
+(defun determinate (mat-a)
+  "Returns the determinate of the matrix (uses the cramer method)"
   (declare ((simple-array single-float (9)) mat-a))
-  (let ((cofactor-0 (- (* (melm mat-a 1 1)
-                          (melm mat-a 2 2))
-                       (* (melm mat-a 1 2)
-                          (melm mat-a 2 1))))
-        (cofactor-3 (- (* (melm mat-a 0 2)
-                          (melm mat-a 2 1))
-                       (* (melm mat-a 0 1)
-                          (melm mat-a 2 2))))
-        (cofactor-6 (- (* (melm mat-a 0 1)
-                          (melm mat-a 1 2))
-                       (* (melm mat-a 0 2)
-                          (melm mat-a 1 1)))))
-    (values (+ (* (melm mat-a 0 0) cofactor-0)
-               (* (melm mat-a 1 0) cofactor-3)
-               (* (melm mat-a 2 0) cofactor-6))
-            cofactor-0 cofactor-3 cofactor-6)))
+  (let* ((cofactor-0 (- (* (melm mat-a 1 1) (melm mat-a 2 2))
+			(* (melm mat-a 2 1) (melm mat-a 1 2))))
+
+	 (cofactor-3 (- (* (melm mat-a 2 0) (melm mat-a 1 2))
+			(* (melm mat-a 1 0) (melm mat-a 2 2))))
+
+	 (cofactor-6 (- (* (melm mat-a 1 0) (melm mat-a 2 1))
+			(* (melm mat-a 2 0) (melm mat-a 1 1)))))
+    (+ (* (melm mat-a 0 0) cofactor-0)
+       (* (melm mat-a 0 1) cofactor-3)
+       (* (melm mat-a 0 2) cofactor-6))))
 
 ;;----------------------------------------------------------------
 
-;;[TODO] Look more into errors
 (declaim
- (inline inverse)
+ (inline affine-inverse)
  (ftype (function ((simple-array single-float (9)))
                   (simple-array single-float (9)))
-        inverse))
-(defun inverse (mat-a)
+        affine-inverse))
+(defun affine-inverse (mat-a)
   "returns the inverse of the matrix"
   (declare ((simple-array single-float (9)) mat-a))
-  (multiple-value-bind (det cofactor-0 cofactor-3 cofactor-6)
-      (determinate-cramer mat-a)
-    (if (float-zero det)
-        (error "Matrix Inverse: Singular Matrix (determinate is 0)"))
-    (let ((inv-det (/ 1.0 det)))
-      (make-matrix3
-       (* inv-det cofactor-0)
-       (* inv-det cofactor-3)
-       (* inv-det cofactor-6)
-       (* inv-det (- (* (melm mat-a 1 2) (melm mat-a 2 0))
+  (let* ((cofactor-0 (- (* (melm mat-a 1 1) (melm mat-a 2 2))
+                     (* (melm mat-a 2 1) (melm mat-a 1 2))))
+
+         (cofactor-3 (- (* (melm mat-a 2 0) (melm mat-a 1 2))
                      (* (melm mat-a 1 0) (melm mat-a 2 2))))
-       (* inv-det (- (* (melm mat-a 0 0) (melm mat-a 2 2))
-                     (* (melm mat-a 0 2) (melm mat-a 2 0))))
-       (* inv-det (- (* (melm mat-a 0 2) (melm mat-a 1 0))
-                     (* (melm mat-a 0 0 ) (melm mat-a 1 2))))
-       (* inv-det (- (* (melm mat-a 1 0) (melm mat-a 2 1))
-                     (* (melm mat-a 1 1) (melm mat-a 2 0))))
-       (* inv-det (- (* (melm mat-a 0 1) (melm mat-a 2 0))
-                     (* (melm mat-a 0 0) (melm mat-a 2 1))))
-       (* inv-det (- (* (melm mat-a 0 0) (melm mat-a 1 1))
-                     (* (melm mat-a 0 1) (melm mat-a 1 0))))))))
+
+         (cofactor-6 (- (* (melm mat-a 1 0) (melm mat-a 2 1))
+                     (* (melm mat-a 2 0) (melm mat-a 1 1))))
+         (det (+ (* (melm mat-a 0 0) cofactor-0)
+                 (* (melm mat-a 0 1) cofactor-3)
+                 (* (melm mat-a 0 2) cofactor-6))))
+    (if (float-zero det)
+	(error "Matrix4 Inverse: Singular Matrix")
+	(let*
+	    ((inv-det (/ 1.0 det))
+	     (r00 (* inv-det cofactor-0))
+	     (r10 (* inv-det cofactor-3))
+	     (r20 (* inv-det cofactor-6))
+	     (r01 (* inv-det (- (* (melm mat-a 2 1) (melm mat-a 0 2))
+				(* (melm mat-a 0 1) (melm mat-a 2 2)))))
+	     (r11 (* inv-det (- (* (melm mat-a 0 0) (melm mat-a 2 2))
+				(* (melm mat-a 2 0) (melm mat-a 0 2)))))
+	     (r21 (* inv-det (- (* (melm mat-a 2 0) (melm mat-a 0 1))
+				(* (melm mat-a 0 0) (melm mat-a 2 1)))))
+	     (r02 (* inv-det (- (* (melm mat-a 0 1) (melm mat-a 1 2))
+				(* (melm mat-a 1 1) (melm mat-a 0 2)))))
+	     (r12 (* inv-det (- (* (melm mat-a 1 0) (melm mat-a 0 2))
+				(* (melm mat-a 0 0) (melm mat-a 1 2)))))
+	     (r22 (* inv-det (- (* (melm mat-a 0 0) (melm mat-a 1 1))
+				(* (melm mat-a 1 0) (melm mat-a 0 1))))))
+	  (make-matrix3 r00 r01 r02
+			r10 r11 r12
+			r20 r21 r22)))))
 
 ;;----------------------------------------------------------------
 

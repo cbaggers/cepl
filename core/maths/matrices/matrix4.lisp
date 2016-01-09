@@ -310,8 +310,14 @@
 ;----------------------------------------------------------------
 
 ;;this one is from 'Essential Maths'
+(declaim
+ (inline affine-inverse)
+ (ftype (function ((simple-array single-float (16)))
+                  (simple-array single-float (16)))
+        affine-inverse))
 (defun affine-inverse (mat-a)
   "Returns the affine inverse of the matrix"
+  (declare ((simple-array single-float (16)) mat-a))
   ;;calculate upper left 3x3 matrix determinant
   (let* ((cofac-0 (- (* (melm mat-a 1 1) (melm mat-a 2 2))
                      (* (melm mat-a 2 1) (melm mat-a 1 2))))
