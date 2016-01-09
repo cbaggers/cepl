@@ -178,15 +178,9 @@
   "Make a 3x3 matrix using the data in the 3 vector3s provided
    to populate the columns"
   (declare ((simple-array single-float (3)) col-1 col-2 col-3))
-  (make-matrix3 (v-x col-1)
-                (v-x col-2)
-                (v-x col-3)
-                (v-y col-1)
-                (v-y col-2)
-                (v-y col-3)
-                (v-z col-1)
-                (v-z col-2)
-                (v-z col-3)))
+  (make-matrix3 (v-x col-1) (v-x col-2) (v-x col-3)
+                (v-y col-1) (v-y col-2) (v-y col-3)
+                (v-z col-1) (v-z col-2) (v-z col-3)))
 
 ;;----------------------------------------------------------------
 
@@ -396,17 +390,20 @@
 (defun rotation-from-euler (vec3-a)
   (declare ((simple-array single-float (3)) vec3-a))
   (let ((x (v-x vec3-a)) (y (v-y vec3-a)) (z (v-z vec3-a)))
-    (let ((cx (cos x)) (cy (cos y)) (cz (cos z))
-          (sx (sin x)) (sy (sin y)) (sz (sin z)))
+    (let ((sx (sin x)) (cx (cos x))
+          (sy (sin y)) (cy (cos y))
+          (sz (sin z)) (cz (cos z)))
       (make-matrix3 (* cy cz)
-                    (+ (* sx sy cz) (* cx sz))
-                    (+ (- (* cx sy cz)) (* sx sz))
-                    (- (* cy sz))
-                    (+ (- (* sx sy sz)) (* cx sz))
-                    (+ (* cx sy sz) (* sx cz))
-                    sy
-                    (- (* sx cy))
-                    (* cx cy)))))
+		    (- (* cy sz))
+		    sy
+
+		    (+ (* sx sy cz) (* cx sz))
+		    (- (* cx cz) (* sx sy sz))
+		    (- (* sx cy))
+
+		    (- (* sx sz) (* cx sy cz))
+		    (+ (* cx sy sz) (* sx cz))
+		    (* cx cy)))))
 
 ;;----------------------------------------------------------------
 
@@ -418,23 +415,22 @@
 (defun rotation-from-axis-angle (axis3 angle)
   "Returns a matrix which will rotate a point about the axis
    specified by the angle provided"
-  (let* ((c-a (cos angle))
-         (s-a (sin angle))
-         (tt (- 1.0 c-a))
-         (norm-axis (vector3:normalize axis3))
-         (tx (* tt (v-x norm-axis)))
-         (ty (* tt (v-y norm-axis)))
-         (tz (* tt (v-z norm-axis)))
-         (sx (* s-a (v-x norm-axis)))
-         (sy (* s-a (v-y norm-axis)))
-         (sz (* s-a (v-z norm-axis)))
-         (txy (* tx (v-y norm-axis)))
-         (tyz (* ty (v-z norm-axis)))
-         (txz (* tx (v-z norm-axis))))
-    (make-matrix3
-     (+ c-a (* tx (v-x norm-axis)))  (- txy sz)                      (+ txz sy)
-     (+ txy sz)                      (+ c-a (* ty (v-y norm-axis)))  (- tyz sx)
-     (- txz sy)                      (+ tyz sx)                      (+ c-a (* tz (v-z norm-axis))))))
+  (cond ((v3:eql axis3 (v3:make-vector3 1f0 0f0 0f0)) (rotation-x angle))
+        ((v3:eql axis3 (v3:make-vector3 0f0 1f0 0f0)) (rotation-y angle))
+        ((v3:eql axis3 (v3:make-vector3 0f0 0f0 1f0)) (rotation-z angle))
+        (t
+         (let ((c (cos angle))
+               (s (sin angle))
+               (g (- 1f0 (cos angle))))
+           (let* ((x (aref axis3 0))
+                  (y (aref axis3 1))
+                  (z (aref axis3 2))
+                  (gxx (* g x x)) (gxy (* g x y)) (gxz (* g x z))
+                  (gyy (* g y y)) (gyz (* g y z)) (gzz (* g z z)))
+             (make-matrix3
+              (+ gxx c)        (- gxy (* s z))  (+ gxz (* s y))
+              (+ gxy (* s z))  (+ gyy c)        (- gyz (* s x))
+              (- gxz (* s y))  (+ gyz (* s x))  (+ gzz c)))))))
 
 ;;----------------------------------------------------------------
 
