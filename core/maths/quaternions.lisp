@@ -137,9 +137,9 @@
 (defun make-quat-from-axies (x-axies y-axies z-axies)
   (make-quat-from-rotation-matrix3
    (m3:make-matrix3
-    (aref x-axies 0) (aref x-axies 0) (aref x-axies 0)
-    (aref y-axies 1) (aref y-axies 1) (aref y-axies 1)
-    (aref z-axies 2) (aref z-axies 2) (aref z-axies 2))))
+    (aref x-axies 0) (aref y-axies 1) (aref z-axies 2)
+    (aref x-axies 0) (aref y-axies 1) (aref z-axies 2)
+    (aref x-axies 0) (aref y-axies 1) (aref z-axies 2))))
 
 (defun make-quat-from-look-at (from3 to3)
   (let* ((dir (v3:- from3 to3))

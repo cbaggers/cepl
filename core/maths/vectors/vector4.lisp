@@ -313,12 +313,12 @@
                           (single-float))
                 dot))
 (defun dot (vector-a vector-b)
-  "Return the dot product of the vector-a and vector-b."
+  "return the dot product of the vector-a and vector-b."
   (declare ((simple-array single-float (4)) vector-a vector-b))
-  (cl:+ (cl:* (AREF VECTOR-A 0) (AREF VECTOR-B 0))
-        (cl:* (AREF VECTOR-A 1) (AREF VECTOR-B 1))
-        (cl:* (AREF VECTOR-A 2) (AREF VECTOR-B 2))
-        (cl:* (AREF VECTOR-A 3) (AREF VECTOR-B 3))))
+  (cl:+ (cl:* (aref vector-a 0) (aref vector-b 0))
+        (cl:* (aref vector-a 1) (aref vector-b 1))
+        (cl:* (aref vector-a 2) (aref vector-b 2))
+        (cl:* (aref vector-a 3) (aref vector-b 3))))
 
 ;;----------------------------------------------------------------
 
