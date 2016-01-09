@@ -144,7 +144,7 @@
 (defun make-quat-from-look-at (from3 to3)
   (let* ((dir (v3:- from3 to3))
          (n-dir (v3:normalize dir))
-         (right (v3:make-vector3 (aref n-dir 2) 0.0 (- (aref n-dir 0))))
+         (right (v3:make-vector3 (v:z n-dir) 0.0 (- (v:x n-dir))))
          (n-right (v3:normalize right))
          (up (v3:cross n-dir n-right)))
     (q:make-quat-from-axies n-right up n-dir)))
