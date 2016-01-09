@@ -330,8 +330,8 @@
      (let*
          ((inv-det (/ 1.0 det))
           (r00 (* inv-det cofac-0))
-          (r10 (* inv-det cofac-0))
-          (r20 (* inv-det cofac-0))
+          (r10 (* inv-det cofac-4))
+          (r20 (* inv-det cofac-8))
           (r01 (* inv-det (- (* (melm mat-a 2 1) (melm mat-a 0 2))
                              (* (melm mat-a 0 1) (melm mat-a 2 2)))))
           (r11 (* inv-det (- (* (melm mat-a 0 0) (melm mat-a 2 2))
@@ -359,7 +359,7 @@
                         (* (melm mat-a 2 0) (melm mat-a 0 3))
                         (* (melm mat-a 2 1) (melm mat-a 1 3))
                         (* (melm mat-a 2 2) (melm mat-a 2 3)))
-                     0.0 0.0 0.0 0.0)))))
+                     0.0 0.0 0.0 1.0)))))
 
 ;----------------------------------------------------------------
 ;; could just feed straight from array into make
