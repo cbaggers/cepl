@@ -149,27 +149,6 @@
          (up (v3:cross n-dir n-right)))
     (q:make-quat-from-axies n-right up n-dir)))
 
-;;[TODO] Need to use destructive operations in here to stop multiple quats
-;;       being created
-;; (defun make-quat-from-vectors (from3 to3)
-;;   (let* ((axis (v3:cross from3 to3))
-;;          (quat (normalize (make-quat (v3:dot from3 to3) (aref axis 0) (aref axis 1)
-;;                                      (aref axis 2))))
-;;          (w (+ 1.0 (aref quat 0))))
-;;     (if (<= w +float-threshold+)
-;;         (if (> (* (aref from3 2) (aref from3 2))
-;;                (* (aref from3 0) (aref from3 0)))
-;;             (setf (aref quat 0) 0.0
-;;                   (aref quat 1) 0.0
-;;                   (aref quat 2) (aref from3 2)
-;;                   (aref quat 3) (- (aref from3 1)))
-;;             (setf (aref quat 0) 0.0
-;;                   (aref quat 1) (aref from3 1)
-;;                   (aref quat 2) (- (aref from3 0))
-;;                   (aref quat 3) 0.0))
-;;         (setf (aref quat 0) w))
-;;     (normalize quat)))
-
 (defun make-quat-from-fixed-angles (x-rot y-rot z-rot)
   (let ((x-rot (/ x-rot 2.0))
         (y-rot (/ y-rot 2.0))

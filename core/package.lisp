@@ -236,7 +236,7 @@
   (:use :cl :base-maths)
   (:nicknames :q)
   (:shadow :lerp)
-  (:export :w :x :y :z :zero-quit :zero-quatp
+  (:export :w :x :y :z :q! :zero-quit :zero-quatp
            :unit-quatp :identity-quat :identity-quatp
            :make-quat :make-quat-from-vec3
            :make-quat-from-rotation-matrix3
