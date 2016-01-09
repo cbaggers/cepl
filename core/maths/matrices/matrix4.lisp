@@ -204,10 +204,7 @@
   "Returns 't' if this is a zero matrix (as contents of the
    matrix are floats the values have an error bound as defined
    in base-maths"
-  (loop for i below 16
-     if (not (float-zero (aref mat-a i)))
-     do (return nil)
-     finally (return t)))
+  (loop :for i :below 16 :always (float-zero (aref mat-a i))))
 
 ;----------------------------------------------------------------
 
@@ -238,11 +235,7 @@
 (defun eql (mat-a mat-b)
   "Returns t if all elements of both matrices provided are
    equal"
-  (loop for i
-     below 16
-     if (/= (aref mat-a i) (aref mat-b i))
-     do (return nil)
-     finally (return t)))
+  (loop :for i :below 16 :always (= (aref mat-a i) (aref mat-b i))))
 
 ;----------------------------------------------------------------
 
@@ -442,9 +435,9 @@
          (let ((c (cos angle))
                (s (sin angle))
                (g (- 1f0 (cos angle))))
-           (let* ((x (aref axis3 0))
-                  (y (aref axis3 1))
-                  (z (aref axis3 2))
+           (let* ((x (v-x axis3))
+                  (y (v-y axis3))
+                  (z (v-z axis3))
                   (gxx (* g x x)) (gxy (* g x y)) (gxz (* g x z))
                   (gyy (* g y y)) (gyz (* g y z)) (gzz (* g z z)))
              (m4:make-matrix4
@@ -576,8 +569,8 @@
   "Adds the 2 matrices component wise and returns the result as
    a new matrix"
   (let ((r (zero-matrix4)))
-    (loop for i below 16
-       do (setf (aref r i) (+ (aref mat-a i) (aref mat-b i))))
+    (loop :for i :below 16
+       :do (setf (aref r i) (+ (aref mat-a i) (aref mat-b i))))
     r))
 
 ;----------------------------------------------------------------
@@ -586,8 +579,8 @@
   "Subtracts the 2 matrices component wise and returns the result
    as a new matrix"
   (let ((r (zero-matrix4)))
-    (loop for i below 16
-       do (setf (aref r i) (- (aref mat-a i) (aref mat-b i))))
+    (loop :for i :below 16
+       :do (setf (aref r i) (- (aref mat-a i) (aref mat-b i))))
     r))
 
 ;----------------------------------------------------------------
@@ -595,8 +588,7 @@
 (defun negate (mat-a)
   "Negates the components of the matrix"
   (let ((r (zero-matrix4)))
-    (loop for i below 16
-       do (setf (aref r i) (- (aref mat-a i))))
+    (loop :for i :below 16 :do (setf (aref r i) (- (aref mat-a i))))
     r))
 
 ;----------------------------------------------------------------
@@ -605,8 +597,8 @@
   "Multiplies the components of the matrix by the scalar
    provided"
   (let ((result (zero-matrix4)))
-    (loop for i below 16
-       do (setf (aref result i) (* scalar (aref mat-a i))))
+    (loop :for i :below 16
+       :do (setf (aref result i) (* scalar (aref mat-a i))))
     result))
 
 ;----------------------------------------------------------------
