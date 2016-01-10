@@ -1,36 +1,37 @@
 
 -----------------+
-     Space	 |
+     Space       |
 -----------------|  [0] Buffer/Window Space
 - Dimensionality |  ----------+------------
-- Basis		 |	      |
-- Origin	 |	      |  ------------ Viewport transform
-- Region	 |	      |               Configured using
+- Basis          |            |
+- Origin         |            |  ------------ Viewport transform
+- Region         |            |               Configured using
 -----------------+                            #'gl:viewport
- 	                [1] NDC Space
-	                ------+------
-			      |
+                        [1] NDC Space
+                        ------+------
+                              |
  (v:/ vec (v:w vec)) -------  |
-			      |
+                              |
 
-		       [2] Clip Space  ----- Is 4D
-		       -------+------        Canonical View Volume
-			      |
-	 +--------------------+
-	 |
-	 |
-	 |                  [3] World Space  ---- A convenience space. By
-	 |           	    ----+----+-----       mapping to a common space
-	 |	 	        |    |            we aid transforms between
-	 |	 ---------------+    |            those spaces
-	 |	 |		     |
-		 |
+                       [2] Clip Space  ----- Is 4D
+                       -------+------        Canonical View Volume
+                              |
+         +--------------------+
+         |
+         |
+         |                  [3] World Space  ---- A convenience space. By
+         |                  ----+----+-----       mapping to a common space
+         |                      |    |            we aid transforms between
+         |       ---------------+    |            those spaces
+         |       |                   |
+                 |
  [4] Eye Space --+            [5] Model Space
  -------------                ---------------
 
  Eye space is simple a         There are an infinite number of model spaces
  name given the the            Every model could have a different one.
- modelspace of the eye
+ modelspace of the eye         There is no object called 'model-space in cepl
+                               as transforming to it is indefinable.
 
 
  [0], [1] & [2] are fixed spaces owned by gl.
@@ -42,3 +43,27 @@
 
  None of the spaces shown are hierarchical, they form a graph and you can
  tranform between them but that's all.
+
+======================================================================
+
+### WIP
+
+Q. Can space relationships can have gpu paths? should we always pass to cpu?
+
+A. Can't think of a good example of this case. I think all will be passed to
+   cpu
+
+-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+Q. When (get-transform something-in-model-space x) the transform is a
+   function of something else. This all sounds a bit odd. How should this
+   work?
+
+A. Don't. #'get-transform is for between spaces. On the gpu you will have
+   to-world matrices. So you can do something like this.
+
+   (defun-g v ((vert :vec4) &uniform (to-world (:mat4 *)) (l :int))
+     (in *world-space*
+       (p! (* (aref to-world (/ vert-id l)) vert))))
+
+-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
