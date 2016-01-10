@@ -1,3 +1,5 @@
+;; oldish ideas
+
 Space Graph
 -----------
 Scene graphs suck, just store spaces. Also use system to heavily

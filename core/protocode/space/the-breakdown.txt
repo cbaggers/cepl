@@ -1,0 +1,44 @@
+
+-----------------+
+     Space	 |
+-----------------|  [0] Buffer/Window Space
+- Dimensionality |  ----------+------------
+- Basis		 |	      |
+- Origin	 |	      |  ------------ Viewport transform
+- Region	 |	      |               Configured using
+-----------------+                            #'gl:viewport
+ 	                [1] NDC Space
+	                ------+------
+			      |
+ (v:/ vec (v:w vec)) -------  |
+			      |
+
+		       [2] Clip Space  ----- Is 4D
+		       -------+------        Canonical View Volume
+			      |
+	 +--------------------+
+	 |
+	 |
+	 |                  [3] World Space  ---- A convenience space. By
+	 |           	    ----+----+-----       mapping to a common space
+	 |	 	        |    |            we aid transforms between
+	 |	 ---------------+    |            those spaces
+	 |	 |		     |
+		 |
+ [4] Eye Space --+            [5] Model Space
+ -------------                ---------------
+
+ Eye space is simple a         There are an infinite number of model spaces
+ name given the the            Every model could have a different one.
+ modelspace of the eye
+
+
+ [0], [1] & [2] are fixed spaces owned by gl.
+
+ [3] & [4] are user defined constructs.
+
+ [5] is kind of ephemeral but when parent-space is nil then you are a
+     'model space'.. or more clearly a root space.
+
+ None of the spaces shown are hierarchical, they form a graph and you can
+ tranform between them but that's all.

@@ -76,7 +76,7 @@
               :accessor cepl-generics:dir)))
 
 (defmethod look-at ((camera pos-dir-cam) point-vec3)
-  (with-slots (world-up position direction) camera
+  (with-slots (position direction) camera
     (setf direction (v3:normalize (v3:- point-vec3 position)))))
 
 (defmethod world->cam ((camera pos-dir-cam))

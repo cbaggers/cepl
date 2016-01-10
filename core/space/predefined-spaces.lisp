@@ -1,4 +1,4 @@
-(in-package :spaces)
+(in-package :space)
 
 ;; here we define the common spaces
 

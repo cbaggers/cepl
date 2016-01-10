@@ -587,21 +587,15 @@
            :timestamp
            :data))
 
-(defpackage :spaces
-  (:use :cl :base-vectors :base-matrices :cepl.events)
-  (:nicknames :cspace)
-  (:shadow :space)
-  (:import-from :cgl)
-  (:export :get-transform :p!))
-
-(defpackage :space-gpu
-  (:use :cl :base-vectors :base-matrices :spaces :cepl-utils
+(defpackage :space
+  (:use :cl :base-vectors :base-matrices :cepl-utils :cepl.events
 	:named-readtables :varjo :varjo-lang)
+  (:shadow :space)
   (:shadowing-import-from :base-vectors :v!)
   (:shadowing-import-from :base-matrices :m!)
   (:import-from :cgl :def-compile-pass :set-uniform :remove-uniform
 		:set-arg-val)
-  (:export :space-g :in))
+  (:export :get-transform :p! :space-g :in))
 
 (defpackage :live
   (:use :cl :cepl-utils)
@@ -622,8 +616,8 @@
         :named-readtables
         :cepl-gl)
   (:shadow :quit)
-  (:import-from :spaces :p!)
-  (:import-from :space-gpu :space-g :in)
+  (:import-from :space :p!)
+  (:import-from :space :space-g :in)
   (:import-from :live
                 :continuable
                 :update-swank

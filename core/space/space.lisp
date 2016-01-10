@@ -1,4 +1,4 @@
-(in-package :spaces)
+(in-package :space)
 
 ;;----------------------------------------------------------------------
 
@@ -31,6 +31,14 @@
   (first (evt::event-node-subscriptions space)))
 
 (defun space-inverse-transform (space)
-  nil)
+  (m4:affine-inverse (space-transform space)))
 
 ;;----------------------------------------------------------------------
+;; gpu
+
+(varjo::def-v-type-class space-g (varjo::v-type)
+  ((varjo::core :initform nil :reader varjo::core-typep)
+   (varjo::glsl-string :initform "#<space>" :reader varjo::v-glsl-string)))
+
+;; a name for the space
+(defvar *current-space* (gensym "current-space"))

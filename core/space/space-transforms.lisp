@@ -1,4 +1,4 @@
-(in-package :spaces)
+(in-package :space)
 
 ;;----------------------------------------------------------------------
 ;; walk up the space graph collecting transforms
@@ -6,13 +6,17 @@
 (defun collect-inverse-to (start-space ancestor-space)
   (labels ((combine-inverse (accum space)
              (m4:m* (space-inverse-transform space) accum)))
+    ;; [TODO] unneccesary identity-matrix4 multiply, pass it start-space
+    ;;        transform as initial-value and (parent-space start-space) as
+    ;;        'of-space arg
     (m4:m* (space-inverse-transform ancestor-space)
-           (reduce-ancestors #'combine-inverse start-space ancestor-space))))
+           (reduce-ancestors #'combine-inverse start-space ancestor-space
+			     (m4:identity-matrix4)))))
 
 (defun collect-transform-to (start-space ancestor-space)
   (labels ((combine-transform (accum space)
              (m4:m* (space-transform space) accum)))
-    ;; [TODO] unneccesary identity-matrix4 multiple, pass it start-space
+    ;; [TODO] unneccesary identity-matrix4 multiply, pass it start-space
     ;;        transform as initial-value and (parent-space start-space) as
     ;;        'of-space arg
     (reduce-ancestors #'combine-transform start-space ancestor-space
@@ -31,14 +35,10 @@
 ;;----------------------------------------------------------------------
 ;; get the matrix that transforms points from one space to another
 
-;; ;; was used for testing while working out logic for gpu spaces
-;; (defun get-transform (from-space to-space)
-;;   (m4:identity-matrix4))
-
 (defun get-transform (from-space to-space)
   (let* ((common-ancestor (find-common-ancestor from-space to-space))
          (i (collect-inverse-to from-space common-ancestor))
-         (f (collect-transform-to common-ancestor to-space)))
+         (f (collect-transform-to to-space common-ancestor)))
     (m4:m* i f)))
 
 ;;----------------------------------------------------------------------
