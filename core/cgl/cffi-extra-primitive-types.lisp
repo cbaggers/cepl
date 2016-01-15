@@ -1,5 +1,7 @@
 (in-package :cffi)
 
+(defconstant +allow-extra-keyword-type-names+ t)
+
 ;; {TODO} need to add info for autowrap
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -53,9 +55,10 @@
                (:byte 'fixnum)
                (:ubyte 'fixnum)
                (t (error "How is there a cffi type with components of ~a" f-type)))))
-    (let* ((new-user-types *extra-primitive-types*))
+    (let* ((new-user-types *extra-primitive-types*)
+           (kwd-allowed +allow-extra-keyword-type-names+))
       `(progn
-         ,@(loop :for (type len comp-type) :in (append new-user-types)
+         ,@(loop :for (type len comp-type) :in new-user-types
               :collect
               (let* ((name (utils:symb 'cgl- type))
                      (type-name (utils:symb name '-type))
@@ -65,7 +68,8 @@
                    (define-foreign-type ,type-name ()
                      ()
                      (:actual-type :struct ,name)
-                     (:simple-parser ,type))
+                     ,@(when kwd-allowed
+                        `((:simple-parser ,type))))
                    (defmethod translate-from-foreign (ptr (type ,type-name))
                      (make-array ,len :element-type ',(get-lisp-type comp-type)
                                  :initial-contents
@@ -92,7 +96,7 @@
                              ,comp-type :bit-size ,comp-bit-size
                              :bit-offset ,offset :bit-alignment 8)
                           :do (incf offset comp-bit-size)))
-                   (autowrap:define-foreign-alias ',(utils:symb 'cgl- type)
+                   (autowrap:define-foreign-alias ',name
                        '(:struct (,name))))))))))
 (make-new-types)
 
