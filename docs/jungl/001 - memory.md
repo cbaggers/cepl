@@ -22,6 +22,25 @@ To this end, by default, none of the data in c-memory or gpu-memory is GC'd. Thi
 
 We say by default as there are certain times you don't mind paying the cost. For example when you are playing with ideas in the repl. To this end we are looking into ways of providing this without compromising any performance in the rest of jungl. This is WIP so this doco will be updated when that is in place.
 
+### #'free and #'free-*
+
+To release memory we have two options, firstly we can use the generic function #'free as in
+
+```
+(free some-jungl-data)
+```
+
+However you may not want to pay the dispatch cost in performance critical code, so there are a number of `free-*` functions (e.g. #'free-c-array #'free-gpu-array etc). These specific functions will be covered in their respective chapters.
+
 ### #'pull-g & #'push-g
 
-Two helpful generic functions that
+These are two very helpful generic functions that let you move data between lisp, c-memory &
+gpu-memory with ease!
+
+`push-g` will take a lisp array or lisp list and push the data into a c-array or a gpu-array (dont worry if you dont know what these are yet)
+
+`pull-g` will pull data from c-array ＆ gpu-arrays and bring it back into lisp.
+
+Obviously the generic dispatch and working out how to upload the data to a given target takes time, so these are generally used in non performance critical places, like the repl!
+
+There is also a bit more to this but we will revisit these in a later chapter.

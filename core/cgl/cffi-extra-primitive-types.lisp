@@ -36,12 +36,12 @@
 
 (define-foreign-type cgl-byte ()
   ()
-  (:actual-type :char)
+  (:actual-type :int8)
   (:simple-parser :byte))
 
 (define-foreign-type cgl-ubyte ()
   ()
-  (:actual-type :uchar)
+  (:actual-type :uint8)
   (:simple-parser :ubyte))
 
 (defmacro make-new-types ()
