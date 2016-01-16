@@ -246,5 +246,5 @@ dimension then their sizes must match exactly"))
   (with-gpu-array-as-c-array (x object :access-type :read-only)
     (pull1-g x)))
 
-;; copy buffer to buffer: glCopyBufferSubData
+;; {TODO} copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData

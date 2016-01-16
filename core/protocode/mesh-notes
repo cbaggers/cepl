@@ -1,0 +1,20 @@
+conversations with folks about mesh axiom theory
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+00:36 <LG3P0> Baggers: TMA wrote to you on Monday 2016.01.11
+              15:08:55 : Say you have a triglyph
+              https://en.wikipedia.org/wiki/Triglyph from a certain
+              kind of marble (3D texture) and another smaller from
+              the same kind -- you dont want to scale the texture
+              alongside the geometry; it might make sense to
+              perform this kind of scaling on the mesh-level of
+00:36 <LG3P0> abstraction, not on the lower level.
+00:36 <LG3P0> Baggers: TMA wrote to you on Monday 2016.01.11
+              14:41:53 : Just my $.02: Mesh might be a good base
+              concept depending on the level of abstraction. It
+              might have sense for one level to use it as a base
+              concept then to pass it to a lower level to decompose
+              it to its base concepts (eg. triangles).
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
