@@ -1,4 +1,5 @@
 (in-package :cgl)
+
 ;;;--------------------------------------------------------------
 ;;; BUFFERS ;;;
 ;;;---------;;;
@@ -12,7 +13,7 @@
    This layout is as follows:
    `((data-type data-index-length offset-in-bytes-into-buffer))
    for example:
-   `((:float 12 0) ('vert-data 140 12))"
+   `((:float 3 0) ('vert-data 140 12))"
   (buffer-id 0)
   (format nil)
   (managed nil))
@@ -61,6 +62,15 @@
     (cl-opengl-bindings:bind-buffer :array-buffer 0)
     (setf buffer-id-cache 0)
     (setf buffer-target-cache :array-buffer)))
+
+(defmacro with-buffer ((var-name buffer &optional (buffer-target :array-buffer))
+		       &body body)
+  `(let* ((,var-name ,buffer))
+     (unwind-protect (progn (bind-buffer ,var-name ,buffer-target)
+			    ,@body)
+       (unbind-buffer ,var-name))))
+
+
 
 (defun make-buffer-from-id (gl-object &key initial-contents
                                         (buffer-target :array-buffer)

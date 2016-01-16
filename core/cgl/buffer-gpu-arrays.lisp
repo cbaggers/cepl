@@ -127,11 +127,11 @@
    have, you can set this to any of the following:
    (:stream-draw :stream-read :stream-copy :static-draw
     :static-read :static-copy :dynamic-draw :dynamic-read
-    :dynamic-copy)
-
-   Finally you can provide an existing buffer if you want to
-   use it rather than creating a new buffer. Note that all
-   existing data in the buffer will be destroyed in the process"
+    :dynamic-copy)"
+   ;;   Finally you can provide an existing buffer if you want to
+   ;; use it rather than creating a new buffer. Note that all
+  ;; existing data in the buffer will be destroyed in the process
+  ;; {TODO} Really? where?
   (let ((buffer (multi-buffer-data (make-buffer :managed t) c-arrays
                                    :array-buffer access-style)))
     (loop :for c-array :in c-arrays :for i :from 0 :collecting
