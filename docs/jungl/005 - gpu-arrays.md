@@ -176,7 +176,16 @@ As we will soon see, the `gpu-array` abstraction is also useful with textures, s
 
 ### Multiple gpu-arrays in the same buffer
 
-There are valid reason so want certain data to live in the same `buffer object`.
+There are valids reason to want certain gpu-arrays to live in the same `buffer object`.
+
+To do this use the `make-gpu-arrays` function
+
+This is the signature: `(c-arrays &key (access-style :static-draw))`
+
+This function creates a list of gpu-arrays residing in a single buffer in opengl. It create one gpu-array for each c-array in the list passed in.
+
+The `:access-style` is shared by all gpu-arrays in the `buffer object` but is otherwise the same as defined earlier.
+
 
 ### Freeing gpu-arrays
 
