@@ -119,3 +119,13 @@ In CL we normally use `(aref some-array subscripts ..)` to get an element from t
 In jungl we use `(aref-c some-array subscripts ..)` to get an element and `(setf (aref-c some-array subscripts ..) val)` to set an element.
 
 Mind bending stuff! :p
+
+### subseq-c
+
+`#'subseq-c` is a cool function. It gives you a c-array whos contents are the subset of another c-arrays. This is very like CL's regular `subseq` function **except** for one **very** important detail.
+
+`#'subseq-c` does not COPY the data, which means changes in the first array affect the second (and vice versa).
+
+### Freeing
+
+To free a c-array we can call `#'free` or `#'free-c-array` the later of course being the more optimized code path.
