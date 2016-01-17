@@ -3,12 +3,14 @@
 ;;======================================================================
 ;; Events
 
+(defmethod timestamp ((object skitter-event))
+  (skitter-event-timestamp object))
 
 ;;----------------------------------------------------------------------
 ;; backend event
 
 ;; an event that also contains the backend specific event is represents
-(defstruct (cpl-backend-event (:include cpl-event))
+(defstruct (cepl-backend-event (:include skitter-event))
   (backend-event nil ;;(error "backend event is mandatory")
                  :type t
                  :read-only t))
@@ -18,12 +20,12 @@
 
 (defstruct
     (context-created
-      (:include cpl-event
+      (:include skitter-event
                 (source-node |context|))))
 
 (defstruct
     (will-quit
-      (:include cpl-backend-event
+      (:include cepl-backend-event
                 (source-node |sys|))))
 
 ;;----------------------------------------------------------------------
@@ -31,7 +33,7 @@
 
 (defstruct+methods
     (win
-      (:include cpl-backend-event
+      (:include cepl-backend-event
                 (source-node |window|)))
   (action (error "windown event requires an action name")
           :type keyword
@@ -47,7 +49,7 @@
 
 (defstruct+methods
     (cepl-mouse-event
-     (:include cpl-backend-event
+     (:include cepl-backend-event
                (source-node |mouse|)))
   (mouse-id (error "mouse-scroll event requires mouse id")
             :type fixnum
@@ -97,7 +99,7 @@
 
 (defstruct+methods
     (cepl-keyboard-event
-     (:include cpl-backend-event
+     (:include cepl-backend-event
                (source-node |keyboard|))))
 
 (defstruct+methods (key (:include cepl-keyboard-event))
@@ -122,23 +124,6 @@
 ;; Event Nodes
 
 ;;----------------------------------------------------------------------
-;; backend events
-
-(defvar backend-events
-  (make-event-node
-   :name :all-events
-   :tags '(:everything :cepl-event-system-meta)))
-
-;;----------------------------------------------------------------------
-;; meta events
-
-(defvar event-system-meta-node
-  (make-event-node
-   :name :cepl-event-system
-   :tags :cepl-event-system-meta
-   :subscribe-to backend-events))
-
-;;----------------------------------------------------------------------
 ;; cepl system events
 
 (defvar |sys|
@@ -146,7 +131,7 @@
    :name 'cepl-internals
    :tags '(:cepl-internal :system)
    :filter #'will-quit-p
-   :subscribe-to backend-events))
+   :subscribe-to all-events))
 
 ;;----------------------------------------------------------------------
 ;; context events
@@ -156,7 +141,7 @@
    :name 'cepl-internals
    :tags '(:context)
    :filter #'context-created-p
-   :subscribe-to backend-events))
+   :subscribe-to all-events))
 
 ;;----------------------------------------------------------------------
 ;; cepl window events
@@ -166,7 +151,7 @@
    :name 'cepl-window
    :tags '(:window)
    :filter #'win-p
-   :subscribe-to backend-events))
+   :subscribe-to all-events))
 
 ;;----------------------------------------------------------------------
 ;; cepl mouse events
@@ -186,7 +171,7 @@
        :tags '(:mouse)
        :filter #'mouse0-eventp
        :body #'update-mouse-state
-       :subscribe-to backend-events))))
+       :subscribe-to all-events))))
 
 ;;----------------------------------------------------------------------
 ;; cepl keyboard events
@@ -200,5 +185,5 @@
        :tags '(:keyboard)
        :filter #'cepl-keyboard-event-p
        :body #'update-key-states
-       :subscribe-to backend-events)))
+       :subscribe-to all-events)))
   (defun key-state (key) (gethash key key-state :up)))

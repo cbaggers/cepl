@@ -26,7 +26,8 @@
                #:symbol-munger
                #:named-readtables
                #:trivial-garbage
-               #:defstruct-plus-methods)
+               #:defstruct-plus-methods
+	       #:skitter)
   :components ((:file "core/package")
                (:file "core/errors")
                (:file "core/backend")
@@ -47,10 +48,8 @@
                (:file "core/maths/quaternions")
                (:file "core/maths/projection")
 
-               (:file "core/events/base-types")
                (:file "core/events/event-nodes")
                (:file "core/events/event-propagation")
-               (:file "core/events/named-event-nodes")
 
                (:file "core/cgl/errors")
                (:file "core/cgl/cl-opengl-replacements")

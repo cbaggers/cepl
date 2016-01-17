@@ -10,7 +10,7 @@
     (loop :for p :in event-pump :do (funcall p))))
 
 (defun inject-backend-event (event)
-  (push-event backend-events event))
+  (push-event all-events event))
 
 (defun cepl-event-hook (event)
   "CEPL gets the first look at events so it can maintain some internal data.

@@ -533,59 +533,59 @@
   (:export :rqpos))
 
 (defpackage :cepl.events
-  (:use :cl :cepl-utils :cepl-generics
-        :defstruct-plus-methods)
+  (:use :cl :cepl-utils :cepl-generics :skitter :defstruct-plus-methods)
   (:nicknames :evt)
-  (:export :cpl-event
-	   :make-event-node
-           :subscribe
-           :unsubscribe
-	   :unsubscribe-from-all
-	   :push-event
+  (:export
+   ;; from-skitter
+   :subscribe
+   :unsubscribe
+   :unsubscribe-from-all
+   :push-event
+   :def-named-event-node
+   :all-events
+   :make-event-node
 
-	   :register-thunk-with-pump-events
-	   :pump-events
-	   :inject-backend-event
+   ;; from-cepl
+   :register-thunk-with-pump-events
+   :pump-events
+   :inject-backend-event
 
-	   :def-named-event-node
-
-           :backend-events
-           :|sys|
-           :|context|
-           :|window|
-           :|mouse|
-           :|keyboard|
-	   :make-context-created
-           :make-will-quit
-           :make-win
-           :make-cepl-mouse-event
-           :make-mouse-scroll
-           :make-mouse-button
-           :make-mouse-motion
-           :make-cepl-keyboard-event
-           :make-key
-           :event
-           :mouse-button-state
-           :key-state
-           :will-quit
-           :window
-           :win
-           :context-created
-           :mouse-scroll
-           :mouse-button
-           :mouse-motion
-           :action
-           :button
-           :clicks
-           :delta
-           :etype
-           :id
-           :key
-           :repeating
-           :source-id
-           :state
-           :timestamp
-           :data))
+   :|sys|
+   :|context|
+   :|window|
+   :|mouse|
+   :|keyboard|
+   :make-context-created
+   :make-will-quit
+   :make-win
+   :make-cepl-mouse-event
+   :make-mouse-scroll
+   :make-mouse-button
+   :make-mouse-motion
+   :make-cepl-keyboard-event
+   :make-key
+   :event
+   :mouse-button-state
+   :key-state
+   :will-quit
+   :window
+   :win
+   :context-created
+   :mouse-scroll
+   :mouse-button
+   :mouse-motion
+   :action
+   :button
+   :clicks
+   :delta
+   :etype
+   :id
+   :key
+   :repeating
+   :source-id
+   :state
+   :timestamp
+   :data))
 
 (defpackage :space
   (:use :cl :base-vectors :base-matrices :cepl-utils :cepl.events
