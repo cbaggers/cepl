@@ -24,6 +24,7 @@ Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 
 All of the following will be download automatically by quicklisp
 
+* cffi
 * cl-autowrap
 * cl-plus-c
 * cl-fad
@@ -34,12 +35,14 @@ All of the following will be download automatically by quicklisp
 * cl-ppcre
 * symbol-munger
 * named-readtables
+* fn
+* temporal-functions - https://github.com/cbaggers/temporal-functions
 
-These two will hopefully be in quicklisp soon, until then download them at the links provided.
+These three will hopefully be in quicklisp at some point, until then download them at the links provided.
 
 * varjo - https://github.com/cbaggers/varjo
-* temporal-functions - https://github.com/cbaggers/temporal-functions
 * skitter - https://github.com/cbaggers/skitter
+* defstruct-plus-methods - https://github.com/cbaggers/defstruct-plus-methods
 
 -----------------------------------------------------------------------------------------
 

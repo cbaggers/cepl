@@ -27,6 +27,7 @@
                #:named-readtables
                #:trivial-garbage
                #:defstruct-plus-methods
+	       #:fn
 	       #:skitter)
   :components ((:file "core/package")
                (:file "core/errors")
