@@ -39,6 +39,7 @@ These two will hopefully be in quicklisp soon, until then download them at the l
 
 * varjo - https://github.com/cbaggers/varjo
 * temporal-functions - https://github.com/cbaggers/temporal-functions
+* skitter - https://github.com/cbaggers/skitter
 
 -----------------------------------------------------------------------------------------
 
