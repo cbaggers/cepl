@@ -98,16 +98,17 @@
   (make-shader (varjo->gl-stage-names (varjo:stage-type compiled-stage))
                (varjo:glsl-code compiled-stage)))
 
-(defun %compile-link-and-upload (name prog-id stage-pairs)
+(defun %compile-link-and-upload (name stage-pairs)
   (let* ((compiled-stages (%varjo-compile-as-pipeline stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo
                                  compiled-stages)))
     (format t "~&; uploading (~a ...)~&" name)
-    (link-shaders stages-objects prog-id compiled-stages)
-    (when +cache-last-compile-result+
-      (add-compile-results-to-pipeline name compiled-stages))
-    (mapcar #'%gl:delete-shader stages-objects)
-    compiled-stages))
+    (let ((prog-id (request-program-id-for name)))
+      (link-shaders stages-objects prog-id compiled-stages)
+      (when +cache-last-compile-result+
+	(add-compile-results-to-pipeline name compiled-stages))
+      (mapcar #'%gl:delete-shader stages-objects)
+      (values compiled-stages prog-id))))
 
 (defun %create-implicit-uniform-uploader (compiled-stages)
   (let ((uniforms (%dedup-implicit-uniforms
@@ -152,10 +153,10 @@
       ()
       (let ((image-unit -1))
         (declare (ignorable image-unit))
-        (setf prog-id (request-program-id-for ',name))
-        (let ((compiled-stages (%compile-link-and-upload ',name prog-id
-                                                         ',stage-pairs)))
-          (declare (ignorable compiled-stages))
+        (multiple-value-bind (compiled-stages new-prog-id)
+	    (%compile-link-and-upload ',name ',stage-pairs)
+	  (declare (ignorable compiled-stages))
+	  (setf prog-id new-prog-id)
           ,(when (supports-implicit-uniformsp context)
                  `(setf implicit-uniform-upload-func
                         (or (%create-implicit-uniform-uploader compiled-stages)
@@ -186,6 +187,10 @@
          (prim-type (varjo::get-primitive-type-from-context context))
          (u-uploads (mapcar #'second uniform-assigners)))
     `(progn
+       (defun ,(symb :%touch- name) ()
+	 (unless prog-id
+	   (setf prog-id (,init-func-name))
+	   t))
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignore mapg-context) (ignorable ,@uniform-names))
          (unless prog-id

@@ -141,9 +141,9 @@
 	     spec
 	     (remove-if-not #'gpu-func-spec (varjo::used-macros compiled)) ;;[1]
 	     compiled)))
-      ;;{TODO} WAT? missing-dependencies is missing
       (varjo::could-not-find-function (e) ;;[0]
-	(setf missing-dependencies (list (slot-value e 'varjo::name)))))))
+	(setf missing-dependencies (list (slot-value e 'varjo::name)))
+	(%update-gpu-function-data spec nil nil)))))
 
 (defun %recompile-gpu-function (name)
   "Recompile all pipelines that depend on the named gpu function or any other
