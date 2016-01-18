@@ -255,16 +255,15 @@
   (:shadow :lerp)
   (:export :perspective :orthographic))
 
-(defpackage :%cgl
+(defpackage :%jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :base-vectors :cepl-generics
         :split-sequence :named-readtables)
   (:shadowing-import-from :base-vectors :v!))
 
-(defpackage :cepl-gl
+(defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :base-vectors :cepl-generics
-        :split-sequence :%cgl :named-readtables)
+        :split-sequence :%jungl :named-readtables)
   (:shadowing-import-from :base-vectors :v!)
-  (:nicknames :cgl :jungl)
   (:import-from :utils
                 :deferror
                 :print-mem)
@@ -594,7 +593,7 @@
   (:shadow :space)
   (:shadowing-import-from :base-vectors :v!)
   (:shadowing-import-from :base-matrices :m!)
-  (:import-from :cgl :def-compile-pass :set-uniform :remove-uniform
+  (:import-from :jungl :def-compile-pass :set-uniform :remove-uniform
 		:set-arg-val)
   (:export :get-transform :p! :space-g :in))
 
@@ -615,7 +614,7 @@
         :cepl-camera
         :cl-fad
         :named-readtables
-        :cepl-gl)
+        :jungl)
   (:shadow :quit)
   (:import-from :space :p!)
   (:import-from :space :space-g :in)

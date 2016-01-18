@@ -35,7 +35,7 @@
 
 (defun ndc-space->screen-space (depth-range viewport point)
   (destructuring-bind (width height) (size viewport)
-    (let ((vo (cgl::viewport-origin viewport))
+    (let ((vo (jungl::viewport-origin viewport))
 	  (near (v:x depth-range))
 	  (far (v:y depth-range)))
       (v! (+ (* (/ width 2) (v:x point)) (v:x vo) (/ width 2))
@@ -55,7 +55,7 @@
 
 (defun matrix-for-ndc-space->screen-space (depth-range viewport)
   (destructuring-bind (width height) (viewport-resolution viewport)
-    (dvec* ((vo-x vo-y) (cgl::viewport-origin viewport)
+    (dvec* ((vo-x vo-y) (jungl::viewport-origin viewport)
 	    (near far) depth-range)
       (m! (/ width 2)  0.0           0.0                 (+ vo-x (/ width 2))
 	  0.0          (/ height 2)  0.0                 (+ vo-y (/ height 2))

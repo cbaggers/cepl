@@ -76,6 +76,6 @@
         :model-to-cam model-to-cam-matrix
         ;; :normal-model-to-cam normal-to-cam-matrix
         :ambient-intensity (v! 0.2 0.2 0.2 1.0)
-        :textur *bird-tex* :fbo-tex (slot-value c 'cgl::texture)
+        :textur *bird-tex* :fbo-tex (slot-value c 'jungl::texture)
         :bird-tex *bird-tex2*
         :loop *loop-pos*))

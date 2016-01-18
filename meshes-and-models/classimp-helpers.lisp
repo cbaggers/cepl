@@ -18,7 +18,7 @@
       (:indices ,(loop :for % :across f :append (coerce % 'list))))))
 
 (defun calc-type (v n tc)
-  (apply #'utils:symb-package :cgl
+  (apply #'utils:symb-package :jungl
          (remove nil (cons :g- (list (and v :p)
                                      (and (> (length n) 0) :n)
                                      (and (> (length tc) 0) :t))))))
@@ -26,10 +26,10 @@
   (list
    (destructuring-bind (_ type data) (assoc :data mesh-list)
      (declare (ignore _))
-     (cgl:make-gpu-array data :element-type type))
+     (jungl:make-gpu-array data :element-type type))
    (destructuring-bind (_ data) (assoc :indices mesh-list)
      (declare (ignore _))
-     (cgl:make-gpu-array data :element-type :ushort))))
+     (jungl:make-gpu-array data :element-type :ushort))))
 
 (defun scene-meshes->gpu (scene)
   (mapcar #'mesh-list->gpu (meshes->lists scene)))

@@ -45,7 +45,7 @@
                (v! 0.2 0.2 0.2 1.0)
                (/ (y gl-frag-pos) 500.0))))
         (gl:flush)
-        (cgl:update-display)))
+        (jungl:update-display)))
 
 
 ;; what about
@@ -80,21 +80,21 @@
                                      lerp-value)))))
 
 ;; if I have a combined language then I really dont want setf confusing things.
-;; auto lifting of shader expressions requires knowledge of how things can 
-;; interpolate, what their cost is, and how frequently their argument change 
+;; auto lifting of shader expressions requires knowledge of how things can
+;; interpolate, what their cost is, and how frequently their argument change
 ;; (eg every compile/execution/vertex/fragment).
 
-;; The reason for needing cost is that glsl puts a limit on the number of data 
-;; items that can be passed between stages. If the number of expressions that 
+;; The reason for needing cost is that glsl puts a limit on the number of data
+;; items that can be passed between stages. If the number of expressions that
 ;; can be lifted to the vertex shader exceeds the number of slots available then
 ;; we need to be able to make the best choice on what is lifted.
 
-;; does varjo know if something is constant? nope. Actually varjo is a bit 
+;; does varjo know if something is constant? nope. Actually varjo is a bit
 ;; broken around this and we should read the todo fiel for more info
 
-;; 
-;; inline pipeline will work if we can specify the name (the number) of the 
+;;
+;; inline pipeline will work if we can specify the name (the number) of the
 ;; glsl-program when we compile it. This means we could replace the inline
 ;; form with (run-program n) where n is decided at macro expansion time, we save
-;; the form in a dictioanry against n and then compiel it when the context is 
+;; the form in a dictioanry against n and then compiel it when the context is
 ;; created.

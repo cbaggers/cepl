@@ -24,7 +24,7 @@
 
 (defpackage :meshes
   (:use :cl :cffi :cepl-utils :base-vectors :cepl-generics
-        :split-sequence :cgl)
+        :split-sequence :jungl)
   (:export :mesh
            :vertices
            :indicies

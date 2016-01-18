@@ -18,7 +18,7 @@
                      (PROGRAM-ID (LINK-SHADERS SHADERS (PROGRAM-MANAGER 'PROG-1)))
                      (ASSIGNERS
                       (CREATE-UNIFORM-ASSIGNERS PROGRAM-ID '((A VERT-DATA) (B :VEC4))
-                                                :CEPL-GL))
+                                                :jungl))
                      (A-ASSIGNER (NTH 0 ASSIGNERS))
                      (B-ASSIGNER (NTH 1 ASSIGNERS)))
                 (DECLARE (IGNORABLE ASSIGNERS))

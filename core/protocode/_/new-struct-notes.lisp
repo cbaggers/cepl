@@ -1,8 +1,8 @@
-(in-package :cgl)
+(in-package :jungl)
 
 ;; So what kind of data is allowed in a glstruct?
 
-;; primitive cffi types 
+;; primitive cffi types
 ;; primitive extra types (vec matrix etc)
 ;; glstructs
 ;; arrays

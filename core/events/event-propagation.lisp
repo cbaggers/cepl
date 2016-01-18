@@ -16,4 +16,4 @@
   "CEPL gets the first look at events so it can maintain some internal data.
    It is not allowed to stop or modify the event."
   (when (and (typep event 'win) (eq (slot-value event 'action) :resized))
-    (cgl::%set-default-fbo-viewport (slot-value event 'data))))
+    (jungl::%set-default-fbo-viewport (slot-value event 'data))))

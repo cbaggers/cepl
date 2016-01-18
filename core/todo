@@ -75,7 +75,7 @@ defun-g should check if arg types are quoted, error if they are
 
 * uniform buffer objects
 
-* deletion of things in pools in cepl-gl
+* deletion of things in pools in jungl
 
 * :triangle, :lines, etc are called the render-mode or primitive
    do our arg names reflect this?
@@ -83,7 +83,7 @@ defun-g should check if arg types are quoted, error if they are
 * bindbufferrange - read about it
 
 * work through the glossaries of arc-synth and check args names
-   in cepl-gl for conformance
+   in jungl for conformance
 
 * Render buffers...not urgent in any way but we should support them
   I'm thinking that if a strict subset of the commands that work on

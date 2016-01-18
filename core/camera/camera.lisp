@@ -18,12 +18,12 @@
   ((cam->clip :type (simple-array single-float (16)) :reader cam->clip)
    (cam->clip-func :initform nil :initarg :cam->clip-func )
    (frame-size :reader frame-size :initarg :frame-size
-               :initform (cgl:viewport-resolution (cgl:current-viewport)))
+               :initform (jungl:viewport-resolution (jungl:current-viewport)))
    (near :type single-float :reader near :initarg :near)
    (far :type single-float :reader far :initarg :far)
    (fov :type single-float :reader fov :initarg :fov)))
 
-(cgl:def-equivalent-type camera
+(jungl:def-equivalent-type camera
   (cam->clip :mat4 (cam->clip %) :accessor cam->clip)
   (world->cam :mat4 (world->cam %) :accessor world->cam))
 
@@ -54,7 +54,7 @@
             ((simple-array single-float (2)) (list (aref frame 0)
                                                    (aref frame 1)))
 
-            (cgl:viewport (cgl:viewport-resolution frame))
+            (jungl:viewport (jungl:viewport-resolution frame))
             (list frame))))
     (setf (slot-value camera 'frame-size) frame))
   (update-cam->clip camera))
@@ -93,7 +93,7 @@
             (m4:melm result 2 3) (aref eye-inv 2))
       result)))
 
-(defun make-camera (&optional (frame (cgl:current-viewport))
+(defun make-camera (&optional (frame (jungl:current-viewport))
                       (near 1.0) (far 1000.0) (fov 120.0)
                       (cam->clip-function #'projection:perspective))
   (let* ((frame
@@ -101,7 +101,7 @@
             ((simple-array single-float (2)) (list (aref frame 0)
                                                    (aref frame 1)))
 
-            (cgl:viewport (cgl:viewport-resolution frame))
+            (jungl:viewport (jungl:viewport-resolution frame))
             (list frame)))
          (camera (make-instance 'pos-dir-cam
                                 :cam->clip-func cam->clip-function

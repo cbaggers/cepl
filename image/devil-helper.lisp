@@ -10,11 +10,11 @@
              (data-cpy (cffi:foreign-alloc :ubyte-vec4 :count (* height width))))
         (cl-devil:copy-pixels 0 0 0 (cl-devil:image-width) (cl-devil:image-height) 1
                               :rgba :unsigned-byte data-cpy)
-        (cgl:make-c-array-from-pointer (list width height)
+        (jungl:make-c-array-from-pointer (list width height)
                                        :ubyte-vec4 data-cpy)))))
 
 (defun load-image-to-texture (filename)
   (let* ((array (load-image-to-c-array filename))
-	 (texture (cgl:make-texture array)))
+	 (texture (jungl:make-texture array)))
     (jungl:free-c-array array)
     texture))

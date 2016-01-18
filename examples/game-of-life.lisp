@@ -52,7 +52,7 @@
 (defun step-main ()
   (clear)
   (game-o-life)
-  (cgl:update-display))
+  (jungl:update-display))
 
 ;; this macro is a lazy way to get a function called on start (:init)
 ;; and a function called every

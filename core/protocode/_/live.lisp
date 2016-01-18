@@ -106,13 +106,13 @@
      (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
      (prog-2 (e-stream entity) :model-to-world (entity-matrix entity)))
   (gl:flush)
-  (cgl:update-display))
+  (jungl:update-display))
 
 (defun reshape (width height)
   (setf (m4:melm *cam-clip-matrix* 0 0) (* *frustrum-scale* (/ height width)))
   (setf (m4:melm *cam-clip-matrix* 1 1) *frustrum-scale*)
   (prog-2 nil :cam-to-clip *cam-clip-matrix*)
-  (cgl:viewport 0 0 width height))
+  (jungl:viewport 0 0 width height))
 
 (let ((running nil))
   (defun run-demo ()

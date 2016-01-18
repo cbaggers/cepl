@@ -14,7 +14,7 @@
 
 (defun init (&optional (width 320) (height 240) (backend :sdl) (title "CEPL")
                (resizable t))
-  (cgl:make-context backend :width width :height height :resizable resizable
+  (jungl:make-context backend :width width :height height :resizable resizable
                     :title title)
   (evt:register-thunk-with-pump-events
    (lambda ()
