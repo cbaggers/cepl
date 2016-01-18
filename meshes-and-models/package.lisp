@@ -23,7 +23,7 @@
                 :make-vector4))
 
 (defpackage :meshes
-  (:use :cl :cffi :cepl-utils :base-vectors :cepl-generics
+  (:use :cl :cffi :cepl-utils :cl-game-math.base-vectors :cepl-generics
         :split-sequence :jungl)
   (:export :mesh
            :vertices
