@@ -30,7 +30,7 @@
 	 (eq (caar args) *current-space*))))
 
 (defun cross-space-form-p (node)
-  (and (ast-typep node 'pos4)
+  (and (ast-typep node 'pos4-g)
        (let ((origin (first (val-origins node))))
 	 (and (ast-kindp origin '%p!)
 	      (not (id= (flow-ids (ast-space node))
