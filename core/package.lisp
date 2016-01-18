@@ -80,190 +80,15 @@
            :last1
            :p->))
 
-(defpackage :base-maths
-  (:use :cl)
-  (:export :clamp
-           :clampf
-           :+float-threshold+
-           :+one-degree-in-radians+
-           :+pi+
-           :float-zero
-           :float>=0
-           :float<=0
-           :float>0
-           :float<0
-           :float-greater-than-zero
-           :c-sqrt
-           :c-inv-sqrt
-           :degrees
-           :radians))
-
-(defpackage :maths
-  (:use :cl)
-  (:export :lerp :mix :stepv :clamp :smoothstep :pulse
-           :spline))
-
-(defpackage :base-vectors
-  (:use :cl)
-  (:export :v! :v-x :v-y :v-z :v-w
-           :v!byte :v!ubyte :v!int))
-
-(defpackage :base-matrices
-  (:use :cl)
-  (:export :m!))
-
-(defpackage :vector2
-  (:use :cl)
-  (:nicknames :v2)
-  (:shadow :eql :+ :- :* :/ :length :zerop)
-  (:export :make-vector2 :+ :- :* :eql
-           :*vec :/ :/vec :negate :length-squared
-           :length :distance-squared :distance :dot
-           :absolute-dot :normalize :perp-dot
-           :*unit-x* :*unit-y* :*unit-scale*
-           :zerop :unitp :cross :face-foreward :lerp
-           :bezier :spline :from-complex)
-  (:import-from :base-maths :float-zero
-                :c-sqrt
-                :c-inv-sqrt)
-  (:import-from :base-vectors :v-x :v-y))
-
-(defpackage :vector3
-  (:use :cl)
-  (:nicknames :v3)
-  (:shadow :incf :eql :+ :- :* :/ :length :zerop)
-  (:export :make-vector3 :eql :+ :- :* :/
-           :*vec :/vec :negate :length-squared
-           :length :distance-squared :distance :dot
-           :absolute-dot :normalize :cross
-           :*unit-x* :*unit-y* :*unit-z* :*unit-scale*
-           :zerop :unitp :cross :face-foreward :lerp
-           :bezier :spline :incf)
-  (:import-from :base-maths :float-zero
-                :c-sqrt
-                :c-inv-sqrt)
-  (:import-from :base-vectors :v-x :v-y :v-z))
-
-(defpackage :vector4
-  (:use :cl)
-  (:nicknames :v4)
-  (:shadow :eql :+ :- :* :/ :length :zerop)
-  (:export :make-vector4 :+ :- :* :/ :v3* :eql
-           :*vec :/vec :negate :length-squared
-           :length :distance-squared :distance :dot
-           :absolute-dot :normalize :cross
-           :*unit-x* :*unit-y* :*unit-z* :*unit-w* :*unit-scale*
-           :zerop :unitp :face-foreward :lerp
-           :bezier :spline)
-  (:import-from :base-maths :float-zero
-                :c-sqrt
-                :c-inv-sqrt)
-  (:import-from :base-vectors :v-x :v-y :v-z :v-w))
-
-(defpackage :vectors
-  (:use :cl)
-  (:nicknames :v)
-  (:export :v :make-vector :zerop :unitp := :+ :/= :1+ :1- :- :*
-           :/ :length :length-squared :distance :distance-squared
-           :dot :absolute-dot :perp-dot :normalize :cross :eql
-           :swizzle :s~ :merge-into-vector :negate :face-foreward :lerp
-           :mix :bezier :x :y :z :w :dvec :dvec*)
-  (:shadow :zerop :+ :eql := :/= :1+ :1- :- :* :/ :length)
-  (:import-from :vector2
-                :make-vector2)
-  (:import-from :vector3
-                :make-vector3)
-  (:import-from :vector4
-                :make-vector4))
-
-(defpackage :matrix3
-  (:use :cl)
-  (:nicknames :m3)
-  (:shadow :eql)
-  (:export :melm :identity-matrix3 :zero-matrix3
-           :make-matrix3 :make-from-rows :get-rows
-           :get-row :make-from-columns :get-columns
-           :get-column :determinate-cramer :inverse
-           :mzerop :identityp :transpose :adjoint
-           :mtrace :rotation-from-euler
-           :rotation-from-axis-angle :scale
-           :rotation-x :rotation-y :rotation-z
-           :get-fixed-angles :get-axis-angle :m+ :m- :negate
-           :m* :m*vec :mcol*vec3 :mrow*vec3 :m*scalar :eql)
-  (:import-from :base-maths :float-zero
-                :c-sqrt)
-  (:import-from :vector3
-                :make-vector3)
-  (:import-from :base-vectors :v-x :v-y :v-z :v-w))
-
-(defpackage :matrix4
-  (:use :cl)
-  (:nicknames :m4)
-  (:shadow :eql)
-  (:export :melm :identity-matrix4 :zero-matrix4
-           :2dclipspace-to-imagespace-matrix4 :make-matrix4
-           :mzerop :identityp :minor :adjoint
-           :determinant :affine-inverse :transpose
-           :translation :rotation-from-matrix3
-           :rotation-from-euler :rotation-from-axis-angle
-           :scale :rotation-x :rotation-y
-           :rotation-z :get-fixed-angles :mtrace
-           :get-axis-angle :m+ :m- :negate :m*scalar
-           :mcol*vec4 :mrow*vec4 :m* :transform
-           :to-matrix3 :get-row :get-rows :get-column
-           :get-columns :eql)
-  (:import-from :base-maths :float-zero
-                :c-sqrt)
-  (:import-from :vector3
-                :make-vector3)
-  (:import-from :vector4
-                :make-vector4)
-  (:import-from :base-vectors :v-x :v-y :v-z :v-w))
-
-
-(defpackage :matrices
-  (:use :cl)
-  (:nicknames :m)
-  (:export :zerop :unitp :+ :eql := :/= :1+ :1- :- :*
-           :identityp :elt :elm :get-rows :get-row
-           :get-columns :get-column :determinant
-           :inverse :transpose :trace :negate
-           :to-string)
-  (:shadow :zerop :unitp :+ :eql := :/= :1+ :1- :- :*
-           :elt :trace))
-
-(defpackage :quaternions
-  (:use :cl :base-maths)
-  (:nicknames :q)
-  (:shadow :lerp)
-  (:export :w :x :y :z :q! :zero-quit :zero-quatp
-           :unit-quatp :identity-quat :identity-quatp
-           :make-quat :make-quat-from-vec3
-           :make-quat-from-rotation-matrix3
-           :make-quat-from-axis-angle
-           :make-quat-from-look-at
-           :make-quat-from-axies
-           :make-quat-from-fixed-angles
-           :magnitude :norm :quat-eql :quat-!eql
-           :copy :get-axis-angle :normalize :qconjugate
-           :inverse :q+1 :q+ :q-1 :q- :q* :q*quat
-           :dot :rotate :lerp :slerp :approx-slerp
-           :to-matrix3 :to-matrix4))
-
-(defpackage :projection
-  (:use :cl :base-maths)
-  (:shadow :lerp)
-  (:export :perspective :orthographic))
-
 (defpackage :%jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :base-vectors :cepl-generics
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors :cepl-generics
         :split-sequence :named-readtables)
-  (:shadowing-import-from :base-vectors :v!))
+  (:shadowing-import-from :cl-game-math.base-vectors :v!))
 
 (defpackage :jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :base-vectors :cepl-generics
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors :cepl-generics
         :split-sequence :%jungl :named-readtables)
-  (:shadowing-import-from :base-vectors :v!)
+  (:shadowing-import-from :cl-game-math.base-vectors :v!)
   (:import-from :utils
                 :deferror
                 :print-mem)
@@ -482,7 +307,7 @@
 
 (defpackage :cepl-camera
   (:nicknames :ccam)
-  (:use :cl :cepl-generics :base-vectors)
+  (:use :cl :cepl-generics :cl-game-math.base-vectors)
   (:export :camera
            :make-camera
            :orthographic-projection
@@ -500,36 +325,18 @@
            :cam->clip
            :world->cam
            :make-cam-clip-matrix)
-  (:import-from :vector2
+  (:import-from :cl-game-math.vector2
                 :make-vector2)
-  (:import-from :vector3
+  (:import-from :cl-game-math.vector3
                 :make-vector3)
-  (:import-from :vector4
+  (:import-from :cl-game-math.vector4
                 :make-vector4))
-
-(defpackage :primitives
-  (:use :cl
-        :base-vectors
-        :base-matrices
-        :base-maths)
-  (:export :latice-data
-           :primitive-data
-           :cap-data
-           :plain-data
-           :box-data
-           :cube-data
-           :equilateral-triangle-data
-           :sphere-data
-           :cone-data
-           :cylinder-data
-           :prim-array
-           :swap-winding-order))
 
 (defpackage :tools
   (:use :cl
-        :base-vectors
-        :base-matrices
-        :base-maths)
+        :cl-game-math.base-vectors
+        :cl-game-math.base-matrices
+        :cl-game-math.base-maths)
   (:export :rqpos))
 
 (defpackage :cepl.events
@@ -588,11 +395,11 @@
    :data))
 
 (defpackage :space
-  (:use :cl :base-vectors :base-matrices :cepl-utils :cepl.events
+  (:use :cl :cl-game-math.base-vectors :cl-game-math.base-matrices :cepl-utils :cepl.events
 	:named-readtables :varjo :varjo-lang)
   (:shadow :space)
-  (:shadowing-import-from :base-vectors :v!)
-  (:shadowing-import-from :base-matrices :m!)
+  (:shadowing-import-from :cl-game-math.base-vectors :v!)
+  (:shadowing-import-from :cl-game-math.base-matrices :m!)
   (:import-from :jungl :def-compile-pass :set-uniform :remove-uniform
 		:set-arg-val)
   (:export :get-transform :p! :space-g :in))
@@ -607,9 +414,9 @@
 (defpackage :cepl
   (:use :cl
         :cepl-generics
-        :base-vectors
-        :base-matrices
-        :base-maths
+        :cl-game-math.base-vectors
+        :cl-game-math.base-matrices
+        :cl-game-math.base-maths
         :temporal-functions
         :cepl-camera
         :cl-fad
@@ -626,7 +433,7 @@
                 :deferror
                 :print-mem
                 :p->)
-  (:import-from :vectors
+  (:import-from :cl-game-math.vectors
 		:dvec
 		:dvec*)
   (:import-from :cepl.events

@@ -28,26 +28,17 @@
                #:trivial-garbage
                #:defstruct-plus-methods
 	       #:fn
-	       #:skitter)
+	       #:skitter
+	       #:dendrite
+	       #:cl-game-math)
   :components ((:file "core/package")
                (:file "core/errors")
                (:file "core/backend")
                (:file "core/utils")
                (:file "core/static")
                (:file "core/generics")
-               (:file "core/maths/base-maths")
-               (:file "core/maths/maths")
-               (:file "core/maths/vectors/base-vectors")
-               (:file "core/maths/vectors/vector2")
-               (:file "core/maths/vectors/vector3")
-               (:file "core/maths/vectors/vector4")
-               (:file "core/maths/vectors/vectors")
-               (:file "core/maths/matrices/base-matrices")
-               (:file "core/maths/matrices/matrix3")
-               (:file "core/maths/matrices/matrix4")
-               (:file "core/maths/matrices/matrices")
-               (:file "core/maths/quaternions")
-               (:file "core/maths/projection")
+
+	       (:file "core/maths/varjo-equivalent-types")
 
                (:file "core/events/event-nodes")
                (:file "core/events/event-propagation")
@@ -99,6 +90,6 @@
                (:file "core/live/live-macros")
                (:file "core/live/bootstrapping")
                (:file "core/time/time")
-               (:file "core/primitives/primitives")
+
                (:file "core/repl")
                (:file "examples/examples-data")))
