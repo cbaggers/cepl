@@ -1,6 +1,7 @@
 (in-package :cepl)
 
 (varjo:add-equivalent-name 'varjo-lang:v! 'cl-game-math.base-vectors:v!)
+(varjo:add-equivalent-name 'varjo-lang:s~ 'cl-game-math.vectors:s~)
 (varjo:add-equivalent-name 'varjo-lang:m! 'cl-game-math.base-matrices:m!)
 (varjo:add-equivalent-name 'varjo-lang:swizzle 'cl-game-math.vectors:swizzle)
 (varjo:add-equivalent-name 'varjo-lang:s~ 'cl-game-math.vectors:s~)

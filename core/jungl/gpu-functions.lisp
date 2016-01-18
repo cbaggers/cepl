@@ -133,15 +133,16 @@
 				     context)
 			      `(progn ,@body)
 			      nil)))
-	    (setf actual-uniforms (uniforms compiled);;[2]
+	    (setf actual-uniforms (uniforms compiled) ;;[2]
 		  uniform-transforms (with-hash (uv 'uniform-vals)
 					 (third-party-metadata compiled)
 				       (map-hash #'list uv)))
 	    (%update-gpu-function-data
 	     spec
-	     (remove-if-not #'gpu-func-spec (varjo::used-macros compiled));;[1]
+	     (remove-if-not #'gpu-func-spec (varjo::used-macros compiled)) ;;[1]
 	     compiled)))
-      (varjo::could-not-find-function (e);;[0]
+      ;;{TODO} WAT? missing-dependencies is missing
+      (varjo::could-not-find-function (e) ;;[0]
 	(setf missing-dependencies (list (slot-value e 'varjo::name)))))))
 
 (defun %recompile-gpu-function (name)

@@ -15,11 +15,11 @@
            :mesh->gpu
            :scene-meshes->gpu
            :calc-type)
-  (:import-from :vector2
+  (:import-from :cl-game-math.vector2
                 :make-vector2)
-  (:import-from :vector3
+  (:import-from :cl-game-math.vector3
                 :make-vector3)
-  (:import-from :vector4
+  (:import-from :cl-game-math.vector4
                 :make-vector4))
 
 (defpackage :meshes
