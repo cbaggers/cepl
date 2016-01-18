@@ -26,6 +26,14 @@
   (gpu-arrays nil)
   (managed nil))
 
+(defmethod print-object ((object vertex-stream) stream)
+  (format stream "#<JUNGL:VERTEX-STREAM (~s) :LENGTH ~s ~@[:ARRAYS ~s~] ~@[:INDEXED ~s~]>"
+	  (vertex-stream-vao object)
+	  (vertex-stream-length object)
+	  (when (vertex-stream-gpu-arrays object)
+	    (length (first (vertex-stream-gpu-arrays object))))
+	  (not (null (vertex-stream-index-type object)))))
+
 (defmethod free ((object vertex-stream))
   (free-vertex-stream object))
 
@@ -95,7 +103,5 @@
          :index-type (when index-array (element-type index-array))
          :managed t
          :gpu-arrays (when retain-arrays
-                       (append gpu-arrays
-                               (when index-array
-                                 (cons :index-array index-array)))))
+                       (list gpu-arrays index-array)))
         (error "You can only make vertex-streams from 1D arrays"))))

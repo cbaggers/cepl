@@ -259,11 +259,12 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :base-vectors :cepl-generics
         :split-sequence :named-readtables)
   (:shadowing-import-from :base-vectors :v!))
+
 (defpackage :cepl-gl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :base-vectors :cepl-generics
         :split-sequence :%cgl :named-readtables)
   (:shadowing-import-from :base-vectors :v!)
-  (:nicknames :cgl)
+  (:nicknames :cgl :jungl)
   (:import-from :utils
                 :deferror
                 :print-mem)
