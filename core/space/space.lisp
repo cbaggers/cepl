@@ -6,27 +6,31 @@
 (defstruct (space-event (:include skitter:skitter-event))
   (flush nil
          :type boolean)
-  (matrix-4 (m4:identity-matrix4)
+  (matrix-4 (m4:identity)
             :type (simple-array single-float (16))))
 
 ;;----------------------------------------------------------------------
 ;; Space Node
 
-(skitter::def-event-node-type space
-  (transform (m4:identity-matrix4)
+(skitter::def-event-node-type (space :constructor %make-space)
+  (transform (m4:identity)
              :type (simple-array single-float (16)))
   (has-propagated nil :type boolean)
   (nht (make-hash-table) :type hash-table) ;; {TODO} swap out later
   (root nil :type (or null space)))
 
+(defun make-space (transform &optional parent-space)
+  (assert (typep transform '(simple-array single-float (16))))
+  (assert (or (null parent-space) (typep parent-space 'space)))
+  (%make-space :transform transform :subscribe-to parent-space
+	       :root (when parent-space
+		       (%find-root parent-space))))
+
 (defmethod print-object ((object space) stream)
   (format stream "#<SPACE ~s>" (%uid object)))
 
 (defun space! (transform &optional parent-space)
-  (assert (typep transform '(simple-array single-float (16))))
-  (assert (or (null parent-space) (typep parent-space 'space)))
-  (make-space :transform transform :subscribe-to parent-space
-	      :root (%find-root parent-space)))
+  (make-space transform parent-space))
 
 (defun %uid (space) (evt::event-node-uid space))
 

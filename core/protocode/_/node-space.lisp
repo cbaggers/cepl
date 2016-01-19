@@ -1,7 +1,7 @@
 (in-package :cepl)
 
 (defstruct (node (:constructor %make-node) (:conc-name %node-))
-  (transform (m4:identity-matrix4) :type (simple-array single-float (16)))
+  (transform (m4:identity) :type (simple-array single-float (16)))
   (re-calc t :type boolean)
   (update-func #'node-transform
                :type (function (node) (simple-array single-float (16)))))
@@ -88,7 +88,7 @@
   (cache (make-vspace-cache) :type vspace-cache))
 
 (defstruct vspace-cache
-  (transform (m4:identity-matrix4) :type (simple-array single-float (16))))
+  (transform (m4:identity) :type (simple-array single-float (16))))
 
 (defun get-transform (space)
   (labels ((inner (space accum)

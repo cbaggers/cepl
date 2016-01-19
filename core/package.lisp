@@ -402,7 +402,7 @@
   (:shadowing-import-from :cl-game-math.base-matrices :m!)
   (:import-from :jungl :def-compile-pass :set-uniform :remove-uniform
 		:set-arg-val)
-  (:export :get-transform :p! :space-g :in))
+  (:export :get-transform :p! :space-g :in :space!))
 
 (defpackage :live
   (:use :cl :cepl-utils)

@@ -66,7 +66,8 @@
            ,@(make-autowrap-record-def autowrap-name slots))
          (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
            :constructor ,(symb '%make- name))
-         ,(make-varjo-struct-def name slots varjo-constructor)
+	 (eval-when (:compile-toplevel :load-toplevel :execute)
+	   ,(make-varjo-struct-def name slots varjo-constructor))
          ,@(when (and readers accesors)
                  (remove nil (mapcar (lambda (_)
                                        (make-slot-getter _ name autowrap-name))

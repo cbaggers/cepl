@@ -6,21 +6,21 @@
 (defun collect-inverse-to (start-space ancestor-space)
   (labels ((combine-inverse (accum space)
              (m4:m* (space-inverse-transform space) accum)))
-    ;; [TODO] unneccesary identity-matrix4 multiply, pass it start-space
+    ;; [TODO] unneccesary identity multiply, pass it start-space
     ;;        transform as initial-value and (parent-space start-space) as
     ;;        'of-space arg
     (m4:m* (space-inverse-transform ancestor-space)
            (reduce-ancestors #'combine-inverse start-space ancestor-space
-			     (m4:identity-matrix4)))))
+			     (m4:identity)))))
 
 (defun collect-transform-to (start-space ancestor-space)
   (labels ((combine-transform (accum space)
              (m4:m* (space-transform space) accum)))
-    ;; [TODO] unneccesary identity-matrix4 multiply, pass it start-space
+    ;; [TODO] unneccesary identity multiply, pass it start-space
     ;;        transform as initial-value and (parent-space start-space) as
     ;;        'of-space arg
     (reduce-ancestors #'combine-transform start-space ancestor-space
-                      (m4:identity-matrix4))))
+                      (m4:identity))))
 
 ;;----------------------------------------------------------------------
 ;; finding a common ancestor
