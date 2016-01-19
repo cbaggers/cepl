@@ -109,12 +109,15 @@
                  (if (eq new-result initial)
                      initial
                      (until-no-change new-result)))))
-      (let ((compile-result
-             (until-no-change
-              (varjo:translate in-args uniforms context body tp-meta))))
+      (let* ((translate-result
+	      (varjo:translate in-args uniforms context body tp-meta))
+	     (compile-result
+	      (until-no-change translate-result)))
         (with-hash (av 'uniform-vals) (third-party-metadata compile-result)
           (setf av arg-val-map))
         compile-result))))
+
+
 
 (defun v-rolling-translate (stages)
   (varjo:rolling-translate stages #'v-translate))
@@ -161,15 +164,17 @@
      changed)))
 
 (defun find-unused-uniforms (compiled)
-  (let* ((b-env (varjo::%get-base-env (ast-starting-env (ast compiled))))
-         (u-names (mapcar #'car (uniforms compiled)))
-         (pairs (mapcar λ(cons (flow-ids (get-var _ b-env)) _) u-names)))
+  (let* ((base-env (varjo::%get-base-env (ast-starting-env (ast compiled))))
+         (uniform-names (mapcar #'car (uniforms compiled)))
+	 ;; get a list of (flow-id . uniform-name)
+         (pairs (mapcar λ(cons (flow-ids (get-var _ base-env)) _)
+			uniform-names)))
+    ;; walk the ast, any time you see a flow-ids in the uniform-flowid map
+    ;; above (pairs) remove it. By the end, pairs will only contain unused
+    ;; uniforms
     (labels ((visit (node)
-               (setf pairs
-                     (reduce (lambda (accum fid)
-                               (remove-if λ(id~= fid (car _)) accum))
-                             (flow-ids node)
-                             :initial-value pairs))))
+               (setf pairs (remove-if λ(id~= (flow-ids node) (car _))
+				      pairs))))
       (visit-ast-nodes #'visit compiled)
       (mapcar #'cdr pairs))))
 

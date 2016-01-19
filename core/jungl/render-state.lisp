@@ -1,3 +1,5 @@
+(in-package :jungl)
+
 ;; 2.5 Context State
 ;; Context state is state that belongs to the GL context as a whole, rather than
 ;; to instances of the different object types
@@ -29,3 +31,12 @@
 ;; - vaos (mostly done, would like to support the draw-base* commands)
 ;; - query objects (nothing yet)
 ;; - sync objects (nothing yet)
+
+(defstruct context-state)
+
+(defstruct render-state
+  (context-state nil :type (or context-state null)))
+
+(let ((render-state (make-render-state)))
+  (defun get-render-state ()
+    render-state))

@@ -176,9 +176,10 @@ has not been cached yet")
 
 (defmethod pull1-g ((asset-name symbol))
   (if +cache-last-compile-result+
-      (slot-value (or (pipeline-spec asset-name)
-		      (gpu-func-spec asset-name))
-		  'cached-compile-results)
+      (or (slot-value (or (pipeline-spec asset-name)
+			  (gpu-func-spec asset-name))
+		      'cached-compile-results)
+	  (%pull-g-soft-message asset-name))
       +pull*-g-not-enabled-message+))
 
 (defmethod pull-g ((asset-name symbol))
@@ -189,10 +190,16 @@ has not been cached yet")
 		 (slot-value (pipeline-spec asset-name)
 			     'cached-compile-results)))
 	((gpu-func-spec asset-name)
-	 (ast->code (slot-value (gpu-func-spec asset-name)
+	 (let ((ast (slot-value (gpu-func-spec asset-name)
 				'cached-compile-results)))
-	(t (format nil +pull-g-not-cached-template+ asset-name)))
+	   (if ast
+	       (ast->code ast)
+	       (%pull-g-soft-message asset-name))))
+	(t (%pull-g-soft-message asset-name)))
       +pull*-g-not-enabled-message+))
+
+(defun %pull-g-soft-message (asset-name)
+  (format nil +pull-g-not-cached-template+ asset-name))
 
 ;;--------------------------------------------------
 

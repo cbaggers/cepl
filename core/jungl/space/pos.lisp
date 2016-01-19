@@ -55,10 +55,26 @@
   ((varjo::core :initform nil :reader varjo::core-typep)
    (varjo::glsl-string :initform "#<pos4-g>" :reader varjo::v-glsl-string)))
 
-(varjo:v-defmacro p! (v)
-  `(%p! ,v ,*current-space*))
+(varjo:v-defmacro p! (v &rest r)
+  (if r
+      `(%p! ,v ,@r ,*current-space*)
+      `(%p! ,v ,*current-space*)))
 
-(varjo:v-defun %p! (v s) "#<pos4-g(~a, ~a)>" (:vec4 space-g) pos4-g)
+(varjo:v-defun %p! (v s) "#<pos4-g(~a, ~a)>"
+	       (:vec4 space-g) pos4-g)
+
+(varjo:v-defun %p! (v w s) "#<pos4-g(~a, ~a, ~a)>"
+	       (:vec3 :float space-g) pos4-g)
+
+(varjo:v-defun %p! (v1 v2 s) "#<pos4-g(~a, ~a, ~a)>"
+	       (:vec2 :vec2 space-g) pos4-g)
+
+(varjo:v-defun %p! (v1 z w s) "#<pos4-g(~a, ~a, ~a, ~a)>"
+	       (:vec2 :float :float space-g) pos4-g)
+
+(varjo:v-defun %p! (x y z w s) "#<pos4-g(~a, ~a, ~a, ~a, ~a)>"
+	       (:float :float :float :float space-g) pos4-g)
+
 
 (varjo:v-defun v! (p) "~a" (pos4-g) :vec4)
 (varjo:v-defun v! (p) "~a" (:vec4) :vec4)

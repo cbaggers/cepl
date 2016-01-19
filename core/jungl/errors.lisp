@@ -127,3 +127,8 @@ internal texture format"
  Missing funcs: ~s
  To disable this warning for all future compilations:
  (setf jungl::*warn-when-cant-test-compile* nil)" gfunc-name missing-func-names)
+
+
+(deferror dont-define-space-to-self () (space)
+    "with-model-space: please dont try redefining the relationship between ~s and itself."
+  space)

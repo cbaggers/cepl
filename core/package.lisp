@@ -92,7 +92,7 @@
   (:import-from :utils
                 :deferror
                 :print-mem)
-  (:shadow :float)
+  (:shadow :float :space)
   (:export :cls
            :gl-context
            :*quad*
@@ -300,7 +300,13 @@
 	   :def-compile-pass
 	   :set-uniform
 	   :remove-uniform
-	   :set-arg-val))
+	   :set-arg-val
+	   ;;----------
+	   :*ndc-space*
+	   :*clip-space*
+	   :*world-space*
+	   :*model-space*
+	   ))
 
 (defpackage :varjo-bridge-types
   (:use :cl))

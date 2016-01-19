@@ -143,6 +143,9 @@
 	     compiled)))
       (varjo::could-not-find-function (e) ;;[0]
 	(setf missing-dependencies (list (slot-value e 'varjo::name)))
+	(when *warn-when-cant-test-compile*
+	  (format t "~% jungl: the function ~s was not found when compiling ~s"
+		  (first missing-dependencies) name))
 	(%update-gpu-function-data spec nil nil)))))
 
 (defun %recompile-gpu-function (name)
@@ -363,6 +366,7 @@
     (number (guess-a-varjo-number-type x))
     (array (guess-a-varjo-array-type x))
     (boolean (guess-a-varjo-bool-type x))
+    (space::space 'space::space-g)
     (t (error "Cant guess a suitable type for ~s" x))))
 
 (defun guess-a-varjo-bool-type (x)

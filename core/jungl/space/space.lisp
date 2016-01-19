@@ -19,6 +19,7 @@
   (nht (make-hash-table) :type hash-table) ;; {TODO} swap out later
   (root nil :type (or null space)))
 
+;; {TODO} transform is not needed in non-hierarchical
 (defun make-space (transform &optional parent-space)
   (assert (typep transform '(simple-array single-float (16))))
   (assert (or (null parent-space) (typep parent-space 'space)))
@@ -32,13 +33,42 @@
 (defun space! (transform &optional parent-space)
   (make-space transform parent-space))
 
-(defun %uid (space) (evt::event-node-uid space))
+(defun %uid (space) (skitter:event-node-uid space))
+
+;;----------------------------------------------------------------------
+;; (WIP) model space
+
+;; (let-model-space ((:to *clip-space* (m4:identity)))
+;;   (print :jam))
+
+(defmacro let-model-space ((&rest relationships) &body body)
+  (let ((hiding-names (mapcar (lambda (r) (declare (ignore r)) (gensym))
+			      relationships)))
+    `(let ((*model-space* (space! (m4:identity)))
+	   ,@(mapcar (lambda (r n) `(,n ,(second r)))
+		     relationships hiding-names))
+       ,@(gen-with-model-space-setfs relationships hiding-names)
+       ,@body)))
+
+(defun gen-with-model-space-setfs (relationships hiding-names)
+  (mapcar (lambda (r n) (with-model-relationship-to-setf r n))
+	  relationships
+	  hiding-names))
+
+(defun with-model-relationship-to-setf (r space-var)
+  (destructuring-bind (direction _ transform) r
+    (declare (ignore _))
+    (ecase direction
+      (:from `(add-non-hierarchical-relationship
+	       *model-space* ,space-var ,transform nil))
+      (:to `(add-non-hierarchical-relationship
+	       *model-space* ,space-var nil ,transform)))))
 
 ;;----------------------------------------------------------------------
 ;; Hierarchical Transforms
 
 (defun parent-space (space)
-  (first (evt::event-node-subscriptions space)))
+  (first (skitter::event-node-subscriptions space)))
 
 (defun %find-root (space)
   (labels ((walk (x)

@@ -43,6 +43,10 @@
                (:file "core/events/event-nodes")
                (:file "core/events/event-propagation")
 
+	       (:file "core/jungl/space/space")
+	       (:file "core/jungl/space/predefined-spaces")
+
+	       (:file "core/jungl/render-state")
                (:file "core/jungl/errors")
                (:file "core/jungl/cl-opengl-replacements")
                (:file "core/jungl/viewport")
@@ -79,13 +83,12 @@
                (:file "core/jungl/misc")
                (:file "core/camera/camera")
 
-               (:file "core/space/space")
-	       (:file "core/space/space-errors")
-	       (:file "core/space/space-walking")
-	       (:file "core/space/space-transforms")
-	       ;; (:file "core/space/predefined-spaces")
-	       (:file "core/space/pos")
-	       (:file "core/space/gpu")
+	       (:file "core/jungl/space/space-errors")
+	       (:file "core/jungl/space/space-walking")
+	       (:file "core/jungl/space/space-transforms")
+
+	       (:file "core/jungl/space/pos")
+	       (:file "core/jungl/space/gpu")
 
                (:file "core/live/live-macros")
                (:file "core/live/bootstrapping")
