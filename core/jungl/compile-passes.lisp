@@ -94,28 +94,34 @@
                             h)))
          (passes (mapcar λ(cons _ (make-pass-env arg-val-map))
                          (append (%get-passes) (%get-internal-passes)))))
-    (labels ((on-pass (c-result pass-pair)
-               (dbind (pass . transform-env) pass-pair
-                 (varjo::vbind (new-pass-args there-were-changes)
-                     (run-pass c-result pass transform-env
-                               in-args uniforms context)
-                   (if there-were-changes
-                       (apply #'varjo:translate new-pass-args)
-                       c-result))))
-             (once-through (initial)
-               (reduce #'on-pass passes :initial-value initial))
-             (until-no-change (initial)
-               (let ((new-result (once-through initial)))
-                 (if (eq new-result initial)
-                     initial
-                     (until-no-change new-result)))))
-      (let* ((translate-result
-	      (varjo:translate in-args uniforms context body tp-meta))
-	     (compile-result
-	      (until-no-change translate-result)))
-        (with-hash (av 'uniform-vals) (third-party-metadata compile-result)
-          (setf av arg-val-map))
-        compile-result))))
+    (handler-bind ((varjo::setq-type-match
+		    (lambda (c)
+		      (when (typep (varjo::code-type (varjo::new-value c))
+				   'space::pos4-g)
+			(invoke-restart 'varjo::setq-supply-alternate-type
+					:vec4)))))
+      (labels ((on-pass (c-result pass-pair)
+		 (dbind (pass . transform-env) pass-pair
+		   (varjo::vbind (new-pass-args there-were-changes)
+		       (run-pass c-result pass transform-env
+				 in-args uniforms context)
+		     (if there-were-changes
+			 (apply #'varjo:translate new-pass-args)
+			 c-result))))
+	       (once-through (initial)
+		 (reduce #'on-pass passes :initial-value initial))
+	       (until-no-change (initial)
+		 (let ((new-result (once-through initial)))
+		   (if (eq new-result initial)
+		       initial
+		       (until-no-change new-result)))))
+	(let ((translate-result
+	       (varjo:translate in-args uniforms context body tp-meta)))
+	  (let ((compile-result
+		 (until-no-change translate-result)))
+	    (with-hash (av 'uniform-vals) (third-party-metadata compile-result)
+	      (setf av arg-val-map))
+	    compile-result))))))
 
 
 

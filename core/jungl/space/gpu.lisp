@@ -91,7 +91,7 @@
     ;; here we set how we get the transform we are uploading
     (set-arg-val var-name `(get-transform ,from-name ,to-name) env)
     ;; and here is the replacement code for our crossing the spaces
-    `(* ,var-name ,node)))
+    `(values-safe (* ,var-name ,node))))
 
 (defun %gen-space->space-name (from-name to-name)
   "generate a name for the uniform that will contain the
@@ -110,7 +110,7 @@
 
 (defun cross-to-null-space (node env)
   (declare (ignore env))
-  `(v! ,node))
+  `(values-safe (v! ,node)))
 
 (defun p!->v! (node env)
   (declare (ignore env))
