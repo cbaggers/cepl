@@ -1,4 +1,4 @@
-(in-package :space)
+(in-package :jungl.space)
 
 ;;----------------------------------------------------------------------
 ;; ancestor walking function

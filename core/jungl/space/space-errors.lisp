@@ -1,4 +1,4 @@
-(in-package :space)
+(in-package :jungl.space)
 
 (jungl::deferror not-ancestor () (start-space ancestor-space)
     "spaces: ~s is not an ancestor of ~s"

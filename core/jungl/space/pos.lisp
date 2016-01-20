@@ -1,4 +1,4 @@
-(in-package :space)
+(in-package :jungl.space)
 
 ;; terminology
 ;; -----------
@@ -51,9 +51,9 @@
 ;;----------------------------------------------------------------------
 ;; gpu
 
-(varjo::def-v-type-class pos4-g (varjo::v-vec4)
-  ((varjo::core :initform nil :reader varjo::core-typep)
-   (varjo::glsl-string :initform "#<pos4-g>" :reader varjo::v-glsl-string)))
+(varjo::def-v-type-class pos4-g (varjo:v-vec4)
+  ((varjo::core :initform nil :reader varjo:core-typep)
+   (varjo::glsl-string :initform "#<pos4-g>" :reader varjo:v-glsl-string)))
 
 (varjo:v-defmacro p! (v &rest r)
   (if r

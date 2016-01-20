@@ -104,9 +104,6 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defvar %default-framebuffer nil)
-(defvar %current-fbo nil)
-
 (defun %make-default-framebuffer (dimensions &optional (double-buffering t) (depth t))
   (let ((result
          (%update-fbo-state

@@ -94,15 +94,16 @@
                             h)))
          (passes (mapcar λ(cons _ (make-pass-env arg-val-map))
                          (append (%get-passes) (%get-internal-passes)))))
-    (handler-bind ((varjo::setq-type-match
+    (handler-bind ((varjo-conditions:setq-type-match
 		    (lambda (c)
 		      (when (typep (varjo::code-type (varjo::new-value c))
-				   'space::pos4-g)
-			(invoke-restart 'varjo::setq-supply-alternate-type
-					:vec4)))))
+				   'jungl.space:pos4-g)
+			(invoke-restart
+			 'varjo-conditions:setq-supply-alternate-type
+			 :vec4)))))
       (labels ((on-pass (c-result pass-pair)
 		 (dbind (pass . transform-env) pass-pair
-		   (varjo::vbind (new-pass-args there-were-changes)
+		   (multiple-value-bind (new-pass-args there-were-changes)
 		       (run-pass c-result pass transform-env
 				 in-args uniforms context)
 		     (if there-were-changes
@@ -142,8 +143,8 @@
     (let* ((pairs+env
             (mapcar λ(dbind (filter func) _ `(,filter ,(fn:fn~r func env)))
                     filter-transform-pairs)))
-      (varjo::vbind (new-body there-were-changes)
-          (varjo::ast->code v-compile-result :filter-func-pairs pairs+env)
+      (multiple-value-bind (new-body there-were-changes)
+          (varjo:ast->code v-compile-result :filter-func-pairs pairs+env)
         (let ((new-uniforms
                (remove-duplicates
                 (append (reduce λ(remove _1 _ :key #'car)
@@ -166,11 +167,11 @@
      (with-slots (uniform-transform) pass
        (list original-in-args (if changed new-uniforms original-uniforms)
              original-context
-             (varjo::ast->code v-compile-result)))
+             (varjo:ast->code v-compile-result)))
      changed)))
 
 (defun find-unused-uniforms (compiled)
-  (let* ((base-env (varjo::%get-base-env (ast-starting-env (ast compiled))))
+  (let* ((base-env (varjo:get-base-env (ast-starting-env (ast compiled))))
          (uniform-names (mapcar #'car (uniforms compiled)))
 	 ;; get a list of (flow-id . uniform-name)
          (pairs (mapcar λ(cons (flow-ids (get-var _ base-env)) _)

@@ -1,4 +1,4 @@
-(in-package :space)
+(in-package :jungl.space)
 
 ;;----------------------------------------------------------------------
 ;; walk up the space graph collecting transforms

@@ -18,7 +18,7 @@
                     :title title)
   (evt:register-thunk-with-pump-events
    (lambda ()
-     (cepl-event-hook event)
+     (evt:cepl-event-hook event)
      (cepl-backend:get-event-pump cepl-backend:*backend*))))
 
 (defun quit () (cepl-backend:shutdown cepl-backend:*backend*))

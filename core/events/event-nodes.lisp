@@ -7,6 +7,14 @@
   (skitter-event-timestamp object))
 
 ;;----------------------------------------------------------------------
+
+(defvar |sys| nil)
+(defvar |context| nil)
+(defvar |window| nil)
+(defvar |mouse| nil)
+(defvar |keyboard| nil)
+
+;;----------------------------------------------------------------------
 ;; backend event
 
 ;; an event that also contains the backend specific event is represents
@@ -126,7 +134,7 @@
 ;;----------------------------------------------------------------------
 ;; cepl system events
 
-(defvar |sys|
+(setf |sys|
   (make-event-node
    :name 'cepl-internals
    :tags '(:cepl-internal :system)
@@ -136,7 +144,7 @@
 ;;----------------------------------------------------------------------
 ;; context events
 
-(defvar |context|
+(setf |context|
   (make-event-node
    :name 'cepl-internals
    :tags '(:context)
@@ -146,7 +154,7 @@
 ;;----------------------------------------------------------------------
 ;; cepl window events
 
-(defvar |window|
+(setf |window|
   (make-event-node
    :name 'cepl-window
    :tags '(:window)
@@ -165,7 +173,7 @@
   (labels ((update-mouse-state (event)
               (when (typep event 'mouse-button)
                 (setf (gethash (button event) button-state) (state event)))))
-    (defvar |mouse|
+    (setf |mouse|
       (make-event-node
        :name 'cepl-mouse
        :tags '(:mouse)
@@ -179,7 +187,7 @@
 (let ((key-state (make-hash-table)))
   (labels ((update-key-states (event)
              (setf (gethash (key event) key-state) (state event))))
-    (defvar |keyboard|
+    (setf |keyboard|
       (make-event-node
        :name 'cepl-keyboard
        :tags '(:keyboard)

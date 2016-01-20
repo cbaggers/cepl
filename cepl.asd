@@ -30,7 +30,8 @@
 	       #:fn
 	       #:skitter
 	       #:dendrite
-	       #:cl-game-math)
+	       #:cl-game-math
+	       #:structy-defclass)
   :components ((:file "core/package")
                (:file "core/errors")
                (:file "core/backend")
@@ -46,6 +47,7 @@
 	       (:file "core/jungl/space/space")
 	       (:file "core/jungl/space/predefined-spaces")
 
+	       (:file "core/jungl/global-vars")
 	       (:file "core/jungl/render-state")
                (:file "core/jungl/errors")
                (:file "core/jungl/cl-opengl-replacements")

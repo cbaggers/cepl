@@ -93,7 +93,7 @@
     (let* ((in-arg-names (mapcar #'first in-args))
 	   (uniform-names (mapcar #'first uniforms))
 	   (macro-func-name (gensym))
-	   (fbody `(list 'varjo::labels-no-implicit ;;[1]
+	   (fbody `(list 'varjo-lang:labels-no-implicit ;;[1]
 			 '((,macro-func-name (,@in-args ,@uniforms) ,@body))
 			 (list ',macro-func-name
 			       ,@in-arg-names ,@uniform-names)))
@@ -125,7 +125,7 @@
    that transform between the public uniform arguments and the internal ones."
   (with-gpu-func-spec spec
     (handler-case
-	(varjo::with-stemcell-infer-hook
+	(varjo:with-stemcell-infer-hook
 	    #'try-guessing-a-varjo-type-for-symbol
 	  (let ((compiled
 		 (v-translate in-args uniforms
@@ -139,9 +139,9 @@
 				       (map-hash #'list uv)))
 	    (%update-gpu-function-data
 	     spec
-	     (remove-if-not #'gpu-func-spec (varjo::used-macros compiled)) ;;[1]
+	     (remove-if-not #'gpu-func-spec (varjo:used-macros compiled)) ;;[1]
 	     compiled)))
-      (varjo::could-not-find-function (e) ;;[0]
+      (varjo-conditions:could-not-find-function (e) ;;[0]
 	(setf missing-dependencies (list (slot-value e 'varjo::name)))
 	(when *warn-when-cant-test-compile*
 	  (format t "~% jungl: the function ~s was not found when compiling ~s"
@@ -297,7 +297,7 @@
    Each pair contains:
    - the shader stage (e.g. vertex fragment etc)
    - the name of the gpu function to use for this stage"
-  (varjo::with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
+  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
     (v-rolling-translate
      (mapcar #'parsed-gpipe-args->v-translate-args parsed-gpipe-args))))
 
@@ -315,7 +315,7 @@
   (dbind (stage-type . stage-name) stage-pair
     (dbind (in-args uniforms context code) (get-func-as-stage-code stage-name)
       ;;[1]
-      (let ((n (count-if (lambda (_) (member _ varjo::*stage-types*))
+      (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
 			 context)))
 	(assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
       (let ((context (cons :iuniforms ;;[0]
@@ -366,7 +366,7 @@
     (number (guess-a-varjo-number-type x))
     (array (guess-a-varjo-array-type x))
     (boolean (guess-a-varjo-bool-type x))
-    (space::space 'space::space-g)
+    (jungl.space:space 'jungl.space:space-g)
     (t (error "Cant guess a suitable type for ~s" x))))
 
 (defun guess-a-varjo-bool-type (x)

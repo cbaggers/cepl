@@ -460,7 +460,7 @@
     (null (error 'make-tex-no-content-no-type))
     (c-array (lisp-type->internal-format
               (element-type initial-contents)))
-    (cepl-uploadable-seq (scan-for-type initial-contents))))
+    (cepl-uploadable-lisp-seq (scan-for-type initial-contents))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 

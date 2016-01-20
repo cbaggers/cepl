@@ -1,4 +1,4 @@
-(in-package :space)
+(in-package :jungl.space)
 
 ;;----------------------------------------------------------------------
 ;; Space Events
@@ -113,9 +113,9 @@
 ;;----------------------------------------------------------------------
 ;; GPU
 
-(varjo::def-v-type-class space-g (varjo::v-type)
-  ((varjo::core :initform nil :reader varjo::core-typep)
-   (varjo::glsl-string :initform "#<space>" :reader varjo::v-glsl-string)))
+(varjo::def-v-type-class space-g (varjo:v-type)
+  ((varjo::core :initform nil :reader varjo:core-typep)
+   (varjo::glsl-string :initform "#<space>" :reader varjo:v-glsl-string)))
 
 ;; a name for the space
 (defvar *current-space* (gensym "current-space"))

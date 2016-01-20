@@ -82,13 +82,14 @@
            :p->))
 
 (defpackage :%jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors :cepl-generics
-        :split-sequence :named-readtables)
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors
+	:cepl-generics :split-sequence :named-readtables :structy-defclass)
   (:shadowing-import-from :cl-game-math.base-vectors :v!))
 
 (defpackage :jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors :cepl-generics
-        :split-sequence :%jungl :named-readtables)
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors
+	:cepl-generics :split-sequence :%jungl :named-readtables
+	:structy-defclass)
   (:shadowing-import-from :cl-game-math.base-vectors :v!)
   (:import-from :utils
                 :deferror
@@ -302,11 +303,6 @@
 	   :set-uniform
 	   :remove-uniform
 	   :set-arg-val
-	   ;;----------
-	   :*ndc-space*
-	   :*clip-space*
-	   :*world-space*
-	   :*model-space*
 	   ))
 
 (defpackage :varjo-bridge-types
@@ -360,6 +356,7 @@
    :make-event-node
 
    ;; from-cepl
+   :cepl-event-hook
    :register-thunk-with-pump-events
    :pump-events
    :inject-backend-event
@@ -401,15 +398,17 @@
    :timestamp
    :data))
 
-(defpackage :space
-  (:use :cl :cl-game-math.base-vectors :cl-game-math.base-matrices :cepl-utils :cepl.events
-	:named-readtables :varjo :varjo-lang)
+(defpackage :jungl.space
+  (:use :cl :cl-game-math.base-vectors :cl-game-math.base-matrices :cepl-utils
+	:cepl.events :named-readtables :varjo :varjo-lang)
   (:shadow :space)
   (:shadowing-import-from :cl-game-math.base-vectors :v!)
   (:shadowing-import-from :cl-game-math.base-matrices :m!)
   (:import-from :jungl :def-compile-pass :set-uniform :remove-uniform
 		:set-arg-val)
-  (:export :get-transform :p! :space-g :in :space!))
+  (:export :get-transform :p! :in :space! :make-space
+	   :*ndc-space* :*clip-space* :*world-space* :*model-space*
+	   :space :pos4 :space-g :pos4-g))
 
 (defpackage :live
   (:use :cl :cepl-utils)
@@ -430,8 +429,7 @@
         :named-readtables
         :jungl)
   (:shadow :quit)
-  (:import-from :space :p!)
-  (:import-from :space :space-g :in)
+  (:import-from :jungl.space :p! :space-g :in)
   (:import-from :live
                 :continuable
                 :update-swank
@@ -618,5 +616,4 @@
 	   ;;---
 	   :p!
 	   :space-g
-	   :in
-	   ))
+	   :in))

@@ -1,7 +1,8 @@
 (in-package :jungl)
 (in-readtable fn:fn-reader)
 
-(defun %defpipeline-gfuncs (name args gpipe-args options &optional suppress-compile)
+(defun %defpipeline-gfuncs (name args gpipe-args options
+			    &optional suppress-compile)
   ;; {TODO} context is now options, need to parse this
   (when args (error 'shader-pipeline-non-null-args :pipeline-name name))
   (assert-valid-gpipe-form name gpipe-args :shader)
@@ -184,7 +185,7 @@
 			    stage-names
 			    :initial-value nil)))
 	   :test #'equal))
-         (prim-type (varjo::get-primitive-type-from-context context))
+         (prim-type (varjo:get-primitive-type-from-context context))
          (u-uploads (mapcar #'second uniform-assigners)))
     `(progn
        (defun ,(symb :%touch- name) ()
@@ -272,9 +273,9 @@
           result))))
 
 (defun %make-arg-assigners (uniform-arg)
-  (varjo::with-arg (arg-name varjo-type~1 qualifiers glsl-name) uniform-arg
+  (varjo:with-v-arg (arg-name varjo-type~1 qualifiers glsl-name) uniform-arg
     (let* ((local-arg-name 'val)
-           (glsl-name (or glsl-name (varjo::safe-glsl-name-string arg-name)))
+           (glsl-name (or glsl-name (varjo:safe-glsl-name-string arg-name)))
            (assigner (dispatch-make-assigner local-arg-name varjo-type~1
                                              glsl-name qualifiers)))
       `(,(let-forms assigner)
@@ -358,7 +359,7 @@
     (merge-into-assigner
      t
      (loop :for i :below array-length
-        :if (varjo:v-typep element-type 'varjo::v-user-struct) :append
+        :if (varjo:v-typep element-type 'varjo:v-user-struct) :append
         (make-struct-assigners arg-name element-type
                                (format nil "~a[~a]" glsl-name-path i)
                                byte-offset)
@@ -401,7 +402,7 @@
       :for (pslot-type array-length . rest) := (listify v-slot-type)
       :append
       (let* ((pslot-type (type-spec->type pslot-type))
-             (glsl-name (varjo::safe-glsl-name-string l-slot-name))
+             (glsl-name (varjo:safe-glsl-name-string l-slot-name))
              (glsl-name-path (format nil "~a.~a" glsl-name-path glsl-name)))
         (cond
           ;;

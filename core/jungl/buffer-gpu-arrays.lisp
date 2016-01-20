@@ -21,9 +21,7 @@
           (element-type object)
           (gpuarray-dimensions object)))
 
-(defmethod print-mem ((thing gpuarray) &optional (size-in-bytes 64) (offset 0))
-  (with-gpu-array-as-pointer (a thing :access-type :read-only)
-    (print-mem (cffi:inc-pointer a offset) size-in-bytes)))
+;; defmethod print-mem can be found further down the page
 
 (defmethod backed-by ((object gpuarray))
   :buffer)
@@ -156,6 +154,28 @@
                              :access-style (gpuarray-access-style array))
               (error "Invalid subseq start or end for c-array"))))))
 
+(defmacro with-gpu-array-as-pointer
+    ((temp-name gpu-array &key (access-type :read-write)) &body body)
+  "This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   giving you the pointer"
+  (unless (find access-type '(:read-write :read-only :write-only))
+    (error "The access argument must be set to :read-write :read-only or :write-only"))
+  (let ((glarray-pointer (gensym "POINTER"))
+        (buffer-sym (gensym "BUFFER"))
+        (target (gensym "target")))
+    `(let ((,buffer-sym (gpuarray-buffer ,gpu-array))
+           (,target :array-buffer))
+       (force-bind-buffer ,buffer-sym ,target)
+       (gl:with-mapped-buffer (,glarray-pointer
+                               ,target
+                               ,access-type)
+         (if (pointer-eq ,glarray-pointer (null-pointer))
+             (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
+                    ,glarray-pointer)
+             (let ((,temp-name ,glarray-pointer))
+               ,@body))))))
+
 ;; [TODO] Dont require a temporary name, just use the one it has
 ;;        this makes it feel more magical to me and also it is
 ;;        in-line with things like with-slots
@@ -184,27 +204,10 @@
                  (cffi:inc-pointer ,temp-name (gpuarray-offset ,ggpu-array)))))
            ,@body)))))
 
-(defmacro with-gpu-array-as-pointer
-    ((temp-name gpu-array &key (access-type :read-write)) &body body)
-  "This macro is really handy if you need to have random access
-   to the data on the gpu. It takes a gpu-array and maps it
-   giving you the pointer"
-  (unless (find access-type '(:read-write :read-only :write-only))
-    (error "The access argument must be set to :read-write :read-only or :write-only"))
-  (let ((glarray-pointer (gensym "POINTER"))
-        (buffer-sym (gensym "BUFFER"))
-        (target (gensym "target")))
-    `(let ((,buffer-sym (gpuarray-buffer ,gpu-array))
-           (,target :array-buffer))
-       (force-bind-buffer ,buffer-sym ,target)
-       (gl:with-mapped-buffer (,glarray-pointer
-                               ,target
-                               ,access-type)
-         (if (pointer-eq ,glarray-pointer (null-pointer))
-             (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
-                    ,glarray-pointer)
-             (let ((,temp-name ,glarray-pointer))
-               ,@body))))))
+
+(defmethod print-mem ((thing gpuarray) &optional (size-in-bytes 64) (offset 0))
+  (with-gpu-array-as-pointer (a thing :access-type :read-only)
+    (print-mem (cffi:inc-pointer a offset) size-in-bytes)))
 
 (defun gpu-array-pull-1 (gpu-array)
   "This function returns the contents of the gpu array as a c-array
