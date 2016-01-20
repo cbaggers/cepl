@@ -437,3 +437,14 @@
 (defmacro ---block-doc--- (doc-string &body body)
   (declare (ignore doc-string))
   `(progn ,@body))
+
+(defgeneric make-length-same (list list-to-match &optional fill-value))
+
+(defmethod make-length-same ((list list) (list-to-match list)
+			     &optional fill-value)
+  (let ((l1 (length list))
+	(l2 (length list-to-match)))
+    (cond ((= l1 l2) list)
+	  ((< l1 l2) (append list (loop :for i :from l1 :below l2 :collect
+				     fill-value)))
+	  (t (error "make-length-same wont shrink the source list")))))

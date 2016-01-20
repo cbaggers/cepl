@@ -254,15 +254,15 @@
 
    This function replaces the lisp type names with the gpu type they map to."
   (with-gpu-func-spec spec
-    (mapcar (lambda (equivalent-type original-arg)
-	      (dbind (o-name o-type . o-qualifiers) original-arg
-		(declare (ignore o-type))
-		(if equivalent-type
-		    `(,o-name ,equivalent-type ,@o-qualifiers)
-		    original-arg)))
-            equivalent-uniforms (if interal-uniforms-p
-				    actual-uniforms
-				    uniforms))))
+    (let ((uniforms (if interal-uniforms-p actual-uniforms uniforms)))
+      (mapcar (lambda (equivalent-type original-arg)
+		(dbind (o-name o-type . o-qualifiers) original-arg
+		  (declare (ignore o-type))
+		  (if equivalent-type
+		      `(,o-name ,equivalent-type ,@o-qualifiers)
+		      original-arg)))
+	      (make-length-same equivalent-uniforms uniforms)
+	      uniforms))))
 
 (defun aggregate-uniforms (names &optional accum interal-uniforms-p)
   "[0] Aggregates the uniforms from the named gpu-functions,

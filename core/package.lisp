@@ -53,6 +53,7 @@
            :hash-keys
            :intersperse
            :walk-replace
+	   :make-length-same
            :file-to-string
            :flatten
            :find-in-tree
