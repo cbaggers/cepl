@@ -186,9 +186,11 @@ has not been cached yet")
   (if +cache-last-compile-result+
       (cond
 	((pipeline-spec asset-name)
-	 (mapcar #'varjo:glsl-code
-		 (slot-value (pipeline-spec asset-name)
-			     'cached-compile-results)))
+	 (let ((p (slot-value (pipeline-spec asset-name)
+			      'cached-compile-results)))
+	   (if p
+	       (mapcar #'varjo:glsl-code p)
+	       (%pull-g-soft-message asset-name))))
 	((gpu-func-spec asset-name)
 	 (let ((ast (slot-value (gpu-func-spec asset-name)
 				'cached-compile-results)))
