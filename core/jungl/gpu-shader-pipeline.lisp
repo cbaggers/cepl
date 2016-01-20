@@ -34,7 +34,8 @@
                    ,(def-dispatch-func name (first init-func) stage-names
 				       context pass-key)))
                ;; generate the function that recompiles this pipeline
-               ,(gen-recompile-func name args gpipe-args stage-names options)
+               ,(gen-recompile-func name args gpipe-args stage-names options
+				    pass-key)
                ,(unless suppress-compile `(,(recompile-name name))))))))))
 
 (defun fallback-implicit-uniform-func (context)
@@ -43,14 +44,14 @@
                                (declare (ignore prog-id)
                                         (optimize (speed 3) (safety 1)))))))
 
-(defun gen-recompile-func (name args gpipe-args stage-names options)
+(defun gen-recompile-func (name args gpipe-args stage-names options pass-key)
   `(defun ,(recompile-name name) ()
-     (unless (equal (slot-value (pipeline-spec ',name) 'change-spec)
-                    (make-pipeline-change-signature ',stage-names))
-       (let ((*standard-output* (make-string-output-stream)))
-         (handler-bind ((warning #'muffle-warning))
-           (eval (%defpipeline-gfuncs
-                  ',name ',args ',gpipe-args ',options t)))))))
+     (format t "~&; recompile cpu side of (~a ...)~&" ',name)
+     (force-output)
+     (let ((*standard-output* (make-string-output-stream)))
+       (handler-bind ((warning #'muffle-warning))
+	 (eval (%defpipeline-gfuncs
+		',name ',args ',gpipe-args ',options t))))))
 
 (defun %update-spec (name stage-names context gpipe-context)
   (update-pipeline-spec
@@ -188,10 +189,20 @@
          (prim-type (varjo:get-primitive-type-from-context context))
          (u-uploads (mapcar #'second uniform-assigners)))
     `(progn
-       (defun ,(symb :%touch- name) ()
+       (defun ,(symb :%touch- name) (&key verbose)
 	 (unless prog-id
-	   (setf prog-id (,init-func-name))
-	   t))
+	   (setf prog-id (,init-func-name)))
+	 (when verbose
+	   (format t
+		   ,(format nil
+			    "~%----------------------------------------
+~%name: ~s~%~%pipeline compile context: ~s~%~%uniform assigners:~%~s~%~%uniform transforms:~%~s
+~%----------------------------------------"
+			    name
+			    context
+			    uniform-assigners
+			    uniform-transforms)))
+	 t)
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignore mapg-context) (ignorable ,@uniform-names))
          (unless prog-id

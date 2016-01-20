@@ -99,6 +99,7 @@
 			       ,@in-arg-names ,@uniform-names)))
 	   (to-compile `(lambda (,@in-arg-names ,@uniform-names);;[1]
 			  ,fbody)))
+      (%update-gpu-function-data spec nil nil)
       (varjo::add-macro name (compile nil to-compile)
 			context varjo::*global-env*);;[1]
       `(progn
@@ -261,7 +262,7 @@
 		  (if equivalent-type
 		      `(,o-name ,equivalent-type ,@o-qualifiers)
 		      original-arg)))
-	      (make-length-same equivalent-uniforms uniforms)
+	      (make-length-same equivalent-uniforms uniforms nil nil)
 	      uniforms))))
 
 (defun aggregate-uniforms (names &optional accum interal-uniforms-p)

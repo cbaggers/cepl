@@ -438,13 +438,17 @@
   (declare (ignore doc-string))
   `(progn ,@body))
 
-(defgeneric make-length-same (list list-to-match &optional fill-value))
+(defgeneric make-length-same
+    (list list-to-match &optional fill-value error-on-shorten-p))
 
 (defmethod make-length-same ((list list) (list-to-match list)
-			     &optional fill-value)
+			     &optional fill-value (error-on-shorten-p t))
   (let ((l1 (length list))
 	(l2 (length list-to-match)))
     (cond ((= l1 l2) list)
 	  ((< l1 l2) (append list (loop :for i :from l1 :below l2 :collect
 				     fill-value)))
-	  (t (error "make-length-same wont shrink the source list")))))
+	  (t (if error-on-shorten-p
+		 (error "make-length-same wont shrink the source list:
+source: ~s~%list-to-match: ~s" list list-to-match)
+		 (subseq list 0 (length list-to-match)))))))
