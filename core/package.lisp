@@ -86,6 +86,10 @@
 	:cepl-generics :split-sequence :named-readtables :structy-defclass)
   (:shadowing-import-from :cl-game-math.base-vectors :v!))
 
+(defpackage :jungl.space.routes
+  (:use #:cl #:fn #:named-readtables)
+  (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
+
 (defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors
 	:cepl-generics :split-sequence :%jungl :named-readtables

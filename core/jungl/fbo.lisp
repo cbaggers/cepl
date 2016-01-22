@@ -11,7 +11,10 @@
   (id -1 :type fixnum)
   (attachment-color (make-array (max-draw-buffers *gl-context*)
                                 :element-type 'attachment
-                                :initial-element (%make-attachment))
+                                :initial-contents
+				(loop :for i
+				   :below (max-draw-buffers *gl-context*)
+				   :collect (%make-attachment)))
                     :type (array attachment *))
   (draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
                                   (max-draw-buffers *gl-context*)
