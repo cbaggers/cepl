@@ -59,9 +59,9 @@
   (destructuring-bind (direction _ transform) r
     (declare (ignore _))
     (ecase direction
-      (:from `(add-non-hierarchical-relationship
+      (:from `(update-non-hierarchical-relationship
 	       *model-space* ,space-var ,transform nil))
-      (:to `(add-non-hierarchical-relationship
+      (:to `(update-non-hierarchical-relationship
 	       *model-space* ,space-var nil ,transform)))))
 
 ;;----------------------------------------------------------------------
@@ -98,6 +98,16 @@
 	(make-transformer :to a->b :from b->a)
 	(gethash space-a (space-nht space-b))
 	(make-transformer :to b->a :from a->b))
+  space-a)
+
+(defun update-non-hierarchical-relationship (space-a space-b a->b b->a)
+  (let ((tr (gethash space-b (space-nht space-a))))
+    (setf (transformer-to tr) a->b
+	  (transformer-from tr) b->a))
+
+  (let ((tr (gethash space-a (space-nht space-b))))
+    (setf (transformer-to tr) b->a
+	  (transformer-from tr) a->b))
   space-a)
 
 (defun remove-non-hierarchical-relationship (space-a space-b)

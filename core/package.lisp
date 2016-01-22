@@ -165,6 +165,7 @@
            :with-viewport
            :with-fbo-viewport
            :viewport-resolution
+	   :viewport-resolution-v!
            :clear-gl-context-cache
            :free
            :update-display
@@ -408,7 +409,12 @@
 		:set-arg-val)
   (:export :get-transform :p! :in :space! :make-space
 	   :*ndc-space* :*clip-space* :*world-space* :*model-space*
-	   :space :pos4 :space-g :pos4-g))
+	   :space :pos4 :space-g :pos4-g :let-model-space
+	   :parent-space
+	   :space-inverse-transform
+	   :add-non-hierarchical-relationship
+	   :update-non-hierarchical-relationship
+	   :remove-non-hierarchical-relationship))
 
 (defpackage :live
   (:use :cl :cepl-utils)
