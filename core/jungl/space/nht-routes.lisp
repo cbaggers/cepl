@@ -1,6 +1,34 @@
 (in-package :jungl.space.routes)
 (in-readtable fn:fn-reader)
 
+;; ideas for memory hungryness:
+;; - dual approach? skip lists for short neighbour lists and full arrays
+;;   for long?
+;; - relationship based ids?
+;; - can half the size by only storing a->b and not b->a. Any route to a
+;;   lower id is just the reverse of the inverse route
+;; - multi chain system
+;;   - first node gets a chain id, next node added joins that chain
+;;   - any node which joins an end of the chain (or both ends) is part of
+;;     the same chain
+;;   - other nodes add (in middle of a chain) start a new chain and are a
+;;     member of both chains.
+;;   - (n2/2) maps are only for chain local relationships
+;;   - then one map for between chains
+;;   - optimal for many medium size pools
+;;   - doesnt exclude one way relationships
+;; - skip list is best if ids clumped based on relationship..which isnt the case
+;;   - could add graph-defrag, but when to run it?
+;;   - could be incremental, but as outside world only has pointers (fixnums)
+;;   - we need a outer-id->inner-id cache.
+;; -
+
+;; other ideas
+;; - store neighbour-index along with absolute-id to allow fast lookups
+;;   into nht transforms when being used by spaces
+;; -
+
+
 ;;----------------------------------------------------------------------
 ;; Constants
 
@@ -200,7 +228,7 @@
 ;; Adding
 
 (defun add-id (new-id connect-to-ids)
-  (case (length connect-to-ids)
+  (case= (length connect-to-ids)
     (0 nil)
     (1 (connect-to-1 new-id (first connect-to-ids)))
     (otherwise (connect-to-many new-id connect-to-ids)))

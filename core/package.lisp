@@ -46,6 +46,7 @@
   (:export :gdefun
            :dbind
            :assoc-bind
+	   :case=
            :sn-equal
            :listify
            :replace-nth
@@ -87,7 +88,7 @@
   (:shadowing-import-from :cl-game-math.base-vectors :v!))
 
 (defpackage :jungl.space.routes
-  (:use #:cl #:fn #:named-readtables)
+  (:use #:cl #:fn #:named-readtables #:cepl-utils)
   (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
 
 (defpackage :jungl
@@ -404,8 +405,9 @@
    :data))
 
 (defpackage :jungl.space
-  (:use :cl :cl-game-math.base-vectors :cl-game-math.base-matrices :cepl-utils
-	:cepl.events :named-readtables :varjo :varjo-lang)
+  (:use :cl :cepl-utils :cl-game-math.types :cl-game-math.base-vectors
+	:cl-game-math.base-matrices :cepl.events :named-readtables :varjo
+	:varjo-lang :structy-defclass)
   (:shadow :space)
   (:shadowing-import-from :cl-game-math.base-vectors :v!)
   (:shadowing-import-from :cl-game-math.base-matrices :m!)

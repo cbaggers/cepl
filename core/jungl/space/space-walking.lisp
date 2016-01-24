@@ -12,7 +12,7 @@
   (labels ((walk (accum space)
              (if space
                  (walk (funcall function accum space)
-                       (parent-space space))
+                       (%space-parent space))
                  accum)))
     (walk initial-value of-space)))
 
@@ -35,7 +35,7 @@
                            :ancestor-space until-space
                            :start-space of-space))
                    (t (walk (funcall function accum space)
-                            (parent-space space))))))
+                            (%space-parent space))))))
     (walk initial-value of-space)))
 
 (defun reduce-ancestors (function of-space &optional until-space initial-value)
@@ -47,7 +47,7 @@
                                             :start-space of-space)
                                      accum))
                    (t (walk (funcall function accum space)
-                            (parent-space space))))))
+                            (%space-parent space))))))
     (walk initial-value of-space)))
 
 (define-compiler-macro reduce-ancestors

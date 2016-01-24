@@ -26,27 +26,27 @@
 (defvar *default-pos-space*)
 
 (defun p! (vec &optional (space *default-pos-space*))
-  (ecase (length vec)
+  (case= (length vec)
     (3 (%%-pos3! :space space :point vec))
     (4 (%%-pos4! :space space :point vec))))
 
 (defun to-space (destination-space pos)
-  (ecase (length pos)
-    (3 (m4:transform (get-transform (pos-space pos) destination-space)
-		     (pos3-point pos)))
-    (4 (m4:transform (get-transform (pos-space pos) destination-space)
-		     (pos4-point pos)))))
+  (typecase pos
+    (pos3 (m4:transform (get-transform (pos-space pos) destination-space)
+			(pos3-point pos)))
+    (pos4 (m4:transform (get-transform (pos-space pos) destination-space)
+			(pos4-point pos)))))
 
 (defun re-space (new-space pos)
   "makes a new point in the same location as the first but relative to the
    provided new space"
-  (ecase (length pos)
-    (3 (p! (m4:transform (get-transform (pos-space pos) new-space)
-			 (pos3-point pos))
-	   new-space))
-    (4 (p! (m4:transform (get-transform (pos-space pos) new-space)
-			 (pos4-point pos))
-	   new-space))))
+  (typecase pos
+    (pos3 (p! (m4:transform (get-transform (pos-space pos) new-space)
+			    (pos3-point pos))
+	      new-space))
+    (pos4 (p! (m4:transform (get-transform (pos-space pos) new-space)
+			    (pos4-point pos))
+	      new-space))))
 
 ;;----------------------------------------------------------------------
 ;; gpu

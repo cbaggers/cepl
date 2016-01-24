@@ -1,29 +1,92 @@
 (in-package :jungl.space)
 
+
 ;;----------------------------------------------------------------------
-;; walk up the space graph collecting transforms
+;; Model
+
+(defun %mspace-to-hspace-transform (from-space to-space)
+  (if (eq (%space-root to-space) from-space)
+      (collect-inverse-to to-space from-space)
+      (let ((dest-root (%space-root to-space)))
+	(m4:m* (collect-inverse-to to-space dest-root)
+	       (%rspace-to-rspace-transform from-space dest-root)))))
+
+(defun %mspace-to-rspace-transform (mspace rspace)
+  (let* ((only-sr (%mspace-only-sr mspace))
+	 (neighbour-id (sr-target-id only-sr))
+	 (to-neighbour (sr-to only-sr))
+	 (rspace-id (%space-nht-id rspace)))
+    (if (= rspace-id neighbour-id)
+	to-neighbour
+	(m4:m* (%rspace-ids-transform neighbour-id rspace-id)
+	       to-neighbour))))
+
+;;----------------------------------------------------------------------
+;; Relational
+
+(defun %rspace-to-rspace-transform (space-a space-b)
+  (%rspace-ids-transform (%space-nht-id space-a) (%space-nht-id space-b)))
+
+(defun %rspace-to-hspace-transform (from-space to-space)
+  (if (eq (%space-root to-space) from-space)
+      (collect-inverse-to to-space from-space)
+      (let ((dest-root (%space-root to-space)))
+	(m4:m* (collect-inverse-to to-space dest-root)
+	       (%rspace-to-rspace-transform from-space dest-root)))))
+
+;;----------------------------------------------------------------------
+;; Hierarchical
+;;
+;; the hspace transform is from the parent to the current space
+;;
+
+(defun %hspace-transform (hspace)
+  (declare ;;(optimize (speed 3) (debug 0))
+   (inline sr-from %space-neighbours))
+  (sr-to (aref (%space-neighbours hspace) 0)))
+
+(defun %hspace-inverse-transform (space)
+  (m4:affine-inverse (%hspace-transform space)))
+
+(defun %hspace-to-mspace-transform (from-space to-space)
+  (if (eq (%space-root to-space) from-space)
+      (collect-inverse-to to-space from-space)
+      (error "cannot transform from a hierarchical space to a model space if the space is not a child of the model space")))
+
+(defun %hspace-to-rspace-transform (from-space to-space)
+  (if (eq (%space-root from-space) to-space)
+      (collect-transform-to from-space to-space)
+      (let ((dest-root (%space-root from-space)))
+	(m4:m* (%rspace-to-rspace-transform from-space dest-root)
+	       (collect-inverse-to to-space dest-root)))))
+
+(defun %hspace-to-hspace-transform (from-space to-space)
+  (if (eq (%space-root from-space) (%space-root to-space))
+      (%get-hierarchical-transform from-space to-space)
+      (let ((from-root (%space-root from-space)))
+	(m4:m*
+	 (get-transform from-root to-space)
+	 (collect-inverse-to from-space from-root)))))
 
 (defun collect-inverse-to (start-space ancestor-space)
   (labels ((combine-inverse (accum space)
-             (m4:m* (space-inverse-transform space) accum)))
+             (m4:m* (%hspace-inverse-transform space) accum)))
     ;; [TODO] unneccesary identity multiply, pass it start-space
     ;;        transform as initial-value and (parent-space start-space) as
     ;;        'of-space arg
-    (m4:m* (space-inverse-transform ancestor-space)
+    (m4:m* (%hspace-inverse-transform ancestor-space)
            (reduce-ancestors #'combine-inverse start-space ancestor-space
 			     (m4:identity)))))
 
 (defun collect-transform-to (start-space ancestor-space)
   (labels ((combine-transform (accum space)
-             (m4:m* (space-transform space) accum)))
+             (m4:m* (%hspace-transform space) accum)))
     ;; [TODO] unneccesary identity multiply, pass it start-space
     ;;        transform as initial-value and (parent-space start-space) as
     ;;        'of-space arg
     (reduce-ancestors #'combine-transform start-space ancestor-space
                       (m4:identity))))
 
-;;----------------------------------------------------------------------
-;; finding a common ancestor
 
 (defun find-common-ancestor (space-a space-b)
   (labels ((collect-id (accum space) (cons space accum)))
@@ -32,27 +95,37 @@
        :when (eq left right) :return left
        :finally (return nil))))
 
-;;----------------------------------------------------------------------
-;; get the matrix that transforms points from one space to another
-
-(defun get-transform (from-space to-space)
-  (let ((f-root (space-root from-space))
-	(t-root (space-root to-space)))
-    (if (eq f-root t-root)
-	(%get-hierarchical-transform from-space to-space)
-	(%get-non-hierarchical-transform from-space f-root
-					 to-space t-root))))
-
 (defun %get-hierarchical-transform (from-space to-space)
   (let* ((common-ancestor (find-common-ancestor from-space to-space))
 	 (i (collect-inverse-to from-space common-ancestor))
          (f (collect-transform-to to-space common-ancestor)))
     (m4:m* i f)))
 
-(defun %get-non-hierarchical-transform (from-space from-root to-space to-root)
-  (let* ((ft (collect-inverse-to from-space from-root))
-         (tt (collect-transform-to to-space to-root))
-	 (transform-func (transformer-to (%get-nht from-root to-root))))
-    (m4:m* (funcall transform-func ft) tt)))
+;;----------------------------------------------------------------------
+;; get the matrix that transforms points from one space to another
+
+(defun get-transform (from-space to-space)
+  (declare (inline %mspace-to-rspace-transform
+		   %mspace-to-hspace-transform
+		   %rspace-to-hspace-transform
+		   %hspace-to-mspace-transform
+		   %hspace-to-rspace-transform
+		   %hspace-to-hspace-transform))
+  (kind-case (from-space to-space)
+	     :m->m (error "model to model space transforms are impossible as the model space defines a one-way relationship to a single neighbour space")
+	     :m->r (%mspace-to-rspace-transform from-space to-space)
+	     :m->h (%mspace-to-hspace-transform from-space to-space)
+
+	     :r->m (error "relatation to model space transforms are impossible as the model space defines a one-way relationship to a single neighbour space")
+	     :r->r (%rspace-to-rspace-transform from-space to-space)
+	     :r->h (%rspace-to-hspace-transform from-space to-space)
+
+	     :h->m (%hspace-to-mspace-transform from-space to-space)
+	     :h->r (%hspace-to-rspace-transform from-space to-space)
+	     :h->h (%hspace-to-hspace-transform from-space to-space)))
+
+(defun get-transform-via (from-space to-space via-space)
+  (m4:m* (get-transform via-space to-space)
+	 (get-transform from-space via-space)))
 
 ;;----------------------------------------------------------------------
