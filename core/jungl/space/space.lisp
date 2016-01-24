@@ -4,6 +4,8 @@
 ;; spatial relationship
 ;;
 ;; {TODO} add function based relationships
+;; - could also do with way of saying "just #'affine-inverse it"
+;; - basically this needs more options
 
 (defstruct (spatial-relationship (:constructor %make-sr) (:conc-name sr-))
   (source-id 0 :type fixnum :read-only t)
@@ -244,13 +246,6 @@
 	    (setf (sr-from relationship) transform)
 	    (error "relationship exists between ~s and ~s but it is one way"
 		   (%space-ref to-id) (%space-ref from-id))))))
-
-(defun %rspace-ids-transform (space-a-id space-b-id)
-  (labels ((transform (accum current-id next-id)
-	     (m4:m* (%rspace-to-neighbour-transform current-id next-id) accum)))
-    (jungl.space.routes:reduce-route
-     space-a-id space-b-id
-     #'transform (m4:identity))))
 
 ;;----------------------------------------------------------------------
 ;; Model Space

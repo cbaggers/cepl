@@ -7,6 +7,10 @@
 ;; - relationship based ids?
 ;; - can half the size by only storing a->b and not b->a. Any route to a
 ;;   lower id is just the reverse of the inverse route
+;;   - FECK doesnt work unless always bidirectional
+;;   - unless are always bidirectional BUT use ultra high score to deter
+;;     using a particular path. Hmm..could work. need extra code in case
+;;     the only route is a dumb one and it get's picked.
 ;; - multi chain system
 ;;   - first node gets a chain id, next node added joins that chain
 ;;   - any node which joins an end of the chain (or both ends) is part of
@@ -127,6 +131,17 @@
 	   ((< new-subtable-count len)
 	    (setf (fill-pointer (route-table-sparse-part r)) len)))))))
 
+
+(defun on-route-p (from-id to-id id-that-might-be-on-route)
+  (let ((current-id from-id))
+    (if (= id-that-might-be-on-route current-id)
+	t
+	(loop :for next-id = (%next-step current-id to-id)
+	   :if (= id-that-might-be-on-route current-id)
+	   :return t
+	   :else :do (setf current-id next-id)
+	   :until (= next-id to-id)
+	   :finally (return nil)))))
 
 (defun get-route (from-id to-id)
   (let ((current-id from-id))

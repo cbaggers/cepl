@@ -38,8 +38,55 @@
 ;;----------------------------------------------------------------------
 ;; Relational
 
+
+(defmacro with-rendering-via (via-space &body body)
+  `(if (route-restriction)
+       (error "JUNGL.SPACE: Encountered a with-routes-via block attempting to route all transforms via ~s however another restriction exists within the same dynamic scope: ~s" ,via-space (route-restriction))
+       (progn
+	 (restrict-route ,via-space)
+	 (unwind-protect
+	      (progn ,@body)
+	   (un-restrict-routes)))))
+
+;; (with-rendering-via cam
+;;   (print "hi"))
+
+(let ((route-restriction nil)
+      (clip-space-id-cached (%space-nht-id *clip-space*)))
+
+  (defun route-restriction ()
+    route-restriction)
+
+  (defun restrict-route (via-space)
+    (setf route-restriction (%space-nht-id via-space)))
+
+  (defun un-restrict-routes ()
+    (setf route-restriction nil))
+
+  (defun %rspace-to-rspace-transform (space-a space-b)
+    (let ((space-a-id (%space-nht-id space-a))
+	  (space-b-id (%space-nht-id space-b)))
+      (labels ((transform (accum current-id next-id)
+		 (m4:m* (%rspace-to-neighbour-transform current-id next-id) accum)))
+	(if (and route-restriction
+		 (jungl.space.routes::on-route-p
+		  space-a-id space-b-id clip-space-id-cached))
+	    (m4:m* (jungl.space.routes:reduce-route
+		    route-restriction space-b-id #'transform (m4:identity))
+		   (jungl.space.routes:reduce-route
+		    space-a-id route-restriction #'transform (m4:identity)))
+	    (jungl.space.routes:reduce-route space-a-id space-b-id
+					     #'transform (m4:identity)))))))
+
+
 (defun %rspace-to-rspace-transform (space-a space-b)
-  (%rspace-ids-transform (%space-nht-id space-a) (%space-nht-id space-b)))
+  (let ((space-a-id (%space-nht-id space-a))
+	(space-b-id (%space-nht-id space-b)))
+    (labels ((transform (accum current-id next-id)
+	       (m4:m* (%rspace-to-neighbour-transform current-id next-id) accum)))
+      (jungl.space.routes:reduce-route
+       space-a-id space-b-id
+       #'transform (m4:identity)))))
 
 (defun %rspace-to-hspace-transform (from-space to-space)
   (if (eq (%space-root to-space) from-space)
@@ -157,7 +204,6 @@
 (defun get-transform-via (from-space to-space via-space)
   (m4:m* (get-transform via-space to-space)
 	 (get-transform from-space via-space)))
-
 
 
 (defun (setf get-transform) (m4-value from-space &optional to-space)
