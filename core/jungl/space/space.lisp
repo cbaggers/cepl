@@ -2,6 +2,8 @@
 
 ;;----------------------------------------------------------------------
 ;; spatial relationship
+;;
+;; {TODO} add function based relationships
 
 (defstruct (spatial-relationship (:constructor %make-sr) (:conc-name sr-))
   (source-id 0 :type fixnum :read-only t)
@@ -57,7 +59,7 @@
 
 (defmethod print-object ((space space) stream)
   (case= (%space-kind space)
-    (+model-space+ (format stream "#<MODEL-SPACE ~s>" (%space-uid space)))
+    (+model-space+ (format stream "#<R1-SPACE ~s>" (%space-uid space)))
     (+relational-space+ (format stream "#<R-SPACE ~s>" (%space-uid space)))
     (+hierachical-space+ (format stream "#<H-SPACE ~s>" (%space-uid space)))))
 
@@ -195,22 +197,40 @@
 	 (second r)
 	 (not (third r)))))
 
-(defun %rspace-to-neighbour-transform (from-id to-id)
+(defun %rspace-to-neighbour-relationship (from-id to-id)
   (if (> from-id to-id)
       (let* ((owning-space (%space-ref from-id)))
-	(or (sr-to (or (find to-id (%space-neighbours owning-space)
-			     :test #'= :key #'sr-target-id)
-		       (error "couldnt not find space ~s in neighbours for space ~s"
-			      (%space-ref to-id) owning-space)))
-	    (error "relationship exists between ~s and ~s but it is one way"
-		   owning-space (%space-ref to-id))))
+	(or (find to-id (%space-neighbours owning-space)
+		  :test #'= :key #'sr-target-id)
+	    (error "couldnt not find space ~s in neighbours for space ~s"
+		   (%space-ref to-id) owning-space)))
       (let* ((owning-space (%space-ref to-id)))
-	(or (sr-from (or (find from-id (%space-neighbours owning-space)
-			       :test #'= :key #'sr-target-id)
-			 (error "couldnt not find space ~s in neighbours for space ~s"
-				(%space-ref to-id) owning-space)))
+	(or (find from-id (%space-neighbours owning-space)
+		  :test #'= :key #'sr-target-id)
+	    (error "couldnt not find space ~s in neighbours for space ~s"
+		   (%space-ref to-id) owning-space)))))
+
+(defun %rspace-to-neighbour-transform (from-id to-id)
+  (let ((relationship (%rspace-to-neighbour-relationship from-id to-id)))
+    (if (> from-id to-id)
+	(or (sr-to relationship)
 	    (error "relationship exists between ~s and ~s but it is one way"
-		   owning-space (%space-ref to-id))))))
+		   (%space-ref from-id) (%space-ref to-id)))
+	(or (sr-from relationship)
+	    (error "relationship exists between ~s and ~s but it is one way"
+		   (%space-ref to-id) (%space-ref from-id))))))
+
+(defun %set-rspace-to-neighbour-transform (from-id to-id transform)
+  (let ((relationship (%rspace-to-neighbour-relationship from-id to-id)))
+    (if (> from-id to-id)
+	(if (sr-to relationship)
+	    (setf (sr-to relationship) transform)
+	    (error "relationship exists between ~s and ~s but it is one way"
+		   (%space-ref from-id) (%space-ref to-id)))
+	(if (sr-from relationship)
+	    (setf (sr-from relationship) transform)
+	    (error "relationship exists between ~s and ~s but it is one way"
+		   (%space-ref to-id) (%space-ref from-id))))))
 
 (defun %rspace-ids-transform (space-a-id space-b-id)
   (labels ((transform (accum current-id next-id)
@@ -240,11 +260,6 @@
    (inline %space-neighbours))
   (aref (%space-neighbours mspace) 0))
 
-(defun %mspace-transform (mspace)
-  (declare ;;(optimize (speed 3) (debug 0))
-	   (inline sr-to %mspace-only-sr))
-  (sr-to (%mspace-only-sr mspace)))
-
 (defun %update-mspace-transform (mspace transform)
   (setf (sr-to (aref (%space-neighbours mspace) 0))
 	transform)
@@ -263,9 +278,23 @@
 ;;----------------------------------------------------------------------
 ;; Helpers
 
-(defmacro kind-case ((from to &key error) &key m->m m->r m->h
-				 r->m r->r r->h
-				 h->m h->r h->h)
+(defmacro kind-case ((space &key error) &key m r h)
+  (let ((space-g (gensym "space")))
+    `(let ((,space-g ,space))
+       (case= (%space-kind ,space-g)
+	 (+model-space+
+	  ,(or m (when error
+		   '(error "m->m transform is not valid here"))))
+	 (+relational-space+
+	  ,(or r (when error
+		   '(error "m->r transform is not valid here"))))
+	 (+hierachical-space+
+	  ,(or h (when error
+		   '(error "m->h transform is not valid here"))))))))
+
+(defmacro kind-case* ((from to &key error) &key m->m m->r m->h
+					     r->m r->r r->h
+					     h->m h->r h->h)
   (let ((from-g (gensym "from"))
 	(to-g (gensym "to")))
     `(let ((,from-g ,from)
