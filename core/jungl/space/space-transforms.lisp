@@ -54,9 +54,7 @@
     (if (= (%space-kind to-space) +model-space+)
 	(error "Model->Relational relationships are one way so you have to set the transform on the model-space")
 	(error "Relational spaces can only have direct relationships with other relational spaces.")))
-  (%set-rspace-to-neighbour-transform (%space-nht-id from-space)
-				      (%space-nht-id to-space)
-				      transform))
+  (%set-rspace-to-neighbour-transform from-space to-space transform))
 
 ;;----------------------------------------------------------------------
 ;; Hierarchical

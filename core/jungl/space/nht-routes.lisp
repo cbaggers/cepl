@@ -110,7 +110,6 @@
       (vector-push-extend (make-route-table) routes +subtable-length+))
     (let ((cache-len (array-dimension cache 0)))
       (when (> (get-current-id-count) cache-len)
-	(print "extend-cache")
 	(setf cache (make-cache (+ cache-len +subtable-length+)))))
     t)
   (defun get-routes () routes)
@@ -120,7 +119,6 @@
     (setf routes (%make-routes-array))
     t)
   (defun update-all-route-tables (new-subtable-count)
-    (print "update-all-route-tables")
     (loop :for r :across routes :do
        (let ((len (length (route-table-sparse-part r))))
 	 (cond
@@ -158,7 +156,8 @@
     (loop :for next-id = (%next-step current-id to-id)
        :do (setf accum (funcall function accum current-id next-id))
        :do (setf current-id next-id)
-       :until (= next-id to-id))))
+       :until (= next-id to-id))
+    accum))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 ;; Subtables
@@ -300,10 +299,11 @@
        (%set-route my-id n n 1)
        (%set-route n my-id my-id 1))
     ;; and propagate the changes
-    (propagate-routes (mapcar λ(list _ my-id) neighbour-ids))
+    (propagate-routes (mapcar λ(cons _ my-id) neighbour-ids)
+		      (list my-id))
     my-id))
 
-(defun propagate-routes (todo)
+(defun propagate-routes (todo seen)
   (let ((propagate-further nil)
 	(cache (get-route-cache))
 	(clear (* 2 (get-current-id-count))))
@@ -314,7 +314,10 @@
 		      (< (1+ len) (%route-len to-id i)))
 	     (%set-route to-id i from-id (1+ len))
 	     (setf propagate-further t))))
+
       (when propagate-further
 	(propagate-routes
-	 (append todo (delete from-id (id-neighbours to-id)
-			      :test #'=)))))))
+	 ;; visit all nodes except the one we've just come from
+	 (append todo (mapcar λ(cons _ to-id)
+			      (set-difference (id-neighbours to-id) seen)))
+	 (adjoin from-id seen :test #'=))))))

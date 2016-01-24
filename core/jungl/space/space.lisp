@@ -157,14 +157,14 @@
 ;; Relational Space
 
 (defun %dispatch-relational-space (relationships)
-  (let ((relationships (mapcar #'parse-relationship relationships)))
+  (let ((relationships (parse-relationships relationships)))
     (if (model-relationship-p relationships)
 	(%make-model-space (subseq (first relationships) 0 2))
 	(%make-relational-space relationships))))
 
 (defun make-relational-space (relationships)
   (%make-relational-space
-   (mapcar #'parse-relationship relationships)))
+   (parse-relationships relationships)))
 
 (defun %make-relational-space (relationships)
   (let* ((id (jungl.space.routes:id!))
@@ -186,8 +186,15 @@
     (%add-space-to-array space)
     space))
 
-(defun parse-relationship (r)
-  (dbind (target-space &optional (to-m4 (m4:identity)) from-m4)
+(defun parse-relationships (relationships)
+  (mapcar (lambda (r)
+	    (parse-relationship
+	     r :default-birectional (> (length relationships) 1)))
+	  relationships))
+
+(defun parse-relationship (r &key default-birectional)
+  (dbind (target-space &optional (to-m4 (m4:identity))
+		       (from-m4 (when default-birectional (m4:identity))))
       (listify r)
     (list target-space to-m4 from-m4)))
 
@@ -197,21 +204,25 @@
 	 (second r)
 	 (not (third r)))))
 
-(defun %rspace-to-neighbour-relationship (from-id to-id)
-  (if (> from-id to-id)
-      (let* ((owning-space (%space-ref from-id)))
-	(or (find to-id (%space-neighbours owning-space)
-		  :test #'= :key #'sr-target-id)
-	    (error "couldnt not find space ~s in neighbours for space ~s"
-		   (%space-ref to-id) owning-space)))
-      (let* ((owning-space (%space-ref to-id)))
-	(or (find from-id (%space-neighbours owning-space)
-		  :test #'= :key #'sr-target-id)
-	    (error "couldnt not find space ~s in neighbours for space ~s"
-		   (%space-ref to-id) owning-space)))))
+(defun %rspace-to-neighbour-relationship (from-space to-space)
+  (let ((from-id (%space-nht-id from-space))
+	(to-id (%space-nht-id to-space)))
+    (if (> (%space-uid from-space) (%space-uid to-space))
+	(let* ((owning-space from-space))
+	  (or (find to-id (%space-neighbours owning-space)
+		    :test #'= :key #'sr-target-id)
+	      (error "couldnt not find space ~s in neighbours for space ~s"
+		     (%space-ref to-id) owning-space)))
+	(let* ((owning-space to-space))
+	  (or (find from-id (%space-neighbours owning-space)
+		    :test #'= :key #'sr-target-id)
+	      (error "couldnt not find space ~s in neighbours for space ~s"
+		     (%space-ref to-id) owning-space))))))
 
 (defun %rspace-to-neighbour-transform (from-id to-id)
-  (let ((relationship (%rspace-to-neighbour-relationship from-id to-id)))
+  (let* ((from-space (%space-ref from-id))
+	 (to-space (%space-ref to-id))
+	 (relationship (%rspace-to-neighbour-relationship from-space to-space)))
     (if (> from-id to-id)
 	(or (sr-to relationship)
 	    (error "relationship exists between ~s and ~s but it is one way"
@@ -220,8 +231,10 @@
 	    (error "relationship exists between ~s and ~s but it is one way"
 		   (%space-ref to-id) (%space-ref from-id))))))
 
-(defun %set-rspace-to-neighbour-transform (from-id to-id transform)
-  (let ((relationship (%rspace-to-neighbour-relationship from-id to-id)))
+(defun %set-rspace-to-neighbour-transform (from-space to-space transform)
+  (let* ((from-id (%space-nht-id from-space))
+	 (to-id (%space-nht-id to-space))
+	 (relationship (%rspace-to-neighbour-relationship from-space to-space)))
     (if (> from-id to-id)
 	(if (sr-to relationship)
 	    (setf (sr-to relationship) transform)
