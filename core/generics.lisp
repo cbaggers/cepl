@@ -29,9 +29,3 @@
 (defgeneric repeating (object))
 (defgeneric state (object))
 (defgeneric timestamp (object))
-
-
-;; camera/camera.lisp:35:(defmethod (setf near) (distance (camera camera))
-;; camera/camera.lisp:39:(defmethod (setf far) (distance (camera camera))
-;; camera/camera.lisp:43:(defmethod (setf fov) (angle (camera camera))
-;; camera/camera.lisp:47:(defmethod (setf frame-size) (frame-size (camera camera))

@@ -737,12 +737,13 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   "The are 3 kinds of valid argument:
    - keyword naming an attachment: This makes a new texture
      with size of (current-viewport) and attaches
-   - (keyword camera) creates a new texture at the framesize of
-     the camera and attaches it to attachment named by keyword
    - (keyword vector2): creates a new texture sized by the vector
      and attaches it to attachment named by keyword
    - (keyword texarray): attaches the tex-array
-   - (keyword texture): attaches the root tex-array"
+   - (keyword texture): attaches the root tex-array
+   - (keyword some-type) any types that supports the generic dimensions function
+                         creates a new texture at the framesize of the object
+                         and attaches it to attachment named by keyword"
   (let ((target (%extract-target (first args))))
     (mapcar (lambda (texture attachment)
               (fbo-attach fbo texture attachment target))
@@ -799,17 +800,15 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                       :magnify-filter magnify-filter
                       :wrap wrap
                       :compare compare))))
-    ;; take the resolution from a camera
-    ((typep (second pattern) 'cepl-camera:camera)
-     (texref
-      (make-texture nil :dimensions (cepl-camera:frame-size (second pattern))
-                    :element-type (%get-default-texture-format
-				   (first pattern)))))
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t) (second pattern))
     ;; use the first gpu-array in texture
     ((typep (second pattern) 'gl-texture) (texref (second pattern)))
-    (t (error "Invalid pattern in %gen-textures"))))
+    ;; take the dimensions from some object
+    (t (texref
+	(make-texture nil :dimensions (dimensions (second pattern))
+		      :element-type (%get-default-texture-format
+				     (first pattern)))))))
 
 (defun %get-default-texture-format (attachment)
   (assert (keywordp attachment))

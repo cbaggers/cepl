@@ -314,33 +314,6 @@
 (defpackage :varjo-bridge-types
   (:use :cl))
 
-(defpackage :cepl-camera
-  (:nicknames :ccam)
-  (:use :cl :cepl-generics :cl-game-math.base-vectors)
-  (:export :camera
-           :make-camera
-           :orthographic-projection
-           :perspective-projection
-           :world->cam
-           :look-at
-           :world-up
-           :pos
-           :dir
-           :frame-size
-           :fov
-           :far
-           :near
-           :cam->clip-func
-           :cam->clip
-           :world->cam
-           :make-cam-clip-matrix)
-  (:import-from :cl-game-math.vector2
-                :make-vector2)
-  (:import-from :cl-game-math.vector3
-                :make-vector3)
-  (:import-from :cl-game-math.vector4
-                :make-vector4))
-
 (defpackage :tools
   (:use :cl
         :cl-game-math.base-vectors
@@ -437,7 +410,6 @@
         :cl-game-math.base-matrices
         :cl-game-math.base-maths
         :temporal-functions
-        :cepl-camera
         :cl-fad
         :named-readtables
         :jungl)
@@ -506,24 +478,6 @@
            :expiredp
            :expiredp+
            :make-stepper
-           ;;---
-           :camera
-           :make-camera
-           :orthographic-projection
-           :perspective-projection
-           :world->cam
-           :look-at
-           :world-up
-           :pos
-           :dir
-           :frame-size
-           :fov
-           :far
-           :near
-           :cam->clip-func
-           :cam->clip
-           :world->cam
-           :make-cam-clip-matrix
            ;;---
            :update-swank
            :peek

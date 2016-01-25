@@ -56,7 +56,7 @@
 
 ;; makes new varjo type
 ;;
-;; (def-equivalent-type cepl:camera
+;; (def-equivalent-type cepl.camera:camera
 ;;   (cam->clip :mat4 (slot-value % 'cam->clip) :accessor cam->clip)
 ;;   (world->cam :mat4 (world->cam %) :accessor world->cam))
 (defun det-new-type (lisp-type-name &rest slots)

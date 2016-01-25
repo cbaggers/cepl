@@ -17,6 +17,10 @@
 
 (defgeneric populate (object data))
 
+(defmethod dimensions ((object t))
+  (error "Jungl: Cannot extract dimensions from ~s object:~%~s"
+	 (type-of object) object))
+
 (defgeneric gl-assign-attrib-pointers (array-type &optional attrib-num
                                               pointer-offset
                                               stride-override

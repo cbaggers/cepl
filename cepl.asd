@@ -84,7 +84,6 @@
                (:file "core/jungl/blending-modes")
                (:file "core/jungl/default-data")
                (:file "core/jungl/misc")
-               (:file "core/camera/camera")
 
 	       (:file "core/jungl/space/space-errors")
 	       (:file "core/jungl/space/space-walking")
