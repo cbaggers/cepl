@@ -388,7 +388,7 @@
 		:set-arg-val)
   (:export :get-transform :p! :in :space! :make-space
 	   :with-rendering-via
-	   :*ndc-space* :*clip-space* :*world-space*
+	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
 	   :model-space-p :relational-space-p
 	   :space :pos4 :space-g :pos4-g :let-model-space
 	   :parent-space

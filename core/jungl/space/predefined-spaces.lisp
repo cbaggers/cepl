@@ -2,8 +2,11 @@
 
 ;; ;; here we define the common spaces
 
-(defvar *ndc-space*
+(defvar *screen-space*
   (make-relational-space nil))
+
+(defvar *ndc-space*
+  (make-relational-space `((,*screen-space*))))
 
 (defvar *clip-space*
   (make-relational-space `((,*ndc-space*))))

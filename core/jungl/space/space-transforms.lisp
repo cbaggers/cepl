@@ -48,11 +48,10 @@
 	      (progn ,@body)
 	   (un-restrict-routes)))))
 
-;; (with-rendering-via cam
-;;   (print "hi"))
-
 (let ((route-restriction nil)
-      (clip-space-id-cached (%space-nht-id *clip-space*)))
+      (clip-space-id-cached (%space-nht-id *clip-space*))
+      (ndc-space-id-cached (%space-nht-id *ndc-space*))
+      (screen-space-id-cached (%space-nht-id *screen-space*)))
 
   (defun route-restriction ()
     route-restriction)
@@ -63,9 +62,16 @@
   (defun un-restrict-routes ()
     (setf route-restriction nil))
 
+  (defun %check-not-illegal-space (space-id)
+    (if (or (= space-id screen-space-id-cached)
+	    (= space-id ndc-space-id-cached))
+	(error "Jungl.Space: It is currently not valid to try to calculate a route to *ndc-space* or *screen-space*. These spaces are defined by the OpenGL pipeline and cepl cannot yet query those transforms.")
+	space-id))
+
   (defun %rspace-to-rspace-transform (space-a space-b)
-    (let ((space-a-id (%space-nht-id space-a))
-	  (space-b-id (%space-nht-id space-b)))
+    (let ((space-a-id (%check-not-illegal-space (%space-nht-id space-a)))
+	  (space-b-id (%check-not-illegal-space (%space-nht-id space-b))))
+
       (labels ((transform (accum current-id next-id)
 		 (m4:m* (%rspace-to-neighbour-transform current-id next-id) accum)))
 	(if (and route-restriction
@@ -77,16 +83,6 @@
 		    space-a-id route-restriction #'transform (m4:identity)))
 	    (jungl.space.routes:reduce-route space-a-id space-b-id
 					     #'transform (m4:identity)))))))
-
-
-(defun %rspace-to-rspace-transform (space-a space-b)
-  (let ((space-a-id (%space-nht-id space-a))
-	(space-b-id (%space-nht-id space-b)))
-    (labels ((transform (accum current-id next-id)
-	       (m4:m* (%rspace-to-neighbour-transform current-id next-id) accum)))
-      (jungl.space.routes:reduce-route
-       space-a-id space-b-id
-       #'transform (m4:identity)))))
 
 (defun %rspace-to-hspace-transform (from-space to-space)
   (if (eq (%space-root to-space) from-space)
