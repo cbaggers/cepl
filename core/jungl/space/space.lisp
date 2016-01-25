@@ -158,6 +158,9 @@
 ;;----------------------------------------------------------------------
 ;; Relational Space
 
+(defun relational-space-p (space)
+  (= (%space-kind space) +relational-space+))
+
 (defun %dispatch-relational-space (relationships)
   (let ((relationships (parse-relationships relationships)))
     (if (model-relationship-p relationships)

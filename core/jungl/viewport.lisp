@@ -4,7 +4,15 @@
 
 (defun current-viewport ()
   (or %current-viewport
-      (jungl::attachment-viewport (attachment jungl::%default-framebuffer 0))))
+      (jungl::attachment-viewport
+       (attachment
+	(or jungl::%default-framebuffer
+	    (error "No default framebuffer found ~a"
+		   (if (and (boundp '*gl-context*)
+			    (symbol-value '*gl-context*))
+		       "but we do have a gl context. This is a bug"
+		       "because the GL context is not yet available")))
+	0))))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

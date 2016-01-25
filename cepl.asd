@@ -96,5 +96,4 @@
                (:file "core/live/bootstrapping")
                (:file "core/time/time")
 
-               (:file "core/repl")
-               (:file "examples/examples-data")))
+               (:file "core/repl")))
