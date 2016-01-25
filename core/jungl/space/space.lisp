@@ -250,6 +250,9 @@
 ;;----------------------------------------------------------------------
 ;; Model Space
 
+(defun model-space-p (space)
+  (= (%space-kind space) +model-space+))
+
 (defun %make-model-space (relationship)
   (dbind (target-space transform) relationship
     (%make-space :nht-id -1 :kind +model-space+ :depth 0
