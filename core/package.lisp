@@ -426,7 +426,8 @@
                 :p->)
   (:import-from :cl-game-math.vectors
 		:dvec
-		:dvec*)
+		:dvec*
+		:s~)
   (:import-from :cepl.events
                 :def-named-event-node)
   (:export :repl
@@ -452,7 +453,7 @@
            :peek
            :*examples-directory*
            ;;---
-           :v! :v-x :v-y :v-z :v-w
+           :v! :v-x :v-y :v-z :v-w :s~
            :v!byte :v!ubyte :v!int
            ;;---
            :m!
