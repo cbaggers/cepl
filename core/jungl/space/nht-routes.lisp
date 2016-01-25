@@ -134,7 +134,8 @@
 
 (defun on-route-p (from-id to-id id-that-might-be-on-route)
   (let ((current-id from-id))
-    (if (= id-that-might-be-on-route current-id)
+    (if (or (= id-that-might-be-on-route current-id)
+	    (= id-that-might-be-on-route to-id))
 	t
 	(loop :for next-id = (%next-step current-id to-id)
 	   :if (= id-that-might-be-on-route current-id)
@@ -145,10 +146,11 @@
 
 (defun get-route (from-id to-id)
   (let ((current-id from-id))
-    (loop :for next-id = (%next-step current-id to-id)
-       :collect current-id
-       :do (setf current-id next-id)
-       :until (= next-id to-id))))
+    (cons current-id
+	  (loop :for next-id = (%next-step current-id to-id)
+	     :collect next-id
+	     :do (setf current-id next-id)
+	     :until (= next-id to-id)))))
 
 (let ((fart 3))
   (defun fart-route (from-id to-id)
@@ -166,12 +168,13 @@
        :until (= next-id to-id))))
 
 (defun reduce-route (from-id to-id function &optional initial-value)
-  (let ((current-id from-id)
+  ;; applying backwards because of matrix multiplication
+  (let ((current-id to-id)
 	(accum initial-value))
-    (loop :for next-id = (%next-step current-id to-id)
-       :do (setf accum (funcall function accum current-id next-id))
+    (loop :for next-id = (%next-step current-id from-id)
+       :do (setf accum (funcall function accum next-id current-id))
        :do (setf current-id next-id)
-       :until (= next-id to-id))
+       :until (= next-id from-id))
     accum))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -

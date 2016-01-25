@@ -32,7 +32,7 @@
 	 (rspace-id (%space-nht-id rspace)))
     (if (= rspace-id neighbour-id)
 	to-neighbour
-	(m4:m* (%rspace-ids-transform neighbour-id rspace-id)
+	(m4:m* (%rspace-to-rspace-ids-transform neighbour-id rspace-id)
 	       to-neighbour))))
 
 ;;----------------------------------------------------------------------
@@ -68,21 +68,30 @@
 	(error "Jungl.Space: It is currently not valid to try to calculate a route to *ndc-space* or *screen-space*. These spaces are defined by the OpenGL pipeline and cepl cannot yet query those transforms.")
 	space-id))
 
-  (defun %rspace-to-rspace-transform (space-a space-b)
-    (let ((space-a-id (%check-not-illegal-space (%space-nht-id space-a)))
-	  (space-b-id (%check-not-illegal-space (%space-nht-id space-b))))
-
+  (defun %rspace-to-rspace-ids-transform (space-a-id space-b-id
+					  &optional (initial-m4 (m4:identity)))
+    (let ((space-a-id (%check-not-illegal-space space-a-id))
+	  (space-b-id (%check-not-illegal-space space-b-id)))
       (labels ((transform (accum current-id next-id)
-		 (m4:m* (%rspace-to-neighbour-transform current-id next-id) accum)))
+		 (m4:m* accum
+			(%rspace-to-neighbour-transform current-id next-id))))
 	(if (and route-restriction
 		 (jungl.space.routes::on-route-p
 		  space-a-id space-b-id clip-space-id-cached))
-	    (m4:m* (jungl.space.routes:reduce-route
-		    route-restriction space-b-id #'transform (m4:identity))
-		   (jungl.space.routes:reduce-route
-		    space-a-id route-restriction #'transform (m4:identity)))
+	    ;;
+	    (jungl.space.routes:reduce-route
+	     space-a-id route-restriction #'transform
+	     (jungl.space.routes:reduce-route
+	      route-restriction space-b-id #'transform initial-m4))
+	    ;;
 	    (jungl.space.routes:reduce-route space-a-id space-b-id
-					     #'transform (m4:identity)))))))
+					     #'transform initial-m4)))))
+
+  (defun %rspace-to-rspace-transform (space-a space-b
+				      &optional (initial-m4 (m4:identity)))
+    (%rspace-to-rspace-ids-transform (%space-nht-id space-a)
+				     (%space-nht-id space-b)
+				     initial-m4)))
 
 (defun %rspace-to-hspace-transform (from-space to-space)
   (if (eq (%space-root to-space) from-space)
@@ -137,9 +146,8 @@
   (if (eq (%space-root from-space) (%space-root to-space))
       (%get-hierarchical-transform from-space to-space)
       (let ((from-root (%space-root from-space)))
-	(m4:m*
-	 (get-transform from-root to-space)
-	 (collect-inverse-to from-space from-root)))))
+	(m4:m* (get-transform from-root to-space)
+	       (collect-inverse-to from-space from-root)))))
 
 (defun collect-inverse-to (start-space ancestor-space)
   (labels ((combine-inverse (accum space)
@@ -177,7 +185,7 @@
 ;;----------------------------------------------------------------------
 ;; get the matrix that transforms points from one space to another
 
-(defun get-transform (from-space to-space)
+(defun get-transform (from-space to-space &optional (initial-m4 (m4:identity)))
   (declare (inline %mspace-to-rspace-transform
 		   %mspace-to-hspace-transform
 		   %rspace-to-hspace-transform
@@ -190,7 +198,7 @@
 	      :m->h (%mspace-to-hspace-transform from-space to-space)
 
 	      :r->m (error "relatation to model space transforms are impossible as the model space defines a one-way relationship to a single neighbour space")
-	      :r->r (%rspace-to-rspace-transform from-space to-space)
+	      :r->r (%rspace-to-rspace-transform from-space to-space initial-m4)
 	      :r->h (%rspace-to-hspace-transform from-space to-space)
 
 	      :h->m (%hspace-to-mspace-transform from-space to-space)
@@ -198,8 +206,8 @@
 	      :h->h (%hspace-to-hspace-transform from-space to-space)))
 
 (defun get-transform-via (from-space to-space via-space)
-  (m4:m* (get-transform via-space to-space)
-	 (get-transform from-space via-space)))
+  (get-transform from-space via-space
+		 (get-transform via-space to-space)))
 
 
 (defun (setf get-transform) (m4-value from-space &optional to-space)

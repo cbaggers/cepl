@@ -386,7 +386,7 @@
   (:shadowing-import-from :cl-game-math.base-matrices :m!)
   (:import-from :jungl :def-compile-pass :set-uniform :remove-uniform
 		:set-arg-val)
-  (:export :get-transform :p! :in :space! :make-space
+  (:export :get-transform :get-transform-via :p! :in :space! :make-space
 	   :with-rendering-via
 	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
 	   :model-space-p :relational-space-p

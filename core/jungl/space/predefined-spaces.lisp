@@ -1,6 +1,6 @@
 (in-package :jungl.space)
 
-;; ;; here we define the common spaces
+;; here we define the common spaces
 
 (defvar *screen-space*
   (make-relational-space nil))
