@@ -39,8 +39,6 @@
                (:file "core/static")
                (:file "core/generics")
 
-	       (:file "core/maths/varjo-equivalent-types")
-
                (:file "core/events/event-nodes")
                (:file "core/events/event-propagation")
 
