@@ -42,6 +42,7 @@
 	      (not (id= (flow-ids (ast-space node))
 			(flow-ids (ast-space origin))))))))
 
+progn
 (defun cross-space->matrix-multiply (node env)
   ;;[0] get or create the transforms table. Note that env is the
   ;;    'transform environment' we add a transforms hash-table to
@@ -91,7 +92,13 @@
     ;; here we set how we get the transform we are uploading
     (set-arg-val var-name `(get-transform ,from-name ,to-name) env)
     ;; and here is the replacement code for our crossing the spaces
-    `(values-safe (* ,var-name ,node))))
+    (if (eq (ast-kind node) 'let)
+	`(p! (* ,var-name
+		(let ,@(butlast (ast-args node))
+		  (v! ,(last1 (ast-args node))))))
+	`(p! (* ,var-name (v! ,node))))))
+
+
 
 (defun %gen-space->space-name (from-name to-name)
   "generate a name for the uniform that will contain the
@@ -124,6 +131,8 @@
     `(progn ,@body)))
 
 (defun redundent-in-form-p (node)
+  "Check if the *current-space* outside the scope is the
+   same *current-space* as inside the scope."
   (declare (optimize (debug 3) (speed 0)))
   (when (in-form-p node)
     (dbind (((% space-form)) . body) (ast-args node)
@@ -133,11 +142,26 @@
 	(when outer-space
 	  (id~= (flow-ids outer-space) (flow-ids inner-space)))))))
 
+(defun redundent-v!-form-p (node)
+  (and (eq (ast-kind node) 'v!)
+       (= (length (ast-args node)) 1)))
+
+(defun splice-v!-form (node env)
+  (declare (ignore env))
+  (first (ast-args node)))
+
+
 (def-compile-pass remove-redundent-in-forms
   (#'redundent-in-form-p  #'in-form->progn))
 
-(def-compile-pass (space-pass :depends-on remove-redundent-in-forms)
+(def-deep-pass (cross-space-pass :depends-on remove-redundent-in-forms)
+    :filter #'cross-space-form-p
+    :transform #'cross-space->matrix-multiply)
+
+(def-compile-pass (space-pass :depends-on cross-space-pass)
   (#'cross-to-null-space-form-p #'cross-to-null-space)
-  (#'cross-space-form-p  #'cross-space->matrix-multiply)
   (#'p!-form-p  #'p!->v!)
   (#'in-form-p  #'in-form->progn))
+
+(def-compile-pass (remove-redundent-v!-forms :depends-on space-pass)
+  (#'redundent-v!-form-p  #'splice-v!-form))

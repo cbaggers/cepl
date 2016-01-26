@@ -1,6 +1,8 @@
 (in-package :jungl)
 (in-readtable fn:fn-reader)
 
+(defparameter *verbose-compiles* nil)
+
 ;; Often we want to run varjo on some code and use the metadata in the
 ;; varjo-compile-result to inform modifications to the code and uploads.
 ;;
@@ -10,12 +12,21 @@
 ;; Below we have versions of varjo's translate and rolling-translate functions
 ;; that take optional extra passes.
 
-(defclass compile-pass () ())
+(defclass compile-pass ()
+  ((name :initarg :name :initform :no-name :reader name)))
 
 (defclass ast-transform-compile-pass (compile-pass)
   ((filter-transform-pairs :initarg :filter-transform-pairs
                            :initform nil
                            :reader filter-transform-pairs)))
+
+(defclass deep-dive-compile-pass (compile-pass)
+  ((filter :initarg :filter
+	   :initform (error "filter must be provided" )
+	   :reader filter)
+   (transform :initarg :transform
+	      :initform (error "transform must be provided" )
+	      :reader transform)))
 
 (defclass %uniform-transform-pass (compile-pass) ())
 
@@ -56,9 +67,21 @@
     `(%add-compile-pass
       ',name
       (make-instance 'ast-transform-compile-pass
+		     :name ',name
                      :filter-transform-pairs
                      (list ,@(mapcar λ(cons 'list _) filter-transform-pairs)))
       ',depends-on)))
+
+(defmacro def-deep-pass (name/options &key filter transform)
+  (dbind (name &key depends-on) (listify name/options)
+    (assert (and (symbolp name)
+                 (symbolp depends-on)
+                 (not (keywordp name))))
+    `(%add-compile-pass ',name
+			(make-instance 'deep-dive-compile-pass
+				       :name ',name
+				       :filter ,filter :transform ,transform)
+			',depends-on)))
 
 (defun undef-compile-pass (name)
   (setf *registered-passes*
@@ -93,7 +116,8 @@
                                :do (setf (gethash n h) n))
                             h)))
          (passes (mapcar λ(cons _ (make-pass-env arg-val-map))
-                         (append (%get-passes) (%get-internal-passes)))))
+                         (append (%get-passes) (%get-internal-passes))))
+	 (pass-inputs nil))
     (handler-bind ((varjo-conditions:setq-type-match
 		    (lambda (c)
 		      (when (typep (varjo::code-type (varjo::new-value c))
@@ -101,29 +125,38 @@
 			(invoke-restart
 			 'varjo-conditions:setq-supply-alternate-type
 			 :vec4)))))
-      (labels ((on-pass (c-result pass-pair)
-		 (dbind (pass . transform-env) pass-pair
-		   (multiple-value-bind (new-pass-args there-were-changes)
-		       (run-pass c-result pass transform-env
-				 in-args uniforms context)
-		     (if there-were-changes
-			 (apply #'varjo:translate new-pass-args)
-			 c-result))))
-	       (once-through (initial)
-		 (reduce #'on-pass passes :initial-value initial))
-	       (until-no-change (initial)
-		 (let ((new-result (once-through initial)))
+      (labels ((on-pass (accum pass-pair)
+		 (dbind (c-result uniforms) accum
+		   (dbind (pass . transform-env) pass-pair
+		     (multiple-value-bind (new-pass-args there-were-changes)
+			 (run-pass c-result pass transform-env
+				   in-args uniforms context)
+		       (if there-were-changes
+			   (progn
+			     (push (append new-pass-args (list (name pass)))
+				   pass-inputs)
+			     (list (apply #'varjo:translate new-pass-args)
+				   (second new-pass-args)))
+			   (list c-result uniforms))))))
+	       (once-through (initial uniforms)
+		 (reduce #'on-pass passes
+			 :initial-value (list initial uniforms)))
+	       (until-no-change (initial uniforms)
+		 (dbind (new-result new-uniforms)
+		     (once-through initial uniforms)
 		   (if (eq new-result initial)
 		       initial
-		       (until-no-change new-result)))))
+		       (until-no-change new-result new-uniforms)))))
 	(let ((translate-result
 	       (varjo:translate in-args uniforms context body tp-meta)))
+	  (push (list in-args uniforms context body) pass-inputs)
 	  (let ((compile-result
-		 (until-no-change translate-result)))
+		 (until-no-change translate-result uniforms)))
 	    (with-hash (av 'uniform-vals) (third-party-metadata compile-result)
 	      (setf av arg-val-map))
+	    (when *verbose-compiles*
+	      (print-compile-report (reverse pass-inputs)))
 	    compile-result))))))
-
 
 
 (defun v-rolling-translate (stages)
@@ -133,6 +166,29 @@
 
 (defgeneric run-pass (v-compile-result pass env original-in-args
                       original-uniforms original-context))
+
+;;--------------------------------------------------
+
+(defmethod run-pass (v-compile-result (pass deep-dive-compile-pass)
+                     env original-in-args original-uniforms
+                     original-context)
+  (with-slots (filter transform) pass
+    ;; {TODO} ast-deep-replace does not respect env and will walk
+    ;;        many paths even though it may result in changes to the
+    ;;        env by code changes that arent included in the result.
+    (let ((augmented-transform (fn:fn~r transform env)))
+      (multiple-value-bind (new-body there-were-changes)
+	  (varjo:ast-deep-replace (ast v-compile-result) filter
+				  augmented-transform)
+        (let ((new-uniforms
+               (remove-duplicates
+                (append (reduce λ(remove _1 _ :key #'car)
+                                (gethash 'remove-uniforms env)
+                                :initial-value original-uniforms)
+                        (gethash 'set-uniforms env))
+                :key #'car)))
+          (values (list original-in-args new-uniforms original-context new-body)
+                  there-were-changes))))))
 
 ;;--------------------------------------------------
 
@@ -204,3 +260,27 @@
   (with-hash (arg-vals 'uniform-vals) env
     (with-hash (arg name) arg-vals
       (setf arg (subst arg current-val-symb form)))))
+
+;;--------------------------------------------------
+
+(defun print-compile-report (pass-inputs)
+  (labels ((report (f)
+	     (when (fifth f)
+	       (format t "~%:name ~s" (fifth f)))
+	     (format t "~%:in-args ~s" (first f))
+	     (format t "~%:uniforms ~s" (second f))
+	     (format t "~%:context ~s" (third f))
+	     (format t "~%:body-code ~%~s" (fourth f))))
+    (print "-----------------------------------")
+    (print "- Initial Inputs -")
+    (report (first pass-inputs))
+    (loop :for a :in (butlast (rest pass-inputs)) :for i :from 1 :do
+       (print "-  -  -  -  -  -  -  -  -  -  -  -")
+       (format t "~%- Pass ~s -" i)
+       (report a))
+    (print "-  -  -  -  -  -  -  -  -  -  -  -")
+    (print "- Final Code -")
+    (if (= 1 (length pass-inputs))
+	(print "No change")
+	(report (car (last pass-inputs))))
+    (print "-----------------------------------")))
