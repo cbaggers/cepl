@@ -1,7 +1,7 @@
 (in-package :jungl)
 (in-readtable fn:fn-reader)
 
-(defparameter *verbose-compiles* t)
+(defparameter *verbose-compiles* nil)
 
 ;; Often we want to run varjo on some code and use the metadata in the
 ;; varjo-compile-result to inform modifications to the code and uploads.

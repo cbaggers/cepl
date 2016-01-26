@@ -184,8 +184,9 @@
          (u-uploads (mapcar #'second uniform-assigners)))
     `(progn
        (defun ,(symb :%touch- name) (&key verbose)
-	 (unless prog-id
-	   (setf prog-id (,init-func-name)))
+	 (let ((*verbose-compiles* verbose))
+	   (unless prog-id
+	     (setf prog-id (,init-func-name))))
 	 (when verbose
 	   (format t
 		   ,(format nil

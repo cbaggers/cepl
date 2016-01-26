@@ -85,7 +85,6 @@
 	 (var-name (or (gethash key transforms)
 		       (setf (gethash key transforms)
 			     (%gen-space->space-name from-name to-name)))))
-    (format t "found: ~s -> ~s" from-name to-name)
     ;; we now have everything we need:
     ;; let's add a uniform with our new name
     (set-uniform var-name :mat4 env)
