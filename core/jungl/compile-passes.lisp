@@ -1,7 +1,7 @@
 (in-package :jungl)
 (in-readtable fn:fn-reader)
 
-(defparameter *verbose-compiles* nil)
+(defparameter *verbose-compiles* t)
 
 ;; Often we want to run varjo on some code and use the metadata in the
 ;; varjo-compile-result to inform modifications to the code and uploads.
@@ -135,8 +135,10 @@
 			   (progn
 			     (push (append new-pass-args (list (name pass)))
 				   pass-inputs)
-			     (list (apply #'varjo:translate new-pass-args)
-				   (second new-pass-args)))
+			     (on-pass
+			      (list (apply #'varjo:translate new-pass-args)
+				    (second new-pass-args))
+			      pass-pair))
 			   (list c-result uniforms))))))
 	       (once-through (initial uniforms)
 		 (reduce #'on-pass passes
@@ -150,6 +152,8 @@
 	(let ((translate-result
 	       (varjo:translate in-args uniforms context body tp-meta)))
 	  (push (list in-args uniforms context body) pass-inputs)
+	  (push (list in-args uniforms context (ast->code translate-result))
+		pass-inputs)
 	  (let ((compile-result
 		 (until-no-change translate-result uniforms)))
 	    (with-hash (av 'uniform-vals) (third-party-metadata compile-result)
@@ -274,13 +278,16 @@
     (print "-----------------------------------")
     (print "- Initial Inputs -")
     (report (first pass-inputs))
-    (loop :for a :in (butlast (rest pass-inputs)) :for i :from 1 :do
+    (print "-  -  -  -  -  -  -  -  -  -  -  -")
+    (print "- Gave This -")
+    (report (second pass-inputs))
+    (loop :for a :in (butlast (cddr pass-inputs)) :for i :from 1 :do
        (print "-  -  -  -  -  -  -  -  -  -  -  -")
-       (format t "~%- Pass ~s -" i)
+       (format t "~%- After Pass ~s -" i)
        (report a))
     (print "-  -  -  -  -  -  -  -  -  -  -  -")
     (print "- Final Code -")
-    (if (= 1 (length pass-inputs))
+    (if (= 2 (length pass-inputs))
 	(print "No change")
 	(report (car (last pass-inputs))))
     (print "-----------------------------------")))
