@@ -301,8 +301,6 @@
            :ubo-data
            :ubo-index
            ;;----------
-           :def-equivalent-type
-           ;;----------
            :clear
 	   ;;----------
 	   :def-compile-pass
@@ -566,7 +564,6 @@
            :current-viewport
            :with-viewport
            :with-fbo-viewport
-           :def-equivalent-type
            ;;---
            :node
            :make-node

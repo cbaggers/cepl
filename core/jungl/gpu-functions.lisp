@@ -20,20 +20,11 @@
       (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
       ;; equivalent types need to be swapped out
-      (let* ((in-args (swap-equivalent-types in-args))
-	     (uniforms (swap-equivalent-types uniforms))
-	     (equivalent-inargs (mapcar (lambda (_)
-					  (when (equivalent-typep _) _))
-					(mapcar #'second in-args)))
-	     (equivalent-uniforms (mapcar (lambda (_)
-					    (when (equivalent-typep _) _))
-					  (mapcar #'second uniforms))))
-	;; we dont allow equivalent types in inargs apparently
-        (assert (every #'null equivalent-inargs))
+      (let* ((in-args in-args)
+	     (uniforms uniforms))
 	;; now the meat
         (%def-gpu-function name in-args uniforms context body instancing
-                           equivalent-inargs equivalent-uniforms
-                           doc-string declarations)))))
+                           nil nil doc-string declarations)))))
 
 (defun assert-arg-format (gfunc-name x)
   (unless (listp x)
@@ -247,27 +238,8 @@
                     u accum))))
       accum))
 
-(defun %splice-in-equivalent-uniform-types (spec interal-uniforms-p)
-  "Equivalent types allow users to specify how a lisp type maps to a
-   gpu type and provide a way to convert from the lisp type to the gpu type.
-   It allows things like defining a complex lisp camera class and mapping
-   only the needed parts to a gpu struct.
-
-   This function replaces the lisp type names with the gpu type they map to."
-  (with-gpu-func-spec spec
-    (let ((uniforms (if interal-uniforms-p actual-uniforms uniforms)))
-      (mapcar (lambda (equivalent-type original-arg)
-		(dbind (o-name o-type . o-qualifiers) original-arg
-		  (declare (ignore o-type))
-		  (if equivalent-type
-		      `(,o-name ,equivalent-type ,@o-qualifiers)
-		      original-arg)))
-	      (make-length-same equivalent-uniforms uniforms nil nil)
-	      uniforms))))
-
 (defun aggregate-uniforms (names &optional accum interal-uniforms-p)
   "[0] Aggregates the uniforms from the named gpu-functions,
-   [1] but first ensures that any equivalent types are spliced in
 
    The reason we need to aggregate uniforms is as follows:
    - pipelines are made of composed gpu functions
@@ -278,8 +250,10 @@
       (aggregate-uniforms
        (rest names)
        (%aggregate-uniforms;;[0]
-	(%splice-in-equivalent-uniform-types;;[1]
-	 (gpu-func-spec (first names)) interal-uniforms-p)
+	(with-gpu-func-spec (gpu-func-spec (first names))
+	  (if interal-uniforms-p
+	      actual-uniforms
+	      uniforms))
 	accum)
        interal-uniforms-p)
       accum))

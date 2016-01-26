@@ -99,6 +99,8 @@
   (symbol-function (get-uniform-function-name type)))
 
 (defun get-foreign-uniform-function-name (type)
+  "Used when uploading from a foreign data source (like a c-array)
+   This lets your uploading from an offset the source"
   (case type
     ((:int :int-arb :bool :bool-arb) '%gl:uniform-1iv)
     ((:float :float-arb) '%gl:uniform-1fv)
@@ -115,6 +117,7 @@
            (error "Sorry cepl doesnt handle that type yet")))))
 
 (defun get-uniform-function-name (type)
+  "Used when uploading lisp data"
   (case type
     ((:int :int-arb :bool :bool-arb) 'uniform-1i)
     ((:float :float-arb) 'uniform-1f)

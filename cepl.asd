@@ -62,7 +62,6 @@
                (:file "core/jungl/c-arrays")
                (:file "core/jungl/structs")
                (:file "core/jungl/predefined-structs")
-               (:file "core/jungl/equivalent-types")
                (:file "core/jungl/buffers")
                (:file "core/jungl/buffer-gpu-arrays")
                (:file "core/jungl/vaos")

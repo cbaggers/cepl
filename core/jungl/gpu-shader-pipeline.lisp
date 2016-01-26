@@ -34,8 +34,7 @@
                    ,(def-dispatch-func name (first init-func) stage-names
 				       context pass-key)))
                ;; generate the function that recompiles this pipeline
-               ,(gen-recompile-func name args gpipe-args stage-names options
-				    pass-key)
+               ,(gen-recompile-func name args gpipe-args options)
                ,(unless suppress-compile `(,(recompile-name name))))))))))
 
 (defun fallback-implicit-uniform-func (context)
@@ -44,7 +43,7 @@
                                (declare (ignore prog-id)
                                         (optimize (speed 3) (safety 1)))))))
 
-(defun gen-recompile-func (name args gpipe-args stage-names options pass-key)
+(defun gen-recompile-func (name args gpipe-args options)
   `(defun ,(recompile-name name) ()
      (format t "~&; recompile cpu side of (~a ...)~&" ',name)
      (force-output)
@@ -113,8 +112,7 @@
       (values compiled-stages prog-id))))
 
 (defun %create-implicit-uniform-uploader (compiled-stages)
-  (let ((uniforms (%dedup-implicit-uniforms
-                   (mapcat #'varjo:implicit-uniforms compiled-stages))))
+  (let ((uniforms (mapcat #'varjo:implicit-uniforms compiled-stages)))
     (when uniforms
       (let* ((assigners (mapcar #'make-arg-assigners uniforms))
              (u-lets (mapcat #'first assigners)))
@@ -134,10 +132,6 @@
      (loop :for (n tp . i_)
         :in (remove-if-not (lambda (x) (equal (car x) name)) uniforms)
         :always (equal type tp))))
-
-(defun %dedup-implicit-uniforms (uniforms)
-  (assert (%implicit-uniforms-dont-have-type-mismatches uniforms))
-  (remove-duplicates uniforms :test #'equal :key #'first))
 
 (defun %compile-closure (code)
   (funcall (compile nil `(lambda () ,code))))
@@ -298,23 +292,18 @@
 
 (defun dispatch-make-assigner (arg-name type glsl-name qualifiers)
   (assert (not (null glsl-name)))
-  (let* ((is-equiv (equivalent-typep type))
-         (varjo-type (varjo:type-spec->type
-                      (if is-equiv (equivalent-type type) type)))
+  (let* ((varjo-type (varjo:type-spec->type type))
          (struct-arg (varjo:v-typep varjo-type 'varjo:v-user-struct))
          (array-length (when (v-typep varjo-type 'v-array)
                          (apply #'* (v-dimensions varjo-type))))
          (sampler (sampler-typep varjo-type))
          (ubo (member :ubo qualifiers)))
     (cond
-      (is-equiv (make-eq-type-assigner arg-name type varjo-type glsl-name
-                                       qualifiers))
-      ;;
       (ubo (make-ubo-assigner arg-name varjo-type glsl-name))
       ;;
       (array-length (make-array-assigners arg-name varjo-type glsl-name))
       ;;
-      (struct-arg (make-struct-assigners arg-name varjo-type glsl-name ))
+      (struct-arg (make-struct-assigners arg-name varjo-type glsl-name))
       ;;
       (sampler (make-sampler-assigner arg-name varjo-type glsl-name))
       ;;
@@ -359,6 +348,9 @@
      :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path)))
      :uploaders
      `((when (>= ,id-name 0)
+	 ;; If we have a byte offset then we need index into that block of
+	 ;; foreign data to upload (think structs) so we need to use
+	 ;; #'get-foreign-uniform-function-name.
          ,(if byte-offset
               `(,(get-foreign-uniform-function-name (type->spec type))
                  ,id-name 1 (cffi:inc-pointer ,arg-name ,byte-offset))
@@ -379,29 +371,6 @@
                               (format nil "~a[~a]" glsl-name-path i)
                               byte-offset)
         :do (incf byte-offset (gl-type-size (type->spec element-type)))))))
-
-(defun make-eq-type-assigner (arg-name type varjo-type glsl-name qualifiers)
-  (let* ((local-var (gensym (symbol-name arg-name)))
-         (varjo-type-spec (varjo:type->type-spec varjo-type))
-         (assigner (dispatch-make-assigner `(autowrap:ptr ,local-var)
-                                           varjo-type-spec
-                                           glsl-name
-                                           qualifiers))
-         (eq-spec (equiv-spec type))
-         (varjo-type-name (first eq-spec))
-         (updaters
-          `((progn
-              ,@(loop :for x :in (second eq-spec) :collect
-                   `(setf (,(first x) ,local-var)
-                          ,(subst arg-name '% (second x)
-                                  :test (lambda (_ _1)
-                                          (when (symbolp _1)
-                                            (string-equal _ _1))))))))))
-    (make-assigner
-     :let-forms (cons `(,local-var (autowrap:alloc ',varjo-type-name))
-                      (let-forms assigner))
-     :uploaders (append updaters (uploaders assigner)))))
-
 
 
 (defun make-struct-assigners (arg-name type glsl-name-path
@@ -426,8 +395,9 @@
           ;;
           (t (list (make-simple-assigner arg-name pslot-type glsl-name-path
                                          byte-offset)))))
-      :do (incf byte-offset (* (gl-type-size pslot-type)
-                               (or array-length 1))))))
+      :do (when byte-offset
+	    (incf byte-offset (* (gl-type-size pslot-type)
+				 (or array-length 1)))))))
 
 
 (defclass assigner ()
