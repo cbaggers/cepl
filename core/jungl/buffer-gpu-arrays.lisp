@@ -162,19 +162,27 @@
   (unless (find access-type '(:read-write :read-only :write-only))
     (error "The access argument must be set to :read-write :read-only or :write-only"))
   (let ((glarray-pointer (gensym "POINTER"))
+	(array-sym (gensym "BUFFER"))
         (buffer-sym (gensym "BUFFER"))
         (target (gensym "target")))
-    `(let ((,buffer-sym (gpuarray-buffer ,gpu-array))
-           (,target :array-buffer))
-       (force-bind-buffer ,buffer-sym ,target)
-       (gl:with-mapped-buffer (,glarray-pointer
-                               ,target
-                               ,access-type)
-         (if (pointer-eq ,glarray-pointer (null-pointer))
-             (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
-                    ,glarray-pointer)
-             (let ((,temp-name ,glarray-pointer))
-               ,@body))))))
+    `(progn
+       (let ((,array-sym ,gpu-array))
+	 (unless (typep ,array-sym 'gpuarray)
+	   (if (typep ,array-sym 'gpu-array-t)
+	       (error "Unfortunately jungl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
+	       (error "with-gpu-array-* does not support the type ~s"
+		      (type-of ,array-sym))))
+	 (let ((,buffer-sym (gpuarray-buffer ,array-sym))
+	       (,target :array-buffer))
+	   (force-bind-buffer ,buffer-sym ,target)
+	   (gl:with-mapped-buffer (,glarray-pointer
+				   ,target
+				   ,access-type)
+	     (if (pointer-eq ,glarray-pointer (null-pointer))
+		 (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
+			,glarray-pointer)
+		 (let ((,temp-name ,glarray-pointer))
+		   ,@body))))))))
 
 ;; [TODO] Dont require a temporary name, just use the one it has
 ;;        this makes it feel more magical to me and also it is

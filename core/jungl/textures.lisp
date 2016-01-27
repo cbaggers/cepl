@@ -31,6 +31,8 @@
 ;;------------------------------------------------------------
 
 (defun texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
+  (when (and (> cube-face 0) (not (slot-value texture 'cubes)))
+    (error "Cannot get the cube-face from a texture that wasnt made with :cubes t:~%~a" texture))
   (if (eq (slot-value texture 'texture-type) :texture-buffer)
       (if (> (+ mipmap-level layer cube-face) 0)
           (error "Texture index out of range")
@@ -85,7 +87,7 @@
         (l (slot-value object 'layer-count))
         (c (slot-value object 'cubes)))
     (format stream
-            "#<GL-~a (~{~a~^x~})~:[~; mip-levels:~a~]~:[~; layers:~a~]>"
+            "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]>"
             (slot-value object 'texture-type)
             (slot-value object 'base-dimensions)
             (when (> m 1) m) (when (> l 1) l) c)))
@@ -95,10 +97,11 @@
         (l (slot-value object 'layer-count))
         (c (slot-value object 'cubes)))
     (format stream
-            "#<GL-~a (~{~a~^x~})~:[~; mip-levels:~a~]~:[~; layers:~a~]>"
+            "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]>"
             (slot-value object 'texture-type)
             (slot-value object 'base-dimensions)
-            (when (> m 1) m) (when (> l 1) l) c)))
+            (when (> m 1) m)
+	    (when (> l 1) l) c)))
 
 (defmethod print-object ((object buffer-texture) stream)
   (format stream
@@ -548,7 +551,8 @@
                       rectangle multisample immutable initial-contents
                       internal-format lod-bias min-lod max-lod minify-filter
                       magnify-filter wrap compare generate-mipmaps)
-  (let* ((dimensions (%texture-dimensions initial-contents dimensions)))
+  (let* ((dimensions (listify dimensions))
+	 (dimensions (%texture-dimensions initial-contents dimensions)))
     ;; check for power of two - handle or warn
     (let* ((pixel-format (when initial-contents
                            (lisp-type->pixel-format initial-contents)))
@@ -708,15 +712,15 @@
                            (slot-value texture 'mipmap-levels)
                            (slot-value texture 'internal-format)
                            (first base-dimensions)
-                           (second base-dimensions)))
+                           (or (second base-dimensions) 0)))
           ((:texture-3d :proxy-texture-3d :texture-2d-array :texture-cube-array
                         :proxy-texture-cube-array :proxy-texture-2d-array)
            (tex-storage-3d texture-type
                            (slot-value texture 'mipmap-levels)
                            (slot-value texture 'internal-format)
                            (first base-dimensions)
-                           (second base-dimensions)
-                           (third base-dimensions))))
+                           (or (second base-dimensions) 0)
+                           (or (third base-dimensions) 0))))
         (setf (slot-value texture 'allocated) t))))
 
 ;;------------------------------------------------------------
@@ -790,7 +794,6 @@
   texture)
 
 ;; {TODO}
-;; copy data (from gpu to cpu) - get-tex-image
 ;; copy data (from frame-buffer to texture image) - leave for now
 ;; copy from buffer to texture glCopyTexSubImage2D
 ;; set texture params
