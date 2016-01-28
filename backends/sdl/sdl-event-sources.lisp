@@ -137,7 +137,9 @@
     :leave
     :focus-gained
     :focus-lost
-    :close))
+    :close
+    :take-focus
+    :hit-test))
 
 
 (defvar *sdl-scan-lookup*
