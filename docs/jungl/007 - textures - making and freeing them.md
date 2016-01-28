@@ -1,3 +1,4 @@
+
 # Textures
 
 Ah textures! The area of opengl with probably the most misleading names in all of graphics.
@@ -107,12 +108,16 @@ CEPL> (make-texture nil :dimensions '(10 10 10) :element-type :ubyte)
 #<GL-TEXTURE-3D (10x10x10)>
 ```
 
+#### Subseq-g for Texture backed gpu-arrays?
+
+Having this would mean we could `pull-g` from, and `push-g` to, a portion of the texture. This is on the roadmap but not currently implemented.
+
 #### MipMaps
 
 I'll just paste chunks of the GL wiki's description of mipmaps as it is very good:
 
 > When a texture is directly applied to a surface, how many pixels of that texture (commonly called "texels") are used depends on the angle at which that surface is rendered. A texture mapped to a plane that is almost edge-on with the camera will only use a fraction of the pixels of the texture. Similarly, looking directly down on the texture from far away will show fewer texels than an up-close version.
-> The problem is with animation. When you slowly zoom out on a texture, you start to see aliasing artifacts appear. These are caused by sampling fewer than all of the texels; the choice of which texels are sampled changes between different frames of the animation. Even with linear filtering (see below), artifacts will appear as the camera zooms out.
+> The problem is with animation. When you slowly zoom out on a texture, you start to see aliasing artifacts appear. These are caused by sampling fewer than all of the texels; the choice of which texels are sampled changes between different frames of the animation. Even with linear filtering, artifacts will appear as the camera zooms out.
 
 > To solve this problem, we employ mip maps. These are pre-shrunk versions of the full-sized image. Each mipmap is half the size of the previous one in the chain, using the largest dimension of the image . So a 64x16 2D texture can have 6 mip-maps: 32x8, 16x4, 8x2, 4x1, 2x1, and 1x1. OpenGL does not require that the entire mipmap chain is complete; you can specify what range of mipmaps in a texture are available.
 
@@ -288,13 +293,17 @@ Of course opengl has many more potential format that this so feel free to use an
 If you are missing a format, or you are having issues with pulling or pushing data, as usual, please file an issue report on github.
 
 
-#### Pixel Format
+#### Pixel Formats
 
-Arghh too many format. The short version is that `pixel formats` are not equal to `image format`. See here for details: https://www.opengl.org/wiki/Pixel_Transfer#Format_conversion
+Arghh too many format. The short version is that `pixel formats` are not equal to `image formats`. `Pixel formats` define the format of the data on the cpu side (client side in opengl terminology) and `image formats` define the gpu side.
 
-Jungl should just **do the right thing** and any cases where it doesnt are considered a bug.
+See here for details: https://www.opengl.org/wiki/Pixel_Transfer#Format_conversion
 
-#### Sampling parms, sampler objects
+There are only certain combinations that make sense and so Jungl should just **do the right thing**. Any cases where it doesnt are considered a bug.
+
+
 #### Freeing
-#### sub-array push, subseq
-#### Using textures
+
+You can use either `#'free` or `#'free-texture` to free textures (and all their contained gpu-arrays)
+
+You can't free a texture backed gpu-array on it's own.
