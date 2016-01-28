@@ -88,7 +88,7 @@
                                                                  call-form)))))
       ;; the return sig is a list of '(the-code the-draw-buffers)
       (if fbo
-          (%gen-with-bind-fbo-result fbo lisp-forms map-g-form)
+          (%gen-with-fbo-bound-result fbo lisp-forms map-g-form)
           (if lisp-forms
               (list `(progn ,@lisp-forms ,map-g-form) nil)
               (list map-g-form nil))))))
@@ -96,7 +96,7 @@
 (defun %uniform-arg-to-call (uniform-arg)
   `(,(kwd (first uniform-arg)) ,(first uniform-arg)))
 
-(defun %gen-with-bind-fbo-result (fbo-pattern lisp-forms map-g-form)
+(defun %gen-with-fbo-bound-result (fbo-pattern lisp-forms map-g-form)
   (let* ((fbo-pattern (listify fbo-pattern))
          (key-start (or (position-if #'keywordp fbo-pattern)
                         (length fbo-pattern)))
@@ -106,7 +106,7 @@
     (when (and (member :draw-buffers keys) attachments)
       (error "defpipeline: You must not specify an fbo target with buffers and a :draw-buffers keyword argument"))
     (list
-     `(with-bind-fbo
+     `(with-fbo-bound
           (,fbo ,@keys
                 ,@(if attachments
                       `(:draw-buffers

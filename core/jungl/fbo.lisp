@@ -32,6 +32,7 @@
                            :destination-rgb :zero
                            :destination-alpha :zero) :type blending-params))
 
+
 (defstruct (attachment (:constructor %make-attachment)
                        (:conc-name %attachment-))
   (fbo nil :type (or null fbo))
@@ -46,6 +47,12 @@
                            :source-alpha :one
                            :destination-rgb :zero
                            :destination-alpha :zero) :type blending-params))
+
+(defmethod print-object ((obj attachment) stream)
+  (format stream "#<~s-ATTACHMENT (:fbo ~s)>"
+          "COLOR"
+          (%fbo-id (%attachment-fbo obj))
+          ))
 
 (defmethod print-object ((object fbo) stream)
   (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENT ~a~]>"
@@ -449,15 +456,6 @@
 
 ;;--------------------------------------------------------------
 
-(defmacro with-fbo ((var-name fbo) &body body)
-  `(let ((,var-name ,fbo))
-     (unwind-protect
-          (with-bind-fbo (,var-name)
-            ,@body)
-       (free ,var-name))))
-
-;;--------------------------------------------------------------
-
 (defmacro with-fbo-slots (attachment-bindings expression &body body)
   (let ((expr (gensym "expression")))
     `(let* ((,expr ,expression)
@@ -471,7 +469,7 @@
 
 
 ;; (with-fbo-slots (c0 d)
-;;     (with-bind-fbo (fbo)
+;;     (with-fbo-bound (fbo)
 ;;       (map-g #'prog-1 stream :tex tx))
 ;;   (print c0)
 ;;   (print d))
@@ -492,7 +490,9 @@
   "Will create an fbo and optionally attach the arguments using
    #'fbo-gen-attach"
   (let ((fbo (make-fbo-from-id (first (gl:gen-framebuffers 1)))))
-    (when fuzzy-attach-args (apply #'fbo-gen-attach fbo fuzzy-attach-args))
+    (if fuzzy-attach-args
+        (apply #'fbo-gen-attach fbo fuzzy-attach-args)
+        (error "Jungl: FBOs must have at least one attachment"))
     (check-framebuffer-status fbo)
     fbo))
 
@@ -567,7 +567,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (gl:bind-framebuffer :framebuffer 0))
 
 
-(defmacro with-bind-fbo ((fbo &key (target :framebuffer) (unbind t)
+(defmacro with-fbo-bound ((fbo &key (target :framebuffer) (unbind t)
                               (with-viewport t) (attachment-for-size 0)
                               (with-blending t) (draw-buffers t))
                          &body body)
@@ -615,7 +615,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target can be '(:framebuffer :read-framebuffer :draw-framebuffer)
   (let ((attach-enum (get-gl-attachment-keyword attachment)))
-    (with-bind-fbo (fbo :target target :with-viewport nil :draw-buffers nil)
+    (with-fbo-bound (fbo :target target :with-viewport nil :draw-buffers nil)
       ;; FBOs have the following attachment points:
       ;; GL_COLOR_ATTACHMENTi: These are an implementation-dependent number of
       ;; attachment points. You can query GL_MAX_COLOR_ATTACHMENTS to determine the
