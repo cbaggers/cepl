@@ -35,6 +35,22 @@
 	(m4:m* (%rspace-to-rspace-ids-transform neighbour-id rspace-id)
 	       to-neighbour))))
 
+(defun %mspace-to-mspace-transform (mspace-a mspace-b)
+  (let* ((a-only-sr (%mspace-only-sr mspace-a))
+	 (a-neighbour-id (sr-target-id a-only-sr))
+	 (a-to-neighbour (sr-to a-only-sr))
+
+	 (b-only-sr (%mspace-only-sr mspace-b))
+	 (b-neighbour-id (sr-target-id b-only-sr))
+	 (from-b-neighbour-to-b (m4:affine-inverse (sr-to b-only-sr))))
+
+    (if (= a-neighbour-id b-neighbour-id)
+	(m4:m* from-b-neighbour-to-b
+	       a-to-neighbour)
+	(m4:m* (m4:m* from-b-neighbour-to-b
+		      (%rspace-to-rspace-ids-transform a-neighbour-id b-neighbour-id))
+	       a-to-neighbour))))
+
 ;;----------------------------------------------------------------------
 ;; Relational
 
@@ -99,6 +115,16 @@
       (let ((dest-root (%space-root to-space)))
 	(m4:m* (collect-inverse-to to-space dest-root)
 	       (%rspace-to-rspace-transform from-space dest-root)))))
+
+(defun %rspace-to-mspace-transform (mspace rspace)
+  (let* ((only-sr (%mspace-only-sr mspace))
+	 (neighbour-id (sr-target-id only-sr))
+	 (from-neighbour-to-mspace (m4:affine-inverse (sr-to only-sr)))
+	 (rspace-id (%space-nht-id rspace)))
+    (if (= rspace-id neighbour-id)
+	from-neighbour-to-mspace
+	(m4:m* from-neighbour-to-mspace
+	       (%rspace-to-rspace-ids-transform neighbour-id rspace-id)))))
 
 (defun %set-rspace-transform (from-space to-space transform)
   (unless (and (= (%space-kind from-space) +relational-space+)
@@ -193,11 +219,11 @@
 		   %hspace-to-rspace-transform
 		   %hspace-to-hspace-transform))
   (kind-case* (from-space to-space)
-	      :m->m (error "model to model space transforms are impossible as the model space defines a one-way relationship to a single neighbour space")
+	      :m->m (%mspace-to-mspace-transform from-space to-space)
 	      :m->r (%mspace-to-rspace-transform from-space to-space)
 	      :m->h (%mspace-to-hspace-transform from-space to-space)
 
-	      :r->m (error "relatation to model space transforms are impossible as the model space defines a one-way relationship to a single neighbour space")
+	      :r->m (%rspace-to-mspace-transform from-space to-space)
 	      :r->r (%rspace-to-rspace-transform from-space to-space initial-m4)
 	      :r->h (%rspace-to-hspace-transform from-space to-space)
 
