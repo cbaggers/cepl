@@ -71,6 +71,12 @@
                    value)))
     (%set-resolution viewport (first value) (second value))))
 
+(defun (setf viewport-resolution-v!) (value viewport)
+  (let ((value (if (typep value 'cl-game-math.types:vec2)
+                   (list (floor (v:x value)) (floor (v:y value)))
+                   (error "The value given to (setf viewport-resolution-v!) must be a vec2"))))
+    (%set-resolution viewport (first value) (second value))))
+
 (defmethod (setf cepl-generics:size) (value (object viewport))
   (%set-resolution object (ceiling (v:x value)) (ceiling (v:y value))))
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -107,3 +113,7 @@
    composed dispatch would be an example"
   `(%with-viewport (attachment-viewport (%attachment ,fbo ,attachment))
      ,@body))
+
+(defun clone-viewport (viewport)
+  (make-viewport (viewport-resolution viewport)
+		 (viewport-origin viewport)))

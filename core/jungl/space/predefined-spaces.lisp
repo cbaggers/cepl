@@ -6,10 +6,10 @@
   (make-relational-space nil))
 
 (defvar *ndc-space*
-  (make-relational-space `((,*screen-space*))))
+  (make-space* `(,*screen-space*)))
 
 (defvar *clip-space*
-  (make-relational-space `((,*ndc-space*))))
+  (make-space* `(,*ndc-space*)))
 
 ;; this defines a link between world and clip space.
 ;;
@@ -19,9 +19,9 @@
 ;; It may seem annoying to have this but identity is a valid transform
 ;; and it means we have a valid space graph.
 (defvar *identity-eye-space*
-  (make-relational-space `((,*clip-space*))))
+  (make-space* `(,*clip-space*)))
 
 ;; technically anyone can make a world space. But for optimization
 ;; jungl wants to own this one.
 (defvar *world-space*
-  (make-relational-space `((,*identity-eye-space*))))
+  (make-space* (list *identity-eye-space* (m4:identity) (m4:identity))))

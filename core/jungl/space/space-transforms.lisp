@@ -116,7 +116,7 @@
 	(m4:m* (collect-inverse-to to-space dest-root)
 	       (%rspace-to-rspace-transform from-space dest-root)))))
 
-(defun %rspace-to-mspace-transform (mspace rspace)
+(defun %rspace-to-mspace-transform (rspace mspace)
   (let* ((only-sr (%mspace-only-sr mspace))
 	 (neighbour-id (sr-target-id only-sr))
 	 (from-neighbour-to-mspace (m4:affine-inverse (sr-to only-sr)))
@@ -124,7 +124,7 @@
     (if (= rspace-id neighbour-id)
 	from-neighbour-to-mspace
 	(m4:m* from-neighbour-to-mspace
-	       (%rspace-to-rspace-ids-transform neighbour-id rspace-id)))))
+	       (%rspace-to-rspace-ids-transform rspace-id neighbour-id)))))
 
 (defun %set-rspace-transform (from-space to-space transform)
   (unless (and (= (%space-kind from-space) +relational-space+)

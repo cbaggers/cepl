@@ -168,6 +168,7 @@
            ;;- - - - - - - -
            :viewport
 	   :make-viewport
+	   :clone-viewport
            :with-viewport
            :with-fbo-viewport
            :viewport-resolution
@@ -387,6 +388,7 @@
   (:import-from :jungl :def-compile-pass :def-deep-pass :set-uniform :remove-uniform
 		:set-arg-val)
   (:export :get-transform :get-transform-via :p! :in :space! :make-space
+	   :make-space*
 	   :with-rendering-via
 	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
 	   :model-space-p :relational-space-p
@@ -565,6 +567,7 @@
            :viewport
            :current-viewport
 	   :make-viewport
+	   :clone-viewport
            :with-viewport
            :with-fbo-viewport
            ;;---

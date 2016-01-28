@@ -69,22 +69,25 @@
 ;; Constructors
 
 ;; usage idas:
-;; (make-space a)
-;; (make-space (a m4to m4from) b)
-;; (make-space (:to a m4to) (:from a m4from))
+;; (make-space* (space-a m4to) (space-b m4to m4from))
 
-(defun make-space* (relationships)
+(defun make-space* (&rest relationships)
+  (unless relationships
+    (error "JUNGL.SPACE: All spaces must be created with at least 1 relationship"))
   (if (eq :parent (first relationships))
-      (%make-heirarchical-space relationships)
-      (%dispatch-relational-space relationships)))
+      (dbind (&key parent (transform (m4:identity)))
+	  relationships
+	(%make-heirarchical-space parent transform))
+      (%make-relational-space (parse-relationships relationships))))
 
-(defun make-space (&rest relationships)
-  (if relationships
-      (make-space* relationships)
-      (error "JUNGL.SPACE: All spaces must be created with at least 1 relationship")))
+;; (make-space a m4to)
+;; (make-space a m4to m4from)
 
-(defun space! (&rest relationships)
-  (make-space* relationships))
+(defun make-space (target-space transform-to &optional transform-from)
+  (%make-model-space target-space transform-to transform-from))
+
+(defun space! (target-space transform-to &optional transform-from)
+  (%make-model-space target-space transform-to transform-from))
 
 (defun disconnect-space (space)
   (declare (ignore space))
@@ -128,22 +131,21 @@
 ;;----------------------------------------------------------------------
 ;; Hierarchical Space
 
-(defun %make-heirarchical-space (relationship)
-  (dbind (&key parent (transform (m4:identity))) relationship
-    (assert parent)
-    (let ((space
-	   (%make-space
-	    :nht-id -1 :kind +hierachical-space+ :parent parent
-	    :root (%space-root parent) :depth (1+ (%space-depth parent))
-	    :children (make-array 0 :element-type 'spatial-relationship
-				  :adjustable t :fill-pointer 0)
-	    :neighbours (make-array
-			 1 :element-type 'spatial-relationship
-			 :initial-element (make-spatial-relationship
-					   -1 -1 transform nil)))))
-      (vector-push-extend space (%space-children parent))
-      (%add-space-to-array space)
-      space)))
+(defun %make-heirarchical-space (parent &optional (transform (m4:identity)))
+  (assert parent)
+  (let ((space
+	 (%make-space
+	  :nht-id -1 :kind +hierachical-space+ :parent parent
+	  :root (%space-root parent) :depth (1+ (%space-depth parent))
+	  :children (make-array 0 :element-type 'spatial-relationship
+				:adjustable t :fill-pointer 0)
+	  :neighbours (make-array
+		       1 :element-type 'spatial-relationship
+		       :initial-element (make-spatial-relationship
+					 -1 -1 transform nil)))))
+    (vector-push-extend space (%space-children parent))
+    (%add-space-to-array space)
+    space))
 
 (defun parent-space (space)
   (or (%space-parent space)
@@ -160,12 +162,6 @@
 
 (defun relational-space-p (space)
   (= (%space-kind space) +relational-space+))
-
-(defun %dispatch-relational-space (relationships)
-  (let ((relationships (parse-relationships relationships)))
-    (if (model-relationship-p relationships)
-	(%make-model-space (subseq (first relationships) 0 2))
-	(%make-relational-space relationships))))
 
 (defun make-relational-space (relationships)
   (%make-relational-space
@@ -192,22 +188,12 @@
     space))
 
 (defun parse-relationships (relationships)
-  (mapcar (lambda (r)
-	    (parse-relationship
-	     r :default-birectional (> (length relationships) 1)))
-	  relationships))
+  (mapcar #'parse-relationship relationships))
 
-(defun parse-relationship (r &key default-birectional)
-  (dbind (target-space &optional (to-m4 (m4:identity))
-		       (from-m4 (when default-birectional (m4:identity))))
+(defun parse-relationship (r)
+  (dbind (target-space &optional (to-m4 (m4:identity)) (from-m4 (m4:identity)))
       (listify r)
     (list target-space to-m4 from-m4)))
-
-(defun model-relationship-p (relationships)
-  (let ((r (first relationships)))
-    (and (= (length relationships) 1)
-	 (second r)
-	 (not (third r)))))
 
 (defun %rspace-to-neighbour-relationship (from-space to-space)
   (let ((from-id (%space-nht-id from-space))
@@ -256,14 +242,16 @@
 (defun model-space-p (space)
   (= (%space-kind space) +model-space+))
 
-(defun %make-model-space (relationship)
-  (dbind (target-space transform) relationship
-    (%make-space :nht-id -1 :kind +model-space+ :depth 0
-		 :neighbours (make-array
-			      1 :element-type 'spatial-relationship
-			      :initial-element (make-spatial-relationship
-						-1 (%space-nht-id target-space)
-						transform nil)))))
+(defun %make-model-space (target-space transform-to &optional transform-from)
+  (%make-space
+   :nht-id -1 :kind +model-space+ :depth 0
+   :neighbours (make-array
+		1 :element-type 'spatial-relationship
+		:initial-element (make-spatial-relationship
+				  -1 (%space-nht-id target-space)
+				  transform-to
+				  (or transform-from
+				      (m4:affine-inverse transform-to))))))
 
 (defun upgrade-from-model-space (model-space)
   (declare (ignore model-space))
