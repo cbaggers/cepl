@@ -391,6 +391,13 @@
     (cond
       ;; ms
       (multisample (error "cepl: Multisample textures are not supported"))
+      ;; cube textures
+      ((and initial-contents cubes)
+       (%make-cube-texture dimensions mipmap layer-count cubes buffer-storage
+                           rectangle multisample immutable initial-contents
+                           internal-format lod-bias min-lod max-lod
+                           minify-filter magnify-filter wrap compare
+                           generate-mipmaps))
       ;; initialize content needs to be turned into c-array
       ((and initial-contents (typep initial-contents 'cepl-uploadable-lisp-seq))
        (%make-texture-with-lisp-data dimensions mipmap layer-count cubes
@@ -406,13 +413,6 @@
                              rectangle multisample immutable initial-contents
                              lod-bias min-lod max-lod minify-filter
                              magnify-filter wrap compare))
-      ;; cube textures
-      ((and initial-contents cubes)
-       (%make-cube-texture dimensions mipmap layer-count cubes buffer-storage
-                           rectangle multisample immutable initial-contents
-                           internal-format lod-bias min-lod max-lod
-                           minify-filter magnify-filter wrap compare
-                           generate-mipmaps))
       ;; all other cases
       (t (%make-texture dimensions mipmap layer-count cubes buffer-storage
                         rectangle multisample immutable initial-contents
