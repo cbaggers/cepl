@@ -189,14 +189,15 @@
 	     (setf prog-id (,init-func-name))))
 	 (when verbose
 	   (format t
-		   ,(format nil
-			    "~%----------------------------------------
+		   ,(escape-tildes
+		     (format nil
+			     "~%----------------------------------------
 ~%name: ~s~%~%pipeline compile context: ~s~%~%uniform assigners:~%~s~%~%uniform transforms:~%~s
 ~%----------------------------------------"
-			    name
-			    context
-			    uniform-assigners
-			    uniform-transforms)))
+			     name
+			     context
+			     uniform-assigners
+			     uniform-transforms))))
 	 t)
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignore mapg-context) (ignorable ,@uniform-names))
@@ -219,6 +220,9 @@
          (unless (mapg-constantp mapg-context)
            (error 'dispatch-called-outside-of-map-g :name ',name))
          whole))))
+
+(defun escape-tildes (str)
+  (cl-ppcre:regex-replace-all "~" str "~~"))
 
 (defmacro draw-expander (stream draw-type)
   "This draws the single stream provided using the currently
