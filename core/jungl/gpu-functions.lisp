@@ -83,12 +83,12 @@
     ;; it is *not* recursive
     (let* ((in-arg-names (mapcar #'first in-args))
 	   (uniform-names (mapcar #'first uniforms))
-	   (macro-func-name (gensym))
+	   (macro-func-name (gensym (symbol-name name)))
 	   (fbody `(list 'varjo-lang:labels-no-implicit ;;[1]
 			 '((,macro-func-name (,@in-args ,@uniforms) ,@body))
 			 (list ',macro-func-name
 			       ,@in-arg-names ,@uniform-names)))
-	   (to-compile `(lambda (,@in-arg-names ,@uniform-names);;[1]
+	   (to-compile `(lambda (,@in-arg-names ,@uniform-names) ;;[1]
 			  ,fbody)))
       (%update-gpu-function-data spec nil nil)
       (varjo::add-macro name (compile nil to-compile)
