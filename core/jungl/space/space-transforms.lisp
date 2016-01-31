@@ -1,6 +1,5 @@
 (in-package :jungl.space)
 
-
 ;;----------------------------------------------------------------------
 ;; Model
 
@@ -78,16 +77,22 @@
   (defun un-restrict-routes ()
     (setf route-restriction nil))
 
-  (defun %check-not-illegal-space (space-id)
-    (if (or (= space-id screen-space-id-cached)
-	    (= space-id ndc-space-id-cached))
-	(error "Jungl.Space: It is currently not valid to try to calculate a route to *ndc-space* or *screen-space*. These spaces are defined by the OpenGL pipeline and cepl cannot yet query those transforms.")
-	space-id))
+  (defun %check-not-illegal-space (space-id from?)
+    (case= space-id
+      (screen-space-id-cached
+       (if from?
+	   (error 'from-ndc-or-screen-cpu-side)
+	   (error 'to-ndc-or-screen)))
+      (ndc-space-id-cached
+       (if from?
+	   (error 'from-ndc-or-screen-cpu-side)
+	   (error 'to-ndc-or-screen)))
+      (otherwise space-id)))
 
   (defun %rspace-to-rspace-ids-transform (space-a-id space-b-id
 					  &optional (initial-m4 (m4:identity)))
-    (let ((space-a-id (%check-not-illegal-space space-a-id))
-	  (space-b-id (%check-not-illegal-space space-b-id)))
+    (let ((space-a-id (%check-not-illegal-space space-a-id t))
+	  (space-b-id (%check-not-illegal-space space-b-id nil)))
       (labels ((transform (accum current-id next-id)
 		 (m4:m* accum
 			(%rspace-to-neighbour-transform current-id next-id))))

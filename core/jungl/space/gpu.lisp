@@ -73,8 +73,28 @@
 	 ;; the ast-node inside the function where it was created
 	 (from-origins (flow-id-origins (flow-ids from-space)
 					t node))
-	 (from-name (origin-name (first from-origins)))
-	 ;; Now we are done with the searching, time to use the results
+	 (from-name (origin-name (first from-origins))))
+    ;;
+    ;; when we have to transform from *screen-space* or *ndc-space* we are in
+    ;; a more tricky situation as the transform is a function of the vector,
+    ;; a matrix alone cannot capture the transform.
+    ;; To handle this situation (in a way that won't kill performace) we
+    ;; require that the source space (screen or ndc) is explicit, in code, at
+    ;; compile time.
+    ;;
+    (let ((val (if (eq (ast-kind node) 'let)
+		   `(let ,@(butlast (ast-args node))
+		      (v! ,(last1 (ast-args node))))
+		   `(v! ,node))))
+      (if (or (eq from-name '*screen-space*) (eq from-name '*ndc-space*))
+	  (inject-clip-or-ndc-space-reverse-transform from-name to-name val env)
+	  (inject-regular-space-transform from-name from-space
+					  to-name to-space
+					  transforms val env)))))
+
+(defun inject-regular-space-transform (from-name from-space to-name to-space
+				       transforms val env)
+  (let* (;; Now we are done with the searching, time to use the results
 	 ;;
 	 ;; we could have multiple of the same transform so we should
 	 ;; deduplicate. This is a hacky way to get a key
@@ -91,13 +111,47 @@
     ;; here we set how we get the transform we are uploading
     (set-arg-val var-name `(get-transform ,from-name ,to-name) env)
     ;; and here is the replacement code for our crossing the spaces
-    (if (eq (ast-kind node) 'let)
-	`(p! (* ,var-name
-		(let ,@(butlast (ast-args node))
-		  (v! ,(last1 (ast-args node))))))
-	`(p! (* ,var-name (v! ,node))))))
+    `(p! (* ,var-name ,val))))
+
+(defun inject-clip-or-ndc-space-reverse-transform (from-name to-name val env)
+  (cond
+    ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    ;; Case we dont yet handle
+    ((eq from-name '*ndc-space*)
+     (error 'from-ndc))
+    ((eq to-name '*screen-space*)
+     (error 'to-ndc-or-screen))
+    ((eq to-name '*ndc-space*)
+     (error 'to-ndc-or-screen))
+    ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    ;; the case we do handle
+    ((eq from-name '*screen-space*)
+     ;; we now have everything we need:
+     ;; let's add a uniform for the viewport params
+     (set-uniform 'viewport-params :vec4 env)
+     ;; here we set how we get the transform we are uploading
+     (set-arg-val 'viewport-params `(jungl::viewport-params-to-vec4) env)
+     ;; lets make the code to transform to clip-space
+     (let ((code `(screen-space-to-clip-space ,val viewport-params)))
+       ;; now we have a transform to clip-space, but it is likely we need to go
+       ;; further, if that might be the case then tell the next pass that we are
+       ;; in clip-space and let the compiler take care of the rest
+       (if (eq to-name '*clip-space*)
+	   `(p! ,code)
+	   `(in *clip-space* (p! ,code)))))))
 
 
+(jungl:defun-g screen-space-to-clip-space ((ss-pos :vec4) (viewport :vec4))
+  (/ (v! (- (* (v:s~ ss-pos :xy) 2.0)
+	    (/ (* (v:s~ viewport :xy) 2.0)
+	       (* (v:s~ viewport :zw) 2.0))
+	    (v! 1 1))
+	 (/ (- (* 2.0 (v:z gl-frag-coord))
+	       (near gl-depth-range)
+	       (far gl-depth-range))
+	    (- (near gl-depth-range) (far gl-depth-range)))
+	 1.0)
+     (v:w gl-frag-coord)))
 
 (defun %gen-space->space-name (from-name to-name)
   "generate a name for the uniform that will contain the

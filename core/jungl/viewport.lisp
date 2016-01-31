@@ -117,3 +117,10 @@
 (defun clone-viewport (viewport)
   (make-viewport (viewport-resolution viewport)
 		 (viewport-origin viewport)))
+
+(defun viewport-params-to-vec4 ()
+  (let ((viewport (current-viewport)))
+    (v! (%viewport-origin-x viewport)
+	(%viewport-origin-y viewport)
+	(%viewport-resolution-x viewport)
+	(%viewport-resolution-y viewport))))
