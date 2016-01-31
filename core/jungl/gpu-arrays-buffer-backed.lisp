@@ -95,7 +95,7 @@
                             buffer element-type dimensions
                             :array-buffer access-style)
                    :format-index 0
-                   :dimensions dimensions
+                   :dimensions (listify dimensions)
                    :access-style access-style)))
 
 (defmethod make-gpu-array ((initial-contents t)
@@ -107,13 +107,31 @@
     (make-gpu-array c-array :access-style access-style)))
 
 (defmethod make-gpu-array ((initial-contents c-array)
-                           &key (access-style :static-draw))
-  (let ((buffer (make-buffer :managed t)))
+                           &key (access-style :static-draw)
+			     dimensions)
+  (let ((buffer (make-buffer :managed t))
+	(dimensions (listify dimensions))
+	(c-dimensions (dimensions initial-contents)))
+    (when dimensions
+      (asserting (and (every #'= c-dimensions dimensions)
+		      (= (length c-dimensions) (length dimensions)))
+		 make-gpu-array-from-c-array-mismatched-dimensions
+		 :c-array-dimensions c-dimensions
+		 :provided-dimensions dimensions))
     (make-gpuarray :buffer (buffer-data buffer initial-contents
                                         :array-buffer access-style)
                    :format-index 0
                    :dimensions (dimensions initial-contents)
                    :access-style access-style)))
+
+(deferror make-gpu-array-from-c-array-mismatched-dimensions ()
+    (c-array-dimensions provided-dimensions)
+    "Jungl: make-gpu-array mismatched dimensions
+
+A call to #'make-gpu-array was made with a c-array as the initial-contents.
+The dimensions of the c-array are ~s, however the dimensions given in the
+call to #'make-gpu-array were ~s"
+  c-array-dimensions provided-dimensions)
 
 (defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
   "This function creates a list of gpu-arrays residing in a

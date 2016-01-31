@@ -62,7 +62,7 @@
                (:file "core/jungl/structs")
                (:file "core/jungl/predefined-structs")
                (:file "core/jungl/buffers")
-               (:file "core/jungl/buffer-gpu-arrays")
+               (:file "core/jungl/gpu-arrays-buffer-backed")
                (:file "core/jungl/vaos")
                (:file "core/jungl/vertex-streams")
                (:file "core/jungl/uniforms")
