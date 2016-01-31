@@ -74,6 +74,7 @@
            :arangei
            :mapcat
            :deferror
+	   :asserting
            :split-seq-by-seq
            :print-mem
            :map-hash

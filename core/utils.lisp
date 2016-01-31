@@ -329,6 +329,9 @@
                 (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
                         ,@body)))))
 
+(defmacro asserting (form error-name &rest keys-to-error)
+  `(unless ,form (error ',error-name ,@keys-to-error)))
+
 
 ;; ------------------------------------------------------------
 ;; dumb little func to pretty print a memory table
