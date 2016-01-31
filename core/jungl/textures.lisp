@@ -399,7 +399,7 @@
                            minify-filter magnify-filter wrap compare
                            generate-mipmaps))
       ;; initialize content needs to be turned into c-array
-      ((and initial-contents (typep initial-contents 'cepl-uploadable-lisp-seq))
+      ((and initial-contents (typep initial-contents 'uploadable-lisp-seq))
        (%make-texture-with-lisp-data dimensions mipmap layer-count cubes
                                      buffer-storage rectangle multisample
                                      immutable initial-contents lod-bias min-lod
@@ -463,11 +463,9 @@
     (null (error 'make-tex-no-content-no-type))
     (c-array (lisp-type->internal-format
               (element-type initial-contents)))
-    (cepl-uploadable-lisp-seq (scan-for-type initial-contents))))
+    (uploadable-lisp-seq (scan-for-type initial-contents))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-
-(deftype cepl-uploadable-lisp-seq () '(or list vector array))
 
 (defun %calc-internal-format-with-declared-format
     (element-type internal-format initial-contents)
@@ -483,7 +481,7 @@
                         :element-type element-type
                         :internal-format internal-format
                         :array-type (element-type initial-contents))))
-    (cepl-uploadable-lisp-seq internal-format) ;; we cant infer all types so we
+    (uploadable-lisp-seq internal-format) ;; we cant infer all types so we
     ;; have to trust and then the
     ;; c-array code handle it
     (t (error 'make-tex-array-not-match-type

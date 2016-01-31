@@ -42,6 +42,7 @@
                (:file "core/events/event-nodes")
                (:file "core/events/event-propagation")
 
+	       (:file "core/jungl/types")
 	       (:file "core/jungl/space/nht-routes")
 	       (:file "core/jungl/space/space")
 	       (:file "core/jungl/space/predefined-spaces")
