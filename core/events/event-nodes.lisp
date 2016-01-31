@@ -110,7 +110,7 @@
      (:include cepl-backend-event
                (source-node |keyboard|))))
 
-(defstruct+methods (key (:include cepl-keyboard-event))
+(defstruct+methods (key-event (:include cepl-keyboard-event))
   (etype (error "mouse-button event requires etype name")
          :type keyword
          :read-only t
@@ -179,19 +179,26 @@
        :tags '(:mouse)
        :filter #'mouse0-eventp
        :body #'update-mouse-state
-       :subscribe-to all-events))))
+       :subscribe-to all-events))
+    (defun mouse-state (button) (gethash button button-state :up))))
 
 ;;----------------------------------------------------------------------
 ;; cepl keyboard events
 
-(let ((key-state (make-hash-table)))
-  (labels ((update-key-states (event)
-             (setf (gethash (key event) key-state) (state event))))
+(let ((keyboard-state (make-hash-table)))
+  (labels ((update-keyboard-states (event)
+	     (let ((key-name (key event))
+		   (state (state event)))
+	       (declare (keyword key-name state))
+	       (assert (keywordp key-name))
+	       (setf (gethash key-name keyboard-state) state))))
     (setf |keyboard|
       (make-event-node
        :name 'cepl-keyboard
        :tags '(:keyboard)
        :filter #'cepl-keyboard-event-p
-       :body #'update-key-states
+       :body #'update-keyboard-states
        :subscribe-to all-events)))
-  (defun key-state (key) (gethash key key-state :up)))
+  (defun key-state (key)
+    (declare (keyword key))
+    (gethash key keyboard-state :up)))

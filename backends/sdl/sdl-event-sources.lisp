@@ -95,7 +95,7 @@
 
       ((:keydown :keyup)
        (:type typ :timestamp ts :state s :repeat r :keysym keysym)
-       (cl:push (evt:make-key
+       (cl:push (evt:make-key-event
                  :timestamp (sdl->lisp-time ts)
                  :etype (key-type-lookup typ)
                  :state (key-state-lookup s)

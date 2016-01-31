@@ -355,8 +355,10 @@
    :make-mouse-motion
    :make-cepl-keyboard-event
    :make-key
+   :make-key-event
    :event
    :mouse-button-state
+   :mouse-state
    :key-state
    :will-quit
    :window
@@ -433,7 +435,6 @@
   (:import-from :cepl.events
                 :def-named-event-node)
   (:export :repl
-           :init
            :quit
            :make-project
            ;;----
