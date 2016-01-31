@@ -27,7 +27,7 @@
   (managed nil))
 
 (defmethod print-object ((object vertex-stream) stream)
-  (format stream "#<JUNGL:VERTEX-STREAM (~s) :LENGTH ~s ~@[:ARRAYS ~s~] ~@[:INDEXED ~s~]>"
+  (format stream "#<JUNGL:VERTEX-STREAM (~s) :LENGTH ~s~@[ :ARRAYS ~s~]~@[ :INDEXED ~s~]>"
 	  (vertex-stream-vao object)
 	  (vertex-stream-length object)
 	  (when (vertex-stream-gpu-arrays object)
