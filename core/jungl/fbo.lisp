@@ -134,6 +134,7 @@
                              (%make-default-attachment nil dimensions)
                              (%make-default-attachment nil dimensions)))
            :attachment-depth (%make-default-attachment depth dimensions)))))
+    (update-clear-mask result)
     (setf %default-framebuffer result
           %current-fbo result)
     result))
