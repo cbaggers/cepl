@@ -467,3 +467,12 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 	     (cases (append cases-but1 (list last-case))))
 	`(let ((,g ,form))
 	   (cond ,@cases))))))
+
+(defun split-string (delimiter string)
+  (let* ((string (string-trim (list delimiter) string))
+	 (result '(nil)))
+    (loop :for c :across string
+       :if (char= c delimiter) :do (push nil result)
+       :else :do (push c (first result)))
+    (mapcar (lambda (x) (concatenate 'string x))
+	    (reverse result))))

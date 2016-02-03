@@ -31,12 +31,10 @@ All of the following will be download automatically by quicklisp
 * cl-opengl
 * cl-devil
 * swank
-* cl-utilities
 * cl-ppcre
 * symbol-munger
 * named-readtables
 * fn
-* temporal-functions - https://github.com/cbaggers/temporal-functions
 
 These three will hopefully be in quicklisp at some point, until then download them at the links provided.
 
@@ -77,7 +75,7 @@ else
 Getting Started
 ===============
 - `cd` to your quicklisp/local-projects folder
-- clone `this repo`, `varjo` and `temporal-functions`
+- clone `this repo`& `varjo`
 
 Now most days you will use `(ql:quickload :cepl-default)` to load all of cepl and it's supporting libs. However this first time please do the following. The reason for following these longer steps is to make it easy to see where the issues are.
 

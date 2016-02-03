@@ -20,8 +20,6 @@
                #:cl-opengl
                #:swank
                #:varjo
-               #:temporal-functions
-               #:cl-utilities
                #:cl-ppcre
                #:symbol-munger
                #:named-readtables
@@ -34,7 +32,7 @@
 	       #:structy-defclass)
   :components ((:file "core/package")
                (:file "core/errors")
-               (:file "core/backend")
+               (:file "backends/api")
                (:file "core/utils")
                (:file "core/static")
                (:file "core/generics")
@@ -89,9 +87,5 @@
 
 	       (:file "core/jungl/space/pos")
 	       (:file "core/jungl/space/gpu")
-
-               (:file "core/live/live-macros")
-               (:file "core/live/bootstrapping")
-               (:file "core/time/time")
 
                (:file "core/repl")))

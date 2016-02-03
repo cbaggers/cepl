@@ -47,9 +47,8 @@
                        (loop :for i :below (gl:get-integer :num-extensions)
                           :collect (%gl:get-string-i :extensions i))
                        ;; OpenGL version < 3
-                       (cl-utilities:split-sequence
-                        #\space (gl:get-string :extensions)
-                        :remove-empty-subseqs t)))
+                       (utils:split-string
+			#\space (gl:get-string :extensions))))
              (exts (append exts
                            (mapcar (lambda (x)
                                      (utils:kwd (string-upcase (subseq x 3))))

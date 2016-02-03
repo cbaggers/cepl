@@ -81,7 +81,8 @@
 	   :with-hash
 	   :with-hash*
            :last1
-           :p->))
+           :p->
+	   :split-string))
 
 (defpackage :%jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -313,71 +314,6 @@
 	   :set-arg-val
 	   ))
 
-(defpackage :varjo-bridge-types
-  (:use :cl))
-
-(defpackage :tools
-  (:use :cl :rtg-math :rtg-math.base-maths)
-  (:export :rqpos))
-
-(defpackage :cepl.events
-  (:use :cl :cepl-utils :cepl-generics :skitter :defstruct-plus-methods)
-  (:nicknames :evt)
-  (:export
-   ;; from-skitter
-   :subscribe
-   :unsubscribe
-   :unsubscribe-from-all
-   :push-event
-   :def-named-event-node
-   :all-events
-   :make-event-node
-
-   ;; from-cepl
-   :cepl-event-hook
-   :register-thunk-with-pump-events
-   :pump-events
-   :inject-backend-event
-
-   :|sys|
-   :|context|
-   :|window|
-   :|mouse|
-   :|keyboard|
-   :make-context-created
-   :make-will-quit
-   :make-win
-   :make-cepl-mouse-event
-   :make-mouse-scroll
-   :make-mouse-button
-   :make-mouse-motion
-   :make-cepl-keyboard-event
-   :make-key
-   :make-key-event
-   :event
-   :mouse-button-state
-   :mouse-state
-   :key-state
-   :will-quit
-   :window
-   :win
-   :context-created
-   :mouse-scroll
-   :mouse-button
-   :mouse-motion
-   :action
-   :button
-   :clicks
-   :delta
-   :etype
-   :id
-   :key
-   :repeating
-   :source-id
-   :state
-   :timestamp
-   :data))
-
 (defpackage :jungl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :cepl.events :named-readtables
 	:varjo :varjo-lang :structy-defclass)
@@ -397,28 +333,16 @@
 	   :update-non-hierarchical-relationship
 	   :remove-non-hierarchical-relationship))
 
-(defpackage :live
-  (:use :cl :cepl-utils)
-  (:export :main-loop
-           :update-swank
-           :peek
-           :continuable))
-
 (defpackage :cepl
   (:use :cl
         :cepl-generics
         :rtg-math
         :rtg-math.base-maths
-        :temporal-functions
         :cl-fad
         :named-readtables
         :jungl)
   (:shadow :quit)
   (:import-from :jungl.space :p! :space-g :in)
-  (:import-from :live
-                :continuable
-                :update-swank
-                :peek)
   (:import-from :utils
                 :deferror
                 :print-mem
@@ -444,17 +368,12 @@
            :tex
            :col
            ;;---
-           :update-swank
-           :peek
-           :*examples-directory*
-           ;;---
            :v! :v-x :v-y :v-z :v-w :s~
            :v!byte :v!ubyte :v!int
            ;;---
            :m!
            ;;---
            :rqpos
-           :continuable
            ;;---
            :def-time-units
            :milliseconds
@@ -475,9 +394,6 @@
            :expiredp
            :expiredp+
            :make-stepper
-           ;;---
-           :update-swank
-           :peek
            ;;---
            :*quad*
            :*quad-stream*
