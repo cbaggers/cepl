@@ -10,7 +10,7 @@
 
 (asdf:defsystem #:cepl-model-helper
   :serial t
-  :depends-on (#:cepl #:classimp #:cl-game-math)
+  :depends-on (#:cepl #:classimp #:rtg-math)
   :components ((:file "meshes-and-models/package")
                (:file "meshes-and-models/mesh")
                (:file "meshes-and-models/classimp-helpers")))

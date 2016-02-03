@@ -84,19 +84,19 @@
            :p->))
 
 (defpackage :%jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
 	:cepl-generics :split-sequence :named-readtables :structy-defclass)
-  (:shadowing-import-from :cl-game-math.base-vectors :v!))
+  (:shadowing-import-from :rtg-math :v!))
 
 (defpackage :jungl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils)
   (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
 
 (defpackage :jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :cl-game-math.base-vectors
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
 	:cepl-generics :split-sequence :%jungl :named-readtables
 	:structy-defclass)
-  (:shadowing-import-from :cl-game-math.base-vectors :v!)
+  (:shadowing-import-from :rtg-math :v!)
   (:import-from :utils
                 :deferror
                 :print-mem)
@@ -317,10 +317,7 @@
   (:use :cl))
 
 (defpackage :tools
-  (:use :cl
-        :cl-game-math.base-vectors
-        :cl-game-math.base-matrices
-        :cl-game-math.base-maths)
+  (:use :cl :rtg-math :rtg-math.base-maths)
   (:export :rqpos))
 
 (defpackage :cepl.events
@@ -382,12 +379,10 @@
    :data))
 
 (defpackage :jungl.space
-  (:use :cl :cepl-utils :cl-game-math.types :cl-game-math.base-vectors
-	:cl-game-math.base-matrices :cepl.events :named-readtables :varjo
-	:varjo-lang :structy-defclass)
+  (:use :cl :cepl-utils :rtg-math.types :rtg-math :cepl.events :named-readtables
+	:varjo :varjo-lang :structy-defclass)
   (:shadow :space)
-  (:shadowing-import-from :cl-game-math.base-vectors :v!)
-  (:shadowing-import-from :cl-game-math.base-matrices :m!)
+  (:shadowing-import-from :rtg-math :m! :v!)
   (:import-from :jungl :def-compile-pass :def-deep-pass :set-uniform :remove-uniform
 		:set-arg-val)
   (:export :get-transform :get-transform-via :p! :in :space! :make-space
@@ -412,9 +407,8 @@
 (defpackage :cepl
   (:use :cl
         :cepl-generics
-        :cl-game-math.base-vectors
-        :cl-game-math.base-matrices
-        :cl-game-math.base-maths
+        :rtg-math
+        :rtg-math.base-maths
         :temporal-functions
         :cl-fad
         :named-readtables
@@ -429,10 +423,7 @@
                 :deferror
                 :print-mem
                 :p->)
-  (:import-from :cl-game-math.vectors
-		:dvec
-		:dvec*
-		:s~)
+  (:import-from :rtg-math :s~)
   (:import-from :cepl.events
                 :def-named-event-node)
   (:export :repl

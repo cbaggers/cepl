@@ -14,16 +14,10 @@
            :mesh-list->gpu
            :mesh->gpu
            :scene-meshes->gpu
-           :calc-type)
-  (:import-from :cl-game-math.vector2
-                :make-vector2)
-  (:import-from :cl-game-math.vector3
-                :make-vector3)
-  (:import-from :cl-game-math.vector4
-                :make-vector4))
+           :calc-type))
 
 (defpackage :meshes
-  (:use :cl :cffi :cepl-utils :cl-game-math.base-vectors :cepl-generics
+  (:use :cl :cffi :cepl-utils :rtg-math :cepl-generics
         :split-sequence :jungl)
   (:export :mesh
            :vertices

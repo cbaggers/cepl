@@ -67,7 +67,7 @@
                     (evt:make-mouse-scroll
                      :timestamp (sdl->lisp-time ts)
                      :mouse-id id
-                     :vec (cl-game-math.base-vectors:v! x y))
+                     :vec (rtg-math.base-vectors:v! x y))
                     results))
 
       ((:mousebuttondown :mousebuttonup)
@@ -79,7 +79,7 @@
                  :button (mouse-button-lookup b)
                  :state (mouse-button-state-lookup s)
                  :clicks c
-                 :pos (cl-game-math.base-vectors:v! x y))
+                 :pos (rtg-math.base-vectors:v! x y))
                 results))
 
       (:mousemotion
@@ -89,8 +89,8 @@
                  :timestamp (sdl->lisp-time ts)
                  :mouse-id id
                  :state (mouse-button-state-lookup s)
-                 :pos (cl-game-math.base-vectors:v! x y)
-                 :delta (cl-game-math.base-vectors:v! xrel yrel))
+                 :pos (rtg-math.base-vectors:v! x y)
+                 :delta (rtg-math.base-vectors:v! xrel yrel))
                 results))
 
       ((:keydown :keyup)

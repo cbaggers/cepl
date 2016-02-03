@@ -30,7 +30,7 @@
 	       #:fn
 	       #:skitter
 	       #:dendrite
-	       #:cl-game-math
+	       #:rtg-math
 	       #:structy-defclass)
   :components ((:file "core/package")
                (:file "core/errors")

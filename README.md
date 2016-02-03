@@ -40,7 +40,7 @@ All of the following will be download automatically by quicklisp
 
 These three will hopefully be in quicklisp at some point, until then download them at the links provided.
 
-* cl-game-math - https://github.com/cbaggers/cl-game-math
+* rtg-math - https://github.com/cbaggers/rtg-math
 * varjo - https://github.com/cbaggers/varjo
 * skitter - https://github.com/cbaggers/skitter
 * defstruct-plus-methods - https://github.com/cbaggers/defstruct-plus-methods
