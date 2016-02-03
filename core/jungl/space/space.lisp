@@ -39,16 +39,17 @@
 
 (defvar *last-space-id* -1)
 
-(deftclass (space (:constructor %make-space) (:conc-name %space-))
-  (uid (incf *last-space-id*) :type :fixnum)
-  (nht-id (error "id must be provided") :type :fixnum)
-  (kind (error "space kind must be provided") :type (mod 3))
-  (parent nil :type (or null space))
-  (children nil :type (or null (array space (*))))
-  (root nil :type (or null space))
+(defstruct (space (:constructor %make-space) (:conc-name %space-))
+  (uid (incf *last-space-id*) :type :fixnum :read-only t)
+  (nht-id (error "id must be provided") :type :fixnum :read-only t)
+  (kind (error "space kind must be provided") :type (mod 3) :read-only t)
+  (parent nil :type (or null space) :read-only t)
+  (children nil :type (or null (array space (*))) :read-only t)
+  (root nil :type (or null space) :read-only t)
   (neighbours (make-array 0 :element-type 'spatial-relationship
 			  :initial-element (%make-sr))
-	      :type (array spatial-relationship (*)))
+	      :type (array spatial-relationship (*))
+	      :read-only t)
   ;;
   ;; # optimization data
   ;;

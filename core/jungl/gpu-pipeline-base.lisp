@@ -27,22 +27,6 @@
    (missing-dependencies :initarg :missing-dependencies :initform nil)
    (cached-compile-results :initform nil)))
 
-(deftclass gpu-func-incomplete-spec
-  i-name
-  i-in-args
-  i-uniforms
-  i-actual-uniforms
-  i-uniform-transforms
-  i-context
-  i-body
-  i-instancing
-  i-equivalent-inargs
-  i-equivalent-uniforms
-  i-doc-string
-  i-declarations
-  i-missing-dependencies
-  i-cached-compile-results)
-
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
 			    actual-uniforms uniform-transforms

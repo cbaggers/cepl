@@ -6,9 +6,9 @@ Common Lisp's cffi is amazing, to be able to get some much done as a newbie real
 
 ### Right, back to the snooker:
 
-So when dealing with graphics we are very often dealing with large arrays of information, information like the vectices of our meshes or positions of lights. Cffi allows us to allocate arrays of different types, but in jungl we also want to attach extra metadata that will be used behind the scenes.
+So when dealing with graphics we are very often dealing with large arrays of information, information like the vectices of our meshes or positions of lights. Cffi allows us to allocate arrays of different types, but in cepl we also want to attach extra metadata that will be used behind the scenes.
 
-To this end jungl has its own c-array type that uses cffi behind the scenes.
+To this end cepl has its own c-array type that uses cffi behind the scenes.
 
 That was all a bit technical so lets get into how to use them.
 
@@ -47,7 +47,7 @@ This is simply to show that we can use our structs from the previous chapter in 
 This little example shows that when we provide the `initial-contents` we can leave out the dimensions. The dimensions will be made the same dimensions as that of the data provided.
 
 *3:*
-Number 3 shows that you can even provide lisp data when the `element-type` is a jungl struct. In this case it will use `#'populate` (which we talked about in the last chapter) to fill in the values.
+Number 3 shows that you can even provide lisp data when the `element-type` is a cepl struct. In this case it will use `#'populate` (which we talked about in the last chapter) to fill in the values.
 
 Here is the definition of that struct again:
 
@@ -60,9 +60,9 @@ Here is the definition of that struct again:
 So in this case we end up with a c-array with two elements of type `our-data`, the first struct has the `position` `(v! 1 2 3)` and the `val` `10`; the second struct has the `position` `(v! 4 5 6)` and the `val` 20.
 
 *4:*
-Hey now this is odd, we only provide the lisp data, how does jungl know what to do?
+Hey now this is odd, we only provide the lisp data, how does cepl know what to do?
 
-What happens is that `#'make-c-array` scans each element of the lisp data and tries to find the *smallest jungl compatible type* that will hold all the values. In this case because of the number `3.0` in there the array has to have `element-type` `:float`.
+What happens is that `#'make-c-array` scans each element of the lisp data and tries to find the *smallest cepl compatible type* that will hold all the values. In this case because of the number `3.0` in there the array has to have `element-type` `:float`.
 
 Now this feature is very handy (especially in the repl) but there are some caveats.
 
@@ -70,13 +70,13 @@ Now this feature is very handy (especially in the repl) but there are some cavea
   `:ubyte` `:byte` `:int` `:float` & `:double`
 
 - Scanning for types is not fast:
-  This is a great feature to use at the repl, because odds are jungl can work out the type fast enough that you won't notice a delay. **However** this is not a good type to use in performance critical code, so if you need the speed, always specify your `element-type`
+  This is a great feature to use at the repl, because odds are cepl can work out the type fast enough that you won't notice a delay. **However** this is not a good type to use in performance critical code, so if you need the speed, always specify your `element-type`
 
 *5:*
 This shows two things:
 
 First: that c-arrays can take arrays (of multiple dimensions also)
-Second: The `element-type` that jungl will give this array is `:ubyte`. The reason is that all the elements are between 0 & 255.
+Second: The `element-type` that cepl will give this array is `:ubyte`. The reason is that all the elements are between 0 & 255.
 
 If we were to write:
 
@@ -116,7 +116,7 @@ There's not point having an array we can access so let's do that now.
 
 In CL we normally use `(aref some-array subscripts ..)` to get an element from the array and `(setf (aref some-array subscripts ..) val)` to set an element.
 
-In jungl we use `(aref-c some-array subscripts ..)` to get an element and `(setf (aref-c some-array subscripts ..) val)` to set an element.
+In cepl we use `(aref-c some-array subscripts ..)` to get an element and `(setf (aref-c some-array subscripts ..) val)` to set an element.
 
 Mind bending stuff! :p
 

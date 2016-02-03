@@ -1,8 +1,8 @@
-# Types in Jungl
+# Types in Cepl
 
 ### Back to the Bytes
 
-Types in Jungl are a lot more akin to the primitive types in languages like C, in that they have a one to one mapping to the byte layout in memory.
+Types in Cepl are a lot more akin to the primitive types in languages like C, in that they have a one to one mapping to the byte layout in memory.
 
 This is unlike the usual state of affairs in lisp where we let the implementation decide how memory is laid out.
 
@@ -20,7 +20,7 @@ If you have already had a peek below you will have seen many keywords being used
 
 So the rule has become that that core types have optional keyword names and all users defined types have regular symbols names (just like cffi)
 
-### Jungl's basic types
+### Cepl's basic types
 
 So without further ado, lets look at each type, the size in bytes and the lisp types it maps to.
 
@@ -68,4 +68,4 @@ Of course if this was all we could use it would be a bit limiting. Luckily we ca
 
 ### p.s
 
-For the sake of brevity we will refer to *all the above types* PLUS *all jungl structs* PLUS *all jungl arrays of these types* using the phrase 'jungl compatible types'
+For the sake of brevity we will refer to *all the above types* PLUS *all cepl structs* PLUS *all cepl arrays of these types* using the phrase 'cepl compatible types'

@@ -2,13 +2,13 @@
 
 ### Where's my data?
 
-With Jungl your data can exist in 3 different places:
+With Cepl your data can exist in 3 different places:
 
 - lisp memory - The regular lisp data in your program. This get's GC'd (garbage collected)
 - c memory - Data stored in block of cffi memory. This does not get GC'd
 - gpu memory - Data stored on the GPU. This does not get GC'd
 
-A lot of work done in jungl is about making moving data between these places easy.
+A lot of work done in cepl is about making moving data between these places easy.
 
 ### GC
 
@@ -20,14 +20,14 @@ On top of this, communication with the gpu can be very expensive if done at the 
 
 To this end, by default, none of the data in c-memory or gpu-memory is GC'd. This obviously means you need to free this data yourself or you end up with memory leaks.
 
-We say by default as there are certain times you don't mind paying the cost. For example when you are playing with ideas in the repl. To this end we are looking into ways of providing this without compromising any performance in the rest of jungl. This is WIP so this doco will be updated when that is in place.
+We say by default as there are certain times you don't mind paying the cost. For example when you are playing with ideas in the repl. To this end we are looking into ways of providing this without compromising any performance in the rest of cepl. This is WIP so this doco will be updated when that is in place.
 
 ### #'free and #'free-*
 
 To release memory we have two options, firstly we can use the generic function #'free as in
 
 ```
-(free some-jungl-data)
+(free some-cepl-data)
 ```
 
 However you may not want to pay the dispatch cost in performance critical code, so there are a number of `free-*` functions (e.g. #'free-c-array #'free-gpu-array etc). These specific functions will be covered in their respective chapters.

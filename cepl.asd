@@ -21,15 +21,9 @@
                #:swank
                #:varjo
                #:cl-ppcre
-               #:symbol-munger
                #:named-readtables
-               #:trivial-garbage
-               #:defstruct-plus-methods
 	       #:fn
-	       #:skitter
-	       #:dendrite
-	       #:rtg-math
-	       #:structy-defclass)
+	       #:rtg-math)
   :components ((:file "core/package")
                (:file "core/errors")
                (:file "backends/api")

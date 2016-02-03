@@ -29,3 +29,7 @@
 (defgeneric repeating (object))
 (defgeneric state (object))
 (defgeneric timestamp (object))
+
+
+(defgeneric context-avilable (context))
+(defmethod context-avilable (context) nil)

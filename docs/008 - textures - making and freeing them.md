@@ -95,7 +95,7 @@ CEPL> (texref *)
 #<GPU-ARRAY :element-type :R8 :dimensions (10) :backed-by :TEXTURE>
 ```
 
-Eagle-eyed readers will notice that the `:element-type` we provided was `:ubyte` yet the `:element-type` of the gpu-array is `:r8`. Textures have special type names for their data and Jungl is just picking the matching type. OpenGL's textures types are a topic of their own so I'll cover it a bit later. For now just know that Jungl lets you use regular types when it can work out the equivalent **or** the official OpenGL names.
+Eagle-eyed readers will notice that the `:element-type` we provided was `:ubyte` yet the `:element-type` of the gpu-array is `:r8`. Textures have special type names for their data and Cepl is just picking the matching type. OpenGL's textures types are a topic of their own so I'll cover it a bit later. For now just know that Cepl lets you use regular types when it can work out the equivalent **or** the official OpenGL names.
 
 #### More dimensions
 
@@ -166,7 +166,7 @@ So in our parlance a cubemap texture has 6 2d gpu-arrays at each mipmap level.
 
 The way we sample the data from cube textures is cool, you can read all the gory details here: https://www.opengl.org/wiki/Cubemap_Texture#Samplers
 
-To make a cube-texture in Jungl we can write the following:
+To make a cube-texture in Cepl we can write the following:
 
 ```
 CEPL> (defvar c (make-texture nil :dimensions '(10 10) :element-type :ubyte-vec4 :cubes t))
@@ -188,11 +188,11 @@ Textures can hold also arrays of gpu-arrays. The description from the wiki is as
 
 > An Array Texture is a Texture where each mipmap level contains an array of images of the same size. Array textures may have Mipmaps, but each mipmap in the texture has the same number of levels.
 
-Notice they use the term **layers** when talking about the elements of the array, and number of layers when talking about the length. This is a bit odd but it is OpenGL parlance so (for now at least) Jungl is using it.
+Notice they use the term **layers** when talking about the elements of the array, and number of layers when talking about the length. This is a bit odd but it is OpenGL parlance so (for now at least) Cepl is using it.
 
 As always, the source of truth on these matters in the GL spec and https://www.opengl.org/wiki/Array_Texture
 
-Array-Textures can be arrays of 1D, 2D, 3D or Cube texture. Jungl tries to get this right but, to be honest, it gets rather confusing. If you find a combination that should work (according to the GL spec) and doesnt, please let us know on github.
+Array-Textures can be arrays of 1D, 2D, 3D or Cube texture. Cepl tries to get this right but, to be honest, it gets rather confusing. If you find a combination that should work (according to the GL spec) and doesnt, please let us know on github.
 
 To make an array texture we do this using the `:layer-count` `&key` argument
 
@@ -200,7 +200,7 @@ To make an array texture we do this using the `:layer-count` `&key` argument
 (make-texture nil :dimensions 10 :element-type :ubyte-vec4 :layer-count 8)
 ERROR
 ```
-Woops, seems Jungl has a bug. You can track this here: https://github.com/cbaggers/cepl/issues/48
+Woops, seems Cepl has a bug. You can track this here: https://github.com/cbaggers/cepl/issues/48
 
 
 #### Buffer Textures
@@ -243,14 +243,14 @@ CEPL> (make-texture nil :dimensions '(10 20) :element-type :ubyte-vec4 :rectangl
 
 #### Mutisample Textures
 
-Jungl does not support these yet.
+Cepl does not support these yet.
 
 
 #### Mutable and Immutable Texture Storage
 
 I was confused by this at first as I thought it was talking about the data inside the texture's gpu arrays, but no. All texture data is mutable, but OpenGL traditionally allowed you to redefine the nature of the storage on an existing texture. It also required you to do a lot more work setting up.
 
-Jungl will use immutable texture storage if your GL supports it and mutable if not. Jungl will (read should) give you a texture that is ready to use (the GL term is *complete*) for details see this page: https://www.opengl.org/wiki/Texture_Storage and prepare for your brain to melt (well mine did anyway)
+Cepl will use immutable texture storage if your GL supports it and mutable if not. Cepl will (read should) give you a texture that is ready to use (the GL term is *complete*) for details see this page: https://www.opengl.org/wiki/Texture_Storage and prepare for your brain to melt (well mine did anyway)
 
 
 #### Image Formats
@@ -261,7 +261,7 @@ Image formats dictate what dat can be stores in a texture's gpu-arrays and also 
 
 The main wiki page of Image Formats is here, https://www.opengl.org/wiki/Image_Format but I actually find that page to be missing A LOT of data, so also see this page：https://www.opengl.org/wiki/GLAPI/glTexStorage2D
 
-Yay choices. Ok so Jungl does not support all this yet. It's a shame but it doesnt. Ιt could though, so at some point I need to get back to it.
+Yay choices. Ok so Cepl does not support all this yet. It's a shame but it doesnt. Ιt could though, so at some point I need to get back to it.
 
 Things that are defintely unsupported are:
 
@@ -274,7 +274,7 @@ Things that are in a questionable state:
 
 
 Auto conversion:
-Jungl can help with types by providing conversions from lisp types to their equivalent image formats.
+Cepl can help with types by providing conversions from lisp types to their equivalent image formats.
 
 The convertable types are: `:ubyte :byte :ushort :short :uint :int :float`
 
@@ -299,7 +299,7 @@ Arghh too many format. The short version is that `pixel formats` are not equal t
 
 See here for details: https://www.opengl.org/wiki/Pixel_Transfer#Format_conversion
 
-There are only certain combinations that make sense and so Jungl should just **do the right thing**. Any cases where it doesnt are considered a bug.
+There are only certain combinations that make sense and so Cepl should just **do the right thing**. Any cases where it doesnt are considered a bug.
 
 
 #### Freeing

@@ -47,7 +47,7 @@ But wait, `#'make-gpu-array` also has another trick. It can take a `c-array` as 
 
 This argument is a optimization hint that is given to opengl to say how you expect to be accessing this data.
 
-This bit it pretty technical so if you dont know what you need, just let jungl use the default.
+This bit it pretty technical so if you dont know what you need, just let cepl use the default.
 
 This enables the OpenGL implementation to make more intelligent decisions that may significantly impact gpu-array performance. It does not, however, constrain the actual usage of the array. `Access-Style` can be broken down into two parts: first, the frequency of access (modification and usage), and second, the nature of that access.
 
@@ -86,7 +86,7 @@ A simple example would be if we wanted to set the 3rd element in a gpu array to 
 
 Very cool!
 
-When you do this OpenGL does some magic to map the memory containing the gpu-array to the local address space. This let's jungl get a pointer to it and thus be able to present a c-array to you.
+When you do this OpenGL does some magic to map the memory containing the gpu-array to the local address space. This let's cepl get a pointer to it and thus be able to present a c-array to you.
 
 Of course don't try and be sneaky and copy this c-array somewhere, at the end of the `with-gpu-array-as-c-array`'s scope the gpu memory is
 
@@ -94,7 +94,7 @@ The valid values for access are `:read-only` `:write-only` & `:read-write`
 
 *Performance Note:*
 
-I've taken this from the OpenGL wiki and modified it to use jungl's terminology:
+I've taken this from the OpenGL wiki and modified it to use cepl's terminology:
 
 > Mappings to the data stores of `gpu-arrays` may have nonstandard performance characteristics. For example, such mappings may be marked as uncacheable regions of memory, and in such cases reading from them may be very slow. To ensure optimal performance, the client should use the mapping in a fashion consistent with the values of `:access-style` for the `gpu-array` and of access. Using a mapping in a fashion inconsistent with these values is liable to be multiple orders of magnitude slower than using normal memory.
 
@@ -102,7 +102,7 @@ So again, don't assume you will get good performance, this is not how you should
 
 ### Structs and gpu-arrays
 
-One nice thing that jungl does for you if you use our structs is to *interleave* your struct data.
+One nice thing that cepl does for you if you use our structs is to *interleave* your struct data.
 
 Imagine you have a model of a goat with has 3000 vertices, and each vertex of the goat has a position, uv coordinates and a normal vector. One way to store it would be:
 
@@ -131,7 +131,7 @@ The the data is laid out like this
      [first pos | first uv | first normal | second pos | second uv | second normal | .. etc .. ]
 ```
 
-This really helps the gpu, and jungl makes it easy, do it :)
+This really helps the gpu, and cepl makes it easy, do it :)
 
 
 ### subseq-g
@@ -167,7 +167,7 @@ OpenGL provides textures (which we will get into later) and 'Buffer Objects' whi
 
 `buffers` allow you to allocate a block of `buffer memory` and then upload data there. There is no real limit of what you can stick up there, but there are *effective limits* as there only certain things you can *do* with the data once it's there.
 
-So whilst we could just expose these buffers (and we do, see chapter [006]("./006 - Buffers.md")) in jungl we choose to also expose objects that map more directly to what you do with this data.
+So whilst we could just expose these buffers (and we do, see chapter [006]("./006 - Buffers.md")) in cepl we choose to also expose objects that map more directly to what you do with this data.
 
 `Gpu-arrays` are one case of this. All your 3d models you render will have their vertex data stored sequentially in a buffer object, this data has a length and has an definite layour of the 'elements'..this is pretty much the definition for a kind of array.
 

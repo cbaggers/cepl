@@ -29,10 +29,8 @@ All of the following will be download automatically by quicklisp
 * cl-plus-c
 * cl-fad
 * cl-opengl
-* cl-devil
 * swank
 * cl-ppcre
-* symbol-munger
 * named-readtables
 * fn
 
@@ -40,8 +38,6 @@ These three will hopefully be in quicklisp at some point, until then download th
 
 * rtg-math - https://github.com/cbaggers/rtg-math
 * varjo - https://github.com/cbaggers/varjo
-* skitter - https://github.com/cbaggers/skitter
-* defstruct-plus-methods - https://github.com/cbaggers/defstruct-plus-methods
 
 -----------------------------------------------------------------------------------------
 

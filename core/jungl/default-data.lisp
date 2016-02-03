@@ -1,6 +1,6 @@
 (in-package :jungl)
 
-(evt:def-named-event-node default-data-init (event evt:|context|)
+(defmethod context-avilable :after (context)
   (init-data))
 
 (defvar *quad* nil)

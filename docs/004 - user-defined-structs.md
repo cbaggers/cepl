@@ -1,6 +1,6 @@
 # User defined structs
 
-On of the really tricky parts of working with gpu data is lay it out in memory (and a lot of realted details that make my brain melt). Jungl simplifies this by providing a kind of struct that can be used both on the gpu and cpu.
+On of the really tricky parts of working with gpu data is lay it out in memory (and a lot of realted details that make my brain melt). Cepl simplifies this by providing a kind of struct that can be used both on the gpu and cpu.
 
 ### Defining
 
@@ -28,7 +28,7 @@ The format for a slot is
 
 ### Gimme one!
 
-The first example above makes a slot of the given type (which must be a jungl compatible type). Like regular lisp structs, the way you make an instance of this our `our-data` type is using the `make-our-data` function passing in values using the keyword arguments. So for example:
+The first example above makes a slot of the given type (which must be a cepl compatible type). Like regular lisp structs, the way you make an instance of this our `our-data` type is using the `make-our-data` function passing in values using the keyword arguments. So for example:
 
 ```
      (defvar x (make-our-data :position (v! 1 2 3) :val 5))
@@ -38,9 +38,9 @@ Will return a fully populated struct **in c memory**.
 
 For those who havent seen it yet, the `v!` is used to make vectors. So here we are making a vector3
 
-Notice that we are passing lisp data into this make function and jungl is transparently translating it to *c data*. More on this later.
+Notice that we are passing lisp data into this make function and cepl is transparently translating it to *c data*. More on this later.
 
-Remember that, like in c-like-languages, not providing values for the slots leaves the field undefined. The value in the slot will be garbage and trying to retrieve it may crash jungl.
+Remember that, like in c-like-languages, not providing values for the slots leaves the field undefined. The value in the slot will be garbage and trying to retrieve it may crash cepl.
 
 ### Accessors
 
@@ -60,7 +60,7 @@ Also note that I said `on the cpu`. As we are going to see, our shaders are stat
 
 ### Populate
 
-jungl comes with a function called `populate` which can take lisp lists and set the slots in a struct using that data. For example for our `our-data` struct we can say:
+cepl comes with a function called `populate` which can take lisp lists and set the slots in a struct using that data. For example for our `our-data` struct we can say:
 
 ```
 (populate x (list (v! 1 2 3) 5))
@@ -111,4 +111,4 @@ Setting this to nil means that `defstruct-g` will not be able to make `gpu strea
 Setting this to nil means that you will not get a `populate` function for this type.
 
 
-Some of the above options are redundent in combination with others. For example the `push-g` method uses `#'populate` behind the scenes so with `populate` disabled you can have `#'push-g` for this type. Jungl needs to do a better job at communicating these conflicts to the user.
+Some of the above options are redundent in combination with others. For example the `push-g` method uses `#'populate` behind the scenes so with `populate` disabled you can have `#'push-g` for this type. Cepl needs to do a better job at communicating these conflicts to the user.

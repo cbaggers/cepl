@@ -10,7 +10,7 @@ The Default Framebuffer is the Framebuffer that is created along with the OpenGL
 
 #### User Defined
 
-We can make our own fbos and tell Jungl to render to these instead. When we do this we don't see anything we rendered on screen but instead have the rendering result in the attachments of our fbo.
+We can make our own fbos and tell Cepl to render to these instead. When we do this we don't see anything we rendered on screen but instead have the rendering result in the attachments of our fbo.
 
 Why do this? Well our attachments can have texture backed gpu-arrays in them. This means we can render into a texture. Have you have ever seen a game which had 'security cam' footage on in in-game screen? Chances are they are rendering part of the world to a texture and texturing the screen with that result. Rendering to texture is useful for much more than this of course.
 
@@ -18,7 +18,7 @@ Why do this? Well our attachments can have texture backed gpu-arrays in them. Th
 
 Before we start making fbos we need to know a little more about attachments.
 
-In Jungl attachments contain something we are rendering into and some metadata on how to render into it. Right now the only thing we put in an attachment is a texture-backed gpu-array. In the future we may support OpenGL's renderbuffer, but there are far fewer cases where this is useful (compared to rendering into a texture) so it has been ommited for now.
+In Cepl attachments contain something we are rendering into and some metadata on how to render into it. Right now the only thing we put in an attachment is a texture-backed gpu-array. In the future we may support OpenGL's renderbuffer, but there are far fewer cases where this is useful (compared to rendering into a texture) so it has been ommited for now.
 
 An attachment has a certain format. It can be a `color`, `depth` or `stencil` attachment.
 
@@ -63,9 +63,9 @@ Are not supported yet, sorry
 
 #### Making Fbos
 
-Jungl really tries to ensure that you don't make an fbo that is in an invalid state. Getting those kinds of *'fbo incompleteness'* bugs is very annoying and rather easy to do in regular GL.
+Cepl really tries to ensure that you don't make an fbo that is in an invalid state. Getting those kinds of *'fbo incompleteness'* bugs is very annoying and rather easy to do in regular GL.
 
-Because of this Jungl is very flexible with it's `make-fbo` syntax, we will go those the general patterns below.
+Because of this Cepl is very flexible with it's `make-fbo` syntax, we will go those the general patterns below.
 
 Let's make one now.
 
@@ -84,7 +84,7 @@ This is a way of making a fbo with one color attachment. Let's make an fbo with 
 How about with 2 color and 1 depth attachment
 
 ```
-JUNGL> (make-fbo :c :c1 :d)
+CEPL> (make-fbo :c :c1 :d)
 #<FBO COLOR-ATTACHMENTS (0 1) DEPTH-ATTACHMENT T>
 ```
 

@@ -1,6 +1,6 @@
 # Buffers
 
-Most people can safely skip this chapter. It is only relevent if you really want to understand how jungl allocates `buffer objects`.
+Most people can safely skip this chapter. It is only relevent if you really want to understand how cepl allocates `buffer objects`.
 
 This chapter will be more of an api-reference than a guide, if you want to use this then you already know what you are doing
 
@@ -42,7 +42,7 @@ You can optionally provide a `c-array` as the `:initial-contents` to have the bu
 
 Usage in this case is the same as in `gpu-arrays`
 
-`Managed` is a flag used by jungl to indicate that a gpu-array owns the buffer. When this is true, and you free the `gpu-array` that uses this buffer, then the buffer is freed at the same time.
+`Managed` is a flag used by cepl to indicate that a gpu-array owns the buffer. When this is true, and you free the `gpu-array` that uses this buffer, then the buffer is freed at the same time.
 
 ### Reserve Space
 

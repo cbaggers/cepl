@@ -1,8 +1,6 @@
-# Jungl - (Alpha)
+# Cepl - (Alpha)
 
-> Welcome to the jungl, we've got funny names
-
-Jungl is a sane interface to the modern opengl api.
+Cepl is a sane interface to the modern opengl api.
 
 ### OpenGL Background
 
@@ -10,9 +8,9 @@ OpenGL gets a bad rap for it's api, and for good reason, it is actually 2 (prett
 
 The first api is the old fixed function pipeline and the other is the modern shader based pipeline. The ugly thing is that these apis often reuse functions even when the behaviour underneath is very different. This makes for a very fustrating experience.
 
-The belief help by Jungl is that there is an good api in there, it's just very well hidden :)
+The belief help by Cepl is that there is an good api in there, it's just very well hidden :)
 
-### Jungl's Goals
+### Cepl's Goals
 
 - Make a sane interface to the modern opengl api.
 - Make working opengl lispy & repl friendly
@@ -24,7 +22,7 @@ The third and second goals can often be at odds in a project like this. We want 
 
 The goal therefore is to always have a codepath that is optimized as hard as we can (whilst being as pleasant as possible) and then in those situations where it can't be made repl friendly we have a more generic code path that sacrifices a bit of performace for coder-experience.
 
-There should be as little of the later as possible though. Very high level of abstractions tend to be geared to a certain aproach or technique and those things are best kept in a seperate library that depends on Jungl.
+There should be as little of the later as possible though. Very high level of abstractions tend to be geared to a certain aproach or technique and those things are best kept in a seperate library that depends on Cepl.
 
 
 ### Can I do 'x'?

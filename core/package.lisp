@@ -86,7 +86,7 @@
 
 (defpackage :%jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl-generics :split-sequence :named-readtables :structy-defclass)
+	:cepl-generics :split-sequence :named-readtables)
   (:shadowing-import-from :rtg-math :v!))
 
 (defpackage :jungl.space.routes
@@ -95,8 +95,7 @@
 
 (defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl-generics :split-sequence :%jungl :named-readtables
-	:structy-defclass)
+	:cepl-generics :split-sequence :%jungl :named-readtables)
   (:shadowing-import-from :rtg-math :v!)
   (:import-from :utils
                 :deferror
@@ -316,7 +315,7 @@
 
 (defpackage :jungl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :cepl.events :named-readtables
-	:varjo :varjo-lang :structy-defclass)
+	:varjo :varjo-lang)
   (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)
   (:import-from :jungl :def-compile-pass :def-deep-pass :set-uniform :remove-uniform
@@ -348,8 +347,6 @@
                 :print-mem
                 :p->)
   (:import-from :rtg-math :s~)
-  (:import-from :cepl.events
-                :def-named-event-node)
   (:export :repl
            :quit
            :make-project
@@ -357,8 +354,6 @@
 	   :dvec
 	   :dvec*
 	   ;;----
-           :def-named-event-node
-           ;;----
            :pos
            :rot
            :dir

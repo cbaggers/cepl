@@ -66,7 +66,7 @@ On this line we create and array on the gpu to hold the data for our triangle.
 
 We use lisp data that was defined in `*triangle-data*` and the `pos-col` type defined in `[1]`
 
-To read up on where data can live in Jungl see [chapter 002 - memory](./chapter 002 - memory.md)
+To read up on where data can live in Cepl see [chapter 002 - memory](./chapter 002 - memory.md)
 
 `[1]` defstruct-g is a way of defining a struct type that can be used in `c-arrays` and `gpu-arrays`
 

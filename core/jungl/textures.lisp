@@ -24,7 +24,7 @@
                             :texture-cube-map-positive-z
                             :texture-cube-map-negative-z))
 
-(evt:def-named-event-node default-data-init (event evt:|context|)
+(defmethod context-avilable :after (context)
   (unless (has-feature "GL_ARB_texture_storage")
     (setf *immutable-available* nil)))
 
