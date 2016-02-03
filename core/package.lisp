@@ -36,7 +36,7 @@
   (:export :init
            :start
            :shutdown
-           :get-event-pump
+           :get-step-func
            :get-swap-func
            :*backend*))
 
@@ -492,4 +492,6 @@
 	   ;;---
 	   :p!
 	   :space-g
-	   :in))
+	   :in
+	   ;;---
+	   :continuable))

@@ -18,16 +18,18 @@
                #:cl-plus-c
                #:cl-fad
                #:cl-opengl
-               #:swank
+	       #:cl-ppcre
+	       #:rtg-math
                #:varjo
-               #:cl-ppcre
                #:named-readtables
 	       #:fn
-	       #:rtg-math)
+	       #:swank)
   :components ((:file "core/package")
-               (:file "core/errors")
                (:file "backends/api")
+	       (:file "backends/step")
+	       (:file "core/errors")
                (:file "core/utils")
+	       (:file "core/continuable")
                (:file "core/static")
                (:file "core/generics")
 
