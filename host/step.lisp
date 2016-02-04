@@ -1,4 +1,4 @@
-(in-package :cepl-backend)
+(in-package :cepl.host)
 
 (let (step-func)
   (defun cache-step-func ()

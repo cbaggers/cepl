@@ -16,6 +16,6 @@
                (resizable t))
   (jungl:make-context backend :width width :height height :resizable resizable
 		      :title title)
-  (cepl-backend:cache-step-func))
+  (cepl.host:cache-step-func))
 
-(defun quit () (cepl-backend:shutdown cepl-backend:*backend*))
+(defun quit () (cepl.host:shutdown cepl.host:*backend*))

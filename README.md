@@ -83,7 +83,7 @@ Step 1
 
 Step 2
 ------
-`(ql:quickload :cepl-backend-sdl)` This is currently the only supported backend. Common lisp will need to be able to find the sdl2 c library. On linux PLEASE use your package manager. On osx use whichever package manager you prefer. On windows download from here: https://www.libsdl.org/download-2.0.php
+`(ql:quickload :cepl.sdl)` This is currently the only supported backend. Common lisp will need to be able to find the sdl2 c library. On linux PLEASE use your package manager. On osx use whichever package manager you prefer. On windows download from here: https://www.libsdl.org/download-2.0.php
 
 At this point you should be able to run the following examples. See further down for advice on running the examples.
 ```

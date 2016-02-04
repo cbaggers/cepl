@@ -21,12 +21,12 @@
                                no-frame (alpha-size 0) (depth-size 16) (stencil-size 8)
                                (red-size 8) (green-size 8) (blue-size 8) (buffer-size 32)
                                (double-buffer t) hidden (resizable t))
-  (cepl-backend:init backend)
+  (cepl.host:init backend)
   (destructuring-bind (context-handle window)
-      (cepl-backend:start backend width height title fullscreen
-                          no-frame alpha-size depth-size stencil-size
-                          red-size green-size blue-size buffer-size
-                          double-buffer hidden resizable)
+      (cepl.host:start backend width height title fullscreen
+		       no-frame alpha-size depth-size stencil-size
+		       red-size green-size blue-size buffer-size
+		       double-buffer hidden resizable)
     (let ((context (make-instance
                     'gl-context :handle context-handle :window window))
           (dimensions (list width height)))

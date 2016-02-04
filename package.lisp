@@ -8,6 +8,15 @@
 
 ;;;; package.lisp
 
+(defpackage :cepl.host
+  (:use :cl)
+  (:export :init
+           :start
+           :shutdown
+           :get-step-func
+           :get-swap-func
+           :*backend*))
+
 (defpackage :cepl-generics
   (:use :cl)
   (:export :pos
@@ -30,15 +39,6 @@
            :repeating
            :state
            :timestamp))
-
-(defpackage :cepl-backend
-  (:use :cl)
-  (:export :init
-           :start
-           :shutdown
-           :get-step-func
-           :get-swap-func
-           :*backend*))
 
 (defpackage :cepl-utils
   (:use :cl)
