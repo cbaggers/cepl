@@ -18,4 +18,4 @@
 		      :title title)
   (cepl.host:cache-step-func))
 
-(defun quit () (cepl.host:shutdown cepl.host:*backend*))
+(defun quit () (cepl.host:shutdown))

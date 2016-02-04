@@ -32,20 +32,20 @@
 
 (defun to-space (destination-space pos)
   (typecase pos
-    (pos3 (m4:transform (get-transform (pos-space pos) destination-space)
-			(pos3-point pos)))
-    (pos4 (m4:transform (get-transform (pos-space pos) destination-space)
-			(pos4-point pos)))))
+    (pos3 (m4:*v (get-transform (pos-space pos) destination-space)
+		 (pos3-point pos)))
+    (pos4 (m4:*v (get-transform (pos-space pos) destination-space)
+		 (pos4-point pos)))))
 
 (defun re-space (new-space pos)
   "makes a new point in the same location as the first but relative to the
    provided new space"
   (typecase pos
-    (pos3 (p! (m4:transform (get-transform (pos-space pos) new-space)
-			    (pos3-point pos))
+    (pos3 (p! (m4:*v (get-transform (pos-space pos) new-space)
+		      (pos3-point pos))
 	      new-space))
-    (pos4 (p! (m4:transform (get-transform (pos-space pos) new-space)
-			    (pos4-point pos))
+    (pos4 (p! (m4:*v (get-transform (pos-space pos) new-space)
+		      (pos4-point pos))
 	      new-space))))
 
 ;;----------------------------------------------------------------------

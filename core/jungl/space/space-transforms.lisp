@@ -5,7 +5,7 @@
 
 (defun %mspace-transform (mspace)
   (declare ;;(optimize (speed 3) (debug 0))
-	   (inline sr-to %mspace-only-sr))
+   (inline sr-to %mspace-only-sr))
   (sr-to (%mspace-only-sr mspace)))
 
 (defun %set-mspace-transform (mspace transform &optional to-space)
@@ -21,8 +21,8 @@
   (if (eq (%space-root to-space) from-space)
       (collect-inverse-to to-space from-space)
       (let ((dest-root (%space-root to-space)))
-	(m4:m* (collect-inverse-to to-space dest-root)
-	       (%rspace-to-rspace-transform from-space dest-root)))))
+	(m4:* (collect-inverse-to to-space dest-root)
+	      (%rspace-to-rspace-transform from-space dest-root)))))
 
 (defun %mspace-to-rspace-transform (mspace rspace)
   (let* ((only-sr (%mspace-only-sr mspace))
@@ -31,8 +31,8 @@
 	 (rspace-id (%space-nht-id rspace)))
     (if (= rspace-id neighbour-id)
 	to-neighbour
-	(m4:m* (%rspace-to-rspace-ids-transform neighbour-id rspace-id)
-	       to-neighbour))))
+	(m4:* (%rspace-to-rspace-ids-transform neighbour-id rspace-id)
+	      to-neighbour))))
 
 (defun %mspace-to-mspace-transform (mspace-a mspace-b)
   (let* ((a-only-sr (%mspace-only-sr mspace-a))
@@ -44,11 +44,11 @@
 	 (from-b-neighbour-to-b (m4:affine-inverse (sr-to b-only-sr))))
 
     (if (= a-neighbour-id b-neighbour-id)
-	(m4:m* from-b-neighbour-to-b
-	       a-to-neighbour)
-	(m4:m* (m4:m* from-b-neighbour-to-b
-		      (%rspace-to-rspace-ids-transform a-neighbour-id b-neighbour-id))
-	       a-to-neighbour))))
+	(m4:* from-b-neighbour-to-b
+	      a-to-neighbour)
+	(m4:* (m4:* from-b-neighbour-to-b
+		    (%rspace-to-rspace-ids-transform a-neighbour-id b-neighbour-id))
+	      a-to-neighbour))))
 
 ;;----------------------------------------------------------------------
 ;; Relational
@@ -94,8 +94,8 @@
     (let ((space-a-id (%check-not-illegal-space space-a-id t))
 	  (space-b-id (%check-not-illegal-space space-b-id nil)))
       (labels ((transform (accum current-id next-id)
-		 (m4:m* accum
-			(%rspace-to-neighbour-transform current-id next-id))))
+		 (m4:* accum
+		       (%rspace-to-neighbour-transform current-id next-id))))
 	(if (and route-restriction
 		 (jungl.space.routes::on-route-p
 		  space-a-id space-b-id clip-space-id-cached))
@@ -118,8 +118,8 @@
   (if (eq (%space-root to-space) from-space)
       (collect-inverse-to to-space from-space)
       (let ((dest-root (%space-root to-space)))
-	(m4:m* (collect-inverse-to to-space dest-root)
-	       (%rspace-to-rspace-transform from-space dest-root)))))
+	(m4:* (collect-inverse-to to-space dest-root)
+	      (%rspace-to-rspace-transform from-space dest-root)))))
 
 (defun %rspace-to-mspace-transform (rspace mspace)
   (let* ((only-sr (%mspace-only-sr mspace))
@@ -128,8 +128,8 @@
 	 (rspace-id (%space-nht-id rspace)))
     (if (= rspace-id neighbour-id)
 	from-neighbour-to-mspace
-	(m4:m* from-neighbour-to-mspace
-	       (%rspace-to-rspace-ids-transform rspace-id neighbour-id)))))
+	(m4:* from-neighbour-to-mspace
+	      (%rspace-to-rspace-ids-transform rspace-id neighbour-id)))))
 
 (defun %set-rspace-transform (from-space to-space transform)
   (unless (and (= (%space-kind from-space) +relational-space+)
@@ -170,29 +170,29 @@
   (if (eq (%space-root from-space) to-space)
       (collect-transform-to from-space to-space)
       (let ((dest-root (%space-root from-space)))
-	(m4:m* (%rspace-to-rspace-transform from-space dest-root)
-	       (collect-inverse-to to-space dest-root)))))
+	(m4:* (%rspace-to-rspace-transform from-space dest-root)
+	      (collect-inverse-to to-space dest-root)))))
 
 (defun %hspace-to-hspace-transform (from-space to-space)
   (if (eq (%space-root from-space) (%space-root to-space))
       (%get-hierarchical-transform from-space to-space)
       (let ((from-root (%space-root from-space)))
-	(m4:m* (get-transform from-root to-space)
-	       (collect-inverse-to from-space from-root)))))
+	(m4:* (get-transform from-root to-space)
+	      (collect-inverse-to from-space from-root)))))
 
 (defun collect-inverse-to (start-space ancestor-space)
   (labels ((combine-inverse (accum space)
-             (m4:m* (%hspace-inverse-transform space) accum)))
+             (m4:* (%hspace-inverse-transform space) accum)))
     ;; [TODO] unneccesary identity multiply, pass it start-space
     ;;        transform as initial-value and (parent-space start-space) as
     ;;        'of-space arg
-    (m4:m* (%hspace-inverse-transform ancestor-space)
-           (reduce-ancestors #'combine-inverse start-space ancestor-space
-			     (m4:identity)))))
+    (m4:* (%hspace-inverse-transform ancestor-space)
+	  (reduce-ancestors #'combine-inverse start-space ancestor-space
+			    (m4:identity)))))
 
 (defun collect-transform-to (start-space ancestor-space)
   (labels ((combine-transform (accum space)
-             (m4:m* (%hspace-transform space) accum)))
+             (m4:* (%hspace-transform space) accum)))
     ;; [TODO] unneccesary identity multiply, pass it start-space
     ;;        transform as initial-value and (parent-space start-space) as
     ;;        'of-space arg
@@ -211,7 +211,7 @@
   (let* ((common-ancestor (find-common-ancestor from-space to-space))
 	 (i (collect-inverse-to from-space common-ancestor))
          (f (collect-transform-to to-space common-ancestor)))
-    (m4:m* i f)))
+    (m4:* i f)))
 
 ;;----------------------------------------------------------------------
 ;; get the matrix that transforms points from one space to another

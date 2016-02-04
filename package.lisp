@@ -13,9 +13,9 @@
   (:export :init
            :start
            :shutdown
+	   :cache-step-func
            :get-step-func
-           :get-swap-func
-           :*backend*))
+           :get-swap-func))
 
 (defpackage :cepl-generics
   (:use :cl)
@@ -314,7 +314,7 @@
 	   ))
 
 (defpackage :jungl.space
-  (:use :cl :cepl-utils :rtg-math.types :rtg-math :cepl.events :named-readtables
+  (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
 	:varjo :varjo-lang)
   (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)

@@ -40,8 +40,8 @@
 (defvar *last-space-id* -1)
 
 (defstruct (space (:constructor %make-space) (:conc-name %space-))
-  (uid (incf *last-space-id*) :type :fixnum :read-only t)
-  (nht-id (error "id must be provided") :type :fixnum :read-only t)
+  (uid (incf *last-space-id*) :type fixnum :read-only t)
+  (nht-id (error "id must be provided") :type fixnum :read-only t)
   (kind (error "space kind must be provided") :type (mod 3) :read-only t)
   (parent nil :type (or null space) :read-only t)
   (children nil :type (or null (array space (*))) :read-only t)

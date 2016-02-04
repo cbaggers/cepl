@@ -24,17 +24,13 @@
                #:named-readtables
 	       #:fn
 	       #:swank)
-  :components ((:file "core/package")
+  :components ((:file "package")
                (:file "host/api")
 	       (:file "host/step")
 	       (:file "core/errors")
                (:file "core/utils")
 	       (:file "core/continuable")
-               (:file "core/static")
                (:file "core/generics")
-
-               (:file "core/events/event-nodes")
-               (:file "core/events/event-propagation")
 
 	       (:file "core/jungl/types")
 	       (:file "core/jungl/space/nht-routes")

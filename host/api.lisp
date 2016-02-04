@@ -1,6 +1,4 @@
-(in-package :cepl-backend)
-
-(defvar *backend* nil)
+(in-package :cepl.host)
 
 ;; This is what the backend has to implement
 (defgeneric init ())

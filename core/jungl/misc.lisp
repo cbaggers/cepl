@@ -3,7 +3,7 @@
 (let (swap-func)
   (defun update-display ()
     (unless swap-func
-      (setf swap-func (cepl.host:get-swap-func cepl.host:*backend*)))
+      (setf swap-func (cepl.host:get-swap-func)))
     (funcall swap-func *gl-window*)))
 
 (defun cls ()
