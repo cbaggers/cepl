@@ -30,6 +30,7 @@
 (defgeneric state (object))
 (defgeneric timestamp (object))
 
-
-(defgeneric context-avilable (context))
-(defmethod context-avilable (context) nil)
+(defgeneric (setf pos) (val obj))
+(defgeneric (setf norm) (val obj))
+(defgeneric (setf col) (val obj))
+(defgeneric (setf tex) (val obj))

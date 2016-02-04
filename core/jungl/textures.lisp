@@ -16,9 +16,11 @@
                             :texture-cube-map-positive-z
                             :texture-cube-map-negative-z))
 
-(defmethod context-avilable :after (context)
+(defun check-immutable-feature ()
   (unless (has-feature "GL_ARB_texture_storage")
     (setf *immutable-available* nil)))
+
+(push #'check-immutable-feature *on-context*)
 
 ;;------------------------------------------------------------
 
@@ -79,21 +81,23 @@
         (l (slot-value object 'layer-count))
         (c (slot-value object 'cubes)))
     (format stream
-            "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]>"
+            "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]~@[ cubes:~a~]>"
             (slot-value object 'texture-type)
             (slot-value object 'base-dimensions)
-            (when (> m 1) m) (when (> l 1) l) c)))
+            (when (> m 1) m) (when (> l 1) l)
+	    c)))
 
 (defmethod print-object ((object immutable-texture) stream)
   (let ((m (slot-value object 'mipmap-levels))
         (l (slot-value object 'layer-count))
         (c (slot-value object 'cubes)))
     (format stream
-            "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]>"
+            "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]~@[ cubes:~a~]>"
             (slot-value object 'texture-type)
             (slot-value object 'base-dimensions)
             (when (> m 1) m)
-	    (when (> l 1) l) c)))
+	    (when (> l 1) l)
+	    c)))
 
 (defmethod print-object ((object buffer-texture) stream)
   (format stream
@@ -415,7 +419,7 @@
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
 (defun calc-dimensions (internal-format dimensions cube-tex)
-  )
+  (declare (ignore internal-format dimensions cube-tex)))
 
 ;; other
 ;; (listify dimensions)

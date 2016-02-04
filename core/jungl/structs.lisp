@@ -8,7 +8,8 @@
      (dimensions :initarg :dimensions :initform 1 :reader s-dimensions)
      (normalised :initarg :normalised :reader s-normalisedp)
      (reader :initarg :reader :reader s-reader)
-     (writer :initarg :writer :reader s-writer))))
+     (writer :initarg :writer :reader s-writer)
+     (uses-method-p :initarg :uses-method-p :reader s-uses-method-p))))
 
 (defmethod s-arrayp ((object gl-struct-slot))
   (eq (s-type object) :array))
@@ -22,6 +23,11 @@
   (s-prim-p (s-type object)))
 (defmethod s-extra-prim-p ((object gl-struct-slot))
   (s-extra-prim-p (s-type object)))
+
+(defmethod s-def ((object gl-struct-slot))
+  (if (s-uses-method-p object)
+      'defmethod
+      'defun))
 
 ;;------------------------------------------------------------
 
@@ -95,6 +101,7 @@
                                (or accessor (symb type-name '- name)))
                      :writer (when writers
                                (or accessor (symb type-name '- name)))
+		     :uses-method-p (not (null accessor))
                      :element-type element-type :dimensions dimensions))))
 
 ;; put all cepl's errors definitions in one place (like varjo)
@@ -201,22 +208,22 @@
       (t (error "Dont know what to do with slot ~a" slot)))))
 
 (defun make-prim-slot-getter (slot awrap-type-name)
-  `(defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+  `(,(s-def slot) ,(s-reader slot) ((wrapped-object ,awrap-type-name))
      (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot)))))
 
 (defun make-eprim-slot-getter (slot awrap-type-name)
-  `(defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+  `(,(s-def slot) ,(s-reader slot) ((wrapped-object ,awrap-type-name))
      (mem-ref (plus-c:c-ref wrapped-object ,awrap-type-name
                             ,(kwd (s-name slot)) plus-c::&)
               ,(s-type slot))))
 
 (defun make-t-slot-getter (slot awrap-type-name)
-  `(defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+  `(,(s-def slot) ,(s-reader slot) ((wrapped-object ,awrap-type-name))
      (plus-c:c-ref wrapped-object ,awrap-type-name
                    ,(kwd (s-name slot)))))
 
 (defun make-array-slot-getter (slot awrap-type-name)
-  `(defmethod ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+  `(,(s-def slot) ,(s-reader slot) ((wrapped-object ,awrap-type-name))
      (make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot)
                                 (plus-c:c-ref wrapped-object ,awrap-type-name
                                               ,(kwd (s-name slot)) plus-c::&))))
@@ -233,23 +240,23 @@
       (t (error "Dont know what to do with slot ~a" slot)))))
 
 (defun make-prim-slot-setter (slot awrap-type-name)
-  `(defmethod (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
+  `(,(s-def slot) (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
      (setf (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot)))
            value)))
 
 (defun make-eprim-slot-setter (slot awrap-type-name)
-  `(defmethod (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
+  `(,(s-def slot) (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
      (let ((ptr (plus-c:c-ref wrapped-object ,awrap-type-name
                               ,(kwd (s-name slot)) plus-c::&)))
        (setf (mem-ref ptr ,(s-type slot)) value))))
 
 (defun make-t-slot-setter (slot awrap-type-name)
-  `(defmethod (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
+  `(,(s-def slot) (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
      (populate (,(s-reader slot) wrapped-object) value)))
 
 (defun make-array-slot-setter (slot type-name awrap-type-name)
   (declare (ignore type-name))
-  `(defmethod (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
+  `(,(s-def slot) (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
      (c-populate (,(s-reader slot) wrapped-object) value)))
 
 ;;------------------------------------------------------------

@@ -117,7 +117,7 @@ should be ~s" data element-type)
 ;;---------------------------------------------------
 
 (defmethod free ((object ubo))
-  (when (ubo-owns-gpu-array object)
-    (free-gpu-array (ubo-data object)))
-  (setf (ubo-data object) nil)
+  (let ((data (ubo-data object)))
+    (when (and data (ubo-owns-gpu-array object))
+      (free-gpu-array data)))
   t)

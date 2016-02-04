@@ -26,27 +26,7 @@
                                               stride-override
                                               normalised))
 
-(defmethod gl-assign-attrib-pointers ((array-type t) &optional (attrib-num 0)
-                                                       (pointer-offset 0)
-                                                       stride-override
-                                                       normalised)
-  (let ((type (varjo:type-spec->type array-type)))
-    (if (and (varjo:core-typep type) (not (varjo:v-typep type 'v-sampler)))
-        (let ((slot-layout (expand-slot-to-layout nil type normalised))
-              (stride 0))
-          (loop :for attr :in slot-layout
-             :for i :from 0
-             :with offset = 0
-             :do (progn
-                   (gl:enable-vertex-attrib-array (+ attrib-num i))
-                   (%gl:vertex-attrib-pointer
-                    (+ attrib-num i) (first attr) (second attr)
-                    (third attr) (or stride-override stride)
-                    (cffi:make-pointer (+ offset pointer-offset))))
-             :do (setf offset (+ offset (* (first attr)
-                                           (gl-type-size (second attr))))))
-          (length slot-layout))
-        (error "Type ~a is not known to cepl" type))))
+
 
 (defgeneric make-gpu-array (initial-contents &key)
   (:documentation "This function creates a gpu-array which is very similar
@@ -64,7 +44,18 @@
     :dynamic-copy)"))
 
 
-(defun gl-type-size (type)
-  (if (keywordp type)
-      (cffi:foreign-type-size type)
-      (autowrap:foreign-type-size type)))
+(defgeneric clear-gl-context-cache (object))
+(defgeneric s-arrayp (object))
+(defgeneric s-prim-p (spec))
+(defgeneric s-extra-prim-p (spec))
+(defgeneric s-def (spec))
+
+(defgeneric tangent (object))
+(defgeneric bi-tangent (object))
+(defgeneric (setf tangent) (val object))
+(defgeneric (setf bi-tangent) (val object))
+
+(defgeneric make-vao-from-id (gl-object gpu-arrays &optional index-array))
+(defgeneric %collate-args (spec))
+(defgeneric %get-pipeline-uniforms (pipeline-spec call-form))
+(defgeneric free-texture (texture))

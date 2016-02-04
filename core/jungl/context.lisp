@@ -9,16 +9,17 @@
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;;   :width width :height height :title "CEPL REPL" :resizable t
 
-(defun make-context (backend &key (width 640) (height 480) (title "") fullscreen
-                               no-frame (alpha-size 0) (depth-size 16) (stencil-size 8)
-                               (red-size 8) (green-size 8) (blue-size 8) (buffer-size 32)
-                               (double-buffer t) hidden (resizable t))
-  (cepl.host:init backend)
+(defun make-context (&key (width 640) (height 480) (title "") fullscreen
+		       no-frame (alpha-size 0) (depth-size 16) (stencil-size 8)
+		       (red-size 8) (green-size 8) (blue-size 8) (buffer-size 32)
+		       (double-buffer t) hidden (resizable t))
+  (cepl.host:init)
   (destructuring-bind (context-handle window)
-      (cepl.host:start backend width height title fullscreen
-		       no-frame alpha-size depth-size stencil-size
-		       red-size green-size blue-size buffer-size
-		       double-buffer hidden resizable)
+      (cepl.host:request-context
+       width height title fullscreen
+       no-frame alpha-size depth-size stencil-size
+       red-size green-size blue-size buffer-size
+       double-buffer hidden resizable)
     (let ((context (make-instance
                     'gl-context :handle context-handle :window window))
           (dimensions (list width height)))
@@ -28,7 +29,7 @@
             *gl-window* (window context)
             (slot-value context 'fbo) (%make-default-framebuffer
                                        dimensions t t))
-      (context-avilable *gl-context*)
+      (map nil #'funcall *on-context*)
       (cls))))
 
 
@@ -72,14 +73,17 @@
 
 (defmacro def-cached-context-reader (name &key (enum-name name) index)
   (let ((kwd-name (kwd enum-name)))
-    `(defmethod ,name ((context gl-context))
-       (with-slots (cache) context
-         (or (gethash ,kwd-name cache)
-             (setf (gethash ,kwd-name cache)
-                   (gl:get* ,kwd-name ,@(when index (list index)))))))))
+    `(progn
+       (defgeneric ,name (context))
+       (defmethod ,name ((context gl-context))
+	 (with-slots (cache) context
+	   (or (gethash ,kwd-name cache)
+	       (setf (gethash ,kwd-name cache)
+		     (gl:get* ,kwd-name ,@(when index (list index))))))))))
 (defmacro def-context-reader (name &key (enum-name name) index)
   (let ((kwd-name (kwd enum-name)))
     `(progn
+       (defgeneric ,name (context))
        (defmethod ,name ((context gl-context))
          (declare (ignore context))
          (gl:get* ,kwd-name ,@(when index (list index))))

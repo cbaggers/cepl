@@ -1,8 +1,5 @@
 (in-package :jungl)
 
-(defmethod context-avilable :after (context)
-  (init-data))
-
 (defvar *quad* nil)
 (defvar *quad-stream* nil)
 
@@ -18,3 +15,5 @@
                   :element-type 'g-pt
                   :dimensions 6))
     (setf *quad-stream* (make-buffer-stream *quad* :retain-arrays t))))
+
+(push #'init-data *on-context*)

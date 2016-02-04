@@ -3,7 +3,7 @@
 (defpackage :cepl.host
   (:use :cl)
   (:export :init
-           :start
+           :request-context
            :shutdown
 	   :cache-step-func
            :get-step-func
