@@ -5,9 +5,13 @@
   (:export :init
            :request-context
            :shutdown
-	   :cache-step-func
            :get-step-func
-           :get-swap-func))
+           :get-swap-func
+	   ;;---
+	   :cache-step-func
+	   :cache-swap-func
+	   :host-step
+	   :host-swap))
 
 (defpackage :cepl-generics
   (:use :cl)
