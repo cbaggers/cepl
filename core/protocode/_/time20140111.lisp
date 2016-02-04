@@ -1,11 +1,3 @@
-;; This software is Copyright (c) 2012 Chris Bagley
-;; (techsnuffle<at>gmail<dot>com)
-;; Chris Bagley grants you the rights to
-;; distribute and use this software as governed
-;; by the terms of the Lisp Lesser GNU Public License
-;; (http://opensource.franz.com/preamble.html),
-;; known as the LLGPL.
-
 ;; Functions and macros for handling time in games
 ;; This area is very prone to change as time is so integral
 ;; to game building.
@@ -13,24 +5,24 @@
 (in-package :base-time)
 
 (defmacro def-time-units (&body forms)
-  (unless (numberp (second (first forms))) 
+  (unless (numberp (second (first forms)))
     (error "base unit must be specified as a constant"))
   (let ((defined nil))
     `(progn
        ,@(loop :for (type expression) :in forms
-            :for count = (if (numberp expression) 
-                             expression 
+            :for count = (if (numberp expression)
+                             expression
                              (if (and (listp expression)
                                       (= (length expression) 2)
                                       (numberp (second expression))
                                       (assoc (first expression) defined))
-                                 (* (second expression) 
+                                 (* (second expression)
                                     (cdr (assoc (first expression) defined)))
                                  (error "invalid time expression")))
             :collect `(defun ,type (quantity) (* quantity ,count))
             :do (push (cons type count) defined)))))
 
-(def-time-units 
+(def-time-units
   (milliseconds 1)
   (seconds (milliseconds 1000))
   (minutes (seconds 60))
@@ -45,7 +37,7 @@
 (defun signal-expired () (signal 'c-expired) nil)
 
 ;;{TODO} hmm what if the true state pulses? The the expire is incorrect
-(defmacro defcon (name args condition &body body)   
+(defmacro defcon (name args condition &body body)
   (let ((lived (gensym "lived")))
     `(let ((,lived nil))
        (defun ,name ,args
@@ -68,28 +60,28 @@
 (defmacro cfn (args condition &body body)
   `(conditional ,args ,condition &body ,body))
 
-;; like compose for conditions, makes a lambda that when evaluated runs each 
+;; like compose for conditions, makes a lambda that when evaluated runs each
 ;; form until it expires and then moves to the next, at the end it will return
 ;; nil and release an expired condition
 (defmacro then (args &body forms)
   (let ((step (gensym "step")))
-    `(let ((,step 0)) 
-       (lambda (,args)         
+    `(let ((,step 0))
+       (lambda (,args)
          (case step
            ,@(loop :for form :in forms :for i :from 0 :collect
-                `(,i (handler-case ,form 
+                `(,i (handler-case ,form
                        (c-expired (c) (ignore c) (incf ,step) nil))))
            (,(length forms) (signal-expired)))))))
 
 ;;--------------------------------------------------------------------
-;; 'every' is the temporal implementation of steppers, they eat time from a 
+;; 'every' is the temporal implementation of steppers, they eat time from a
 ;; relative source and call functions when 'time-buffer is full'
 ;; 'every*' is a version that handles multiple things with one source, perfect
 ;; for main loops
 
 (defun make-rel-time (&optional (time-source *default-time-source*))
   (let* ((last 0) (step 0)
-         (func (lambda (&optional trigger) 
+         (func (lambda (&optional trigger)
                  (when (eq trigger :step)
                    (let ((new (funcall time-source)))
                      (setf step (- new last) last new)))
@@ -101,10 +93,10 @@
                            (transform nil))
   (case type
     (:absolute (if transform
-                   (lambda (&optional x) 
+                   (lambda (&optional x)
                      (declare (ignore x))
                      (funcall transform (funcall parent)))
-                   (lambda (&optional x) 
+                   (lambda (&optional x)
                      (declare (ignore x))
                      (funcall parent))))
     (:relative (if transform
@@ -182,30 +174,30 @@
 ;; (let ((deadline (from-now (milliseconds 500))))
 ;;       (loop :until (after deadline) :finally (print "hi")))
 ;; ;; well 'after' could call the get-time method passing in the timesource
-;; (get-time timesource) 
+;; (get-time timesource)
 ;; ;; for absolute just returns the parent passed into the transform func
-;; ;; for relative it would get the time using and t-step would update the 
+;; ;; for relative it would get the time using and t-step would update the
 ;; ;; timesource
 ;; (let ((deadline (from-now (milliseconds 1500)))
 ;;           (rel (make-time-source)))
 ;;       (loop :until (after deadline) :finally
 ;;          (format t "timediff=~a" (t-step rel))))
 
-;; ;; why is this any better? seems slower for a start 
+;; ;; why is this any better? seems slower for a start
 ;; ;; well I was worried that steppers would be fed relative time objects and that
 ;; ;; seemed like a lot of function calls.... I guess its not too bad.
 ;;------------------------------------------------------------
 ;; Coundlt generic functions make it feel similar
 
-(defmethod get-time ((time-source function)) 
+(defmethod get-time ((time-source function))
   (funcall time-source))
 
 (let ((deadline (from-now (milliseconds 500))))
   (loop :until (after deadline) :finally (print "hi")))
 
 ;; this can now be a struct
-(defclass rel-time () 
-  ((time-value :initform 0) 
+(defclass rel-time ()
+  ((time-value :initform 0)
    (last-value :initform 0)
    (parent :initform nil :initarg :source :accessor parent)))
 

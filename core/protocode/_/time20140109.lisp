@@ -1,11 +1,3 @@
-;; This software is Copyright (c) 2012 Chris Bagley
-;; (techsnuffle<at>gmail<dot>com)
-;; Chris Bagley grants you the rights to
-;; distribute and use this software as governed
-;; by the terms of the Lisp Lesser GNU Public License
-;; (http://opensource.franz.com/preamble.html),
-;; known as the LLGPL.
-
 ;; Functions and macros for handling time in games
 ;; This area is very prone to change as time is so integral
 ;; to game building.
@@ -13,24 +5,24 @@
 (in-package :base-time)
 
 (defmacro def-time-units (&body forms)
-  (unless (numberp (second (first forms))) 
+  (unless (numberp (second (first forms)))
     (error "base unit must be specified as a constant"))
   (let ((defined nil))
     `(progn
        ,@(loop :for (type expression) :in forms
-            :for count = (if (numberp expression) 
-                             expression 
+            :for count = (if (numberp expression)
+                             expression
                              (if (and (listp expression)
                                       (= (length expression) 2)
                                       (numberp (second expression))
                                       (assoc (first expression) defined))
-                                 (* (second expression) 
+                                 (* (second expression)
                                     (cdr (assoc (first expression) defined)))
                                  (error "invalid time expression")))
             :collect `(defun ,type (quantity) (* quantity ,count))
             :do (push (cons type count) defined)))))
 
-(def-time-units 
+(def-time-units
   (milliseconds 1)
   (seconds (milliseconds 1000))
   (minutes (seconds 60))
@@ -65,16 +57,16 @@
 (defmacro cfn (args condition &body body)
   `(conditional ,args ,condition &body ,body))
 
-;; like compose for conditions, makes a lambda that when evaluated runs each 
+;; like compose for conditions, makes a lambda that when evaluated runs each
 ;; form until it expires and then moves to the next, at the end it will return
 ;; nil and release an expired condition
 (defmacro then (args &body forms)
   (let ((step (gensym "step")))
-    `(let ((,step 0)) 
-       (lambda (,args)         
+    `(let ((,step 0))
+       (lambda (,args)
          (case step
            ,@(loop :for form :in forms :for i :from 0 :collect
-                `(,i (handler-case ,form 
+                `(,i (handler-case ,form
                        (c-expired (c) (ignore c) (incf ,step) nil))))
            (,(length forms) (signal-expired)))))))
 
@@ -83,9 +75,9 @@
 (defclass time-source () ())
 
 (defclass absolute-time-source (time-source)
-  ((value :initform 0 :initarg :value :type integer 
+  ((value :initform 0 :initarg :value :type integer
           :accessor time-value)
-   (last-updated :initform 0 :initarg :last-updated :type integer 
+   (last-updated :initform 0 :initarg :last-updated :type integer
                  :accessor last-updated)
    (parent :initform nil :initarg :parent :type (or null time-source)
            :accessor parent-source)
@@ -94,14 +86,14 @@
 
 (defclass relative-time-source (time-source)
   ((value :initform 0 :initarg :value :type integer :accessor time-value)
-   (last-updated :initform 0 :initarg :last-updated :type integer 
+   (last-updated :initform 0 :initarg :last-updated :type integer
                  :accessor last-updated)
    (parent :initarg :parent :type time-source
            :accessor parent-source)))
 
 (defparameter *system-time* (make-instance 'absolute-time-source))
 
-(defun update-system-time () 
+(defun update-system-time ()
   (setf (time-value *system-time*) (absolute-system-time)))
 
 (defmethod update-time ((source absolute-time-source))
@@ -109,12 +101,12 @@
     (setf (last-updated source) parent-time)
     (if (parent-source source)
         (if (transform source)
-            (setf (time-value source) 
+            (setf (time-value source)
                   (floor (funcall (transform source) parent-time)))
             (setf (time-value source) parent-time))
         (time-value source))))
 
-(defmethod update-time ((source relative-time-source))  
+(defmethod update-time ((source relative-time-source))
   (let ((parent-time (time-value (parent-source source))))
     (setf (time-value source) (- parent-time (last-updated source)))
     (setf (last-updated source) parent-time))
@@ -130,18 +122,18 @@
                    (make-instance 'relative-time-source :parent parent)))
     (t (error "unknown time-source type"))))
 
-(defun before (time &optional (time-source *system-time*)) 
+(defun before (time &optional (time-source *system-time*))
   (when (< (time-value time-source) time) (time-value time-source)))
-(defun after (time &optional (time-source *system-time*)) 
+(defun after (time &optional (time-source *system-time*))
   (when (> (time-value time-source) time) (time-value time-source)))
-(defun between (start-time end-time &optional (time-source *system-time*)) 
+(defun between (start-time end-time &optional (time-source *system-time*))
   (when (and (>= (time-value time-source) start-time)
-             (<= (time-value time-source) end-time)) 
+             (<= (time-value time-source) end-time))
     (time-value time-source)))
 
 ;;--------------------------------------------------------------------
 
-;; 'every' is the temporal implementation of steppers, they eat time from a 
+;; 'every' is the temporal implementation of steppers, they eat time from a
 ;; relative source and call functions when 'time-buffer is full'
 ;; 'every*' is a version that handles multiple things with one source, perfect
 ;; for main loops
@@ -157,7 +149,7 @@
   (loop :while (after deadline *source*)
      :do (print "hi")))
 
-(conditional ((before 12000 *time*) :name @test) 
+(conditional ((before 12000 *time*) :name @test)
   (lerp (pos *obj*) (v! 0 0 0) (/ (pos *obj*) @test)))
 
 ;; the problem is that non-function based time objects dont update themselves
@@ -168,7 +160,7 @@
     (loop :until (after deadline)
        :do (update-system-time) :finally (print "hi"))))
 
-;; however relative sources should only be updated in one place as it is 
+;; however relative sources should only be updated in one place as it is
 ;; relative TO something.
 
 ;; want to write this
@@ -200,7 +192,7 @@
 
 (defun make-rel-time (&optional (time-source #'absolute-system-time))
   (let* ((last 0) (step 0)
-         (func (lambda (&optional trigger) 
+         (func (lambda (&optional trigger)
                  (when (eq trigger :step)
                    (let ((new (funcall time-source)))
                      (setf step (- new last) last new)))
@@ -212,10 +204,10 @@
                            (transform nil))
   (case type
     (:absolute (if transform
-                   (lambda (x) 
+                   (lambda (x)
                      (declare (ignore x))
                      (funcall transform (funcall parent)))
-                   (lambda (x) 
+                   (lambda (x)
                      (declare (ignore x))
                      (funcall parent))))
     (:relative (if transform
@@ -230,23 +222,23 @@
 (let ((deadline (from-now (milliseconds 500))))
       (loop :until (after deadline) :finally (print "hi")))
 ;; well 'after' could call the get-time method passing in the timesource
-(get-time timesource) 
+(get-time timesource)
 ;; for absolute just returns the parent passed into the transform func
-;; for relative it would get the time using and t-step would update the 
+;; for relative it would get the time using and t-step would update the
 ;; timesource
 (let ((deadline (from-now (milliseconds 1500)))
           (rel (make-time-source)))
       (loop :until (after deadline) :finally
          (format t "timediff=~a" (t-step rel))))
 
-;; why is this any better? seems slower for a start 
+;; why is this any better? seems slower for a start
 ;; well I was worried that steppers would be fed relative time objects and that
 ;; seemed like a lot of function calls.... I guess its not too bad.
 
 ;; ok stick with this for now
 (defun make-stepper (step-size)
   (let ((time-cache 0))
-    (lambda (time) 
+    (lambda (time)
       (if (eq time t)
           step-size
           (progn

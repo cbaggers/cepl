@@ -1,11 +1,3 @@
-;; This software is Copyright (c) 2012 Chris Bagley
-;; (techsnuffle<at>gmail<dot>com)
-;; Chris Bagley grants you the rights to
-;; distribute and use this software as governed
-;; by the terms of the Lisp Lesser GNU Public License
-;; (http://opensource.franz.com/preamble.html),
-;; known as the LLGPL.
-
 ;; Functions and macros for handling time in games
 ;; This area is very prone to change as time is so integral
 ;; to game building.
@@ -17,24 +9,24 @@
 ;;------------
 
 (defmacro def-time-units (&body forms)
-  (unless (numberp (second (first forms))) 
+  (unless (numberp (second (first forms)))
     (error "base unit must be specified as a constant"))
   (let ((defined nil))
     `(progn
        ,@(loop :for (type expression) :in forms
-            :for count = (if (numberp expression) 
-                             expression 
+            :for count = (if (numberp expression)
+                             expression
                              (if (and (listp expression)
                                       (= (length expression) 2)
                                       (numberp (second expression))
                                       (assoc (first expression) defined))
-                                 (* (second expression) 
+                                 (* (second expression)
                                     (cdr (assoc (first expression) defined)))
                                  (error "invalid time expression")))
             :collect `(defun ,type (quantity) (* quantity ,count))
             :do (push (cons type count) defined)))))
 
-(def-time-units 
+(def-time-units
   (milliseconds 1)
   (seconds (milliseconds 1000))
   (minutes (seconds 60))
@@ -50,7 +42,7 @@
   (let* ((type (if (and (listp type) (eq (first type) 'quote))
                    (second type) type))
          (rtype (symb 'relative- type)))
-    `(progn 
+    `(progn
        (defstruct ,rtype
          (value 0 :type ,type)
          (last-value 0 :type ,type)
@@ -73,12 +65,12 @@
 
 (defun signal-expired () (signal 'c-expired) nil)
 
-(defmacro expiredp (&body body) 
+(defmacro expiredp (&body body)
   `(handler-case (progn ,@body nil)
      (c-expired (c) (progn c t))))
 
 ;;{TODO} hmm what if the true state pulses? The the expire is incorrect
-(defmacro defcon (name args condition &body body)   
+(defmacro defcon (name args condition &body body)
   (let ((lived (gensym "lived")))
     `(let ((,lived nil))
        (defun ,name ,args
@@ -101,28 +93,28 @@
 (defmacro cfn (args condition &body body)
   `(conditional ,args ,condition &body ,body))
 
-;; like compose for conditions, makes a lambda that when evaluated runs each 
+;; like compose for conditions, makes a lambda that when evaluated runs each
 ;; form until it expires and then moves to the next, at the end it will return
 ;; nil and release an expired condition
 (defmacro then (args &body forms)
   (let ((step (gensym "step")))
-    `(let ((,step 0)) 
-       (lambda (,args)         
+    `(let ((,step 0))
+       (lambda (,args)
          (case step
            ,@(loop :for form :in forms :for i :from 0 :collect
-                `(,i (handler-case ,form 
+                `(,i (handler-case ,form
                        (c-expired (c) (ignore c) (incf ,step) nil))))
            (,(length forms) (signal-expired)))))))
 
 ;;--------------------------------------------------------------------
-;; 'every' is the temporal implementation of steppers, they eat time from a 
+;; 'every' is the temporal implementation of steppers, they eat time from a
 ;; relative source and call functions when 'time-buffer is full'
 ;; 'every*' is a version that handles multiple things with one source, perfect
 ;; for main loops
 
 (defun make-rel-time (&optional (time-source *default-time-source*))
   (let* ((last 0) (step 0)
-         (func (lambda (&optional trigger) 
+         (func (lambda (&optional trigger)
                  (when (eq trigger :step)
                    (let ((new (funcall time-source)))
                      (setf step (- new last) last new)))
@@ -134,10 +126,10 @@
                            (transform nil))
   (case type
     (:absolute (if transform
-                   (lambda (&optional x) 
+                   (lambda (&optional x)
                      (declare (ignore x))
                      (funcall transform (funcall parent)))
-                   (lambda (&optional x) 
+                   (lambda (&optional x)
                      (declare (ignore x))
                      (funcall parent))))
     (:relative (if transform
@@ -214,19 +206,19 @@
   (loop :until (after deadline) :finally (print "hi")))
 
 ;; this can now be a struct
-(defclass rel-time () 
-  ((time-value :initform 0) 
+(defclass rel-time ()
+  ((time-value :initform 0)
    (last-value :initform 0)
    (parent :initform nil :initarg :source :accessor parent)))
 
 ;;----------------------------------------------------------------------
 
-(defmethod get-time ((time-source function)) 
+(defmethod get-time ((time-source function))
   (funcall time-source))
 (defmethod get-time ((time-source rel-time))
   (slot-value time-source 'time-value))
 
-(defmethod t-step ((time function)) 
+(defmethod t-step ((time function))
   (funcall time))
 (defmethod t-step ((time-source rel-time))
   (let ((ctime (get-time (parent time-source))))
@@ -256,14 +248,14 @@
 ;; ok so last major problem I think
 
 ;; this is ok
-(let ((end (from-now (seconds 10)))) 
+(let ((end (from-now (seconds 10))))
   (t-manage (conditional () (before end) (print 'still-here))))
 
 ;; but this would be better
-(t-manage (conditional () (before (from-now (seconds 10))) 
+(t-manage (conditional () (before (from-now (seconds 10)))
             (print 'still-here)))
-;; this means that conditional takes a test FUNCTION and before needs to be a 
-;; lambda itself...well it needs to be a 
+;; this means that conditional takes a test FUNCTION and before needs to be a
+;; lambda itself...well it needs to be a
 (defun nbefore (offset &optional (source *default-time-source*))
   (let ((source source)
         (offset offset))

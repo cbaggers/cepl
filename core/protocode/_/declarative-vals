@@ -6,11 +6,11 @@
      (dbind (pos entity) (v! (sin (+ i test)) (cos (+ i test))))))
 
 ;; this could be hard. Do we bind the the lexical entity or the value
-;; it really should be the value but place isnt a 'real' object just 
+;; it really should be the value but place isnt a 'real' object just
 ;; a semantic effect
 (drelease (pos entity))
 
-;; dbind should return a handle to the call back then you can 
+;; dbind should return a handle to the call back then you can
 
 (with-dvalue (dtest)
   (loop :for entity :in entities :do
@@ -18,7 +18,7 @@
                                                  (cos (+ i dtest)))))))
 
 ;; and then entity's slot will hold a key
-;; then you can do this 
+;; then you can do this
 (drelease (slot entity) dtest)
 
 ;; that should be it
@@ -30,14 +30,6 @@
 
 --------------------------------------------------------------
 IMPL
-
-;; This software is Copyright (c) 2012 Chris Bagley
-;; (techsnuffle<at>gmail<dot>com)
-;; Chris Bagley grants you the rights to
-;; distribute and use this software as governed
-;; by the terms of the Lisp Lesser GNU Public License
-;; (http://opensource.franz.com/preamble.html),
-;; known as the LLGPL.
 
 ;; Functions and macros for handling space
 
@@ -67,7 +59,7 @@ IMPL
 
 (defun transform-bind (place dvals expr release-on-change)
   (let* ((dvals (or (loop :for v :in dvals :if (utils:find-in-tree v expr)
-                       :collect v) 
+                       :collect v)
                     dvals))
          (expr (if (consp expr)
                    (loop :for dval in dvals :do
@@ -79,12 +71,12 @@ IMPL
          (error "The second argument must always be a dval or a list of dvals")
          (let ((setter (let (,@(loop for dval in dvals collect
                                       (list dval dval)))
-                           (lambda () 
-                             ,(when release-on-change 
+                           (lambda ()
+                             ,(when release-on-change
                                     `(progn ,@(loop :for dval :in dvals :collect
-                                                 `(remhash ',key (bound ,dval))))) 
+                                                 `(remhash ',key (bound ,dval)))))
                              (setf ,place ,expr)))))
-           ,@(loop :for dval :in dvals :collect 
+           ,@(loop :for dval :in dvals :collect
                 `(setf (gethash ',key (bound ,dval)) setter))
            ',key))))
 
@@ -94,11 +86,11 @@ IMPL
   `(bind ,place ,dvals ,expr t))
 
 (defmacro bind (place dvals &optional expr release-on-change)
-  (let ((dvals (if (listp dvals) 
-                   (if (eq (first dvals) 'quote) 
-                       (error "No need to quote the dvals") 
+  (let ((dvals (if (listp dvals)
+                   (if (eq (first dvals) 'quote)
+                       (error "No need to quote the dvals")
                        dvals)
-                   (list dvals))))    
+                   (list dvals))))
     (if expr
         (transform-bind place dvals expr release-on-change)
         (if (> (length dvals) 1)
@@ -114,9 +106,8 @@ IMPL
 
 ;; [TODO] The following breaks as 'i' gets lexically bound and at the end of the
 ;;        loop it is 4. We need to bind the i at the time of the binding, not
-;;        the initialisation. We can walk places for non-first, non-quoted 
+;;        the initialisation. We can walk places for non-first, non-quoted
 ;;        symbols and cache them with a 'let'.
 ;;        note: the non-quote is essential
-;; (loop for i below (length the-list) 
+;; (loop for i below (length the-list)
 ;;    :do (print i) (bind (nth i the-list) d))
-
