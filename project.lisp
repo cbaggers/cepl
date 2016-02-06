@@ -103,7 +103,7 @@ quickproject and then run this again.")
       name)))
 
 (defparameter *run-session-base*
-  "(in-package #:~a)~%(defun run-session ()
+  "(in-package #:~a)~%(defun %run-session ()
   #+darwin
   (let ((extra-package-dirs '(\"/opt/local/lib/\" \"/usr/local/\")))
     (mapcar
