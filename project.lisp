@@ -77,18 +77,19 @@ quickproject and then run this again.")
     (when (eq pathname :why)
       (error 'make-project-missing-default-implementation))
     (let* ((pathname (pathname-as-directory pathname))
-	   (name (or name (ni-call :quickproject :pathname-project-name
-				   pathname))))
-      (ni-call :quickproject :make-project
-	       pathname
-	       :depends-on `(:cepl
-			     :temporal-functions
-			     ,host
-			     ,@(when (eq repl :swank) `(:swank.live))
-			     ,@(utils:listify input-system))
-	       :name name
-	       :template-directory *template-dir*
-	       :template-parameters (list :start-repl-session (gen-thing repl)))
+	   (name (or name (cepl-utils:ni-call :quickproject :pathname-project-name
+					      pathname))))
+      (cepl-utils:ni-call
+       :quickproject :make-project
+       pathname
+       :depends-on `(:cepl
+		     :temporal-functions
+		     ,host
+		     ,@(when (eq repl :swank) `(:swank.live))
+		     ,@(utils:listify input-system))
+       :name name
+       :template-directory *template-dir*
+       :template-parameters (list :start-repl-session (gen-thing repl)))
       name)))
 
 (defun gen-thing (repl)

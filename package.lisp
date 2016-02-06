@@ -308,8 +308,7 @@
 	   :def-deep-pass
 	   :set-uniform
 	   :remove-uniform
-	   :set-arg-val
-	   ))
+	   :set-arg-val))
 
 (defpackage :jungl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
