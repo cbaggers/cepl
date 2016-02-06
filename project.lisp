@@ -100,7 +100,6 @@ quickproject and then run this again.")
 	       :name name
 	       :template-directory *template-dir*)
       (write-application-file name pathname repl)
-      (write-run-session-file name pathname)
       name)))
 
 (defparameter *run-session-base*
@@ -120,11 +119,8 @@ quickproject and then run this again.")
         (style nil))
     ~a))")
 
-(defparameter *sdl-launch*
+(defparameter *swank-launch*
   "(cepl.host:set-primary-thread-and-run (lambda () (swank:create-server :style style :dont-close t)))")
-
-(defparameter *kickoff-lines*
-  "(ql:quickload :~a)~%~%(funcall (symbol-function (find-symbol \"RUN-SESSION\" (find-package :~a))))~%")
 
 (defun write-application-file (name pathname repl)
   (let ((file (merge-pathnames (make-pathname :name name :type "lisp")
@@ -134,13 +130,4 @@ quickproject and then run this again.")
 	(format stream *run-session-base*
 		(make-symbol (string-upcase name))
 		(if (eq repl :swank)
-		    *sdl-launch*))))))
-
-(defun write-run-session-file (name pathname)
-  (let ((file (merge-pathnames (make-pathname :name "run-session" :type "lisp")
-			       pathname)))
-    (with-open-file (stream file :direction :output :if-exists :error)
-      (let ((*print-case* :downcase))
-	(format stream *kickoff-lines*
-		(make-symbol (string-upcase name))
-		(make-symbol (string-upcase name)))))))
+		    *swank-launch*))))))
