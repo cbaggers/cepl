@@ -69,17 +69,6 @@ quickproject and then run this again.")
 (defvar *template-dir*
   (asdf:system-relative-pathname :cepl "project-template/"))
 
-(defun ni-call (package-name func-name &rest args)
-  (let ((p (find-package package-name)))
-    (unless p (error "ni-call: package ~s not found" package-name))
-    (let ((func-symb (find-symbol (if (keywordp func-name)
-				      (symbol-name func-name)
-				      func-name)
-				  p)))
-      (unless func-name (error "ni-call: could not find symbol ~s in package ~s"
-			       func-name package-name))
-      (apply (symbol-function func-symb) args))))
-
 (defun make-project (pathname &key name (host :cepl.sdl2) (repl :swank)
 				(input-system :skitter))
   (let ((qp (find-package :quickproject)))
@@ -98,29 +87,14 @@ quickproject and then run this again.")
 			     ,@(when (eq repl :swank) `(:swank.live))
 			     ,@(utils:listify input-system))
 	       :name name
-	       :template-directory *template-dir*)
-      (write-application-file name pathname repl)
+	       :template-directory *template-dir*
+	       :template-parameters (list :start-repl-session (gen-thing repl)))
       name)))
 
-(defparameter *run-session-base*
-  "(in-package #:~a)~%(defun %run-session ()
-  #+darwin
-  (let ((extra-package-dirs '(\"/opt/local/lib/\" \"/usr/local/\")))
-    (mapcar
-     (lambda (raw-path)
-       (let ((port-dir (cl-fad:directory-exists-p raw-path)))
-         (when (and port-dir
-                    (not (member port-dir cffi:*foreign-library-directories*)))
-           (push port-dir cffi:*foreign-library-directories*))))
-     extra-package-dirs))
-  (let (#+linux
-        (style swank::*communication-style*)
-        #-linux
-        (style nil))
-    ~a))")
-
-(defparameter *swank-launch*
-  "(cepl.host:set-primary-thread-and-run (lambda () (swank:create-server :style style :dont-close t)))")
+(defun gen-thing (repl)
+  (if (eq repl :swank)
+      "(swank:create-server :style style :dont-close t)"
+      "(identity)"))
 
 (defun write-application-file (name pathname repl)
   (let ((file (merge-pathnames (make-pathname :name name :type "lisp")
