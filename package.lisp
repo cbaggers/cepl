@@ -7,6 +7,7 @@
            :shutdown
            :get-step-func
            :get-swap-func
+	   :set-primary-thread-and-run
 	   ;;---
 	   :cache-step-func
 	   :cache-swap-func
@@ -365,26 +366,6 @@
            :m!
            ;;---
            :rqpos
-           ;;---
-           :def-time-units
-           :milliseconds
-           :seconds
-           :minutes
-           :hours
-           :tlambda
-           :tdefun
-           :before
-           :after
-           :between
-           :each
-           :then
-           :repeat
-           :whilst
-           :%progress%
-           :signal-expired
-           :expiredp
-           :expiredp+
-           :make-stepper
            ;;---
            :*quad*
            :*quad-stream*

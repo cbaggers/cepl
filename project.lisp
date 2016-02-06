@@ -1,14 +1,5 @@
 (in-package :cepl)
 
-;; NOTE:
-;;
-;; The run-session.sh script in ./project-template was generated using
-;; cl-launch with the following recipe
-
-;; cl-launch --output run-session.sh -l 'sbcl ccl clisp ecl ccl cmucl' \
-;;           --init "(beeenz:run-session)" -s 'beeenz' --quicklisp --no-include
-
-
 (deferror make-project-missing-default-implementation () ()
     "Sorry the :default-implementation argument must be provided
 
@@ -108,21 +99,12 @@ quickproject and then run this again.")
 			     ,@(utils:listify input-system))
 	       :name name
 	       :template-directory *template-dir*)
-      (write-application-file name pathname repl host)
+      (write-application-file name pathname repl)
+      (write-run-session-file name pathname)
       name)))
 
-(defun write-application-file (name pathname repl host)
-  (let ((file (merge-pathnames (make-pathname :name name :type "lisp")
-			       pathname)))
-    (with-open-file (stream file :direction :output :if-exists :overwrite)
-      (let ((*print-case* :downcase))
-	(format stream "(in-package ~S)~%~%~a"
-		(make-symbol (string-upcase name))
-		(gen-run-session-code (eq repl :swank)
-				      (eq host :cepl.sdl2)))))))
-
 (defparameter *run-session-base*
-  "\(defun run-session ()
+  "(in-package #:~a)~%(defun run-session ()
   #+darwin
   (let ((extra-package-dirs '(\"/opt/local/lib/\" \"/usr/local/\")))
     (mapcar
@@ -135,18 +117,30 @@ quickproject and then run this again.")
   (let (#+linux
         (style swank::*communication-style*)
         #-linux
-        (style nil)
-    ~a))\)")
+        (style nil))
+    ~a))")
 
-(defparameter *sdl-swank-launch*
-  "(sdl2:make-this-thread-main (lambda () (swank:create-server :style style :dont-close t)))")
+(defparameter *sdl-launch*
+  "(cepl.host:set-primary-thread-and-run (lambda () (swank:create-server :style style :dont-close t)))")
 
-(defparameter *swank-launch*
-  "(swank:create-server :style style :dont-close t)")
+(defparameter *kickoff-lines*
+  "(ql:quickload :~a)~%~%(funcall (symbol-function (find-symbol \"RUN-SESSION\" (find-package :~a))))~%")
 
-(defun gen-run-session-code (swank sdl2)
-  (format nil *run-session-base*
-	  (if swank
-	      (if sdl2
-		  *sdl-swank-launch*
-		  *swank-launch*))))
+(defun write-application-file (name pathname repl)
+  (let ((file (merge-pathnames (make-pathname :name name :type "lisp")
+			       pathname)))
+    (with-open-file (stream file :direction :output :if-exists :overwrite)
+      (let ((*print-case* :downcase))
+	(format stream *run-session-base*
+		(make-symbol (string-upcase name))
+		(if (eq repl :swank)
+		    *sdl-launch*))))))
+
+(defun write-run-session-file (name pathname)
+  (let ((file (merge-pathnames (make-pathname :name "run-session" :type "lisp")
+			       pathname)))
+    (with-open-file (stream file :direction :output :if-exists :error)
+      (let ((*print-case* :downcase))
+	(format stream *kickoff-lines*
+		(make-symbol (string-upcase name))
+		(make-symbol (string-upcase name)))))))

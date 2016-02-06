@@ -10,3 +10,4 @@
 (defgeneric shutdown ())
 (defgeneric get-step-func ())
 (defgeneric get-swap-func ())
+(defgeneric set-primary-thread-and-run (func &rest args))
