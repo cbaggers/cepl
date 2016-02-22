@@ -43,12 +43,12 @@
          (right-dir (v3:normalize (v3:cross look-dir up-dir)))
          (perp-up-dir (v3:cross right-dir look-dir))
          (rot-matrix (m4:transpose
-                      (m4:rotation-from-matrix3
-                       (m3:make-from-rows right-dir
-                                          perp-up-dir
-                                          (v3:- (v! 0 0 0) look-dir)))))
+                      (m4:rotation-from-mat3
+                       (m3:from-rows right-dir
+				     perp-up-dir
+				     (v3:- (v! 0 0 0) look-dir)))))
          (trans-matrix (m4:translation (v3:- (v! 0 0 0) (pos camera)))))
-    (m4:m* rot-matrix trans-matrix)))
+    (m4:* rot-matrix trans-matrix)))
 
 (defun resolve-cam-position (sphere-cam-rel-pos cam-target)
   (let* ((phi (radians (v-x sphere-cam-rel-pos)))
@@ -94,7 +94,7 @@
   (gl:enable :depth-clamp))
 
 (defun entity-matrix (entity)
-  (reduce #'m4:m* (list (m4:translation (pos entity))
+  (reduce #'m4:* (list (m4:translation (pos entity))
                         (m4:rotation-from-euler (rot entity))
                         (m4:scale (scale entity)))))
 
@@ -106,7 +106,7 @@
      (setf (rot entity) (v:+ (rot entity) (v! 0.01 0.02 0)))
      (prog-2 (e-stream entity) :model-to-world (entity-matrix entity)))
   (gl:flush)
-  (jungl:update-display))
+  (jungl:swap))
 
 (defun reshape (width height)
   (setf (m4:melm *cam-clip-matrix* 0 0) (* *frustrum-scale* (/ height width)))

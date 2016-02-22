@@ -36,8 +36,8 @@
 (defun %pos-quat-update (node)
   (declare (node node))
   (setf (%node-re-calc node) nil
-        (%node-transform node) (m4:m* (m4:translation (%pqn-pos node))
-                                      (q:to-matrix4 (%pqn-quat node)))))
+        (%node-transform node) (m4:* (m4:translation (%pqn-pos node))
+                                      (q:to-mat4 (%pqn-quat node)))))
 
 (defun pqn-pos (node) (%pqn-pos node))
 (defun pqn-quat (node) (%pqn-quat node))
@@ -94,7 +94,7 @@
   (labels ((inner (space accum)
              (if space
                  (inner (vspace-parent space)
-                        (m4:m* (node-transform (vspace-node space)) accum))
+                        (m4:* (node-transform (vspace-node space)) accum))
                  accum)))
     (inner (vspace-parent space) (node-transform (vspace-node space)))))
 

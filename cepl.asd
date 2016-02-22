@@ -21,6 +21,7 @@
 	       (:file "host/step")
                (:file "core/utils")
 	       (:file "project")
+	       (:file "core/lifecycle")
 	       (:file "core/continuable")
                (:file "core/generics")
 
@@ -43,7 +44,6 @@
                (:file "core/jungl/gl-extras")
                (:file "core/jungl/c-arrays")
                (:file "core/jungl/structs")
-               (:file "core/jungl/predefined-structs")
                (:file "core/jungl/buffers")
                (:file "core/jungl/gpu-arrays-buffer-backed")
                (:file "core/jungl/vaos")
@@ -73,4 +73,5 @@
 	       (:file "core/jungl/space/pos")
 	       (:file "core/jungl/space/gpu")
 
+	       (:file "core/predefined/gpu-structs.lisp")
                (:file "core/repl")))

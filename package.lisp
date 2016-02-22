@@ -7,12 +7,19 @@
            :shutdown
            :get-step-func
            :get-swap-func
+	   :get-event-pump-func
 	   :set-primary-thread-and-run
 	   ;;---
 	   :cache-step-func
 	   :cache-swap-func
 	   :host-step
 	   :host-swap))
+
+(defpackage :cepl.lifecycle
+  (:use :cl)
+  (:export :shutting-down-p
+	   :listen-to-lifecycle-changes
+	   :stop-listening-to-lifecycle-changes))
 
 (defpackage :cepl-generics
   (:use :cl)
@@ -24,6 +31,8 @@
            :norm
            :tex
            :col
+	   :tangent
+	   :bi-tangent
            :action
            :button
            :clicks
@@ -174,7 +183,7 @@
 	   :viewport-resolution-v!
            :clear-gl-context-cache
            :free
-           :update-display
+           :swap
            :valid-pixel-format-p
            :pixel-format
            :pixel-format->lisp-type
@@ -264,16 +273,6 @@
            :free-texture
            :free-gpu-array
            :free-vao
-           :g-pn
-           :g-pc
-           :g-pt
-           :g-pnc
-           :g-pnt
-           :g-pntc
-           :pos
-           :col
-           :norm
-           :tex
            ;;----------
            :map-g
            ;;----------
@@ -344,8 +343,10 @@
                 :print-mem
                 :p->)
   (:import-from :rtg-math :s~)
+  (:import-from :cepl.lifecycle :shutting-down-p)
   (:export :repl
            :quit
+	   :shutting-down-p
            :make-project
            ;;----
 	   :dvec
@@ -359,6 +360,8 @@
            :norm
            :tex
            :col
+	   :tangent
+	   :bi-tangent
            ;;---
            :v! :v-x :v-y :v-z :v-w :s~
            :v!byte :v!ubyte :v!int
@@ -370,7 +373,8 @@
            :*quad*
            :*quad-stream*
            :clear
-           :update-display
+	   :step-host
+           :swap
            :pixel-format
            :lisp-type->pixel-format
            :pixel-format->lisp-type
@@ -451,6 +455,7 @@
 	   :clone-viewport
            :with-viewport
            :with-fbo-viewport
+	   :element-type
            ;;---
            :node
            :make-node

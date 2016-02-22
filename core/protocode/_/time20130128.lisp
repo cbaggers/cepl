@@ -49,7 +49,7 @@
                           (:quit () (setf running nil)))
                         (prog-1 *stream*)
                         (gl:flush)
-                        (jungl:update-display)))
+                        (jungl:swap)))
 
 (tloop :while running :catching 'error
        :each (seconds 0.5) :do (update-swank)
@@ -59,7 +59,7 @@
          (:quit () (setf running nil)))
        (prog-1 *stream*)
        (gl:flush)
-       (jungl:update-display))
+       (jungl:swap))
 
 ;; The :do following :do syntax is actually perfectly inline with the standard
 ;; loop macro, for example:

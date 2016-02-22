@@ -478,6 +478,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 	    (reverse result))))
 
 (defun ni-call (package-name func-name &rest args)
+  "Non-interning funcall"
   (let ((p (find-package package-name)))
     (unless p (error "ni-call: package ~s not found" package-name))
     (let ((func-symb (find-symbol (if (keywordp func-name)

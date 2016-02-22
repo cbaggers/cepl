@@ -8,6 +8,8 @@
 (defgeneric size (object))
 (defgeneric norm (object))
 (defgeneric col (object))
+(defgeneric tangent (object))
+(defgeneric bi-tangent (object))
 
  ;; will return a list of fixnums
 (defgeneric resolution (object))
@@ -34,3 +36,5 @@
 (defgeneric (setf norm) (val obj))
 (defgeneric (setf col) (val obj))
 (defgeneric (setf tex) (val obj))
+(defgeneric (setf tangent) (val object))
+(defgeneric (setf bi-tangent) (val object))

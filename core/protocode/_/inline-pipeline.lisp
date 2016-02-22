@@ -45,7 +45,7 @@
                (v! 0.2 0.2 0.2 1.0)
                (/ (y gl-frag-pos) 500.0))))
         (gl:flush)
-        (jungl:update-display)))
+        (jungl:swap)))
 
 
 ;; what about

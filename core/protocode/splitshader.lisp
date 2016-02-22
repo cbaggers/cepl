@@ -31,4 +31,4 @@
        (continuable (progn (gl:clear :color-buffer-bit)
                                        (prog-1 gstream)
                                        (gl:flush)
-                                       (sdl:update-display))))))
+                                       (sdl:swap))))))

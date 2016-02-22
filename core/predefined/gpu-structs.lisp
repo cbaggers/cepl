@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl)
 
 (defstruct-g g-pn ()
   (position :vec3 :accessor pos)

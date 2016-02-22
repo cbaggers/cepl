@@ -41,7 +41,7 @@ Below we will do the standard OpenGL version of 'hello world' and draw a colored
   (update-swank) ;; [4]
   (clear) ;; [5]
   (map-g #'prog-1 *stream*) ;; [6]
-  (update-display)) ;; [10]
+  (swap)) ;; [10]
 
 (defun run-loop ()
   (setf *running* t

@@ -66,43 +66,58 @@ faced by those running multiple graphics card setups.")
 cepl uses the excellent quickproject to make it's projects, please load
 quickproject and then run this again.")
 
-(defvar *template-dir*
-  (asdf:system-relative-pathname :cepl "project-template/"))
+(defvar *default-template-dir*
+  (asdf:system-relative-pathname :cepl "project-template/default"))
+
+(defvar *swank-template-dir*
+  (asdf:system-relative-pathname :cepl "project-template/swank"))
 
 (defun make-project (pathname &key name (host :cepl.sdl2) (repl :swank)
-				(input-system :skitter))
+				depends-on)
+  ;; this has a bunch of little hacks to make the experience of making
+  ;; project's better, we can add lots of little helpers here when they
+  ;; pick the only valid option. See the skitter.sdl2 example for an
+  ;; example
   (let ((qp (find-package :quickproject)))
     (unless qp
       (error 'make-project-needs-quickproject))
     (when (eq pathname :why)
       (error 'make-project-missing-default-implementation))
     (let* ((pathname (pathname-as-directory pathname))
-	   (name (or name (cepl-utils:ni-call :quickproject :pathname-project-name
-					      pathname))))
+	   (name (or name (cepl-utils:ni-call
+			   :quickproject :pathname-project-name
+			   pathname)))
+	   ;; if you are using skitter and also cepl.sdl2 then
+	   ;; you actually will want skitter.sdl2
+	   (depends-on (if (and (member :skitter depends-on)
+				(eq host :cepl.sdl2))
+			   (cons :skitter.sdl2 (remove :skitter depends-on))
+			   depends-on))
+	   ;; with skitter.sdl2 there are two input packages that are
+	   ;; good to have :use'd by default so we add them
+	   (skitter-sdl-p (member :skitter.sdl2 depends-on))
+	   ;;
+	   (swank-p (or (eq repl :slime) (eq repl :swank))))
       (cepl-utils:ni-call
        :quickproject :make-project
        pathname
        :depends-on `(:cepl
 		     :temporal-functions
 		     ,host
-		     ,@(when (eq repl :swank) `(:swank.live))
-		     ,@(utils:listify input-system))
+		     ,@(when (or (eq repl :swank) (eq repl :slime))
+			     `(:swank.live))
+		     ,@(when (or (eq repl :sly) (eq repl :slynk))
+			     `(:livesupport))
+		     ,@(utils:listify depends-on))
        :name name
-       :template-directory *template-dir*
-       :template-parameters (list :start-repl-session (gen-thing repl)))
+       :template-directory (if swank-p
+			       *swank-template-dir*
+			       *default-template-dir*)
+       :template-parameters (list :start-repl-session (gen-thing repl)
+				  :skitter-sdl-p skitter-sdl-p))
       name)))
 
 (defun gen-thing (repl)
   (if (eq repl :swank)
       "(swank:create-server :style style :dont-close t)"
       "(identity)"))
-
-(defun write-application-file (name pathname repl)
-  (let ((file (merge-pathnames (make-pathname :name name :type "lisp")
-			       pathname)))
-    (with-open-file (stream file :direction :output :if-exists :overwrite)
-      (let ((*print-case* :downcase))
-	(format stream *run-session-base*
-		(make-symbol (string-upcase name))
-		(if (eq repl :swank)
-		    *swank-launch*))))))

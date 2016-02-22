@@ -29,6 +29,12 @@
       'defmethod
       'defun))
 
+(defmethod s-slot-args ((slot gl-struct-slot) (args list))
+  (labels ((fun-arg (x) (if (listp x) (first x) x)))
+    (if (s-uses-method-p slot)
+	args
+	(mapcar #'fun-arg args))))
+
 ;;------------------------------------------------------------
 
 
@@ -208,22 +214,26 @@
       (t (error "Dont know what to do with slot ~a" slot)))))
 
 (defun make-prim-slot-getter (slot awrap-type-name)
-  `(,(s-def slot) ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+  `(,(s-def slot) ,(s-reader slot)
+     ,(s-slot-args slot `((wrapped-object ,awrap-type-name)))
      (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot)))))
 
 (defun make-eprim-slot-getter (slot awrap-type-name)
-  `(,(s-def slot) ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+  `(,(s-def slot) ,(s-reader slot)
+     ,(s-slot-args slot `((wrapped-object ,awrap-type-name)))
      (mem-ref (plus-c:c-ref wrapped-object ,awrap-type-name
                             ,(kwd (s-name slot)) plus-c::&)
               ,(s-type slot))))
 
 (defun make-t-slot-getter (slot awrap-type-name)
-  `(,(s-def slot) ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+  `(,(s-def slot) ,(s-reader slot)
+     ,(s-slot-args slot `((wrapped-object ,awrap-type-name)))
      (plus-c:c-ref wrapped-object ,awrap-type-name
                    ,(kwd (s-name slot)))))
 
 (defun make-array-slot-getter (slot awrap-type-name)
-  `(,(s-def slot) ,(s-reader slot) ((wrapped-object ,awrap-type-name))
+  `(,(s-def slot) ,(s-reader slot)
+     ,(s-slot-args slot `((wrapped-object ,awrap-type-name)))
      (make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot)
                                 (plus-c:c-ref wrapped-object ,awrap-type-name
                                               ,(kwd (s-name slot)) plus-c::&))))
@@ -240,23 +250,27 @@
       (t (error "Dont know what to do with slot ~a" slot)))))
 
 (defun make-prim-slot-setter (slot awrap-type-name)
-  `(,(s-def slot) (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
+  `(,(s-def slot) (setf ,(s-writer slot))
+     ,(s-slot-args slot `(value (wrapped-object ,awrap-type-name)))
      (setf (plus-c:c-ref wrapped-object ,awrap-type-name ,(kwd (s-name slot)))
            value)))
 
 (defun make-eprim-slot-setter (slot awrap-type-name)
-  `(,(s-def slot) (setf ,(s-writer slot)) (value (wrapped-object ,awrap-type-name))
+  `(,(s-def slot) (setf ,(s-writer slot))
+     ,(s-slot-args slot `(value (wrapped-object ,awrap-type-name)))
      (let ((ptr (plus-c:c-ref wrapped-object ,awrap-type-name
                               ,(kwd (s-name slot)) plus-c::&)))
        (setf (mem-ref ptr ,(s-type slot)) value))))
 
 (defun make-t-slot-setter (slot awrap-type-name)
-  `(,(s-def slot) (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
+  `(,(s-def slot) (setf ,(s-writer slot))
+     ,(s-slot-args slot `((value list) (wrapped-object ,awrap-type-name)))
      (populate (,(s-reader slot) wrapped-object) value)))
 
 (defun make-array-slot-setter (slot type-name awrap-type-name)
   (declare (ignore type-name))
-  `(,(s-def slot) (setf ,(s-writer slot)) ((value list) (wrapped-object ,awrap-type-name))
+  `(,(s-def slot) (setf ,(s-writer slot))
+     ,(s-slot-args slot `((value list) (wrapped-object ,awrap-type-name)))
      (c-populate (,(s-reader slot) wrapped-object) value)))
 
 ;;------------------------------------------------------------

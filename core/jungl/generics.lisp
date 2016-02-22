@@ -50,10 +50,7 @@
 (defgeneric s-extra-prim-p (spec))
 (defgeneric s-def (spec))
 
-(defgeneric tangent (object))
-(defgeneric bi-tangent (object))
-(defgeneric (setf tangent) (val object))
-(defgeneric (setf bi-tangent) (val object))
+
 
 (defgeneric make-vao-from-id (gl-object gpu-arrays &optional index-array))
 (defgeneric %collate-args (spec))

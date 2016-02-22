@@ -1,6 +1,6 @@
 (in-package :jungl)
 
-(defun update-display ()
+(defun swap ()
   (cepl.host:host-swap))
 
 (defun cls ()
