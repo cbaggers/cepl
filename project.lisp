@@ -1,20 +1,10 @@
 (in-package :cepl)
 
 (deferror make-project-missing-default-implementation () ()
-    "Sorry the :default-implementation argument must be provided
+    "You may rightly be wondering why you have you use an odd method to start
+your lisp session when using swank/sly with cepl.
 
-You may rightly be wondering why you are being asked what implementation you
-mostly use when you are just trying to make a project.
 It's a fair question though the answer is a little convoluted:
-
-TLDR: Certain OS's window management operations have to be done from the
-      first thread. Rather than require you to send those operations to the
-      main thread we make a script that starts your lisp session in a way
-      that makes doing this from the repl easy, however on osx/win you then
-      use a script that starts your lisp session. The choice of implementation
-      is what lisp will be used [by default] by the script.
-
-Long Version:
 
 On OSX [and possibly windows 10?] you are only allowed to run window manager
 operations on thread 0. The end result of this is that, for systems like sdl2,
@@ -80,10 +70,10 @@ quickproject and then run this again.")
   ;; example
   (let ((qp (find-package :quickproject))
 	(depends-on (utils:listify depends-on)))
-    (unless qp
-      (error 'make-project-needs-quickproject))
     (when (eq pathname :why)
       (error 'make-project-missing-default-implementation))
+    (unless qp
+      (error 'make-project-needs-quickproject))
     (let* ((pathname (pathname-as-directory pathname))
 	   (name (or name (cepl-utils:ni-call
 			   :quickproject :pathname-project-name

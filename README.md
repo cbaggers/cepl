@@ -64,13 +64,13 @@ Simply run `(ql:quickproject "my-proj")` and then run `(cepl:repl)`. This will b
 
 ### Windows & OSX
 
-In your new `my-proj` directory you will find a file called `run-session.lisp`. Run your lisp, loading this file. I use sbcl so it looks like this `sbcl --load "run-session.lisp`. Then you can connect your editor to this session (at port 4005) and carry on as usual. I use `slime` and `emacs` so I type `M-x slime-connect` and hit the `return` key twice.
+In your new `my-proj` directory you will find a file called `run-session.lisp`. Run your lisp, loading this file. I use sbcl so it looks like this `sbcl --load "run-session.lisp`. Then call `(run-session)` and you can then connect your editor to this session (at port 4005) and carry on as usual. I use `slime` and `emacs` so I type `M-x slime-connect` and hit the `return` key twice.
 
 Now you can run `(ql:quickproject "my-proj")` and then run `(cepl:repl)`. This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
 
 ### Q: Why is the Windows/OSX start procedure more complicated?
 
-Both these platforms have restrictions over which thread is allowed to interact with the window manager (I will call this the 'UI thread'). This would be fine except that, when developing, most common-lisp programmers use a system like `slime` or `sly` to connect their editor to their lisp session and those systems normally run your code in a different thread.
+*A:* Both these platforms have restrictions over which thread is allowed to interact with the window manager (I will call this the 'UI thread'). This would be fine except that, when developing, most common-lisp programmers use a system like `slime` or `sly` to connect their editor to their lisp session and those systems normally run your code in a different thread.
 
 The choices are then to frequently dispatch jobs to the 'UI thread' (and accept that overhead) or start `slime`/`sly` in a way that guarentees the thread. In cepl we choose the latter as, although it does add one step to starting your project, it means you can ignore the detail whilst you are working.
 
