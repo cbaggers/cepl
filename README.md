@@ -34,7 +34,11 @@ These three will hopefully be in quicklisp at some point, until then download th
 * rtg-math - https://github.com/cbaggers/rtg-math
 * varjo - https://github.com/cbaggers/varjo
 
-*Cepl's Host*
+## C Library dependency
+
+Cepl uses OpenGL so you need to make sure this is available on your machine. Installing your GPU drivers will usually handle this.
+
+## Cepl's Host*
 
 Cepl abstracts working with OpenGL but is not responsible for creating a window or GL context, this is handled by a `Host`. Right now the only supported host is `SDL2`, the system to load is called `cepl.sdl2`, you can find it here: [cepl.sdl2](https://github.com/cbaggers/cepl.sdl2)
 
