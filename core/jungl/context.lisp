@@ -14,8 +14,9 @@
 		       (red-size 8) (green-size 8) (blue-size 8) (buffer-size 32)
 		       (double-buffer t) hidden (resizable t))
   (handler-case
-      (cepl.host:init)
+      (find-method #'cepl.host:init nil nil)
     (error () (error "Cepl.Host: Init could not be found. Have you loaded a host?")))
+  (cepl.host:init)
   (destructuring-bind (context-handle window)
       (cepl.host:request-context
        width height title fullscreen

@@ -28,8 +28,7 @@
                (let-pipeline-vars (,stage-names ,pass-key ,context)
                  ;; we upload the spec at compile time
                  ,(gen-update-spec name stage-names context gpipe-context)
-                 (labels (,init-func
-                          ,@(fallback-implicit-uniform-func context))
+                 (labels (,init-func)
                    ;; generate the code that actually renders
                    ,(def-dispatch-func name (first init-func) stage-names
 				       context pass-key)))
@@ -37,11 +36,8 @@
                ,(gen-recompile-func name args gpipe-args options)
                ,(unless suppress-compile `(,(recompile-name name))))))))))
 
-(defun fallback-implicit-uniform-func (context)
-  (when (supports-implicit-uniformsp context)
-    `((fallback-iuniform-func (prog-id)
-                               (declare (ignore prog-id)
-                                        (optimize (speed 3) (safety 1)))))))
+(defun fallback-iuniform-func (prog-id)
+  (declare (ignore prog-id) (optimize (speed 3) (safety 1))))
 
 (defun gen-recompile-func (name args gpipe-args options)
   `(defun ,(recompile-name name) ()
@@ -89,10 +85,12 @@
   (let ((uniform-assigners (stages->uniform-assigners stage-names pass-key)))
     `(let ((prog-id nil)
            ,@(when (supports-implicit-uniformsp context)
-                   `((implicit-uniform-upload-func nil)))
+                   `((implicit-uniform-upload-func #'fallback-iuniform-func)))
            ,@(let ((u-lets (mapcat #'first uniform-assigners)))
                   (mapcar (lambda (_)
                             `(,(first _) -1)) u-lets)))
+       ,@(when (supports-implicit-uniformsp context)
+	       `((declare (type function implicit-uniform-upload-func))))
        ,@body)))
 
 (defun %gl-make-shader-from-varjo (compiled-stage)
@@ -209,8 +207,7 @@
 	   ,@u-uploads)
          ,(when (supports-implicit-uniformsp context)
                 `(locally
-                     (declare (function implicit-uniform-upload-func)
-                              (optimize (speed 3) (safety 1)))
+                     (declare (optimize (speed 3) (safety 1)))
                    (funcall implicit-uniform-upload-func prog-id)))
          (when stream (draw-expander stream ,prim-type))
          (use-program 0)

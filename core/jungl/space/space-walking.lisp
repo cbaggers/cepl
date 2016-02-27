@@ -7,7 +7,8 @@
                           t)
                 %reduce-ancestors))
 (defun %reduce-ancestors (function of-space initial-value)
-  (declare (space of-space) ((function (t space) t) function)
+  (declare (type space of-space)
+	   (type (function (t space) t) function)
            (optimize (speed 3) (safety 1) (debug 1)))
   (labels ((walk (accum space)
              (if space
@@ -24,8 +25,8 @@
                 %reduce-ancestors-until-space))
 (defun %reduce-ancestors-until-space (function of-space until-space
                                       initial-value)
-  (declare (space of-space until-space)
-           ((function (t space) t) function)
+  (declare (type space of-space until-space)
+           (type (function (t space) t) function)
            (optimize (speed 3) (safety 1) (debug 1)))
   (assert (typep until-space 'space))
   (labels ((walk (accum space)

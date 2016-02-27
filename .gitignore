@@ -3,5 +3,6 @@
 *.FASL
 *.~lock*
 \#*\#
+*.fas
 *.dx64fsl
 *.DS_Store
