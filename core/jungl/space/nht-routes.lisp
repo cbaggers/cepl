@@ -32,13 +32,6 @@
 ;;   into nht transforms when being used by spaces
 ;; -
 
-
-;;----------------------------------------------------------------------
-;; Constants
-
-(defconstant +subtable-length+ 16)
-(defconstant +default-subtable-count+ 1)
-
 ;;----------------------------------------------------------------------
 ;; Types
 

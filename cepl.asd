@@ -25,6 +25,7 @@
                (:file "core/generics")
 
 	       (:file "core/jungl/types")
+	       (:file "core/jungl/space/constants")
 	       (:file "core/jungl/space/nht-routes")
 	       (:file "core/jungl/space/space")
 	       (:file "core/jungl/space/predefined-spaces")
