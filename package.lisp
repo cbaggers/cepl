@@ -104,7 +104,7 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
 	:cepl-generics :split-sequence :%jungl :named-readtables)
   (:shadowing-import-from :rtg-math :v!)
-  (:import-from :utils
+  (:import-from :cepl-utils
                 :deferror
                 :print-mem)
   (:shadow :float :space)
@@ -336,7 +336,7 @@
         :jungl)
   (:shadow :quit)
   (:import-from :jungl.space :p! :space-g :in)
-  (:import-from :utils
+  (:import-from :cepl-utils
                 :deferror
                 :print-mem
                 :p->)
