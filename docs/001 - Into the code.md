@@ -38,7 +38,7 @@ Below we will do the standard OpenGL version of 'hello world' and draw a colored
 ;; here is what we do each frame
 (defun step-demo ()
   (step-host) ;; [3]
-  (update-swank) ;; [4]
+  (update-repl-link) ;; [4]
   (clear) ;; [5]
   (map-g #'prog-1 *stream*) ;; [6]
   (swap)) ;; [10]

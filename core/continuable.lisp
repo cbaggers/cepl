@@ -6,4 +6,4 @@
    errors don't kill the app."
   `(restart-case
        (progn ,@body)
-     (continue () :report "Swank.Live: Continue")))
+     (continue () :report "Continuable: Continue")))

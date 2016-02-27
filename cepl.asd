@@ -14,8 +14,7 @@
 	       #:rtg-math
                #:varjo
                #:named-readtables
-	       #:fn
-	       #:swank)
+	       #:fn)
   :components ((:file "package")
                (:file "host/api")
 	       (:file "host/step")

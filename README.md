@@ -31,7 +31,6 @@ All of the following will be download automatically by quicklisp
 * cl-plus-c
 * cl-fad
 * cl-opengl
-* swank
 * cl-ppcre
 * named-readtables
 * fn

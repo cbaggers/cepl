@@ -73,12 +73,13 @@ quickproject and then run this again.")
   (asdf:system-relative-pathname :cepl "project-template/swank"))
 
 (defun make-project (pathname &key name (host :cepl.sdl2) (repl :swank)
-				depends-on)
+				(depends-on :skitter))
   ;; this has a bunch of little hacks to make the experience of making
   ;; project's better, we can add lots of little helpers here when they
   ;; pick the only valid option. See the skitter.sdl2 example for an
   ;; example
-  (let ((qp (find-package :quickproject)))
+  (let ((qp (find-package :quickproject))
+	(depends-on (utils:listify depends-on)))
     (unless qp
       (error 'make-project-needs-quickproject))
     (when (eq pathname :why)
@@ -108,7 +109,7 @@ quickproject and then run this again.")
 			     `(:swank.live))
 		     ,@(when (or (eq repl :sly) (eq repl :slynk))
 			     `(:livesupport))
-		     ,@(utils:listify depends-on))
+		     ,@depends-on)
        :name name
        :template-directory (if swank-p
 			       *swank-template-dir*
