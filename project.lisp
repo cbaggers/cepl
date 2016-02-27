@@ -91,7 +91,7 @@ quickproject and then run this again.")
 	   ;; you actually will want skitter.sdl2
 	   (depends-on (if (and (member :skitter depends-on)
 				(eq host :cepl.sdl2))
-			   (cons :skitter.sdl2 (remove :skitter depends-on))
+			   (cons :cepl.skitter.sdl2 (remove :skitter depends-on))
 			   depends-on))
 	   ;; with skitter.sdl2 there are two input packages that are
 	   ;; good to have :use'd by default so we add them
