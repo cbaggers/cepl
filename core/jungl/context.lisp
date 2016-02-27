@@ -44,11 +44,11 @@
                        (loop :for i :below (gl:get-integer :num-extensions)
                           :collect (%gl:get-string-i :extensions i))
                        ;; OpenGL version < 3
-                       (utils:split-string
+                       (cepl-utils:split-string
 			#\space (gl:get-string :extensions))))
              (exts (append exts
                            (mapcar (lambda (x)
-                                     (utils:kwd (string-upcase (subseq x 3))))
+                                     (cepl-utils:kwd (string-upcase (subseq x 3))))
                                    exts))))
         (setf available-extensions exts)))
     (not (null (find x available-extensions :test #'equal)))))

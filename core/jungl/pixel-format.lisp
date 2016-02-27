@@ -191,7 +191,7 @@
                        :normalise normalise :reversed reversed
                        :comp-length component-length)))
 
-;; [TODO] swap intern for utils:kwd
+;; [TODO] swap intern for cepl-utils:kwd
 (defun compile-pixel-format (pixel-format)
   (let* ((components (pixel-format-components pixel-format))
          (components (if (eq components :depth) :depth-component components))

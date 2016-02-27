@@ -354,7 +354,7 @@
   (let* ((size (if (oddp size-in-bytes) (1+ size-in-bytes) size-in-bytes))
          (data (loop :for i :below size :collect
                   (cffi:mem-ref pointer :uchar i)))
-         (batched (utils:group data 16))
+         (batched (group data 16))
          (batched-chars (mapcar
                          (lambda (x)
                            (mapcar

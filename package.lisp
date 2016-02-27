@@ -48,7 +48,6 @@
 
 (defpackage :cepl-utils
   (:use :cl)
-  (:nicknames :utils)
   (:export :gdefun
            :dbind
            :assoc-bind

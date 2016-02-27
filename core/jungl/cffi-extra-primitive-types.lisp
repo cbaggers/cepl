@@ -60,8 +60,8 @@
       `(progn
          ,@(loop :for (type len comp-type) :in new-user-types
               :collect
-              (let* ((name (utils:symb 'jungl- type))
-                     (type-name (utils:symb name '-type))
+              (let* ((name (cepl-utils:symb 'jungl- type))
+                     (type-name (cepl-utils:symb name '-type))
                      (comp-bit-size (* 8 (cffi:foreign-type-size comp-type))))
                 `(progn
                    (cffi:defcstruct ,name (components ,comp-type :count ,len))
@@ -80,7 +80,7 @@
                      ,@(loop :for j :below len :collect
                           `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))
                    ,(when (< len 5)
-                          (let ((components (utils:kwd (subseq "RGBA" 0 len))))
+                          (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
                             (when (jungl:valid-pixel-format-p components comp-type t nil)
                               `(defmethod jungl:lisp-type->pixel-format ((comp-type (eql ,type)))
                                  (jungl:pixel-format ,components ',comp-type)))))
@@ -92,7 +92,7 @@
                      ',(loop :for i :below len :with offset = 0 :collect
                           `(,(if (<= len 4)
                                  (nth i '(:x :y :z :w))
-                                 (utils:kwd 'slot- i))
+                                 (cepl-utils:kwd 'slot- i))
                              ,comp-type :bit-size ,comp-bit-size
                              :bit-offset ,offset :bit-alignment 8)
                           :do (incf offset comp-bit-size)))

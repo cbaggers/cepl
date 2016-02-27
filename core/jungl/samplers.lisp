@@ -81,7 +81,7 @@
 ;; [TODO] does cl-opengl use multisample instead of ms?
 (defun calc-sampler-type (texture-type internal-format &optional shadow-sampler)
   "Makes the keyword that names the sampler-type for the given texture-type and format"
-  (utils:kwd
+  (cepl-utils:kwd
    (case internal-format
      ((:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm
            :r3-g3-b2 :rgb4 :rgb5 :rgb8 :rgb8-snorm :rgb10 :rgb12

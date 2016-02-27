@@ -39,7 +39,7 @@
           (slot-value object 'dimensions)))
 
 (defmethod print-mem ((thing c-array) &optional (size-in-bytes 64) (offset 0))
-  (utils::%print-mem (cffi:inc-pointer (pointer thing) offset) size-in-bytes))
+  (cepl-utils::%print-mem (cffi:inc-pointer (pointer thing) offset) size-in-bytes))
 
 ;;------------------------------------------------------------
 

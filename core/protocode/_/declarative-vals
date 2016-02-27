@@ -58,7 +58,7 @@ IMPL
 ;;        (list 'dval target))))
 
 (defun transform-bind (place dvals expr release-on-change)
-  (let* ((dvals (or (loop :for v :in dvals :if (utils:find-in-tree v expr)
+  (let* ((dvals (or (loop :for v :in dvals :if (cepl-utils:find-in-tree v expr)
                        :collect v)
                     dvals))
          (expr (if (consp expr)

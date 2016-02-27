@@ -491,7 +491,7 @@
                     &optional (shader-type
                                (shader-type-from-path file-path)))
   (restart-case
-      (make-shader (utils:file-to-string file-path) shader-type)
+      (make-shader (cepl-utils:file-to-string file-path) shader-type)
     (reload-recompile-shader () (load-shader file-path
                                              shader-type))))
 
