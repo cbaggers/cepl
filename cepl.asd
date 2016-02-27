@@ -73,5 +73,5 @@
 	       (:file "core/jungl/space/pos")
 	       (:file "core/jungl/space/gpu")
 
-	       (:file "core/predefined/gpu-structs.lisp")
+	       (:file "core/predefined/gpu-structs")
                (:file "core/repl")))
