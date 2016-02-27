@@ -73,7 +73,7 @@ quickproject and then run this again.")
   (asdf:system-relative-pathname :cepl "project-template/swank"))
 
 (defun make-project (pathname &key name (host :cepl.sdl2) (repl :swank)
-				(depends-on :skitter))
+				(depends-on '(:skitter :cepl.devil)))
   ;; this has a bunch of little hacks to make the experience of making
   ;; project's better, we can add lots of little helpers here when they
   ;; pick the only valid option. See the skitter.sdl2 example for an

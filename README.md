@@ -1,28 +1,22 @@
-# This is broken right now as am in middle of massive refactor
+_Note_ I'm currently working on getting the dependencies into quicklisp, I'd recommended waiting until that is done before trying this unless you are fine with cloning lot's of repos :)
 
-CEPL (Code Evaluate Play Loop) - [ALPHA]
-============================================
+# CEPL (Code Evaluate Play Loop) - [ALPHA]
 
-*"Lisp isn't a language, it's a building material." - Alan Kay*
+CEPL is a lispy and REPL friendly library for working with OpenGL.
 
-The goal of CEPL is to provide building materials for realtime graphics demos and games.
+It's goal is to feel like lisp just always had support for GPU programming in the standard.
 
-CEPL will not be an engine for a certain class of game but will provide primitives to aid
-in building graphical tools or engines.
-
-CEPL aims to provide or extend wrappers around core technologies (opengl, sdl, etc) and make
-them lispy and REPL friendly. The latter of those two points is worth noting. Too often an attempt
-to abstract complex ideas can produce tools which are great for handling the complex situation but they can end up ballooning simple examples and intimidating beginners.
+The usual approach to using it is to start it at the beginning of your lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how `*standard-output*` is treated for text.
 
 CEPL is in alpha. The API is closing in the what it needs to be but there are still many bugs.
 
-See the ./examples folder for experiments with opengl which is the current focus of the devlopment.
+See the [cepl.examples repository](https://github.com/cbaggers/cepl.examples) for some examples of how cepl can be used
 
 Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 
 -----------------------------------------------------------------------------------------
 
-**Requirements**
+# Requirements
 
 All of the following will be download automatically by quicklisp
 
@@ -40,121 +34,46 @@ These three will hopefully be in quicklisp at some point, until then download th
 * rtg-math - https://github.com/cbaggers/rtg-math
 * varjo - https://github.com/cbaggers/varjo
 
------------------------------------------------------------------------------------------
+*Cepl's Host*
 
-If this is your first time running cepl, use the 'Getting Started' instructions below. Whilst not neccesary it really does help debugging if one of the steps goes wrong.
-
-**Running on Linux or Windows**
-- Start slime
-- `(ql:quickload :cepl-default)`
-- `(cepl:repl)`
-
-**Running on OSX**
-
-If using sbcl
-
-- run platform-specific/osx-sbcl-launch.sh from the terminal
-- slime-connect
-- `(ql:quickload :cepl-default)`
-- `(cepl:repl)`
-
-else
-
-- Start your lisp's repl in the terminal
-- `(ql:quickload :cepl-osx)`
-- `(cepl-osx:start)`
-- slime-connect
-- `(ql:quickload :cepl-default)`
-- `(cepl:repl)`
+Cepl abstracts working with OpenGL but is not responsible for creating a window or GL context, this is handled by a `Host`. Right now the only supported host is `SDL2`, the system to load is called `cepl.sdl2`, you can find it here: [cepl.sdl2](https://github.com/cbaggers/cepl.sdl2)
 
 -----------------------------------------------------------------------------------------
 
-Getting Started
-===============
-- `cd` to your quicklisp/local-projects folder
-- clone `this repo`& `varjo`
+# Getting Started
 
-Now most days you will use `(ql:quickload :cepl-default)` to load all of cepl and it's supporting libs. However this first time please do the following. The reason for following these longer steps is to make it easy to see where the issues are.
+The best way to get started is to make a new project that uses cepl. Do the following in your repl to get set up:
 
-Step 1
-------
-`(ql:quickload :cepl)` Cepl is a standalone package so there should be no issues here. It is, however, useless without a backend to create the opengl context and provide input events.
+- First, run `(ql:quickload :cepl)`
+- Then run `(ql:quickload :quickproject)`. Cepl uses this to create a lisp project using it's own templates
+- Then run `(cepl:make-project "my-proj")`. This will use quickproject to make a new project with all the correct dependencies. Remember that cepl does not handle window managers or input so by default your new project will use the following
+ - cepl for the graphics
+ - [cepl.sdl2](https://github.com/cbaggers/cepl.sdl2) for the host
+ - [skitter](https://github.com/cbaggers/skitter) for handling input and events
+ - [cepl.devil](https://github.com/cbaggers/cepl.devil) for loading images
 
-Step 2
-------
-`(ql:quickload :cepl.sdl)` This is currently the only supported backend. Common lisp will need to be able to find the sdl2 c library. On linux PLEASE use your package manager. On osx use whichever package manager you prefer. On windows download from here: https://www.libsdl.org/download-2.0.php
+You are now ready to get started. How this is done varies a little between OS:
 
-At this point you should be able to run the following examples. See further down for advice on running the examples.
-```
-triangle.lisp
-basic-3d-objects.lisp
-texture-example.lisp
-ubo-test.lisp
-moving-triangles.lisp
-raymarcher.lisp
-```
+### Linux
 
-Step 3
-------
-`(ql:quickload :cepl-image-helper)` This uses the equally excellent cl-devil wrapper around the devil c library. You can guess the steps by now... Linux or osx -> Package Manager, Windows -> http://openil.sourceforge.net/download.php
+Simply run `(ql:quickproject "my-proj")` and then run `(cepl:repl)`. This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
 
-At this point you should be able to run the following examples
-```
-bloom.lisp
-cubemap.lisp
-```
+### Windows & OSX
 
-Step 4
-------
-`(ql:quickload :cepl-model-helper)` This relies on the wonderful classimp library which is a wrapper around the assimp c library. Again for linux and osx use your package manager. On windows download it here http://assimp.sourceforge.net/main_downloads.html
+In your new `my-proj` directory you will find a file called `run-session.lisp`. Run your lisp, loading this file. I use sbcl so it looks like this `sbcl --load "run-session.lisp`. Then you can connect your editor to this session (at port 4005) and carry on as usual. I use `slime` and `emacs` so I type `M-x slime-connect` and hit the `return` key twice.
 
-You should now be able to run the following examples
-```
-instancing.lisp
-normal-mapping.lisp
-refraction.lisp
-```
+Now you can run `(ql:quickproject "my-proj")` and then run `(cepl:repl)`. This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
 
-DONE
-----
-Let's run an example :)
+### Q: Why is the Windows/OSX start procedure more complicated?
+
+Both these platforms have restrictions over which thread is allowed to interact with the window manager (I will call this the 'UI thread'). This would be fine except that, when developing, most common-lisp programmers use a system like `slime` or `sly` to connect their editor to their lisp session and those systems normally run your code in a different thread.
+
+The choices are then to frequently dispatch jobs to the 'UI thread' (and accept that overhead) or start `slime`/`sly` in a way that guarentees the thread. In cepl we choose the latter as, although it does add one step to starting your project, it means you can ignore the detail whilst you are working.
+
+To get a full breakdown of the above issue run `(cepl:make-project :why)` in your repl.
+
+-----------------------------------------------------------------------------------------
 
 **Windows C Library Hack**
 
 If you are having issues getting the c libraries to load and just need to rule out whether lisp can find them, try putting them in the same folder as the lisp exe. For example `C:\Program Files\sbcl\`.
-
------------------------------------------------------------------------------------------
-
-Running an example
-------------------
-To do this we launch the cepl repl and compile the example.
-
-Step 1
-------
-In your repl evaluate `(cepl:repl)` You should see a 320x240 pixel window appear. It will almost certainly look like it is not responding, this is normal as we aren't handling events yet. Don't worry!
-
-Step 2
-------
-Evaluate `(in-package :cepl)`
-
-Step 3
-------
-Open the `moving-triangles.lisp` file in the examples directory and `C-c C-k` to compile the whole file
-
-Step 4
-------
-Evaluate `(run-loop)` in the repl
-
-Step 5
-------
-Enjoy! This is very alpha software but is still fun when you don't crash into bugs! Report the ones you find and please consider making a fix or two yourself.
-
-Thankyou so much for taking an interest.
-
-Baggers
-
------------------------------------------------------------------------------------------
-
-**Driving Ideas**
-
-(making (making a game) a game)
