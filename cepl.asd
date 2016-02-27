@@ -63,7 +63,6 @@
                (:file "core/jungl/map-g")
                (:file "core/jungl/fbo")
                (:file "core/jungl/blending-modes")
-               (:file "core/jungl/default-data")
                (:file "core/jungl/misc")
 
 	       (:file "core/jungl/space/space-errors")

@@ -110,8 +110,6 @@
   (:shadow :float :space)
   (:export :cls
            :gl-context
-           :*quad*
-           :*quad-stream*
            :current-viewport
            ;;- - - - - - - -
            :make-context
@@ -370,8 +368,6 @@
            ;;---
            :rqpos
            ;;---
-           :*quad*
-           :*quad-stream*
            :clear
 	   :step-host
            :swap
