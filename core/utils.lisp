@@ -488,3 +488,15 @@ source: ~s~%list-to-match: ~s" list list-to-match)
       (unless func-name (error "ni-call: could not find symbol ~s in package ~s"
 			       func-name package-name))
       (apply (symbol-function func-symb) args))))
+
+(defun ni-val (package-name symb-name)
+  "Non-interning get value"
+  (let ((p (find-package package-name)))
+    (unless p (error "ni-call: package ~s not found" package-name))
+    (let ((symb (find-symbol (if (keywordp symb-name)
+				 (symbol-name symb-name)
+				 symb-name)
+			     p)))
+      (unless symb-name (error "ni-call: could not find symbol ~s in package ~s"
+			       symb-name package-name))
+      (symbol-value symb))))

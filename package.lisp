@@ -89,7 +89,8 @@
            :last1
            :p->
 	   :split-string
-	   :ni-call))
+	   :ni-call
+	   :ni-val))
 
 (defpackage :%jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

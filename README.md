@@ -60,13 +60,21 @@ You are now ready to get started. How this is done varies a little between OS:
 
 ### Linux
 
-Simply run `(ql:quickproject "my-proj")` and then run `(cepl:repl)`. This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
+Simply run:
+- `(ql:quickproject "my-proj")`
+- `(in-package :my-proj)`
+- and lastly `(cepl:repl)`
+
+This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
 
 ### Windows & OSX
 
-In your new `my-proj` directory you will find a file called `run-session.lisp`. Run your lisp, loading this file. I use sbcl so it looks like this `sbcl --load "run-session.lisp`. Then call `(run-session)` and you can then connect your editor to this session (at port 4005) and carry on as usual. I use `slime` and `emacs` so I type `M-x slime-connect` and hit the `return` key twice.
+- In your new `my-proj` directory you will find a file called `run-session.lisp`
+- Run your lisp, loading this file. I use sbcl so it looks like this `sbcl --load "run-session.lisp`.
+- You can then connect your editor to this session (at port 4005) and carry on as usual. I use `slime` and `emacs` so I type `M-x slime-connect` and hit the `return` key twice.
+- Now you can run `(in-package :my-proj)` and `(cepl:repl)`.
 
-Now you can run `(ql:quickproject "my-proj")` and then run `(cepl:repl)`. This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
+This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
 
 ### Q: Why is the Windows/OSX start procedure more complicated?
 

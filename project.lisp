@@ -56,13 +56,10 @@ faced by those running multiple graphics card setups.")
 cepl uses the excellent quickproject to make it's projects, please load
 quickproject and then run this again.")
 
-(defvar *default-template-dir*
-  (asdf:system-relative-pathname :cepl "project-template/default"))
+(defvar *template-dir*
+  (asdf:system-relative-pathname :cepl "project-template/"))
 
-(defvar *swank-template-dir*
-  (asdf:system-relative-pathname :cepl "project-template/swank"))
-
-(defun make-project (pathname &key name (host :cepl.sdl2) (repl :swank)
+(defun make-project (pathname &key name (host :cepl.sdl2) (repl :slime)
 				(depends-on '(:skitter :cepl.devil)))
   ;; this has a bunch of little hacks to make the experience of making
   ;; project's better, we can add lots of little helpers here when they
@@ -87,28 +84,19 @@ quickproject and then run this again.")
 	   ;; with skitter.sdl2 there are two input packages that are
 	   ;; good to have :use'd by default so we add them
 	   (skitter-sdl-p (member :skitter.sdl2 depends-on))
-	   ;;
-	   (swank-p (or (eq repl :slime) (eq repl :swank))))
+	   (swank-p (or (eq repl :swank) (eq repl :slime)))
+	   (slynk-p (or (eq repl :sly) (eq repl :slynk))))
       (cepl-utils:ni-call
        :quickproject :make-project
        pathname
        :depends-on `(:cepl
 		     :temporal-functions
 		     ,host
-		     ,@(when (or (eq repl :swank) (eq repl :slime))
-			     `(:swank.live))
-		     ,@(when (or (eq repl :sly) (eq repl :slynk))
-			     `(:livesupport))
+		     ,@(when swank-p `(:swank))
+		     ,@(when slynk-p `(:slynk))
+		     ,@(when (or swank-p slynk-p) `(:livesupport))
 		     ,@depends-on)
        :name name
-       :template-directory (if swank-p
-			       *swank-template-dir*
-			       *default-template-dir*)
-       :template-parameters (list :start-repl-session (gen-thing repl)
-				  :skitter-sdl-p skitter-sdl-p))
+       :template-directory *template-dir*
+       :template-parameters (list :skitter-sdl-p skitter-sdl-p))
       name)))
-
-(defun gen-thing (repl)
-  (if (eq repl :swank)
-      "(swank:create-server :style style :dont-close t)"
-      "(identity)"))
