@@ -1,0 +1,93 @@
+
+sdl has hardcoded gl version fix this
+
+-----
+
+element-type for texture
+
+-----
+
+finish changing vertex-stream to buffer-stream
+
+-----
+
+unless overriden, when creating a cube map texture set the wrapping to clamp-to-edge
+
+-----
+
+allow setting name for progress var
+
+-----
+
+normalize value when set dir camera
+
+-----
+
+cepl's ability to 'continue' seems hampered on osx, sdl2s restart is confusing
+
+-----
+
+q:make-quat-from-fixed-angles is broken, weird scaling and shit
+
+-----
+
+defun-g should check if arg types are quoted, error if they are
+
+-----
+
+* check qualifiers are valid in varjo
+* inherit qualifiers from previous stage
+* uniforms saying arg incompatible for basic changes...merge 'em
+
+-----
+
+* get gamepad input stable
+* optimize the vector/matrix/quaternion functions
+* live version of tdefun
+
+-----
+
+* Object that represents the opengl state machine. Directly address slots etc
+* Copy between buffer (gpu-arrays)
+* Research safe foreign data initialisation so an error doesnt cause a memrory leak
+  look at with-foreign-object for hints
+* read http://www.opengl.org/wiki/Buffer_Object and look at the buffer corruption section
+
+-----
+
+* make-gpu-array with list is failing
+  ok at really odd  times so is from gl-array... this is odd
+  seems to be when created using defparameter...so it doesnt like
+  top level for some reason?
+- Something to do with null lexical environment
+
+* add set culling? combined enabling, setting winding-order and
+  cull-face in one move.
+
+* stream could have base offset so draw-element-base thingy works
+
+* enable is odd.... can things be made better by spinning out
+  it's functionality to other functions?
+
+* uniform buffer objects
+
+* deletion of things in pools in jungl
+
+* :triangle, :lines, etc are called the render-mode or primitive
+   do our arg names reflect this?
+
+* bindbufferrange - read about it
+
+* work through the glossaries of arc-synth and check args names
+   in jungl for conformance
+
+* Render buffers...not urgent in any way but we should support them
+  I'm thinking that if a strict subset of the commands that work on
+  fbos work on render buffers, then I will make them a special case
+  of fbo.
+
+* Default framebuffer should appear to be a user fbo including attachment names
+  No sense having this forward backward crap unless it provides something
+  real I dont know about yet.
+
+* GL-Free for attachments

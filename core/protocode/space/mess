@@ -1,0 +1,53 @@
+(defmacro with-space (s &body body)
+  (declare (ignore s))
+  `(progn ,@body))
+
+(defmacro in-normal-space (s &body body)
+  (declare (ignore s))
+  `(progn ,@body))
+
+(defmacro in-space (s &body body)
+  (declare (ignore s))
+  `(progn ,@body))
+
+
+(map-g #'first-render data)
+
+;; sets default space for the first stage (vertex)
+(in-space s
+  (map-g #'first-render data))
+
+
+
+(defmacro in (s &body body)
+  (if (symbolp s)
+      (%in-space-object s body)
+      (%in-space-values s body)))
+
+(in world-space
+  (map-g #'first-render data))
+
+(in ((:from nil :to *clip-space* :is n->c-matrix)
+     (:from nil :to *world-space* :is n->c-matrix))
+  (map-g #'first-render data))
+
+
+
+
+(defmacro with-local-space ((space-name &rest relationships) &body body)
+  `(with-local-spaces ((,space-name ,@relationships))
+     ,@body))
+
+(defmacro with-local-spaces (space-definitions &body body)
+  )
+
+(defvar -local-spaces-
+  (make-array ))
+
+(with-local-space (model (:to *clip-space* m->c-matrix)
+			 (:from *world-space* w->m-matrix))
+  )
+
+(with-model-space ((:to *clip-space* m->c-matrix)
+		   (:from *world-space* w->m-matrix))
+  )

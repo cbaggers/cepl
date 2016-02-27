@@ -8,6 +8,8 @@
 (defgeneric size (object))
 (defgeneric norm (object))
 (defgeneric col (object))
+(defgeneric tangent (object))
+(defgeneric bi-tangent (object))
 
  ;; will return a list of fixnums
 (defgeneric resolution (object))
@@ -30,8 +32,9 @@
 (defgeneric state (object))
 (defgeneric timestamp (object))
 
-
-;; camera/camera.lisp:35:(defmethod (setf near) (distance (camera camera))
-;; camera/camera.lisp:39:(defmethod (setf far) (distance (camera camera))
-;; camera/camera.lisp:43:(defmethod (setf fov) (angle (camera camera))
-;; camera/camera.lisp:47:(defmethod (setf frame-size) (frame-size (camera camera))
+(defgeneric (setf pos) (val obj))
+(defgeneric (setf norm) (val obj))
+(defgeneric (setf col) (val obj))
+(defgeneric (setf tex) (val obj))
+(defgeneric (setf tangent) (val object))
+(defgeneric (setf bi-tangent) (val object))

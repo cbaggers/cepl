@@ -86,10 +86,11 @@
   (some 0 :type fixnum)
   (vars 0 :type fixnum))
 
-(defun-static restore-gl-state ((state-cache gl-state-cache)) -> null
-  (format t "~%some = ~a vars = ~a~%"
-          (gl-state-cache-some state-cache)
-          (gl-state-cache-vars state-cache))
+(declaim (ftype (function (gl-state-cache) null) restore-gl-state))
+(defun restore-gl-state (state-cache)
+  (declare (gl-state-cache state-cache))
+  (format t "~%some = ~a vars = ~a~%" (gl-state-cache-some state-cache)
+	  (gl-state-cache-vars state-cache))
   nil)
 
 (defmacro with-shared-gl-state ((var-name &optional state-object) &body body)

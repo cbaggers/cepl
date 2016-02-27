@@ -329,6 +329,9 @@
                 (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
                         ,@body)))))
 
+(defmacro asserting (form error-name &rest keys-to-error)
+  `(unless ,form (error ',error-name ,@keys-to-error)))
+
 
 ;; ------------------------------------------------------------
 ;; dumb little func to pretty print a memory table
@@ -351,7 +354,7 @@
   (let* ((size (if (oddp size-in-bytes) (1+ size-in-bytes) size-in-bytes))
          (data (loop :for i :below size :collect
                   (cffi:mem-ref pointer :uchar i)))
-         (batched (utils:group data 16))
+         (batched (group data 16))
          (batched-chars (mapcar
                          (lambda (x)
                            (mapcar
@@ -372,6 +375,24 @@
                   :collect "     ")
                chars))))
 
+(defmacro with-hash ((var-name key) hash-table &body body)
+  (let ((k (gensym "key"))
+	(ht (gensym "hash-table")))
+    `(let ((,k ,key)
+	   (,ht ,hash-table))
+       (symbol-macrolet ((,var-name (gethash ,k ,ht)))
+	 ,@body))))
+
+(defmacro with-hash* (var-key-pairs hash-table &body body)
+  (let ((keys (loop :for x in var-key-pairs :collect (gensym "key")))
+	(ht (gensym "hash-table")))
+    `(let ((,ht ,hash-table)
+	   ,@(mapcar (lambda (_ _1) `(,_ ,(second _1)))
+		     keys var-key-pairs))
+       (symbol-macrolet
+	   ,(mapcar (lambda (k p) `(,(first p) (gethash ,k ,ht)))
+		    keys var-key-pairs)
+	 ,@body))))
 
 (defun map-hash (function hash-table)
   "map through a hash and actually return something"
@@ -419,3 +440,63 @@
 (defmacro ---block-doc--- (doc-string &body body)
   (declare (ignore doc-string))
   `(progn ,@body))
+
+(defgeneric make-length-same
+    (list list-to-match &optional fill-value error-on-shorten-p))
+
+(defmethod make-length-same ((list list) (list-to-match list)
+			     &optional fill-value (error-on-shorten-p t))
+  (let ((l1 (length list))
+	(l2 (length list-to-match)))
+    (cond ((= l1 l2) list)
+	  ((< l1 l2) (append list (loop :for i :from l1 :below l2 :collect
+				     fill-value)))
+	  (t (if error-on-shorten-p
+		 (error "make-length-same wont shrink the source list:
+source: ~s~%list-to-match: ~s" list list-to-match)
+		 (subseq list 0 (length list-to-match)))))))
+
+(defmacro case= (form &body cases)
+  (let ((g (gensym "val")))
+    (labels ((wrap-case (c) `((= ,g ,(first c)) ,@(rest c))))
+      (let* ((cases-but1 (mapcar #'wrap-case (butlast cases)))
+	     (last-case (car (last cases)))
+	     (last-case (if (eq (car last-case) 'otherwise)
+			    `(t ,@(rest last-case))
+			    (wrap-case last-case)))
+	     (cases (append cases-but1 (list last-case))))
+	`(let ((,g ,form))
+	   (cond ,@cases))))))
+
+(defun split-string (delimiter string)
+  (let* ((string (string-trim (list delimiter) string))
+	 (result '(nil)))
+    (loop :for c :across string
+       :if (char= c delimiter) :do (push nil result)
+       :else :do (push c (first result)))
+    (mapcar (lambda (x) (concatenate 'string x))
+	    (reverse result))))
+
+(defun ni-call (package-name func-name &rest args)
+  "Non-interning funcall"
+  (let ((p (find-package package-name)))
+    (unless p (error "ni-call: package ~s not found" package-name))
+    (let ((func-symb (find-symbol (if (keywordp func-name)
+				      (symbol-name func-name)
+				      func-name)
+				  p)))
+      (unless func-name (error "ni-call: could not find symbol ~s in package ~s"
+			       func-name package-name))
+      (apply (symbol-function func-symb) args))))
+
+(defun ni-val (package-name symb-name)
+  "Non-interning get value"
+  (let ((p (find-package package-name)))
+    (unless p (error "ni-call: package ~s not found" package-name))
+    (let ((symb (find-symbol (if (keywordp symb-name)
+				 (symbol-name symb-name)
+				 symb-name)
+			     p)))
+      (unless symb-name (error "ni-call: could not find symbol ~s in package ~s"
+			       symb-name package-name))
+      (symbol-value symb))))

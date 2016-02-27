@@ -1,11 +1,3 @@
-;; This software is Copyright (c) 2012 Chris Bagley
-;; (techsnuffle<at>gmail<dot>com)
-;; Chris Bagley grants you the rights to
-;; distribute and use this software as governed
-;; by the terms of the Lisp Lesser GNU Public License
-;; (http://opensource.franz.com/preamble.html),
-;; known as the LLGPL.
-
 ;;;; cepl.asd
 
 #+(and darwin sbcl)
@@ -18,70 +10,66 @@
                #:cl-plus-c
                #:cl-fad
                #:cl-opengl
-               #:swank
+	       #:cl-ppcre
+	       #:rtg-math
                #:varjo
-               #:temporal-functions
-               #:cl-utilities
-               #:cl-ppcre
-               #:symbol-munger
-               #:named-readtables)
-  :components ((:file "core/package")
-               (:file "core/backend")
+               #:named-readtables
+	       #:fn)
+  :components ((:file "package")
+               (:file "host/api")
+	       (:file "host/step")
                (:file "core/utils")
-               (:file "core/static")
+	       (:file "project")
+	       (:file "core/lifecycle")
+	       (:file "core/continuable")
                (:file "core/generics")
-               (:file "core/maths/base-maths")
-               (:file "core/maths/maths")
-               (:file "core/maths/vectors/base-vectors")
-               (:file "core/maths/vectors/vector2")
-               (:file "core/maths/vectors/vector3")
-               (:file "core/maths/vectors/vector4")
-               (:file "core/maths/vectors/vectors")
-               (:file "core/maths/matrices/base-matrices")
-               (:file "core/maths/matrices/matrix3")
-               (:file "core/maths/matrices/matrix4")
-               (:file "core/maths/matrices/matrices")
-               (:file "core/maths/quaternions")
-               (:file "core/maths/projection")
-               (:file "core/events/base-events")
-               (:file "core/events/event-classes")
-               (:file "core/events/events")
-               (:file "core/cgl/cl-opengl-replacements")
-               (:file "core/cgl/viewport")
-               (:file "core/cgl/context-classes")
-               (:file "core/cgl/context")
-               (:file "core/cgl/generics")
-               (:file "core/cgl/pixel-format")
-               (:file "core/cgl/cffi-extra-primitive-types")
-               (:file "core/cgl/gl-extras")
-               (:file "core/cgl/c-arrays")
-               (:file "core/cgl/structs")
-               (:file "core/cgl/predefined-structs")
-               (:file "core/cgl/equivalent-types")
-               (:file "core/cgl/buffers")
-               (:file "core/cgl/buffer-gpu-arrays")
-               (:file "core/cgl/vaos")
-               (:file "core/cgl/vertex-streams")
-               (:file "core/cgl/uniforms")
-               (:file "core/cgl/gpu-macros")
-               (:file "core/cgl/gpu-pipeline-base")
-               (:file "core/cgl/gpu-functions")
-               (:file "core/cgl/gpu-shader-pipeline")
-               (:file "core/cgl/gpu-compose-pipeline")
-               (:file "core/cgl/ubo")
-               (:file "core/cgl/textures")
-               (:file "core/cgl/samplers")
-               (:file "core/cgl/map-g")
-               (:file "core/cgl/fbo")
-               (:file "core/cgl/blending-modes")
-               (:file "core/cgl/default-data")
-               (:file "core/cgl/misc")
-               (:file "core/camera/camera")
-               (:file "core/space/node")
-               (:file "core/space/vspace")
-               (:file "core/live/live-macros")
-               (:file "core/live/bootstrapping")
-               (:file "core/time/time")
-               (:file "core/primitives/primitives")
-               (:file "core/repl")
-               (:file "examples/examples-data")))
+
+	       (:file "core/jungl/types")
+	       (:file "core/jungl/space/nht-routes")
+	       (:file "core/jungl/space/space")
+	       (:file "core/jungl/space/predefined-spaces")
+
+	       (:file "core/jungl/global-vars")
+               (:file "core/jungl/generics")
+	       (:file "core/jungl/render-state")
+               (:file "core/jungl/errors")
+               (:file "core/jungl/cl-opengl-replacements")
+               (:file "core/jungl/viewport")
+               (:file "core/jungl/context-classes")
+               (:file "core/jungl/context")
+               (:file "core/jungl/helpers")
+               (:file "core/jungl/pixel-format")
+               (:file "core/jungl/cffi-extra-primitive-types")
+               (:file "core/jungl/gl-extras")
+               (:file "core/jungl/c-arrays")
+               (:file "core/jungl/structs")
+               (:file "core/jungl/buffers")
+               (:file "core/jungl/gpu-arrays-buffer-backed")
+               (:file "core/jungl/vaos")
+               (:file "core/jungl/vertex-streams")
+               (:file "core/jungl/uniforms")
+               (:file "core/jungl/map-g-constant")
+	       (:file "core/jungl/compile-passes")
+               (:file "core/jungl/gpu-macros")
+               (:file "core/jungl/gpu-pipeline-base")
+               (:file "core/jungl/gpu-pipeline-validation")
+               (:file "core/jungl/gpu-functions")
+               (:file "core/jungl/gpu-shader-pipeline")
+               (:file "core/jungl/gpu-compose-pipeline")
+               (:file "core/jungl/ubo")
+               (:file "core/jungl/textures")
+               (:file "core/jungl/samplers")
+               (:file "core/jungl/map-g")
+               (:file "core/jungl/fbo")
+               (:file "core/jungl/blending-modes")
+               (:file "core/jungl/misc")
+
+	       (:file "core/jungl/space/space-errors")
+	       (:file "core/jungl/space/space-walking")
+	       (:file "core/jungl/space/space-transforms")
+
+	       (:file "core/jungl/space/pos")
+	       (:file "core/jungl/space/gpu")
+
+	       (:file "core/predefined/gpu-structs")
+               (:file "core/repl")))
