@@ -1,5 +1,3 @@
-_Note_ I'm currently working on getting the dependencies into quicklisp, I'd recommended waiting until that is done before trying this unless you are fine with cloning lot's of repos :)
-
 # CEPL (Code Evaluate Play Loop) - [ALPHA]
 
 CEPL is a lispy and REPL friendly library for working with OpenGL.
