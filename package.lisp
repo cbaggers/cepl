@@ -5,13 +5,11 @@
   (:export :init
            :request-context
            :shutdown
-           :get-step-func
-           :get-swap-func
-	   :get-event-pump-func
 	   :set-primary-thread-and-run
 	   ;;---
-	   :cache-step-func
-	   :cache-swap-func
+	   :set-step-func
+	   :set-swap-func
+	   :set-default-swap-arg
 	   :host-step
 	   :host-swap))
 

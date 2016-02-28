@@ -33,8 +33,7 @@
             (slot-value context 'fbo) (%make-default-framebuffer
                                        dimensions t t))
       (map nil #'funcall *on-context*)
-      (cepl.host:cache-step-func)
-      (cepl.host:cache-swap-func *gl-window*)
+      (cepl.host:set-default-swap-arg *gl-window*)
       (cls))))
 
 
