@@ -58,6 +58,7 @@
              (force-bind-buffer buffer :array-buffer)
              (loop :for (type normalized stride pointer)
                 :in (rest format)
+		:do (just-ignore normalized)
                 :do (setf attr-num
                           (+ attr-num
                              (gl-assign-attrib-pointers

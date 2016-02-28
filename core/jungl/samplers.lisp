@@ -325,9 +325,10 @@
 
 ;; This is how you use samplers.
 (defmacro with-sampling (bindings-pairs &body body)
-  (let* ((tex-syms (loop for i in bindings-pairs collect (gensym "texture")))
-         (revert-syms (loop for i in bindings-pairs collect
-                           (gensym "original-id")))
+  (let* ((tex-syms (cepl-utils:n-of* (gensym "texture")
+				     (length bindings-pairs)))
+         (revert-syms (cepl-utils:n-of* (gensym "original-id")
+					(length bindings-pairs)))
          (letting (loop for b in bindings-pairs
                      for ts in tex-syms
                      for rs in revert-syms

@@ -113,6 +113,7 @@
          (arg-val-map (or (gethash 'uniform-vals tp-meta)
                           (let ((h (make-hash-table)))
                             (loop :for (n . r) :in uniforms
+			       :do (just-ignore r)
                                :do (setf (gethash n h) n))
                             h)))
          (passes (mapcar λ(cons _ (make-pass-env arg-val-map))
@@ -220,6 +221,7 @@
 (defmethod run-pass (v-compile-result (pass %uniform-transform-pass)
                      env original-in-args original-uniforms
                      original-context)
+  (declare (ignore env))
   (let* ((changed (not (null (find-unused-uniforms v-compile-result))))
          (new-uniforms
           (when changed (remove-unused-uniforms v-compile-result))))

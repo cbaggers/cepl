@@ -367,7 +367,7 @@ for any array of, up to and including, 4 dimensions."
   (let ((cur index))
     (nreverse
      (loop :for s :in subscripts :collect
-        (multiple-value-bind (x rem) (floor cur (car subscripts))
+        (multiple-value-bind (x rem) (floor cur s)
           (setq cur x)
           rem)))))
 

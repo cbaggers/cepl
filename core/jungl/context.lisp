@@ -76,10 +76,11 @@
 (defmethod clear-gl-context-cache ((object gl-context))
   (clrhash (slot-value object 'cache)))
 
-(defmacro def-cached-context-reader (name &key (enum-name name) index)
+(defmacro def-cached-context-reader (name &key (enum-name name) index
+					    no-defgeneric)
   (let ((kwd-name (kwd enum-name)))
     `(progn
-       (defgeneric ,name (context))
+       ,(unless no-defgeneric `(defgeneric ,name (context)))
        (defmethod ,name ((context gl-context))
 	 (with-slots (cache) context
 	   (or (gethash ,kwd-name cache)
@@ -149,7 +150,7 @@
 
 ;; GL_TIMESTAMP (GLint64, see glQueryCounter)
 ;; The 64-bit value of the current GL time.
-(def-cached-context-reader timestamp)
+(def-cached-context-reader timestamp :no-defgeneric t)
 
 ;;------------------------------------------------------------
 

@@ -14,6 +14,12 @@
 
 (defun listify (x) (if (listp x) x (list x)))
 
+(defun n-of (thing count)
+  (loop :for i :below count :collect thing))
+
+(defmacro n-of* (form count)
+  `(loop :for i :below ,count :collect ,form))
+
 (defmacro dbind (lambda-list expressions &body body)
   `(destructuring-bind ,lambda-list ,expressions ,@body))
 
@@ -384,7 +390,7 @@
 	 ,@body))))
 
 (defmacro with-hash* (var-key-pairs hash-table &body body)
-  (let ((keys (loop :for x in var-key-pairs :collect (gensym "key")))
+  (let ((keys (n-of* (gensym "key") (length var-key-pairs)))
 	(ht (gensym "hash-table")))
     `(let ((,ht ,hash-table)
 	   ,@(mapcar (lambda (_ _1) `(,_ ,(second _1)))
@@ -500,3 +506,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
       (unless symb-name (error "ni-call: could not find symbol ~s in package ~s"
 			       symb-name package-name))
       (symbol-value symb))))
+
+(defun just-ignore (&rest args)
+  (declare (ignore args))
+  nil)

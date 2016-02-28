@@ -480,7 +480,7 @@
     (uploadable-lisp-seq internal-format) ;; we cant infer all types so we
     ;; have to trust and then the
     ;; c-array code handle it
-    (t (error 'make-tex-array-not-match-type
+    (t (error 'make-tex-array-not-match-type2
               :element-type element-type
               :initial-contents initial-contents))))
 

@@ -137,8 +137,9 @@
      (%gen-attachment-blend pattern fbo body))))
 
 (defun %gen-attachment-blend (attachments fbo body)
-  (let ((a-syms (loop for a in attachments collect (gensym "attachment")))
-        (override-syms (loop for a in attachments collect (gensym "override"))))
+  (let ((a-syms (cepl-utils:n-of* (gensym "attachment") (length attachments)))
+        (override-syms (cepl-utils:n-of* (gensym "override")
+					 (length attachments))))
     ;; First we want to get all the lookups of attachment state done
     `(let* ,(cons
              `(%current-blend-params (%fbo-blending-params ,fbo))

@@ -126,9 +126,12 @@
   (not (member :no-iuniforms context)))
 
 (defun %implicit-uniforms-dont-have-type-mismatches (uniforms)
-  (loop :for (name type . i) :in uniforms :always
+  (loop :for (name type . i) :in uniforms
+     :do (just-ignore i)
+     :always
      (loop :for (n tp . i_)
         :in (remove-if-not (lambda (x) (equal (car x) name)) uniforms)
+	:do (just-ignore n i_)
         :always (equal type tp))))
 
 (defun %compile-closure (code)
@@ -382,6 +385,7 @@
    (loop
       :for (l-slot-name v-slot-type) :in (varjo:v-slots type)
       :for (pslot-type array-length . rest) := (listify v-slot-type)
+      :do (just-ignore rest)
       :append
       (let* ((pslot-type (type-spec->type pslot-type))
              (glsl-name (varjo:safe-glsl-name-string l-slot-name))

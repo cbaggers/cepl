@@ -89,7 +89,9 @@
            :p->
 	   :split-string
 	   :ni-call
-	   :ni-val))
+	   :ni-val
+	   :n-of
+	   :n-of*))
 
 (defpackage :%jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -106,7 +108,8 @@
   (:shadowing-import-from :rtg-math :v!)
   (:import-from :cepl-utils
                 :deferror
-                :print-mem)
+                :print-mem
+		:just-ignore)
   (:shadow :float :space)
   (:export :cls
            :gl-context

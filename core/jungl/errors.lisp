@@ -83,7 +83,7 @@ no initial-contents to infer the type from")
 element-type of ~s"
   element-type internal-format array-type)
 
-(deferror make-tex-array-not-match-type () (element-type initial-contents)
+(deferror make-tex-array-not-match-type2 () (element-type initial-contents)
     "CEPL - make-texture: Trying to make texture with an element-type of ~s,
 however the initial-contents provided do not seem to be compatible:~%~s"
   element-type initial-contents)
