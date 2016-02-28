@@ -29,6 +29,7 @@
       'defmethod
       'defun))
 
+(defgeneric s-slot-args (slot args))
 (defmethod s-slot-args ((slot gl-struct-slot) (args list))
   (labels ((fun-arg (x) (if (listp x) (first x) x)))
     (if (s-uses-method-p slot)

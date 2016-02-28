@@ -32,7 +32,12 @@
 (defgeneric state (object))
 (defgeneric timestamp (object))
 
+
 (defgeneric (setf pos) (val obj))
+(defgeneric (setf rot) (val obj))
+(defgeneric (setf dir) (val obj))
+(defgeneric (setf vec) (val obj))
+(defgeneric (setf size) (val object))
 (defgeneric (setf norm) (val obj))
 (defgeneric (setf col) (val obj))
 (defgeneric (setf tex) (val obj))
