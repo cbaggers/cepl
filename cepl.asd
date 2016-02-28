@@ -5,6 +5,10 @@
   (sb-int:set-floating-point-modes :traps nil))
 
 (asdf:defsystem #:cepl
+  :description "Fast lispy way to work with OpenGL"
+  :author "Chris Bagley (Baggers) <techsnuffle@gmail.com>"
+  :license "BSD 2 Clause"
+  :depends-on (#:cepl #:sdl2)
   :serial t
   :depends-on (#:cl-autowrap
                #:cl-plus-c
