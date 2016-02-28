@@ -26,11 +26,8 @@ All of the following will be download automatically by quicklisp
 * cl-ppcre
 * named-readtables
 * fn
-
-These three will hopefully be in quicklisp at some point, until then download them at the links provided.
-
-* rtg-math - https://github.com/cbaggers/rtg-math
-* varjo - https://github.com/cbaggers/varjo
+* * rtg-math
+* varjo
 
 ## C Library dependency
 
