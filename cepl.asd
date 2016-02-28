@@ -23,6 +23,7 @@
 	       (:file "core/lifecycle")
 	       (:file "core/continuable")
                (:file "core/generics")
+	       (:file "core/jungl/generics")
 
 	       (:file "core/jungl/types")
 	       (:file "core/jungl/space/constants")
@@ -31,7 +32,6 @@
 	       (:file "core/jungl/space/predefined-spaces")
 
 	       (:file "core/jungl/global-vars")
-               (:file "core/jungl/generics")
 	       (:file "core/jungl/render-state")
                (:file "core/jungl/errors")
                (:file "core/jungl/cl-opengl-replacements")

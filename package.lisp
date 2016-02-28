@@ -91,7 +91,8 @@
 	   :ni-call
 	   :ni-val
 	   :n-of
-	   :n-of*))
+	   :n-of*
+	   :just-ignore))
 
 (defpackage :%jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
