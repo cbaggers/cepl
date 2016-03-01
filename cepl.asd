@@ -8,6 +8,7 @@
   :description "Fast lispy way to work with OpenGL"
   :author "Chris Bagley (Baggers) <techsnuffle@gmail.com>"
   :license "BSD 2 Clause"
+  #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :serial t
   :depends-on (#:cl-autowrap
                #:cl-plus-c
