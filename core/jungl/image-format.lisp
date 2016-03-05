@@ -157,34 +157,9 @@
 ;;----------------------------------------------------------------------
 
 (defvar *color-renderable-formats*
-  '(:r8 :r16
-    :rg8 :rg16
-    :rgb8
-    :rgba2 :rgba4 :rgba8 :rgba16
-
-    :r8-snorm :r16-snorm
-    :rg8-snorm :rg16-snorm
-    :rgb8-snorm :rgb16-snorm
-    :rgba8-snorm
-
-    :r8i :r16i :r32i
-    :rg8i :rg16i :rg32i
-    :rgb8i :rgb16i :rgb32i
-    :rgba8i :rgba16i :rgba32i
-
-    :r32ui
-    :rg8ui :rg16ui :rg32ui
-    :rgb8ui :rgb16ui :rgb32ui
-    :rgba8ui :rgba16ui :rgba32ui
-
-    :r32f
-    :rg32f
-    :rgb32f
-    :rgba32f
-
-    :srgb8 :srgb8-alpha8
-
-    :r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui))
+  (append *regular-color-formats*
+	  *srgb-color-formats*
+	  '(:r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui)))
 
 ;;----------------------------------------------------------------------
 
