@@ -43,6 +43,7 @@
                (:file "core/jungl/context-classes")
                (:file "core/jungl/context")
                (:file "core/jungl/helpers")
+	       (:file "core/jungl/image-format")
                (:file "core/jungl/pixel-format")
                (:file "core/jungl/cffi-extra-primitive-types")
                (:file "core/jungl/gl-extras")
