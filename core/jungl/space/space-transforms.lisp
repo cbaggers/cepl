@@ -97,6 +97,8 @@
 		 (m4:* accum
 		       (%rspace-to-neighbour-transform current-id next-id))))
 	(if (and route-restriction
+		 (not (eq route-restriction space-a-id))
+		 (not (eq route-restriction space-b-id))
 		 (jungl.space.routes::on-route-p
 		  space-a-id space-b-id clip-space-id-cached))
 	    ;;
