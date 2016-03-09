@@ -87,6 +87,8 @@
                   ,(gpu-sub-array monster-col-data 1000 2000))
      :index-array monster-index-array
      :length 1000)"
+  (unless gpu-arrays
+    (error 'make-buffer-stream-with-no-gpu-arrays))
   (let* ((gpu-arrays (listify gpu-arrays))
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER

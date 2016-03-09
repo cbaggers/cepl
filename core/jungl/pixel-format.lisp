@@ -43,11 +43,7 @@
 (defvar *gl-integral-pixel-types*
   '(:ubyte :byte :ushort :short :uint :int))
 
-(defvar *expanded-gl-type-names*
-  '((:uint :unsigned-int) (:ubyte :unsigned-byte)
-    (:ubyte :unsigned-byte) (:ushort :unsigned-short)))
-
-(defvar *gl-pixel-to-internal-map*
+(defparameter *gl-pixel-to-internal-map*
   '(((:depth t :short nil) :depth-component16)
     ((:depth t :int nil) :depth-component32)
     ((:depth t :float nil) :depth-component32f)
@@ -70,6 +66,10 @@
     ((:rg t :float nil) :rg32f)
     ((:rgb t :float nil) :rgb32f)
     ((:rgba t :float nil) :rgba32f)
+    ((:r t :float nil) :r16f)
+    ((:rg t :float nil) :rg16f)
+    ((:rgb t :float nil) :rgb16f)
+    ((:rgba t :float nil) :rgba16f)
     ((:r nil :byte nil) :r8i)
     ((:r nil :ubyte nil) :r8ui)
     ((:r nil :short nil) :r16i)
@@ -184,8 +184,7 @@
                        components))
          (sizes (pixel-format-sizes pixel-format))
          (type (pixel-format-type pixel-format))
-         (expanded-type (or (second (assoc type *expanded-gl-type-names*))
-                            type)))
+         (expanded-type (expand-gl-type-name type)))
     (let ((format (if (pixel-format-normalise pixel-format)
                       gl-comps
                       (intern (format nil "~a-INTEGER" gl-comps) 'keyword)))

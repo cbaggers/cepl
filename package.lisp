@@ -278,7 +278,7 @@
            ;;----------
            :make-fbo
            :make-fbos
-           :with-bind-fbo
+           :with-fbo-bound
            :fbo-attach
            :fbo-detach
            :attachment
@@ -430,7 +430,7 @@
            :fbo
            :make-fbo
            :make-fbos
-           :with-bind-fbo
+           :with-fbo-bound
            :with-fbo-slots
            :fbo-attach
            :attachment

@@ -132,3 +132,6 @@ internal texture format"
 (deferror dont-define-space-to-self () (space)
     "with-model-space: please dont try redefining the relationship between ~s and itself."
   space)
+
+(deferror make-buffer-stream-with-no-gpu-arrays () ()
+    "Cepl: Invalid attempt to make buffer-stream with no gpu-arrays")

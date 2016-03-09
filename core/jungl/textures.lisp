@@ -400,7 +400,8 @@
                                      buffer-storage rectangle multisample
                                      immutable initial-contents lod-bias min-lod
                                      max-lod minify-filter magnify-filter wrap
-                                     compare generate-mipmaps element-type))
+                                     compare generate-mipmaps element-type
+				     internal-format))
       ;; buffer backed - note that by now if there were intitial contents, they
       ;;                 are now a c-array
       (buffer-storage
@@ -509,17 +510,19 @@
      rectangle multisample immutable initial-contents
      lod-bias min-lod max-lod minify-filter
      magnify-filter wrap compare generate-mipmaps
-     element-type)
-  (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions
-                                   :element-type element-type))
-    (make-texture tmp :mipmap mipmap
-                  :layer-count layer-count :cubes cubes :rectangle rectangle
-                  :multisample multisample :immutable immutable
-                  :buffer-storage buffer-storage
-                  :generate-mipmaps generate-mipmaps :lod-bias lod-bias
-                  :min-lod min-lod :max-lod max-lod
-                  :minify-filter minify-filter :magnify-filter magnify-filter
-                  :wrap wrap :compare compare)))
+     element-type internal-format)
+  (declare (ignore element-type))
+  (let ((element-type (internal-format->lisp-type internal-format)))
+    (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions
+				     :element-type element-type))
+      (make-texture tmp :mipmap mipmap
+		    :layer-count layer-count :cubes cubes :rectangle rectangle
+		    :multisample multisample :immutable immutable
+		    :buffer-storage buffer-storage
+		    :generate-mipmaps generate-mipmaps :lod-bias lod-bias
+		    :min-lod min-lod :max-lod max-lod
+		    :minify-filter minify-filter :magnify-filter magnify-filter
+		    :wrap wrap :compare compare))))
 
 (defun %make-cube-texture (dimensions mipmap layer-count cubes buffer-storage
                            rectangle multisample immutable initial-contents
@@ -723,9 +726,17 @@
   (push-g object (texref destination)))
 (defmethod push-g ((object list) (destination gl-texture))
   (push-g object (texref destination)))
+(defmethod push-g ((object array) (destination gl-texture))
+  (push-g object (texref destination)))
 
-;; [TODO] push-g taking lists
 (defmethod push-g ((object list) (destination gpu-array-t))
+  (with-c-array (c-a (make-c-array object
+                                   :dimensions (dimensions destination)
+                                   :element-type (internal-format->pixel-format
+                                                  (internal-format destination))))
+    (push-g c-a destination)))
+
+(defmethod push-g ((object array) (destination gpu-array-t))
   (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (internal-format->pixel-format

@@ -2,30 +2,40 @@
 
 ;;----------------------------------------------------------------------
 
-(defvar *regular-color-formats*
-  '(;; Unsigned normalized integer format
-    :r8 :r16 :rg8 :rg16 :rgb4 :rgb5 :rgb8 :rgb10 :rgb12 :rgb16
-    :rgba2 :rgba4 :rgba5 :rgba8 :rgba12 :rgba16
+(defvar *unsigned-normalized-integer-formats*
+  '(:r8 :r16 :rg8 :rg16 :rgb4 :rgb5 :rgb8 :rgb10 :rgb12 :rgb16
+    :rgba2 :rgba4 :rgba5 :rgba8 :rgba12 :rgba16))
 
-    ;; Signed normalized integer format.
-    :r8_snorm :r16_snorm :rg8_snorm :rg16_snorm :rgb8_snorm :rgb16_snorm
-    :rgba8_snorm :rgba16_snorm
+(defvar *signed-normalized-integer-formats*
+  '(:r8_snorm :r16_snorm :rg8_snorm :rg16_snorm :rgb8_snorm :rgb16_snorm
+    :rgba8_snorm :rgba16_snorm))
 
-    ;; Signed integral format. Thus GL_RGBA8I gives a signed integer
+(defvar *signed-integral-formats*
+  '(;; Thus GL_RGBA8I gives a signed integer
     ;; format where each of the four components is an integer on the
     ;; range [-128, 127].
     :r8i :r16i :r32i :rg8i :rg16i :rg32i :rgb8i :rgb16i :rgb32i :rgba8i :rgba16i
-    :rgba32i
+    :rgba32i))
 
-    ;; Unsigned integral format. The values go from [0, MAX_INT] for the
+(defvar *unsigned-integral-formats*
+  '(;; Unsigned integral format. The values go from [0, MAX_INT] for the
     ;; integer size.
     :r8ui :r16ui :r32ui :rg8ui :rg16ui :rg32ui :rgb8ui :rgb16ui :rgb32ui
-    :rgba8ui :rgba16ui :rgba32ui
+    :rgba8ui :rgba16ui :rgba32ui))
 
-    ;; Floating-point.
+(defvar *floating-point-formats*
+  '(;; Floating-point.
     ;; Thus, GL_RGBA32F is a floating-point format where
     ;; each component is a 32-bit IEEE floating-point value.
     :r16f :r32f :rg16f :rg32f :rgb16f :rgb32f :rgba16f :rgba32f))
+
+(defvar *regular-color-formats*
+  (append
+   *unsigned-normalized-integer-formats*
+   *signed-normalized-integer-formats*
+   *signed-integral-formats*
+   *unsigned-integral-formats*
+   *floating-point-formats*))
 
 ;;----------------------------------------------------------------------
 

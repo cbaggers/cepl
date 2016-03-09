@@ -66,6 +66,7 @@
     (error "dimensions are not optional when making an array from a pointer"))
   (let* ((dimensions (listify dimensions))
          (p-format (pixel-format-p element-type))
+	 (element-type (expand-gl-type-name element-type))
          (element-type2 (if p-format
                             (pixel-format->lisp-type element-type)
                             element-type))
@@ -106,7 +107,8 @@
 ;; [TODO] extract error messages
 (defun make-c-array (initial-contents
                       &key dimensions element-type displaced-by (alignment 1))
-  (let* ((dimensions (listify dimensions))
+  (let* ((element-type (expand-gl-type-name element-type))
+	 (dimensions (listify dimensions))
          (dimensions
           (if dimensions
               (if initial-contents
