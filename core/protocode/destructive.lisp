@@ -56,7 +56,8 @@
     (otherwise (%map-into-c-nd destination-c-array function source-c-array))))
 
 (defun %map-into-c-1d (dest func source)
-  )
+  (loop :for i :below (first (c-array-))
+     ))
 
 (defun across-c (function c-array)
   "run function passing in the array and the current index/indices"

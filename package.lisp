@@ -194,7 +194,6 @@
            :lisp-type->internal-format
            :describe-pixel-format
            :defstruct-g
-           :c-array-byte-size
            :gl-calc-byte-size
            :make-c-array-from-pointer
            :with-c-array
@@ -202,7 +201,9 @@
            :free-c-array
            :clone-c-array
            :make-c-array
+	   :c-array-byte-size
            :c-array-pointer
+	   :c-array-dimensions
            :aref-c
            :%aref-c
            :c-populate
@@ -396,6 +397,7 @@
            :free-c-array
            :aref-c
            :c-array-pointer
+	   :c-array-dimensions
            :c-populate
            :make-gpu-array
            :make-gpu-arrays

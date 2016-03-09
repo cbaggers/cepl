@@ -1,8 +1,6 @@
 (in-package :jungl)
 
 ;; [TODO] Justify your use of the gl- prefix everywhere.
-;; [TODO] alignment, what the hell do we do with that? I'm a bit
-;;        drunk to make these choices right now
 ;; [TODO] How do we free these? Tag buffer format type as :free and handle?
 
 ;;;--------------------------------------------------------------
@@ -80,7 +78,6 @@
 
 ;;---------------------------------------------------------------
 
-;; c-array (dimensions element-type &key initial-contents displaced-by (alignment 1))
 ;; old-gpu (initial-contents &key element-type length access-style)
 ;; ??????? (initial-contents &key element-type dimensions access-style)
 ;; [TODO] Check to see we have all the data we need
@@ -99,11 +96,9 @@
                    :access-style access-style)))
 
 (defmethod make-gpu-array ((initial-contents t)
-                           &key dimensions element-type (access-style :static-draw)
-                             (alignment 1))
+                           &key dimensions element-type (access-style :static-draw))
   (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
-                                       :element-type element-type
-                                       :alignment alignment))
+                                       :element-type element-type))
     (make-gpu-array c-array :access-style access-style)))
 
 (defmethod make-gpu-array ((initial-contents c-array)
@@ -116,7 +111,7 @@
       (asserting (and (every #'= c-dimensions dimensions)
 		      (= (length c-dimensions) (length dimensions)))
 		 make-gpu-array-from-c-array-mismatched-dimensions
-		 :c-array-dimensions c-dimensions
+		 :c-arr-dimensions c-dimensions
 		 :provided-dimensions dimensions))
     (make-gpuarray :buffer (buffer-data buffer initial-contents
                                         :array-buffer access-style)
@@ -125,13 +120,13 @@
                    :access-style access-style)))
 
 (deferror make-gpu-array-from-c-array-mismatched-dimensions ()
-    (c-array-dimensions provided-dimensions)
+    (c-arr-dimensions provided-dimensions)
     "Jungl: make-gpu-array mismatched dimensions
 
 A call to #'make-gpu-array was made with a c-array as the initial-contents.
 The dimensions of the c-array are ~s, however the dimensions given in the
 call to #'make-gpu-array were ~s"
-  c-array-dimensions provided-dimensions)
+  c-arr-dimensions provided-dimensions)
 
 (defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
   "This function creates a list of gpu-arrays residing in a
@@ -246,8 +241,7 @@ call to #'make-gpu-array were ~s"
 (defmethod push-g ((object list) (destination gpuarray))
   (with-c-array (tmp (make-c-array object
                                    :dimensions (dimensions destination)
-                                   :element-type (element-type destination)
-                                   :alignment 1))
+                                   :element-type (element-type destination)))
     (push-g tmp destination)))
 
 (defmethod push-g ((object c-array) (destination gpuarray))

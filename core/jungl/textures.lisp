@@ -757,8 +757,6 @@
   (pull-g (texref object)))
 
 ;; [TODO] implement gl-fill and fill arguments
-
-;; [TODO] Alignment
 ;; [TODO] Does not respect GL_PIXEL_PACK/UNPACK_BUFFER
 (defmethod pull1-g ((object gpu-array-t))
   (with-slots (layer-num level-num texture-type face-num

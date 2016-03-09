@@ -181,7 +181,6 @@
                    (cffi:null-pointer) usage)
   buffer)
 
-;; [TODO] Handle alignment?
 (defun buffer-reserve-block (buffer type dimensions buffer-target usage)
   "This function creates an empty block of data in the opengl buffer
    equal in size to (* length size-in-bytes-of-type).

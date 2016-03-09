@@ -1,67 +1,86 @@
 (in-package :jungl)
 
 ;;------------------------------------------------------------
-(defclass c-array ()
-  ((pointer :initarg :pointer :reader pointer)
-   (dimensions :initarg :dimensions :reader dimensions)
-   (element-type :initarg :element-type :reader element-type)
-   (element-byte-size :initarg :element-byte-size :reader element-byte-size)
-   (row-byte-size :initarg :row-byte-size :reader row-byte-size)
-   (row-alignment :initarg :row-alignment :reader row-alignment)
-   (element-pixel-format :initform nil :initarg :element-pixel-format
-                         :reader element-pixel-format)))
+
+(defstruct (c-array (:constructor %make-c-array))
+  (pointer
+   (error "cepl: c-array must be created with a pointer")
+   :type cffi-sys:foreign-pointer)
+  (dimensions
+   (error "cepl: c-array must be created with dimensions")
+   :type list)
+  (element-type
+   (error "cepl: c-array must be created with an element-type")
+   :type symbol)
+  (element-byte-size
+   (error "cepl: c-array must be created with an element-byte-size")
+   :type fixnum)
+  (row-byte-size
+   (error "cepl: c-array must be created with a pointer")
+   :type fixnum)
+  (element-pixel-format nil :type (or null pixel-format)))
+
+(defmethod pointer ((array c-array))
+  (c-array-pointer array))
+
+(defmethod dimensions ((array c-array))
+  (c-array-dimensions array))
+
+(defmethod element-type ((array c-array))
+  (c-array-element-type array))
+
+(defmethod element-byte-size ((array c-array))
+  (c-array-element-byte-size array))
+
+;; (defmethod row-byte-size ((array c-array))
+;;   (c-array-row-byte-size array))
+
+;; (defmethod element-pixel-format ((array c-array))
+;;   (c-array-element-pixel-format array))
+
 
 (defun blank-c-array-object (c-array)
-  (with-slots (pointer dimensions element-type element-byte-size row-byte-size
-                       row-alignment element-pixel-format) c-array
-    (setf pointer nil
-          dimensions nil
-          element-type nil
-          element-byte-size nil
-          row-byte-size nil
-          row-alignment nil
-          element-pixel-format nil)))
+  (setf (c-array-pointer c-array) (cffi:null-pointer))
+  (setf (c-array-dimensions c-array) nil)
+  (setf (c-array-element-type c-array) nil)
+  (setf (c-array-element-byte-size c-array) 0)
+  (setf (c-array-row-byte-size c-array) 0)
+  (setf (c-array-element-pixel-format c-array) nil))
 
 (defmethod free ((object c-array))
   (free-c-array object))
 
 (defun free-c-array (c-array)
   "Frees the specified c-array."
-  (foreign-free (pointer c-array))
+  (foreign-free (c-array-pointer c-array))
   (blank-c-array-object c-array))
-
-(defun c-array-pointer (c-array)
-  (slot-value c-array 'pointer))
 
 (defmethod print-object ((object c-array) stream)
   (format stream "#<C-ARRAY :element-type ~s :dimensions ~a>"
-          (slot-value object 'element-type)
-          (slot-value object 'dimensions)))
+          (c-array-element-type object)
+          (c-array-dimensions object)))
 
 (defmethod print-mem ((thing c-array) &optional (size-in-bytes 64) (offset 0))
-  (cepl-utils::%print-mem (cffi:inc-pointer (pointer thing) offset) size-in-bytes))
+  (cepl-utils::%print-mem
+   (cffi:inc-pointer (c-array-pointer thing) offset)
+   size-in-bytes))
 
 ;;------------------------------------------------------------
 
 (defun c-array-byte-size (c-array)
-  (%gl-calc-byte-size (element-byte-size c-array)
-                      (dimensions c-array)
-                      (row-alignment c-array)))
+  (%gl-calc-byte-size (c-array-element-byte-size c-array)
+                      (c-array-dimensions c-array)))
 
-(defun %gl-calc-byte-size (elem-size dimensions &optional (alignment 1))
-  (let* ((x-size (first dimensions)) (rest (rest dimensions)))
-    (let* ((row-raw-size (* x-size elem-size))
-           (row-mod (mod row-raw-size alignment))
-           (row-byte-size (+ row-raw-size row-mod)))
-      (values (* row-byte-size (max (reduce #'* rest) 1))
-              row-byte-size))))
+(defun %gl-calc-byte-size (elem-size dimensions)
+  (let* ((x-size (first dimensions)) (rest (rest dimensions))
+	 (row-byte-size (* x-size elem-size)))
+    (values (* row-byte-size (max (reduce #'* rest) 1))
+	    row-byte-size)))
 
-(defun gl-calc-byte-size (type dimensions &optional (alignment 1))
-  (%gl-calc-byte-size (gl-type-size type)
-                      dimensions alignment))
+(defun gl-calc-byte-size (type dimensions)
+  (%gl-calc-byte-size (gl-type-size type) dimensions))
 
-(defun make-c-array-from-pointer (dimensions element-type pointer
-                                   &optional (alignment 1))
+(defun make-c-array-from-pointer (dimensions element-type pointer)
   (unless dimensions
     (error "dimensions are not optional when making an array from a pointer"))
   (let* ((dimensions (listify dimensions))
@@ -72,16 +91,15 @@
                             element-type))
          (elem-size (gl-type-size element-type2)))
     (multiple-value-bind (byte-size row-byte-size)
-        (%gl-calc-byte-size elem-size dimensions alignment)
+        (%gl-calc-byte-size elem-size dimensions)
       (declare (ignore byte-size))
-      (make-instance 'c-array
-                     :pointer pointer
-                     :dimensions dimensions
-                     :element-type element-type2
-                     :element-byte-size elem-size
-                     :row-byte-size row-byte-size
-                     :row-alignment alignment
-                     :element-pixel-format (when p-format element-type)))))
+      (%make-c-array
+       :pointer pointer
+       :dimensions dimensions
+       :element-type element-type2
+       :element-byte-size elem-size
+       :row-byte-size row-byte-size
+       :element-pixel-format (when p-format element-type)))))
 
 (defmacro with-c-array ((var-name c-array) &body body)
   `(let* ((,var-name ,c-array))
@@ -95,18 +113,17 @@
 (defun clone-c-array (c-array)
   (let* ((size (c-array-byte-size c-array))
          (new-pointer (cffi::%foreign-alloc size)))
-    (cffi::%memcpy new-pointer (pointer c-array) size)
-    (make-instance 'c-array
-                   :pointer new-pointer
-                   :dimensions (dimensions c-array)
-                   :element-byte-size (element-byte-size c-array)
-                   :element-type (element-type c-array)
-                   :row-byte-size (row-byte-size c-array)
-                   :row-alignment (row-alignment c-array))))
+    (cffi::%memcpy new-pointer (c-array-pointer c-array) size)
+    (%make-c-array
+     :pointer new-pointer
+     :dimensions (c-array-dimensions c-array)
+     :element-byte-size (c-array-element-byte-size c-array)
+     :element-type (c-array-element-type c-array)
+     :row-byte-size (c-array-row-byte-size c-array))))
 
 ;; [TODO] extract error messages
 (defun make-c-array (initial-contents
-                      &key dimensions element-type displaced-by (alignment 1))
+                      &key dimensions element-type displaced-by)
   (let* ((element-type (expand-gl-type-name element-type))
 	 (dimensions (listify dimensions))
          (dimensions
@@ -142,48 +159,28 @@
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))
-    (when (not (find alignment '(1 2 4 8)))
-      (error "alignment can only be 1, 2, 4 or 8"))
     (when (not (loop for i in dimensions always (> i 0)))
       (error "all dimensions must be >=1 in length"))
     (when displaced-by
       (if initial-contents
           (error "Cannot displace and populate array at the same time")
           (when (or (not (eql (reduce #'* dimensions)
-                              (reduce #'* (dimensions displaced-by))))
-                    (not (eq (element-type displaced-by) element-type))
-                    (> (row-alignment displaced-by) 1))
-            (error "Byte size and type of arrays must match and alignment must be 1"))))
+                              (reduce #'* (c-array-dimensions displaced-by))))
+                    (not (eq (c-array-element-type displaced-by) element-type)))
+            (error "Byte size and type of arrays must match"))))
     (multiple-value-bind (byte-size row-byte-size)
-        (%gl-calc-byte-size elem-size dimensions alignment)
-      (let ((new-array (make-instance
-                        'c-array
+        (%gl-calc-byte-size elem-size dimensions)
+      (let ((new-array (%make-c-array
                         :pointer (or displaced-by
                                      (cffi::%foreign-alloc byte-size))
                         :dimensions dimensions
                         :element-byte-size elem-size
                         :element-type element-type
                         :row-byte-size row-byte-size
-                        :row-alignment alignment
                         :element-pixel-format pixel-format)))
         (when initial-contents
           (c-populate new-array initial-contents nil))
         new-array))))
-
-;; Old but here incase the crazy below it fails :)
-;; (defun calc-gl-index (c-array subscripts)
-;;   (with-slots (dimensions row-byte-size element-type) c-array
-;;     (if (and (eql (length dimensions) (length subscripts))
-;;              (loop for d in dimensions for s in subscripts
-;;                 :always (and (< s d) (>= s 0))))
-;;         (+ (* (first subscripts) (element-byte-size c-array))
-;;            (* (or (second subscripts) 0) row-byte-size)
-;;            (* (or (third subscripts) 0) (or (second dimensions) 0)
-;;               row-byte-size)
-;;            (* (or (fourth subscripts) 0) (or (third dimensions) 0)
-;;               (or (second dimensions) 0) row-byte-size))
-;;         (error "The subscripts ~a are outside of the c-array range ~a"
-;;                subscripts dimensions))))
 
 (defun row-index-correct
     (indices dimensions
@@ -199,8 +196,10 @@
             :do (setq p (* p d)))))))
 
 (defun calc-gl-index-correct (c-array subscripts)
-  (with-slots (dimensions row-byte-size element-byte-size) c-array
-    (row-index-correct subscripts dimensions row-byte-size element-byte-size)))
+  (row-index-correct subscripts
+		     (c-array-dimensions c-array)
+		     (c-array-row-byte-size c-array)
+		     (c-array-element-byte-size c-array)))
 
 (defun calc-gl-index (c-array subscripts)
   ;; This is allowed to be unsafe as the ptr is a fixed quantity
@@ -225,12 +224,13 @@
                               (unsafe-ptr-index ,dims ,(1+ c))
                               (the fixnum 0))))))))
     (locally (declare (optimize (speed 3) (safety 0)))
-      (with-slots (dimensions row-byte-size element-byte-size) c-array
-        (let ((sub (reverse subscripts))
-              (dim (cons row-byte-size (reverse (rest dimensions))))
-              (p 1))
-          (declare (fixnum p))
-          (unsafe-ptr-index 4))))))
+      (let* ((row-byte-size (c-array-row-byte-size c-array))
+	     (element-byte-size (c-array-element-byte-size c-array))
+	     (sub (reverse subscripts))
+	     (dim (cons row-byte-size (reverse (rest (c-array-dimensions c-array)))))
+	     (p 1))
+	(declare (fixnum p))
+	(unsafe-ptr-index 4)))))
 
 (defmacro index-n-writer (dims dims-form subs-form &optional (c 0) sub dim p)
   "This essentially is a loop unroller for calculating the row-major index
@@ -277,14 +277,10 @@ for any array of, up to and including, 4 dimensions."
     r))
 
 (defun calc-1d-gl-index (c-array subscript)
-  ;; only really for use with c-populate
-  ;; it does take alignment into account
   (calc-gl-index c-array (1d-to-2d-subscript c-array subscript)))
 
 (defun 1d-to-2d-subscript (c-array subscript)
-  ;; only really for use with c-populate
-  ;; it does take alignment into account
-  (with-slots (dimensions) c-array
+  (let ((dimensions (c-array-dimensions c-array)))
     (let ((x-size (or (first dimensions) 1))
           (y-size (or (second dimensions) 1))
           (z-size (or (third dimensions) 1)))
@@ -293,49 +289,85 @@ for any array of, up to and including, 4 dimensions."
              (w (floor (/ z z-size))))
         (subseq (list (mod subscript x-size) y z w) 0 (length dimensions))))))
 
+(defmacro %with-1-shot-aref-c ((aref-name array &key (prim-type :unknown)
+					  (get t) (set nil))
+			       &body body)
+  (let* ((arr (gensym "c-array"))
+	 (etype (gensym "element-type"))
+	 (primp (gensym "is-cepl-prim-type"))
+	 (get-code
+	  (when get
+	    (case prim-type
+	      ((t) `((mem-ref (c-array-pointer ,arr) ,etype
+			       (calc-gl-index ,arr subscripts))))
+	      ((nil) `((autowrap:wrap-pointer
+			 (inc-pointer (c-array-pointer ,arr) (calc-gl-index ,arr subscripts))
+			 ,etype)))
+	      (:unknown
+	       `((,aref-name
+		  (subscripts)
+		  (if ,primp
+		      (mem-ref (c-array-pointer ,arr) ,etype
+			       (calc-gl-index ,arr subscripts))
+		      (autowrap:wrap-pointer
+		       (inc-pointer (c-array-pointer ,arr) (calc-gl-index ,arr subscripts))
+		       ,etype))))))))
+	 (set-code
+	  (when set
+	    (case prim-type
+	      ((t) `((setf (mem-ref (c-array-pointer c-array) (c-array-element-type c-array)
+				     (calc-gl-index c-array subscripts))
+			    value)))
+	      ((nil) `((let ((obj (autowrap:wrap-pointer
+				    (let ((ptr (c-array-pointer c-array)))
+				      (inc-pointer ptr (calc-gl-index c-array subscripts)))
+				    etype)))
+			  (populate obj value))))
+	      (:unknown
+	       `((if (keywordp etype)
+		      (setf (mem-ref (c-array-pointer c-array) (c-array-element-type c-array)
+				     (calc-gl-index c-array subscripts))
+			    value)
+		      (let ((obj (autowrap:wrap-pointer
+				  (let ((ptr (c-array-pointer c-array)))
+				    (inc-pointer ptr (calc-gl-index c-array subscripts)))
+				  etype)))
+			(populate obj value)))))))))
+    `(let* ((,arr ,array)
+	    (,etype (c-array-element-type ,arr))
+	    (,primp ,(if (eq prim-type :unknown)
+			   `(keywordp ,etype)
+			   ;; {TODO} this  ^^^^^^^ heuristic  sucks, cache whether it is a struct
+			   prim-type)))
+       (labels (,@get-code
+		,@set-code)
+	 ,@body))))
+
 (defun aref-c (c-array &rest subscripts)
-  (let ((etype (element-type c-array)))
-    (if (keywordp etype)
-        (mem-ref (pointer c-array) etype
-                 (calc-gl-index c-array subscripts))
-        (autowrap:wrap-pointer
-         (let ((ptr (pointer c-array)))
-           (inc-pointer ptr (calc-gl-index c-array subscripts)))
-         etype))))
+  (%aref-c c-array subscripts))
 
 (defun (setf aref-c) (value c-array &rest subscripts)
-  (let ((etype (element-type c-array)))
-    (if (keywordp etype)
-        (setf (mem-ref (pointer c-array) (element-type c-array)
-                       (calc-gl-index c-array subscripts))
-              value)
-        (let ((obj (autowrap:wrap-pointer
-                    (let ((ptr (pointer c-array)))
-                      (inc-pointer ptr (calc-gl-index c-array subscripts)))
-                    etype)))
-          (populate obj value)))))
+  (setf (%aref-c c-array subscripts) value))
 
+;;
+;; these two dont use &rest on subscripts
+;;
 (defun %aref-c (c-array subscripts)
-  (let ((etype (element-type c-array)))
-    (if (keywordp etype)
-        (mem-ref (pointer c-array) etype
-                 (calc-gl-index c-array subscripts))
-        (autowrap:wrap-pointer
-         (let ((ptr (pointer c-array)))
-           (inc-pointer ptr (calc-gl-index c-array subscripts)))
-         etype))))
+  (%with-1-shot-aref-c (%aref-c c-array)
+    (%aref-c subscripts)))
 
 (defun (setf %aref-c) (value c-array subscripts)
-  (let ((etype (element-type c-array)))
-    (if (keywordp etype)
-        (setf (mem-ref (pointer c-array) (element-type c-array)
-                       (calc-gl-index c-array subscripts))
-              value)
-        (let ((obj (autowrap:wrap-pointer
-                    (let ((ptr (pointer c-array)))
-                      (inc-pointer ptr (calc-gl-index c-array subscripts)))
-                    etype)))
-          (populate obj value)))))
+  (%with-1-shot-aref-c (%aref-c c-array :get nil :set t)
+    (%aref-c subscripts)))
+
+;;------------------------------------------------------------
+;; map & across
+
+;; (defun %map-into-c-1d (dest func source)
+;;   (loop :for i :below (first (c-array-dimensions source)) :do
+;;      ()))
+
+;;------------------------------------------------------------
 
 ;; [TODO] can the common of the two subfuncs be spun off? (almost certainly)
 (defun c-populate (c-array data &optional (check-sizes t))
@@ -357,12 +389,14 @@ for any array of, up to and including, 4 dimensions."
                     (populate (%aref-c c-array coords) (row-major-aref data i))
                     (setf (%aref-c c-array coords) (row-major-aref data i))))))
     (when check-sizes
-      (unless (validate-dimensions data (dimensions c-array))
+      (unless (validate-dimensions data (c-array-dimensions c-array))
         (error "Dimensions of array differs from that of the data:~%~a~%~a"
                c-array data)))
     (typecase data
-      (sequence (walk-to-dpop data (dimensions c-array) (not (keywordp (element-type c-array)))))
-      (array (dpop-with-array data (dimensions c-array) (not (keywordp (element-type c-array))))))
+      (sequence (walk-to-dpop data (c-array-dimensions c-array)
+			      (not (keywordp (c-array-element-type c-array)))))
+      (array (dpop-with-array data (c-array-dimensions c-array)
+			      (not (keywordp (c-array-element-type c-array))))))
     c-array))
 
 (defun rm-index-to-coords (index subscripts)
@@ -374,7 +408,7 @@ for any array of, up to and including, 4 dimensions."
           rem)))))
 
 (defun validate-dimensions (data dimensions)
-  (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
+  (let* ((dimensions (listify dimensions))
          (r (typecase data
               (sequence (validate-seq-dimensions data dimensions))
               (array (validate-arr-dimensions data dimensions))
@@ -429,18 +463,18 @@ for any array of, up to and including, 4 dimensions."
     (if (> (length dimensions) 1)
         (error "Cannot take subseq of multidimensional array")
         (let* ((length (first dimensions))
-               (type (element-type array))
+               (type (c-array-element-type array))
                (end (or end length)))
           (if (and (< start end) (< start length) (<= end length))
               (make-c-array-from-pointer
                (list (- end start)) type
-               (cffi:inc-pointer (pointer array)
-                                 (%gl-calc-byte-size (element-byte-size array)
+               (cffi:inc-pointer (c-array-pointer array)
+                                 (%gl-calc-byte-size (c-array-element-byte-size array)
                                                      (list start))))
               (error "Invalid subseq start or end for c-array"))))))
 
 (defmethod pull1-g ((object c-array))
-  (let* ((dimensions (dimensions object))
+  (let* ((dimensions (c-array-dimensions object))
          (depth      (1- (length dimensions)))
          (indices    (make-list (1+ depth))))
     (labels ((recurse (n)
@@ -460,8 +494,8 @@ for any array of, up to and including, 4 dimensions."
   (c-populate destination object))
 
 (defmethod lisp-type->pixel-format ((type c-array))
-  (or (element-pixel-format type)
-      (lisp-type->pixel-format (element-type type))))
+  (or (c-array-element-pixel-format type)
+      (lisp-type->pixel-format (c-array-element-type type))))
 
 ;;------------------------------------------------------------
 
