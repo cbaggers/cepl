@@ -56,3 +56,7 @@
 (defgeneric %collate-args (spec))
 (defgeneric %get-pipeline-uniforms (pipeline-spec call-form))
 (defgeneric free-texture (texture))
+
+(defgeneric symbol-names-cepl-structp (sym))
+(defmethod symbol-names-cepl-structp ((sym t))
+  nil)

@@ -81,7 +81,8 @@
            :constructor ,(symb '%make- name))
 	 (eval-when (:compile-toplevel :load-toplevel :execute)
 	   ,(make-varjo-struct-def name slots varjo-constructor))
-         ,@(when (and readers accesors)
+     ,(make-varjo-struct-lookup name)
+     ,@(when (and readers accesors)
                  (remove nil (mapcar (lambda (_)
                                        (make-slot-getter _ name autowrap-name))
                                      slots)))
@@ -144,6 +145,12 @@
 
 (defun validate-varjo-type-spec (spec)
   (type->spec (type-spec->type spec)))
+
+;;------------------------------------------------------------
+
+(defun make-varjo-struct-lookup (name)
+  `(defmethod symbol-names-cepl-structp ((sym (eql ',name)))
+     t))
 
 ;;------------------------------------------------------------
 

@@ -100,6 +100,7 @@
        :element-byte-size elem-size
        :row-byte-size row-byte-size
        :element-pixel-format (when p-format element-type)))))
+;; (symbol-names-cepl-structp element-type)
 
 (defmacro with-c-array ((var-name c-array) &body body)
   `(let* ((,var-name ,c-array))
@@ -290,58 +291,63 @@ for any array of, up to and including, 4 dimensions."
         (subseq (list (mod subscript x-size) y z w) 0 (length dimensions))))))
 
 (defmacro %with-1-shot-aref-c ((aref-name array &key (prim-type :unknown)
-					  (get t) (set nil))
-			       &body body)
+                                          (get t) (set nil))
+                               &body body)
   (let* ((arr (gensym "c-array"))
-	 (etype (gensym "element-type"))
-	 (primp (gensym "is-cepl-prim-type"))
-	 (get-code
-	  (when get
-	    (case prim-type
-	      ((t) `((mem-ref (c-array-pointer ,arr) ,etype
-			       (calc-gl-index ,arr subscripts))))
-	      ((nil) `((autowrap:wrap-pointer
-			 (inc-pointer (c-array-pointer ,arr) (calc-gl-index ,arr subscripts))
-			 ,etype)))
-	      (:unknown
-	       `((,aref-name
-		  (subscripts)
-		  (if ,primp
-		      (mem-ref (c-array-pointer ,arr) ,etype
-			       (calc-gl-index ,arr subscripts))
-		      (autowrap:wrap-pointer
-		       (inc-pointer (c-array-pointer ,arr) (calc-gl-index ,arr subscripts))
-		       ,etype))))))))
-	 (set-code
-	  (when set
-	    (case prim-type
-	      ((t) `((setf (mem-ref (c-array-pointer c-array) (c-array-element-type c-array)
-				     (calc-gl-index c-array subscripts))
-			    value)))
-	      ((nil) `((let ((obj (autowrap:wrap-pointer
-				    (let ((ptr (c-array-pointer c-array)))
-				      (inc-pointer ptr (calc-gl-index c-array subscripts)))
-				    etype)))
-			  (populate obj value))))
-	      (:unknown
-	       `((if (keywordp etype)
-		      (setf (mem-ref (c-array-pointer c-array) (c-array-element-type c-array)
-				     (calc-gl-index c-array subscripts))
-			    value)
-		      (let ((obj (autowrap:wrap-pointer
-				  (let ((ptr (c-array-pointer c-array)))
-				    (inc-pointer ptr (calc-gl-index c-array subscripts)))
-				  etype)))
-			(populate obj value)))))))))
+         (etype (gensym "element-type"))
+         (primp (gensym "is-cepl-prim-type"))
+         (get-code
+          (when get
+            (case prim-type
+              ((t) `((,aref-name (subscripts)
+                                 (mem-ref (c-array-pointer ,arr) ,etype
+                                          (calc-gl-index ,arr subscripts)))))
+              ((nil) `((,aref-name (subscripts)
+                                   (autowrap:wrap-pointer
+                                    (inc-pointer (c-array-pointer ,arr) (calc-gl-index ,arr subscripts))
+                                    ,etype))))
+              (:unknown
+               `((,aref-name (subscripts)
+                             (if ,primp
+                                 (mem-ref (c-array-pointer ,arr) ,etype
+                                          (calc-gl-index ,arr subscripts))
+                                 (autowrap:wrap-pointer
+                                  (inc-pointer (c-array-pointer ,arr) (calc-gl-index ,arr subscripts))
+                                  ,etype))))))))
+         (set-code
+          (when set
+            (case prim-type
+              ((t) `(((setf ,aref-name) (value subscripts)
+                      (setf (mem-ref (c-array-pointer c-array) (c-array-element-type c-array)
+                                     (calc-gl-index c-array subscripts))
+                            value))))
+              ((nil) `(((setf ,aref-name) (value subscripts)
+                        (let ((obj (autowrap:wrap-pointer
+                                    (let ((ptr (c-array-pointer c-array)))
+                                      (inc-pointer ptr (calc-gl-index c-array subscripts)))
+                                    ,etype)))
+                          (populate obj value)))))
+              (:unknown
+               `(((setf ,aref-name) (value subscripts)
+                  (if ,primp
+                      (setf (mem-ref (c-array-pointer c-array) (c-array-element-type c-array)
+                                     (calc-gl-index c-array subscripts))
+                            value)
+                      (let ((obj (autowrap:wrap-pointer
+                                  (let ((ptr (c-array-pointer c-array)))
+                                    (inc-pointer ptr (calc-gl-index c-array subscripts)))
+                                  ,etype)))
+                        (populate obj value))))))))))
     `(let* ((,arr ,array)
-	    (,etype (c-array-element-type ,arr))
-	    (,primp ,(if (eq prim-type :unknown)
-			   `(keywordp ,etype)
-			   ;; {TODO} this  ^^^^^^^ heuristic  sucks, cache whether it is a struct
-			   prim-type)))
+            (,etype (c-array-element-type ,arr))
+            ,@(when (eq :unknown prim-type)
+                    `((,primp ,(if (eq prim-type :unknown)
+                                   `(keywordp ,etype)
+                                   ;; {TODO} this  ^^^^^^^ heuristic  sucks, cache whether it is a struct
+                                   prim-type)))))
        (labels (,@get-code
-		,@set-code)
-	 ,@body))))
+                ,@set-code)
+         ,@body))))
 
 (defun aref-c (c-array &rest subscripts)
   (%aref-c c-array subscripts))
@@ -358,7 +364,7 @@ for any array of, up to and including, 4 dimensions."
 
 (defun (setf %aref-c) (value c-array subscripts)
   (%with-1-shot-aref-c (%aref-c c-array :get nil :set t)
-    (%aref-c subscripts)))
+    (setf (%aref-c subscripts) value)))
 
 ;;------------------------------------------------------------
 ;; map & across
