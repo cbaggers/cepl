@@ -210,6 +210,7 @@
 ;; Macro to write the helper func and compiler macro
 
 (defun replace-attachment-array (gpu-array attachment)
+  ;; {TODO} ^^ seems like a bad name
   (%make-attachment
    :gpu-array gpu-array
    :owns-gpu-array (%attachment-owns-gpu-array attachment)

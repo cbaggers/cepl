@@ -15,6 +15,7 @@
   (element-byte-size
    (error "cepl: c-array must be created with an element-byte-size")
    :type fixnum)
+  (struct-element-typep nil :type boolean)
   (row-byte-size
    (error "cepl: c-array must be created with a pointer")
    :type fixnum)
@@ -98,6 +99,7 @@
        :dimensions dimensions
        :element-type element-type2
        :element-byte-size elem-size
+       :struct-element-typep (symbol-names-cepl-structp element-type2)
        :row-byte-size row-byte-size
        :element-pixel-format (when p-format element-type)))))
 ;; (symbol-names-cepl-structp element-type)
@@ -120,6 +122,7 @@
      :dimensions (c-array-dimensions c-array)
      :element-byte-size (c-array-element-byte-size c-array)
      :element-type (c-array-element-type c-array)
+     :struct-element-typep (c-array-struct-element-typep c-array)
      :row-byte-size (c-array-row-byte-size c-array))))
 
 ;; [TODO] extract error messages
@@ -177,6 +180,8 @@
                         :dimensions dimensions
                         :element-byte-size elem-size
                         :element-type element-type
+                        :struct-element-typep (symbol-names-cepl-structp
+                                               element-type)
                         :row-byte-size row-byte-size
                         :element-pixel-format pixel-format)))
         (when initial-contents
@@ -342,8 +347,7 @@ for any array of, up to and including, 4 dimensions."
             (,etype (c-array-element-type ,arr))
             ,@(when (eq :unknown prim-type)
                     `((,primp ,(if (eq prim-type :unknown)
-                                   `(keywordp ,etype)
-                                   ;; {TODO} this  ^^^^^^^ heuristic  sucks, cache whether it is a struct
+                                   `(c-array-struct-element-typep ,arr)
                                    prim-type)))))
        (labels (,@get-code
                 ,@set-code)
@@ -400,9 +404,11 @@ for any array of, up to and including, 4 dimensions."
                c-array data)))
     (typecase data
       (sequence (walk-to-dpop data (c-array-dimensions c-array)
-			      (not (keywordp (c-array-element-type c-array)))))
+                              (c-array-struct-element-typep
+                               (c-array-element-type c-array))))
       (array (dpop-with-array data (c-array-dimensions c-array)
-			      (not (keywordp (c-array-element-type c-array))))))
+                              (c-array-struct-element-typep
+                               (c-array-element-type c-array)))))
     c-array))
 
 (defun rm-index-to-coords (index subscripts)
