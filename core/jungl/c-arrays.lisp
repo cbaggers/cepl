@@ -381,9 +381,13 @@ for any array of, up to and including, 4 dimensions."
 ;;------------------------------------------------------------
 ;; map & across
 
-;; (defun %map-into-c-1d (dest func source)
-;;   (loop :for i :below (first (c-array-dimensions source)) :do
-;;      ()))
+(defun %map-into-c-1d (dest func source)
+  (%with-1-shot-aref-c (src-ref source)
+    (%with-1-shot-aref-c (dst-ref dest :get nil :set t)
+      (loop :for i :below (first (c-array-dimensions source)) :do
+	 (setf (dst-ref i) (src-ref i))))))
+
+(c-array-element-byte-size c-array)
 
 ;;------------------------------------------------------------
 
