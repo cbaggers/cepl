@@ -307,47 +307,55 @@ for any array of, up to and including, 4 dimensions."
               ((t) `((,aref-name (subscripts)
                                  (mem-ref (c-array-pointer ,arr) ,etype
                                           (calc-gl-index ,arr subscripts)))))
-              ((nil) `((,aref-name (subscripts)
-                                   (autowrap:wrap-pointer
-                                    (inc-pointer (c-array-pointer ,arr) (calc-gl-index ,arr subscripts))
-                                    ,etype))))
+              ((nil) `((,aref-name
+			(subscripts)
+			(autowrap:wrap-pointer
+			 (inc-pointer (c-array-pointer ,arr)
+				      (calc-gl-index ,arr subscripts))
+			 ,etype))))
               (:unknown
-               `((,aref-name (subscripts)
-                             (if ,primp
-                                 (mem-ref (c-array-pointer ,arr) ,etype
-                                          (calc-gl-index ,arr subscripts))
-                                 (autowrap:wrap-pointer
-                                  (inc-pointer (c-array-pointer ,arr) (calc-gl-index ,arr subscripts))
-                                  ,etype))))))))
+               `((,aref-name
+		  (subscripts)
+		  (if ,primp
+		      (mem-ref (c-array-pointer ,arr) ,etype
+			       (calc-gl-index ,arr subscripts))
+		      (autowrap:wrap-pointer
+		       (inc-pointer (c-array-pointer ,arr)
+				    (calc-gl-index ,arr subscripts))
+		       ,etype))))))))
          (set-code
           (when set
             (case prim-type
               ((t) `(((setf ,aref-name) (value subscripts)
-                      (setf (mem-ref (c-array-pointer c-array) (c-array-element-type c-array)
+                      (setf (mem-ref (c-array-pointer c-array)
+				     (c-array-element-type c-array)
                                      (calc-gl-index c-array subscripts))
                             value))))
               ((nil) `(((setf ,aref-name) (value subscripts)
                         (let ((obj (autowrap:wrap-pointer
                                     (let ((ptr (c-array-pointer c-array)))
-                                      (inc-pointer ptr (calc-gl-index c-array subscripts)))
+                                      (inc-pointer ptr (calc-gl-index
+							c-array subscripts)))
                                     ,etype)))
                           (populate obj value)))))
               (:unknown
                `(((setf ,aref-name) (value subscripts)
                   (if ,primp
-                      (setf (mem-ref (c-array-pointer c-array) (c-array-element-type c-array)
+                      (setf (mem-ref (c-array-pointer c-array)
+				     (c-array-element-type c-array)
                                      (calc-gl-index c-array subscripts))
                             value)
                       (let ((obj (autowrap:wrap-pointer
                                   (let ((ptr (c-array-pointer c-array)))
-                                    (inc-pointer ptr (calc-gl-index c-array subscripts)))
+                                    (inc-pointer ptr (calc-gl-index
+						      c-array subscripts)))
                                   ,etype)))
                         (populate obj value))))))))))
     `(let* ((,arr ,array)
             (,etype (c-array-element-type ,arr))
             ,@(when (eq :unknown prim-type)
                     `((,primp ,(if (eq prim-type :unknown)
-                                   `(c-array-struct-element-typep ,arr)
+                                   `(not (c-array-struct-element-typep ,arr))
                                    prim-type)))))
        (labels (,@get-code
                 ,@set-code)
@@ -404,11 +412,9 @@ for any array of, up to and including, 4 dimensions."
                c-array data)))
     (typecase data
       (sequence (walk-to-dpop data (c-array-dimensions c-array)
-                              (c-array-struct-element-typep
-                               (c-array-element-type c-array))))
+                              (c-array-struct-element-typep c-array)))
       (array (dpop-with-array data (c-array-dimensions c-array)
-                              (c-array-struct-element-typep
-                               (c-array-element-type c-array)))))
+                              (c-array-struct-element-typep c-array))))
     c-array))
 
 (defun rm-index-to-coords (index subscripts)
