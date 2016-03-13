@@ -60,3 +60,13 @@
 (defgeneric symbol-names-cepl-structp (sym))
 (defmethod symbol-names-cepl-structp ((sym t))
   nil)
+
+(defgeneric get-typed-from-foreign (type-name))
+(defgeneric get-typed-to-foreign (type-name))
+
+(defmethod get-typed-from-foreign ((type-name t))
+  (format t "~%No optimized from-foreign found for ~a~%" type-name)
+  (lambda (ptr) (mem-ref ptr type-name)))
+
+(defmethod get-typed-to-foreign ((type-name t))
+  (error "~%No optimized from-foreign found for ~a~%" type-name))

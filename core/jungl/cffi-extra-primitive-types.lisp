@@ -69,7 +69,7 @@
                      ()
                      (:actual-type :struct ,name)
                      ,@(when kwd-allowed
-                        `((:simple-parser ,type))))
+			     `((:simple-parser ,type))))
                    (defmethod translate-from-foreign (ptr (type ,type-name))
                      (make-array ,len :element-type ',(get-lisp-type comp-type)
                                  :initial-contents
@@ -84,6 +84,21 @@
                             (when (jungl:valid-pixel-format-p components comp-type t nil)
                               `(defmethod jungl:lisp-type->pixel-format ((comp-type (eql ,type)))
                                  (jungl:pixel-format ,components ',comp-type)))))
+
+		   (defmethod expand-into-foreign-memory
+		       (value (type ,type-name) ptr)
+		     (cons 'progn
+			   (loop :for j :below ,len :collect
+			      `(setf (mem-aref ,ptr ,,comp-type ,j)
+				     (aref ,value ,j)))))
+
+		   (defmethod expand-from-foreign (ptr (type ,type-name))
+		     (list 'make-array ,len :element-type '',(get-lisp-type comp-type)
+			   :initial-contents
+			   (list 'list
+				 ,@(loop :for j :below len :collect
+				     `(list 'mem-aref ptr ',comp-type ,j)))))
+
                    (autowrap:define-foreign-record
                        ',name
                        :struct
@@ -96,14 +111,29 @@
                              ,comp-type :bit-size ,comp-bit-size
                              :bit-offset ,offset :bit-alignment 8)
                           :do (incf offset comp-bit-size)))
-                   (autowrap:define-foreign-alias ',name
-                       '(:struct (,name))))))))))
+		   (autowrap:define-foreign-alias ',name
+		       '(:struct (,name))))))))))
 (make-new-types)
 
-;; Extra functions, these probably need to live somewhere else
-(defcfun (%memcpy "memcpy") :pointer
-  (destination-pointer :pointer)
-  (source-pointer :pointer)
-  (byte-length :long))
 
-(export '(%memcpy))
+;;----------------------------------------------------------------
+
+(define-foreign-type gl-half-float () ()
+		     (:actual-type :ushort)
+		     (:simple-parser :half-float))
+
+(ieee-floats:make-float-converters encode-half-float decode-half-float
+				   5 10 t)
+
+(defmethod expand-to-foreign (value (type gl-half-float))
+  `(encode-half-float ,value))
+
+(defmethod expand-from-foreign (value (type gl-half-float))
+  `(decode-half-float ,value))
+
+(defmethod translate-to-foreign (value (type gl-half-float))
+  (declare (type float value))
+  (encode-half-float value))
+
+(defmethod translate-from-foreign (ptr (type gl-half-float))
+  (decode-half-float ptr))

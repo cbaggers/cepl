@@ -103,7 +103,8 @@
 
 (defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl-generics :split-sequence :%jungl :named-readtables)
+	:cepl-generics :split-sequence :%jungl :named-readtables
+	:rtg-math.vectors.foreign)
   (:shadowing-import-from :rtg-math :v!)
   (:import-from :cepl-utils
                 :deferror
@@ -204,6 +205,17 @@
 	   :c-array-byte-size
            :c-array-pointer
 	   :c-array-dimensions
+
+	   :populate-foreign-v1
+	   :populate-foreign-v2
+	   :populate-foreign-v3
+	   :populate-foreign-v4
+	   :across-c-ptr
+	   :across-c
+	   :map-into-c
+	   :map-c
+	   :ptr-index
+
            :aref-c
            :%aref-c
            :c-populate

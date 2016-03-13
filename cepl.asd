@@ -18,7 +18,8 @@
 	       #:rtg-math
                #:varjo
                #:named-readtables
-	       #:fn)
+	       #:fn
+	       #:ieee-floats)
   :components ((:file "package")
                (:file "host/api")
 	       (:file "host/step")
@@ -46,8 +47,17 @@
 	       (:file "core/jungl/image-format")
                (:file "core/jungl/pixel-format")
                (:file "core/jungl/cffi-extra-primitive-types")
+	       (:file "core/jungl/cffi-helpers")
+
                (:file "core/jungl/gl-extras")
-               (:file "core/jungl/c-arrays")
+
+               (:file "core/jungl/c-arrays/def")
+	       (:file "core/jungl/c-arrays/aref-c")
+	       (:file "core/jungl/c-arrays/populate")
+	       (:file "core/jungl/c-arrays/make")
+	       (:file "core/jungl/c-arrays/map")
+	       (:file "core/jungl/c-arrays/rest")
+
                (:file "core/jungl/structs")
                (:file "core/jungl/buffers")
                (:file "core/jungl/gpu-arrays-buffer-backed")
