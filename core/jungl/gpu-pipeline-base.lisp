@@ -27,6 +27,13 @@
    (missing-dependencies :initarg :missing-dependencies :initform nil)
    (cached-compile-results :initform nil)))
 
+(defclass glsl-stage-spec ()
+  ((name :initarg :name)
+   (in-args :initarg :in-args)
+   (uniforms :initarg :uniforms)
+   (context :initarg :context)
+   (body-string :initarg :body)))
+
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
 			    actual-uniforms uniform-transforms
@@ -46,6 +53,14 @@
                  :declarations declarations
 		 :missing-dependencies missing-dependencies))
 
+(defun %make-glsl-stage-spec (name in-args uniforms context body-string)
+  (make-instance 'glsl-stage-spec
+                 :name name
+                 :in-args (mapcar #'listify in-args)
+                 :uniforms (mapcar #'listify uniforms)
+                 :context context
+                 :body-string body-string))
+
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms actual-uniforms context body instancing
                      equivalent-inargs equivalent-uniforms uniform-transforms
@@ -56,12 +71,22 @@
 			 uniform-transforms))
      ,@body))
 
+(defmacro with-glsl-stage-spec (glsl-stage-spec &body body)
+  `(with-slots (name in-args uniforms context body-string) ,glsl-stage-spec
+     (declare (ignorable name in-args uniforms context body-string))
+     ,@body))
+
 (defun %serialize-gpu-func-spec (spec)
   (with-gpu-func-spec spec
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
                           ',instancing ',equivalent-inargs ',equivalent-uniforms
 			  ',actual-uniforms ',uniform-transforms
                           ,doc-string ',declarations ',missing-dependencies)))
+
+(defun %serialize-glsl-stage-spec (spec)
+  (with-glsl-stage-spec spec
+    `(%make-glsl-stage-spec
+      ',name ',in-args ',uniforms ',context ',body-string)))
 
 (defun gpu-func-spec (name &optional error-if-missing)
   (or (gethash name *gpu-func-specs*)
