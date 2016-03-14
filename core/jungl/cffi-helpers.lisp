@@ -1,12 +1,19 @@
 (in-package :jungl)
 
 (defmacro make-typed-from-foreign ()
-  (let ((types (append (list :int8 :uint8 :byte :ubyte
-			     :short :ushort :int :uint
-			     :float :double)
-		       (mapcar #'first cffi::*extra-primitive-types*))))
+  (let ((types (append `((:int8 0 nil nil)
+			 (:uint8 0 nil nil)
+			 (:byte 0 nil nil)
+			 (:ubyte 0 nil nil)
+			 (:short 0 nil nil)
+			 (:ushort 0 nil nil)
+			 (:int 0 nil nil)
+			 (:uint 0 nil nil)
+			 (:float 0 nil nil)
+			 (:double 0 nil nil))
+		       cffi::*extra-primitive-types*)))
     `(progn
-       ,@(loop :for type :in types
+       ,@(loop :for (type len comp-type comp-lisp-type) :in types
 	    :for from = (cepl-utils:symb type '-from-foreign)
 	    :for to = (cepl-utils:symb type '-to-foreign) :append
 	    `((declaim (inline ,from))
@@ -16,7 +23,10 @@
 		(mem-aref ptr ,type))
 	      (defun ,to (ptr value)
 		(declare (type cffi:foreign-pointer ptr)
-			 (optimize (speed 3) (safety 0) (debug 0)))
+			 (optimize (speed 3) (safety 0) (debug 0))
+			 ,@(when (> len 0) `((type (simple-array
+						    ,comp-lisp-type (,len))
+						   value))))
 		(setf (mem-aref ptr ,type) value))
 	      (defmethod get-typed-from-foreign ((type-name (eql ',type)))
 		#',from)
