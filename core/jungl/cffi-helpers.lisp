@@ -10,7 +10,8 @@
 			 (:int 0 nil nil)
 			 (:uint 0 nil nil)
 			 (:float 0 nil nil)
-			 (:double 0 nil nil))
+			 (:double 0 nil nil)
+			 (:half-float 0 nil nil))
 		       cffi::*extra-primitive-types*)))
     `(progn
        ,@(loop :for (type len comp-type comp-lisp-type) :in types
