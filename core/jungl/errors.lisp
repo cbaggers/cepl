@@ -135,3 +135,12 @@ internal texture format"
 
 (deferror make-buffer-stream-with-no-gpu-arrays () ()
     "Cepl: Invalid attempt to make buffer-stream with no gpu-arrays")
+
+(deferror invalid-context-for-def-glsl-stage () (name context)
+    "CEPL: Invalid context supplied for glsl-stage ~a:
+The context must, at least, contain:
+- One of the following versions: ~a
+- One of the following stage names: ~a
+
+Instead recieved: ~a"
+  name varjo::*supported-versions* varjo::*supported-stages* context)

@@ -65,12 +65,12 @@
        with the same signature as the gpu-function. This gives code hinting and
        also a decent error message if you try calling it from the cpu.
 
-   [4] the purpose of %recompile-gpu-function is actually to recompile pipelines
-       that depend on this gpu function. I should change the name. It does this
-       by calling %recompile-gpu-function on all the gpu function that depend on
-       this func and then the recompile-function for all pipelines that depend
-       on this gpu function. To this end it walks depth first too all affected
-       pipelines. (this also happens at runtime)
+   [4] the purpose of %recompile-gpu-function-and-pipelines is to recompile and
+       functions or pipelines that depend on this gpu function. It does this
+       by calling %recompile-gpu-function-and-pipelines on all the gpu function
+       that depend on this func and then the recompile-function for all
+       pipelines that depend on this gpu function. To this end it walks depth
+       first too all affected pipelines.
 
    [5] At runtime this looks for any gpu function that listed this function as
        one of it's missing dependencies and calls %test-&-update-spec on them.
@@ -96,7 +96,7 @@
       `(progn
          (%test-&-update-spec ,(%serialize-gpu-func-spec spec));;[2]
          ,(%make-stand-in-lisp-func spec);;[3]
-         (%recompile-gpu-function ',name);;[4]
+         (%recompile-gpu-function-and-pipelines ',name);;[4]
 	 (update-specs-with-missing-dependencies);;[5]
 	 ',name))))
 
@@ -140,7 +140,7 @@
 		  (first missing-dependencies) name))
 	(%update-gpu-function-data spec nil nil)))))
 
-(defun %recompile-gpu-function (name)
+(defun %recompile-gpu-function-and-pipelines (name)
   "Recompile all pipelines that depend on the named gpu function or any other
    gpu function that depends on the named gpu function. It does this by doing
    the following:
@@ -150,13 +150,10 @@
 
    [1] Trigger a recompile on all pipelines that depend on this gpu function"
   ;; recompile gpu-funcs that depends on name
-  (mapcar #'%recompile-gpu-function (funcs-that-use-this-func name));;[0]
+  (mapcar #'%recompile-gpu-function-and-pipelines
+	  (funcs-that-use-this-func name));;[0]
   ;; and recompile pipelines that depend on name
-  (mapcar (lambda (_)
-            (let ((recompile-pipeline-name (recompile-name _)));;[1]
-	      (when (fboundp recompile-pipeline-name)
-		(funcall (symbol-function recompile-pipeline-name)))))
-          (pipelines-that-use-this-func name)))
+  (recompile-pipelines-that-use-this-as-a-stage name))
 
 (defun %update-gpu-function-data (spec depends-on compiled)
   "[0] Add or update the spec
@@ -170,6 +167,11 @@
     (mapcar (lambda (_) (%subscribe-to-gpu-func name _)) depends-on);;[1]
     (when +cache-last-compile-result+
       (setf (slot-value spec 'cached-compile-results) compiled));;[2]
+    (setf (gpu-func-spec name) spec)));;[0]
+
+(defun %update-glsl-stage-data (spec)
+  "[0] Add or update the spec"
+  (with-slots (name) spec
     (setf (gpu-func-spec name) spec)));;[0]
 
 (defun %subscribe-to-gpu-func (name subscribe-to-name)

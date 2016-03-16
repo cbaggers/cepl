@@ -31,8 +31,10 @@
   ((name :initarg :name)
    (in-args :initarg :in-args)
    (uniforms :initarg :uniforms)
+   (outputs :initarg :outputs)
    (context :initarg :context)
-   (body-string :initarg :body)))
+   (body-string :initarg :body-string)
+   (cached-compile-results :initarg :compiled :initform nil)))
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
@@ -53,13 +55,16 @@
                  :declarations declarations
 		 :missing-dependencies missing-dependencies))
 
-(defun %make-glsl-stage-spec (name in-args uniforms context body-string)
+(defun %make-glsl-stage-spec (name in-args uniforms outputs context body-string
+			      compiled)
   (make-instance 'glsl-stage-spec
                  :name name
                  :in-args (mapcar #'listify in-args)
                  :uniforms (mapcar #'listify uniforms)
+		 :outputs (mapcar #'listify outputs)
                  :context context
-                 :body-string body-string))
+                 :body-string body-string
+		 :compiled compiled))
 
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms actual-uniforms context body instancing
@@ -72,8 +77,9 @@
      ,@body))
 
 (defmacro with-glsl-stage-spec (glsl-stage-spec &body body)
-  `(with-slots (name in-args uniforms context body-string) ,glsl-stage-spec
-     (declare (ignorable name in-args uniforms context body-string))
+  `(with-slots (name in-args uniforms outputs context body-string)
+       ,glsl-stage-spec
+     (declare (ignorable name in-args uniforms outputs context body-string))
      ,@body))
 
 (defun %serialize-gpu-func-spec (spec)
@@ -86,7 +92,7 @@
 (defun %serialize-glsl-stage-spec (spec)
   (with-glsl-stage-spec spec
     `(%make-glsl-stage-spec
-      ',name ',in-args ',uniforms ',context ',body-string)))
+      ',name ',in-args ',uniforms ',outputs ',context ',body-string)))
 
 (defun gpu-func-spec (name &optional error-if-missing)
   (or (gethash name *gpu-func-specs*)
@@ -136,7 +142,7 @@ names are depended on by the functions named later in the list"
                              (%funcs-this-func-uses (car x) (1+ depth)))
                            this-func-calls)))))
 
-(defun pipelines-that-use-this-func (name)
+(defun pipelines-that-use-this-as-a-stage (name)
   (remove nil
           (map-hash
            (lambda (k v)
@@ -151,6 +157,16 @@ names are depended on by the functions named later in the list"
 		 (%test-&-update-spec _1)
 		 _))
 	    *gpu-func-specs*))
+
+(defun recompile-pipelines-that-use-this-as-a-stage (name)
+  "Recompile all pipelines that depend on the named gpu function or any other
+   gpu function that depends on the named gpu function. It does this by
+   triggering a recompile on all pipelines that depend on this glsl-stage"
+  (mapcar (lambda (_)
+            (let ((recompile-pipeline-name (recompile-name _)))
+	      (when (fboundp recompile-pipeline-name)
+		(funcall (symbol-function recompile-pipeline-name)))))
+          (pipelines-that-use-this-as-a-stage name)))
 
 ;;--------------------------------------------------
 
