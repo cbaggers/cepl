@@ -25,16 +25,9 @@
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
    (missing-dependencies :initarg :missing-dependencies :initform nil)
-   (cached-compile-results :initform nil)))
-
-(defclass glsl-stage-spec ()
-  ((name :initarg :name)
-   (in-args :initarg :in-args)
-   (uniforms :initarg :uniforms)
-   (outputs :initarg :outputs)
-   (context :initarg :context)
-   (body-string :initarg :body-string)
    (cached-compile-results :initarg :compiled :initform nil)))
+
+(defclass glsl-stage-spec (gpu-func-spec) ())
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
@@ -55,16 +48,24 @@
                  :declarations declarations
 		 :missing-dependencies missing-dependencies))
 
-(defun %make-glsl-stage-spec (name in-args uniforms outputs context body-string
+(defun %make-glsl-stage-spec (name in-args uniforms context body-string
 			      compiled)
-  (make-instance 'glsl-stage-spec
-                 :name name
-                 :in-args (mapcar #'listify in-args)
-                 :uniforms (mapcar #'listify uniforms)
-		 :outputs (mapcar #'listify outputs)
-                 :context context
-                 :body-string body-string
-		 :compiled compiled))
+  (let ((uniforms (mapcar #'listify uniforms)))
+    (make-instance 'glsl-stage-spec
+		   :name name
+		   :in-args (mapcar #'listify in-args)
+		   :uniforms uniforms
+		   :context context
+		   :body body-string
+		   :compiled compiled
+		   :instancing nil
+		   :equivalent-inargs nil
+		   :equivalent-uniforms nil
+		   :actual-uniforms uniforms
+		   :uniform-transforms nil
+		   :doc-string nil
+		   :declarations nil
+		   :missing-dependencies nil)))
 
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms actual-uniforms context body instancing
@@ -77,9 +78,10 @@
      ,@body))
 
 (defmacro with-glsl-stage-spec (glsl-stage-spec &body body)
-  `(with-slots (name in-args uniforms outputs context body-string)
+  `(with-slots (name in-args uniforms outputs context body
+		     (compiled cached-compile-results))
        ,glsl-stage-spec
-     (declare (ignorable name in-args uniforms outputs context body-string))
+     (declare (ignorable name in-args uniforms outputs context compiled))
      ,@body))
 
 (defun %serialize-gpu-func-spec (spec)
@@ -88,11 +90,6 @@
                           ',instancing ',equivalent-inargs ',equivalent-uniforms
 			  ',actual-uniforms ',uniform-transforms
                           ,doc-string ',declarations ',missing-dependencies)))
-
-(defun %serialize-glsl-stage-spec (spec)
-  (with-glsl-stage-spec spec
-    `(%make-glsl-stage-spec
-      ',name ',in-args ',uniforms ',outputs ',context ',body-string)))
 
 (defun gpu-func-spec (name &optional error-if-missing)
   (or (gethash name *gpu-func-specs*)

@@ -285,23 +285,28 @@
    for the v-rolling-translate function.
    That is what this function does.
    It also:
-   [0] enables implicit uniforms
-   [1] validate that either the gpu-function's context didnt specify a stage
+   [0] if it's a glsl-stage then it is already compiled. Pass the compile result
+       and let varjo handle it
+   [1] enables implicit uniforms
+   [2] validate that either the gpu-function's context didnt specify a stage
        explicitly or that, if it did, that it matches the stage it is being used
        for now"
   (dbind (stage-type . stage-name) stage-pair
-    (dbind (in-args uniforms context code) (get-func-as-stage-code stage-name)
-      ;;[1]
-      (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
-			 context)))
-	(assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-      (let ((context (cons :iuniforms ;;[0]
-			   (cons stage-type
-				 (remove stage-type context)))))
-	(list in-args
-	      uniforms
-	      context
-	      `(progn ,@code))))))
+    (if (typep (gpu-func-spec stage-name) 'glsl-stage-spec)
+	(with-glsl-stage-spec (gpu-func-spec stage-name)
+	  compiled);;[0]
+	(dbind (in-args uniforms context code) (get-func-as-stage-code stage-name)
+	  ;;[2]
+	  (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
+			     context)))
+	    (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+	  (let ((context (cons :iuniforms ;;[1]
+			       (cons stage-type
+				     (remove stage-type context)))))
+	    (list in-args
+		  uniforms
+		  context
+		  `(progn ,@code)))))))
 
 ;;--------------------------------------------------
 

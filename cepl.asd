@@ -59,6 +59,7 @@
                (:file "core/jungl/gpu-pipeline-base")
                (:file "core/jungl/gpu-pipeline-validation")
                (:file "core/jungl/gpu-functions")
+	       (:file "core/jungl/gpu-glsl-stages")
                (:file "core/jungl/gpu-shader-pipeline")
                (:file "core/jungl/gpu-compose-pipeline")
                (:file "core/jungl/ubo")

@@ -34,10 +34,12 @@
     ;; check the arguments are sanely formatted
     (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
     (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
+    ;; check we can use the type from glsl cleanly
+    (assert-glsl-stage-types in-args uniforms)
     ;; now the meat
     (assert-context name context)
     (let ((spec (%make-glsl-stage-spec;;[0]
-		 name in-args uniforms outputs context body-string
+		 name in-args uniforms context body-string
 		 (glsl-stage-spec-to-varjo-compile-result ;;[1]
 		  in-args uniforms outputs context body-string))))
       (%update-glsl-stage-data spec)
@@ -53,6 +55,23 @@
 			    varjo::*supported-versions*))))
     (unless allowed
       (error 'invalid-context-for-def-glsl-stage :name name :context context))))
+
+(defun type-contains-structs (type)
+  (let ((type (varjo:type-spec->type type)))
+    (cond
+      ((v-typep type 'v-user-struct) t)
+      ((v-typep type 'v-array)
+       (type-contains-structs (v-element-type type)))
+      (t nil))))
+
+(defun assert-glsl-stage-types (in-args uniforms)
+  (labels ((check (x)
+	     (when (type-contains-structs (second x))
+	       (first x))))
+    (let* ((struct-args
+	    (remove nil (mapcar #'check (append in-args uniforms)))))
+      (when struct-args
+	(error 'struct-in-glsl-stage-args :arg-names struct-args)))))
 
 (defun %make-stand-in-lisp-func-for-glsl-stage (spec)
   "Makes a regular lisp function with the same names and arguments
@@ -95,8 +114,9 @@
 
 (defun process-glsl-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
-    (let ((name (symb (string-upcase glsl-name))))
-      `(,name ,type ,@qualifiers ,glsl-name))))
+    (let ((name (symb (string-upcase glsl-name)))
+	  (prefixed-glsl-name (format nil "@~a" glsl-name)))
+      `(,name ,type ,@qualifiers ,prefixed-glsl-name))))
 
 (defun fill-in-post-proc (x body-string outputs)
   (with-slots ((used-types varjo::used-types)

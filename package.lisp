@@ -259,6 +259,7 @@
            :gpu-array-t
            :texref
            :defpipeline
+	   :def-glsl-stage
            :g->
            :defun-g
            :defmacro-g
@@ -382,6 +383,7 @@
            :with-instances
            :g->
            :defpipeline
+	   :def-glsl-stage
            :defun-g
            :defmacro-g
            :defstruct-g
