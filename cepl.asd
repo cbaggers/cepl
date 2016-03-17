@@ -21,7 +21,6 @@
 	       #:fn)
   :components ((:file "package")
                (:file "host/api")
-	       (:file "host/step")
                (:file "core/utils")
 	       (:file "project")
 	       (:file "core/lifecycle")

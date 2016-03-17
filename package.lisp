@@ -8,10 +8,7 @@
 	   :set-primary-thread-and-run
 	   ;;---
 	   :set-step-func
-	   :set-swap-func
-	   :set-default-swap-arg
-	   :host-step
-	   :host-swap))
+	   :set-swap-func))
 
 (defpackage :cepl.lifecycle
   (:use :cl)

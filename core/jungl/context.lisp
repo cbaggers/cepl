@@ -13,10 +13,6 @@
 		       no-frame (alpha-size 0) (depth-size 16) (stencil-size 8)
 		       (red-size 8) (green-size 8) (blue-size 8) (buffer-size 32)
 		       (double-buffer t) hidden (resizable t))
-  (handler-case
-      (find-method #'cepl.host:init nil nil)
-    (error () (error "Cepl.Host: Init could not be found. Have you loaded a host?")))
-  (cepl.host:init)
   (destructuring-bind (context-handle window)
       (cepl.host:request-context
        width height title fullscreen
@@ -33,7 +29,7 @@
             (slot-value context 'fbo) (%make-default-framebuffer
                                        dimensions t t))
       (map nil #'funcall *on-context*)
-      (cepl.host:set-default-swap-arg *gl-window*)
+      (cepl.host::set-default-swap-arg *gl-window*)
       (cls))))
 
 
