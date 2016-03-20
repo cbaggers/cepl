@@ -18,7 +18,8 @@
 	       #:rtg-math
                #:varjo
                #:named-readtables
-	       #:fn)
+	       #:fn
+	       #:documentation-utils)
   :components ((:file "package")
                (:file "host/api")
                (:file "core/utils")
@@ -78,4 +79,7 @@
 	       (:file "core/jungl/space/gpu")
 
 	       (:file "core/predefined/gpu-structs")
-               (:file "core/repl")))
+               (:file "core/repl")
+
+	       (:file "docs/doc-strings/package")
+	       (:file "docs/doc-strings/c-arrays")))
