@@ -192,15 +192,25 @@
            :describe-pixel-format
            :defstruct-g
            :gl-calc-byte-size
+
+	   :pointer
+	   :dimensions ; [TODO] this isnt really inline with array-dimensions
+	   :element-type
+
+	   :c-array-pointer
+	   :c-array-dimensions
+	   :c-array-element-type
+
            :make-c-array-from-pointer
            :with-c-array
            :with-c-arrays
            :free-c-array
            :clone-c-array
            :make-c-array
+
 	   :c-array-byte-size
-           :c-array-pointer
-	   :c-array-dimensions
+
+
            :aref-c
            :%aref-c
            :c-populate
@@ -209,9 +219,9 @@
            :pull-g
            :pull1-g
            :push-g
-           :dimensions ; [TODO] this isnt really inline with array-dimensions
+
            :backed-by ; [TODO] is this the right name for the job?
-           :element-type
+
            :1d-p
            :bind-buffer
            :force-bind-buffer
@@ -327,152 +337,70 @@
 	   :update-non-hierarchical-relationship
 	   :remove-non-hierarchical-relationship))
 
-(defpackage :cepl
-  (:use :cl
-        :cepl-generics
-        :rtg-math
-        :rtg-math.base-maths
-        :cl-fad
-        :named-readtables
-        :jungl)
-  (:shadow :quit)
-  (:import-from :jungl.space :p! :space-g :in)
-  (:import-from :cepl-utils
-                :deferror
-                :print-mem
-                :p->)
-  (:import-from :rtg-math :s~)
-  (:import-from :cepl.lifecycle :shutting-down-p)
-  (:export :repl
-           :quit
-	   :shutting-down-p
-           :make-project
-           ;;----
-	   :dvec
-	   :dvec*
-	   ;;----
-           :pos
-           :rot
-           :dir
-           :vec
-           :size
-           :norm
-           :tex
-           :col
-	   :tangent
-	   :bi-tangent
-           ;;---
-           :v! :v-x :v-y :v-z :v-w :s~
-           :v!byte :v!ubyte :v!int
-           ;;---
-           :m!
-           ;;---
-           :rqpos
-           ;;---
-           :clear
-	   :step-host
-           :swap
-           :pixel-format
-           :lisp-type->pixel-format
-           :pixel-format->lisp-type
-           :pixel-format->internal-format
-           :internal-format->pixel-format
-           :internal-format->lisp-type
-           :lisp-type->internal-format
-           :describe-pixel-format
-           :with-instances
-           :g->
-           :defpipeline
-	   :def-glsl-stage
-           :defun-g
-           :defmacro-g
-           :defstruct-g
-           :pull-g
-           :pull1-g
-           :push-g
-           :make-c-array
-           :with-c-array
-           :with-c-arrays
-           :free-c-array
-           :aref-c
-           :c-array-pointer
-	   :c-array-dimensions
-           :c-populate
-           :make-gpu-array
-           :make-gpu-arrays
-           :subseq-g
-           :subseq-c
-           :with-gpu-array-as-c-array
-           :with-gpu-array-as-pointer
-           :make-buffer-stream
-           :make-texture
-           :sampler-type
-           :calc-sampler-type
-           :make-sampler
-           :with-sampling
-           :lod-bias
-           :min-lod
-           :max-lod
-           :magnify-filter
-           :minify-filter
-           :set-minify-filter
-           :calc-minify-filter
-           :wrap
-           :compare
-           :with-texture-bound
-           :g-pn
-           :g-pc
-           :g-pt
-           :g-pnc
-           :g-pnt
-           :g-pntc
-           :texref
-           :map-g
-           :fbo
-           :make-fbo
-           :make-fbos
-           :with-fbo-bound
-           :with-fbo-slots
-           :fbo-attach
-           :attachment
-           :attachment-compatible
-           :attachment-gpu-array
-           :mode-rgb
-           :mode-alpha
-           :source-rgb
-           :source-alpha
-           :destination-rgb
-           :destination-alpha
-           :blending
-           :make-blending-params
-           :with-blending
-           :per-attachment-blending-available-p
-           :fbo-detach
-           :viewport
-           :current-viewport
-	   :make-viewport
-	   :clone-viewport
-           :with-viewport
-           :with-fbo-viewport
-	   :element-type
-           ;;---
-           :node
-           :make-node
-           :node-transform
-           :make-pos-quat-node
-           :pqn-pos
-           :pqn-quat
-           :make-axis-angle-node
-           :aan-axis
-           :aan-angle
-           ;;---
-           :make-ubo
-           :ubo-data
-           :ubo-index
-           :cls
-	   ;;---
-	   :p!
-	   :space-g
-	   :in
-	   ;;---
-	   :continuable))
+(macrolet
+    ((def-re-exporting-package (name &key use shadow export re-export
+				     import-from export-from)
+       (labels ((exported-symbols (package-name)
+		  (let ((package (find-package package-name)))
+		    (loop :for x :being :each external-symbol :of package
+		       :when (eq (symbol-package x) package) :collect
+		       (intern (symbol-name x) :keyword))))
+		(calc-export-all (re)
+		  (exported-symbols re))
+		(calc-import-from (re)
+		  (rest re))
+		(calc-re-export (re)
+		  (typecase re
+		    (list (calc-import-from re))
+		    (symbol (calc-export-all re))))
+		(calc-exports-from (ef)
+		  (rest ef))
+		(calc-exports ()
+		  (append export (mapcan #'calc-re-export re-export)
+			  (mapcan #'calc-exports-from export-from)))
+		(calc-re-using (x)
+		  (if (listp x) (first x) x)))
+	 (let ((use (append use (mapcar #'calc-re-using re-export)))
+	       (exports (calc-exports)))
+	   `(defpackage ,name
+	      ,@(when use `((:use ,@use)))
+	      ,@(when shadow `((:shadow ,@shadow)))
+	      ,@(loop :for i :in import-from :collect (cons :import-from i))
+	      ,@(loop :for i :in export-from :collect (cons :import-from i))
+	      ,@(when exports `((:export ,@exports))))))))
+  ;;
+  (def-re-exporting-package :cepl
+      :use (:cl
+	    :rtg-math.base-maths
+	    :cl-fad
+	    :named-readtables)
+      :shadow (:quit)
+      :import-from ((:cepl-utils :deferror
+				  :print-mem
+				  :p->))
+      :export-from ((:jungl.space :p! :space-g :in))
+      :export (:g-pc
+	       :g-pn
+	       :g-pnc
+	       :g-pnt
+	       :g-pntc
+	       :g-pt
+	       :make-project
+	       :quit
+	       :repl
+	       :step-host
+	       :continuable)
+      :re-export (:cepl-generics
+		  :jungl
+		  (:cepl.lifecycle :shutting-down-p)
+		  (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
+			     :radians :degrees))))
+
+
+;; {TODO} read up on this:
+;; com.informatimago.common-lisp.lisp-reader.package:defpackage
+;;
+;; re-evaluating defpackage has implementation specific effects,
+;; advice I got from pjb was to implement the ugliness above with
+;; 'export directly. I need to understand this approach but could
+;; be nice.
