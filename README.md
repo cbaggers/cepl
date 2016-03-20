@@ -1,4 +1,4 @@
-# CEPL (Code Evaluate Play Loop) - [ALPHA]
+## CEPL (Code Evaluate Play Loop) - [ALPHA]
 
 CEPL is a lispy and REPL friendly library for working with OpenGL.
 
@@ -14,7 +14,7 @@ Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 
 -----------------------------------------------------------------------------------------
 
-# Requirements
+### Requirements
 
 All of the following will be download automatically by quicklisp
 
@@ -29,17 +29,17 @@ All of the following will be download automatically by quicklisp
 * * rtg-math
 * varjo
 
-## C Library dependency
+#### C Library dependency
 
 Cepl uses OpenGL so you need to make sure this is available on your machine. Installing your GPU drivers will usually handle this.
 
-## Cepl's Host
+#### Cepl's Host
 
 Cepl abstracts working with OpenGL but is not responsible for creating a window or GL context, this is handled by a `Host`. Right now the only supported host is `SDL2`, the system to load is called `cepl.sdl2`, you can find it here: [cepl.sdl2](https://github.com/cbaggers/cepl.sdl2)
 
 -----------------------------------------------------------------------------------------
 
-# Getting Started
+### Getting Started
 
 The best way to get started is to make a new project that uses cepl. Do the following in your repl to get set up:
 
@@ -53,7 +53,7 @@ The best way to get started is to make a new project that uses cepl. Do the foll
 
 You are now ready to get started. How this is done varies a little between OS:
 
-### Linux
+#### Linux
 
 Simply run:
 - `(ql:quickproject "my-proj")`
@@ -62,7 +62,7 @@ Simply run:
 
 This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
 
-### Windows & OSX
+#### Windows & OSX
 
 - In your new `my-proj` directory you will find a file called `run-session.lisp`
 - Run your lisp, loading this file. I use sbcl so it looks like this `sbcl --load "run-session.lisp`.
@@ -71,7 +71,7 @@ This will bring use the host (`sdl2`) to create a window & initialize opengl. Yo
 
 This will bring use the host (`sdl2`) to create a window & initialize opengl. You now are ready to go, have fun!
 
-### Q: Why is the Windows/OSX start procedure more complicated?
+#### Q: Why is the Windows/OSX start procedure more complicated?
 
 *A:* Both these platforms have restrictions over which thread is allowed to interact with the window manager (I will call this the 'UI thread'). This would be fine except that, when developing, most common-lisp programmers use a system like `slime` or `sly` to connect their editor to their lisp session and those systems normally run your code in a different thread.
 
