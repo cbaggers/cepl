@@ -89,18 +89,13 @@
 	   :n-of*
 	   :just-ignore))
 
-(defpackage :%jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl-generics :split-sequence :named-readtables)
-  (:shadowing-import-from :rtg-math :v!))
-
 (defpackage :jungl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils)
   (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
 
 (defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl-generics :split-sequence :%jungl :named-readtables)
+	:cepl-generics :split-sequence :named-readtables)
   (:shadowing-import-from :rtg-math :v!)
   (:import-from :cepl-utils
                 :deferror

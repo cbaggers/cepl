@@ -79,6 +79,6 @@ The choices are then to frequently dispatch jobs to the 'UI thread' (and accept 
 
 To get a full breakdown of the above issue run `(cepl:make-project :why)` in your repl.
 
-**Windows C Library Hack**
+#### Windows C Library Hack
 
 If you are having issues getting the c libraries to load and just need to rule out whether lisp can find them, try putting them in the same folder as the lisp exe. For example `C:\Program Files\sbcl\`.
