@@ -101,7 +101,7 @@ should be ~s" data element-type)
 ;;---------------------------------------------------
 
 (defmethod push-g ((object c-array) (destination ubo))
-  (push-g (list object) (subseq-g (ubo-data object) 0 1)))
+  (push-g object (subseq-g (ubo-data destination) 0 1)))
 
 (defmethod pull1-g ((object ubo))
   (let* ((data (ubo-data object))
