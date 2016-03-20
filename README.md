@@ -26,7 +26,7 @@ All of the following will be download automatically by quicklisp
 * cl-ppcre
 * named-readtables
 * fn
-* * rtg-math
+* rtg-math
 * varjo
 
 #### C Library dependency
@@ -78,8 +78,6 @@ This will bring use the host (`sdl2`) to create a window & initialize opengl. Yo
 The choices are then to frequently dispatch jobs to the 'UI thread' (and accept that overhead) or start `slime`/`sly` in a way that guarentees the thread. In cepl we choose the latter as, although it does add one step to starting your project, it means you can ignore the detail whilst you are working.
 
 To get a full breakdown of the above issue run `(cepl:make-project :why)` in your repl.
-
------------------------------------------------------------------------------------------
 
 **Windows C Library Hack**
 
