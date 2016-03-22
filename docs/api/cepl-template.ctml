@@ -3,19 +3,6 @@
   <head>
     <meta charset="utf-8" />
     <title lquery="(text name)">NAME</title>
-    <style type="text/css">
-      html{font-family: serif;}
-      code a{text-decoration: none;}
-      h1{display: inline-block; margin-bottom: 0;}
-      code{font-family: monospace;}
-      h4{display: inline-block; margin: 0; padding: 0;}
-      #symbol-index ul{list-style: none;}
-      .package li{margin-bottom: 20px;}
-      .package pre{margin: 0 0 0 10px; white-space: pre-wrap;}
-      .package .nicknames{font-weight: normal;}
-      table{margin: 20px;}
-      td{padding-bottom: 10px;}
-    </style>
     <link href="cepl-styles.css" rel="stylesheet" type="text/css" />
   </head>
   <body>

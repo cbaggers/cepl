@@ -30,7 +30,7 @@
                                        dimensions t t))
       (map nil #'funcall jungl::*on-context*)
       (cepl.host::set-default-swap-arg jungl::*gl-window*)
-      (jungl:cls))))
+      (cepl:cls))))
 
 
 (let ((available-extensions nil))

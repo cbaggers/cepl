@@ -285,8 +285,7 @@
                 :print-mem
                 :just-ignore)
   (:shadow :float :space)
-  (:export :cls
-           ;;- - - - - - - -
+  (:export ;;- - - - - - - -
            :timestamp
            ;;- - - - - - - -
            :current-viewport
@@ -297,7 +296,7 @@
            :with-fbo-viewport
            :viewport-resolution
            :viewport-resolution-v!
-           :swap
+
            :valid-pixel-format-p
            :pixel-format
            :pixel-format->lisp-type
@@ -463,7 +462,9 @@
                :quit
                :repl
                :step-host
-               :continuable)
+               :continuable
+	       :cls
+	       :swap)
       :re-export (:cepl.generics
                   :cepl.c-arrays
                   :cepl.gpu-buffers

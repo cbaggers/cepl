@@ -29,28 +29,24 @@
                (:file "core/generics")
                (:file "core/internals")
                (:file "core/types/types")
-
                (:file "core/spaces/constants")
                (:file "core/spaces/nht-routes")
                (:file "core/spaces/space")
                (:file "core/spaces/predefined-spaces")
 
-               (:file "core/jungl/global-vars")
-               (:file "core/jungl/render-state")
-               (:file "core/errors")
+               (:file "core/global-vars")
 
+               (:file "core/context/render-state")
+               (:file "core/errors")
                (:file "core/misc/gl-extras")
 
-               (:file "core/jungl/viewport")
+               (:file "core/viewports/viewport")
 
                (:file "core/context/context-classes")
                (:file "core/context/context")
-
                (:file "core/textures/image-format")
                (:file "core/textures/pixel-format")
-
                (:file "core/types/cffi-extra-primitive-types")
-
                (:file "core/c-arrays/c-arrays")
                (:file "core/types/structs")
                (:file "core/gpu-buffers/gpu-buffers")
@@ -68,25 +64,22 @@
                (:file "core/pipelines/gpu-shader-pipeline")
                (:file "core/pipelines/gpu-compose-pipeline")
 
-               (:file "core/jungl/ubo")
+               (:file "core/ubos/ubo")
 
                (:file "core/textures/textures")
                (:file "core/textures/samplers")
                (:file "core/pipelines/map-g")
                (:file "core/gpu-arrays/texture-backed")
 
-               (:file "core/jungl/fbo")
-               (:file "core/jungl/blending-modes")
-               (:file "core/jungl/misc")
+               (:file "core/fbos/fbo")
+               (:file "core/blending/blending-modes")
 
                (:file "core/spaces/space-errors")
                (:file "core/spaces/space-walking")
                (:file "core/spaces/space-transforms")
                (:file "core/spaces/pos")
                (:file "core/spaces/gpu")
-
                (:file "core/types/predefined/gpu-structs")
                (:file "core/repl")
-
                (:file "docs/doc-strings/package")
                (:file "docs/doc-strings/c-arrays")))
