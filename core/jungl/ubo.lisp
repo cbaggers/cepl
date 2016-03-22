@@ -83,7 +83,7 @@ should be ~s" data element-type)
 
 (defun %bind-ubo (ubo)
   (let* ((data (ubo-data ubo))
-         (buffer-id (glbuffer-buffer-id
+         (buffer-id (gpu-buffer-id
 		     (gpuarray-buffer data)))
          (offset (destructuring-bind (type len byte-offset)
 		     (gpuarray-format data)

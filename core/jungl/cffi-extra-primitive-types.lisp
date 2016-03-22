@@ -82,7 +82,7 @@
                    ,(when (< len 5)
                           (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
                             (when (jungl:valid-pixel-format-p components comp-type t nil)
-                              `(defmethod jungl:lisp-type->pixel-format ((comp-type (eql ,type)))
+                              `(defmethod lisp-type->pixel-format ((comp-type (eql ,type)))
                                  (jungl:pixel-format ,components ',comp-type)))))
                    (autowrap:define-foreign-record
                        ',name

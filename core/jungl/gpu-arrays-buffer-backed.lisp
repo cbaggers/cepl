@@ -42,10 +42,10 @@
 ;; If the buffer is managed and all formats are undefined then free it.
 (defun free-gpu-array-b (gpu-array)
   (let* ((buffer (gpuarray-buffer gpu-array))
-         (buffer-formats (glbuffer-format buffer)))
+         (buffer-formats (gpu-buffer-format buffer)))
     (setf (first (nth (gpuarray-format-index gpu-array) buffer-formats))
           :UNDEFINED)
-    (when (and (glbuffer-managed buffer)
+    (when (and (gpu-buffer-managed buffer)
                (loop :for format :in buffer-formats :always
                   (eq (car format) :UNDEFINED)))
       (free-buffer buffer)))
@@ -58,7 +58,7 @@
    array and the offset in bytes from the beginning of the buffer
    this gpu-array lives in."
   (nth (gpuarray-format-index gpu-array)
-       (glbuffer-format (gpuarray-buffer gpu-array))))
+       (gpu-buffer-format (gpuarray-buffer gpu-array))))
 
 (defmethod dimensions ((object gpuarray))
   (gpuarray-dimensions object))
@@ -87,7 +87,7 @@
                            &key element-type dimensions
                              (access-style :static-draw))
   (declare (ignore initial-contents))
-  (let ((buffer (make-buffer :managed t)))
+  (let ((buffer (make-gpu-buffer :managed t)))
     (make-gpuarray :buffer (buffer-reserve-block
                             buffer element-type dimensions
                             :array-buffer access-style)
@@ -104,7 +104,7 @@
 (defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw)
 			     dimensions)
-  (let ((buffer (make-buffer :managed t))
+  (let ((buffer (make-gpu-buffer :managed t))
 	(dimensions (listify dimensions))
 	(c-dimensions (dimensions initial-contents)))
     (when dimensions
@@ -143,7 +143,7 @@ call to #'make-gpu-array were ~s"
    ;; use it rather than creating a new buffer. Note that all
   ;; existing data in the buffer will be destroyed in the process
   ;; {TODO} Really? where?
-  (let ((buffer (multi-buffer-data (make-buffer :managed t) c-arrays
+  (let ((buffer (multi-buffer-data (make-gpu-buffer :managed t) c-arrays
                                    :array-buffer access-style)))
     (loop :for c-array :in c-arrays :for i :from 0 :collecting
        (make-gpuarray :buffer buffer

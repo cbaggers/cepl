@@ -27,7 +27,7 @@ With this knowledge we can now start doing things with buffers
 
 ### Making Buffers
 
-`#'make-buffer`:
+`#'make-gpu-buffer`:
 
 ```
      Signature: (&key initial-contents

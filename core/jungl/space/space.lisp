@@ -118,7 +118,7 @@
 (defun %space-ref (id)
   (aref spaces id))
 
-(defmethod jungl:free ((space space))
+(defmethod free ((space space))
   (free-space space))
 
 (defun free-space (space)

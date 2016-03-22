@@ -51,11 +51,11 @@
   (v! (%viewport-origin-x viewport)
       (%viewport-origin-y viewport)))
 
-(defmethod cepl-generics:size ((object viewport))
+(defmethod size ((object viewport))
   (v! (%viewport-resolution-x object)
       (%viewport-resolution-y object)))
 
-(defmethod cepl-generics:pos ((object viewport))
+(defmethod pos ((object viewport))
   (v! (%viewport-origin-x object)
       (%viewport-origin-y object)))
 
@@ -77,7 +77,7 @@
                    (error "The value given to (setf viewport-resolution-v!) must be a vec2"))))
     (%set-resolution viewport (first value) (second value))))
 
-(defmethod (setf cepl-generics:size) (value (object viewport))
+(defmethod (setf size) (value (object viewport))
   (%set-resolution object (ceiling (v:x value)) (ceiling (v:y value))))
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

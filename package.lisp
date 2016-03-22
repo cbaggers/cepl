@@ -16,7 +16,7 @@
 	   :listen-to-lifecycle-changes
 	   :stop-listening-to-lifecycle-changes))
 
-(defpackage :cepl-generics
+(defpackage :cepl.generics
   (:use :cl)
   (:export :pos
            :rot
@@ -39,7 +39,20 @@
            :pos
            :repeating
            :state
-           :timestamp))
+           :timestamp
+	   ;;--
+	   :backed-by
+	   :dimensions
+	   :free
+	   :free-gpu-array
+	   :free-texture
+	   :lisp-type->pixel-format
+	   :make-gpu-array
+	   :make-vao-from-id
+	   :populate
+	   :pull-g
+	   :pull1-g
+	   :push-g))
 
 (defpackage :cepl-utils
   (:use :cl)
@@ -89,13 +102,73 @@
 	   :n-of*
 	   :just-ignore))
 
+(defpackage :cepl.internals
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+	:cepl.generics :split-sequence :named-readtables)
+  (:export :%collate-args
+	   :%get-pipeline-uniforms
+	   :1d-p
+	   :clear-gl-context-cache
+	   :gl-assign-attrib-pointers
+	   :s-arrayp
+	   :s-def
+	   :s-extra-prim-p
+	   :s-prim-p
+	   :symbol-names-cepl-structp))
+
+(defpackage :cepl.types
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+	:cepl.generics :split-sequence :named-readtables))
+
 (defpackage :jungl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils)
   (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
 
+(defpackage :cepl.c-arrays
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+	:cepl.generics :split-sequence :named-readtables)
+  (:export :with-c-array
+	   :with-c-arrays
+	   :element-byte-size
+	   :element-type
+	   :pointer
+	   :aref-c
+	   :%aref-c
+	   :c-array
+	   :c-array-pointer
+	   :c-array-dimensions
+	   :c-array-element-type
+	   :clone-c-array
+	   :free-c-array
+	   :make-c-array
+	   :make-c-array-from-pointer
+	   :subseq-c))
+
+(defpackage :cepl.gpu-buffers
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+	:cepl.generics :split-sequence :named-readtables)
+  (:export :with-buffer
+	   :gpu-buffer
+	   :gpu-buffer-id
+	   :gpu-buffer-format
+	   :bind-buffer
+	   :buffer-data
+	   :buffer-data-raw
+	   :buffer-reserve-block
+	   :buffer-reserve-block-raw
+	   :buffer-reserve-blocks
+	   :buffer-sub-data
+	   :free-buffer
+	   :free-buffers
+	   :make-gpu-buffer
+	   :make-gpu-buffer-from-id
+	   :multi-buffer-data
+	   :unbind-buffer))
+
 (defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl-generics :split-sequence :named-readtables)
+	:cepl.generics :split-sequence :named-readtables
+	:cepl.internals :cepl.c-arrays :cepl.gpu-buffers)
   (:shadowing-import-from :rtg-math :v!)
   (:import-from :cepl-utils
                 :deferror
@@ -173,8 +246,6 @@
            :with-fbo-viewport
            :viewport-resolution
 	   :viewport-resolution-v!
-           :clear-gl-context-cache
-           :free
            :swap
            :valid-pixel-format-p
            :pixel-format
@@ -182,54 +253,14 @@
            :pixel-format->internal-format
            :internal-format->pixel-format
            :internal-format->lisp-type
-           :lisp-type->pixel-format
            :lisp-type->internal-format
            :describe-pixel-format
            :defstruct-g
            :gl-calc-byte-size
 
-	   :pointer
-	   :dimensions ; [TODO] this isnt really inline with array-dimensions
-	   :element-type
 
-	   :c-array-pointer
-	   :c-array-dimensions
-	   :c-array-element-type
-
-           :make-c-array-from-pointer
-           :with-c-array
-           :with-c-arrays
-           :free-c-array
-           :clone-c-array
-           :make-c-array
-
-	   :c-array-byte-size
-
-
-           :aref-c
-           :%aref-c
-           :c-populate
            :subseq-g
-           :subseq-c
-           :pull-g
-           :pull1-g
-           :push-g
 
-           :backed-by ; [TODO] is this the right name for the job?
-
-           :1d-p
-           :bind-buffer
-           :force-bind-buffer
-           :unbind-buffer
-           :gen-buffer
-           :buffer-data-raw
-           :buffer-data
-           :buffer-sub-data
-           :multi-buffer-data
-           :buffer-reserve-block-raw
-           :buffer-reserve-block
-           :buffer-reserve-blocks
-           :make-gpu-array
            :make-gpu-arrays
            :with-gpu-array-as-c-array
            :with-gpu-array-as-pointer
@@ -271,11 +302,7 @@
            :define-compiler-macro-g
            :with-instances
            :free-managed-resources
-           :free-buffer
-           :free-buffers
            :free-vertex-stream
-           :free-texture
-           :free-gpu-array
            :free-vao
            ;;----------
            :map-g
@@ -315,7 +342,7 @@
 
 (defpackage :jungl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
-	:varjo :varjo-lang)
+	:varjo :varjo-lang :cepl.generics)
   (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)
   (:import-from :jungl :def-compile-pass :def-deep-pass :set-uniform :remove-uniform
@@ -385,7 +412,9 @@
 	       :repl
 	       :step-host
 	       :continuable)
-      :re-export (:cepl-generics
+      :re-export (:cepl.generics
+		  :cepl.c-arrays
+		  :cepl.gpu-buffers
 		  :jungl
 		  (:cepl.lifecycle :shutting-down-p)
 		  (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~

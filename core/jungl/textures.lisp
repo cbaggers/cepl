@@ -653,7 +653,7 @@
       ;; upload
       (with-texture-bound (new-tex)
         (%gl::tex-buffer :texture-buffer internal-format
-                         (glbuffer-buffer-id (gpuarray-buffer array)))
+                         (gpu-buffer-id (gpuarray-buffer array)))
         (setf (slot-value new-tex 'allocated) t)
         new-tex))))
 
