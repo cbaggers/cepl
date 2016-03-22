@@ -1,4 +1,4 @@
-(in-package :jungl.space)
+(in-package :cepl.space)
 
 ;; here we define the common spaces
 

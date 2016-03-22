@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pixel-formats)
 
 ;; This has many lookup vars which a quite ugly and will need to be
 ;; consolidated with other such tables in cepl. For now I am still hashing

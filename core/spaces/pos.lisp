@@ -1,4 +1,4 @@
-(in-package :jungl.space)
+(in-package :cepl.space)
 
 ;; terminology
 ;; -----------

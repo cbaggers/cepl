@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.blending)
 
 ;; Most of the code that uses blend modes will be in other files
 ;; as it is most needed in map-g and fbos
@@ -217,194 +217,197 @@
                                (source-alpha attachment)
                                (destination-alpha attachment))))
 
+
+;;----------------------------------------------------------------------
+
 ;; functions below were written to help me understand the blending process
 ;; they are not something to use in attachments. I'm not sure how to expose
 ;; these (or if I should). I like the idea of cpu side debugging using this
 ;; but in issolation it doesnt really mean much. Probably only makes sense in
 ;; a software renderer.
 
-(defun zero
-    (source destination &key (target-rgb t) (blend-color *blend-color*))
-  (declare (ignore source destination blend-color))
-  (if target-rgb
-      (v! 0 0 0)
-      0))
+;; (defun zero
+;;     (source destination &key (target-rgb t) (blend-color *blend-color*))
+;;   (declare (ignore source destination blend-color))
+;;   (if target-rgb
+;;       (v! 0 0 0)
+;;       0))
 
-(defun one
-    (source destination &key (target-rgb t) (blend-color *blend-color*))
-  (declare (ignore source destination blend-color))
-  (if target-rgb
-      (v! 1 1 1)
-      1))
+;; (defun one
+;;     (source destination &key (target-rgb t) (blend-color *blend-color*))
+;;   (declare (ignore source destination blend-color))
+;;   (if target-rgb
+;;       (v! 1 1 1)
+;;       1))
 
-(defun src-color
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:s~ source :xyz))
-      (* (v:w (if target-source source destination))
-         (v:w source))))
+;; (defun src-color
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:s~ source :xyz))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w source))))
 
-(defun one-minus-src-color
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:- (v! 1 1 1) (v:s~ source :xyz)))
-      (* (v:w (if target-source source destination))
-         (- 1 (v:w source)))))
+;; (defun one-minus-src-color
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:- (v! 1 1 1) (v:s~ source :xyz)))
+;;       (* (v:w (if target-source source destination))
+;;          (- 1 (v:w source)))))
 
-(defun dst-color
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:s~ destination :xyz))
-      (* (v:w (if target-source source destination))
-         (v:w destination))))
+;; (defun dst-color
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:s~ destination :xyz))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w destination))))
 
-(defun one-minus-dst-color
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:- (v! 1 1 1) (v:s~ destination :xyz)))
-      (* (v:w (if target-source source destination))
-         (- 1 (v:w destination)))))
+;; (defun one-minus-dst-color
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:- (v! 1 1 1) (v:s~ destination :xyz)))
+;;       (* (v:w (if target-source source destination))
+;;          (- 1 (v:w destination)))))
 
-(defun src-alpha
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v! (v:w source) (v:w source) (v:w source)))
-      (* (v:w (if target-source source destination))
-         (v:w source))))
+;; (defun src-alpha
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v! (v:w source) (v:w source) (v:w source)))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w source))))
 
-(defun one-minus-src-alpha
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:- (v! 1 1 1) (v! (v:w source) (v:w source) (v:w source))))
-      (* (v:w (if target-source source destination))
-         (- 1 (v:w source)))))
+;; (defun one-minus-src-alpha
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:- (v! 1 1 1) (v! (v:w source) (v:w source) (v:w source))))
+;;       (* (v:w (if target-source source destination))
+;;          (- 1 (v:w source)))))
 
-(defun dst-alpha
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v! (v:w destination) (v:w destination) (v:w destination)))
-      (* (v:w (if target-source source destination))
-         (v:w destination))))
+;; (defun dst-alpha
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v! (v:w destination) (v:w destination) (v:w destination)))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w destination))))
 
-(defun one-minus-dst-alpha
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:- (v! 1 1 1) (v! (v:w destination) (v:w destination) (v:w destination))))
-      (* (v:w (if target-source source destination))
-         (v:w destination))))
+;; (defun one-minus-dst-alpha
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:- (v! 1 1 1) (v! (v:w destination) (v:w destination) (v:w destination))))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w destination))))
 
-(defun constant-color
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:s~ blend-color :xyz))
-      (* (v:w (if target-source source destination))
-         (v:w blend-color))))
+;; (defun constant-color
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:s~ blend-color :xyz))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w blend-color))))
 
-(defun one-minus-constant-color
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:- (v! 1 1 1) (v:s~ blend-color :xyz)))
-      (* (v:w (if target-source source destination))
-         (- 1 (v:w blend-color)))))
+;; (defun one-minus-constant-color
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:- (v! 1 1 1) (v:s~ blend-color :xyz)))
+;;       (* (v:w (if target-source source destination))
+;;          (- 1 (v:w blend-color)))))
 
-(defun constant-alpha
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore ))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v! (v:w blend-color) (v:w blend-color) (v:w blend-color)))
-      (* (v:w (if target-source source destination))
-         (v:w blend-color))))
+;; (defun constant-alpha
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore ))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v! (v:w blend-color) (v:w blend-color) (v:w blend-color)))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w blend-color))))
 
-(defun one-minus-constant-alpha
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:- (v! 1 1 1) (v! (v:w blend-color) (v:w blend-color) (v:w blend-color))))
-      (* (v:w (if target-source source destination))
-         (- 1 (v:w blend-color)))))
+;; (defun one-minus-constant-alpha
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:- (v! 1 1 1) (v! (v:w blend-color) (v:w blend-color) (v:w blend-color))))
+;;       (* (v:w (if target-source source destination))
+;;          (- 1 (v:w blend-color)))))
 
-;; Destination color multiplied by the minimum of the source and (1 – destination)
-(defun src-alpha-saturate
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*))
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (let ((factor (min (v:w source) (- 1 (v:w destination)))))
-             (v! factor factor factor)))
-      (* (v:w (if target-source source destination))
-         1)))
+;; ;; Destination color multiplied by the minimum of the source and (1 – destination)
+;; (defun src-alpha-saturate
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*))
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (let ((factor (min (v:w source) (- 1 (v:w destination)))))
+;;              (v! factor factor factor)))
+;;       (* (v:w (if target-source source destination))
+;;          1)))
 
-(defun src1-color
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*) source-2)
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:s~ source-2 :xyz))
-      (* (v:w (if target-source source destination))
-         (v:w source-2))))
+;; (defun src1-color
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*) source-2)
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:s~ source-2 :xyz))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w source-2))))
 
-(defun one-minus-src1-color
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*) source-2)
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:- (v! 1 1 1) (v:s~ source-2 :xyz)))
-      (* (v:w (if target-source source destination))
-         (- 1 (v:w source-2)))))
+;; (defun one-minus-src1-color
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*) source-2)
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:- (v! 1 1 1) (v:s~ source-2 :xyz)))
+;;       (* (v:w (if target-source source destination))
+;;          (- 1 (v:w source-2)))))
 
-(defun src1-alpha
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*) source-2)
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v! (v:w source-2) (v:w source-2) (v:w source-2)))
-      (* (v:w (if target-source source destination))
-         (v:w source-2))))
+;; (defun src1-alpha
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*) source-2)
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v! (v:w source-2) (v:w source-2) (v:w source-2)))
+;;       (* (v:w (if target-source source destination))
+;;          (v:w source-2))))
 
-(defun one-minus-src1-alpha
-    (source destination &key (target-rgb t) (target-source t)
-                          (blend-color *blend-color*) source-2)
-  (declare (ignore blend-color))
-  (if target-rgb
-      (v:* (v:s~ (if target-source source destination) :xyz)
-           (v:- (v! 1 1 1) (v! (v:w source-2) (v:w source-2) (v:w source-2))))
-      (* (v:w (if target-source source destination))
-         (- 1 (v:w source-2)))))
+;; (defun one-minus-src1-alpha
+;;     (source destination &key (target-rgb t) (target-source t)
+;;                           (blend-color *blend-color*) source-2)
+;;   (declare (ignore blend-color))
+;;   (if target-rgb
+;;       (v:* (v:s~ (if target-source source destination) :xyz)
+;;            (v:- (v! 1 1 1) (v! (v:w source-2) (v:w source-2) (v:w source-2))))
+;;       (* (v:w (if target-source source destination))
+;;          (- 1 (v:w source-2)))))

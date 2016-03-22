@@ -1,7 +1,7 @@
-(in-package :jungl.space)
+(in-package :cepl.space)
 
 (deferror from-ndc-or-screen-cpu-side () ()
-    "Jungl.Spaces: Limitations in cpu-side space transforms from
+    "Cepl.Spaces: Limitations in cpu-side space transforms from
                    *screen-space* & *ndc-space*
 
 Jungl's `spaces` feature can transform between most spaces in the graph, however
@@ -32,13 +32,13 @@ Notes:
     glsl code, which is a great way to destroy the performace of your code.")
 
 (deferror to-ndc-or-screen () ()
-    "Jungl.Spaces: Un-implemented Transform Feature
+    "Cepl.Spaces: Un-implemented Transform Feature
 
 Sorry we do not currently support transforming to *ndc-space* or *screen-space*
 This is a gap in the api and will be looked at in future versions.")
 
 (deferror from-ndc () ()
-    "Jungl.Spaces: Un-implemented Transform Feature
+    "Cepl.Spaces: Un-implemented Transform Feature
 
 Sorry we do not currently support transforming from *ndc-space*
 This is a gap in the api and will be looked at in future versions.")

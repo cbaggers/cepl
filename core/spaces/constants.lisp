@@ -1,4 +1,4 @@
-(in-package :jungl.space.routes)
+(in-package :cepl.space.routes)
 
 ;;----------------------------------------------------------------------
 ;; Constants

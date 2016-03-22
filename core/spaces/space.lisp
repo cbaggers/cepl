@@ -1,4 +1,4 @@
-(in-package :jungl.space)
+(in-package :cepl.space)
 
 ;;----------------------------------------------------------------------
 ;; spatial relationship
@@ -74,7 +74,7 @@
 
 (defun make-space* (&rest relationships)
   (unless relationships
-    (error "JUNGL.SPACE: All spaces must be created with at least 1 relationship"))
+    (error "CEPL.SPACE: All spaces must be created with at least 1 relationship"))
   (if (eq :parent (first relationships))
       (dbind (&key parent (transform (m4:identity)))
 	  relationships
@@ -125,7 +125,7 @@
   (let ((id (%space-nht-id space)))
     (when (> id 0)
       (setf (aref spaces id) nil)
-      (jungl.space.routes:free-id id))
+      (cepl.space.routes:free-id id))
     (disconnect-space space)
     nil))
 
@@ -169,7 +169,7 @@
    (parse-relationships relationships)))
 
 (defun %make-relational-space (relationships)
-  (let* ((id (jungl.space.routes:id!))
+  (let* ((id (cepl.space.routes:id!))
 	 (spatial-relationships
 	  (mapcar (lambda (x)
 		    (dbind (target to-m4 from-m4) x
@@ -184,7 +184,7 @@
 				    :element-type 'spatial-relationship
 				    :initial-contents spatial-relationships)
 		       :depth 0)))
-    (jungl.space.routes:add-id id (mapcar #'sr-target-id spatial-relationships))
+    (cepl.space.routes:add-id id (mapcar #'sr-target-id spatial-relationships))
     (%add-space-to-array space)
     space))
 

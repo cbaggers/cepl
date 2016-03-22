@@ -1,4 +1,4 @@
-(in-package :jungl.space)
+(in-package :cepl.space)
 
 ;;----------------------------------------------------------------------
 ;; Model
@@ -56,7 +56,7 @@
 
 (defmacro with-rendering-via (via-space &body body)
   `(if (route-restriction)
-       (error "JUNGL.SPACE: Encountered a with-routes-via block attempting to route all transforms via ~s however another restriction exists within the same dynamic scope: ~s" ,via-space (route-restriction))
+       (error "CEPL.SPACE: Encountered a with-routes-via block attempting to route all transforms via ~s however another restriction exists within the same dynamic scope: ~s" ,via-space (route-restriction))
        (progn
 	 (restrict-route ,via-space)
 	 (unwind-protect
@@ -99,15 +99,15 @@
 	(if (and route-restriction
 		 (not (eq route-restriction space-a-id))
 		 (not (eq route-restriction space-b-id))
-		 (jungl.space.routes::on-route-p
+		 (cepl.space.routes::on-route-p
 		  space-a-id space-b-id clip-space-id-cached))
 	    ;;
-	    (jungl.space.routes:reduce-route
+	    (cepl.space.routes:reduce-route
 	     space-a-id route-restriction #'transform
-	     (jungl.space.routes:reduce-route
+	     (cepl.space.routes:reduce-route
 	      route-restriction space-b-id #'transform initial-m4))
 	    ;;
-	    (jungl.space.routes:reduce-route space-a-id space-b-id
+	    (cepl.space.routes:reduce-route space-a-id space-b-id
 					     #'transform initial-m4)))))
 
   (defun %rspace-to-rspace-transform (space-a space-b

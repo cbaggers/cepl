@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.fbos)
 
 ;; {TODO} A fragment shader can output different data to any of these by
 ;;        linking out variables to attachments with the glBindFragDataLocation

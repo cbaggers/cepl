@@ -348,7 +348,7 @@
     (number (guess-a-varjo-number-type x))
     (array (guess-a-varjo-array-type x))
     (boolean (guess-a-varjo-bool-type x))
-    (jungl.space:space 'jungl.space:space-g)
+    (cepl.space:space 'cepl.space:space-g)
     (t (error "Cant guess a suitable type for ~s" x))))
 
 (defun guess-a-varjo-bool-type (x)

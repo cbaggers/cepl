@@ -122,7 +122,7 @@
     (handler-bind ((varjo-conditions:setq-type-match
 		    (lambda (c)
 		      (when (typep (varjo::code-type (varjo::new-value c))
-				   'jungl.space:pos4-g)
+				   'cepl.space:pos4-g)
 			(invoke-restart
 			 'varjo-conditions:setq-supply-alternate-type
 			 :vec4)))))

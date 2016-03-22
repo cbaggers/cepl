@@ -1,4 +1,4 @@
-(in-package :jungl.space)
+(in-package :cepl.space)
 (in-readtable fn:fn-reader)
 
 ;; and let's make the 'in macro that uses it

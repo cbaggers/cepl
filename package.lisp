@@ -225,15 +225,64 @@
 	:cepl.errors)
   (:export :defstruct-g))
 
-(defpackage :jungl.space.routes
+(defpackage :cepl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils
 	:cepl.errors)
   (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
 
+(defpackage :cepl.image-formats
+  (:use #:cl #:fn #:named-readtables #:cepl-utils
+	:cepl.errors)
+  (:export :internal-formatp
+	   :valid-internal-format-for-buffer-backed-texturep
+	   :color-renderable-formatp
+	   :depth-formatp
+	   :stencil-formatp
+	   :depth-stencil-formatp
+	   :*unsigned-normalized-integer-formats*
+	   :*signed-normalized-integer-formats*
+	   :*signed-integral-formats*
+	   :*unsigned-integral-formats*
+	   :*floating-point-formats*
+	   :*regular-color-formats*
+	   :*special-color-formats*
+	   :*srgb-color-formats*
+	   :*red/green-compressed-formats*
+	   :*bptc-compressed-formats*
+	   :*s3tc/dxt-compessed-formats*
+	   :*depth-formats*
+	   :*stencil-formats*
+	   :*depth-stencil-formats*
+	   :*color-renderable-formats*
+	   :*valid-internal-formats-for-buffer-backed-texture*
+	   :*image-formats*))
+
+(defpackage :cepl.pixel-formats
+  (:use #:cl #:fn #:named-readtables #:cepl-utils
+	:cepl.errors :cepl.internals)
+  (:export :pixel-format
+	   :pixel-format-components
+	   :pixel-format-type
+	   :pixel-format-normalise
+	   :pixel-format-sizes
+	   :pixel-format-reversed
+	   :pixel-format-comp-length
+	   :compile-pixel-format
+	   :describe-internal-format
+	   :describe-pixel-format
+	   :get-component-length
+	   :internal-format->lisp-type
+	   :internal-format->pixel-format
+	   :lisp-type->internal-format
+	   :lisp-type->pixel-format
+	   :pixel-format->internal-format
+	   :pixel-format->lisp-type
+	   :valid-pixel-format-p))
+
 (defpackage :cepl.c-arrays
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :split-sequence :named-readtables :cepl.errors
-	:cepl.internals)
+	:cepl.internals :cepl.image-formats)
   (:export :with-c-array
            :with-c-arrays
            :element-byte-size
@@ -273,6 +322,32 @@
            :make-gpu-buffer-from-id
            :multi-buffer-data
            :unbind-buffer))
+
+(defpackage :cepl.fbos
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+        :cepl.context :cepl.errors :cepl.c-arrays
+	:cepl.internals :cepl.image-formats)
+  (:export))
+
+(defpackage :cepl.blending
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+        :cepl.context :cepl.errors :cepl.c-arrays
+	:cepl.internals :cepl.fbos)
+  (:export :blending-params
+	   :make-blending-params
+	   :blending-params-mode-rgb
+	   :blending-params-mode-alpha
+	   :blending-params-source-rgb
+	   :blending-params-source-alpha
+	   :blending-params-destination-rgb
+	   :blending-params-destination-alpha
+	   :with-blending
+	   :constant-alpha
+	   :constant-color
+	   :current-blend-params
+	   :blend-func-namep))
 
 (defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -390,7 +465,7 @@
            :remove-uniform
            :set-arg-val))
 
-(defpackage :jungl.space
+(defpackage :cepl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
         :varjo :varjo-lang :cepl.generics :cepl.errors)
   (:shadow :space)
@@ -451,7 +526,7 @@
       :import-from ((:cepl-utils :deferror
                                  :print-mem
                                  :p->))
-      :export-from ((:jungl.space :p! :space-g :in))
+      :export-from ((:cepl.space :p! :space-g :in))
       :export (:g-pc
                :g-pn
                :g-pnc
