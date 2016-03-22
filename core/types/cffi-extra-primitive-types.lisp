@@ -81,9 +81,11 @@
                           `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))
                    ,(when (< len 5)
                           (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
-                            (when (jungl:valid-pixel-format-p components comp-type t nil)
+                            (when (cepl.pixel-formats:valid-pixel-format-p
+				   components comp-type t nil)
                               `(defmethod lisp-type->pixel-format ((comp-type (eql ,type)))
-                                 (jungl:pixel-format ,components ',comp-type)))))
+                                 (cepl.pixel-formats:pixel-format
+				  ,components ',comp-type)))))
                    (autowrap:define-foreign-record
                        ',name
                        :struct

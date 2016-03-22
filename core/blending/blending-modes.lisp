@@ -85,7 +85,7 @@
 (defun current-blend-params ()
   (copy-blending-params
    (or %current-blend-params
-       (jungl::attachment-viewport (attachment jungl::%default-framebuffer 0)))))
+       (attachment-viewport (attachment %default-framebuffer 0)))))
 
 (defmacro with-blending (blending-params &body body)
   (let ((b-params (gensym "blending-params")))

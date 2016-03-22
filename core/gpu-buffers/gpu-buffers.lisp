@@ -93,7 +93,7 @@
   "Creates a new opengl buffer object.
    Optionally you can provide a c-array as the :initial-contents
    to have the buffer populated with the contents of the array"
-  (make-gpu-buffer-from-id (jungl::gen-buffer) :initial-contents initial-contents
+  (make-gpu-buffer-from-id (gen-buffer) :initial-contents initial-contents
                        :buffer-target buffer-target :usage usage
                        :managed managed))
 

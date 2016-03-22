@@ -33,21 +33,16 @@
                (:file "core/spaces/nht-routes")
                (:file "core/spaces/space")
                (:file "core/spaces/predefined-spaces")
-
-               (:file "core/global-vars")
-
                (:file "core/context/render-state")
                (:file "core/errors")
-               (:file "core/misc/gl-extras")
-
                (:file "core/viewports/viewport")
-
                (:file "core/context/context-classes")
                (:file "core/context/context")
                (:file "core/textures/image-format")
                (:file "core/textures/pixel-format")
                (:file "core/types/cffi-extra-primitive-types")
                (:file "core/c-arrays/c-arrays")
+	       (:file "core/c-arrays/docs")
                (:file "core/types/structs")
                (:file "core/gpu-buffers/gpu-buffers")
                (:file "core/gpu-arrays/buffer-backed")
@@ -63,17 +58,13 @@
                (:file "core/pipelines/gpu-glsl-stages")
                (:file "core/pipelines/gpu-shader-pipeline")
                (:file "core/pipelines/gpu-compose-pipeline")
-
                (:file "core/ubos/ubo")
-
                (:file "core/textures/textures")
                (:file "core/textures/samplers")
                (:file "core/pipelines/map-g")
                (:file "core/gpu-arrays/texture-backed")
-
                (:file "core/fbos/fbo")
                (:file "core/blending/blending-modes")
-
                (:file "core/spaces/space-errors")
                (:file "core/spaces/space-walking")
                (:file "core/spaces/space-transforms")
@@ -81,5 +72,4 @@
                (:file "core/spaces/gpu")
                (:file "core/types/predefined/gpu-structs")
                (:file "core/repl")
-               (:file "docs/doc-strings/package")
-               (:file "docs/doc-strings/c-arrays")))
+               (:file "docs/api/package")))

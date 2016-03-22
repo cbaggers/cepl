@@ -130,7 +130,7 @@
      ;; let's add a uniform for the viewport params
      (set-uniform 'viewport-params :vec4 env)
      ;; here we set how we get the transform we are uploading
-     (set-arg-val 'viewport-params `(jungl::viewport-params-to-vec4) env)
+     (set-arg-val 'viewport-params `(viewport-params-to-vec4) env)
      ;; lets make the code to transform to clip-space
      (let ((code `(screen-space-to-clip-space ,val viewport-params)))
        ;; now we have a transform to clip-space, but it is likely we need to go
@@ -141,7 +141,7 @@
 	   `(in *clip-space* (p! ,code)))))))
 
 
-(jungl:defun-g screen-space-to-clip-space ((ss-pos :vec4) (viewport :vec4))
+(defun-g screen-space-to-clip-space ((ss-pos :vec4) (viewport :vec4))
   (/ (v! (- (* (v:s~ ss-pos :xy) 2.0)
 	    (/ (* (v:s~ viewport :xy) 2.0)
 	       (* (v:s~ viewport :zw) 2.0))

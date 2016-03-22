@@ -10,14 +10,26 @@
 
 (defun gen-docs ()
   (staple:generate
-   :cepl :packages '(:cepl.host
+   :cepl :packages '(:cepl.context
 		     :cepl.generics
-		     :cepl.context
-		     :cepl.types
+		     :cepl.blending
 		     :cepl.c-arrays
+		     :cepl.fbos
+		     :cepl.generics
+		     :cepl.gpu-arrays.buffer-backed
 		     :cepl.gpu-buffers
-		     :jungl
+		     :cepl.image-formats
+		     :cepl.pipelines
+		     :cepl.pixel-formats
+		     :cepl.render-state
+		     :cepl.samplers
 		     :cepl.space
+		     :cepl.streams
+		     :cepl.textures
+		     :cepl.types
+		     :cepl.ubos
+		     :cepl.viewports
+		     :cepl.host
 		     :cepl)
    :template *template-dir*
    :out *out-dir*

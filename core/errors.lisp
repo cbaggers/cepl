@@ -126,7 +126,7 @@ internal texture format"
  due to not all dependent functions having been compiled yet.
  Missing funcs: ~s
  To disable this warning for all future compilations:
- (setf jungl::*warn-when-cant-test-compile* nil)" gfunc-name missing-func-names)
+ (setf cepl.pipelines:*warn-when-cant-test-compile* nil)" gfunc-name missing-func-names)
 
 
 (deferror dont-define-space-to-self () (space)

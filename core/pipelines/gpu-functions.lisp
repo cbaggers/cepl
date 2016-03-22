@@ -136,7 +136,7 @@
       (varjo-conditions:could-not-find-function (e) ;;[0]
 	(setf missing-dependencies (list (slot-value e 'varjo::name)))
 	(when *warn-when-cant-test-compile*
-	  (format t "~% jungl: the function ~s was not found when compiling ~s"
+	  (format t "~% cepl: the function ~s was not found when compiling ~s"
 		  (first missing-dependencies) name))
 	(%update-gpu-function-data spec nil nil)))))
 

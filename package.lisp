@@ -1,59 +1,5 @@
 ;;;; package.lisp
 
-(defpackage :cepl.host
-  (:use :cl)
-  (:export :init
-           :request-context
-           :shutdown
-           :set-primary-thread-and-run
-           ;;---
-           :set-step-func
-           :set-swap-func))
-
-(defpackage :cepl.lifecycle
-  (:use :cl)
-  (:export :shutting-down-p
-           :listen-to-lifecycle-changes
-           :stop-listening-to-lifecycle-changes))
-
-(defpackage :cepl.generics
-  (:use :cl)
-  (:export :pos
-           :rot
-           :dir
-           :vec
-           :size
-           :norm
-           :tex
-           :col
-           :tangent
-           :bi-tangent
-           :action
-           :button
-           :clicks
-           :data
-           :delta
-           :etype
-           :id
-           :key
-           :pos
-           :repeating
-           :state
-           :timestamp
-           ;;--
-           :backed-by
-           :dimensions
-           :free
-           :free-gpu-array
-           :free-texture
-           :lisp-type->pixel-format
-           :make-gpu-array
-           :make-vao-from-id
-           :populate
-           :pull-g
-           :pull1-g
-           :push-g))
-
 (defpackage :cepl-utils
   (:use :cl)
   (:export :gdefun
@@ -134,9 +80,82 @@
 	   :invalid-context-for-def-glsl-stage
 	   :struct-in-glsl-stage-args))
 
-(defpackage :cepl.internals
+(defpackage :cepl.host
+  (:use :cl)
+  (:export :init
+           :request-context
+           :shutdown
+           :set-primary-thread-and-run
+           ;;---
+           :set-step-func
+           :set-swap-func))
+
+(defpackage :cepl.lifecycle
+  (:use :cl)
+  (:export :shutting-down-p
+           :listen-to-lifecycle-changes
+           :stop-listening-to-lifecycle-changes))
+
+(defpackage :cepl.generics
+  (:use :cl)
+  (:export :pos
+           :rot
+           :dir
+           :vec
+           :size
+           :norm
+           :tex
+           :col
+           :tangent
+           :bi-tangent
+           :action
+           :button
+           :clicks
+           :data
+           :delta
+           :etype
+           :id
+           :key
+           :pos
+           :repeating
+           :state
+           :timestamp
+           ;;--
+           :backed-by
+           :dimensions
+           :free
+           :free-gpu-array
+           :free-texture
+
+           :make-gpu-array
+           :make-vao-from-id
+           :populate
+           :pull-g
+           :pull1-g
+           :push-g))
+
+(defpackage :cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :split-sequence :named-readtables
+	:cepl.errors)
+  (:export :defstruct-g
+	   :lisp-type->pixel-format
+	   :internal-format->lisp-type
+	   :internal-format->pixel-format
+	   :lisp-type->internal-format
+	   :pixel-format->internal-format
+	   :pixel-format->lisp-type
+	   ;;---
+	   :g-pc
+	   :g-pn
+	   :g-pnc
+	   :g-pnt
+	   :g-pntc
+	   :g-pt))
+
+(defpackage :cepl.internals
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :cepl.types :split-sequence :named-readtables
 	:cepl.errors)
   (:export :%collate-args
            :%get-pipeline-uniforms
@@ -152,11 +171,48 @@
            :*expanded-gl-type-names*
            :expand-gl-type-name
 	   :color-attachment-enum
-	   :gl-type-size))
+	   :gl-type-size
+	   ;;---
+	   :def-compile-pass
+	   :def-deep-pass
+	   :set-uniform
+	   :remove-uniform
+	   :set-arg-val
+	   ;;---
+	   :%default-framebuffer
+	   :%current-fbo
+	   :*gl-window*
+	   :*on-context*))
+
+(defpackage :cepl.render-state
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :cepl.types :split-sequence :named-readtables
+	:cepl.errors)
+  (:export))
+
+(defpackage :cepl.viewports
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :cepl.types :split-sequence :named-readtables
+	:cepl.errors)
+  (:export :current-viewport
+	   :viewport
+	   :viewport-p
+	   :viewport-resolution-x
+	   :viewport-resolution-y
+	   :viewport-origin-x
+	   :viewport-origin-y
+	   :make-viewport
+	   :viewport-resolution
+	   :viewport-resolution-v!
+	   :viewport-origin
+	   :with-viewport
+	   :with-fbo-viewport
+	   :clone-viewport
+	   :viewport-params-to-vec4))
 
 (defpackage :cepl.context
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
 	:cepl.errors)
   (:export :gl-context
            :*gl-context*
@@ -221,43 +277,6 @@
            ;; :%vertex-array-binding
            ))
 
-(defpackage :cepl.render-state
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
-	:cepl.errors)
-  (:export))
-
-(defpackage :cepl.viewports
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
-	:cepl.errors)
-  (:export :current-viewport
-	   :viewport
-	   :viewport-p
-	   :viewport-resolution-x
-	   :viewport-resolution-y
-	   :viewport-origin-x
-	   :viewport-origin-y
-	   :make-viewport
-	   :viewport-resolution
-	   :viewport-resolution-v!
-	   :viewport-origin
-	   :with-viewport
-	   :with-fbo-viewport
-	   :clone-viewport
-	   :viewport-params-to-vec4))
-
-(defpackage :cepl.types
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
-	:cepl.errors)
-  (:export :defstruct-g))
-
-(defpackage :cepl.space.routes
-  (:use #:cl #:fn #:named-readtables #:cepl-utils
-	:cepl.errors)
-  (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
-
 (defpackage :cepl.image-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils
 	:cepl.errors)
@@ -300,17 +319,11 @@
 	   :describe-internal-format
 	   :describe-pixel-format
 	   :get-component-length
-	   :internal-format->lisp-type
-	   :internal-format->pixel-format
-	   :lisp-type->internal-format
-	   :lisp-type->pixel-format
-	   :pixel-format->internal-format
-	   :pixel-format->lisp-type
 	   :valid-pixel-format-p))
 
 (defpackage :cepl.c-arrays
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables :cepl.errors
+        :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
 	:cepl.internals :cepl.image-formats)
   (:export :with-c-array
            :with-c-arrays
@@ -332,7 +345,7 @@
 
 (defpackage :cepl.gpu-buffers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
 	:cepl.internals)
   (:export :with-buffer
@@ -356,7 +369,7 @@
 
 (defpackage :cepl.gpu-arrays.buffer-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables :cepl.errors
+        :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
 	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers)
   (:export :gpu-array
 	   :gpu-array-p
@@ -371,9 +384,15 @@
 	   :with-gpu-array-as-pointer
 	   :with-gpu-array-as-c-array))
 
+(defpackage :cepl.gpu-arrays.texture-backed
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
+	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers)
+  (:export))
+
 (defpackage :cepl.streams
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
 	:cepl.errors :cepl.c-arrays)
   (:export :free-vao
 	   :free-vaos
@@ -396,7 +415,7 @@
 
 (defpackage :cepl.ubos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
 	:cepl.errors :cepl.c-arrays)
   (:export :ubo
 	   :make-ubo
@@ -409,7 +428,7 @@
 
 (defpackage :cepl.samplers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
 	:cepl.internals)
   (:export :sampler
@@ -439,7 +458,7 @@
 
 (defpackage :cepl.textures
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
 	:cepl.internals :cepl.samplers :cepl.pixel-formats)
   (:export :*immutable-available*
@@ -467,14 +486,36 @@
 
 (defpackage :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
 	:cepl.internals :cepl.image-formats :cepl.textures)
-  (:export))
+  (:export :fbo
+	   :fbo-p
+	   :attachment
+	   :attachment-p
+	   :blending-params
+	   :attachment-viewport
+	   :attachment-gpu-array
+	   :mode-rgb
+	   :mode-alpha
+	   :source-rgb
+	   :source-alpha
+	   :destination-rgb
+	   :destination-alpha
+	   :blending
+	   :per-attachment-blending-available-p
+	   :attachment
+	   :make-fbo-from-id
+	   :make-fbo
+	   :check-framebuffer-status
+	   :with-fbo-bound
+	   :fbo-attach
+	   :fbo-detach
+	   :clear))
 
 (defpackage :cepl.blending
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
 	:cepl.internals :cepl.fbos)
   (:export :blending-params
@@ -493,10 +534,11 @@
 
 (defpackage :cepl.pipelines
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
+        :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.internals :cepl.c-arrays :cepl.gpu-buffers
-        :cepl.context :cepl.types :cepl.errors)
+        :cepl.context :cepl.errors)
   (:export :*verbose-compiles*
+	   :*warn-when-cant-test-compile*
 	   :defun-g
 	   :undefine-gpu-function
 	   :def-glsl-stage
@@ -507,129 +549,17 @@
 	   :g->
 	   :map-g))
 
-(defpackage :jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables
-        :cepl.internals :cepl.c-arrays :cepl.gpu-buffers
-        :cepl.context :cepl.types :cepl.errors)
-  (:shadowing-import-from :rtg-math :v!)
-  (:import-from :cepl-utils
-                :deferror
-                :print-mem
-                :just-ignore)
-  (:shadow :float :space)
-  (:export ;;- - - - - - - -
-           :timestamp
-           ;;- - - - - - - -
-           :current-viewport
-           :viewport
-           :make-viewport
-           :clone-viewport
-           :with-viewport
-           :with-fbo-viewport
-           :viewport-resolution
-           :viewport-resolution-v!
-
-           :valid-pixel-format-p
-           :pixel-format
-           :pixel-format->lisp-type
-           :pixel-format->internal-format
-           :internal-format->pixel-format
-           :internal-format->lisp-type
-           :lisp-type->internal-format
-           :describe-pixel-format
-           :defstruct-g
-           :gl-calc-byte-size
-
-
-           :subseq-g
-
-           :make-gpu-arrays
-           :with-gpu-array-as-c-array
-           :with-gpu-array-as-pointer
-           :suitable-array-for-index-p
-           :bind-vao
-           :bind-vertex-array
-           :make-vao-from-formats
-           :make-vao
-           :make-raw-buffer-stream
-           :make-buffer-stream
-           :make-texture
-           :bind-texture
-           :with-texture-bound
-           :mutable-texturep
-           :upload-c-array-to-gpu-array-t ; this is a crap name
-           :calc-sampler-type
-           :make-sampler
-           :with-sampling
-           :lod-bias
-           :min-lod
-           :max-lod
-           :magnify-filter
-           :minify-filter
-           :set-minify-filter
-           :calc-minify-filter
-           :wrap
-           :compare
-           :sampler-type
-           :dimensions-at-mipmap-level
-           :establish-texture-type
-           :gl-texture
-           :gpu-array-t
-           :texref
-           :defpipeline
-           :def-glsl-stage
-           :g->
-           :defun-g
-           :defmacro-g
-           :define-compiler-macro-g
-           :with-instances
-           :free-managed-resources
-           :free-buffer-stream
-           :free-vao
-           ;;----------
-           :map-g
-           ;;----------
-           :make-fbo
-           :make-fbos
-           :with-fbo-bound
-           :fbo-attach
-           :fbo-detach
-           :attachment
-           :with-fbo-slots
-           :attachment-compatible
-           :attachment-gpu-array
-           :mode-rgb
-           :mode-alpha
-           :source-rgb
-           :source-alpha
-           :destination-rgb
-           :destination-alpha
-           :blending
-           :make-blending-params
-           :with-blending
-           :per-attachment-blending-available-p
-           :fbo-detach
-           ;;----------
-           :make-ubo
-           :ubo-data
-           :ubo-index
-           ;;----------
-           :clear
-           ;;----------
-           :def-compile-pass
-           :def-deep-pass
-           :set-uniform
-           :remove-uniform
-           :set-arg-val))
+(defpackage :cepl.space.routes
+  (:use #:cl #:fn #:named-readtables #:cepl-utils
+	:cepl.errors)
+  (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
 
 (defpackage :cepl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
-        :varjo :varjo-lang :cepl.generics :cepl.errors)
+        :varjo :varjo-lang :cepl.generics :cepl.types :cepl.errors
+	:cepl.internals :cepl.pipelines)
   (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)
-  (:import-from :jungl :def-compile-pass :def-deep-pass :set-uniform :remove-uniform
-                :set-arg-val)
   (:export :get-transform :get-transform-via :p! :in :space! :make-space
            :make-space*
            :with-rendering-via
@@ -685,13 +615,7 @@
                                  :print-mem
                                  :p->))
       :export-from ((:cepl.space :p! :space-g :in))
-      :export (:g-pc
-               :g-pn
-               :g-pnc
-               :g-pnt
-               :g-pntc
-               :g-pt
-               :make-project
+      :export (:make-project
                :quit
                :repl
                :step-host
@@ -700,12 +624,27 @@
 	       :swap
 	       :print-mem)
       :re-export (:cepl.generics
-                  :cepl.c-arrays
-                  :cepl.gpu-buffers
-                  :jungl
+		  ;; :cepl.context
+		  :cepl.render-state
+		  :cepl.viewports
+		  :cepl.types
+		  :cepl.image-formats
+		  :cepl.pixel-formats
+		  :cepl.c-arrays
+		  :cepl.gpu-buffers
+		  :cepl.gpu-arrays.buffer-backed
+		  :cepl.streams
+		  :cepl.ubos
+		  :cepl.samplers
+		  :cepl.textures
+		  :cepl.fbos
+		  :cepl.blending
+		  :cepl.pipelines
                   (:cepl.lifecycle :shutting-down-p)
                   (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
                              :radians :degrees))))
+
+
 
 
 ;; {TODO} read up on this:

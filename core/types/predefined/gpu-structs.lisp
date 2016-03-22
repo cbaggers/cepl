@@ -1,4 +1,4 @@
-(in-package :cepl)
+(in-package :cepl.types)
 
 (defstruct-g g-pn ()
   (position :vec3 :accessor pos)

@@ -19,7 +19,7 @@
   (row-byte-size
    (error "cepl: c-array must be created with a pointer")
    :type fixnum)
-  (element-pixel-format nil :type (or null jungl:pixel-format)))
+  (element-pixel-format nil :type (or null pixel-format)))
 
 (defmethod pointer ((array c-array))
   (c-array-pointer array))
@@ -85,10 +85,10 @@
   (unless dimensions
     (error "dimensions are not optional when making an array from a pointer"))
   (let* ((dimensions (listify dimensions))
-         (p-format (jungl::pixel-format-p element-type))
+         (p-format (pixel-format-p element-type))
 	 (element-type (expand-gl-type-name element-type))
          (element-type2 (if p-format
-                            (jungl:pixel-format->lisp-type element-type)
+                            (pixel-format->lisp-type element-type)
                             element-type))
          (elem-size (gl-type-size element-type2)))
     (multiple-value-bind (byte-size row-byte-size)
@@ -144,10 +144,10 @@
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
                   (error "make-c-array must be given initial-elements or dimensions"))))
-         (p-format (jungl::pixel-format-p element-type))
+         (p-format (pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
-                           (jungl:pixel-format->lisp-type element-type)
+                           (pixel-format->lisp-type element-type)
                            element-type))
          (inferred-lisp-type (cond (element-type nil)
                                    (initial-contents (scan-for-type

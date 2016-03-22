@@ -8,4 +8,4 @@
   (labels ((function-formp (x) (eq (first x) 'function)))
     `(progn
        (funcall ,pipeline-func ,+mapg-constant+ ,stream ,@uniforms)
-       jungl::%current-fbo)))
+       %current-fbo)))

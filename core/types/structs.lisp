@@ -290,7 +290,7 @@
 (defun make-struct-attrib-assigner (type-name slots)
   (when (every #'buffer-stream-comptible-typep slots)
     (let* ((stride (if (> (length slots) 1)
-                       `(gl-type-size ',type-name)
+                       `(cepl.internals:gl-type-size ',type-name)
                        0))
            (stride-sym (gensym "stride"))
            (definitions
@@ -302,7 +302,7 @@
                   (cffi:make-pointer (+ ,offset pointer-offset))))
                :do (setf offset (+ offset
                                    (* (first attr)
-                                      (gl-type-size (second attr))))))))
+                                      (cepl.internals:gl-type-size (second attr))))))))
       (when definitions
         `(progn
            (defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name))
@@ -367,7 +367,7 @@
     (when (< len 5)
       (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
         (when (and (loop for i in slots always (eql (s-type i) type))
-                   (jungl:valid-pixel-format-p components type t nil))
+                   (cepl.pixel-formats:valid-pixel-format-p components type t nil))
           `(defmethod lisp-type->pixel-format ((type (eql ',name)))
              (pixel-format ,components ',type)))))))
 

@@ -55,6 +55,11 @@
 (defun color-attachment-enum (attachment-num)
   (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :color-attachment0)))
 
+(defvar %default-framebuffer nil)
+(defvar %current-fbo nil)
+(defvar *gl-window* nil)
+(defvar *on-context* nil)
+
 (defun gl-type-size (type)
   (if (keywordp type)
       (cffi:foreign-type-size type)

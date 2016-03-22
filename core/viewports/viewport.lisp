@@ -4,9 +4,9 @@
 
 (defun current-viewport ()
   (or %current-viewport
-      (jungl::attachment-viewport
+      (attachment-viewport
        (attachment
-	(or jungl::%default-framebuffer
+	(or %default-framebuffer
 	    (error "No default framebuffer found ~a"
 		   (if (and (boundp '*gl-context*)
 			    (symbol-value '*gl-context*))

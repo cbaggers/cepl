@@ -25,11 +25,11 @@
       (ensure-cepl-compatible-setup)
       (%set-default-gl-options)
       (setf *gl-context* context
-            jungl::*gl-window* (window context)
-            (slot-value context 'fbo) (jungl::%make-default-framebuffer
+            *gl-window* (window context)
+            (slot-value context 'fbo) (%make-default-framebuffer
                                        dimensions t t))
-      (map nil #'funcall jungl::*on-context*)
-      (cepl.host::set-default-swap-arg jungl::*gl-window*)
+      (map nil #'funcall *on-context*)
+      (cepl.host::set-default-swap-arg *gl-window*)
       (cepl:cls))))
 
 

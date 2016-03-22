@@ -62,11 +62,11 @@
            (setf initd t)
            ,(when post `(funcall ,post)))
          ;; symbol-macrolet will go here
-         (labels ((jungl:attachment (fbo attachment-name)
-                    (slot-value (jungl::%attachment-gpu-array
-                                 (jungl::%attachment fbo attachment-name))
-                                'jungl::texture)))
-           (declare (ignorable (function jungl:attachment)))
+         (labels ((cepl.fbos:attachment (fbo attachment-name)
+                    (slot-value (%attachment-gpu-array
+                                 (%attachment fbo attachment-name))
+                                'texture)))
+           (declare (ignorable (function cepl.fbos:attachment)))
            (let ,(when all-draw-buffers `((,+db-pass-ptr-sym+ ,+db-ptr-sym+)))
              ,@pass-code))))))
 
