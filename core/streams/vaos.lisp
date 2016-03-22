@@ -55,7 +55,7 @@
     (force-bind-vao vao)
     (loop for format in formats
        :do (let ((buffer (first format)))
-             (force-bind-buffer buffer :array-buffer)
+             (cepl.gpu-buffers::force-bind-buffer buffer :array-buffer)
              (loop :for (type normalized stride pointer)
                 :in (rest format)
 		:do (just-ignore normalized)
@@ -64,12 +64,12 @@
                              (gl-assign-attrib-pointers
                               type pointer stride))))))
     (when element-buffer
-      (force-bind-buffer element-buffer :element-array-buffer))
+      (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
     vao))
 
 (defun suitable-array-for-index-p (array)
-  (and (eql (length (gpu-buffer-format (gpuarray-buffer array))) 1)
+  (and (eql (length (gpu-buffer-format (gpu-array-buffer array))) 1)
        (1d-p array)
        (find (element-type array) '(:ubyte :ushort :uint :unsigned-short
                                     :unsigned-byte :unsigned-int))))
@@ -98,23 +98,24 @@
   (unless (and (every #'1d-p gpu-arrays)
                (or (null index-array) (suitable-array-for-index-p
                                        index-array))))
-  (let ((element-buffer (when index-array (gpuarray-buffer index-array)))
+  (let ((element-buffer (when index-array (gpu-array-buffer index-array)))
         (vao gl-object)
         (attr 0))
     (force-bind-vao vao)
     (loop :for gpu-array :in gpu-arrays :do
-       (let* ((buffer (gpuarray-buffer gpu-array))
-              (format (gpuarray-format gpu-array)))
-         (force-bind-buffer buffer :array-buffer)
+       (let* ((buffer (gpu-array-buffer gpu-array))
+              (format (gpu-array-format gpu-array)))
+         (cepl.gpu-buffers::force-bind-buffer buffer :array-buffer)
          (setf attr (+ attr (gl-assign-attrib-pointers
                              (let ((type (first format)))
                                (if (listp type) (second type) type))
                              attr
                              (+ (third format)
-                                (gl-calc-byte-size (first format)
-                                                   (list (gpuarray-start
-                                                          gpu-array)))))))))
+                                (cepl.c-arrays::gl-calc-byte-size
+				 (first format)
+				 (list (gpu-array-start
+					gpu-array)))))))))
     (when element-buffer
-      (force-bind-buffer element-buffer :element-array-buffer))
+      (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)
     vao))

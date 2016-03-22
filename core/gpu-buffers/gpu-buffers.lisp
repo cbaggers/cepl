@@ -76,7 +76,7 @@
                                         (usage :static-draw)
                                         (managed nil))
   (declare (symbol buffer-target usage))
-  (let ((new-buffer (%make-gpu-buffer :buffer-id gl-object :managed managed)))
+  (let ((new-buffer (%make-gpu-buffer :id gl-object :managed managed)))
     (if initial-contents
         (buffer-data new-buffer initial-contents buffer-target
                      usage)
@@ -90,7 +90,7 @@
   "Creates a new opengl buffer object.
    Optionally you can provide a c-array as the :initial-contents
    to have the buffer populated with the contents of the array"
-  (make-gpu-buffer-from-id (gen-buffer) :initial-contents initial-contents
+  (make-gpu-buffer-from-id (jungl::gen-buffer) :initial-contents initial-contents
                        :buffer-target buffer-target :usage usage
                        :managed managed))
 
@@ -111,7 +111,9 @@
     buffer))
 
 (defun buffer-data (buffer c-array buffer-target usage
-                    &key (offset 0) (size (c-array-byte-size c-array)))
+                    &key
+		      (offset 0)
+		      (size (cepl.c-arrays::c-array-byte-size c-array)))
   "This function populates an opengl buffer with the contents
    of the array. You also pass in the buffer type and the
    draw type this buffer is to be used for.
@@ -133,7 +135,7 @@
    data you are about to write into the buffer will cross the
    boundaries between data already in the buffer and will emit
    an error if you are."
-  (let ((byte-size (c-array-byte-size c-array)))
+  (let ((byte-size (cepl.c-arrays::c-array-byte-size c-array)))
     (when (and safe (loop for format in (gpu-buffer-format buffer)
                        when (and (< byte-offset (third format))
                                  (> (+ byte-offset byte-size)
@@ -153,7 +155,7 @@
    and sequencial data and handling all the offsets."
   (let* ((c-array-byte-sizes (loop for c-array in c-arrays
                               collect
-                                (c-array-byte-size c-array)))
+                                (cepl.c-arrays::c-array-byte-size c-array)))
          (total-size (apply #'+ c-array-byte-sizes)))
     (bind-buffer buffer buffer-target)
     (buffer-data buffer (first c-arrays) buffer-target usage
@@ -188,7 +190,7 @@
     (bind-buffer buffer buffer-target)
     (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
     (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
-           (byte-size (gl-calc-byte-size type dimensions)))
+           (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions)))
       (buffer-reserve-block-raw buffer
                                 byte-size
                                 buffer-target
@@ -208,7 +210,8 @@
     (setf (gpu-buffer-format buffer)
           (loop :for (type dimensions) :in types-and-dimensions :collect
              (let ((type (safer-gl-type type)))
-               (progn (let ((size-in-bytes (gl-calc-byte-size type dimensions)))
+               (progn (let ((size-in-bytes (cepl.c-arrays::gl-calc-byte-size
+					    type dimensions)))
                         (incf total-size-in-bytes size-in-bytes)
                         `(,type ,size-in-bytes ,total-size-in-bytes))))))
     (buffer-reserve-block-raw buffer total-size-in-bytes buffer-target usage))

@@ -102,9 +102,42 @@
            :n-of*
            :just-ignore))
 
+(defpackage :cepl.errors
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
+  (:export :invalid-stages
+	   :gfun-invalid-arg-format
+	   :gpu-func-spec-not-found
+	   :dispatch-called-outside-of-map-g
+	   :invalid-keywords-for-shader-gpipe-args
+	   :invalid-context-for-assert-gpipe
+	   :invalid-context-for-assert-options
+	   :invalid-shader-gpipe-form
+	   :not-enough-args-for-implicit-gpipe-stages
+	   :invalid-shader-gpipe-stage-keys
+	   :invalid-compose-gpipe-form
+	   :invalid-defpipeline-options
+	   :shader-pipeline-non-null-args
+	   :make-tex-no-content-no-type
+	   :make-tex-array-not-match-type
+	   :make-tex-array-not-match-type2
+	   :internal-format->lisp-type-failed
+	   :lisp-type->internal-format-failed
+	   :pixel-format->internal-format-failed
+	   :internal-format->pixel-format-failed
+	   :buffer-backed-texture-invalid-args
+	   :buffer-backed-texture-invalid-samplers
+	   :buffer-backed-texture-invalid-internal-format
+	   :buffer-backed-texture-establish-internal-format
+	   :failed-to-test-compile-gpu-func
+	   :dont-define-space-to-self
+	   :make-buffer-stream-with-no-gpu-arrays
+	   :invalid-context-for-def-glsl-stage
+	   :struct-in-glsl-stage-args))
+
 (defpackage :cepl.internals
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables)
+        :cepl.generics :split-sequence :named-readtables
+	:cepl.errors)
   (:export :%collate-args
            :%get-pipeline-uniforms
            :1d-p
@@ -121,7 +154,8 @@
 
 (defpackage :cepl.context
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables)
+        :cepl.generics :split-sequence :named-readtables
+	:cepl.errors)
   (:export :gl-context
            :*gl-context*
            :make-context
@@ -187,17 +221,41 @@
 
 (defpackage :cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables)
+        :cepl.generics :split-sequence :named-readtables
+	:cepl.errors)
   (:export :defstruct-g))
 
 (defpackage :jungl.space.routes
-  (:use #:cl #:fn #:named-readtables #:cepl-utils)
+  (:use #:cl #:fn #:named-readtables #:cepl-utils
+	:cepl.errors)
   (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
+
+(defpackage :cepl.c-arrays
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables :cepl.errors
+	:cepl.internals)
+  (:export :with-c-array
+           :with-c-arrays
+           :element-byte-size
+           :element-type
+           :pointer
+           :aref-c
+           :%aref-c
+           :c-array
+           :c-array-pointer
+           :c-array-dimensions
+           :c-array-element-type
+           :clone-c-array
+           :free-c-array
+           :make-c-array
+           :make-c-array-from-pointer
+           :subseq-c))
 
 (defpackage :cepl.gpu-buffers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :split-sequence :named-readtables
-        :cepl.context)
+        :cepl.context :cepl.errors :cepl.c-arrays
+	:cepl.internals)
   (:export :with-buffer
            :gpu-buffer
            :gpu-buffer-id
@@ -216,31 +274,11 @@
            :multi-buffer-data
            :unbind-buffer))
 
-(defpackage :cepl.c-arrays
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :split-sequence :named-readtables)
-  (:export :with-c-array
-           :with-c-arrays
-           :element-byte-size
-           :element-type
-           :pointer
-           :aref-c
-           :%aref-c
-           :c-array
-           :c-array-pointer
-           :c-array-dimensions
-           :c-array-element-type
-           :clone-c-array
-           :free-c-array
-           :make-c-array
-           :make-c-array-from-pointer
-           :subseq-c))
-
 (defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :split-sequence :named-readtables
         :cepl.internals :cepl.c-arrays :cepl.gpu-buffers
-        :cepl.context :cepl.types)
+        :cepl.context :cepl.types :cepl.errors)
   (:shadowing-import-from :rtg-math :v!)
   (:import-from :cepl-utils
                 :deferror
@@ -288,7 +326,7 @@
            :bind-texture
            :with-texture-bound
            :mutable-texturep
-           :upload-c-array-to-gpuarray-t ; this is a crap name
+           :upload-c-array-to-gpu-array-t ; this is a crap name
            :calc-sampler-type
            :make-sampler
            :with-sampling
@@ -355,7 +393,7 @@
 
 (defpackage :jungl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
-        :varjo :varjo-lang :cepl.generics)
+        :varjo :varjo-lang :cepl.generics :cepl.errors)
   (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)
   (:import-from :jungl :def-compile-pass :def-deep-pass :set-uniform :remove-uniform
@@ -408,7 +446,8 @@
       :use (:cl
             :rtg-math.base-maths
             :cl-fad
-            :named-readtables)
+            :named-readtables
+	    :cepl.errors)
       :shadow (:quit)
       :import-from ((:cepl-utils :deferror
                                  :print-mem

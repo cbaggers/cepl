@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.errors)
 
 (deferror invalid-stages () (invalid-names)
     "CEPL - Pipeline: The following stages don't have specifications ~s.~%This most likely means they havent been compiled yet or that the names are incorrect" invalid-names)

@@ -15,7 +15,7 @@
 (defstruct (ubo (:constructor %make-ubo))
   (id 0 :type fixnum)
   (data (error "gpu-array must be provided when making ubo")
-	:type gpuarray)
+	:type gpu-array)
   (index 0 :type fixnum)
   (owns-gpu-array nil :type boolean))
 
@@ -41,7 +41,7 @@
   (let* ((id (get-free-ubo-id))
 	 (ubo
 	  (etypecase data
-	    (gpuarray
+	    (gpu-array
 	     (when element-type
 	       (asserting (equal element-type (element-type data))
 			  make-ubo-from-array-bad-type
@@ -77,23 +77,24 @@ should be ~s" data element-type)
 ;;---------------------------------------------------
 
 (defun ubo-data-type (ubo)
-  (first (gpuarray-format (ubo-data ubo))))
+  (first (gpu-array-format (ubo-data ubo))))
 
 ;;---------------------------------------------------
 
 (defun %bind-ubo (ubo)
   (let* ((data (ubo-data ubo))
          (buffer-id (gpu-buffer-id
-		     (gpuarray-buffer data)))
+		     (gpu-array-buffer data)))
          (offset (destructuring-bind (type len byte-offset)
-		     (gpuarray-format data)
+		     (gpu-array-format data)
 		   (declare (ignore len))
 		   (+ byte-offset
-		      (gl-calc-byte-size type (list (ubo-index ubo))))))
+		      (cepl.c-arrays::gl-calc-byte-size
+		       type (list (ubo-index ubo))))))
          (size (destructuring-bind (type len byte-offset)
-		   (gpuarray-format data)
+		   (gpu-array-format data)
 		 (declare (ignore len byte-offset))
-		 (gl-type-size type))))
+		 (jungl::gl-type-size type))))
     (%gl:bind-buffer-range :uniform-buffer (ubo-id ubo)
                            buffer-id offset size))
   ubo)

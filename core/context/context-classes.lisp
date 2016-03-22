@@ -1,4 +1,4 @@
-(in-package :context.lisp)
+(in-package :cepl.context)
 
 (defclass gl-context ()
   ((cache :initform (make-hash-table))

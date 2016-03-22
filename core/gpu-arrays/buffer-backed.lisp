@@ -7,45 +7,45 @@
 ;;; GPUARRAYS ;;;
 ;;;-----------;;;
 
-(defstruct gpuarray
+(defstruct (gpu-array (:constructor %make-gpu-array))
   buffer
   format-index
   (start 0)
   dimensions
   (access-style :static-draw))
 
-(defmethod print-object ((object gpuarray) stream)
+(defmethod print-object ((object gpu-array) stream)
   (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :BUFFER>"
           (element-type object)
-          (gpuarray-dimensions object)))
+          (gpu-array-dimensions object)))
 
 ;; defmethod print-mem can be found further down the page
 
-(defmethod backed-by ((object gpuarray))
+(defmethod backed-by ((object gpu-array))
   :buffer)
 
-(defmethod free ((object gpuarray))
+(defmethod free ((object gpu-array))
   (free-gpu-array-b object))
 
-(defmethod free-gpu-array ((gpu-array gpuarray))
+(defmethod free-gpu-array ((gpu-array gpu-array))
   (free-gpu-array-b gpu-array))
 
 (defun blank-gpu-array-b-object (gpu-array)
-  (setf (gpuarray-buffer gpu-array) nil
-        (gpuarray-format-index gpu-array) nil
-        (gpuarray-start gpu-array) nil
-        (gpuarray-dimensions gpu-array) nil
-        (gpuarray-access-style gpu-array) nil))
+  (setf (gpu-array-buffer gpu-array) nil
+        (gpu-array-format-index gpu-array) nil
+        (gpu-array-start gpu-array) nil
+        (gpu-array-dimensions gpu-array) nil
+        (gpu-array-access-style gpu-array) nil))
 
 ;; we only set the buffer slot type as undefined as the size and
 ;; offset dont change
 ;; If the buffer is managed and all formats are undefined then free it.
 (defun free-gpu-array-b (gpu-array)
-  (let* ((buffer (gpuarray-buffer gpu-array))
+  (let* ((buffer (gpu-array-buffer gpu-array))
          (buffer-formats (gpu-buffer-format buffer)))
-    (setf (first (nth (gpuarray-format-index gpu-array) buffer-formats))
+    (setf (first (nth (gpu-array-format-index gpu-array) buffer-formats))
           :UNDEFINED)
-    (when (and (gpu-buffer-managed buffer)
+    (when (and (cepl.gpu-buffers::gpu-buffer-managed buffer)
                (loop :for format :in buffer-formats :always
                   (eq (car format) :UNDEFINED)))
       (free-buffer buffer)))
@@ -53,28 +53,29 @@
 
 ;;---------------------------------------------------------------
 
-(defun gpuarray-format (gpu-array)
+(defun gpu-array-format (gpu-array)
   "Returns a list containing the element-type, the length of the
    array and the offset in bytes from the beginning of the buffer
    this gpu-array lives in."
-  (nth (gpuarray-format-index gpu-array)
-       (gpu-buffer-format (gpuarray-buffer gpu-array))))
+  (nth (gpu-array-format-index gpu-array)
+       (gpu-buffer-format (gpu-array-buffer gpu-array))))
 
-(defmethod dimensions ((object gpuarray))
-  (gpuarray-dimensions object))
+(defmethod dimensions ((object gpu-array))
+  (gpu-array-dimensions object))
 
-(defmethod element-type ((object gpuarray))
-  (first (gpuarray-format object)))
+(defmethod element-type ((object gpu-array))
+  (first (gpu-array-format object)))
 
 ;; [TODO] This looks wrong, the beginning right? NO!
 ;;        remember that the gpu-array could be a sub-array
 ;;        in that case the
-(defun gpuarray-offset (gpu-array)
+(defun gpu-array-offset (gpu-array)
   "Returns the offset in bytes from the beginning of the buffer
-   that this gpuarray is stored at"
-  (let ((format (gpuarray-format gpu-array)))
-   (+ (third format) (gl-calc-byte-size (first format)
-                                        (list (gpuarray-start gpu-array))))))
+   that this gpu-array is stored at"
+  (let ((format (gpu-array-format gpu-array)))
+    (+ (third format) (cepl.c-arrays::gl-calc-byte-size
+		       (first format)
+		       (list (gpu-array-start gpu-array))))))
 
 ;;---------------------------------------------------------------
 
@@ -88,12 +89,12 @@
                              (access-style :static-draw))
   (declare (ignore initial-contents))
   (let ((buffer (make-gpu-buffer :managed t)))
-    (make-gpuarray :buffer (buffer-reserve-block
-                            buffer element-type dimensions
-                            :array-buffer access-style)
-                   :format-index 0
-                   :dimensions (listify dimensions)
-                   :access-style access-style)))
+    (%make-gpu-array :buffer (buffer-reserve-block
+			      buffer element-type dimensions
+			      :array-buffer access-style)
+		     :format-index 0
+		     :dimensions (listify dimensions)
+		     :access-style access-style)))
 
 (defmethod make-gpu-array ((initial-contents t)
                            &key dimensions element-type (access-style :static-draw))
@@ -113,11 +114,11 @@
 		 make-gpu-array-from-c-array-mismatched-dimensions
 		 :c-arr-dimensions c-dimensions
 		 :provided-dimensions dimensions))
-    (make-gpuarray :buffer (buffer-data buffer initial-contents
-                                        :array-buffer access-style)
-                   :format-index 0
-                   :dimensions (dimensions initial-contents)
-                   :access-style access-style)))
+    (%make-gpu-array :buffer (buffer-data buffer initial-contents
+					  :array-buffer access-style)
+		     :format-index 0
+		     :dimensions (dimensions initial-contents)
+		     :access-style access-style)))
 
 (deferror make-gpu-array-from-c-array-mismatched-dimensions ()
     (c-arr-dimensions provided-dimensions)
@@ -139,32 +140,32 @@ call to #'make-gpu-array were ~s"
    (:stream-draw :stream-read :stream-copy :static-draw
     :static-read :static-copy :dynamic-draw :dynamic-read
     :dynamic-copy)"
-   ;;   Finally you can provide an existing buffer if you want to
-   ;; use it rather than creating a new buffer. Note that all
+  ;;   Finally you can provide an existing buffer if you want to
+  ;; use it rather than creating a new buffer. Note that all
   ;; existing data in the buffer will be destroyed in the process
   ;; {TODO} Really? where?
   (let ((buffer (multi-buffer-data (make-gpu-buffer :managed t) c-arrays
                                    :array-buffer access-style)))
     (loop :for c-array :in c-arrays :for i :from 0 :collecting
-       (make-gpuarray :buffer buffer
-                      :format-index i
-                      :dimensions (dimensions c-array)
-                      :access-style access-style))))
+       (%make-gpu-array :buffer buffer
+			:format-index i
+			:dimensions (dimensions c-array)
+			:access-style access-style))))
 
 (defun subseq-g (array start &optional end)
   (let ((dimensions (dimensions array)))
     (if (> (length dimensions) 1)
         (error "Cannot take subseq of multidimensional array")
         (let* ((length (first dimensions))
-               (parent-start (gpuarray-start array))
+               (parent-start (gpu-array-start array))
                (new-start (+ parent-start (max 0 start)))
                (end (or end length)))
           (if (and (< start end) (< start length) (<= end length))
-              (make-gpuarray :buffer (gpuarray-buffer array)
-                             :format-index (gpuarray-format-index array)
-                             :start new-start
-                             :dimensions (list (- end start))
-                             :access-style (gpuarray-access-style array))
+              (%make-gpu-array :buffer (gpu-array-buffer array)
+			       :format-index (gpu-array-format-index array)
+			       :start new-start
+			       :dimensions (list (- end start))
+			       :access-style (gpu-array-access-style array))
               (error "Invalid subseq start or end for c-array"))))))
 
 (defmacro with-gpu-array-as-pointer
@@ -180,14 +181,14 @@ call to #'make-gpu-array were ~s"
         (target (gensym "target")))
     `(progn
        (let ((,array-sym ,gpu-array))
-	 (unless (typep ,array-sym 'gpuarray)
+	 (unless (typep ,array-sym 'gpu-array)
 	   (if (typep ,array-sym 'gpu-array-t)
 	       (error "Unfortunately jungl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
 	       (error "with-gpu-array-* does not support the type ~s"
 		      (type-of ,array-sym))))
-	 (let ((,buffer-sym (gpuarray-buffer ,array-sym))
+	 (let ((,buffer-sym (gpu-array-buffer ,array-sym))
 	       (,target :array-buffer))
-	   (force-bind-buffer ,buffer-sym ,target)
+	   (cepl.gpu-buffers::force-bind-buffer ,buffer-sym ,target)
 	   (gl:with-mapped-buffer (,glarray-pointer
 				   ,target
 				   ,access-type)
@@ -220,13 +221,13 @@ call to #'make-gpu-array were ~s"
        (with-gpu-array-as-pointer (,temp-name ,ggpu-array :access-type ,access-type)
          (let ((,temp-name
                 (make-c-array-from-pointer
-                 (gpuarray-dimensions ,ggpu-array)
+                 (gpu-array-dimensions ,ggpu-array)
                  (element-type ,ggpu-array)
-                 (cffi:inc-pointer ,temp-name (gpuarray-offset ,ggpu-array)))))
+                 (cffi:inc-pointer ,temp-name (gpu-array-offset ,ggpu-array)))))
            ,@body)))))
 
 
-(defmethod print-mem ((thing gpuarray) &optional (size-in-bytes 64) (offset 0))
+(defmethod print-mem ((thing gpu-array) &optional (size-in-bytes 64) (offset 0))
   (with-gpu-array-as-pointer (a thing :access-type :read-only)
     (print-mem (cffi:inc-pointer a offset) size-in-bytes)))
 
@@ -238,15 +239,15 @@ call to #'make-gpu-array were ~s"
     (clone-c-array x)))
 
 ;; allignmetn
-(defmethod push-g ((object list) (destination gpuarray))
+(defmethod push-g ((object list) (destination gpu-array))
   (with-c-array (tmp (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (element-type destination)))
     (push-g tmp destination)))
 
-(defmethod push-g ((object c-array) (destination gpuarray))
-  (let* ((buffer (gpuarray-buffer destination))
-         (format (gpuarray-format destination))
+(defmethod push-g ((object c-array) (destination gpu-array))
+  (let* ((buffer (gpu-array-buffer destination))
+         (format (gpu-array-format destination))
          (type (first format))
          (ob-dimen (dimensions object))
          (des-dimen (dimensions object)))
@@ -254,18 +255,18 @@ call to #'make-gpu-array were ~s"
              (if (= 1 (length des-dimen) (length ob-dimen))
                  (<= (first ob-dimen) (first des-dimen))
                  (equal ob-dimen des-dimen)))
-        (setf (gpuarray-buffer destination)
-              (buffer-sub-data buffer object (gpuarray-offset destination)
+        (setf (gpu-array-buffer destination)
+              (buffer-sub-data buffer object (gpu-array-offset destination)
                                :array-buffer))
         (error "If the arrays are 1D then the length of the source array must
 be <= length of the destination array. If the arrays have more than 1
 dimension then their sizes must match exactly"))
     destination))
 
-(defmethod pull1-g ((object gpuarray))
+(defmethod pull1-g ((object gpu-array))
   (gpu-array-pull-1 object))
 
-(defmethod pull-g ((object gpuarray))
+(defmethod pull-g ((object gpu-array))
   (with-gpu-array-as-c-array (x object :access-type :read-only)
     (pull1-g x)))
 

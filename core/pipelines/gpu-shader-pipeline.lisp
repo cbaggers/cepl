@@ -322,7 +322,7 @@
      :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path))
                   (,i-unit (incf image-unit)))
      :uploaders `((when (>= ,id-name 0)
-                     (unless (eq (sampler-type ,arg-name) ,(type->spec type))
+                     (unless (eq (sampler-type ,arg-name) ,(cepl.types::type->spec type))
                        (error "incorrect texture type passed to shader"))
                      (active-texture-num ,i-unit)
                      (bind-texture ,arg-name)
@@ -357,9 +357,9 @@
 	 ;; foreign data to upload (think structs) so we need to use
 	 ;; #'get-foreign-uniform-function-name.
          ,(if byte-offset
-              `(,(get-foreign-uniform-function-name (type->spec type))
+              `(,(get-foreign-uniform-function-name (cepl.types::type->spec type))
                  ,id-name 1 (cffi:inc-pointer ,arg-name ,byte-offset))
-              `(,(get-uniform-function-name (type->spec type)) ,id-name ,arg-name)))))))
+              `(,(get-uniform-function-name (cepl.types::type->spec type)) ,id-name ,arg-name)))))))
 
 (defun make-array-assigners (arg-name type glsl-name-path &optional (byte-offset 0))
   (let ((element-type (varjo:v-element-type type))
@@ -375,7 +375,7 @@
         (make-simple-assigner arg-name element-type
                               (format nil "~a[~a]" glsl-name-path i)
                               byte-offset)
-        :do (incf byte-offset (gl-type-size (type->spec element-type)))))))
+        :do (incf byte-offset (jungl::gl-type-size (cepl.types::type->spec element-type)))))))
 
 
 (defun make-struct-assigners (arg-name type glsl-name-path
@@ -402,7 +402,7 @@
           (t (list (make-simple-assigner arg-name pslot-type glsl-name-path
                                          byte-offset)))))
       :do (when byte-offset
-	    (incf byte-offset (* (gl-type-size pslot-type)
+	    (incf byte-offset (* (jungl::gl-type-size pslot-type)
 				 (or array-length 1)))))))
 
 

@@ -26,7 +26,7 @@
 (defclass texture-2d-array (%glarraytexture) ())
 (defclass texture-cube-map-array (%glarraytexture) ())
 (defclass texture-buffer (%gltexture)
-  ((backing-array :type gpuarray)
+  ((backing-array :type gpu-array)
    (owns-array :type boolean)))
 
 (defstruct array-cube

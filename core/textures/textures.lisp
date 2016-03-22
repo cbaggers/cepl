@@ -214,7 +214,7 @@
     (error "Pixel data is a depth format however the texture is not"))
   t)
 
-(defun upload-c-array-to-gpuarray-t (gpu-array c-array &optional format type)
+(defun upload-c-array-to-gpu-array-t (gpu-array c-array &optional format type)
   ;; if no format or type
   (when (or (and format (not type)) (and type (not format)))
     (error "cannot only specify either format or type, must be both or neither"))
@@ -290,9 +290,9 @@
                                             pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))
 
-(defun upload-from-buffer-to-gpuarray-t (&rest args)
+(defun upload-from-buffer-to-gpu-array-t (&rest args)
   (declare (ignore args))
-  (error "upload-from-buffer-to-gpuarray-t is not implemented yet"))
+  (error "upload-from-buffer-to-gpu-array-t is not implemented yet"))
 
 ;;------------------------------------------------------------
 
@@ -460,7 +460,7 @@
     (null (error 'make-tex-no-content-no-type))
     (c-array (lisp-type->internal-format
               (element-type initial-contents)))
-    (uploadable-lisp-seq (scan-for-type initial-contents))))
+    (uploadable-lisp-seq (cepl.c-arrays::scan-for-type initial-contents))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
@@ -588,7 +588,7 @@
                   (when initial-contents
                     (destructuring-bind (pformat ptype)
                         (compile-pixel-format pixel-format)
-                      (upload-c-array-to-gpuarray-t
+                      (upload-c-array-to-gpu-array-t
                        (texref texture) initial-contents
                        pformat ptype)))
                   (when (and generate-mipmaps (> mipmap-levels 1))
@@ -610,7 +610,7 @@
                 texture))
           (error "This combination of texture features is invalid")))))
 
-;; (when (gpuarray-p initial-contents)
+;; (when (gpu-array-p initial-contents)
 ;;     (error "Cannot currently make a buffer-backed texture with an existing buffer-backed gpu-array"))
 ;;   (when (typep initial-contents 'gpu-array-t)
 ;;     (error "Cannot make a buffer-backed texture with a texture-backed gpu-array"))
@@ -653,7 +653,7 @@
       ;; upload
       (with-texture-bound (new-tex)
         (%gl::tex-buffer :texture-buffer internal-format
-                         (gpu-buffer-id (gpuarray-buffer array)))
+                         (gpu-buffer-id (gpu-array-buffer array)))
         (setf (slot-value new-tex 'allocated) t)
         new-tex))))
 
@@ -750,7 +750,7 @@
 (defmethod push-g ((object c-array) (destination gpu-array-t))
   (destructuring-bind (pformat ptype)
       (compile-pixel-format (lisp-type->pixel-format object))
-    (upload-c-array-to-gpuarray-t destination object
+    (upload-c-array-to-gpu-array-t destination object
                                   pformat ptype)))
 
 (defmethod pull-g ((object gl-texture))

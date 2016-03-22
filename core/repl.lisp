@@ -9,8 +9,8 @@
       (find-method #'cepl.host:init nil nil)
     (error () (error "Cepl.Host: Init could not be found. Have you loaded a host?")))
   (cepl.host:init)
-  (jungl:make-context :width width :height height :resizable resizable
-		      :title title)
+  (cepl.context:make-context :width width :height height :resizable resizable
+			     :title title)
   (cepl.lifecycle::change-state :interactive))
 
 (defun init-repl-link (&key (port 4005))

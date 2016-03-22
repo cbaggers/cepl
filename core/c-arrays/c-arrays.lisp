@@ -19,7 +19,7 @@
   (row-byte-size
    (error "cepl: c-array must be created with a pointer")
    :type fixnum)
-  (element-pixel-format nil :type (or null pixel-format)))
+  (element-pixel-format nil :type (or null jungl:pixel-format)))
 
 (defmethod pointer ((array c-array))
   (c-array-pointer array))
@@ -79,18 +79,18 @@
 	    row-byte-size)))
 
 (defun gl-calc-byte-size (type dimensions)
-  (%gl-calc-byte-size (gl-type-size type) dimensions))
+  (%gl-calc-byte-size (jungl::gl-type-size type) dimensions))
 
 (defun make-c-array-from-pointer (dimensions element-type pointer)
   (unless dimensions
     (error "dimensions are not optional when making an array from a pointer"))
   (let* ((dimensions (listify dimensions))
-         (p-format (pixel-format-p element-type))
+         (p-format (jungl::pixel-format-p element-type))
 	 (element-type (expand-gl-type-name element-type))
          (element-type2 (if p-format
-                            (pixel-format->lisp-type element-type)
+                            (jungl:pixel-format->lisp-type element-type)
                             element-type))
-         (elem-size (gl-type-size element-type2)))
+         (elem-size (jungl::gl-type-size element-type2)))
     (multiple-value-bind (byte-size row-byte-size)
         (%gl-calc-byte-size elem-size dimensions)
       (declare (ignore byte-size))
@@ -144,10 +144,10 @@
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
                   (error "make-c-array must be given initial-elements or dimensions"))))
-         (p-format (pixel-format-p element-type))
+         (p-format (jungl::pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
-                           (pixel-format->lisp-type element-type)
+                           (jungl:pixel-format->lisp-type element-type)
                            element-type))
          (inferred-lisp-type (cond (element-type nil)
                                    (initial-contents (scan-for-type
@@ -159,7 +159,7 @@
          (initial-contents (if inferred-lisp-type
                                (update-data initial-contents inferred-lisp-type)
                                initial-contents))
-         (elem-size (gl-type-size element-type)))
+         (elem-size (jungl::gl-type-size element-type)))
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))

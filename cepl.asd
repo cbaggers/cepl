@@ -46,7 +46,6 @@
                (:file "core/context/context-classes")
                (:file "core/context/context")
 
-               (:file "core/jungl/helpers")
                (:file "core/textures/image-format")
                (:file "core/textures/pixel-format")
 

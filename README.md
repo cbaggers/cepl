@@ -2,7 +2,7 @@
 
 CEPL is a lispy and REPL friendly library for working with OpenGL.
 
-It's goal is to feel like lisp just always had support for GPU programming in the standard.
+Its goal is to feel like lisp just always had support for GPU programming in the standard.
 
 The usual approach to using it is to start it at the beginning of your lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how `*standard-output*` is treated for text.
 
@@ -12,7 +12,6 @@ See the [cepl.examples repository](https://github.com/cbaggers/cepl.examples) fo
 
 Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 
------------------------------------------------------------------------------------------
 
 ### Requirements
 
@@ -37,14 +36,13 @@ Cepl uses OpenGL so you need to make sure this is available on your machine. Ins
 
 Cepl abstracts working with OpenGL but is not responsible for creating a window or GL context, this is handled by a `Host`. Right now the only supported host is `SDL2`, the system to load is called `cepl.sdl2`, you can find it here: [cepl.sdl2](https://github.com/cbaggers/cepl.sdl2)
 
------------------------------------------------------------------------------------------
 
 ### Getting Started
 
 The best way to get started is to make a new project that uses cepl. Do the following in your repl to get set up:
 
 - First, run `(ql:quickload :cepl)`
-- Then run `(ql:quickload :quickproject)`. Cepl uses this to create a lisp project using it's own templates
+- Then run `(ql:quickload :quickproject)`. Cepl uses this to create a lisp project using its own templates
 - Then run `(cepl:make-project "my-proj")`. This will use quickproject to make a new project with all the correct dependencies. Remember that cepl does not handle window managers or input so by default your new project will use the following
  - cepl for the graphics
  - [cepl.sdl2](https://github.com/cbaggers/cepl.sdl2) for the host
