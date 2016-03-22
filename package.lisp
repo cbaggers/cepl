@@ -126,13 +126,15 @@
            :free
            :free-gpu-array
            :free-texture
-
+	   ;;--
            :make-gpu-array
            :make-vao-from-id
            :populate
            :pull-g
            :pull1-g
-           :push-g))
+           :push-g
+	   ;;--
+	   :internal-format))
 
 (defpackage :cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -464,6 +466,7 @@
   (:export :*immutable-available*
 	   :*cube-face-order*
 	   :gl-texture
+	   :texture-type
 	   :immutable-texture
 	   :mutable-texture
 	   :buffer-texture
@@ -488,7 +491,8 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
-	:cepl.internals :cepl.image-formats :cepl.textures)
+	:cepl.internals :cepl.image-formats :cepl.textures
+	:cepl.viewports)
   (:export :fbo
 	   :fbo-p
 	   :attachment
@@ -519,6 +523,8 @@
         :cepl.context :cepl.errors :cepl.c-arrays
 	:cepl.internals :cepl.fbos)
   (:export :blending-params
+	   :blending-params-p
+	   :copy-blending-params
 	   :make-blending-params
 	   :blending-params-mode-rgb
 	   :blending-params-mode-alpha

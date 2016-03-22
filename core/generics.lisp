@@ -71,3 +71,5 @@
    (:stream-draw :stream-read :stream-copy :static-draw
     :static-read :static-copy :dynamic-draw :dynamic-read
     :dynamic-copy)"))
+
+(defgeneric internal-format (object))
