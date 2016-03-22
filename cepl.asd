@@ -14,72 +14,80 @@
                #:cl-plus-c
                #:cl-fad
                #:cl-opengl
-	       #:cl-ppcre
-	       #:rtg-math
+               #:cl-ppcre
+               #:rtg-math
                #:varjo
                #:named-readtables
-	       #:fn
-	       #:documentation-utils)
+               #:fn
+               #:documentation-utils)
   :components ((:file "package")
                (:file "host/api")
                (:file "core/utils")
-	       (:file "project")
-	       (:file "core/lifecycle")
-	       (:file "core/continuable")
+               (:file "project")
+               (:file "core/lifecycle")
+               (:file "core/continuable")
                (:file "core/generics")
-	       (:file "core/internals")
+               (:file "core/internals")
+               (:file "core/types/types")
 
-	       (:file "core/jungl/types")
-	       (:file "core/jungl/space/constants")
-	       (:file "core/jungl/space/nht-routes")
-	       (:file "core/jungl/space/space")
-	       (:file "core/jungl/space/predefined-spaces")
+               (:file "core/spaces/constants")
+               (:file "core/spaces/nht-routes")
+               (:file "core/spaces/space")
+               (:file "core/spaces/predefined-spaces")
 
-	       (:file "core/jungl/global-vars")
-	       (:file "core/jungl/render-state")
-               (:file "core/jungl/errors")
-               (:file "core/jungl/cl-opengl-replacements")
+               (:file "core/jungl/global-vars")
+               (:file "core/jungl/render-state")
+               (:file "core/errors")
+
+               (:file "core/misc/gl-extras")
+
                (:file "core/jungl/viewport")
-               (:file "core/jungl/context-classes")
-               (:file "core/jungl/context")
+
+               (:file "core/context/context-classes")
+               (:file "core/context/context")
+
                (:file "core/jungl/helpers")
-	       (:file "core/jungl/image-format")
-               (:file "core/jungl/pixel-format")
-               (:file "core/jungl/cffi-extra-primitive-types")
-               (:file "core/jungl/gl-extras")
-               (:file "core/c-arrays")
-               (:file "core/jungl/structs")
-               (:file "core/gpu-buffers")
-               (:file "core/jungl/gpu-arrays-buffer-backed")
-               (:file "core/jungl/vaos")
-               (:file "core/jungl/vertex-streams")
-               (:file "core/jungl/uniforms")
-               (:file "core/jungl/map-g-constant")
-	       (:file "core/jungl/compile-passes")
-               (:file "core/jungl/gpu-macros")
-               (:file "core/jungl/gpu-pipeline-base")
-               (:file "core/jungl/gpu-pipeline-validation")
-               (:file "core/jungl/gpu-functions")
-	       (:file "core/jungl/gpu-glsl-stages")
-               (:file "core/jungl/gpu-shader-pipeline")
-               (:file "core/jungl/gpu-compose-pipeline")
+               (:file "core/textures/image-format")
+               (:file "core/textures/pixel-format")
+
+               (:file "core/types/cffi-extra-primitive-types")
+
+               (:file "core/c-arrays/c-arrays")
+               (:file "core/types/structs")
+               (:file "core/gpu-buffers/gpu-buffers")
+               (:file "core/gpu-arrays/buffer-backed")
+               (:file "core/streams/vaos")
+               (:file "core/streams/vertex-streams")
+               (:file "core/pipelines/uniforms")
+               (:file "core/pipelines/map-g-constant")
+               (:file "core/pipelines/compile-passes")
+               (:file "core/pipelines/gpu-macros")
+               (:file "core/pipelines/gpu-pipeline-base")
+               (:file "core/pipelines/gpu-pipeline-validation")
+               (:file "core/pipelines/gpu-functions")
+               (:file "core/pipelines/gpu-glsl-stages")
+               (:file "core/pipelines/gpu-shader-pipeline")
+               (:file "core/pipelines/gpu-compose-pipeline")
+
                (:file "core/jungl/ubo")
-               (:file "core/jungl/textures")
-               (:file "core/jungl/samplers")
-               (:file "core/jungl/map-g")
+
+               (:file "core/textures/textures")
+               (:file "core/textures/samplers")
+               (:file "core/pipelines/map-g")
+               (:file "core/gpu-arrays/texture-backed")
+
                (:file "core/jungl/fbo")
                (:file "core/jungl/blending-modes")
                (:file "core/jungl/misc")
 
-	       (:file "core/jungl/space/space-errors")
-	       (:file "core/jungl/space/space-walking")
-	       (:file "core/jungl/space/space-transforms")
+               (:file "core/spaces/space-errors")
+               (:file "core/spaces/space-walking")
+               (:file "core/spaces/space-transforms")
+               (:file "core/spaces/pos")
+               (:file "core/spaces/gpu")
 
-	       (:file "core/jungl/space/pos")
-	       (:file "core/jungl/space/gpu")
-
-	       (:file "core/predefined/gpu-structs")
+               (:file "core/types/predefined/gpu-structs")
                (:file "core/repl")
 
-	       (:file "docs/doc-strings/package")
-	       (:file "docs/doc-strings/c-arrays")))
+               (:file "docs/doc-strings/package")
+               (:file "docs/doc-strings/c-arrays")))

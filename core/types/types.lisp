@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.internals)
 
 (deftype uploadable-lisp-seq () '(or list vector array))
 

@@ -5,16 +5,16 @@
   (:export :init
            :request-context
            :shutdown
-	   :set-primary-thread-and-run
-	   ;;---
-	   :set-step-func
-	   :set-swap-func))
+           :set-primary-thread-and-run
+           ;;---
+           :set-step-func
+           :set-swap-func))
 
 (defpackage :cepl.lifecycle
   (:use :cl)
   (:export :shutting-down-p
-	   :listen-to-lifecycle-changes
-	   :stop-listening-to-lifecycle-changes))
+           :listen-to-lifecycle-changes
+           :stop-listening-to-lifecycle-changes))
 
 (defpackage :cepl.generics
   (:use :cl)
@@ -26,8 +26,8 @@
            :norm
            :tex
            :col
-	   :tangent
-	   :bi-tangent
+           :tangent
+           :bi-tangent
            :action
            :button
            :clicks
@@ -40,26 +40,26 @@
            :repeating
            :state
            :timestamp
-	   ;;--
-	   :backed-by
-	   :dimensions
-	   :free
-	   :free-gpu-array
-	   :free-texture
-	   :lisp-type->pixel-format
-	   :make-gpu-array
-	   :make-vao-from-id
-	   :populate
-	   :pull-g
-	   :pull1-g
-	   :push-g))
+           ;;--
+           :backed-by
+           :dimensions
+           :free
+           :free-gpu-array
+           :free-texture
+           :lisp-type->pixel-format
+           :make-gpu-array
+           :make-vao-from-id
+           :populate
+           :pull-g
+           :pull1-g
+           :push-g))
 
 (defpackage :cepl-utils
   (:use :cl)
   (:export :gdefun
            :dbind
            :assoc-bind
-	   :case=
+           :case=
            :sn-equal
            :listify
            :replace-nth
@@ -67,7 +67,7 @@
            :hash-keys
            :intersperse
            :walk-replace
-	   :make-length-same
+           :make-length-same
            :file-to-string
            :flatten
            :find-in-tree
@@ -87,103 +87,45 @@
            :arangei
            :mapcat
            :deferror
-	   :asserting
+           :asserting
            :split-seq-by-seq
            :print-mem
            :map-hash
-	   :with-hash
-	   :with-hash*
+           :with-hash
+           :with-hash*
            :last1
            :p->
-	   :split-string
-	   :ni-call
-	   :ni-val
-	   :n-of
-	   :n-of*
-	   :just-ignore))
+           :split-string
+           :ni-call
+           :ni-val
+           :n-of
+           :n-of*
+           :just-ignore))
 
 (defpackage :cepl.internals
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl.generics :split-sequence :named-readtables)
+        :cepl.generics :split-sequence :named-readtables)
   (:export :%collate-args
-	   :%get-pipeline-uniforms
-	   :1d-p
-	   :clear-gl-context-cache
-	   :gl-assign-attrib-pointers
-	   :s-arrayp
-	   :s-def
-	   :s-extra-prim-p
-	   :s-prim-p
-	   :symbol-names-cepl-structp))
+           :%get-pipeline-uniforms
+           :1d-p
+           :clear-gl-context-cache
+           :gl-assign-attrib-pointers
+           :s-arrayp
+           :s-def
+           :s-extra-prim-p
+           :s-prim-p
+           :symbol-names-cepl-structp
+           :uploadable-lisp-seq
+           :*expanded-gl-type-names*
+           :expand-gl-type-name))
 
-(defpackage :cepl.types
+(defpackage :cepl.context
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl.generics :split-sequence :named-readtables))
-
-(defpackage :jungl.space.routes
-  (:use #:cl #:fn #:named-readtables #:cepl-utils)
-  (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
-
-(defpackage :cepl.c-arrays
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl.generics :split-sequence :named-readtables)
-  (:export :with-c-array
-	   :with-c-arrays
-	   :element-byte-size
-	   :element-type
-	   :pointer
-	   :aref-c
-	   :%aref-c
-	   :c-array
-	   :c-array-pointer
-	   :c-array-dimensions
-	   :c-array-element-type
-	   :clone-c-array
-	   :free-c-array
-	   :make-c-array
-	   :make-c-array-from-pointer
-	   :subseq-c))
-
-(defpackage :cepl.gpu-buffers
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl.generics :split-sequence :named-readtables)
-  (:export :with-buffer
-	   :gpu-buffer
-	   :gpu-buffer-id
-	   :gpu-buffer-format
-	   :bind-buffer
-	   :buffer-data
-	   :buffer-data-raw
-	   :buffer-reserve-block
-	   :buffer-reserve-block-raw
-	   :buffer-reserve-blocks
-	   :buffer-sub-data
-	   :free-buffer
-	   :free-buffers
-	   :make-gpu-buffer
-	   :make-gpu-buffer-from-id
-	   :multi-buffer-data
-	   :unbind-buffer))
-
-(defpackage :jungl
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-	:cepl.generics :split-sequence :named-readtables
-	:cepl.internals :cepl.c-arrays :cepl.gpu-buffers)
-  (:shadowing-import-from :rtg-math :v!)
-  (:import-from :cepl-utils
-                :deferror
-                :print-mem
-		:just-ignore)
-  (:shadow :float :space)
-  (:export :cls
-           :gl-context
-           :current-viewport
-           ;;- - - - - - - -
-           :make-context
-           :fbo
-           :has-feature
+        :cepl.generics :split-sequence :named-readtables)
+  (:export :gl-context
            :*gl-context*
-           :%context-flags
+           :make-context
+           :has-feature
            :major-version
            :minor-version
            :version-float
@@ -192,11 +134,6 @@
            :extension-count
            :supported-shading-versions-count
            :timestamp
-           :%draw-indirect-buffer-binding
-           :%element-array-buffer-binding
-           :%query-buffer-binding
-           :%texture-buffer-binding
-           :%vertex-array-binding
            :color-clear-value
            :color-writemask
            :depth-clear-value
@@ -238,14 +175,90 @@
            :stencil-value-mask
            :stencil-writemask
            :stereo
+           ;; :%array-buffer-binding
+           ;; :%read-buffer-binding
+           ;; :%copy-write-buffer-binding
+           ;; :%draw-indirect-buffer-binding
+           ;; :%element-array-buffer-binding
+           ;; :%query-buffer-binding
+           ;; :%texture-buffer-binding
+           ;; :%vertex-array-binding
+           ))
+
+(defpackage :cepl.types
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables)
+  (:export :defstruct-g))
+
+(defpackage :jungl.space.routes
+  (:use #:cl #:fn #:named-readtables #:cepl-utils)
+  (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
+
+(defpackage :cepl.gpu-buffers
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+        :cepl.context)
+  (:export :with-buffer
+           :gpu-buffer
+           :gpu-buffer-id
+           :gpu-buffer-format
+           :bind-buffer
+           :buffer-data
+           :buffer-data-raw
+           :buffer-reserve-block
+           :buffer-reserve-block-raw
+           :buffer-reserve-blocks
+           :buffer-sub-data
+           :free-buffer
+           :free-buffers
+           :make-gpu-buffer
+           :make-gpu-buffer-from-id
+           :multi-buffer-data
+           :unbind-buffer))
+
+(defpackage :cepl.c-arrays
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables)
+  (:export :with-c-array
+           :with-c-arrays
+           :element-byte-size
+           :element-type
+           :pointer
+           :aref-c
+           :%aref-c
+           :c-array
+           :c-array-pointer
+           :c-array-dimensions
+           :c-array-element-type
+           :clone-c-array
+           :free-c-array
+           :make-c-array
+           :make-c-array-from-pointer
+           :subseq-c))
+
+(defpackage :jungl
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+        :cepl.internals :cepl.c-arrays :cepl.gpu-buffers
+        :cepl.context :cepl.types)
+  (:shadowing-import-from :rtg-math :v!)
+  (:import-from :cepl-utils
+                :deferror
+                :print-mem
+                :just-ignore)
+  (:shadow :float :space)
+  (:export :cls
            ;;- - - - - - - -
+           :timestamp
+           ;;- - - - - - - -
+           :current-viewport
            :viewport
-	   :make-viewport
-	   :clone-viewport
+           :make-viewport
+           :clone-viewport
            :with-viewport
            :with-fbo-viewport
            :viewport-resolution
-	   :viewport-resolution-v!
+           :viewport-resolution-v!
            :swap
            :valid-pixel-format-p
            :pixel-format
@@ -295,7 +308,7 @@
            :gpu-array-t
            :texref
            :defpipeline
-	   :def-glsl-stage
+           :def-glsl-stage
            :g->
            :defun-g
            :defmacro-g
@@ -333,92 +346,92 @@
            :ubo-index
            ;;----------
            :clear
-	   ;;----------
-	   :def-compile-pass
-	   :def-deep-pass
-	   :set-uniform
-	   :remove-uniform
-	   :set-arg-val))
+           ;;----------
+           :def-compile-pass
+           :def-deep-pass
+           :set-uniform
+           :remove-uniform
+           :set-arg-val))
 
 (defpackage :jungl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
-	:varjo :varjo-lang :cepl.generics)
+        :varjo :varjo-lang :cepl.generics)
   (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)
   (:import-from :jungl :def-compile-pass :def-deep-pass :set-uniform :remove-uniform
-		:set-arg-val)
+                :set-arg-val)
   (:export :get-transform :get-transform-via :p! :in :space! :make-space
-	   :make-space*
-	   :with-rendering-via
-	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
-	   :model-space-p :relational-space-p
-	   :space :pos4 :space-g :pos4-g :let-model-space
-	   :parent-space
-	   :space-inverse-transform
-	   :add-non-hierarchical-relationship
-	   :update-non-hierarchical-relationship
-	   :remove-non-hierarchical-relationship))
+           :make-space*
+           :with-rendering-via
+           :*screen-space* :*ndc-space* :*clip-space* :*world-space*
+           :model-space-p :relational-space-p
+           :space :pos4 :space-g :pos4-g :let-model-space
+           :parent-space
+           :space-inverse-transform
+           :add-non-hierarchical-relationship
+           :update-non-hierarchical-relationship
+           :remove-non-hierarchical-relationship))
 
 (macrolet
     ((def-re-exporting-package (name &key use shadow export re-export
-				     import-from export-from)
+                                     import-from export-from)
        (labels ((exported-symbols (package-name)
-		  (let ((package (find-package package-name)))
-		    (loop :for x :being :each external-symbol :of package
-		       :when (eq (symbol-package x) package) :collect
-		       (intern (symbol-name x) :keyword))))
-		(calc-export-all (re)
-		  (exported-symbols re))
-		(calc-import-from (re)
-		  (rest re))
-		(calc-re-export (re)
-		  (typecase re
-		    (list (calc-import-from re))
-		    (symbol (calc-export-all re))))
-		(calc-exports-from (ef)
-		  (rest ef))
-		(calc-exports ()
-		  (append export (mapcan #'calc-re-export re-export)
-			  (mapcan #'calc-exports-from export-from)))
-		(calc-re-using (x)
-		  (if (listp x) (first x) x)))
-	 (let ((use (append use (mapcar #'calc-re-using re-export)))
-	       (exports (calc-exports)))
-	   `(defpackage ,name
-	      ,@(when use `((:use ,@use)))
-	      ,@(when shadow `((:shadow ,@shadow)))
-	      ,@(loop :for i :in import-from :collect (cons :import-from i))
-	      ,@(loop :for i :in export-from :collect (cons :import-from i))
-	      ,@(when exports `((:export ,@exports))))))))
+                  (let ((package (find-package package-name)))
+                    (loop :for x :being :each external-symbol :of package
+                       :when (eq (symbol-package x) package) :collect
+                       (intern (symbol-name x) :keyword))))
+                (calc-export-all (re)
+                  (exported-symbols re))
+                (calc-import-from (re)
+                  (rest re))
+                (calc-re-export (re)
+                  (typecase re
+                    (list (calc-import-from re))
+                    (symbol (calc-export-all re))))
+                (calc-exports-from (ef)
+                  (rest ef))
+                (calc-exports ()
+                  (append export (mapcan #'calc-re-export re-export)
+                          (mapcan #'calc-exports-from export-from)))
+                (calc-re-using (x)
+                  (if (listp x) (first x) x)))
+         (let ((use (append use (mapcar #'calc-re-using re-export)))
+               (exports (calc-exports)))
+           `(defpackage ,name
+              ,@(when use `((:use ,@use)))
+              ,@(when shadow `((:shadow ,@shadow)))
+              ,@(loop :for i :in import-from :collect (cons :import-from i))
+              ,@(loop :for i :in export-from :collect (cons :import-from i))
+              ,@(when exports `((:export ,@exports))))))))
   ;;
   (def-re-exporting-package :cepl
       :use (:cl
-	    :rtg-math.base-maths
-	    :cl-fad
-	    :named-readtables)
+            :rtg-math.base-maths
+            :cl-fad
+            :named-readtables)
       :shadow (:quit)
       :import-from ((:cepl-utils :deferror
-				  :print-mem
-				  :p->))
+                                 :print-mem
+                                 :p->))
       :export-from ((:jungl.space :p! :space-g :in))
       :export (:g-pc
-	       :g-pn
-	       :g-pnc
-	       :g-pnt
-	       :g-pntc
-	       :g-pt
-	       :make-project
-	       :quit
-	       :repl
-	       :step-host
-	       :continuable)
+               :g-pn
+               :g-pnc
+               :g-pnt
+               :g-pntc
+               :g-pt
+               :make-project
+               :quit
+               :repl
+               :step-host
+               :continuable)
       :re-export (:cepl.generics
-		  :cepl.c-arrays
-		  :cepl.gpu-buffers
-		  :jungl
-		  (:cepl.lifecycle :shutting-down-p)
-		  (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
-			     :radians :degrees))))
+                  :cepl.c-arrays
+                  :cepl.gpu-buffers
+                  :jungl
+                  (:cepl.lifecycle :shutting-down-p)
+                  (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
+                             :radians :degrees))))
 
 
 ;; {TODO} read up on this:

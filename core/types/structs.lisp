@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.types)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass gl-struct-slot ()

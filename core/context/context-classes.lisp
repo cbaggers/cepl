@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :context.lisp)
 
 (defclass gl-context ()
   ((cache :initform (make-hash-table))
