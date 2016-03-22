@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.textures)
 
 ;;{TODO} While I see why I started abstracting this using classes
 ;;       We cannot extend core functionality of gl, thus uses
