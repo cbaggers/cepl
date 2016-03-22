@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.render-state)
 
 ;; 2.5 Context State
 ;; Context state is state that belongs to the GL context as a whole, rather than

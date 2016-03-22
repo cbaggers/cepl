@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 
 (defun parse-compose-gpipe-args (args)
   `(,(mapcar (lambda (_) (car (last1 _))) args)

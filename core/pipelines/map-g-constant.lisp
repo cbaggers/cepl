@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 
 (defconstant +mapg-constant+ :-mgc-)
 

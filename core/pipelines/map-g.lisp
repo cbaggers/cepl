@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 
 (defmacro map-g (pipeline-func stream &rest uniforms)
   `(with-viewport (current-viewport)

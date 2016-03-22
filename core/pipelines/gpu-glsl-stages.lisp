@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 
 ;;----------------------------------------------------------------------
 ;; The code in this file enables def-glsl-stage.

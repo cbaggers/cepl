@@ -720,6 +720,18 @@
                            (or (third base-dimensions) 0))))
         (setf (slot-value texture 'allocated) t))))
 
+(defun tex-storage-1d (target levels internal-format width)
+  (%gl:tex-storage-1d target levels (gl::internal-format->int internal-format)
+                      width))
+
+(defun tex-storage-2d (target levels internal-format width height)
+  (%gl:tex-storage-2d target levels (gl::internal-format->int internal-format)
+                      width height))
+
+(defun tex-storage-3d (target levels internal-format width height depth)
+  (%gl:tex-storage-3d target levels (gl::internal-format->int internal-format)
+                      width height depth))
+
 ;;------------------------------------------------------------
 
 (defmethod push-g ((object c-array) (destination gl-texture))
@@ -795,6 +807,9 @@
                    (setf (slot-value texture 'texture-type) type))
             (error "Texture has already been bound"))))
   texture)
+
+(defun active-texture-num (num)
+  (gl:active-texture (+ #x84C0 num)))
 
 ;; {TODO}
 ;; copy data (from frame-buffer to texture image) - leave for now

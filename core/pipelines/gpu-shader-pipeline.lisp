@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 (in-readtable fn:fn-reader)
 
 (defun %defpipeline-gfuncs (name args gpipe-args options
@@ -231,28 +231,28 @@
    is handling the binding."
   `(let ((stream ,stream)
          (draw-type ,draw-type)
-         (index-type (vertex-stream-index-type stream)))
-     (bind-vao (vertex-stream-vao stream))
+         (index-type (buffer-stream-index-type stream)))
+     (bind-vao (buffer-stream-vao stream))
      (if (= |*instance-count*| 0)
          (if index-type
              (%gl:draw-elements draw-type
-                                (vertex-stream-length stream)
+                                (buffer-stream-length stream)
                                 (gl::cffi-type-to-gl index-type)
                                 (make-pointer 0))
              (%gl:draw-arrays draw-type
-                              (vertex-stream-start stream)
-                              (vertex-stream-length stream)))
+                              (buffer-stream-start stream)
+                              (buffer-stream-length stream)))
          (if index-type
              (%gl:draw-elements-instanced
               draw-type
-              (vertex-stream-length stream)
+              (buffer-stream-length stream)
               (gl::cffi-type-to-gl index-type)
               (make-pointer 0)
               |*instance-count*|)
              (%gl:draw-arrays-instanced
               draw-type
-              (vertex-stream-start stream)
-              (vertex-stream-length stream)
+              (buffer-stream-start stream)
+              (buffer-stream-length stream)
               |*instance-count*|)))))
 
 
@@ -345,6 +345,10 @@
               (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
                      ',type-spec (ubo-data-type ,arg-name))))))))
 
+(defun get-uniform-block-index (program name)
+  (with-foreign-string (s name)
+    (%gl:get-uniform-block-index program s)))
+
 ;; NOTE: byte-offset can be nil, this is a legit value
 (defun make-simple-assigner (arg-name type glsl-name-path
                              &optional (byte-offset 0))
@@ -375,7 +379,7 @@
         (make-simple-assigner arg-name element-type
                               (format nil "~a[~a]" glsl-name-path i)
                               byte-offset)
-        :do (incf byte-offset (jungl::gl-type-size (cepl.types::type->spec element-type)))))))
+        :do (incf byte-offset (gl-type-size (cepl.types::type->spec element-type)))))))
 
 
 (defun make-struct-assigners (arg-name type glsl-name-path
@@ -402,7 +406,7 @@
           (t (list (make-simple-assigner arg-name pslot-type glsl-name-path
                                          byte-offset)))))
       :do (when byte-offset
-	    (incf byte-offset (* (jungl::gl-type-size pslot-type)
+	    (incf byte-offset (* (gl-type-size pslot-type)
 				 (or array-length 1)))))))
 
 

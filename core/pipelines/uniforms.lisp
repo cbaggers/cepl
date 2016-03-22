@@ -1,37 +1,4 @@
-(in-package :jungl)
-
-(defvar *sampler-types*
-  '(:isampler-1D :isampler-1d-Array :isampler-2D :isampler-2d-Array
-    :isampler-2d-MS :isampler-2d-MS-Array :isampler-2d-Rect
-    :isampler-3d :isampler-Buffer :isampler-Cube
-    :isampler-Cube-Array :sampler-1D :sampler-1d-Array
-    :sampler-1d-Array-Shadow :sampler-1d-Shadow :sampler-2D
-    :sampler-2d-Array :sampler-2d-Array-Shadow :sampler-2d-MS
-    :sampler-2d-MS-Array :sampler-2d-Rect :sampler-2d-Rect-Shadow
-    :sampler-2d-Shadow :sampler-3d :sampler-Buffer :sampler-Cube
-    :sampler-Cube-Array :sampler-Cube-Array-Shadow
-    :sampler-Cube-Shadow :usampler-1D :usampler-1d-Array
-    :usampler-2D :usampler-2d-Array :usampler-2d-MS
-    :usampler-2d-MS-Array :usampler-2d-Rect :usampler-3d
-    :usampler-Buffer :usampler-Cube :usampler-Cube-Array
-    :isampler-1D-arb :isampler-1d-Array-arb :isampler-2D-arb
-    :isampler-2d-Array-arb
-    :isampler-2d-MS-arb :isampler-2d-MS-Array-arb :isampler-2d-Rect-arb
-    :isampler-3d-arb :isampler-Buffer-arb :isampler-Cube-arb
-    :isampler-Cube-Array-arb :sampler-1D-arb :sampler-1d-Array-arb
-    :sampler-1d-Array-Shadow-arb :sampler-1d-Shadow-arb :sampler-2D-arb
-    :sampler-2d-Array-arb :sampler-2d-Array-Shadow-arb :sampler-2d-MS-arb
-    :sampler-2d-MS-Array-arb :sampler-2d-Rect-arb :sampler-2d-Rect-Shadow-arb
-    :sampler-2d-Shadow-arb :sampler-3d-arb :sampler-Buffer-arb :sampler-Cube-arb
-    :sampler-Cube-Array-arb :sampler-Cube-Array-Shadow-arb
-    :sampler-Cube-Shadow-arb :usampler-1D-arb :usampler-1d-Array-arb
-    :usampler-2D-arb :usampler-2d-Array-arb :usampler-2d-MS-arb
-    :usampler-2d-MS-Array-arb :usampler-2d-Rect-arb :usampler-3d-arb
-    :usampler-Buffer-arb :usampler-Cube-arb :usampler-Cube-Array-arb))
-
-(defun sampler-typep (type)
-  (or (member type *sampler-types*)
-      (varjo:v-typep type 'v-sampler)))
+(in-package :cepl.pipelines)
 
 ;;;--------------------------------------------------------------
 ;;; UNIFORMS ;;;

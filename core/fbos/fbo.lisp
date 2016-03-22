@@ -205,6 +205,12 @@
                  :none))))
   fbo)
 
+(let ((vals #(#.(cffi:foreign-enum-value '%gl:enum :back-left)
+              #.(cffi:foreign-enum-value '%gl:enum :front-left)
+              #.(cffi:foreign-enum-value '%gl:enum :back-right)
+              #.(cffi:foreign-enum-value '%gl:enum :front-right))))
+  (defun default-fbo-attachment-enum (attachment-num)
+    (aref vals attachment-num)))
 
 ;;--------------------------------------------------------------
 ;; Macro to write the helper func and compiler macro

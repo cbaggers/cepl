@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.gpu-arrays.buffer-backed)
 
 ;; [TODO] Justify your use of the gl- prefix everywhere.
 ;; [TODO] How do we free these? Tag buffer format type as :free and handle?

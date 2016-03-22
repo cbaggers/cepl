@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.streams)
 
 ;; [TODO] The terminology in here seems inconsistant, need to
 ;; nail this down

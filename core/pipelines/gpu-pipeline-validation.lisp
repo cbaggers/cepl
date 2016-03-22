@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 
 (defun assert-valid-gpipe-form (pipeline-name clauses context)
   (case context

@@ -82,6 +82,9 @@
                      usage)
         new-buffer)))
 
+(defun gen-buffer ()
+  (car (gl:gen-buffers 1)))
+
 (defun make-gpu-buffer (&key initial-contents
                      (buffer-target :array-buffer)
                      (usage :static-draw)

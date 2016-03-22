@@ -7,10 +7,6 @@ element-type for texture
 
 -----
 
-finish changing vertex-stream to buffer-stream
-
------
-
 unless overriden, when creating a cube map texture set the wrapping to clamp-to-edge
 
 -----

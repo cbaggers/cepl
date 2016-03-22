@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.ubos)
 
 ;;---------------------------------------------------
 
@@ -94,7 +94,7 @@ should be ~s" data element-type)
          (size (destructuring-bind (type len byte-offset)
 		   (gpu-array-format data)
 		 (declare (ignore len byte-offset))
-		 (jungl::gl-type-size type))))
+		 (gl-type-size type))))
     (%gl:bind-buffer-range :uniform-buffer (ubo-id ubo)
                            buffer-id offset size))
   ubo)

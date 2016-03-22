@@ -283,14 +283,14 @@
 
 ;;------------------------------------------------------------
 
-(defun vertex-stream-comptible-typep (slot)
+(defun buffer-stream-comptible-typep (slot)
   (let ((type (type-spec->type (s-type slot))))
     (core-typep type)))
 
 (defun make-struct-attrib-assigner (type-name slots)
-  (when (every #'vertex-stream-comptible-typep slots)
+  (when (every #'buffer-stream-comptible-typep slots)
     (let* ((stride (if (> (length slots) 1)
-                       `(jungl::gl-type-size ',type-name)
+                       `(gl-type-size ',type-name)
                        0))
            (stride-sym (gensym "stride"))
            (definitions
@@ -302,7 +302,7 @@
                   (cffi:make-pointer (+ ,offset pointer-offset))))
                :do (setf offset (+ offset
                                    (* (first attr)
-                                      (jungl::gl-type-size (second attr))))))))
+                                      (gl-type-size (second attr))))))))
       (when definitions
         `(progn
            (defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name))

@@ -79,7 +79,7 @@
 	    row-byte-size)))
 
 (defun gl-calc-byte-size (type dimensions)
-  (%gl-calc-byte-size (jungl::gl-type-size type) dimensions))
+  (%gl-calc-byte-size (gl-type-size type) dimensions))
 
 (defun make-c-array-from-pointer (dimensions element-type pointer)
   (unless dimensions
@@ -90,7 +90,7 @@
          (element-type2 (if p-format
                             (jungl:pixel-format->lisp-type element-type)
                             element-type))
-         (elem-size (jungl::gl-type-size element-type2)))
+         (elem-size (gl-type-size element-type2)))
     (multiple-value-bind (byte-size row-byte-size)
         (%gl-calc-byte-size elem-size dimensions)
       (declare (ignore byte-size))
@@ -159,7 +159,7 @@
          (initial-contents (if inferred-lisp-type
                                (update-data initial-contents inferred-lisp-type)
                                initial-contents))
-         (elem-size (jungl::gl-type-size element-type)))
+         (elem-size (gl-type-size element-type)))
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))

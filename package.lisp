@@ -150,7 +150,9 @@
            :symbol-names-cepl-structp
            :uploadable-lisp-seq
            :*expanded-gl-type-names*
-           :expand-gl-type-name))
+           :expand-gl-type-name
+	   :color-attachment-enum
+	   :gl-type-size))
 
 (defpackage :cepl.context
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -218,6 +220,32 @@
            ;; :%texture-buffer-binding
            ;; :%vertex-array-binding
            ))
+
+(defpackage :cepl.render-state
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+	:cepl.errors)
+  (:export))
+
+(defpackage :cepl.viewports
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+	:cepl.errors)
+  (:export :current-viewport
+	   :viewport
+	   :viewport-p
+	   :viewport-resolution-x
+	   :viewport-resolution-y
+	   :viewport-origin-x
+	   :viewport-origin-y
+	   :make-viewport
+	   :viewport-resolution
+	   :viewport-resolution-v!
+	   :viewport-origin
+	   :with-viewport
+	   :with-fbo-viewport
+	   :clone-viewport
+	   :viewport-params-to-vec4))
 
 (defpackage :cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -326,6 +354,59 @@
            :multi-buffer-data
            :unbind-buffer))
 
+(defpackage :cepl.gpu-arrays.buffer-backed
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables :cepl.errors
+	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers)
+  (:export :gpu-array
+	   :gpu-array-p
+	   :gpu-array-buffer
+	   :gpu-array-format
+	   :gpu-array-dimensions
+	   :gpu-array-access-style
+	   :free-gpu-array
+	   :make-gpu-array
+	   :make-gpu-arrays
+	   :subseq-g
+	   :with-gpu-array-as-pointer
+	   :with-gpu-array-as-c-array))
+
+(defpackage :cepl.streams
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+	:cepl.errors :cepl.c-arrays)
+  (:export :free-vao
+	   :free-vaos
+	   :bind-vao
+	   :force-bind-vao
+	   :suitable-array-for-index-p
+	   :make-vao
+	   :make-vao-from-id
+	   ;;---
+	   :buffer-stream
+	   :buffer-stream-p
+	   :buffer-stream-vao
+	   :buffer-stream-length
+	   :buffer-stream-index-type
+	   :buffer-stream-gpu-arrays
+	   :buffer-stream-managed
+	   :free-buffer-stream
+	   :make-buffer-stream
+	   :make-buffer-stream-from-id))
+
+(defpackage :cepl.ubos
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+	:cepl.errors :cepl.c-arrays)
+  (:export :ubo
+	   :make-ubo
+	   :make-ubo-from-array
+	   :ubo-id
+	   :ubo-data
+	   :ubo-data-type
+	   :ubo-index
+	   :ubo-owns-gpu-array))
+
 (defpackage :cepl.samplers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :split-sequence :named-readtables
@@ -352,7 +433,9 @@
 	   :set-minify-filter
 	   :wrap
 	   :compare
-	   :with-sampling))
+	   :with-sampling
+	   :*sampler-types*
+	   :sampler-typep))
 
 (defpackage :cepl.textures
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -408,6 +491,22 @@
 	   :current-blend-params
 	   :blend-func-namep))
 
+(defpackage :cepl.pipelines
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+        :cepl.internals :cepl.c-arrays :cepl.gpu-buffers
+        :cepl.context :cepl.types :cepl.errors)
+  (:export :*verbose-compiles*
+	   :defun-g
+	   :undefine-gpu-function
+	   :def-glsl-stage
+	   :defmacro-g
+	   :define-compiler-macro-g
+	   :defpipeline
+	   :with-instances
+	   :g->
+	   :map-g))
+
 (defpackage :jungl
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :split-sequence :named-readtables
@@ -453,7 +552,7 @@
            :bind-vertex-array
            :make-vao-from-formats
            :make-vao
-           :make-raw-vertex-stream
+           :make-raw-buffer-stream
            :make-buffer-stream
            :make-texture
            :bind-texture
@@ -486,7 +585,7 @@
            :define-compiler-macro-g
            :with-instances
            :free-managed-resources
-           :free-vertex-stream
+           :free-buffer-stream
            :free-vao
            ;;----------
            :map-g
@@ -598,7 +697,8 @@
                :step-host
                :continuable
 	       :cls
-	       :swap)
+	       :swap
+	       :print-mem)
       :re-export (:cepl.generics
                   :cepl.c-arrays
                   :cepl.gpu-buffers

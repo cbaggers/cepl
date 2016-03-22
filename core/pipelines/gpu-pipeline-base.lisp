@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 (in-readtable fn:fn-reader)
 
 ;;{TODO} Almost everything in here could really benefit from being optimized

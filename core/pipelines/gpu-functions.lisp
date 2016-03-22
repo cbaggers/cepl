@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 
 ;; extract details from args and delegate to %def-gpu-function
 ;; for the main logic

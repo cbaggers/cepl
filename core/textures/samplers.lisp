@@ -558,3 +558,36 @@
 
 ;; Note that the border color is a 4-component color, so you must use the v
 ;; version of the function to provide all four components.
+
+(defvar *sampler-types*
+  '(:isampler-1d :isampler-1d-array :isampler-2d :isampler-2d-array
+    :isampler-2d-ms :isampler-2d-ms-array :isampler-2d-rect
+    :isampler-3d :isampler-buffer :isampler-cube
+    :isampler-cube-array :sampler-1d :sampler-1d-array
+    :sampler-1d-array-shadow :sampler-1d-shadow :sampler-2d
+    :sampler-2d-array :sampler-2d-array-shadow :sampler-2d-ms
+    :sampler-2d-ms-array :sampler-2d-rect :sampler-2d-rect-shadow
+    :sampler-2d-shadow :sampler-3d :sampler-buffer :sampler-cube
+    :sampler-cube-array :sampler-cube-array-shadow
+    :sampler-cube-shadow :usampler-1d :usampler-1d-array
+    :usampler-2d :usampler-2d-array :usampler-2d-ms
+    :usampler-2d-ms-array :usampler-2d-rect :usampler-3d
+    :usampler-buffer :usampler-cube :usampler-cube-array
+    :isampler-1d-arb :isampler-1d-array-arb :isampler-2d-arb
+    :isampler-2d-array-arb
+    :isampler-2d-ms-arb :isampler-2d-ms-array-arb :isampler-2d-rect-arb
+    :isampler-3d-arb :isampler-buffer-arb :isampler-cube-arb
+    :isampler-cube-array-arb :sampler-1d-arb :sampler-1d-array-arb
+    :sampler-1d-array-shadow-arb :sampler-1d-shadow-arb :sampler-2d-arb
+    :sampler-2d-array-arb :sampler-2d-array-shadow-arb :sampler-2d-ms-arb
+    :sampler-2d-ms-array-arb :sampler-2d-rect-arb :sampler-2d-rect-shadow-arb
+    :sampler-2d-shadow-arb :sampler-3d-arb :sampler-buffer-arb :sampler-cube-arb
+    :sampler-cube-array-arb :sampler-cube-array-shadow-arb
+    :sampler-cube-shadow-arb :usampler-1d-arb :usampler-1d-array-arb
+    :usampler-2d-arb :usampler-2d-array-arb :usampler-2d-ms-arb
+    :usampler-2d-ms-array-arb :usampler-2d-rect-arb :usampler-3d-arb
+    :usampler-buffer-arb :usampler-cube-arb :usampler-cube-array-arb))
+
+(defun sampler-typep (type)
+  (or (member type cepl.samplers:*sampler-types*)
+      (varjo:v-typep type 'v-sampler)))

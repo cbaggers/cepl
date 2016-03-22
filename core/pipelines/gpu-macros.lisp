@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.pipelines)
 
 (defmacro defmacro-g (name lambda-list &body body)
   `(varjo:v-defmacro ,name ,lambda-list ,@body))

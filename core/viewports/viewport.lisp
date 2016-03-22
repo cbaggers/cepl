@@ -1,4 +1,4 @@
-(in-package :jungl)
+(in-package :cepl.viewports)
 
 (defvar %current-viewport nil)
 

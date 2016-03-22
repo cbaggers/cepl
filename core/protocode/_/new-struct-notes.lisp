@@ -1,5 +1,3 @@
-(in-package :jungl)
-
 ;; So what kind of data is allowed in a glstruct?
 
 ;; primitive cffi types

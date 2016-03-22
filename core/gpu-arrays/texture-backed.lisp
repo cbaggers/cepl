@@ -1,1 +1,1 @@
-(in-package :jungl)
+(in-package :cepl.gpu-arrays.texture-backed)

@@ -52,7 +52,7 @@
                (:file "core/gpu-buffers/gpu-buffers")
                (:file "core/gpu-arrays/buffer-backed")
                (:file "core/streams/vaos")
-               (:file "core/streams/vertex-streams")
+               (:file "core/streams/buffer-streams")
                (:file "core/pipelines/uniforms")
                (:file "core/pipelines/map-g-constant")
                (:file "core/pipelines/compile-passes")
