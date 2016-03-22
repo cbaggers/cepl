@@ -1,0 +1,3599 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8"/>
+    <title>CEPL</title>
+    <link href="cepl-styles.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <header>
+      <h1>cepl</h1>
+      <span class="version"/>
+      <p class="description">Fast lispy way to work with OpenGL</p>
+    </header>
+    <div id="content">
+      <article>
+
+          <span><h2>CEPL (Code Evaluate Play Loop) - [ALPHA]</h2>
+
+<p>CEPL is a lispy and REPL friendly library for working with OpenGL.</p>
+
+<p>It's goal is to feel like lisp just always had support for GPU programming in the standard.</p>
+
+<p>The usual approach to using it is to start it at the beginning of your lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code> is treated for text.</p>
+
+<p>CEPL is in alpha. The API is closing in the what it needs to be but there are still many bugs.</p>
+
+<p>See the <a href="https://github.com/cbaggers/cepl.examples">cepl.examples repository</a> for some examples of how cepl can be used</p>
+
+<p>Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y</p>
+
+<hr/>
+
+<h3>Requirements</h3>
+
+<p>All of the following will be download automatically by quicklisp</p>
+
+<ul>
+<li>cffi</li>
+<li>cl-autowrap</li>
+<li>cl-plus-c</li>
+<li>cl-fad</li>
+<li>cl-opengl</li>
+<li>cl-ppcre</li>
+<li>named-readtables</li>
+<li>fn</li>
+<li><ul>
+<li>rtg-math</li>
+</ul></li>
+<li>varjo</li>
+</ul>
+
+<h4>C Library dependency</h4>
+
+<p>Cepl uses OpenGL so you need to make sure this is available on your machine. Installing your GPU drivers will usually handle this.</p>
+
+<h4>Cepl's Host</h4>
+
+<p>Cepl abstracts working with OpenGL but is not responsible for creating a window or GL context, this is handled by a <code>Host</code>. Right now the only supported host is <code>SDL2</code>, the system to load is called <code>cepl.sdl2</code>, you can find it here: <a href="https://github.com/cbaggers/cepl.sdl2">cepl.sdl2</a></p>
+
+<hr/>
+
+<h3>Getting Started</h3>
+
+<p>The best way to get started is to make a new project that uses cepl. Do the following in your repl to get set up:</p>
+
+<ul>
+<li>First, run <code>(ql:quickload :cepl)</code></li>
+<li>Then run <code>(ql:quickload :quickproject)</code>. Cepl uses this to create a lisp project using it's own templates</li>
+<li>Then run <code>(<a href="#CEPL:MAKE-PROJECT">cepl:make-project</a> &quot;my-proj&quot;)</code>. This will use quickproject to make a new project with all the correct dependencies. Remember that cepl does not handle window managers or input so by default your new project will use the following</li>
+<li>cepl for the graphics</li>
+<li><a href="https://github.com/cbaggers/cepl.sdl2">cepl.sdl2</a> for the host</li>
+<li><a href="https://github.com/cbaggers/skitter">skitter</a> for handling input and events</li>
+<li><a href="https://github.com/cbaggers/cepl.devil">cepl.devil</a> for loading images</li>
+</ul>
+
+<p>You are now ready to get started. How this is done varies a little between OS:</p>
+
+<h4>Linux</h4>
+
+<p>Simply run:
+- <code>(ql:quickproject &quot;my-proj&quot;)</code>
+- <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code>
+- and lastly <code>(<a href="#CEPL:REPL">cepl:repl</a>)</code></p>
+
+<p>This will bring use the host (<code>sdl2</code>) to create a window &amp; initialize opengl. You now are ready to go, have fun!</p>
+
+<h4>Windows &amp; OSX</h4>
+
+<ul>
+<li>In your new <code>my-proj</code> directory you will find a file called <code>run-session.lisp</code></li>
+<li>Run your lisp, loading this file. I use sbcl so it looks like this <code>sbcl --load &quot;run-session.lisp</code>.</li>
+<li>You can then connect your editor to this session (at port 4005) and carry on as usual. I use <code>slime</code> and <code>emacs</code> so I type <code>M-x slime-connect</code> and hit the <code><a href="http://l1sp.org/cl/return">return</a></code> key twice.</li>
+<li>Now you can run <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code> and <code>(<a href="#CEPL:REPL">cepl:repl</a>)</code>.</li>
+</ul>
+
+<p>This will bring use the host (<code>sdl2</code>) to create a window &amp; initialize opengl. You now are ready to go, have fun!</p>
+
+<h4>Q: Why is the Windows/OSX start procedure more complicated?</h4>
+
+<p><em>A:</em> Both these platforms have restrictions over which thread is allowed to interact with the window manager (I will call this the 'UI thread'). This would be fine except that, when developing, most common-lisp programmers use a system like <code>slime</code> or <code>sly</code> to connect their editor to their lisp session and those systems normally run your code in a different thread.</p>
+
+<p>The choices are then to frequently dispatch jobs to the 'UI thread' (and accept that overhead) or start <code>slime</code>/<code>sly</code> in a way that guarentees the thread. In cepl we choose the latter as, although it does add one step to starting your project, it means you can ignore the detail whilst you are working.</p>
+
+<p>To get a full breakdown of the above issue run <code>(<a href="#CEPL:MAKE-PROJECT">cepl:make-project</a> :why)</code> in your repl.</p>
+
+<hr/>
+
+<p><strong>Windows C Library Hack</strong></p>
+
+<p>If you are having issues getting the c libraries to load and just need to rule out whether lisp can find them, try putting them in the same folder as the lisp exe. For example <code>C:\Program Files\sbcl\</code>.</p>
+</span>
+
+      </article>
+      <article>
+
+          <h2>Copyright</h2>
+          <span>cepl</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=BSD 2 Clause">BSD 2 Clause</a></span> license.
+
+            © <span>Chris Bagley (Baggers) &lt;techsnuffle@gmail.com&gt;</span>
+            .
+
+
+
+      </article>
+
+        <article id="symbol-index">
+          <h2>Package Index</h2>
+          <ul><li class="package">
+              <h3>
+                <a name="CEPL.HOST" href="#CEPL.HOST">CEPL.HOST</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="CEPL.HOST:SET-STEP-FUNC"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SET-STEP-FUNC" class="name">SET-STEP-FUNC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FUNC)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Call this and pass the function that will be called every time
+     #'cepl:step-host is called</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:SET-SWAP-FUNC"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SET-SWAP-FUNC" class="name">SET-SWAP-FUNC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FUNC)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Call this and pass the function that will be called every time #'cepl:swap
+     is called</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:INIT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:INIT" class="name">INIT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Implement this method and initialize your system inside it.
+    This is called as the first step of cepl initializing.</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:REQUEST-CONTEXT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:REQUEST-CONTEXT" class="name">REQUEST-CONTEXT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(WIDTH HEIGHT TITLE FULLSCREEN NO-FRAME ALPHA-SIZE DEPTH-SIZE STENCIL-SIZE
+ RED-SIZE GREEN-SIZE BLUE-SIZE BUFFER-SIZE DOUBLE-BUFFER HIDDEN RESIZABLE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Implement this method and return a list containing:
+    - gl-context as the first element
+    - window as the second element</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:SET-PRIMARY-THREAD-AND-RUN"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SET-PRIMARY-THREAD-AND-RUN" class="name">SET-PRIMARY-THREAD-AND-RUN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FUNC &amp;REST ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This will be called from the UI thread (if required by the OS)
+    Implement and use this if you need to do some setup from that thread</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:SHUTDOWN"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SHUTDOWN" class="name">SHUTDOWN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Implement this with code to shutdown the host. This will be called
+    when cepl is shutdown</pre>
+                  </article>
+                </li></ul>
+            </li><li class="package">
+              <h3>
+                <a name="CEPL-GENERICS" href="#CEPL-GENERICS">CEPL-GENERICS</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="CEPL-GENERICS:BI-TANGENT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:BI-TANGENT" class="name">BI-TANGENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:COL"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:COL" class="name">COL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:DIR"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:DIR" class="name">DIR</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:NORM"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:NORM" class="name">NORM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:POS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:POS" class="name">POS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:ROT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:ROT" class="name">ROT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:SIZE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:SIZE" class="name">SIZE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:TANGENT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:TANGENT" class="name">TANGENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:TEX"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:TEX" class="name">TEX</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:VEC"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:VEC" class="name">VEC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:ACTION"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:ACTION" class="name">ACTION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:BUTTON"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:BUTTON" class="name">BUTTON</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:CLICKS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:CLICKS" class="name">CLICKS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:DATA"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:DATA" class="name">DATA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:DELTA"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:DELTA" class="name">DELTA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:ETYPE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:ETYPE" class="name">ETYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:ID"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:ID" class="name">ID</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:KEY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:KEY" class="name">KEY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:REPEATING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:REPEATING" class="name">REPEATING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:STATE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:STATE" class="name">STATE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL-GENERICS:TIMESTAMP"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL-GENERICS:TIMESTAMP" class="name">TIMESTAMP</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li></ul>
+            </li><li class="package">
+              <h3>
+                <a name="JUNGL" href="#JUNGL">JUNGL</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="JUNGL:*GL-CONTEXT*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#JUNGL:*GL-CONTEXT*" class="name">*GL-CONTEXT*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:ATTACHMENT"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL:ATTACHMENT" class="name">ATTACHMENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FBO"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL:FBO" class="name">FBO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:GL-CONTEXT"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL:GL-CONTEXT" class="name">GL-CONTEXT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:GL-TEXTURE"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL:GL-TEXTURE" class="name">GL-TEXTURE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:GPU-ARRAY-T"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL:GPU-ARRAY-T" class="name">GPU-ARRAY-T</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:PIXEL-FORMAT"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL:PIXEL-FORMAT" class="name">PIXEL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:VIEWPORT"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL:VIEWPORT" class="name">VIEWPORT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:%AREF-C"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:%AREF-C" class="name">%AREF-C</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAY SUBSCRIPTS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:AREF-C"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:AREF-C" class="name">AREF-C</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAY &amp;REST SUBSCRIPTS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:ATTACHMENT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:ATTACHMENT" class="name">ATTACHMENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FBO ATTACHMENT-NAME)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:ATTACHMENT-GPU-ARRAY"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:ATTACHMENT-GPU-ARRAY" class="name">ATTACHMENT-GPU-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BLENDING"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:BLENDING" class="name">BLENDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:C-ARRAY-DIMENSIONS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:C-ARRAY-DIMENSIONS" class="name">C-ARRAY-DIMENSIONS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+C-ARRAY-DIMENSIONS takes a c-array as an argument and returns the
+dimensions of the c-array
+
+You can also use the generic function #'DIMENSIONS to get the same
+result.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:C-ARRAY-ELEMENT-TYPE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:C-ARRAY-ELEMENT-TYPE" class="name">C-ARRAY-ELEMENT-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+C-ARRAY-POINTER takes a c-array as an argument and returns the
+type of the elements of the array.
+
+You can also use the generic function #'ELEMENT-TYPE to get the same
+result.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:C-ARRAY-POINTER"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:C-ARRAY-POINTER" class="name">C-ARRAY-POINTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+C-ARRAY-POINTER takes a c-array as an argument and returns the
+pointer to the foreign data.
+
+You can also use the generic function #'POINTER to get the same result.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:COMPARE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:COMPARE" class="name">COMPARE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DESTINATION-ALPHA"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:DESTINATION-ALPHA" class="name">DESTINATION-ALPHA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DESTINATION-RGB"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:DESTINATION-RGB" class="name">DESTINATION-RGB</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:LOD-BIAS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:LOD-BIAS" class="name">LOD-BIAS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAGNIFY-FILTER"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAGNIFY-FILTER" class="name">MAGNIFY-FILTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-LOD"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-LOD" class="name">MAX-LOD</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MIN-LOD"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:MIN-LOD" class="name">MIN-LOD</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MINIFY-FILTER"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:MINIFY-FILTER" class="name">MINIFY-FILTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MODE-ALPHA"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:MODE-ALPHA" class="name">MODE-ALPHA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MODE-RGB"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:MODE-RGB" class="name">MODE-RGB</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SOURCE-ALPHA"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:SOURCE-ALPHA" class="name">SOURCE-ALPHA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SOURCE-RGB"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:SOURCE-RGB" class="name">SOURCE-RGB</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:UBO-DATA"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:UBO-DATA" class="name">UBO-DATA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:UBO-INDEX"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:UBO-INDEX" class="name">UBO-INDEX</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:VIEWPORT-RESOLUTION"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:VIEWPORT-RESOLUTION" class="name">VIEWPORT-RESOLUTION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIEWPORT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:VIEWPORT-RESOLUTION-V!"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:VIEWPORT-RESOLUTION-V!" class="name">VIEWPORT-RESOLUTION-V!</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIEWPORT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WRAP"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL:WRAP" class="name">WRAP</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:1D-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:1D-P" class="name">1D-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:ATTACHMENT-COMPATIBLE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:ATTACHMENT-COMPATIBLE" class="name">ATTACHMENT-COMPATIBLE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT INTERNAL-FORMAT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BIND-BUFFER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BIND-BUFFER" class="name">BIND-BUFFER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER BUFFER-TARGET)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Binds the specified opengl buffer to the target</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BIND-TEXTURE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BIND-TEXTURE" class="name">BIND-TEXTURE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TEXTURE &amp;OPTIONAL TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BIND-VAO"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BIND-VAO" class="name">BIND-VAO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VAO)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Binds the vao specfied</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BIND-VERTEX-ARRAY"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BIND-VERTEX-ARRAY" class="name">BIND-VERTEX-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VAO)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Binds the vao specfied</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BUFFER-DATA"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BUFFER-DATA" class="name">BUFFER-DATA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER C-ARRAY BUFFER-TARGET USAGE &amp;KEY (OFFSET 0)
+ (SIZE (C-ARRAY-BYTE-SIZE C-ARRAY)))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function populates an opengl buffer with the contents
+   of the array. You also pass in the buffer type and the
+   draw type this buffer is to be used for.
+
+   The function returns a buffer object with its format slot
+   populated with the details of the data stored within the buffer</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BUFFER-DATA-RAW"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BUFFER-DATA-RAW" class="name">BUFFER-DATA-RAW</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(DATA-POINTER DATA-TYPE DATA-BYTE-SIZE BUFFER BUFFER-TARGET USAGE &amp;OPTIONAL
+ (BYTE-OFFSET 0))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function populates an opengl buffer with the contents
+   of the array. You also pass in the buffer type and the
+   draw type this buffer is to be used for.
+
+   The function returns a buffer object with its format slot
+   populated with the details of the data stored within the buffer</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BUFFER-RESERVE-BLOCK"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BUFFER-RESERVE-BLOCK" class="name">BUFFER-RESERVE-BLOCK</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER TYPE DIMENSIONS BUFFER-TARGET USAGE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function creates an empty block of data in the opengl buffer
+   equal in size to (* length size-in-bytes-of-type).
+   It will remove ALL data currently in the buffer</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BUFFER-RESERVE-BLOCK-RAW"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BUFFER-RESERVE-BLOCK-RAW" class="name">BUFFER-RESERVE-BLOCK-RAW</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER SIZE-IN-BYTES BUFFER-TARGET USAGE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function creates an empty block of data in the opengl buffer.
+   It will remove ALL data currently in the buffer. It also will not
+   update the format of the buffer so you must be sure to handle this
+   yourself. It is much safer to use this as an assistant function to
+   one which takes care of these issues</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BUFFER-RESERVE-BLOCKS"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BUFFER-RESERVE-BLOCKS" class="name">BUFFER-RESERVE-BLOCKS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER TYPES-AND-DIMENSIONS BUFFER-TARGET USAGE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function creates an empty block of data in the opengl buffer
+   equal in size to the sum of all of the
+   (* length size-in-bytes-of-type) in types-and-lengths.
+   types-and-lengths should be of the format:
+   `((type length) (type length) ...etc)
+   It will remove ALL data currently in the buffer</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BUFFER-SUB-DATA"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:BUFFER-SUB-DATA" class="name">BUFFER-SUB-DATA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER C-ARRAY BYTE-OFFSET BUFFER-TARGET &amp;KEY (SAFE T))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function replaces a subsection of the data in the
+   specified buffer with the data in the c-array.
+   The byte offset specifies where you wish to start overwriting
+   data from.
+   When the :safe option is t, the function checks to see if the
+   data you are about to write into the buffer will cross the
+   boundaries between data already in the buffer and will emit
+   an error if you are.</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:C-ARRAY-BYTE-SIZE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:C-ARRAY-BYTE-SIZE" class="name">C-ARRAY-BYTE-SIZE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:C-POPULATE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:C-POPULATE" class="name">C-POPULATE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAY DATA &amp;OPTIONAL (CHECK-SIZES T))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:CALC-MINIFY-FILTER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:CALC-MINIFY-FILTER" class="name">CALC-MINIFY-FILTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FOR-LEVEL BETWEEN-LEVELS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:CALC-SAMPLER-TYPE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:CALC-SAMPLER-TYPE" class="name">CALC-SAMPLER-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TEXTURE-TYPE INTERNAL-FORMAT &amp;OPTIONAL SHADOW-SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Makes the keyword that names the sampler-type for the given texture-type and format</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:CLEAR"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:CLEAR" class="name">CLEAR</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;OPTIONAL (FBO %CURRENT-FBO))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:CLONE-C-ARRAY"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:CLONE-C-ARRAY" class="name">CLONE-C-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:CLONE-VIEWPORT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:CLONE-VIEWPORT" class="name">CLONE-VIEWPORT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIEWPORT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:CLS"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:CLS" class="name">CLS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This func is here because it makes me happy</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:CURRENT-VIEWPORT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:CURRENT-VIEWPORT" class="name">CURRENT-VIEWPORT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DESCRIBE-PIXEL-FORMAT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:DESCRIBE-PIXEL-FORMAT" class="name">DESCRIBE-PIXEL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DIMENSIONS-AT-MIPMAP-LEVEL"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:DIMENSIONS-AT-MIPMAP-LEVEL" class="name">DIMENSIONS-AT-MIPMAP-LEVEL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TEXTURE LEVEL)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:ESTABLISH-TEXTURE-TYPE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:ESTABLISH-TEXTURE-TYPE" class="name">ESTABLISH-TEXTURE-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(DIMENSIONS MIPMAP LAYERS CUBES PO2 MULTISAMPLE BUFFER RECTANGLE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FBO-ATTACH"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:FBO-ATTACH" class="name">FBO-ATTACH</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FBO TEX-ARRAY ATTACHMENT &amp;OPTIONAL (TARGET :FRAMEBUFFER))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FBO-DETACH"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:FBO-DETACH" class="name">FBO-DETACH</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FBO ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FORCE-BIND-BUFFER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:FORCE-BIND-BUFFER" class="name">FORCE-BIND-BUFFER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER BUFFER-TARGET)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Binds the specified opengl buffer to the target</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FREE-BUFFER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:FREE-BUFFER" class="name">FREE-BUFFER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FREE-BUFFERS"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:FREE-BUFFERS" class="name">FREE-BUFFERS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFERS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FREE-C-ARRAY"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:FREE-C-ARRAY" class="name">FREE-C-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Frees the specified c-array.</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FREE-VAO"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:FREE-VAO" class="name">FREE-VAO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VAO)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FREE-VERTEX-STREAM"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:FREE-VERTEX-STREAM" class="name">FREE-VERTEX-STREAM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VERTEX-STREAM)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:GEN-BUFFER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:GEN-BUFFER" class="name">GEN-BUFFER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:GL-CALC-BYTE-SIZE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:GL-CALC-BYTE-SIZE" class="name">GL-CALC-BYTE-SIZE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TYPE DIMENSIONS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:HAS-FEATURE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:HAS-FEATURE" class="name">HAS-FEATURE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(X)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:INTERNAL-FORMAT-&gt;LISP-TYPE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:INTERNAL-FORMAT-&gt;LISP-TYPE" class="name">INTERNAL-FORMAT-&gt;LISP-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INTERNAL-FORMAT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:INTERNAL-FORMAT-&gt;PIXEL-FORMAT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:INTERNAL-FORMAT-&gt;PIXEL-FORMAT" class="name">INTERNAL-FORMAT-&gt;PIXEL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INTERNAL-FORMAT &amp;KEY (ERROR-IF-MISSING T))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:LISP-TYPE-&gt;INTERNAL-FORMAT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:LISP-TYPE-&gt;INTERNAL-FORMAT" class="name">LISP-TYPE-&gt;INTERNAL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(LISP-TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-BLENDING-PARAMS"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM19) :FUNC-ADD) ((:MODE-ALPHA DUM20) :FUNC-ADD)
+ ((:SOURCE-RGB DUM21) :SRC-ALPHA) ((:SOURCE-ALPHA DUM22) :SRC-ALPHA)
+ ((:DESTINATION-RGB DUM23) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DUM24) :ONE-MINUS-SRC-ALPHA))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-BUFFER-STREAM"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-BUFFER-STREAM" class="name">MAKE-BUFFER-STREAM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAYS &amp;KEY INDEX-ARRAY (START 0) LENGTH RETAIN-ARRAYS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function simplifies making the vertex-stream if you are
+   storing the data in gpu-arrays.
+
+   Remember that you can also use gpu-sub-arrays in here if you
+   want to limit the data you are using, for example the
+   following is perfectly legal code:
+   (make-buffer-stream
+     :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
+                  ,(gpu-sub-array monster-col-data 1000 2000))
+     :index-array monster-index-array
+     :length 1000)</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-C-ARRAY"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-C-ARRAY" class="name">MAKE-C-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE DISPLACED-BY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-C-ARRAY-FROM-POINTER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-C-ARRAY-FROM-POINTER" class="name">MAKE-C-ARRAY-FROM-POINTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(DIMENSIONS ELEMENT-TYPE POINTER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-CONTEXT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-CONTEXT" class="name">MAKE-CONTEXT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;KEY (WIDTH 640) (HEIGHT 480) (TITLE &quot;&quot;) FULLSCREEN NO-FRAME (ALPHA-SIZE 0)
+ (DEPTH-SIZE 16) (STENCIL-SIZE 8) (RED-SIZE 8) (GREEN-SIZE 8) (BLUE-SIZE 8)
+ (BUFFER-SIZE 32) (DOUBLE-BUFFER T) HIDDEN (RESIZABLE T))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-FBO"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-FBO" class="name">MAKE-FBO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;REST FUZZY-ATTACH-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Will create an fbo and optionally attach the arguments using
+   #'fbo-gen-attach</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-FBOS"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-FBOS" class="name">MAKE-FBOS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;OPTIONAL (COUNT 1))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-GPU-ARRAYS"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-GPU-ARRAYS" class="name">MAKE-GPU-ARRAYS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAYS &amp;KEY (ACCESS-STYLE :STATIC-DRAW))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function creates a list of gpu-arrays residing in a
+   single buffer in opengl. It create one gpu-array for each
+   c-array in the list passed in.
+
+   Access style is optional but if you are comfortable with
+   opengl, and know what type of usage pattern thsi array will
+   have, you can set this to any of the following:
+   (:stream-draw :stream-read :stream-copy :static-draw
+    :static-read :static-copy :dynamic-draw :dynamic-read
+    :dynamic-copy)</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-RAW-VERTEX-STREAM"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-RAW-VERTEX-STREAM" class="name">MAKE-RAW-VERTEX-STREAM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;KEY (VAO NIL) (START 0) (LENGTH 1) (INDEX-TYPE NIL) (MANAGED NIL)
+ (GPU-ARRAYS NIL))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-SAMPLER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-SAMPLER" class="name">MAKE-SAMPLER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;KEY (LOD-BIAS 0.0) (MIN-LOD -1000.0) (MAX-LOD 1000.0) (MINIFY-FILTER :LINEAR)
+ (MAGNIFY-FILTER :LINEAR) (WRAP #(:REPEAT :REPEAT :REPEAT)) (COMPARE :NONE))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-TEXTURE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-TEXTURE" class="name">MAKE-TEXTURE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE (MIPMAP NIL) (LAYER-COUNT 1)
+ (CUBES NIL) (RECTANGLE NIL) (MULTISAMPLE NIL) (IMMUTABLE T)
+ (BUFFER-STORAGE NIL) LOD-BIAS MIN-LOD MAX-LOD MINIFY-FILTER MAGNIFY-FILTER
+ WRAP COMPARE (GENERATE-MIPMAPS T))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-UBO"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-UBO" class="name">MAKE-UBO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(DATA &amp;OPTIONAL ELEMENT-TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-VAO"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-VAO" class="name">MAKE-VAO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAYS &amp;OPTIONAL INDEX-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">makes a vao using a list of gpu-arrays as the source data
+   (remember that you can also use gpu-sub-array here if you
+   need a subsection of a gpu-array).
+   You can also specify an index-array which will be used as
+   the indicies when rendering</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-VAO-FROM-FORMATS"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-VAO-FROM-FORMATS" class="name">MAKE-VAO-FROM-FORMATS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FORMATS &amp;KEY ELEMENT-BUFFER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Makes a vao from a list of buffer formats.
+   The formats list should be laid out as follows:
+   `((buffer1 (attr-format1) (attr-format2))
+     (buffer2 (attr-format3) (attr-format4)))
+   with each attr-format laid out as follows:
+   `(component-type normalized-flag stride pointer)
+   if you have the type and offset of the data this can be generated
+   by using the function gl-type-format.
+   You can also specify an element buffer to be used in the vao</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-VIEWPORT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-VIEWPORT" class="name">MAKE-VIEWPORT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;OPTIONAL (RESOLUTION '(320 240)) (ORIGIN '(0 0)))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MULTI-BUFFER-DATA"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:MULTI-BUFFER-DATA" class="name">MULTI-BUFFER-DATA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BUFFER C-ARRAYS BUFFER-TARGET USAGE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This beast will take a list of c-arrays and auto-magically
+   push them into a buffer taking care of both interleaving
+   and sequencial data and handling all the offsets.</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:PER-ATTACHMENT-BLENDING-AVAILABLE-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:PER-ATTACHMENT-BLENDING-AVAILABLE-P" class="name">PER-ATTACHMENT-BLENDING-AVAILABLE-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:PIXEL-FORMAT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:PIXEL-FORMAT" class="name">PIXEL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(COMPONENTS &amp;OPTIONAL (TYPE :UBYTE) (NORMALISE T) REVERSED)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:PIXEL-FORMAT-&gt;INTERNAL-FORMAT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:PIXEL-FORMAT-&gt;INTERNAL-FORMAT" class="name">PIXEL-FORMAT-&gt;INTERNAL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(PIXEL-FORMAT &amp;KEY (ERROR-IF-MISSING T))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:PIXEL-FORMAT-&gt;LISP-TYPE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:PIXEL-FORMAT-&gt;LISP-TYPE" class="name">PIXEL-FORMAT-&gt;LISP-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(PIXEL-FORMAT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:REMOVE-UNIFORM"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:REMOVE-UNIFORM" class="name">REMOVE-UNIFORM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME ENV)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SET-ARG-VAL"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:SET-ARG-VAL" class="name">SET-ARG-VAL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME FORM ENV &amp;KEY (CURRENT-VAL-SYMB :CURRENT))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SET-MINIFY-FILTER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:SET-MINIFY-FILTER" class="name">SET-MINIFY-FILTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER FOR-LEVEL &amp;KEY (BETWEEN-LEVELS NIL))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SET-UNIFORM"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:SET-UNIFORM" class="name">SET-UNIFORM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME TYPE ENV)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SUBSEQ-C"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:SUBSEQ-C" class="name">SUBSEQ-C</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ARRAY START &amp;OPTIONAL END)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function returns a c-array which contains
+   a subset of the array passed into this function.
+   Right this will make more sense with a use case:
+
+   Imagine we have one gpu-array with the vertex data for 10
+   different monsters inside it and each monster is made of 100
+   vertices. The first mosters vertex data will be in the
+   sub-array (gpu-sub-array bigarray 0 1000) and the vertex
+   data for the second monster would be at
+   (gpu-sub-array bigarray 1000 2000)
+
+   This *view* (for lack of a better term) into our array can
+   be really damn handy. Prehaps, for example, we want to
+   replace the vertex data of monster 2 with the data in my
+   c-array newmonster. We can simply do the following:
+   (push-g (gpu-sub-array bigarray 1000 2000) newmonster)
+
+   Obviously be aware that any changes you make to the parent
+   array affect the child sub-array. This can really bite you
+   in the backside if you change how the data in the array is
+   laid out.</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SUBSEQ-G"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:SUBSEQ-G" class="name">SUBSEQ-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ARRAY START &amp;OPTIONAL END)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SUITABLE-ARRAY-FOR-INDEX-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:SUITABLE-ARRAY-FOR-INDEX-P" class="name">SUITABLE-ARRAY-FOR-INDEX-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SWAP"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:SWAP" class="name">SWAP</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:TEXREF"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:TEXREF" class="name">TEXREF</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TEXTURE &amp;KEY (MIPMAP-LEVEL 0) (LAYER 0) (CUBE-FACE 0))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:UNBIND-BUFFER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:UNBIND-BUFFER" class="name">UNBIND-BUFFER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:UPLOAD-C-ARRAY-TO-GPUARRAY-T"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:UPLOAD-C-ARRAY-TO-GPUARRAY-T" class="name">UPLOAD-C-ARRAY-TO-GPUARRAY-T</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY C-ARRAY &amp;OPTIONAL FORMAT TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:VALID-PIXEL-FORMAT-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:VALID-PIXEL-FORMAT-P" class="name">VALID-PIXEL-FORMAT-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(COMPONENTS TYPE NORMALISE REVERSED)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:VERSION-FLOAT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL:VERSION-FLOAT" class="name">VERSION-FLOAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:%CONTEXT-FLAGS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:%CONTEXT-FLAGS" class="name">%CONTEXT-FLAGS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:%DRAW-INDIRECT-BUFFER-BINDING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:%DRAW-INDIRECT-BUFFER-BINDING" class="name">%DRAW-INDIRECT-BUFFER-BINDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:%ELEMENT-ARRAY-BUFFER-BINDING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:%ELEMENT-ARRAY-BUFFER-BINDING" class="name">%ELEMENT-ARRAY-BUFFER-BINDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:%QUERY-BUFFER-BINDING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:%QUERY-BUFFER-BINDING" class="name">%QUERY-BUFFER-BINDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:%TEXTURE-BUFFER-BINDING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:%TEXTURE-BUFFER-BINDING" class="name">%TEXTURE-BUFFER-BINDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:%VERTEX-ARRAY-BINDING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:%VERTEX-ARRAY-BINDING" class="name">%VERTEX-ARRAY-BINDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:BACKED-BY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:BACKED-BY" class="name">BACKED-BY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:CLEAR-GL-CONTEXT-CACHE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:CLEAR-GL-CONTEXT-CACHE" class="name">CLEAR-GL-CONTEXT-CACHE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:COLOR-CLEAR-VALUE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:COLOR-CLEAR-VALUE" class="name">COLOR-CLEAR-VALUE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:COLOR-WRITEMASK"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:COLOR-WRITEMASK" class="name">COLOR-WRITEMASK</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEPTH-CLEAR-VALUE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEPTH-CLEAR-VALUE" class="name">DEPTH-CLEAR-VALUE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEPTH-FUNC~1"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEPTH-FUNC~1" class="name">DEPTH-FUNC~1</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEPTH-TEST"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEPTH-TEST" class="name">DEPTH-TEST</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEPTH-WRITEMASK"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEPTH-WRITEMASK" class="name">DEPTH-WRITEMASK</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DIMENSIONS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DIMENSIONS" class="name">DIMENSIONS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DOUBLEBUFFER"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DOUBLEBUFFER" class="name">DOUBLEBUFFER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DRAW-BUFFER"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DRAW-BUFFER" class="name">DRAW-BUFFER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DRAW-BUFFERI"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DRAW-BUFFERI" class="name">DRAW-BUFFERI</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DRAW-FRAMEBUFFER-BINDING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:DRAW-FRAMEBUFFER-BINDING" class="name">DRAW-FRAMEBUFFER-BINDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:ELEMENT-TYPE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:ELEMENT-TYPE" class="name">ELEMENT-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONDITION)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:EXTENSION-COUNT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:EXTENSION-COUNT" class="name">EXTENSION-COUNT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FBO"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:FBO" class="name">FBO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FREE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:FREE" class="name">FREE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FREE-GPU-ARRAY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:FREE-GPU-ARRAY" class="name">FREE-GPU-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:FREE-TEXTURE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:FREE-TEXTURE" class="name">FREE-TEXTURE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TEXTURE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:LISP-TYPE-&gt;PIXEL-FORMAT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:LISP-TYPE-&gt;PIXEL-FORMAT" class="name">LISP-TYPE-&gt;PIXEL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAJOR-VERSION"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAJOR-VERSION" class="name">MAJOR-VERSION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAKE-GPU-ARRAY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAKE-GPU-ARRAY" class="name">MAKE-GPU-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function creates a gpu-array which is very similar
+   to a c-array except that the data is located in the memory
+   of the graphics card and so is accessible to shaders.
+   You can either provide and type and length or you can
+   provide a c-array and the data from that will be used to
+   populate the gpu-array with.
+
+   Access style is optional but if you are comfortable with
+   opengl, and know what type of usage pattern thsi array will
+   have, you can set this to any of the following:
+   (:stream-draw :stream-read :stream-copy :static-draw
+    :static-read :static-copy :dynamic-draw :dynamic-read
+    :dynamic-copy)</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-COLOR-ATTACHMENTS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-COLOR-ATTACHMENTS" class="name">MAX-COLOR-ATTACHMENTS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-COLOR-TEXTURE-SAMPLES"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-COLOR-TEXTURE-SAMPLES" class="name">MAX-COLOR-TEXTURE-SAMPLES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-DEPTH-TEXTURE-SAMPLES"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-DEPTH-TEXTURE-SAMPLES" class="name">MAX-DEPTH-TEXTURE-SAMPLES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-DRAW-BUFFERS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-DRAW-BUFFERS" class="name">MAX-DRAW-BUFFERS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-DUAL-SOURCE-DRAW-BUFFERS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-DUAL-SOURCE-DRAW-BUFFERS" class="name">MAX-DUAL-SOURCE-DRAW-BUFFERS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-FRAMEBUFFER-HEIGHT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-FRAMEBUFFER-HEIGHT" class="name">MAX-FRAMEBUFFER-HEIGHT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-FRAMEBUFFER-LAYERS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-FRAMEBUFFER-LAYERS" class="name">MAX-FRAMEBUFFER-LAYERS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-FRAMEBUFFER-SAMPLES"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-FRAMEBUFFER-SAMPLES" class="name">MAX-FRAMEBUFFER-SAMPLES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-FRAMEBUFFER-WIDTH"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-FRAMEBUFFER-WIDTH" class="name">MAX-FRAMEBUFFER-WIDTH</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-INTEGER-SAMPLES"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-INTEGER-SAMPLES" class="name">MAX-INTEGER-SAMPLES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-SAMPLES"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-SAMPLES" class="name">MAX-SAMPLES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAX-SERVER-WAIT-TIMEOUT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAX-SERVER-WAIT-TIMEOUT" class="name">MAX-SERVER-WAIT-TIMEOUT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MIN-MAP-BUFFER-ALIGNMENT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MIN-MAP-BUFFER-ALIGNMENT" class="name">MIN-MAP-BUFFER-ALIGNMENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MINOR-VERSION"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MINOR-VERSION" class="name">MINOR-VERSION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MUTABLE-TEXTUREP"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:MUTABLE-TEXTUREP" class="name">MUTABLE-TEXTUREP</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TEXTURE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:POINTER"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:POINTER" class="name">POINTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:PULL-G"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:PULL-G" class="name">PULL-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:PULL1-G"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:PULL1-G" class="name">PULL1-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:PUSH-G"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:PUSH-G" class="name">PUSH-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT DESTINATION)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:READ-BUFFER"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:READ-BUFFER" class="name">READ-BUFFER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:READ-FRAMEBUFFER-BINDING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:READ-FRAMEBUFFER-BINDING" class="name">READ-FRAMEBUFFER-BINDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:RENDERBUFFER-BINDING"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:RENDERBUFFER-BINDING" class="name">RENDERBUFFER-BINDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SAMPLER-TYPE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:SAMPLER-TYPE" class="name">SAMPLER-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-BACK-FAIL"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-BACK-FAIL" class="name">STENCIL-BACK-FAIL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-BACK-FUNC"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-BACK-FUNC" class="name">STENCIL-BACK-FUNC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-BACK-PASS-DEPTH-FAIL"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-BACK-PASS-DEPTH-FAIL" class="name">STENCIL-BACK-PASS-DEPTH-FAIL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-BACK-PASS-DEPTH-PASS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-BACK-PASS-DEPTH-PASS" class="name">STENCIL-BACK-PASS-DEPTH-PASS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-BACK-REF"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-BACK-REF" class="name">STENCIL-BACK-REF</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-BACK-VALUE-MASK"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-BACK-VALUE-MASK" class="name">STENCIL-BACK-VALUE-MASK</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-BACK-WRITEMASK"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-BACK-WRITEMASK" class="name">STENCIL-BACK-WRITEMASK</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-CLEAR-VALUE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-CLEAR-VALUE" class="name">STENCIL-CLEAR-VALUE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-FAIL"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-FAIL" class="name">STENCIL-FAIL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-FUNC"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-FUNC" class="name">STENCIL-FUNC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-PASS-DEPTH-FAIL"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-PASS-DEPTH-FAIL" class="name">STENCIL-PASS-DEPTH-FAIL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-PASS-DEPTH-PASS"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-PASS-DEPTH-PASS" class="name">STENCIL-PASS-DEPTH-PASS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-REF"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-REF" class="name">STENCIL-REF</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-TEST"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-TEST" class="name">STENCIL-TEST</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-VALUE-MASK"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-VALUE-MASK" class="name">STENCIL-VALUE-MASK</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STENCIL-WRITEMASK"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STENCIL-WRITEMASK" class="name">STENCIL-WRITEMASK</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:STEREO"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:STEREO" class="name">STEREO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:SUPPORTED-SHADING-VERSIONS-COUNT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#JUNGL:SUPPORTED-SHADING-VERSIONS-COUNT" class="name">SUPPORTED-SHADING-VERSIONS-COUNT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTEXT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEF-COMPILE-PASS"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEF-COMPILE-PASS" class="name">DEF-COMPILE-PASS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME/OPTIONS &amp;BODY FILTER-TRANSFORM-PAIRS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEF-DEEP-PASS"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEF-DEEP-PASS" class="name">DEF-DEEP-PASS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME/OPTIONS &amp;KEY FILTER TRANSFORM)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEF-GLSL-STAGE"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEF-GLSL-STAGE" class="name">DEF-GLSL-STAGE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME ARGS BODY-STRING OUTPUTS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">[0] makes a glsl-stage-spec that will be populated a stored later.
+
+   [1] use varjo to create a varjo-compile-result. We have to bodge a bit
+       of the data but it's worth it to not duplicate varjo's logic
+
+   [2] %make-stand-in-lisp-func-for-glsl-stage is called at expand time to write
+       a lisp function with the same signature as the glsl stage. This gives
+       code hinting and also a decent error message if you try calling it
+       cpu side.</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEFINE-COMPILER-MACRO-G"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEFINE-COMPILER-MACRO-G" class="name">DEFINE-COMPILER-MACRO-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME LAMBDA-LIST &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEFMACRO-G"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEFMACRO-G" class="name">DEFMACRO-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME LAMBDA-LIST &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEFPIPELINE"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEFPIPELINE" class="name">DEFPIPELINE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME ARGS GPU-PIPE-FORM &amp;BODY OPTIONS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEFSTRUCT-G"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEFSTRUCT-G" class="name">DEFSTRUCT-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME
+ (&amp;KEY (ACCESORS T) (CONSTRUCTOR T) VARJO-CONSTRUCTOR (READERS T) (WRITERS T)
+ (PULL-PUSH T) (ATTRIBS T) (POPULATE T))
+ &amp;BODY SLOT-DESCRIPTIONS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:DEFUN-G"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:DEFUN-G" class="name">DEFUN-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME ARGS &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Define a function that runs on the gpu.</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:G-&gt;"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:G-&gt;" class="name">G-&gt;</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;REST FORMS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:MAP-G"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:MAP-G" class="name">MAP-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-BLENDING"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-BLENDING" class="name">WITH-BLENDING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BLENDING-PARAMS &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-C-ARRAY"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-C-ARRAY" class="name">WITH-C-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((VAR-NAME C-ARRAY) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-C-ARRAYS"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-C-ARRAYS" class="name">WITH-C-ARRAYS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((VAR-NAME C-ARRAYS) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-FBO-BOUND"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-FBO-BOUND" class="name">WITH-FBO-BOUND</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((FBO &amp;KEY (TARGET :FRAMEBUFFER) (UNBIND T) (WITH-VIEWPORT T)
+ (ATTACHMENT-FOR-SIZE 0) (WITH-BLENDING T) (DRAW-BUFFERS T))
+ &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-FBO-SLOTS"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-FBO-SLOTS" class="name">WITH-FBO-SLOTS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT-BINDINGS EXPRESSION &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-FBO-VIEWPORT"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-FBO-VIEWPORT" class="name">WITH-FBO-VIEWPORT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((FBO &amp;OPTIONAL (ATTACHMENT 0)) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-GPU-ARRAY-AS-C-ARRAY"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-GPU-ARRAY-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-AS-C-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   as a c-array which allows you to run any of the c-array
+   commands on it.
+
+   A simple example would be if we wanted to set the 3rd element
+   in a gpu array to 5.0 we could do the following:
+   (with-gpu-array-as-c-array (mygpuarray)
+     (setf (aref-c mygpuarray 2) 5.0))
+
+   The valid values for access are :read-only :write-only &amp;
+   :read-write</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-GPU-ARRAY-AS-POINTER"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-GPU-ARRAY-AS-POINTER" class="name">WITH-GPU-ARRAY-AS-POINTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   giving you the pointer</pre>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-INSTANCES"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-INSTANCES" class="name">WITH-INSTANCES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(COUNT &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-SAMPLING"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-SAMPLING" class="name">WITH-SAMPLING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BINDINGS-PAIRS &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-TEXTURE-BOUND"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-TEXTURE-BOUND" class="name">WITH-TEXTURE-BOUND</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((TEXTURE &amp;OPTIONAL TYPE) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL:WITH-VIEWPORT"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL:WITH-VIEWPORT" class="name">WITH-VIEWPORT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIEWPORT &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li></ul>
+            </li><li class="package">
+              <h3>
+                <a name="JUNGL.SPACE" href="#JUNGL.SPACE">JUNGL.SPACE</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="JUNGL.SPACE:*CLIP-SPACE*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:*CLIP-SPACE*" class="name">*CLIP-SPACE*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:*NDC-SPACE*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:*NDC-SPACE*" class="name">*NDC-SPACE*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:*SCREEN-SPACE*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:*SCREEN-SPACE*" class="name">*SCREEN-SPACE*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:*WORLD-SPACE*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:*WORLD-SPACE*" class="name">*WORLD-SPACE*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:POS4"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:POS4" class="name">POS4</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:POS4-G"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:POS4-G" class="name">POS4-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:SPACE"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:SPACE" class="name">SPACE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:SPACE-G"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:SPACE-G" class="name">SPACE-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:GET-TRANSFORM"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:GET-TRANSFORM" class="name">GET-TRANSFORM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FROM-SPACE TO-SPACE &amp;OPTIONAL (INITIAL-M4 (IDENTITY)))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:GET-TRANSFORM-VIA"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:GET-TRANSFORM-VIA" class="name">GET-TRANSFORM-VIA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FROM-SPACE TO-SPACE VIA-SPACE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:MAKE-SPACE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:MAKE-SPACE" class="name">MAKE-SPACE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TARGET-SPACE TRANSFORM-TO &amp;OPTIONAL TRANSFORM-FROM)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:MAKE-SPACE*"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:MAKE-SPACE*" class="name">MAKE-SPACE*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;REST RELATIONSHIPS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:MODEL-SPACE-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:MODEL-SPACE-P" class="name">MODEL-SPACE-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SPACE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:P!"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:P!" class="name">P!</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VEC &amp;OPTIONAL (SPACE *DEFAULT-POS-SPACE*))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:PARENT-SPACE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:PARENT-SPACE" class="name">PARENT-SPACE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SPACE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:RELATIONAL-SPACE-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:RELATIONAL-SPACE-P" class="name">RELATIONAL-SPACE-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SPACE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:SPACE!"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:SPACE!" class="name">SPACE!</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TARGET-SPACE TRANSFORM-TO &amp;OPTIONAL TRANSFORM-FROM)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:IN"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:IN" class="name">IN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SPACE &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="JUNGL.SPACE:WITH-RENDERING-VIA"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#JUNGL.SPACE:WITH-RENDERING-VIA" class="name">WITH-RENDERING-VIA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIA-SPACE &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li></ul>
+            </li><li class="package">
+              <h3>
+                <a name="CEPL" href="#CEPL">CEPL</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="CEPL:G-PC"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL:G-PC" class="name">G-PC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:G-PN"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL:G-PN" class="name">G-PN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:G-PNC"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL:G-PNC" class="name">G-PNC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:G-PNT"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL:G-PNT" class="name">G-PNT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:G-PNTC"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL:G-PNTC" class="name">G-PNTC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:G-PT"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL:G-PT" class="name">G-PT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:MAKE-PROJECT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL:MAKE-PROJECT" class="name">MAKE-PROJECT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(PATHNAME &amp;KEY NAME (HOST :CEPL.SDL2) (REPL :SLIME)
+ (DEPENDS-ON '(:SKITTER :CEPL.DEVIL)))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:QUIT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL:QUIT" class="name">QUIT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:REPL"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL:REPL" class="name">REPL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;OPTIONAL (WIDTH 320) (HEIGHT 240))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:STEP-HOST"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL:STEP-HOST" class="name">STEP-HOST</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL:CONTINUABLE"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL:CONTINUABLE" class="name">CONTINUABLE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Helper macro that we can use to allow us to continue from an
+   error. Remember to hit C in slime or pick the restart so
+   errors don't kill the app.</pre>
+                  </article>
+                </li></ul>
+            </li></ul>
+        </article>
+
+    </div>
+  </body>
+</html>
