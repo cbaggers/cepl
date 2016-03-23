@@ -1,5 +1,55 @@
 (in-package :cepl.blending)
 
+(defun blending-params (target)
+  (typecase target
+    (fbo (cepl.fbos::%fbo-blending-params target))
+    (attachment (cepl.blending:make-blending-params
+                 :mode-rgb (mode-rgb target)
+                 :mode-alpha (mode-alpha target)
+                 :source-rgb (source-rgb target)
+                 :source-alpha (source-alpha target)
+                 :destination-rgb (destination-rgb target)
+                 :destination-alpha (destination-alpha target)))))
+
+(defun (setf blending-params) (value target)
+  (typecase target
+    (fbo (setf (cepl.fbos::%fbo-blending-params target) value))
+    (attachment (setf (cepl.fbos::%attachment-blending-params target) value))))
+
+(defmacro with-blending-param-slots ((&key fbo attachment) &body body)
+  (cond
+    (fbo
+     `(macrolet
+          ((mode-rgb (x)
+	     `(cepl.blending::blending-params-mode-rgb (cepl.fbos::%fbo-blending-params ,x)))
+           (mode-alpha (x)
+	     `(cepl.blending::blending-params-mode-alpha (cepl.fbos::%fbo-blending-params ,x)))
+           (source-rgb (x)
+	     `(cepl.blending::blending-params-source-rgb (cepl.fbos::%fbo-blending-params ,x)))
+           (source-alpha (x)
+	     `(cepl.blending::blending-params-source-alpha (cepl.fbos::%fbo-blending-params ,x)))
+           (destination-rgb (x) `(cepl.blending::blending-params-destination-rgb
+                                  (cepl.fbos::%fbo-blending-params ,x)))
+           (destination-alpha (x) `(cepl.blending::blending-params-destination-alpha
+                                    (cepl.fbos::%fbo-blending-params ,x))))
+        ,@body))
+    (attachment
+     `(macrolet
+          ((mode-rgb (x) `(cepl.blending::blending-params-mode-rgb
+                           (cepl.fbos::%attachment-blending-params ,x)))
+           (mode-alpha (x) `(cepl.blending::blending-params-mode-alpha
+                             (cepl.fbos::%attachment-blending-params ,x)))
+           (source-rgb (x) `(cepl.blending::blending-params-source-rgb
+                             (cepl.fbos::%attachment-blending-params ,x)))
+           (source-alpha (x) `(cepl.blending::blending-params-source-alpha
+                               (cepl.fbos::%attachment-blending-params ,x)))
+           (destination-rgb (x) `(cepl.blending::blending-params-destination-rgb
+                                  (cepl.fbos::%attachment-blending-params ,x)))
+           (destination-alpha (x) `(cepl.blending::blending-params-destination-alpha
+                                    (cepl.fbos::%attachment-blending-params ,x))))
+        ,@body))))
+
+
 ;; Most of the code that uses blend modes will be in other files
 ;; as it is most needed in map-g and fbos
 
@@ -173,14 +223,14 @@
       (when (blending a) (%gl:disable-i :blend i))))
 
 (defun %loop-setting-per-attachment-blend-params (fbo)
-  (loop :for a :across (%fbo-attachment-color fbo) :for i :from 0 :do
+  (loop :for a :across (cepl.fbos::%fbo-attachment-color fbo) :for i :from 0 :do
      (when (blending a)
-       (if (%attachment-override-blending a)
+       (if (cepl.fbos::%attachment-override-blending a)
            (%blend-attachment-i a i)
            (%blend-fbo-i fbo i)))))
 
 (defun %blend-fbo (fbo)
-  (%blend-using-params (%fbo-blending-params fbo)))
+  (%blend-using-params (cepl.fbos::%fbo-blending-params fbo)))
 
 (defun %blend-using-params (params)
   (%gl:blend-equation-separate (blending-params-mode-rgb params)
@@ -192,7 +242,7 @@
 
 (defun %blend-fbo-i (fbo i)
   (with-blending-param-slots (:fbo fbo)
-    (%gl:blend-equation-separate-i i (mode-rgb fbo) (mode-alpha fbo))
+    (%gl:blend-equation-separate-i i (cepl.fbos:mode-rgb fbo) (mode-alpha fbo))
     (%gl:blend-func-separate-i i
                                (source-rgb fbo)
                                (destination-rgb fbo)
@@ -201,7 +251,7 @@
 
 (defun %blend-attachment-i (attachment i)
   (with-blending-param-slots (:attachment attachment)
-    (%gl:blend-equation-separate-i i (mode-rgb attachment)
+    (%gl:blend-equation-separate-i i (cepl.fbos:mode-rgb attachment)
                                    (mode-alpha attachment))
     (%gl:blend-func-separate-i i
                                (source-rgb attachment)

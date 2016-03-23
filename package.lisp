@@ -195,7 +195,7 @@
 (defpackage :cepl.viewports
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors)
+	:cepl.errors :cepl.internals)
   (:export :current-viewport
 	   :viewport
 	   :viewport-p
@@ -308,7 +308,7 @@
 
 (defpackage :cepl.pixel-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils
-	:cepl.errors :cepl.internals)
+	:cepl.types :cepl.errors :cepl.internals)
   (:export :pixel-format
 	   :pixel-format-p
 	   :pixel-format-components
@@ -382,20 +382,12 @@
 	   :free-gpu-array
 	   :make-gpu-array
 	   :make-gpu-arrays
-	   :subseq-g
-	   :with-gpu-array-as-pointer
-	   :with-gpu-array-as-c-array))
-
-(defpackage :cepl.gpu-arrays.texture-backed
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
-	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers)
-  (:export))
+	   :subseq-g))
 
 (defpackage :cepl.streams
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors :cepl.c-arrays)
+	:cepl.errors :cepl.c-arrays :cepl.internals)
   (:export :free-vao
 	   :free-vaos
 	   :bind-vao
@@ -418,7 +410,8 @@
 (defpackage :cepl.ubos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors :cepl.c-arrays)
+	:cepl.errors :cepl.c-arrays :cepl.gpu-arrays.buffer-backed
+	:cepl.internals :cepl.gpu-buffers)
   (:export :ubo
 	   :make-ubo
 	   :make-ubo-from-array
@@ -428,11 +421,57 @@
 	   :ubo-index
 	   :ubo-owns-gpu-array))
 
+(defpackage :cepl.textures
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :cepl.types :split-sequence :named-readtables
+        :cepl.context :cepl.errors :cepl.c-arrays
+	:cepl.internals :cepl.pixel-formats
+	:cepl.image-formats :cepl.gpu-buffers)
+  (:export :*immutable-available*
+	   :*cube-face-order*
+	   :gl-texture
+	   :texture-type
+	   :immutable-texture
+	   :mutable-texture
+	   :buffer-texture
+	   :make-texture-from-id
+	   :make-texture
+	   :mutable-texturep
+	   :free-texture
+	   :generate-mipmaps
+	   :dimensions-at-mipmap-level
+	   :bind-texture
+	   :unbind-texture
+	   :with-texture-bound
+	   :texref
+	   ;;---
+	   :gpu-array-t
+	   :free-gpu-array
+	   :free-gpu-array-t
+	   :upload-c-array-to-gpu-array-t
+	   :upload-from-buffer-to-gpu-array-t))
+
+(defpackage :cepl.gpu-arrays.texture-backed
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
+	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
+	:cepl.textures)
+  (:export))
+
+(defpackage :cepl.gpu-arrays
+  ;; a place to put things that cross both kinds of gpu-array
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
+	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
+	:cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays.texture-backed
+	:cepl.textures)
+  (:export :with-gpu-array-as-pointer :with-gpu-array-as-c-array))
+
 (defpackage :cepl.samplers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
-	:cepl.internals)
+	:cepl.internals :cepl.textures)
   (:export :sampler
 	   :sampler-p
 	   :make-sampler
@@ -457,35 +496,6 @@
 	   :with-sampling
 	   :*sampler-types*
 	   :sampler-typep))
-
-(defpackage :cepl.textures
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables
-        :cepl.context :cepl.errors :cepl.c-arrays
-	:cepl.internals :cepl.samplers :cepl.pixel-formats)
-  (:export :*immutable-available*
-	   :*cube-face-order*
-	   :gl-texture
-	   :texture-type
-	   :immutable-texture
-	   :mutable-texture
-	   :buffer-texture
-	   :make-texture-from-id
-	   :make-texture
-	   :mutable-texturep
-	   :free-texture
-	   :generate-mipmaps
-	   :dimensions-at-mipmap-level
-	   :bind-texture
-	   :unbind-texture
-	   :with-texture-bound
-	   :texref
-	   ;;---
-	   :gpu-array-t
-	   :free-gpu-array
-	   :free-gpu-array-t
-	   :upload-c-array-to-gpu-array-t
-	   :upload-from-buffer-to-gpu-array-t))
 
 (defpackage :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -532,6 +542,7 @@
 	   :blending-params-source-alpha
 	   :blending-params-destination-rgb
 	   :blending-params-destination-alpha
+	   :with-blending-param-slots
 	   :with-blending
 	   :constant-alpha
 	   :constant-color
@@ -639,6 +650,7 @@
 		  :cepl.c-arrays
 		  :cepl.gpu-buffers
 		  :cepl.gpu-arrays.buffer-backed
+		  :cepl.gpu-arrays
 		  :cepl.streams
 		  :cepl.ubos
 		  :cepl.samplers

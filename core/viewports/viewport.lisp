@@ -4,8 +4,8 @@
 
 (defun current-viewport ()
   (or %current-viewport
-      (attachment-viewport
-       (attachment
+      (cepl.fbos:attachment-viewport
+       (cepl.fbos:attachment
 	(or %default-framebuffer
 	    (error "No default framebuffer found ~a"
 		   (if (and (boundp '*gl-context*)

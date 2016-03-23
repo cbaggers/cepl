@@ -106,7 +106,8 @@ should be ~s" data element-type)
 
 (defmethod pull1-g ((object ubo))
   (let* ((data (ubo-data object))
-	 (x (gpu-array-pull-1 (subseq-g data 0 1)))
+	 (x (cepl.gpu-arrays.buffer-backed::gpu-array-pull-1
+	     (subseq-g data 0 1)))
 	 (r (aref-c x 0)))
     (if (typep r 'autowrap:wrapper)
 	r
