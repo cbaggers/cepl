@@ -525,9 +525,7 @@
         :cepl.generics :cepl.types :split-sequence :named-readtables
 	:cepl.errors :%cepl.types :cepl.internals :cepl.image-formats
 	:cepl.c-arrays :cepl.gpu-buffers)
-  (:export :gpu-array
-	   :gpu-array-p
-	   :gpu-array-buffer
+  (:export :gpu-array-buffer
 	   :gpu-array-format
 	   :gpu-array-dimensions
 	   :gpu-array-access-style
@@ -623,7 +621,10 @@
 	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
 	:cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays.texture-backed
 	:cepl.textures :%cepl.types)
-  (:export :with-gpu-array-as-pointer :with-gpu-array-as-c-array))
+  (:export :gpu-array
+	   :gpu-array-p
+	   :with-gpu-array-as-pointer
+	   :with-gpu-array-as-c-array))
 
 (defpackage :cepl.samplers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

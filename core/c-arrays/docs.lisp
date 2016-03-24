@@ -143,4 +143,14 @@ Returns the pointer to the start of the foreign data that makes up the array
       "
 Binds the c-array to the variable named by the var-name argument.
 Frees the c-array at the end of the scope.
+")
+
+  (defun element-byte-size
+      "
+Returns the size in bytes taken up by a single element of the c-array.
+")
+
+  (defun element-type
+      "
+Returns the type of the elements in the c-array.
 "))

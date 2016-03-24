@@ -384,7 +384,9 @@ that.</pre>
                         <span class="arguments">(ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Returns the size in bytes taken up by a single element of the c-array.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GENERICS:ELEMENT-TYPE"/>
@@ -397,7 +399,9 @@ that.</pre>
                         <span class="arguments">(ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Returns the type of the elements in the c-array.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:POINTER"/>
@@ -429,6 +433,88 @@ Returns the pointer to the start of the foreign data that makes up the array
 Binds the c-array to the variable named by the var-name argument.
 Frees the c-array at the end of the scope.
 </pre>
+                  </article>
+                </li></ul></li><li class="package">
+              <h3>
+                <a name="CEPL.GPU-ARRAYS" href="#CEPL.GPU-ARRAYS">CEPL.GPU-ARRAYS</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="%CEPL.TYPES:GPU-ARRAY"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY" class="name">GPU-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+GPU-ARRAY is a structure that respresents an array in gpu-memory.
+
+OpenGL has 2 places it lets you store data on the gpu. Textures, which are covered in cepl.textures, and gpu-buffers
+
+GPU Buffers are blocks of unformatted gpu memory. Most commonly filled ordered
+data that is streamed into the rendering pipeline via the vertex shader, when
+used in this way you will often hear it be called a vertex buffer object (vbo)
+in opengl texts.
+
+Given that
+
+</pre>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:GPU-ARRAY-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY-P" class="name">GPU-ARRAY-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-AS-C-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   as a c-array which allows you to run any of the c-array
+   commands on it.
+
+   A simple example would be if we wanted to set the 3rd element
+   in a gpu array to 5.0 we could do the following:
+   (with-gpu-array-as-c-array (mygpuarray)
+     (setf (aref-c mygpuarray 2) 5.0))
+
+   The valid values for access are :read-only :write-only &amp;
+   :read-write</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER" class="name">WITH-GPU-ARRAY-AS-POINTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   giving you the pointer</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -2434,7 +2520,9 @@ Given that
                         <span class="arguments">(ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Returns the size in bytes taken up by a single element of the c-array.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GENERICS:ELEMENT-TYPE"/>
@@ -2447,7 +2535,9 @@ Given that
                         <span class="arguments">(ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Returns the type of the elements in the c-array.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GENERICS:ETYPE"/>
