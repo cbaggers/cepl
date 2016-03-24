@@ -113,8 +113,7 @@
                              (+ (third format)
                                 (cepl.c-arrays::gl-calc-byte-size
 				 (first format)
-				 (list (gpu-array-start
-					gpu-array)))))))))
+				 (list (cepl.gpu-arrays.buffer-backed::gpu-array-start gpu-array)))))))))
     (when element-buffer
       (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)

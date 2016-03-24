@@ -464,19 +464,19 @@
                   (when (and generate-mipmaps (> mipmap-levels 1))
                     (generate-mipmaps texture)))
                 (when lod-bias
-                  (setf (lod-bias texture) lod-bias))
+                  (setf (cepl.samplers:lod-bias texture) lod-bias))
                 (when min-lod
-                  (setf (min-lod texture) min-lod))
+                  (setf (cepl.samplers:min-lod texture) min-lod))
                 (when max-lod
-                  (setf (max-lod texture) max-lod))
+                  (setf (cepl.samplers:max-lod texture) max-lod))
                 (when minify-filter
-                  (setf (minify-filter texture) minify-filter))
+                  (setf (cepl.samplers:minify-filter texture) minify-filter))
                 (when magnify-filter
-                  (setf (magnify-filter texture) magnify-filter))
+                  (setf (cepl.samplers:magnify-filter texture) magnify-filter))
                 (when wrap
-                  (setf (wrap texture) wrap))
+                  (setf (cepl.samplers:wrap texture) wrap))
                 (when compare
-                  (setf (compare texture) compare))
+                  (setf (cepl.samplers:compare texture) compare))
                 texture))
           (error "This combination of texture features is invalid")))))
 

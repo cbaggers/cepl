@@ -21,6 +21,7 @@
    :type fixnum)
   (element-pixel-format nil :type (or null cepl.pixel-formats:pixel-format)))
 
+(defgeneric pointer (c-array))
 (defmethod pointer ((array c-array))
   (c-array-pointer array))
 

@@ -73,3 +73,5 @@
     :dynamic-copy)"))
 
 (defgeneric internal-format (object))
+(defgeneric element-type (array))
+(defgeneric element-byte-size (array))

@@ -134,7 +134,9 @@
            :pull1-g
            :push-g
 	   ;;--
-	   :internal-format))
+	   :internal-format
+	   :element-type
+	   :element-byte-size))
 
 (defpackage :cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -147,6 +149,7 @@
 	   :lisp-type->internal-format
 	   :pixel-format->internal-format
 	   :pixel-format->lisp-type
+	   :uploadable-lisp-seq
 	   ;;---
 	   :g-pc
 	   :g-pn
@@ -169,7 +172,6 @@
            :s-extra-prim-p
            :s-prim-p
            :symbol-names-cepl-structp
-           :uploadable-lisp-seq
            :*expanded-gl-type-names*
            :expand-gl-type-name
 	   :color-attachment-enum
@@ -215,7 +217,7 @@
 (defpackage :cepl.context
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors)
+	:cepl.errors :cepl.internals)
   (:export :gl-context
            :*gl-context*
            :make-context
@@ -326,7 +328,7 @@
 (defpackage :cepl.c-arrays
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
-	:cepl.internals :cepl.image-formats)
+	:cepl.internals :cepl.image-formats :cepl.pixel-formats)
   (:export :with-c-array
            :with-c-arrays
            :element-byte-size
@@ -387,7 +389,8 @@
 (defpackage :cepl.streams
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors :cepl.c-arrays :cepl.internals)
+	:cepl.errors :cepl.c-arrays :cepl.internals :cepl.gpu-buffers
+	:cepl.gpu-arrays.buffer-backed)
   (:export :free-vao
 	   :free-vaos
 	   :bind-vao
@@ -553,7 +556,7 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.internals :cepl.c-arrays :cepl.gpu-buffers
-        :cepl.context :cepl.errors)
+        :cepl.context :cepl.errors :cepl.samplers)
   (:export :*verbose-compiles*
 	   :*warn-when-cant-test-compile*
 	   :defun-g
@@ -626,7 +629,8 @@
             :rtg-math.base-maths
             :cl-fad
             :named-readtables
-	    :cepl.errors)
+	    :cepl.errors
+	    :cepl.internals)
       :shadow (:quit)
       :import-from ((:cepl-utils :deferror
                                  :print-mem

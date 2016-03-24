@@ -1,5 +1,11 @@
 (in-package :cepl.types)
 
+(defgeneric s-arrayp (object))
+(defgeneric s-prim-p (object))
+(defgeneric s-extra-prim-p (object))
+(defgeneric s-def (object))
+(defgeneric s-slot-args (slot args))
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass gl-struct-slot ()
     ((name :initarg :name :reader s-name)
@@ -29,7 +35,7 @@
       'defmethod
       'defun))
 
-(defgeneric s-slot-args (slot args))
+
 (defmethod s-slot-args ((slot gl-struct-slot) (args list))
   (labels ((fun-arg (x) (if (listp x) (first x) x)))
     (if (s-uses-method-p slot)
@@ -149,7 +155,7 @@
 ;;------------------------------------------------------------
 
 (defun make-varjo-struct-lookup (name)
-  `(defmethod symbol-names-cepl-structp ((sym (eql ',name)))
+  `(defmethod cepl.internals:symbol-names-cepl-structp ((sym (eql ',name)))
      t))
 
 ;;------------------------------------------------------------
@@ -305,10 +311,10 @@
                                       (cepl.internals:gl-type-size (second attr))))))))
       (when definitions
         `(progn
-           (defmethod gl-assign-attrib-pointers ((array-type (EQL ',type-name))
-                                                 &optional (attrib-offset 0)
-                                                   (pointer-offset 0)
-                                                   stride-override normalised)
+           (defmethod cepl.internals:gl-assign-attrib-pointers
+	       ((array-type (EQL ',type-name))
+		&optional (attrib-offset 0) (pointer-offset 0)
+		  stride-override normalised)
              (declare (ignore array-type normalised))
              (let ((,stride-sym (or stride-override ,stride)))
                ,@definitions

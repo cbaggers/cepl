@@ -139,7 +139,7 @@
 
 (defun %post-init (func)
   (unbind-buffer)
-  (force-bind-vao 0)
+  (cepl.streams::force-bind-vao 0)
   (force-use-program 0)
   (when func (funcall func)))
 
