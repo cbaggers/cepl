@@ -335,7 +335,7 @@
            :element-type
            :pointer
            :aref-c
-           :%aref-c
+           :aref-c*
            :c-array
 	   :c-array-p
            :c-array-pointer

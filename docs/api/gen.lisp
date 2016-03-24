@@ -2,35 +2,46 @@
 
 (ql:quickload :staple)
 
-(defvar *template-dir*
+(defparameter *template-dir*
   (asdf:system-relative-pathname :cepl "docs/api/cepl-template.ctml"))
 
-(defvar *out-dir*
+(defparameter *out-dir*
   (asdf:system-relative-pathname :cepl "docs/api/api.html"))
+
+(defparameter *host-template*
+  (asdf:system-relative-pathname :cepl "docs/api/host-template.ctml"))
+
+(defparameter *host-out-dir*
+  (asdf:system-relative-pathname :cepl "docs/api/host-api.html"))
 
 (defun gen-docs ()
   (staple:generate
-   :cepl :packages '(:cepl.context
-		     :cepl.generics
-		     :cepl.blending
+   :cepl :packages '(:cepl
 		     :cepl.c-arrays
-		     :cepl.fbos
-		     :cepl.generics
 		     :cepl.gpu-arrays.buffer-backed
+		     :cepl.streams
+		     :cepl.viewports
+		     :cepl.textures
+		     :cepl.samplers
+		     :cepl.fbos
+		     :cepl.blending
+		     :cepl.pipelines
+		     :cepl.generics
 		     :cepl.gpu-buffers
 		     :cepl.image-formats
-		     :cepl.pipelines
 		     :cepl.pixel-formats
-		     :cepl.render-state
-		     :cepl.samplers
-		     :cepl.space
-		     :cepl.streams
-		     :cepl.textures
-		     :cepl.types
 		     :cepl.ubos
-		     :cepl.viewports
-		     :cepl.host
-		     :cepl)
+		     :cepl.render-state
+		     :cepl.space
+		     :cepl.types
+
+		     :cepl.context)
    :template *template-dir*
    :out *out-dir*
-   :if-exists :supersede))
+   :if-exists :supersede)
+  (staple:generate
+   :cepl :packages '(:cepl.host)
+   :template *host-template*
+   :out *host-out-dir*
+   :if-exists :supersede)
+  :booya)

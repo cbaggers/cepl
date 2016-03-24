@@ -34,4 +34,17 @@ type of the elements of the array.
 
 You can also use the generic function #'ELEMENT-TYPE to get the same
 result.
+")
+
+  (defun aref-c
+      "
+Accesses the c-array element specified by the subscripts
+")
+
+  (defun aref-c*
+      "
+Accesses the c-array element specified by the subscripts.
+
+The difference between this and #'aref-c is that this this function takes the
+subscripts as a list.
 "))

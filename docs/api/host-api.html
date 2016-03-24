@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8"/>
+    <title>CEPL</title>
+    <link href="cepl-styles.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <body>
+    <header>
+      <h1>cepl</h1>
+      <span class="version"/>
+      <p class="description">Fast lispy way to work with OpenGL</p>
+    </header>
+    <div id="content">
+      <article>
+        
+          <h2>Copyright</h2>
+          <span>cepl</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=BSD 2 Clause">BSD 2 Clause</a></span> license.
+          
+            © <span>Chris Bagley (Baggers) &lt;techsnuffle@gmail.com&gt;</span>
+            .
+          
+          
+        
+      </article>
+      
+        <article id="symbol-index">
+          <h2>Package Index</h2>
+          <ul><li class="package">
+              <h3>
+                <a name="CEPL.HOST" href="#CEPL.HOST">CEPL.HOST</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="CEPL.HOST:SET-STEP-FUNC"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SET-STEP-FUNC" class="name">SET-STEP-FUNC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FUNC)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Call this and pass the function that will be called every time
+     #'cepl:step-host is called</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:SET-SWAP-FUNC"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SET-SWAP-FUNC" class="name">SET-SWAP-FUNC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FUNC)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Call this and pass the function that will be called every time #'cepl:swap
+     is called</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:INIT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:INIT" class="name">INIT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Implement this method and initialize your system inside it.
+    This is called as the first step of cepl initializing.</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:REQUEST-CONTEXT"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:REQUEST-CONTEXT" class="name">REQUEST-CONTEXT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(WIDTH HEIGHT TITLE FULLSCREEN NO-FRAME ALPHA-SIZE DEPTH-SIZE STENCIL-SIZE
+ RED-SIZE GREEN-SIZE BLUE-SIZE BUFFER-SIZE DOUBLE-BUFFER HIDDEN RESIZABLE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Implement this method and return a list containing:
+    - gl-context as the first element
+    - window as the second element</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:SET-PRIMARY-THREAD-AND-RUN"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SET-PRIMARY-THREAD-AND-RUN" class="name">SET-PRIMARY-THREAD-AND-RUN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FUNC &amp;REST ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This will be called from the UI thread (if required by the OS)
+    Implement and use this if you need to do some setup from that thread</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:SHUTDOWN"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SHUTDOWN" class="name">SHUTDOWN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Implement this with code to shutdown the host. This will be called
+    when cepl is shutdown</pre>
+                  </article>
+                </li></ul>
+            </li></ul>
+        </article>
+      
+    </div>
+  </body>
+</html>

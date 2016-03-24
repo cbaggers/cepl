@@ -363,21 +363,21 @@ for any array of, up to and including, 4 dimensions."
          ,@body))))
 
 (defun aref-c (c-array &rest subscripts)
-  (%aref-c c-array subscripts))
+  (aref-c* c-array subscripts))
 
 (defun (setf aref-c) (value c-array &rest subscripts)
-  (setf (%aref-c c-array subscripts) value))
+  (setf (aref-c* c-array subscripts) value))
 
 ;;
 ;; these two dont use &rest on subscripts
 ;;
-(defun %aref-c (c-array subscripts)
-  (%with-1-shot-aref-c (%aref-c c-array)
-    (%aref-c subscripts)))
+(defun aref-c* (c-array subscripts)
+  (%with-1-shot-aref-c (aref-c* c-array)
+    (aref-c* subscripts)))
 
-(defun (setf %aref-c) (value c-array subscripts)
-  (%with-1-shot-aref-c (%aref-c c-array :get nil :set t)
-    (setf (%aref-c subscripts) value)))
+(defun (setf aref-c*) (value c-array subscripts)
+  (%with-1-shot-aref-c (aref-c* c-array :get nil :set t)
+    (setf (aref-c* subscripts) value)))
 
 ;;------------------------------------------------------------
 ;; map & across
@@ -396,17 +396,17 @@ for any array of, up to and including, 4 dimensions."
                           (if still-to-walk
                               (walk-to-dpop sublist still-to-walk structp (cons i pos))
                               (if structp
-                                  (populate (%aref-c c-array (reverse (cons i pos)))
+                                  (populate (aref-c* c-array (reverse (cons i pos)))
                                             sublist)
-                                  (setf (%aref-c c-array (reverse (cons i pos)))
+                                  (setf (aref-c* c-array (reverse (cons i pos)))
                                         sublist))))
                     data (range (length data)))))
            (dpop-with-array (data dimensions &optional structp)
              (loop :for i :below (array-total-size data)
                 :for coords = (rm-index-to-coords i dimensions) :do
                 (if structp
-                    (populate (%aref-c c-array coords) (row-major-aref data i))
-                    (setf (%aref-c c-array coords) (row-major-aref data i))))))
+                    (populate (aref-c* c-array coords) (row-major-aref data i))
+                    (setf (aref-c* c-array coords) (row-major-aref data i))))))
     (when check-sizes
       (unless (validate-dimensions data (c-array-dimensions c-array))
         (error "Dimensions of array differs from that of the data:~%~a~%~a"
@@ -500,7 +500,7 @@ for any array of, up to and including, 4 dimensions."
                (loop for j below (nth n dimensions)
                      do (setf (nth n indices) j)
                      collect (if (= n depth)
-                                 (pull1-g (%aref-c object indices))
+                                 (pull1-g (aref-c* object indices))
                                (recurse (1+ n))))))
       (recurse 0))))
 

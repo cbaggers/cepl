@@ -100,3 +100,20 @@ quickproject and then run this again.")
        :template-directory *template-dir*
        :template-parameters (list :skitter-sdl-p skitter-sdl-p))
       name)))
+
+(docs:define-docs
+  (defun make-project
+      "
+This function is a simple way to make a lisp project with all the
+supporting libraries to get up and running with cepl quickly.
+
+It uses the excellent quickproject project, so before starting be sure
+to run the following in your repl:
+
+    (ql:quickload :quickproject)
+
+By default it assumes you want to use sdl2, skitter and devil, and that
+you will be using slime as the communication layer between lisp and your editor.
+
+Valid values for the :repl argument are currently :slime or :slynk.
+"))
