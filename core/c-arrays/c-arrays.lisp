@@ -2,25 +2,6 @@
 
 ;;------------------------------------------------------------
 
-(defstruct (c-array (:constructor %make-c-array))
-  (pointer
-   (error "cepl: c-array must be created with a pointer")
-   :type cffi-sys:foreign-pointer)
-  (dimensions
-   (error "cepl: c-array must be created with dimensions")
-   :type list)
-  (element-type
-   (error "cepl: c-array must be created with an element-type")
-   :type symbol)
-  (element-byte-size
-   (error "cepl: c-array must be created with an element-byte-size")
-   :type fixnum)
-  (struct-element-typep nil :type boolean)
-  (row-byte-size
-   (error "cepl: c-array must be created with a pointer")
-   :type fixnum)
-  (element-pixel-format nil :type (or null cepl.pixel-formats:pixel-format)))
-
 (defgeneric pointer (c-array))
 (defmethod pointer ((array c-array))
   (c-array-pointer array))
@@ -106,11 +87,6 @@
 (defmacro with-c-array ((var-name c-array) &body body)
   `(let* ((,var-name ,c-array))
      (unwind-protect (progn ,@body) (free-c-array ,var-name))))
-
-(defmacro with-c-arrays ((var-name c-arrays) &body body)
-  `(let* ((,var-name ,c-arrays))
-     (unwind-protect (progn ,@body)
-       (loop :for a :in ,var-name :do (free-c-array a)))))
 
 (defun clone-c-array (c-array)
   (let* ((size (c-array-byte-size c-array))

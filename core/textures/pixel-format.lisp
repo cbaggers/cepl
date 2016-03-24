@@ -103,9 +103,6 @@
     ((:rgba t :short (5 5 5 1)) :rgb5-a1)
     ((:rgb t :uint8 (3 3 2)) :r3-g3-b2)))
 
-(defstruct pixel-format
-  components type normalise sizes reversed comp-length)
-
 (defun describe-pixel-format (object)
   (let ((pf (if (pixel-format-p object)
                 object

@@ -280,19 +280,6 @@ lisp much easier.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.C-ARRAYS:%AREF-C"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.C-ARRAYS:%AREF-C" class="name">%AREF-C</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(C-ARRAY SUBSCRIPTS)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="CEPL.C-ARRAYS:AREF-C"/>
                   <article>
                     <header class="accessor">
@@ -303,7 +290,27 @@ lisp much easier.
                         <span class="arguments">(C-ARRAY &amp;REST SUBSCRIPTS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Accesses the c-array element specified by the subscripts
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.C-ARRAYS:AREF-C*"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.C-ARRAYS:AREF-C*" class="name">AREF-C*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAY SUBSCRIPTS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+Accesses the c-array element specified by the subscripts.
+
+The difference between this and #'aref-c is that this this function takes the
+subscripts as a list.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:C-ARRAY-DIMENSIONS"/>
@@ -372,7 +379,9 @@ You can also use the generic function #'POINTER to get the same result.
                         <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Return t if the argument is a c-array. Returns nil otherwise.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:CLONE-C-ARRAY"/>
@@ -385,7 +394,10 @@ You can also use the generic function #'POINTER to get the same result.
                         <span class="arguments">(C-ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Takes a c-array and makes a new c-array with the same contents as the the
+original. The contents in foreign memory are copied.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:FREE-C-ARRAY"/>
@@ -398,7 +410,14 @@ You can also use the generic function #'POINTER to get the same result.
                         <span class="arguments">(C-ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Frees the specified c-array.</pre>
+                    <pre class="docstring">
+Frees the foreign memory accosted with the c-array and 'blanks' the c-array.
+
+Blanking the c-array means it's fields will be set to default values,
+for example dimensions will be 0, the pointer will be null etc.
+
+The generic function #'free will call #'free-c-array when passed a c-array.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:MAKE-C-ARRAY"/>
@@ -408,10 +427,42 @@ You can also use the generic function #'POINTER to get the same result.
                       <code>
                         <h4><a href="#CEPL.C-ARRAYS:MAKE-C-ARRAY" class="name">MAKE-C-ARRAY</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE DISPLACED-BY)</span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will make and return a new c-array.
+
+It can be used in a few different ways:
+
+- with :initial-contents to nil:
+  In this case you need to provide dimensions and an element-type.
+
+- with :initial-contents populated.
+  The initial-contents can be a (potentially nested) list or array.
+
+  When the :initial-contents are an array then the dimension of the c-array
+  will be the same as the array passed in. CEPL currently only supports up
+  to 4D c-arrays.
+
+  When the :initial-contents is a flat list then each element is used as one
+  element in the c-array.
+  If the :initial-contents is a nested list then you must either:
+  - specify multiple dimensions and an element-type
+  - specify an element-type to be some struct type, then nested lists are then
+    used to populate the fields of the foreign structs. For an example of this
+    please see this example: https://github.com/cbaggers/cepl.examples/blob/master/examples/triangle.lisp#L30.
+
+  If the :element-type is not provided then CEPL will look at every element in
+  the initial-contents and try and find the smallest (in bytes) foreign type
+  which works for every element. This mean if the array is full of single-floats
+  then CEPL will choose :float, not :double.
+  Naturally this behaviour is too slow for use in performance critical
+  applications however it is nice for experimentation and working from the repl.
+
+  If you need what would be called a displaced array in lisp then please see the
+  subseq-c function.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:MAKE-C-ARRAY-FROM-POINTER"/>
@@ -424,7 +475,13 @@ You can also use the generic function #'POINTER to get the same result.
                         <span class="arguments">(DIMENSIONS ELEMENT-TYPE POINTER)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Will create a CEPL c-array with the element-type and dimensions specified, and
+will store the pointer as where the data is expected to be.
+
+This function does allocate the memory or validate the type or dimensions so be
+very careful when using this function.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:SUBSEQ-C"/>
@@ -437,27 +494,24 @@ You can also use the generic function #'POINTER to get the same result.
                         <span class="arguments">(ARRAY START &amp;OPTIONAL END)</span>
                       </code>
                     </header>
-                    <pre class="docstring">This function returns a c-array which contains
-   a subset of the array passed into this function.
-   Right this will make more sense with a use case:
+                    <pre class="docstring">
+This function returns a c-array which contains a subset of the array passed into
+this function.
 
-   Imagine we have one gpu-array with the vertex data for 10
-   different monsters inside it and each monster is made of 100
-   vertices. The first mosters vertex data will be in the
-   sub-array (gpu-sub-array bigarray 0 1000) and the vertex
-   data for the second monster would be at
-   (gpu-sub-array bigarray 1000 2000)
+It does not copy the foreign data, instead this array points to within the data
+of the original array. This means these arrays now share data (like a displaced
+array in standard CL.
 
-   This *view* (for lack of a better term) into our array can
-   be really damn handy. Prehaps, for example, we want to
-   replace the vertex data of monster 2 with the data in my
-   c-array newmonster. We can simply do the following:
-   (push-g (gpu-sub-array bigarray 1000 2000) newmonster)
+Due to this you have to be very careful when freeing the underlying array as
+this will affect any other array sharing that data.
 
-   Obviously be aware that any changes you make to the parent
-   array affect the child sub-array. This can really bite you
-   in the backside if you change how the data in the array is
-   laid out.</pre>
+If you want a copy of a subseq of a c-array then use something like:
+
+    (clone-c-array (subseq-c arr 3 10))
+
+The reason that this arguably more dangerous behaviour is default is efficiency.
+CEPL tries not to allocate new memory when the function is not explicitly about
+that.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:POINTER"/>
@@ -470,7 +524,9 @@ You can also use the generic function #'POINTER to get the same result.
                         <span class="arguments">(C-ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Returns the pointer to the start of the foreign data that makes up the array
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:WITH-C-ARRAY"/>
@@ -483,7 +539,10 @@ You can also use the generic function #'POINTER to get the same result.
                         <span class="arguments">((VAR-NAME C-ARRAY) &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Binds the c-array to the variable named by the var-name argument. 
+Frees the c-array at the end of the scope.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.C-ARRAYS:WITH-C-ARRAYS"/>
@@ -3362,7 +3421,7 @@ You can also use the generic function #'POINTER to get the same result.
                       <code>
                         <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT" class="name">PIXEL-FORMAT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(COMPONENTS &amp;OPTIONAL (TYPE :UBYTE) (NORMALISE T) REVERSED)</span>
+                        <span class="arguments">(COMPONENTS &amp;OPTIONAL (TYPE :UINT8) (NORMALISE T) REVERSED)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>

@@ -6,18 +6,6 @@
 
 ;; [TODO] Should buffers have pull-g and push-g? of course! do it :)
 
-(defstruct (gpu-buffer (:constructor %make-gpu-buffer))
-  "This is our opengl buffer object. Along with the opengl
-   buffer name (buffer-id) we also store the layout of the data
-   within the buffer.
-   This layout is as follows:
-   `((data-type data-index-length offset-in-bytes-into-buffer))
-   for example:
-   `((:float 3 0) ('vert-data 140 12))"
-  (id 0)
-  (format nil)
-  (managed nil))
-
 (defmethod free ((object gpu-buffer))
   (free-buffer object))
 

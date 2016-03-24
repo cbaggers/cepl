@@ -12,13 +12,6 @@
 
 ;;---------------------------------------------------
 
-(defstruct (ubo (:constructor %make-ubo))
-  (id 0 :type fixnum)
-  (data (error "gpu-array must be provided when making ubo")
-	:type gpu-array)
-  (index 0 :type fixnum)
-  (owns-gpu-array nil :type boolean))
-
 (defmethod print-object ((ubo ubo) stream)
   (format stream "#<UBO (~s) ~s>" (ubo-id ubo)
 	  (element-type (ubo-data ubo))))

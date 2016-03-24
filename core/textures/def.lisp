@@ -1,16 +1,6 @@
 (in-package :cepl.textures)
 
-(defclass gl-texture ()
-  ((texture-id :initarg :texture-id :reader texture-id)
-   (base-dimensions :initarg :base-dimensions :accessor base-dimensions)
-   (texture-type :initarg :texture-type :reader texture-type)
-   (internal-format :initarg :internal-format :reader internal-format)
-   (sampler-type :initarg :sampler-type :reader sampler-type)
-   (mipmap-levels :initarg :mipmap-levels)
-   (layer-count :initarg :layer-count)
-   (cubes :initarg :cubes)
-   (allocated :initform nil :reader allocatedp)
-   (sampler-object-id :initform 0)))
+;;------------------------------------------------------------
 
 (defun texture-base-dimensions (texture)
   (slot-value texture 'base-dimensions))
@@ -35,13 +25,6 @@
 
 (defun texture-sampler-object-id (texture)
   (slot-value texture 'sampler-object-id))
-
-
-(defclass immutable-texture (gl-texture) ())
-(defclass mutable-texture (gl-texture) ())
-(defclass buffer-texture (gl-texture)
-  ((backing-array :initarg :backing-array)
-   (owns-array :initarg :owns-array)))
 
 (defgeneric mutable-texturep (texture))
 (defmethod mutable-texturep ((texture mutable-texture)) t)
@@ -111,23 +94,16 @@
     (setf (slot-value texture 'texture-id) -1)
     (%gl:delete-textures 1 id)))
 
-(defclass gpu-array-t ()
-  ((texture :initarg :texture :reader texture)
-   (texture-type :initform nil :initarg :texture-type :reader texture-type)
-   (dimensions :initform nil :initarg :dimensions :reader dimensions)
-   (level-num :initform 0 :initarg :level-num)
-   (layer-num :initform 0 :initarg :layer-num)
-   (face-num :initform 0 :initarg :face-num)
-   (internal-format :initform nil :initarg :internal-format :reader internal-format)))
-
 (defmethod backed-by ((object gpu-array-t)) :texture)
 
 (defmethod initialize-instance :after
     ((array gpu-array-t) &key texture texture-type internal-format)
   (when (null texture-type)
-    (setf (slot-value array 'texture-type) (texture-type texture)))
+    (setf (slot-value array 'texture-type) (gpu-array-t-texture-type texture)))
   (when (null internal-format)
     (setf (slot-value array 'internal-format) (internal-format texture))))
+
+;;------------------------------------------------------------
 
 (defmethod print-object ((object gpu-array-t) stream)
   (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by ~s>"
@@ -147,6 +123,28 @@
 
 (defun free-gpu-array-t ()
   (error "Cannot free a texture backed gpu-array. free the texture containing this array "))
+
+(defmacro with-gpu-array-t (gpu-array-t &body body)
+  (let ((arr (gensym "gpu-array-t"))
+	(texture (symb :texture))
+	(texture-type (symb :texture-type))
+	(dimensions (symb :dimensions))
+	(level-num (symb :level-num))
+	(layer-num (symb :layer-num))
+	(face-num (symb :face-num))
+	(internal-format (symb :internal-format)))
+    `(let ((,arr ,gpu-array-t))
+       (symbol-macrolet
+	   ((,texture (list 'gpu-array-t-texture ,arr))
+	    (,texture-type (list 'gpu-array-t-texture-type ,arr))
+	    (,dimensions (list 'gpu-array-dimensions ,arr))
+	    (,level-num (list 'gpu-array-t-level-num ,arr))
+	    (,layer-num (list 'gpu-array-t-layer-num ,arr))
+	    (,face-num (list 'gpu-array-t-face-num ,arr))
+	    (,internal-format (list 'gpu-array-t-internal-format ,arr)))
+	 ,@body))))
+
+;;------------------------------------------------------------
 
 ;; [TODO] use with safe-exit thingy?
 (defmacro with-texture-bound ((texture &optional type) &body body)

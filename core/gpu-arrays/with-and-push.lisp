@@ -87,7 +87,7 @@
              (if (= 1 (length des-dimen) (length ob-dimen))
                  (<= (first ob-dimen) (first des-dimen))
                  (equal ob-dimen des-dimen)))
-        (setf (gpu-array-buffer destination)
+        (setf (gpu-array-bb-buffer destination)
               (buffer-sub-data buffer object (cepl.gpu-arrays.buffer-backed::gpu-array-offset destination)
                                :array-buffer))
         (error "If the arrays are 1D then the length of the source array must

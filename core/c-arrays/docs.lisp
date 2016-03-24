@@ -134,12 +134,13 @@ The reason that this arguably more dangerous behaviour is default is efficiency.
 CEPL tries not to allocate new memory when the function is not explicitly about
 that.")
 
-  (defun thing
+  (defgeneric pointer
       "
+Returns the pointer to the start of the foreign data that makes up the array
 ")
 
-  (defun thing
+  (defun with-c-array
       "
-")
-
-  )
+Binds the c-array to the variable named by the var-name argument.
+Frees the c-array at the end of the scope.
+"))

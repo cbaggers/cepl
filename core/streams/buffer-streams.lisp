@@ -4,28 +4,6 @@
 ;;; GPUSTREAMS ;;;
 ;;;------------;;;
 
-(defstruct (buffer-stream (:constructor make-raw-buffer-stream
-                                        (&key vao start length
-                                              index-type managed
-                                              gpu-arrays)))
-  "buffer-streams are the structure we use in cepl to pass
-   information to our programs on what to draw and how to draw
-   it.
-
-   It basically adds the only things that arent captured in the
-   vao but are needed to draw, namely the range of data to draw
-   and the style of drawing.
-
-   If you are using c-arrays then be sure to use the
-   make-buffer-stream function as it does all the
-   work for you."
-  vao
-  (start 0 :type unsigned-byte)
-  (length 1 :type unsigned-byte)
-  (index-type nil)
-  (gpu-arrays nil)
-  (managed nil))
-
 (defmethod print-object ((object buffer-stream) stream)
   (format stream "#<JUNGL:BUFFER-STREAM (~s) :LENGTH ~s~@[ :ARRAYS ~s~]~@[ :INDEXED ~s~]>"
 	  (buffer-stream-vao object)

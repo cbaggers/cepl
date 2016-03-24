@@ -34,13 +34,13 @@
       (if (valid-index-p texture mipmap-level layer cube-face)
           (make-instance 'gpu-array-t
                          :texture texture
-                         :texture-type (texture-type texture)
+                         :texture-type (gpu-array-t-texture-type texture)
                          :level-num mipmap-level
                          :layer-num layer
                          :face-num cube-face
                          :dimensions (dimensions-at-mipmap-level
                                       texture mipmap-level)
-                         :internal-format (internal-format texture))
+                         :internal-format (gpu-array-t-internal-format texture))
           (error "Texture index out of range"))))
 
 (defun valid-index-p (texture mipmap-level layer cube-face)
@@ -97,7 +97,7 @@
                                        pix-type)
       (unless (equal (dimensions c-array) dimensions)
         (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
-      (with-texture-bound ((texture gpu-array))
+      (with-texture-bound ((gpu-array-t-texture gpu-array))
         (%upload-tex texture texture-type level-num (dimensions c-array)
                      layer-num face-num pix-format pix-type (pointer c-array)))))
   gpu-array)
@@ -109,26 +109,26 @@
 (defmethod %upload-tex ((tex mutable-texture) tex-type level-num dimensions
                         layer-num face-num pix-format pix-type pointer)
   (case tex-type
-    (:texture-1d (gl:tex-image-1d tex-type level-num (internal-format tex)
+    (:texture-1d (gl:tex-image-1d tex-type level-num (gpu-array-t-internal-format tex)
                                   (first dimensions) 0 pix-format pix-type
                                   pointer))
-    (:texture-2d (gl:tex-image-2d tex-type level-num (internal-format tex)
+    (:texture-2d (gl:tex-image-2d tex-type level-num (gpu-array-t-internal-format tex)
                                   (first dimensions) (second dimensions) 0
                                   pix-format pix-type pointer))
-    (:texture-3d (gl:tex-image-3d tex-type level-num (internal-format tex)
+    (:texture-3d (gl:tex-image-3d tex-type level-num (gpu-array-t-internal-format tex)
                                   (first dimensions) (second dimensions)
                                   (third dimensions) 0 pix-format pix-type
                                   pointer))
     (:texture-1d-array (gl:tex-image-2d tex-type level-num
-                                        (internal-format tex)
+                                        (gpu-array-t-internal-format tex)
                                         (first dimensions) layer-num 0
                                         pix-format pix-type pointer))
     (:texture-2d-array (gl:tex-image-3d tex-type level-num
-                                        (internal-format tex)
+                                        (gpu-array-t-internal-format tex)
                                         (first dimensions) (second dimensions)
                                         layer-num 0 pix-format pix-type pointer))
     (:texture-cube-map (gl:tex-image-2d (nth face-num *cube-face-order*)
-                                        level-num (internal-format tex)
+                                        level-num (gpu-array-t-internal-format tex)
                                         (first dimensions) (second dimensions) 0
                                         pix-format pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))
@@ -560,8 +560,8 @@
   (error "This function should not have been called with a buffer backed texture"))
 
 (defmethod allocate-texture ((texture mutable-texture))
-  (gl:tex-parameter (texture-type texture) :texture-base-level 0)
-  (gl:tex-parameter (texture-type texture) :texture-max-level
+  (gl:tex-parameter (gpu-array-t-texture-type texture) :texture-base-level 0)
+  (gl:tex-parameter (gpu-array-t-texture-type texture) :texture-max-level
                     (1- (slot-value texture 'mipmap-levels)))
   (setf (slot-value texture 'allocated) t))
 
@@ -619,14 +619,14 @@
   (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (internal-format->pixel-format
-                                                  (internal-format destination))))
+                                                  (gpu-array-t-internal-format destination))))
     (push-g c-a destination)))
 
 (defmethod push-g ((object array) (destination gpu-array-t))
   (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (internal-format->pixel-format
-                                                  (internal-format destination))))
+                                                  (gpu-array-t-internal-format destination))))
     (push-g c-a destination)))
 
 ;; [TODO] This feels like could create non-optimal solutions
@@ -648,7 +648,7 @@
   (with-slots (layer-num level-num texture-type face-num
                          internal-format texture) object
     (let* ((p-format (internal-format->pixel-format
-                      (internal-format object)))
+                      (gpu-array-t-internal-format object)))
            (c-array (make-c-array nil :dimensions (dimensions object)
                                   :element-type p-format)))
       (destructuring-bind (format type) (compile-pixel-format p-format)

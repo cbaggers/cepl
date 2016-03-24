@@ -16,16 +16,6 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-;;{NOTE} if optimization called for it this could easily be an
-;;       array of 16bit ints (or whatever works)
-(defstruct (viewport (:conc-name %viewport-) (:constructor %make-viewport))
-  (resolution-x 320 :type fixnum)
-  (resolution-y 240 :type fixnum)
-  (origin-x 0 :type fixnum)
-  (origin-y 0 :type fixnum))
-
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 (defun make-viewport (&optional (resolution '(320 240)) (origin '(0 0)))
   (if (listp origin)
       (%make-viewport :resolution-x (first resolution)

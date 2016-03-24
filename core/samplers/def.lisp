@@ -119,20 +119,6 @@
          (:texture-2d-multisample-array :sampler-2d-ms-array)
          (t (error "texture type not known"))))))
 
-;; {TODO} border-color
-(defstruct (sampler (:constructor %make-sampler)
-                    (:conc-name %sampler-))
-  (id -1 :type fixnum)
-  (lod-bias 0.0 :type single-float)
-  (min-lod -1000.0 :type single-float)
-  (max-lod 1000.0 :type single-float)
-  (expects-mipmap nil :type boolean)
-  (minify-filter :linear :type keyword)
-  (magnify-filter :linear :type keyword)
-  (wrap #(:repeat :repeat :repeat) :type vector)
-  (expects-depth nil :type boolean)
-  (compare nil :type symbol))
-
 (defun %delete-sampler (sampler)
   (gl::delete-sampler (%sampler-id sampler)))
 

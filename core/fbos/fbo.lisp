@@ -6,52 +6,44 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defstruct (fbo (:constructor %make-fbo)
-                (:conc-name %fbo-))
-  (id -1 :type fixnum)
-  (attachment-color (make-array (max-draw-buffers *gl-context*)
-                                :element-type 'attachment
-                                :initial-contents
-				(loop :for i
-				   :below (max-draw-buffers *gl-context*)
-				   :collect (%make-attachment)))
-                    :type (array attachment *))
-  (draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
-                                  (max-draw-buffers *gl-context*)
-                                  :initial-element :none))
-  (attachment-depth (%make-attachment) :type attachment)
-  (clear-mask (cffi:foreign-bitfield-value
-               '%gl::ClearBufferMask '(:color-buffer-bit))
-              :type fixnum)
-  (is-default nil :type boolean)
-  (blending-params (cepl.blending:make-blending-params
-                           :mode-rgb :func-add
-                           :mode-alpha :func-add
-                           :source-rgb :one
-                           :source-alpha :one
-                           :destination-rgb :zero
-                           :destination-alpha :zero) :type blending-params))
+(defun %make-fbo (&key (id -1)
+		    (attachment-color
+		     (make-array (max-draw-buffers *gl-context*)
+				 :element-type 'attachment
+				 :initial-contents
+				 (loop :for i
+				    :below (max-draw-buffers *gl-context*)
+				    :collect (%make-attachment))))
+		    (draw-buffer-map
+		     (foreign-alloc 'cl-opengl-bindings:enum :count
+				    (max-draw-buffers *gl-context*)
+				    :initial-element :none))
+		    (attachment-depth (%make-attachment))
+		    (clear-mask (cffi:foreign-bitfield-value
+				 '%gl::ClearBufferMask '(:color-buffer-bit)))
+		    (is-default nil)
+		    (blending-params (make-blending-params
+				      :mode-rgb :func-add
+				      :mode-alpha :func-add
+				      :source-rgb :one
+				      :source-alpha :one
+				      :destination-rgb :zero
+				      :destination-alpha :zero)))
+  (%%make-fbo
+   :id id
+   :attachment-color attachment-color
+   :draw-buffer-map draw-buffer-map
+   :attachment-depth attachment-depth
+   :clear-mask clear-mask
+   :is-default is-default
+   :blending-params blending-params))
 
-
-(defstruct (attachment (:constructor %make-attachment)
-                       (:conc-name %attachment-))
-  (fbo nil :type (or null fbo))
-  (gpu-array nil :type (or null gpu-array-t))
-  (owns-gpu-array nil :type boolean)
-  (blending-enabled nil :type boolean)
-  (override-blending nil :type boolean)
-  (blending-params (cepl.blending:make-blending-params
-                           :mode-rgb :func-add
-                           :mode-alpha :func-add
-                           :source-rgb :one
-                           :source-alpha :one
-                           :destination-rgb :zero
-                           :destination-alpha :zero) :type blending-params))
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defmethod print-object ((obj attachment) stream)
   (format stream "#<~a-ATTACHMENT (:fbo ~s)>"
           (if (%attachment-gpu-array obj)
-	      (let ((f (internal-format (%attachment-gpu-array obj))))
+	      (let ((f (gpu-array-t-internal-format (%attachment-gpu-array obj))))
 		(cond
 		  ((color-renderable-formatp f) "COLOR")
 		  ((depth-formatp f) "DEPTH")
@@ -469,8 +461,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	;;
 	;; When attaching a non-cubemap, textarget should be the proper
 	;; texture-type: GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE, etc.
-	(with-slots (texture-type dimensions (mipmap-level level-num) layer-num
-				  face-num internal-format texture) tex-array
+	(cepl.textures::with-gpu-array-t tex-array
 	  (unless (attachment-compatible attachment internal-format)
 	    (error "attachment is not compatible with this array"))
 	  (let ((tex-id (slot-value texture 'texture-id)))
@@ -480,13 +471,13 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	      (:texture-1d (progn
 			     (setf (attachment fbo attachment) tex-array)
 			     (gl:framebuffer-texture-1d target attach-enum :texture-1d
-							tex-id mipmap-level)))
+							tex-id level-num)))
 	      ;; A 2D texture contains 2D images. Each individual image can be
 	      ;; uniquely identified by a mipmap level.
 	      (:texture-2d (progn
 			     (setf (attachment fbo attachment) tex-array)
 			     (gl:framebuffer-texture-2d target attach-enum :texture-2d
-							tex-id mipmap-level)))
+							tex-id level-num)))
 	      ;; Each mipmap level of a 3D texture is considered a set of 2D images,
 	      ;; with the number of these being the extent of the Z coordinate.
 	      ;; Each integer value for the depth of a 3D texture mipmap level is a
@@ -497,7 +488,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	      (:texture-3d (progn
 			     (setf (attachment fbo attachment) tex-array)
 			     (%gl:framebuffer-texture-layer target attach-enum tex-id
-							    mipmap-level layer-num)))
+							    level-num layer-num)))
 	      ;; Each mipmap level of a 1D Array Textures contains a number of images,
 	      ;; equal to the count images in the array. While these images are
 	      ;; technically one-dimensional, they are promoted to 2D status for FBO
@@ -509,7 +500,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	      (:texture-1d-array (progn
 				   (setf (attachment fbo attachment) tex-array)
 				   (%gl:framebuffer-texture-layer
-				    target attach-enum tex-id mipmap-level layer-num)))
+				    target attach-enum tex-id level-num layer-num)))
 	      ;; 2D Array textures are much like 3D textures, except instead of the
 	      ;; number of Z slices, it is the array count. Each 2D image in an array
 	      ;; texture can be uniquely identified by a layer (the array index) and a
@@ -520,7 +511,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	      (:texture-2d-array (progn
 				   (setf (attachment fbo attachment) tex-array)
 				   (%gl:framebuffer-texture-layer
-				    target attach-enum tex-id mipmap-level layer-num)))
+				    target attach-enum tex-id level-num layer-num)))
 	      ;; A Rectangle Texture has a single 2D image, and thus is identified by
 	      ;; mipmap level 0.
 	      (:texture-rectangle
@@ -548,7 +539,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 		 (setf (attachment fbo attachment) tex-array)
 		 (gl:framebuffer-texture-2d
 		  target attach-enum '&&&CUBEMAP-TARGET&&&
-		  tex-id mipmap-level)))
+		  tex-id level-num)))
 	      ;; Buffer Textures work like 1D texture, only they have a single image,
 	      ;; identified by mipmap level 0.
 	      (:texture-buffer (error "attaching to buffer textures has not been implmented yet"))

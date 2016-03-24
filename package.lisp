@@ -138,10 +138,160 @@
 	   :element-type
 	   :element-byte-size))
 
-(defpackage :cepl.types
+(defpackage :%cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :split-sequence :named-readtables
 	:cepl.errors)
+  (:export :%make-gpu-array
+	   :gpu-array
+	   :gpu-array-p
+	   :gpu-array-dimensions
+
+	   :%make-gpu-array-t
+	   :gpu-array-t
+	   :gpu-array-t-p
+	   :gpu-array-t-texture
+	   :gpu-array-t-texture-type
+	   :gpu-array-t-level-num
+	   :gpu-array-t-layer-num
+	   :gpu-array-t-face-num
+	   :gpu-array-t-internal-format
+
+	   :%make-gpu-array-bb
+	   :gpu-array-bb
+	   :gpu-array-bb-p
+	   :gpu-array-bb-buffer
+	   :gpu-array-bb-format-index
+	   :gpu-array-bb-start
+	   :gpu-array-bb-access-style
+
+	   :%make-gpu-buffer
+	   :gpu-buffer
+	   :gpu-buffer-p
+	   :gpu-buffer-id
+	   :gpu-buffer-format
+	   :gpu-buffer-managed
+	   :+null-gpu-buffer+
+
+	   :gl-texture
+	   :texture-id
+	   :base-dimensions
+	   :texture-type
+	   :internal-format
+	   :sampler-type
+	   :mipmap-levels
+	   :layer-count
+	   :cubes
+	   :allocated
+	   :allocatedp
+	   :sampler-object-id
+
+	   :immutable-texture
+
+	   :mutable-texture
+
+	   :buffer-texture
+	   :backing-array
+	   :owns-array
+
+	   :make-blending-params
+	   :blending-params
+	   :blending-params-p
+	   :blending-params-mode-rgb
+	   :blending-params-mode-alpha
+	   :blending-params-source-rgb
+	   :blending-params-source-alpha
+	   :blending-params-destination-rgb
+	   :blending-params-destination-alpha
+	   :copy-blending-params
+
+	   :%make-sampler
+	   :sampler
+	   :sampler-p
+	   :%sampler-id
+	   :%sampler-lod-bias
+	   :%sampler-min-lod
+	   :%sampler-max-lod
+	   :%sampler-expects-mipmap
+	   :%sampler-minify-filter
+	   :%sampler-magnify-filter
+	   :%sampler-wrap
+	   :%sampler-expects-depth
+	   :%sampler-compare
+
+	   :%%make-fbo
+	   :fbo
+	   :fbo-p
+	   :%fbo-id
+	   :%fbo-attachment-color
+	   :%fbo-draw-buffer-map
+	   :%fbo-attachment-depth
+	   :%fbo-clear-mask
+	   :%fbo-is-default
+	   :%fbo-blending-params
+
+	   :%make-attachment
+	   :attachment
+	   :attachment-p
+	   :%attachment-fbo
+	   :%attachment-gpu-array
+	   :%attachment-owns-gpu-array
+	   :%attachment-blending-enabled
+	   :%attachment-override-blending
+	   :%attachment-blending-params
+
+	   :%make-ubo
+	   :ubo
+	   :ubo-p
+	   :ubo-id
+	   :ubo-data
+	   :ubo-index
+	   :ubo-owns-gpu-array
+
+	   :make-pixel-format
+	   :pixel-format
+	   :pixel-format-p
+	   :pixel-format-components
+	   :pixel-format-type
+	   :pixel-format-normalise
+	   :pixel-format-sizes
+	   :pixel-format-reversed
+	   :pixel-format-comp-length
+
+	   :make-raw-buffer-stream
+	   :buffer-stream
+	   :buffer-stream-p
+	   :buffer-stream-vao
+	   :buffer-stream-start
+	   :buffer-stream-length
+	   :buffer-stream-index-type
+	   :buffer-stream-gpu-arrays
+	   :buffer-stream-managed
+
+	   :%make-c-array
+	   :c-array
+	   :c-array-p
+           :c-array-pointer
+           :c-array-dimensions
+           :c-array-element-type
+	   :c-array-element-type
+	   :c-array-element-byte-size
+	   :c-array-row-byte-size
+	   :c-array-struct-element-typep
+	   :c-array-element-pixel-format
+
+	   :%make-viewport
+	   :viewport
+	   :viewport-p
+	   :%viewport-resolution-x
+	   :%viewport-resolution-y
+	   :%viewport-origin-x
+	   :%viewport-origin-y))
+
+(defpackage :cepl.types
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :split-sequence :named-readtables
+	:cepl.errors :%cepl.types)
   (:export :defstruct-g
 	   :lisp-type->pixel-format
 	   :internal-format->lisp-type
@@ -160,8 +310,8 @@
 
 (defpackage :cepl.internals
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors)
+        :cepl.generics :cepl.types :%cepl.types :split-sequence
+	:named-readtables :cepl.errors)
   (:export :%collate-args
            :%get-pipeline-uniforms
            :1d-p
@@ -190,14 +340,14 @@
 
 (defpackage :cepl.render-state
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors)
+        :cepl.generics :cepl.types :%cepl.types :split-sequence
+	:named-readtables :cepl.errors)
   (:export))
 
 (defpackage :cepl.viewports
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors :cepl.internals)
+        :cepl.generics :cepl.types :%cepl.types :split-sequence
+	:named-readtables :cepl.errors :cepl.internals)
   (:export :current-viewport
 	   :viewport
 	   :viewport-p
@@ -216,8 +366,8 @@
 
 (defpackage :cepl.context
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors :cepl.internals)
+        :cepl.generics :cepl.types :%cepl.types :split-sequence
+	:named-readtables :cepl.errors :cepl.internals)
   (:export :gl-context
            :*gl-context*
            :make-context
@@ -282,8 +432,7 @@
            ))
 
 (defpackage :cepl.image-formats
-  (:use #:cl #:fn #:named-readtables #:cepl-utils
-	:cepl.errors)
+  (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types :cepl.errors)
   (:export :internal-formatp
 	   :valid-internal-format-for-buffer-backed-texturep
 	   :color-renderable-formatp
@@ -309,7 +458,7 @@
 	   :*image-formats*))
 
 (defpackage :cepl.pixel-formats
-  (:use #:cl #:fn #:named-readtables #:cepl-utils
+  (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types
 	:cepl.types :cepl.errors :cepl.internals)
   (:export :pixel-format
 	   :pixel-format-p
@@ -327,10 +476,10 @@
 
 (defpackage :cepl.c-arrays
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
-	:cepl.internals :cepl.image-formats :cepl.pixel-formats)
+        :cepl.generics :cepl.types :%cepl.types :split-sequence
+	:named-readtables :cepl.errors :cepl.internals :cepl.image-formats
+	:cepl.pixel-formats)
   (:export :with-c-array
-           :with-c-arrays
            :element-byte-size
            :element-type
            :pointer
@@ -350,7 +499,7 @@
 (defpackage :cepl.gpu-buffers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-        :cepl.context :cepl.errors :cepl.c-arrays
+        :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
 	:cepl.internals)
   (:export :with-buffer
            :gpu-buffer
@@ -373,8 +522,9 @@
 
 (defpackage :cepl.gpu-arrays.buffer-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
-	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers)
+        :cepl.generics :cepl.types :split-sequence :named-readtables
+	:cepl.errors :%cepl.types :cepl.internals :cepl.image-formats
+	:cepl.c-arrays :cepl.gpu-buffers)
   (:export :gpu-array
 	   :gpu-array-p
 	   :gpu-array-buffer
@@ -388,9 +538,9 @@
 
 (defpackage :cepl.streams
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors :cepl.c-arrays :cepl.internals :cepl.gpu-buffers
-	:cepl.gpu-arrays.buffer-backed)
+        :cepl.generics :cepl.types :%cepl.types :split-sequence
+	:named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
+	:cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed)
   (:export :free-vao
 	   :free-vaos
 	   :bind-vao
@@ -412,9 +562,9 @@
 
 (defpackage :cepl.ubos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables
-	:cepl.errors :cepl.c-arrays :cepl.gpu-arrays.buffer-backed
-	:cepl.internals :cepl.gpu-buffers)
+        :cepl.generics :cepl.types :%cepl.types :split-sequence
+	:named-readtables :cepl.errors :cepl.c-arrays
+	:cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers)
   (:export :ubo
 	   :make-ubo
 	   :make-ubo-from-array
@@ -427,7 +577,7 @@
 (defpackage :cepl.textures
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-        :cepl.context :cepl.errors :cepl.c-arrays
+        :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
 	:cepl.internals :cepl.pixel-formats
 	:cepl.image-formats :cepl.gpu-buffers)
   (:export :*immutable-available*
@@ -458,8 +608,13 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
 	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
-	:cepl.textures)
-  (:export))
+	:cepl.textures :%cepl.types)
+  (:export :gpu-array-texture
+	   :gpu-array-texture-type
+	   :gpu-array-level-num
+	   :gpu-array-layer-num
+	   :gpu-array-face-num
+	   :gpu-array-internal-format))
 
 (defpackage :cepl.gpu-arrays
   ;; a place to put things that cross both kinds of gpu-array
@@ -467,14 +622,14 @@
         :cepl.generics :cepl.types :split-sequence :named-readtables :cepl.errors
 	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
 	:cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays.texture-backed
-	:cepl.textures)
+	:cepl.textures :%cepl.types)
   (:export :with-gpu-array-as-pointer :with-gpu-array-as-c-array))
 
 (defpackage :cepl.samplers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
-	:cepl.internals :cepl.textures)
+	:cepl.internals :cepl.textures :%cepl.types)
   (:export :sampler
 	   :sampler-p
 	   :make-sampler
@@ -503,9 +658,9 @@
 (defpackage :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-        :cepl.context :cepl.errors :cepl.c-arrays
+        :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
 	:cepl.internals :cepl.image-formats :cepl.textures
-	:cepl.viewports)
+	:cepl.viewports )
   (:export :fbo
 	   :fbo-p
 	   :attachment
@@ -533,7 +688,7 @@
 (defpackage :cepl.blending
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
-        :cepl.context :cepl.errors :cepl.c-arrays
+        :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
 	:cepl.internals :cepl.fbos)
   (:export :blending-params
 	   :blending-params-p
@@ -556,7 +711,7 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.internals :cepl.c-arrays :cepl.gpu-buffers
-        :cepl.context :cepl.errors :cepl.samplers)
+        :cepl.context :cepl.errors :cepl.samplers :%cepl.types)
   (:export :*verbose-compiles*
 	   :*warn-when-cant-test-compile*
 	   :defun-g
