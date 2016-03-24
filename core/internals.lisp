@@ -65,9 +65,9 @@
       (cffi:foreign-type-size type)
       (autowrap:foreign-type-size type)))
 
-(defvar *expanded-gl-type-names*
-  '((:uint :unsigned-int) (:ubyte :unsigned-byte)
-    (:ubyte :unsigned-byte) (:ushort :unsigned-short)))
+(defparameter *expanded-gl-type-names*
+  '((:uint :unsigned-int) (:uint8 :unsigned-byte)
+    (:int8 :signed-byte) (:ushort :unsigned-short)))
 
 (defun expand-gl-type-name (type)
   (or (second (assoc type *expanded-gl-type-names*))

@@ -47,4 +47,99 @@ Accesses the c-array element specified by the subscripts.
 
 The difference between this and #'aref-c is that this this function takes the
 subscripts as a list.
-"))
+")
+
+  (defun c-array-p
+      "
+Return t if the argument is a c-array. Returns nil otherwise.
+")
+
+  (defun clone-c-array
+      "
+Takes a c-array and makes a new c-array with the same contents as the the
+original. The contents in foreign memory are copied.
+")
+
+  (defun free-c-array
+      "
+Frees the foreign memory accosted with the c-array and 'blanks' the c-array.
+
+Blanking the c-array means it's fields will be set to default values,
+for example dimensions will be 0, the pointer will be null etc.
+
+The generic function #'free will call #'free-c-array when passed a c-array.
+")
+
+  (defun make-c-array
+      "
+This function will make and return a new c-array.
+
+It can be used in a few different ways:
+
+- with :initial-contents to nil:
+  In this case you need to provide dimensions and an element-type.
+
+- with :initial-contents populated.
+  The initial-contents can be a (potentially nested) list or array.
+
+  When the :initial-contents are an array then the dimension of the c-array
+  will be the same as the array passed in. CEPL currently only supports up
+  to 4D c-arrays.
+
+  When the :initial-contents is a flat list then each element is used as one
+  element in the c-array.
+  If the :initial-contents is a nested list then you must either:
+  - specify multiple dimensions and an element-type
+  - specify an element-type to be some struct type, then nested lists are then
+    used to populate the fields of the foreign structs. For an example of this
+    please see this example: https://github.com/cbaggers/cepl.examples/blob/master/examples/triangle.lisp#L30.
+
+  If the :element-type is not provided then CEPL will look at every element in
+  the initial-contents and try and find the smallest (in bytes) foreign type
+  which works for every element. This mean if the array is full of single-floats
+  then CEPL will choose :float, not :double.
+  Naturally this behaviour is too slow for use in performance critical
+  applications however it is nice for experimentation and working from the repl.
+
+  If you need what would be called a displaced array in lisp then please see the
+  subseq-c function.
+")
+
+  (defun make-c-array-from-pointer
+      "
+Will create a CEPL c-array with the element-type and dimensions specified, and
+will store the pointer as where the data is expected to be.
+
+This function does allocate the memory or validate the type or dimensions so be
+very careful when using this function.
+")
+
+  (defun subseq-c
+      "
+This function returns a c-array which contains a subset of the array passed into
+this function.
+
+It does not copy the foreign data, instead this array points to within the data
+of the original array. This means these arrays now share data (like a displaced
+array in standard CL.
+
+Due to this you have to be very careful when freeing the underlying array as
+this will affect any other array sharing that data.
+
+If you want a copy of a subseq of a c-array then use something like:
+
+    (clone-c-array (subseq-c arr 3 10))
+
+The reason that this arguably more dangerous behaviour is default is efficiency.
+CEPL tries not to allocate new memory when the function is not explicitly about
+that.")
+
+  (defun thing
+      "
+")
+
+  (defun thing
+      "
+")
+
+  )

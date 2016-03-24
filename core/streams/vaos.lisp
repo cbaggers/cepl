@@ -71,8 +71,8 @@
 (defun suitable-array-for-index-p (array)
   (and (eql (length (gpu-buffer-format (gpu-array-buffer array))) 1)
        (1d-p array)
-       (find (element-type array) '(:ubyte :ushort :uint :unsigned-short
-                                    :unsigned-byte :unsigned-int))))
+       (find (element-type array) '(:uint8 :ushort :uint :unsigned-short
+                                    :unsigned-int))))
 
 (defun make-vao (gpu-arrays &optional index-array)
   "makes a vao using a list of gpu-arrays as the source data

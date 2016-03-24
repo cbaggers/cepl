@@ -53,7 +53,6 @@
 (defgeneric pull1-g (object))
 (defgeneric dimensions (object))
 (defgeneric backed-by (object))
-(defgeneric lisp-type->pixel-format (type))
 (defmethod pull-g ((object t)) object)
 (defmethod pull1-g ((object t)) object)
 (defgeneric free-texture (texture))

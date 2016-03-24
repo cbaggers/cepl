@@ -11,7 +11,7 @@
 ;; The pixel format struct is a more explorable representation of the
 ;; internal-format of gl textures. Also they also help with the ugliness
 ;; of the texture api, where different parts want the texture information
-;; in different ways. For example when defining a texture to hold :ubyte's the
+;; in different ways. For example when defining a texture to hold :uint8's the
 ;; system calls the format :R8, but when uploading data to the texture it
 ;; wants the format specified as :RED :UNSIGNED-BYTE.
 
@@ -29,10 +29,10 @@
   '(:r :g :b :rg :rgb :rgba :bgr :bgra :depth :depth-stencil))
 
 (defvar *valid-pixel-types*
-  '(:ubyte :byte :ushort :short :uint :int :float))
+  '(:uint8 :int8 :ushort :short :uint :int :float))
 
 (defvar *valid-pixel-packed-sizes*
-  '(((3 3 2) :ubyte) ((:r 2 3 3) :ubyte)
+  '(((3 3 2) :uint8) ((:r 2 3 3) :uint8)
     ((5 6 5) :ushort) ((:r 5 6 5) :ushort)
     ((4 4 4 4) :ushort) ((:r 4 4 4 4) :ushort)
     ((5 5 5 1) :ushort) ((:r 1 5 5 5) :ushort)
@@ -41,26 +41,26 @@
     ((24 8) :uint) ((:r 10 11 11) :uint) ((:r 5 9 9 9) :uint)))
 
 (defvar *gl-integral-pixel-types*
-  '(:ubyte :byte :ushort :short :uint :int))
+  '(:uint8 :int8 :ushort :short :uint :int))
 
 (defparameter *gl-pixel-to-internal-map*
   '(((:depth t :short nil) :depth-component16)
     ((:depth t :int nil) :depth-component32)
     ((:depth t :float nil) :depth-component32f)
     ((:stencil-only t :int nil) :stencil-index8)
-    ((:r t :ubyte nil) :r8)
-    ((:r t :byte nil) :r8-snorm)
+    ((:r t :uint8 nil) :r8)
+    ((:r t :int8 nil) :r8-snorm)
     ((:r t :ushort nil) :r16)
     ((:r t :short nil) :r16-snorm)
-    ((:rg t :ubyte nil) :rg8)
-    ((:rg t :byte nil) :rg8-snorm)
+    ((:rg t :uint8 nil) :rg8)
+    ((:rg t :int8 nil) :rg8-snorm)
     ((:rg t :ushort nil) :rg16)
     ((:rg t :short nil) :rg16-snorm)
-    ((:rgb t :ubyte nil) :rgb8)
-    ((:rgb t :byte nil) :rgb8-snorm)
+    ((:rgb t :uint8 nil) :rgb8)
+    ((:rgb t :int8 nil) :rgb8-snorm)
     ((:rgb t :short nil) :rgb16-snorm)
-    ((:rgba t :ubyte nil) :rgba8)
-    ((:rgba t :byte nil) :rgba8-snorm)
+    ((:rgba t :uint8 nil) :rgba8)
+    ((:rgba t :int8 nil) :rgba8-snorm)
     ((:rgba t :ushort nil) :rgba16)
     ((:r t :float nil) :r32f)
     ((:rg t :float nil) :rg32f)
@@ -70,38 +70,38 @@
     ((:rg t :float nil) :rg16f)
     ((:rgb t :float nil) :rgb16f)
     ((:rgba t :float nil) :rgba16f)
-    ((:r nil :byte nil) :r8i)
-    ((:r nil :ubyte nil) :r8ui)
+    ((:r nil :int8 nil) :r8i)
+    ((:r nil :uint8 nil) :r8ui)
     ((:r nil :short nil) :r16i)
     ((:r nil :ushort nil) :r16ui)
     ((:r nil :int nil) :r32i)
     ((:r nil :uint nil) :r32ui)
-    ((:rg nil :byte nil) :rg8i)
-    ((:rg nil :ubyte nil) :rg8ui)
+    ((:rg nil :int8 nil) :rg8i)
+    ((:rg nil :uint8 nil) :rg8ui)
     ((:rg nil :short nil) :rg16i)
     ((:rg nil :ushort nil) :rg16ui)
     ((:rg nil :int nil) :rg32i)
     ((:rg nil :uint nil) :rg32ui)
-    ((:rgb nil :byte nil) :rgb8i)
-    ((:rgb nil :ubyte nil) :rgb8ui)
+    ((:rgb nil :int8 nil) :rgb8i)
+    ((:rgb nil :uint8 nil) :rgb8ui)
     ((:rgb nil :short nil) :rgb16i)
     ((:rgb nil :ushort nil) :rgb16ui)
     ((:rgb nil :int nil) :rgb32i)
     ((:rgb nil :uint nil) :rgb32ui)
-    ((:rgba nil :byte nil) :rgba8i)
-    ((:rgba nil :ubyte nil) :rgba8ui)
+    ((:rgba nil :int8 nil) :rgba8i)
+    ((:rgba nil :uint8 nil) :rgba8ui)
     ((:rgba nil :short nil) :rgba16i)
     ((:rgba nil :ushort nil) :rgba16ui)
     ((:rgba nil :int nil) :rgba32i)
     ((:rgba nil :uint nil) :rgba32ui)
-    ((:rgb t :ubyte (8 8 8)) :srgb8)
-    ((:rgba t :ubyte (8 8 8 8)) :srgb8-alpha8)
+    ((:rgb t :uint8 (8 8 8)) :srgb8)
+    ((:rgba t :uint8 (8 8 8 8)) :srgb8-alpha8)
     ((:rgba t :uint (10 10 10 2)) :rgb10-a2)
     ((:rgba nil :uint (10 10 10 2)) :rgb10-a2ui)
-    ((:rgb t :ubyte (2 2 2 2)) :rgba2)
+    ((:rgb t :uint8 (2 2 2 2)) :rgba2)
     ((:rgb t :ushort (4 4 4 4)) :rgba4)
     ((:rgba t :short (5 5 5 1)) :rgb5-a1)
-    ((:rgb t :ubyte (3 3 2)) :r3-g3-b2)))
+    ((:rgb t :uint8 (3 3 2)) :r3-g3-b2)))
 
 (defstruct pixel-format
   components type normalise sizes reversed comp-length)
@@ -166,7 +166,7 @@
       (list components type (if reversed (rest sizes) sizes)
             normalise reversed component-length))))
 
-(defun pixel-format (components &optional (type :ubyte) (normalise t) reversed)
+(defun pixel-format (components &optional (type :uint8) (normalise t) reversed)
   (destructuring-bind
         (components type sizes normalise reversed component-length)
       (process-pixel-format components type normalise reversed)

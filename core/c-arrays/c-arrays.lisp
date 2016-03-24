@@ -53,7 +53,6 @@
   (free-c-array object))
 
 (defun free-c-array (c-array)
-  "Frees the specified c-array."
   (foreign-free (c-array-pointer c-array))
   (blank-c-array-object c-array))
 
@@ -86,8 +85,7 @@
   (unless dimensions
     (error "dimensions are not optional when making an array from a pointer"))
   (let* ((dimensions (listify dimensions))
-         (p-format (pixel-format-p element-type))
-	 (element-type (expand-gl-type-name element-type))
+         (p-format (cepl.pixel-formats:pixel-format-p element-type))
          (element-type2 (if p-format
                             (pixel-format->lisp-type element-type)
                             element-type))
@@ -127,9 +125,8 @@
      :row-byte-size (c-array-row-byte-size c-array))))
 
 ;; [TODO] extract error messages
-(defun make-c-array (initial-contents
-                      &key dimensions element-type displaced-by)
-  (let* ((element-type (expand-gl-type-name element-type))
+(defun make-c-array (initial-contents &key dimensions element-type)
+  (let* ((element-type element-type)
 	 (dimensions (listify dimensions))
          (dimensions
           (if dimensions
@@ -145,7 +142,7 @@
                     (sequence (list (length initial-contents)))
                     (array (array-dimensions initial-contents)))
                   (error "make-c-array must be given initial-elements or dimensions"))))
-         (p-format (pixel-format-p element-type))
+         (p-format (cepl.pixel-formats:pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
                            (pixel-format->lisp-type element-type)
@@ -166,18 +163,10 @@
              (length dimensions)))
     (when (not (loop for i in dimensions always (> i 0)))
       (error "all dimensions must be >=1 in length"))
-    (when displaced-by
-      (if initial-contents
-          (error "Cannot displace and populate array at the same time")
-          (when (or (not (eql (reduce #'* dimensions)
-                              (reduce #'* (c-array-dimensions displaced-by))))
-                    (not (eq (c-array-element-type displaced-by) element-type)))
-            (error "Byte size and type of arrays must match"))))
     (multiple-value-bind (byte-size row-byte-size)
         (%gl-calc-byte-size elem-size dimensions)
       (let ((new-array (%make-c-array
-                        :pointer (or displaced-by
-                                     (cffi::%foreign-alloc byte-size))
+                        :pointer (cffi::%foreign-alloc byte-size)
                         :dimensions dimensions
                         :element-byte-size elem-size
                         :element-type element-type
@@ -457,27 +446,6 @@ for any array of, up to and including, 4 dimensions."
         (otherwise nil))))
 
 (defun subseq-c (array start &optional end)
-  "This function returns a c-array which contains
-   a subset of the array passed into this function.
-   Right this will make more sense with a use case:
-
-   Imagine we have one gpu-array with the vertex data for 10
-   different monsters inside it and each monster is made of 100
-   vertices. The first mosters vertex data will be in the
-   sub-array (gpu-sub-array bigarray 0 1000) and the vertex
-   data for the second monster would be at
-   (gpu-sub-array bigarray 1000 2000)
-
-   This *view* (for lack of a better term) into our array can
-   be really damn handy. Prehaps, for example, we want to
-   replace the vertex data of monster 2 with the data in my
-   c-array newmonster. We can simply do the following:
-   (push-g (gpu-sub-array bigarray 1000 2000) newmonster)
-
-   Obviously be aware that any changes you make to the parent
-   array affect the child sub-array. This can really bite you
-   in the backside if you change how the data in the array is
-   laid out."
   (let ((dimensions (dimensions array)))
     (if (> (length dimensions) 1)
         (error "Cannot take subseq of multidimensional array")
@@ -518,9 +486,9 @@ for any array of, up to and including, 4 dimensions."
 
 ;;------------------------------------------------------------
 
-(let ((states `(((integer 0 256) :ubyte
+(let ((states `(((integer 0 256) :uint8
                  ((integer -127 128) fixnum single-float double-float))
-                ((integer -127 128) :byte
+                ((integer -127 128) :int8
                  ((integer 0 256) fixnum single-float double-float))
                 (fixnum :int (single-float double-float))
                 (single-float :float (double-float))

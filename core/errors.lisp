@@ -103,8 +103,8 @@ internal texture format"
   type-name)
 
 (deferror internal-format->pixel-format-failed () (type-name)
-    "CEPL - make-texture: to find a suitable conversion from the internal texture format ~s
- to a pixel format"
+    "CEPL - unable to find a suitable conversion from the internal
+ texture format ~s to a pixel format"
   type-name)
 
 (deferror buffer-backed-texture-invalid-args () ()

@@ -252,7 +252,8 @@
                        (multisample nil) (immutable t) (buffer-storage nil)
                        lod-bias min-lod max-lod minify-filter magnify-filter
                        wrap compare (generate-mipmaps t))
-  (let ((internal-format (calc-internal-format element-type initial-contents)))
+  (let ((element-type (expand-gl-type-name element-type))
+	(internal-format (calc-internal-format element-type initial-contents)))
     (cond
       ;; ms
       (multisample (error "cepl: Multisample textures are not supported"))
@@ -329,7 +330,9 @@
     (null (error 'make-tex-no-content-no-type))
     (c-array (lisp-type->internal-format
               (element-type initial-contents)))
-    (uploadable-lisp-seq (cepl.c-arrays::scan-for-type initial-contents))))
+    (uploadable-lisp-seq (lisp-type->internal-format
+			  (cepl.c-arrays::lisp->gl-type
+			   (cepl.c-arrays::scan-for-type initial-contents))))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
