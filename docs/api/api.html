@@ -59,7 +59,7 @@
 <ul>
 <li>First, run <code>(ql:quickload :cepl)</code></li>
 <li>Then run <code>(ql:quickload :quickproject)</code>. Cepl uses this to create a lisp project using its own templates</li>
-<li>Then run <code>(<a href="#CEPL:MAKE-PROJECT">cepl:make-project</a> &quot;my-proj&quot;)</code>. This will use quickproject to make a new project with all the correct dependencies. Remember that cepl does not handle window managers or input so by default your new project will use the following</li>
+<li>Then run <code>(cepl:make-project &quot;my-proj&quot;)</code>. This will use quickproject to make a new project with all the correct dependencies. Remember that cepl does not handle window managers or input so by default your new project will use the following</li>
 <li>cepl for the graphics</li>
 <li><a href="https://github.com/cbaggers/cepl.sdl2">cepl.sdl2</a> for the host</li>
 <li><a href="https://github.com/cbaggers/skitter">skitter</a> for handling input and events</li>
@@ -73,7 +73,7 @@
 <p>Simply run:
 - <code>(ql:quickproject &quot;my-proj&quot;)</code>
 - <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code>
-- and lastly <code>(<a href="#CEPL:REPL">cepl:repl</a>)</code></p>
+- and lastly <code>(cepl:repl)</code></p>
 
 <p>This will bring use the host (<code>sdl2</code>) to create a window &amp; initialize opengl. You now are ready to go, have fun!</p>
 
@@ -83,7 +83,7 @@
 <li>In your new <code>my-proj</code> directory you will find a file called <code>run-session.lisp</code></li>
 <li>Run your lisp, loading this file. I use sbcl so it looks like this <code>sbcl --load &quot;run-session.lisp</code>.</li>
 <li>You can then connect your editor to this session (at port 4005) and carry on as usual. I use <code>slime</code> and <code>emacs</code> so I type <code>M-x slime-connect</code> and hit the <code><a href="http://l1sp.org/cl/return">return</a></code> key twice.</li>
-<li>Now you can run <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code> and <code>(<a href="#CEPL:REPL">cepl:repl</a>)</code>.</li>
+<li>Now you can run <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code> and <code>(cepl:repl)</code>.</li>
 </ul>
 
 <p>This will bring use the host (<code>sdl2</code>) to create a window &amp; initialize opengl. You now are ready to go, have fun!</p>
@@ -94,7 +94,7 @@
 
 <p>The choices are then to frequently dispatch jobs to the 'UI thread' (and accept that overhead) or start <code>slime</code>/<code>sly</code> in a way that guarentees the thread. In cepl we choose the latter as, although it does add one step to starting your project, it means you can ignore the detail whilst you are working.</p>
 
-<p>To get a full breakdown of the above issue run <code>(<a href="#CEPL:MAKE-PROJECT">cepl:make-project</a> :why)</code> in your repl.</p>
+<p>To get a full breakdown of the above issue run <code>(cepl:make-project :why)</code> in your repl.</p>
 
 <h4>Windows C Library Hack</h4>
 
@@ -117,156 +117,16 @@
           <h2>Package Index</h2>
           <ul><li class="package">
               <h3>
-                <a name="CEPL" href="#CEPL">CEPL</a>
-                <span class="nicknames"/>
-              </h3>
-              <ul><li>
-                  <a name="CEPL:CLS"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL:CLS" class="name">CLS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-CLS is here as it reminds me of qbasic and that makes me happy.
-
-It calls #'clear and #'swap twice so dont use this in your actually rendering
-code. It can be handy though if you want to clear the screen from the repl.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL:MAKE-PROJECT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL:MAKE-PROJECT" class="name">MAKE-PROJECT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(PATHNAME &amp;KEY NAME (HOST :CEPL.SDL2) (REPL :SLIME)
- (DEPENDS-ON '(:SKITTER :CEPL.DEVIL)))</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function is a simple way to make a lisp project with all the
-supporting libraries to get up and running with cepl quickly.
-
-It uses the excellent quickproject project, so before starting be sure
-to run the following in your repl:
-
-    (ql:quickload :quickproject)
-
-By default it assumes you want to use sdl2, skitter and devil, and that
-you will be using slime as the communication layer between lisp and your editor.
-
-Valid values for the :repl argument are currently :slime or :slynk.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL:QUIT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL:QUIT" class="name">QUIT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-Call this to shutdown CEPL.
-
-Aswell from it's own internal work, CEPL will ask the host to shut itself down.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL:REPL"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL:REPL" class="name">REPL</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;OPTIONAL (WIDTH 320) (HEIGHT 240))</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function is a legacy item at this stage, but is still here as it feels
-nice.
-
-It calls #'init to make a resizable window and prints out a message in the repl.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL:STEP-HOST"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL:STEP-HOST" class="name">STEP-HOST</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-Call this to ask the host update its own internals.
-
-This description is a bit nebulous as cepl doesnt impose what the host should do
-when this call is made; however it is usual to call #'step-host every tick of
-a main-loop and so often hosts will use this to do per-tick jobs like polling
-for input events.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL:SWAP"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL:SWAP" class="name">SWAP</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-Call this ask the host to swap the buffers of the default framebuffer.
-
-We usually do this when we have finished drawing a given frame.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL:CONTINUABLE"/>
-                  <article>
-                    <header class="macro">
-                      <span class="type">macro</span>
-                      <code>
-                        <h4><a href="#CEPL:CONTINUABLE" class="name">CONTINUABLE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;BODY BODY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-Helper macro that we can use to allow us to continue from an
-error. Remember to hit C in slime or pick the restart so
-errors don't kill the app.
-</pre>
-                  </article>
-                </li></ul>
-            </li><li class="package">
-              <h3>
                 <a name="CEPL.C-ARRAYS" href="#CEPL.C-ARRAYS">CEPL.C-ARRAYS</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.C-ARRAYS:C-ARRAY"/>
+                  <a name="%CEPL.TYPES:C-ARRAY"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.C-ARRAYS:C-ARRAY" class="name">C-ARRAY</a></h4>
+                        <h4><a href="#%CEPL.TYPES:C-ARRAY" class="name">C-ARRAY</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -313,12 +173,12 @@ subscripts as a list.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.C-ARRAYS:C-ARRAY-DIMENSIONS"/>
+                  <a name="%CEPL.TYPES:C-ARRAY-DIMENSIONS"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.C-ARRAYS:C-ARRAY-DIMENSIONS" class="name">C-ARRAY-DIMENSIONS</a></h4>
+                        <h4><a href="#%CEPL.TYPES:C-ARRAY-DIMENSIONS" class="name">C-ARRAY-DIMENSIONS</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -332,12 +192,12 @@ result.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.C-ARRAYS:C-ARRAY-ELEMENT-TYPE"/>
+                  <a name="%CEPL.TYPES:C-ARRAY-ELEMENT-TYPE"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.C-ARRAYS:C-ARRAY-ELEMENT-TYPE" class="name">C-ARRAY-ELEMENT-TYPE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:C-ARRAY-ELEMENT-TYPE" class="name">C-ARRAY-ELEMENT-TYPE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -351,12 +211,12 @@ result.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.C-ARRAYS:C-ARRAY-POINTER"/>
+                  <a name="%CEPL.TYPES:C-ARRAY-POINTER"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.C-ARRAYS:C-ARRAY-POINTER" class="name">C-ARRAY-POINTER</a></h4>
+                        <h4><a href="#%CEPL.TYPES:C-ARRAY-POINTER" class="name">C-ARRAY-POINTER</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -369,12 +229,12 @@ You can also use the generic function #'POINTER to get the same result.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.C-ARRAYS:C-ARRAY-P"/>
+                  <a name="%CEPL.TYPES:C-ARRAY-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.C-ARRAYS:C-ARRAY-P" class="name">C-ARRAY-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:C-ARRAY-P" class="name">C-ARRAY-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -514,6 +374,32 @@ CEPL tries not to allocate new memory when the function is not explicitly about
 that.</pre>
                   </article>
                 </li><li>
+                  <a name="CEPL.GENERICS:ELEMENT-BYTE-SIZE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:ELEMENT-BYTE-SIZE" class="name">ELEMENT-BYTE-SIZE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GENERICS:ELEMENT-TYPE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:ELEMENT-TYPE" class="name">ELEMENT-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="CEPL.C-ARRAYS:POINTER"/>
                   <article>
                     <header class="generic">
@@ -540,38 +426,49 @@ Returns the pointer to the start of the foreign data that makes up the array
                       </code>
                     </header>
                     <pre class="docstring">
-Binds the c-array to the variable named by the var-name argument. 
+Binds the c-array to the variable named by the var-name argument.
 Frees the c-array at the end of the scope.
 </pre>
                   </article>
-                </li><li>
-                  <a name="CEPL.C-ARRAYS:WITH-C-ARRAYS"/>
-                  <article>
-                    <header class="macro">
-                      <span class="type">macro</span>
-                      <code>
-                        <h4><a href="#CEPL.C-ARRAYS:WITH-C-ARRAYS" class="name">WITH-C-ARRAYS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">((VAR-NAME C-ARRAYS) &amp;BODY BODY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED" href="#CEPL.GPU-ARRAYS.BUFFER-BACKED">CEPL.GPU-ARRAYS.BUFFER-BACKED</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY"/>
+                  <a name="%CEPL.TYPES:GPU-ARRAY"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY" class="name">GPU-ARRAY</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY" class="name">GPU-ARRAY</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+GPU-ARRAY is a structure that respresents an array in gpu-memory.
+
+OpenGL has 2 places it lets you store data on the gpu. Textures, which are covered in cepl.textures, and gpu-buffers
+
+GPU Buffers are blocks of unformatted gpu memory. Most commonly filled ordered
+data that is streamed into the rendering pipeline via the vertex shader, when
+used in this way you will often hear it be called a vertex buffer object (vbo)
+in opengl texts.
+
+Given that
+
+</pre>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:GPU-ARRAY-DIMENSIONS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY-DIMENSIONS" class="name">GPU-ARRAY-DIMENSIONS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -579,12 +476,12 @@ Frees the c-array at the end of the scope.
                 </li><li>
                   <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-ACCESS-STYLE"/>
                   <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
+                    <header class="function">
+                      <span class="type">function</span>
                       <code>
                         <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-ACCESS-STYLE" class="name">GPU-ARRAY-ACCESS-STYLE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
+                        <span class="arguments">(GPU-ARRAY)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -592,25 +489,12 @@ Frees the c-array at the end of the scope.
                 </li><li>
                   <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-BUFFER"/>
                   <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
+                    <header class="function">
+                      <span class="type">function</span>
                       <code>
                         <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-BUFFER" class="name">GPU-ARRAY-BUFFER</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-DIMENSIONS"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-DIMENSIONS" class="name">GPU-ARRAY-DIMENSIONS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
+                        <span class="arguments">(GPU-ARRAY)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -631,12 +515,12 @@ Frees the c-array at the end of the scope.
    this gpu-array lives in.</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-P"/>
+                  <a name="%CEPL.TYPES:GPU-ARRAY-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-P" class="name">GPU-ARRAY-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY-P" class="name">GPU-ARRAY-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -678,19 +562,56 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li><li>
+                  <a name="CEPL.GENERICS:FREE-GPU-ARRAY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:FREE-GPU-ARRAY" class="name">FREE-GPU-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GENERICS:MAKE-GPU-ARRAY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:MAKE-GPU-ARRAY" class="name">MAKE-GPU-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This function creates a gpu-array which is very similar
+   to a c-array except that the data is located in the memory
+   of the graphics card and so is accessible to shaders.
+   You can either provide and type and length or you can
+   provide a c-array and the data from that will be used to
+   populate the gpu-array with.
+
+   Access style is optional but if you are comfortable with
+   opengl, and know what type of usage pattern thsi array will
+   have, you can set this to any of the following:
+   (:stream-draw :stream-read :stream-copy :static-draw
+    :static-read :static-copy :dynamic-draw :dynamic-read
+    :dynamic-copy)</pre>
+                  </article>
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.STREAMS" href="#CEPL.STREAMS">CEPL.STREAMS</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.STREAMS:BUFFER-STREAM"/>
+                  <a name="%CEPL.TYPES:BUFFER-STREAM"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.STREAMS:BUFFER-STREAM" class="name">BUFFER-STREAM</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-STREAM" class="name">BUFFER-STREAM</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -708,12 +629,12 @@ Frees the c-array at the end of the scope.
    work for you.</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.STREAMS:BUFFER-STREAM-GPU-ARRAYS"/>
+                  <a name="%CEPL.TYPES:BUFFER-STREAM-GPU-ARRAYS"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.STREAMS:BUFFER-STREAM-GPU-ARRAYS" class="name">BUFFER-STREAM-GPU-ARRAYS</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-STREAM-GPU-ARRAYS" class="name">BUFFER-STREAM-GPU-ARRAYS</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -721,12 +642,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.STREAMS:BUFFER-STREAM-INDEX-TYPE"/>
+                  <a name="%CEPL.TYPES:BUFFER-STREAM-INDEX-TYPE"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.STREAMS:BUFFER-STREAM-INDEX-TYPE" class="name">BUFFER-STREAM-INDEX-TYPE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-STREAM-INDEX-TYPE" class="name">BUFFER-STREAM-INDEX-TYPE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -734,12 +655,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.STREAMS:BUFFER-STREAM-LENGTH"/>
+                  <a name="%CEPL.TYPES:BUFFER-STREAM-LENGTH"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.STREAMS:BUFFER-STREAM-LENGTH" class="name">BUFFER-STREAM-LENGTH</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-STREAM-LENGTH" class="name">BUFFER-STREAM-LENGTH</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -747,12 +668,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.STREAMS:BUFFER-STREAM-MANAGED"/>
+                  <a name="%CEPL.TYPES:BUFFER-STREAM-MANAGED"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.STREAMS:BUFFER-STREAM-MANAGED" class="name">BUFFER-STREAM-MANAGED</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-STREAM-MANAGED" class="name">BUFFER-STREAM-MANAGED</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -760,12 +681,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.STREAMS:BUFFER-STREAM-VAO"/>
+                  <a name="%CEPL.TYPES:BUFFER-STREAM-VAO"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.STREAMS:BUFFER-STREAM-VAO" class="name">BUFFER-STREAM-VAO</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-STREAM-VAO" class="name">BUFFER-STREAM-VAO</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -786,12 +707,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring">Binds the vao specfied</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.STREAMS:BUFFER-STREAM-P"/>
+                  <a name="%CEPL.TYPES:BUFFER-STREAM-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.STREAMS:BUFFER-STREAM-P" class="name">BUFFER-STREAM-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-STREAM-P" class="name">BUFFER-STREAM-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -926,19 +847,31 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li><li>
+                  <a name="CEPL.GENERICS:MAKE-VAO-FROM-ID"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:MAKE-VAO-FROM-ID" class="name">MAKE-VAO-FROM-ID</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GL-OBJECT GPU-ARRAYS &amp;OPTIONAL INDEX-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.VIEWPORTS" href="#CEPL.VIEWPORTS">CEPL.VIEWPORTS</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.VIEWPORTS:VIEWPORT"/>
+                  <a name="%CEPL.TYPES:VIEWPORT"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.VIEWPORTS:VIEWPORT" class="name">VIEWPORT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:VIEWPORT" class="name">VIEWPORT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1024,12 +957,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.VIEWPORTS:VIEWPORT-P"/>
+                  <a name="%CEPL.TYPES:VIEWPORT-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-P" class="name">VIEWPORT-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:VIEWPORT-P" class="name">VIEWPORT-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -1075,8 +1008,7 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.TEXTURES" href="#CEPL.TEXTURES">CEPL.TEXTURES</a>
                 <span class="nicknames"/>
@@ -1108,12 +1040,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TEXTURES:BUFFER-TEXTURE"/>
+                  <a name="%CEPL.TYPES:BUFFER-TEXTURE"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.TEXTURES:BUFFER-TEXTURE" class="name">BUFFER-TEXTURE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-TEXTURE" class="name">BUFFER-TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1121,12 +1053,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TEXTURES:GL-TEXTURE"/>
+                  <a name="%CEPL.TYPES:GL-TEXTURE"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.TEXTURES:GL-TEXTURE" class="name">GL-TEXTURE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GL-TEXTURE" class="name">GL-TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1134,12 +1066,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TEXTURES:GPU-ARRAY-T"/>
+                  <a name="%CEPL.TYPES:GPU-ARRAY-T"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.TEXTURES:GPU-ARRAY-T" class="name">GPU-ARRAY-T</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY-T" class="name">GPU-ARRAY-T</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1147,12 +1079,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TEXTURES:IMMUTABLE-TEXTURE"/>
+                  <a name="%CEPL.TYPES:IMMUTABLE-TEXTURE"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.TEXTURES:IMMUTABLE-TEXTURE" class="name">IMMUTABLE-TEXTURE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:IMMUTABLE-TEXTURE" class="name">IMMUTABLE-TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1160,12 +1092,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TEXTURES:MUTABLE-TEXTURE"/>
+                  <a name="%CEPL.TYPES:MUTABLE-TEXTURE"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.TEXTURES:MUTABLE-TEXTURE" class="name">MUTABLE-TEXTURE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:MUTABLE-TEXTURE" class="name">MUTABLE-TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1307,6 +1239,32 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
+                  <a name="CEPL.GENERICS:FREE-GPU-ARRAY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:FREE-GPU-ARRAY" class="name">FREE-GPU-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GENERICS:FREE-TEXTURE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:FREE-TEXTURE" class="name">FREE-TEXTURE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TEXTURE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="CEPL.TEXTURES:MUTABLE-TEXTUREP"/>
                   <article>
                     <header class="generic">
@@ -1320,12 +1278,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TEXTURES:TEXTURE-TYPE"/>
+                  <a name="%CEPL.TYPES:TEXTURE-TYPE"/>
                   <article>
                     <header class="generic">
                       <span class="type">generic</span>
                       <code>
-                        <h4><a href="#CEPL.TEXTURES:TEXTURE-TYPE" class="name">TEXTURE-TYPE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-TYPE" class="name">TEXTURE-TYPE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -1345,8 +1303,7 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.SAMPLERS" href="#CEPL.SAMPLERS">CEPL.SAMPLERS</a>
                 <span class="nicknames"/>
@@ -1365,12 +1322,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.SAMPLERS:SAMPLER"/>
+                  <a name="%CEPL.TYPES:SAMPLER"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.SAMPLERS:SAMPLER" class="name">SAMPLER</a></h4>
+                        <h4><a href="#%CEPL.TYPES:SAMPLER" class="name">SAMPLER</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1483,12 +1440,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.SAMPLERS:SAMPLER-P"/>
+                  <a name="%CEPL.TYPES:SAMPLER-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.SAMPLERS:SAMPLER-P" class="name">SAMPLER-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:SAMPLER-P" class="name">SAMPLER-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -1534,19 +1491,18 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.FBOS" href="#CEPL.FBOS">CEPL.FBOS</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.FBOS:ATTACHMENT"/>
+                  <a name="%CEPL.TYPES:ATTACHMENT"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:ATTACHMENT" class="name">ATTACHMENT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:ATTACHMENT" class="name">ATTACHMENT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1554,12 +1510,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:BLENDING-PARAMS"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1567,12 +1523,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:FBO"/>
+                  <a name="%CEPL.TYPES:FBO"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:FBO" class="name">FBO</a></h4>
+                        <h4><a href="#%CEPL.TYPES:FBO" class="name">FBO</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1580,12 +1536,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:ATTACHMENT"/>
+                  <a name="%CEPL.TYPES:ATTACHMENT"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:ATTACHMENT" class="name">ATTACHMENT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:ATTACHMENT" class="name">ATTACHMENT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(FBO ATTACHMENT-NAME)</span>
                       </code>
@@ -1619,12 +1575,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:BLENDING-PARAMS"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(TARGET)</span>
                       </code>
@@ -1710,12 +1666,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:ATTACHMENT-P"/>
+                  <a name="%CEPL.TYPES:ATTACHMENT-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:ATTACHMENT-P" class="name">ATTACHMENT-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:ATTACHMENT-P" class="name">ATTACHMENT-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -1788,12 +1744,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:FBO-P"/>
+                  <a name="%CEPL.TYPES:FBO-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:FBO-P" class="name">FBO-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:FBO-P" class="name">FBO-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -1842,6 +1798,19 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
+                  <a name="%CEPL.TYPES:FBO"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:FBO" class="name">FBO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="CEPL.FBOS:WITH-FBO-BOUND"/>
                   <article>
                     <header class="macro">
@@ -1856,19 +1825,44 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.BLENDING" href="#CEPL.BLENDING">CEPL.BLENDING</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.BLENDING:BLENDING-PARAMS-DESTINATION-ALPHA"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:BLENDING-PARAMS-DESTINATION-ALPHA" class="name">BLENDING-PARAMS-DESTINATION-ALPHA</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TARGET)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS-DESTINATION-ALPHA"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-DESTINATION-ALPHA" class="name">BLENDING-PARAMS-DESTINATION-ALPHA</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1876,12 +1870,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:BLENDING-PARAMS-DESTINATION-RGB"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS-DESTINATION-RGB"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:BLENDING-PARAMS-DESTINATION-RGB" class="name">BLENDING-PARAMS-DESTINATION-RGB</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-DESTINATION-RGB" class="name">BLENDING-PARAMS-DESTINATION-RGB</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1889,12 +1883,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:BLENDING-PARAMS-MODE-ALPHA"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS-MODE-ALPHA"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:BLENDING-PARAMS-MODE-ALPHA" class="name">BLENDING-PARAMS-MODE-ALPHA</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-MODE-ALPHA" class="name">BLENDING-PARAMS-MODE-ALPHA</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1902,12 +1896,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:BLENDING-PARAMS-MODE-RGB"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS-MODE-RGB"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:BLENDING-PARAMS-MODE-RGB" class="name">BLENDING-PARAMS-MODE-RGB</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-MODE-RGB" class="name">BLENDING-PARAMS-MODE-RGB</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1915,12 +1909,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:BLENDING-PARAMS-SOURCE-ALPHA"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS-SOURCE-ALPHA"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:BLENDING-PARAMS-SOURCE-ALPHA" class="name">BLENDING-PARAMS-SOURCE-ALPHA</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-SOURCE-ALPHA" class="name">BLENDING-PARAMS-SOURCE-ALPHA</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1928,12 +1922,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:BLENDING-PARAMS-SOURCE-RGB"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS-SOURCE-RGB"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:BLENDING-PARAMS-SOURCE-RGB" class="name">BLENDING-PARAMS-SOURCE-RGB</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-SOURCE-RGB" class="name">BLENDING-PARAMS-SOURCE-RGB</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1954,12 +1948,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:BLENDING-PARAMS-P"/>
+                  <a name="%CEPL.TYPES:BLENDING-PARAMS-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:BLENDING-PARAMS-P" class="name">BLENDING-PARAMS-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-P" class="name">BLENDING-PARAMS-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -1967,12 +1961,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:COPY-BLENDING-PARAMS"/>
+                  <a name="%CEPL.TYPES:COPY-BLENDING-PARAMS"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:COPY-BLENDING-PARAMS" class="name">COPY-BLENDING-PARAMS</a></h4>
+                        <h4><a href="#%CEPL.TYPES:COPY-BLENDING-PARAMS" class="name">COPY-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1993,17 +1987,17 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:MAKE-BLENDING-PARAMS"/>
+                  <a name="%CEPL.TYPES:MAKE-BLENDING-PARAMS"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.BLENDING:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
+                        <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM0) :FUNC-ADD) ((:MODE-ALPHA DUM1) :FUNC-ADD)
- ((:SOURCE-RGB DUM2) :SRC-ALPHA) ((:SOURCE-ALPHA DUM3) :SRC-ALPHA)
- ((:DESTINATION-RGB DUM4) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DUM5) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM1213) :FUNC-ADD) ((:MODE-ALPHA DUM1214) :FUNC-ADD)
+ ((:SOURCE-RGB DUM1215) :SRC-ALPHA) ((:SOURCE-ALPHA DUM1216) :SRC-ALPHA)
+ ((:DESTINATION-RGB DUM1217) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DUM1218) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -2034,8 +2028,7 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.PIPELINES" href="#CEPL.PIPELINES">CEPL.PIPELINES</a>
                 <span class="nicknames"/>
@@ -2191,8 +2184,7 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.GENERICS" href="#CEPL.GENERICS">CEPL.GENERICS</a>
                 <span class="nicknames"/>
@@ -2677,19 +2669,18 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.GPU-BUFFERS" href="#CEPL.GPU-BUFFERS">CEPL.GPU-BUFFERS</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.GPU-BUFFERS:GPU-BUFFER"/>
+                  <a name="%CEPL.TYPES:GPU-BUFFER"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.GPU-BUFFERS:GPU-BUFFER" class="name">GPU-BUFFER</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GPU-BUFFER" class="name">GPU-BUFFER</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -2703,12 +2694,12 @@ Frees the c-array at the end of the scope.
    `((:float 3 0) ('vert-data 140 12))</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GPU-BUFFERS:GPU-BUFFER-FORMAT"/>
+                  <a name="%CEPL.TYPES:GPU-BUFFER-FORMAT"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.GPU-BUFFERS:GPU-BUFFER-FORMAT" class="name">GPU-BUFFER-FORMAT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GPU-BUFFER-FORMAT" class="name">GPU-BUFFER-FORMAT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -2716,12 +2707,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.GPU-BUFFERS:GPU-BUFFER-ID"/>
+                  <a name="%CEPL.TYPES:GPU-BUFFER-ID"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.GPU-BUFFERS:GPU-BUFFER-ID" class="name">GPU-BUFFER-ID</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GPU-BUFFER-ID" class="name">GPU-BUFFER-ID</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -2876,12 +2867,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.GPU-BUFFERS:GPU-BUFFER-P"/>
+                  <a name="%CEPL.TYPES:GPU-BUFFER-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.GPU-BUFFERS:GPU-BUFFER-P" class="name">GPU-BUFFER-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GPU-BUFFER-P" class="name">GPU-BUFFER-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -2959,8 +2950,7 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.IMAGE-FORMATS" href="#CEPL.IMAGE-FORMATS">CEPL.IMAGE-FORMATS</a>
                 <span class="nicknames"/>
@@ -3264,19 +3254,18 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.PIXEL-FORMATS" href="#CEPL.PIXEL-FORMATS">CEPL.PIXEL-FORMATS</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT" class="name">PIXEL-FORMAT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT" class="name">PIXEL-FORMAT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -3284,12 +3273,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT-COMP-LENGTH"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT-COMP-LENGTH"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT-COMP-LENGTH" class="name">PIXEL-FORMAT-COMP-LENGTH</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-COMP-LENGTH" class="name">PIXEL-FORMAT-COMP-LENGTH</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3297,12 +3286,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT-COMPONENTS"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT-COMPONENTS"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT-COMPONENTS" class="name">PIXEL-FORMAT-COMPONENTS</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-COMPONENTS" class="name">PIXEL-FORMAT-COMPONENTS</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3310,12 +3299,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT-NORMALISE"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT-NORMALISE"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT-NORMALISE" class="name">PIXEL-FORMAT-NORMALISE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-NORMALISE" class="name">PIXEL-FORMAT-NORMALISE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3323,12 +3312,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT-REVERSED"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT-REVERSED"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT-REVERSED" class="name">PIXEL-FORMAT-REVERSED</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-REVERSED" class="name">PIXEL-FORMAT-REVERSED</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3336,12 +3325,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT-SIZES"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT-SIZES"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT-SIZES" class="name">PIXEL-FORMAT-SIZES</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-SIZES" class="name">PIXEL-FORMAT-SIZES</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3349,12 +3338,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT-TYPE"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT-TYPE"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT-TYPE" class="name">PIXEL-FORMAT-TYPE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-TYPE" class="name">PIXEL-FORMAT-TYPE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3414,12 +3403,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT" class="name">PIXEL-FORMAT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT" class="name">PIXEL-FORMAT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(COMPONENTS &amp;OPTIONAL (TYPE :UINT8) (NORMALISE T) REVERSED)</span>
                       </code>
@@ -3427,12 +3416,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:PIXEL-FORMAT-P"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT-P"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:PIXEL-FORMAT-P" class="name">PIXEL-FORMAT-P</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-P" class="name">PIXEL-FORMAT-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -3452,19 +3441,18 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.UBOS" href="#CEPL.UBOS">CEPL.UBOS</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.UBOS:UBO"/>
+                  <a name="%CEPL.TYPES:UBO"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.UBOS:UBO" class="name">UBO</a></h4>
+                        <h4><a href="#%CEPL.TYPES:UBO" class="name">UBO</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -3472,12 +3460,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.UBOS:UBO-DATA"/>
+                  <a name="%CEPL.TYPES:UBO-DATA"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.UBOS:UBO-DATA" class="name">UBO-DATA</a></h4>
+                        <h4><a href="#%CEPL.TYPES:UBO-DATA" class="name">UBO-DATA</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3485,12 +3473,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.UBOS:UBO-ID"/>
+                  <a name="%CEPL.TYPES:UBO-ID"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.UBOS:UBO-ID" class="name">UBO-ID</a></h4>
+                        <h4><a href="#%CEPL.TYPES:UBO-ID" class="name">UBO-ID</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3498,12 +3486,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.UBOS:UBO-INDEX"/>
+                  <a name="%CEPL.TYPES:UBO-INDEX"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.UBOS:UBO-INDEX" class="name">UBO-INDEX</a></h4>
+                        <h4><a href="#%CEPL.TYPES:UBO-INDEX" class="name">UBO-INDEX</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3511,12 +3499,12 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.UBOS:UBO-OWNS-GPU-ARRAY"/>
+                  <a name="%CEPL.TYPES:UBO-OWNS-GPU-ARRAY"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.UBOS:UBO-OWNS-GPU-ARRAY" class="name">UBO-OWNS-GPU-ARRAY</a></h4>
+                        <h4><a href="#%CEPL.TYPES:UBO-OWNS-GPU-ARRAY" class="name">UBO-OWNS-GPU-ARRAY</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -3562,14 +3550,12 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.RENDER-STATE" href="#CEPL.RENDER-STATE">CEPL.RENDER-STATE</a>
                 <span class="nicknames"/>
               </h3>
-              <ul/>
-            </li><li class="package">
+              <ul/></li><li class="package">
               <h3>
                 <a name="CEPL.SPACE" href="#CEPL.SPACE">CEPL.SPACE</a>
                 <span class="nicknames"/>
@@ -3821,8 +3807,7 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.TYPES" href="#CEPL.TYPES">CEPL.TYPES</a>
                 <span class="nicknames"/>
@@ -3999,8 +3984,7 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li><li class="package">
+                </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.CONTEXT" href="#CEPL.CONTEXT">CEPL.CONTEXT</a>
                 <span class="nicknames"/>
@@ -4683,8 +4667,20 @@ Frees the c-array at the end of the scope.
                     </header>
                     <pre class="docstring"/>
                   </article>
-                </li></ul>
-            </li></ul>
+                </li><li>
+                  <a name="CEPL.GENERICS:TIMESTAMP"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:TIMESTAMP" class="name">TIMESTAMP</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li></ul></li></ul>
         </article>
       
     </div>
