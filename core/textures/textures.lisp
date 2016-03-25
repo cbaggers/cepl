@@ -1,11 +1,5 @@
 (in-package :cepl.textures)
 
-;;{TODO} While I see why I started abstracting this using classes
-;;       We cannot extend core functionality of gl, thus uses
-;;       extensible constructs is optimizing for a case that can
-;;       never happen. We should go for structs, ubyte and macros
-;;       to hide the ugly, optimize for helping the compiler
-
 ;;------------------------------------------------------------
 
 (defvar *immutable-available* t)
@@ -25,12 +19,12 @@
 ;;------------------------------------------------------------
 
 (defun texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
-  (when (and (> cube-face 0) (not (slot-value texture 'cubes)))
+  (when (and (> cube-face 0) (not (texture-cubes texture)))
     (error "Cannot get the cube-face from a texture that wasnt made with :cubes t:~%~a" texture))
-  (if (eq (slot-value texture 'texture-type) :texture-buffer)
+  (if (eq (texture-type texture) :texture-buffer)
       (if (> (+ mipmap-level layer cube-face) 0)
           (error "Texture index out of range")
-          (slot-value texture 'backing-array))
+          (buffer-texture-backing-array texture))
       (if (valid-index-p texture mipmap-level layer cube-face)
           (%make-gpu-array-t
 	   :texture texture
@@ -40,22 +34,20 @@
 	   :face-num cube-face
 	   :dimensions (dimensions-at-mipmap-level
 			texture mipmap-level)
-	   :internal-format (internal-format texture))
+	   :internal-format (texture-internal-format texture))
           (error "Texture index out of range"))))
 
 (defun valid-index-p (texture mipmap-level layer cube-face)
-  (with-slots (mipmap-levels layer-count cubes)
-      texture
-    (and (< mipmap-level mipmap-levels)
-         (< layer layer-count)
-         (if cubes
-             (<= cube-face 6)
-             (eql 0 cube-face)))))
+  (and (< mipmap-level (texture-mipmap-levels texture))
+       (< layer (texture-layer-count texture))
+       (if (texture-cubes texture)
+	   (<= cube-face 6)
+	   (= 0 cube-face))))
 
 ;;------------------------------------------------------------
 
 (defun generate-mipmaps (texture)
-  (let ((type (slot-value texture 'texture-type)))
+  (let ((type (texture-type texture)))
     (with-texture-bound (texture)
       (gl:generate-mipmap type))))
 
@@ -102,11 +94,16 @@
   gpu-array)
 
 ;; [TODO] add offsets
-(defgeneric %upload-tex (tex tex-type level-num dimensions layer-num face-num
-                         pix-format pix-type pointer))
+(defun %upload-tex (tex tex-type level-num dimensions layer-num face-num
+		    pix-format pix-type pointer)
+  (if (texture-mutable-p tex)
+      (%upload-to-mutable-tex tex tex-type level-num dimensions layer-num
+			      face-num pix-format pix-type pointer)
+      (%upload-to-immutable-tex tex tex-type level-num dimensions layer-num
+				face-num pix-format pix-type pointer)))
 
-(defmethod %upload-tex ((tex mutable-texture) tex-type level-num dimensions
-                        layer-num face-num pix-format pix-type pointer)
+(defun %upload-to-mutable-tex (tex tex-type level-num dimensions layer-num
+			       face-num pix-format pix-type pointer)
   (case tex-type
     (:texture-1d (gl:tex-image-1d
 		  tex-type level-num (gpu-array-t-internal-format tex)
@@ -139,8 +136,9 @@
     (t (error "not currently supported for upload: ~a" tex-type))))
 
 
-(defmethod %upload-tex ((tex immutable-texture) tex-type level-num dimensions
-                        layer-num face-num pix-format pix-type pointer)
+(defun %upload-to-immutable-tex (tex tex-type level-num dimensions layer-num
+				 face-num pix-format pix-type pointer)
+  (declare (ignore tex))
   (case tex-type
     (:texture-1d (gl:tex-sub-image-1d tex-type level-num 0 (first dimensions)
                                       pix-format pix-type pointer))
@@ -196,9 +194,9 @@
 
 (defun dimensions-at-mipmap-level (texture level)
   (if (= level 0)
-      (base-dimensions texture)
+      (texture-base-dimensions texture)
       (let ((div (* 2 (1+ level))))
-        (loop for i in (base-dimensions texture) collecting
+        (loop for i in (texture-base-dimensions texture) collecting
              (floor (/ i div))))))
 
 ;;------------------------------------------------------------
@@ -238,17 +236,18 @@
 (defun make-texture-from-id (gl-object &key base-dimensions texture-type
                                          internal-format sampler-type
                                          mipmap-levels layer-count cubes
-                                         allocated)
-  (make-instance 'gl-texture
-                 :texture-id gl-object
-                 :base-dimensions base-dimensions
-                 :texture-type texture-type
-                 :internal-format internal-format
-                 :sampler-type sampler-type
-                 :mipmap-levels mipmap-levels
-                 :layer-count layer-count
-                 :cubes cubes
-                 :allocated allocated))
+                                         allocated mutable-p)
+  (%%make-texture
+   :id gl-object
+   :base-dimensions base-dimensions
+   :type texture-type
+   :internal-format internal-format
+   :sampler-type sampler-type
+   :mipmap-levels mipmap-levels
+   :layer-count layer-count
+   :cubes cubes
+   :allocated-p allocated
+   :mutable-p mutable-p))
 
 
 (defun make-texture (initial-contents
@@ -447,17 +446,15 @@
       (if texture-type
           (if (and cubes (not (apply #'= dimensions)))
               (error "Cube textures must be square")
-              (let ((texture (make-instance
-                              (if (and immutable *immutable-available*)
-                                  'immutable-texture
-                                  'mutable-texture)
-                              :texture-id (gen-texture)
+              (let ((texture (%%make-texture
+                              :id (gen-texture)
                               :base-dimensions dimensions
-                              :texture-type texture-type
+                              :type texture-type
                               :mipmap-levels mipmap-levels
                               :layer-count layer-count
                               :cubes cubes
                               :internal-format internal-format
+			      :mutable-p (and immutable *immutable-available*)
                               :sampler-type (cepl.samplers::calc-sampler-type
 					     texture-type
 					     internal-format))))
@@ -515,11 +512,10 @@
                       (make-gpu-array initial-contents)
                       (make-gpu-array nil :dimensions dimensions
                                       :element-type element-type)))
-           (new-tex (make-instance
-                     'buffer-texture
-                     :texture-id (gen-texture)
+           (new-tex (%%make-buffer-texture
+                     :id (gen-texture)
                      :base-dimensions dimensions
-                     :texture-type texture-type
+                     :type texture-type
                      :mipmap-levels 1
                      :layer-count 1
                      :cubes nil
@@ -533,7 +529,7 @@
         (%gl::tex-buffer :texture-buffer internal-format
                          (gpu-buffer-id
 			  (cepl.gpu-arrays::gpu-array-buffer array)))
-        (setf (slot-value new-tex 'allocated) t)
+        (setf (texture-allocated-p new-tex) t)
         new-tex))))
 
 (defun assert-valid-args-for-buffer-backend-texture
@@ -559,45 +555,47 @@
             (pixel-format->internal-format pfo)
             element-format))))
 
-(defgeneric allocate-texture (texture))
+(defun allocate-texture (texture)
+  (when (buffer-texture-p texture)
+    (error "This function should not have been called with a buffer backed texture"))
+  (if (texture-mutable-p texture)
+      (allocate-mutable-texture texture)
+      (allocate-immutable-texture texture)))
 
-(defmethod allocate-texture ((texture buffer-texture))
-  (error "This function should not have been called with a buffer backed texture"))
+(defun allocate-mutable-texture (texture)
+  (gl:tex-parameter (texture-type texture) :texture-base-level 0)
+  (gl:tex-parameter (texture-type texture) :texture-max-level
+                    (1- (texture-mipmap-levels texture)))
+  (setf (texture-allocated-p texture) t))
 
-(defmethod allocate-texture ((texture mutable-texture))
-  (gl:tex-parameter (gpu-array-t-texture-type texture) :texture-base-level 0)
-  (gl:tex-parameter (gpu-array-t-texture-type texture) :texture-max-level
-                    (1- (slot-value texture 'mipmap-levels)))
-  (setf (slot-value texture 'allocated) t))
-
-(defmethod allocate-texture ((texture immutable-texture))
-  (if (allocatedp texture)
+(defun allocate-immutable-texture (texture)
+  (if (texture-allocated-p texture)
       (error "Attempting to reallocate a previously allocated texture")
-      (let ((base-dimensions (base-dimensions texture))
-            (texture-type (slot-value texture 'texture-type)))
+      (let ((base-dimensions (texture-base-dimensions texture))
+            (texture-type (texture-type texture)))
         (case texture-type
           ((:texture-1d :proxy-texture-1d)
            (tex-storage-1d texture-type
-                           (slot-value texture 'mipmap-levels)
-                           (slot-value texture 'internal-format)
+                           (texture-mipmap-levels texture)
+                           (texture-internal-format texture)
                            (first base-dimensions)))
           ((:texture-2d :proxy-texture-2d :texture-1d-array :texture-rectangle
                         :proxy-texture-rectangle :texture-cube-map
                         :proxy-texture-cube-map :proxy-texture-1d-array)
            (tex-storage-2d texture-type
-                           (slot-value texture 'mipmap-levels)
-                           (slot-value texture 'internal-format)
+                           (texture-mipmap-levels texture)
+                           (texture-internal-format texture)
                            (first base-dimensions)
                            (or (second base-dimensions) 0)))
           ((:texture-3d :proxy-texture-3d :texture-2d-array :texture-cube-array
                         :proxy-texture-cube-array :proxy-texture-2d-array)
            (tex-storage-3d texture-type
-                           (slot-value texture 'mipmap-levels)
-                           (slot-value texture 'internal-format)
+                           (texture-mipmap-levels texture)
+                           (texture-internal-format texture)
                            (first base-dimensions)
                            (or (second base-dimensions) 0)
                            (or (third base-dimensions) 0))))
-        (setf (slot-value texture 'allocated) t))))
+        (setf (texture-allocated-p texture) t))))
 
 (defun tex-storage-1d (target levels internal-format width)
   (%gl:tex-storage-1d target levels (gl::internal-format->int internal-format)
@@ -613,11 +611,11 @@
 
 ;;------------------------------------------------------------
 
-(defmethod push-g ((object c-array) (destination gl-texture))
+(defmethod push-g ((object c-array) (destination texture))
   (push-g object (texref destination)))
-(defmethod push-g ((object list) (destination gl-texture))
+(defmethod push-g ((object list) (destination texture))
   (push-g object (texref destination)))
-(defmethod push-g ((object array) (destination gl-texture))
+(defmethod push-g ((object array) (destination texture))
   (push-g object (texref destination)))
 
 (defmethod push-g ((object list) (destination gpu-array-t))
@@ -644,7 +642,7 @@
     (upload-c-array-to-gpu-array-t destination object
                                   pformat ptype)))
 
-(defmethod pull-g ((object gl-texture))
+(defmethod pull-g ((object texture))
   (pull-g (texref object)))
 
 ;; [TODO] implement gl-fill and fill arguments
@@ -664,7 +662,7 @@
                              (pointer c-array))))
       c-array)))
 
-(defmethod pull1-g ((object gl-texture))
+(defmethod pull1-g ((object texture))
   (pull1-g (texref object)))
 
 ;; [TODO] With-c-array is wrong

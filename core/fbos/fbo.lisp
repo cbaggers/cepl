@@ -104,7 +104,7 @@
 
 ;; {TODO} this is pretty wasteful but will do for now
 (defun attachment-viewport (attachment)
-  (make-viewport (slot-value (%attachment-gpu-array attachment) 'dimensions)
+  (make-viewport (gpu-array-dimensions (%attachment-gpu-array attachment))
                  (v! 0 0)))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -462,8 +462,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	(cepl.textures::with-gpu-array-t tex-array
 	  (unless (attachment-compatible attachment internal-format)
 	    (error "attachment is not compatible with this array"))
-	  (let ((tex-id (slot-value texture 'texture-id)))
-	    (case (cepl.textures:texture-type tex-array)
+	  (let ((tex-id (texture-id texture)))
+	    (case (gpu-array-t-texture-type tex-array)
 	      ;; A 1D texture contains 2D images that have the vertical height of 1.
 	      ;; Each individual image can be uniquely identified by a mipmap level.
 	      (:texture-1d (progn
@@ -624,7 +624,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t) (cons (second pattern) t))
     ;; use the first gpu-array in texture
-    ((typep (second pattern) 'gl-texture) (cons (texref (second pattern)) t))
+    ((typep (second pattern) 'texture) (cons (texref (second pattern)) t))
     ;; take the dimensions from some object
     (t (cons (texref
 	      (make-texture nil :dimensions (dimensions (second pattern))

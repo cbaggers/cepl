@@ -156,6 +156,7 @@
 	   :gpu-array-t-layer-num
 	   :gpu-array-t-face-num
 	   :gpu-array-t-internal-format
+	   :+null-texture-backed-gpu-array+
 
 	   :%make-gpu-array-bb
 	   :gpu-array-bb
@@ -164,6 +165,7 @@
 	   :gpu-array-bb-format-index
 	   :gpu-array-bb-start
 	   :gpu-array-bb-access-style
+	   :+null-buffer-backed-gpu-array+
 
 	   :%make-gpu-buffer
 	   :gpu-buffer
@@ -173,27 +175,26 @@
 	   :gpu-buffer-managed
 	   :+null-gpu-buffer+
 
-	   :gl-texture
+	   :%%make-texture
+	   :%%make-buffer-texture
+	   :texture
+	   :texture-p
 	   :texture-id
-	   :base-dimensions
+	   :texture-base-dimensions
 	   :texture-type
-	   :internal-format
-	   :sampler-type
-	   :mipmap-levels
-	   :layer-count
-	   :cubes
-	   :allocated
-	   :allocatedp
-	   :sampler-object-id
-	   :+null-texture+
-
-	   :immutable-texture
-
-	   :mutable-texture
-
+	   :texture-internal-format
+	   :texture-sampler-type
+	   :texture-mipmap-levels
+	   :texture-layer-count
+	   :texture-cubes
+	   :texture-mutable-p
+	   :texture-allocated-p
+	   :texture-sampler-object-id
 	   :buffer-texture
-	   :backing-array
-	   :owns-array
+	   :buffer-texture-p
+	   :buffer-texture-backing-array
+	   :buffer-texture-owns-array
+	   :+null-texture+
 
 	   :make-blending-params
 	   :blending-params
@@ -585,12 +586,10 @@
 	:cepl.image-formats :cepl.gpu-buffers)
   (:export :gl-texture
 	   :texture-type
-	   :immutable-texture
-	   :mutable-texture
 	   :buffer-texture
 	   :make-texture-from-id
 	   :make-texture
-	   :mutable-texturep
+	   :texture-mutable-p
 	   :free-texture
 	   :generate-mipmaps
 	   :dimensions-at-mipmap-level
@@ -599,7 +598,16 @@
 	   :with-texture-bound
 	   :texref
 	   :*immutable-available*
-	   :*cube-face-order*
+
+	   :texture-base-dimensions
+	   :texture-internal-format
+	   :texture-sampler-type
+	   :texture-mipmap-levels
+	   :texture-layer-count
+	   :texture-cubes
+	   :texture-allocated
+	   :texture-sampler-object-id
+
 	   ;;---
 	   :gpu-array-t
 	   :free-gpu-array

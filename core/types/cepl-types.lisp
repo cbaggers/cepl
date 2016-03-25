@@ -23,20 +23,29 @@
 
 ;;------------------------------------------------------------
 
-(defclass gl-texture ()
-  ((texture-id :initarg :texture-id :reader texture-id)
-   (base-dimensions :initarg :base-dimensions :accessor base-dimensions)
-   (texture-type :initarg :texture-type :reader texture-type)
-   (internal-format :initarg :internal-format :reader internal-format)
-   (sampler-type :initarg :sampler-type :reader sampler-type)
-   (mipmap-levels :initarg :mipmap-levels)
-   (layer-count :initarg :layer-count)
-   (cubes :initarg :cubes)
-   (allocated :initform nil :reader allocatedp)
-   (sampler-object-id :initform 0)))
+;;{TODO} While I see why I started abstracting this using classes
+;;       We cannot extend core functionality of gl, thus uses
+;;       extensible constructs is optimizing for a case that can
+;;       never happen. We should go for structs, ubyte and macros
+;;       to hide the ugly, optimize for helping the compiler
+
+(defstruct (texture (:constructor %%make-texture))
+  (id 0 :type real)
+  (base-dimensions nil :type list)
+  (type (error "") :type symbol)
+  (internal-format (error "") :type symbol)
+  (sampler-type (error "") :type symbol)
+  (mipmap-levels 0 :type fixnum)
+  (layer-count 0 :type fixnum)
+  (cubes nil :type boolean)
+  (allocated-p nil :type boolean)
+  (sampler-object-id 0 :type real)
+  (mutable-p nil :type boolean))
 
 (defvar +null-texture+
-  (make-instance 'gl-texture))
+  (%%make-texture :type nil
+		  :internal-format nil
+		  :sampler-type nil))
 
 ;;------------------------------------------------------------
 
@@ -68,20 +77,30 @@
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)
 			(:include gpu-array))
-  (texture (error "") :type gl-texture)
+  (texture (error "") :type texture)
   (texture-type (error "") :type symbol)
   (level-num 0 :type fixnum)
   (layer-num 0 :type fixnum)
   (face-num 0 :type fixnum)
   (internal-format nil :type symbol))
 
+(defvar +null-texture-backed-gpu-array+
+  (%make-gpu-array-bb
+   :buffer +null-gpu-buffer+
+   :access-style :invalid))
+
+(defvar +null-buffer-backed-gpu-array+
+  (%make-gpu-array-t
+   :texture +null-texture+
+   :texture-type nil))
+
 ;;------------------------------------------------------------
 
-(defclass immutable-texture (gl-texture) ())
-(defclass mutable-texture (gl-texture) ())
-(defclass buffer-texture (gl-texture)
-  ((backing-array :initarg :backing-array)
-   (owns-array :initarg :owns-array)))
+(defstruct (buffer-texture
+	     (:include texture)
+	     (:constructor %%make-buffer-texture))
+  (backing-array (error "") :type gpu-array-bb)
+  (owns-array nil :type boolean))
 
 ;;------------------------------------------------------------
 

@@ -2,53 +2,14 @@
 
 ;;------------------------------------------------------------
 
-(defun texture-base-dimensions (texture)
-  (slot-value texture 'base-dimensions))
-
-(defun texture-internal-format (texture)
-  (slot-value texture 'internal-format))
-
-(defun texture-sampler-type (texture)
-  (slot-value texture 'sampler-type))
-
-(defun texture-mipmap-levels (texture)
-  (slot-value texture 'mipmap-levels))
-
-(defun texture-layer-count (texture)
-  (slot-value texture 'layer-count))
-
-(defun texture-cubes (texture)
-  (slot-value texture 'cubes))
-
-(defun texture-allocated (texture)
-  (slot-value texture 'allocated))
-
-(defun texture-sampler-object-id (texture)
-  (slot-value texture 'sampler-object-id))
-
-(defgeneric mutable-texturep (texture))
-(defmethod mutable-texturep ((texture mutable-texture)) t)
-(defmethod mutable-texturep ((texture immutable-texture)) nil)
-
-(defmethod print-object ((object mutable-texture) stream)
-  (let ((m (slot-value object 'mipmap-levels))
-        (l (slot-value object 'layer-count))
-        (c (slot-value object 'cubes)))
+(defmethod print-object ((object texture) stream)
+  (let ((m (texture-mipmap-levels object))
+        (l (texture-layer-count object))
+        (c (texture-cubes object)))
     (format stream
             "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]~@[ cubes:~a~]>"
-            (slot-value object 'texture-type)
-            (slot-value object 'base-dimensions)
-            (when (> m 1) m) (when (> l 1) l)
-	    c)))
-
-(defmethod print-object ((object immutable-texture) stream)
-  (let ((m (slot-value object 'mipmap-levels))
-        (l (slot-value object 'layer-count))
-        (c (slot-value object 'cubes)))
-    (format stream
-            "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]~@[ cubes:~a~]>"
-            (slot-value object 'texture-type)
-            (slot-value object 'base-dimensions)
+            (texture-type object)
+            (texture-base-dimensions object)
             (when (> m 1) m)
 	    (when (> l 1) l)
 	    c)))
@@ -56,42 +17,39 @@
 (defmethod print-object ((object buffer-texture) stream)
   (format stream
           "#<GL-~a (~{~a~^x~})>"
-          (slot-value object 'texture-type)
-          (slot-value object 'base-dimensions)))
+          (texture-type object)
+          (texture-base-dimensions object)))
 
-(defmethod free ((object gl-texture))
+(defmethod free ((object texture))
   (free-texture object))
 
 (defun blank-texture-object (texture)
-  (with-slots (texture-id base-dimensions texture-type internal-format
-                          sampler-type mipmap-levels layer-count cubes
-                          allocated) texture
-    (setf (slot-value texture 'texture-id) -1
-          (slot-value texture 'base-dimensions) nil
-          (slot-value texture 'texture-type) nil
-          (slot-value texture 'internal-format) nil
-          (slot-value texture 'sampler-type) nil
-          (slot-value texture 'mipmap-levels) nil
-          (slot-value texture 'layer-count) nil
-          (slot-value texture 'cubes) nil
-          (slot-value texture 'allocated) nil)))
+  (setf (texture-id texture) -1
+	(texture-base-dimensions texture) nil
+	(texture-type texture) nil
+	(texture-internal-format texture) nil
+	(texture-sampler-type texture) nil
+	(texture-mipmap-levels texture) 0
+	(texture-layer-count texture) 0
+	(texture-cubes texture) nil
+	(texture-allocated-p texture) nil))
 
-(defmethod free-texture ((texture gl-texture))
+(defmethod free-texture ((texture texture))
   (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) (texture-id texture))
-    (setf (slot-value texture 'texture-id) -1)
+    (setf (texture-id texture) -1)
     (%gl:delete-textures 1 id)
     t))
 
 (defmethod free-texture ((texture buffer-texture))
   (with-foreign-object (id :uint)
-    (with-slots (owns-array backing-array) texture
-      (when owns-array
-        (free backing-array)
-        (setf owns-array nil
-              backing-array nil)))
+    (when (buffer-texture-owns-array texture)
+      (free (buffer-texture-backing-array texture))
+      (setf (buffer-texture-owns-array texture) nil)
+      (setf (buffer-texture-backing-array texture)
+	    +null-buffer-backed-gpu-array+))
     (setf (mem-ref id :uint) (texture-id texture))
-    (setf (slot-value texture 'texture-id) -1)
+    (setf (texture-id texture) -1)
     (%gl:delete-textures 1 id)))
 
 ;;------------------------------------------------------------
@@ -147,17 +105,17 @@
     `(let ((,tex ,texture))
        (bind-texture ,tex ,type)
        (let ((,res (progn ,@body)))
-         (unbind-texture (slot-value ,tex 'texture-type))
+         (unbind-texture (texture-type ,tex))
          ,res))))
 
 
 (defun bind-texture (texture &optional type)
-  (let ((texture-type (slot-value texture 'texture-type)))
+  (let ((texture-type (texture-type texture)))
     (if (or (null type) (eq type texture-type))
         (gl:bind-texture texture-type (texture-id texture))
         (if (eq :none texture-type)
             (progn (gl:bind-texture type (texture-id texture))
-                   (setf (slot-value texture 'texture-type) type))
+                   (setf (texture-type texture) type))
             (error "Texture has already been bound"))))
   texture)
 
