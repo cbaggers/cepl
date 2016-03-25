@@ -106,31 +106,31 @@
 			       face-num pix-format pix-type pointer)
   (case tex-type
     (:texture-1d (gl:tex-image-1d
-		  tex-type level-num (gpu-array-t-internal-format tex)
+		  tex-type level-num (texture-internal-format tex)
 		  (first dimensions) 0 pix-format pix-type
 		  pointer))
     (:texture-2d (gl:tex-image-2d
-		  tex-type level-num (gpu-array-t-internal-format tex)
+		  tex-type level-num (texture-internal-format tex)
 		  (first dimensions) (second dimensions) 0
 		  pix-format pix-type pointer))
     (:texture-3d (gl:tex-image-3d
-		  tex-type level-num (gpu-array-t-internal-format tex)
+		  tex-type level-num (texture-internal-format tex)
 		  (first dimensions) (second dimensions)
 		  (third dimensions) 0 pix-format pix-type
 		  pointer))
     (:texture-1d-array (gl:tex-image-2d
 			tex-type level-num
-			(gpu-array-t-internal-format tex)
+			(texture-internal-format tex)
 			(first dimensions) layer-num 0
 			pix-format pix-type pointer))
     (:texture-2d-array (gl:tex-image-3d
 			tex-type level-num
-			(gpu-array-t-internal-format tex)
+			(texture-internal-format tex)
 			(first dimensions) (second dimensions)
 			layer-num 0 pix-format pix-type pointer))
     (:texture-cube-map (gl:tex-image-2d
 			(nth face-num *cube-face-order*)
-			level-num (gpu-array-t-internal-format tex)
+			level-num (texture-internal-format tex)
 			(first dimensions) (second dimensions) 0
 			pix-format pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))

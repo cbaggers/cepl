@@ -584,12 +584,26 @@
         :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
 	:cepl.internals :cepl.pixel-formats
 	:cepl.image-formats :cepl.gpu-buffers)
-  (:export :gl-texture
+  (:export :texture
+	   :texture-p
+	   :texture-id
+	   :texture-base-dimensions
 	   :texture-type
+	   :texture-internal-format
+	   :texture-sampler-type
+	   :texture-mipmap-levels
+	   :texture-layer-count
+	   :texture-cubes
+	   :texture-mutable-p
+	   :texture-allocated-p
+	   :texture-sampler-object-id
 	   :buffer-texture
+	   :buffer-texture-p
+	   :buffer-texture-backing-array
+	   :buffer-texture-owns-array
+
 	   :make-texture-from-id
 	   :make-texture
-	   :texture-mutable-p
 	   :free-texture
 	   :generate-mipmaps
 	   :dimensions-at-mipmap-level
@@ -599,17 +613,6 @@
 	   :texref
 	   :*immutable-available*
 
-	   :texture-base-dimensions
-	   :texture-internal-format
-	   :texture-sampler-type
-	   :texture-mipmap-levels
-	   :texture-layer-count
-	   :texture-cubes
-	   :texture-allocated
-	   :texture-sampler-object-id
-
-	   ;;---
-	   :gpu-array-t
 	   :free-gpu-array
 	   :free-gpu-array-t
 	   :upload-c-array-to-gpu-array-t

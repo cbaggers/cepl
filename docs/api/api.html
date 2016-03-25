@@ -1310,19 +1310,6 @@ It will remain as the current viewport until the end of the scope.
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.TEXTURES:*CUBE-FACE-ORDER*"/>
-                  <article>
-                    <header class="special">
-                      <span class="type">special</span>
-                      <code>
-                        <h4><a href="#CEPL.TEXTURES:*CUBE-FACE-ORDER*" class="name">*CUBE-FACE-ORDER*</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="CEPL.TEXTURES:*IMMUTABLE-AVAILABLE*"/>
                   <article>
                     <header class="special">
@@ -1349,19 +1336,6 @@ It will remain as the current viewport until the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:GL-TEXTURE"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:GL-TEXTURE" class="name">GL-TEXTURE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:GPU-ARRAY-T"/>
                   <article>
                     <header class="class">
@@ -1375,12 +1349,12 @@ It will remain as the current viewport until the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:IMMUTABLE-TEXTURE"/>
+                  <a name="VARJO-LANG:TEXTURE"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#%CEPL.TYPES:IMMUTABLE-TEXTURE" class="name">IMMUTABLE-TEXTURE</a></h4>
+                        <h4><a href="#VARJO-LANG:TEXTURE" class="name">TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -1388,14 +1362,170 @@ It will remain as the current viewport until the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:MUTABLE-TEXTURE"/>
+                  <a name="%CEPL.TYPES:BUFFER-TEXTURE-BACKING-ARRAY"/>
                   <article>
-                    <header class="class">
-                      <span class="type">class</span>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#%CEPL.TYPES:MUTABLE-TEXTURE" class="name">MUTABLE-TEXTURE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-TEXTURE-BACKING-ARRAY" class="name">BUFFER-TEXTURE-BACKING-ARRAY</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:BUFFER-TEXTURE-OWNS-ARRAY"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-TEXTURE-OWNS-ARRAY" class="name">BUFFER-TEXTURE-OWNS-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-ALLOCATED-P"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-ALLOCATED-P" class="name">TEXTURE-ALLOCATED-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-BASE-DIMENSIONS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-BASE-DIMENSIONS" class="name">TEXTURE-BASE-DIMENSIONS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-CUBES"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-CUBES" class="name">TEXTURE-CUBES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-ID"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-ID" class="name">TEXTURE-ID</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-INTERNAL-FORMAT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-INTERNAL-FORMAT" class="name">TEXTURE-INTERNAL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-LAYER-COUNT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-LAYER-COUNT" class="name">TEXTURE-LAYER-COUNT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-MIPMAP-LEVELS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-MIPMAP-LEVELS" class="name">TEXTURE-MIPMAP-LEVELS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-MUTABLE-P"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-MUTABLE-P" class="name">TEXTURE-MUTABLE-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-SAMPLER-OBJECT-ID"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-SAMPLER-OBJECT-ID" class="name">TEXTURE-SAMPLER-OBJECT-ID</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-SAMPLER-TYPE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-SAMPLER-TYPE" class="name">TEXTURE-SAMPLER-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-TYPE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-TYPE" class="name">TEXTURE-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -1409,6 +1539,19 @@ It will remain as the current viewport until the end of the scope.
                         <h4><a href="#CEPL.TEXTURES:BIND-TEXTURE" class="name">BIND-TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(TEXTURE &amp;OPTIONAL TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:BUFFER-TEXTURE-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:BUFFER-TEXTURE-P" class="name">BUFFER-TEXTURE-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -1477,7 +1620,7 @@ It will remain as the current viewport until the end of the scope.
                         <h4><a href="#CEPL.TEXTURES:MAKE-TEXTURE-FROM-ID" class="name">MAKE-TEXTURE-FROM-ID</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(GL-OBJECT &amp;KEY BASE-DIMENSIONS TEXTURE-TYPE INTERNAL-FORMAT SAMPLER-TYPE
- MIPMAP-LEVELS LAYER-COUNT CUBES ALLOCATED)</span>
+ MIPMAP-LEVELS LAYER-COUNT CUBES ALLOCATED MUTABLE-P)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -1491,6 +1634,19 @@ It will remain as the current viewport until the end of the scope.
                         <h4><a href="#CEPL.TEXTURES:TEXREF" class="name">TEXREF</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(TEXTURE &amp;KEY (MIPMAP-LEVEL 0) (LAYER 0) (CUBE-FACE 0))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="%CEPL.TYPES:TEXTURE-P"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-P" class="name">TEXTURE-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -1572,32 +1728,6 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                         <h4><a href="#CEPL.GENERICS:FREE-TEXTURE" class="name">FREE-TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(TEXTURE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.TEXTURES:MUTABLE-TEXTUREP"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.TEXTURES:MUTABLE-TEXTUREP" class="name">MUTABLE-TEXTUREP</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(TEXTURE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:TEXTURE-TYPE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:TEXTURE-TYPE" class="name">TEXTURE-TYPE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -2306,10 +2436,10 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM1209) :FUNC-ADD) ((:MODE-ALPHA DUM1210) :FUNC-ADD)
- ((:SOURCE-RGB DUM1211) :SRC-ALPHA) ((:SOURCE-ALPHA DUM1212) :SRC-ALPHA)
- ((:DESTINATION-RGB DUM1213) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DUM1214) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM2033) :FUNC-ADD) ((:MODE-ALPHA DUM2034) :FUNC-ADD)
+ ((:SOURCE-RGB DUM2035) :SRC-ALPHA) ((:SOURCE-ALPHA DUM2036) :SRC-ALPHA)
+ ((:DESTINATION-RGB DUM2037) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DUM2038) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
