@@ -186,7 +186,7 @@
 	   :texture-sampler-type
 	   :texture-mipmap-levels
 	   :texture-layer-count
-	   :texture-cubes
+	   :texture-cubes-p
 	   :texture-mutable-p
 	   :texture-allocated-p
 	   :texture-sampler-object-id
@@ -593,14 +593,11 @@
 	   :texture-sampler-type
 	   :texture-mipmap-levels
 	   :texture-layer-count
-	   :texture-cubes
+	   :texture-cubes-p
 	   :texture-mutable-p
-	   :texture-allocated-p
 	   :texture-sampler-object-id
 	   :buffer-texture
 	   :buffer-texture-p
-	   :buffer-texture-backing-array
-	   :buffer-texture-owns-array
 
 	   :make-texture-from-id
 	   :make-texture
@@ -614,9 +611,10 @@
 	   :*immutable-available*
 
 	   :free-gpu-array
-	   :free-gpu-array-t
-	   :upload-c-array-to-gpu-array-t
-	   :upload-from-buffer-to-gpu-array-t))
+	   ;; :free-gpu-array-t
+	   ;; :upload-c-array-to-gpu-array-t
+	   ;; :upload-from-buffer-to-gpu-array-t
+	   ))
 
 (defpackage :cepl.gpu-arrays.texture-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

@@ -37,7 +37,7 @@
   (sampler-type (error "") :type symbol)
   (mipmap-levels 0 :type fixnum)
   (layer-count 0 :type fixnum)
-  (cubes nil :type boolean)
+  (cubes-p nil :type boolean)
   (allocated-p nil :type boolean)
   (sampler-object-id 0 :type real)
   (mutable-p nil :type boolean))

@@ -574,7 +574,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       :draw-framebuffer))
 
 (defvar %possible-texture-keys '(:dimensions :internal-format :mipmap
-                                 :layer-count :cubes :rectangle
+                                 :layer-count :cubes-p :rectangle
                                  :multisample :immutable :buffer-storage
                                  :lod-bias :min-lod :max-lod :minify-filter
                                  :magnify-filter :wrap :compare))

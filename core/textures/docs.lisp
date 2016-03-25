@@ -29,12 +29,12 @@ buffer-textures are created by calling #'make-texture with the :buffer key
 argument set to t.
 
 Buffer textures have limitations over regular textures:
-- cannot be mipmapped
-- can only only have one gpu-array
-- that gpu-array must be one dimensional
-- can only be accessed in shaders with #'texel-fetch
-- can have a more limited number of valid internal-formats to choose from
-  see *valid-internal-formats-for-buffer-backed-texture* for details
+ - cannot be mipmapped
+ - can only only have one gpu-array
+ - that gpu-array must be one dimensional
+ - can only be accessed in shaders with #'texel-fetch
+ - can have a more limited number of valid internal-formats to choose from
+   see *valid-internal-formats-for-buffer-backed-texture* for details
 ")
 
   (defstruct texture
@@ -91,9 +91,9 @@ The textures themselves have a number of configurations (known from here on as
   Not currently supported in CEPL
 
 -- Mip Maps --
-When a texture is applied to a surface, the number of the texture's pixels
-(commonly called 'texels') that are used depends on the angle at which that
-surface is rendered. For example if we were rendering a TV then when it is
+When a texture is applied to a surface, the number of the texture's
+pixels (commonly called 'texels') that are used depends on the angle at which
+that surface is rendered. For example if we were rendering a TV then when it is
 almost side on we will use much less pixels that if we were rendering it from
 the front. At that point the gpu has to pick which texels from the texture to
 use.
@@ -122,13 +122,43 @@ you can redefine the 'nature' of the data stored in the gpu-arrays after they
 are created, by that we mean things like the type of the data, the resolution of
 the gpu-arrays.
 
-It is hard to do without creating and 'incomplete' texture [1]
+It is hard to do without creating and 'incomplete' texture [1] and so CEPL opts
+to treat all textures as immutable textures. When the OpenGL version doesnt
+support immutable texture storage CEPL makes uses immutable storage,
+allocates all the memory at construction, and doesnt provide abstractions over
+the opengl features that would modify the storage.
 
+-- Sampling --
+Sampling is the process of fetching a value from a texture at a given position.
+There are a number of values that can be tweaked that affect how the sampling is
+done. These values can be set either on the texture itself or on a 'sampler'.
+
+To find out more see the Cepl.Samplers section.
 
 
 [0] - more correctly the default-fbo
 [1] - https://www.opengl.org/wiki/Immutable_Storage_Texture#Texture_completeness
 ")
+
+  (defun texture-base-dimensions ()
+    "
+Returns the resolution of the gpu-array at the 'base-level' of the mipmap chain.
+The base level is the largest one.
+")
+
+  (defun texture-cubes-p
+      "
+This function returns t if the texture is a cube texture and nil otherwise
+")
+
+  (defun texture-id
+      "
+This function returns the id of the GL Texture Object from the CEPL texture.
+
+Don't use this unless you know what you are doing on the GL side.
+")
+
+  (defun texture-internal-format )
 
   (defun make-texture
       "

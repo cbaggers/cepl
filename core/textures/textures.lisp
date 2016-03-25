@@ -19,8 +19,8 @@
 ;;------------------------------------------------------------
 
 (defun texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
-  (when (and (> cube-face 0) (not (texture-cubes texture)))
-    (error "Cannot get the cube-face from a texture that wasnt made with :cubes t:~%~a" texture))
+  (when (and (> cube-face 0) (not (texture-cubes-p texture)))
+    (error "Cannot get the cube-face from a texture that wasnt made with :cubes-p t:~%~a" texture))
   (if (eq (texture-type texture) :texture-buffer)
       (if (> (+ mipmap-level layer cube-face) 0)
           (error "Texture index out of range")
@@ -40,7 +40,7 @@
 (defun valid-index-p (texture mipmap-level layer cube-face)
   (and (< mipmap-level (texture-mipmap-levels texture))
        (< layer (texture-layer-count texture))
-       (if (texture-cubes texture)
+       (if (texture-cubes-p texture)
 	   (<= cube-face 6)
 	   (= 0 cube-face))))
 
@@ -245,7 +245,7 @@
    :sampler-type sampler-type
    :mipmap-levels mipmap-levels
    :layer-count layer-count
-   :cubes cubes
+   :cubes-p cubes
    :allocated-p allocated
    :mutable-p mutable-p))
 
@@ -452,7 +452,7 @@
                               :type texture-type
                               :mipmap-levels mipmap-levels
                               :layer-count layer-count
-                              :cubes cubes
+                              :cubes-p cubes
                               :internal-format internal-format
 			      :mutable-p (and immutable *immutable-available*)
                               :sampler-type (cepl.samplers::calc-sampler-type
@@ -518,7 +518,7 @@
                      :type texture-type
                      :mipmap-levels 1
                      :layer-count 1
-                     :cubes nil
+                     :cubes-p nil
                      :internal-format internal-format
                      :sampler-type (cepl.samplers::calc-sampler-type
                                     texture-type internal-format)

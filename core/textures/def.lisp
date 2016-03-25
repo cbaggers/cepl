@@ -5,7 +5,7 @@
 (defmethod print-object ((object texture) stream)
   (let ((m (texture-mipmap-levels object))
         (l (texture-layer-count object))
-        (c (texture-cubes object)))
+        (c (texture-cubes-p object)))
     (format stream
             "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]~@[ cubes:~a~]>"
             (texture-type object)
@@ -31,7 +31,7 @@
 	(texture-sampler-type texture) nil
 	(texture-mipmap-levels texture) 0
 	(texture-layer-count texture) 0
-	(texture-cubes texture) nil
+	(texture-cubes-p texture) nil
 	(texture-allocated-p texture) nil))
 
 (defmethod free-texture ((texture texture))
