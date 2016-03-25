@@ -11,10 +11,9 @@
 (defgeneric tangent (object))
 (defgeneric bi-tangent (object))
 
- ;; will return a list of fixnums
-(defgeneric resolution (object))
-;;(defgeneric dimensions (object)) ;; prefer this over resolution, yeah
-                                   ;; this is the naming from array
+
+(defgeneric resolution (object)) ;; returns a vecn
+(defgeneric dimensions (object)) ;; returns a list
 
 ;; will return objects
 (defgeneric tex (object))
@@ -51,7 +50,6 @@
 (defgeneric push-g (object destination))
 (defgeneric pull-g (object))
 (defgeneric pull1-g (object))
-(defgeneric dimensions (object))
 (defmethod pull-g ((object t)) object)
 (defmethod pull1-g ((object t)) object)
 (defgeneric free-texture (texture))

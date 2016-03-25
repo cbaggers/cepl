@@ -96,9 +96,10 @@
     (loop :for c :across (%fbo-attachment-color fbo) :do
        (let ((garray (%attachment-gpu-array c)))
          (when garray
-           (with-slots (dimensions) garray
+           (cepl.textures::with-gpu-array-t garray
              (setf dimensions new-dimensions)))))
-    (with-slots (dimensions) (%attachment-gpu-array (%fbo-attachment-depth fbo))
+    (cepl.textures::with-gpu-array-t
+	(%attachment-gpu-array (%fbo-attachment-depth fbo))
       (setf dimensions new-dimensions))))
 
 ;; {TODO} this is pretty wasteful but will do for now

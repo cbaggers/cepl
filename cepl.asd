@@ -82,4 +82,5 @@
 	       (:file "core/c-arrays/docs")
 	       (:file "core/gpu-arrays/docs")
 	       (:file "core/streams/docs")
+	       (:file "core/viewport/docs")
 	       (:file "core/vaos/docs")))

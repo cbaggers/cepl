@@ -6,6 +6,10 @@
   (error "Jungl: Cannot extract dimensions from ~s object:~%~s"
 	 (type-of object) object))
 
+(defmethod resolution ((object t))
+  (error "Jungl: Cannot extract a resolution from ~s object:~%~s"
+	 (type-of object) object))
+
 (defun 1d-p (object)
   (= 1 (length (dimensions object))))
 

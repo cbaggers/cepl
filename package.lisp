@@ -284,6 +284,7 @@
 	   :%make-viewport
 	   :viewport
 	   :viewport-p
+	   :copy-viewport
 	   :%viewport-resolution-x
 	   :%viewport-resolution-y
 	   :%viewport-origin-x
@@ -362,7 +363,7 @@
 	   :viewport-origin
 	   :with-viewport
 	   :with-fbo-viewport
-	   :clone-viewport
+	   :copy-viewport
 	   :viewport-params-to-vec4))
 
 (defpackage :cepl.context
@@ -582,9 +583,7 @@
         :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
 	:cepl.internals :cepl.pixel-formats
 	:cepl.image-formats :cepl.gpu-buffers)
-  (:export :*immutable-available*
-	   :*cube-face-order*
-	   :gl-texture
+  (:export :gl-texture
 	   :texture-type
 	   :immutable-texture
 	   :mutable-texture
@@ -599,6 +598,8 @@
 	   :unbind-texture
 	   :with-texture-bound
 	   :texref
+	   :*immutable-available*
+	   :*cube-face-order*
 	   ;;---
 	   :gpu-array-t
 	   :free-gpu-array

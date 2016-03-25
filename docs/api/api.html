@@ -1087,29 +1087,6 @@ data you are using, for example the following is perfectly legal code:
     behaviour please file it as an issue on github.
 </pre>
                   </article>
-                </li><li>
-                  <a name="CEPL.STREAMS:MAKE-BUFFER-STREAM-FROM-ID"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.STREAMS:MAKE-BUFFER-STREAM-FROM-ID" class="name">MAKE-BUFFER-STREAM-FROM-ID</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(VAO-GL-OBJECT GPU-ARRAYS &amp;KEY INDEX-ARRAY (START 0) LENGTH RETAIN-ARRAYS)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">This function simplifies making the buffer-stream if you are
-   storing the data in gpu-arrays.
-
-   Remember that you can also use gpu-sub-arrays in here if you
-   want to limit the data you are using, for example the
-   following is perfectly legal code:
-   (make-buffer-stream
-     :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
-                  ,(gpu-sub-array monster-col-data 1000 2000))
-     :index-array monster-index-array
-     :length 1000)</pre>
-                  </article>
                 </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.VIEWPORTS" href="#CEPL.VIEWPORTS">CEPL.VIEWPORTS</a>
@@ -1126,7 +1103,38 @@ data you are using, for example the following is perfectly legal code:
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Viewport is a structure that represents a retangular region of the window that
+CEPL can draw into.
+
+There is always a viewport current when rendering. If one of your own is not
+current then CEPL will use it's default viewport, the resolution of which is the
+same as that of the window when it was created.
+
+The default viewport can be modified, so feel free to update the resolution if
+the window size changes.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.VIEWPORTS:VIEWPORT-DIMENSIONS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-DIMENSIONS" class="name">VIEWPORT-DIMENSIONS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIEWPORT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function returns the resolution of the viewport as a list of integers
+
+If you call the generic function #'dimensions with a viewport you will get
+this value.
+
+If you need this value as a vec2 use #'viewport-resolution or just the
+generic function #'resolution
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION"/>
@@ -1139,33 +1147,31 @@ data you are using, for example the following is perfectly legal code:
                         <span class="arguments">(VIEWPORT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the resolution of the viewport as a vec2
+
+If you call the generic function #'resolution with a viewport you will get
+this value.
+
+If you need this value as a list use #'viewport-dimensions or just the
+generic function #'dimensions
+</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-V!"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-V!" class="name">VIEWPORT-RESOLUTION-V!</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(VIEWPORT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.VIEWPORTS:CLONE-VIEWPORT"/>
+                  <a name="%CEPL.TYPES:COPY-VIEWPORT"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.VIEWPORTS:CLONE-VIEWPORT" class="name">CLONE-VIEWPORT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:COPY-VIEWPORT" class="name">COPY-VIEWPORT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(VIEWPORT)</span>
+                        <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns a new viewport with identical origin and resolution to the
+viewport provided.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:CURRENT-VIEWPORT"/>
@@ -1178,7 +1184,12 @@ data you are using, for example the following is perfectly legal code:
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the viewport that is current in this scope.
+
+If no other code in the callstack has uses with-viewport or with-fbo-viewport
+then the result will be the default viewport.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:MAKE-VIEWPORT"/>
@@ -1191,7 +1202,9 @@ data you are using, for example the following is perfectly legal code:
                         <span class="arguments">(&amp;OPTIONAL (RESOLUTION '(320 240)) (ORIGIN '(0 0)))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns a new viewport with the specified resolution and origin
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:VIEWPORT-ORIGIN"/>
@@ -1204,7 +1217,12 @@ data you are using, for example the following is perfectly legal code:
                         <span class="arguments">(VIEWPORT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the origin of the viewport.
+
+This is the top-left corner of the rectangle within the window that OpenGL (and
+thus CEPL) will draw into
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:VIEWPORT-P"/>
@@ -1217,7 +1235,10 @@ data you are using, for example the following is perfectly legal code:
                         <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will return t if the value given is a viewport, otherwise it will
+return nil
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:VIEWPORT-PARAMS-TO-VEC4"/>
@@ -1227,10 +1248,17 @@ data you are using, for example the following is perfectly legal code:
                       <code>
                         <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-PARAMS-TO-VEC4" class="name">VIEWPORT-PARAMS-TO-VEC4</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
+                        <span class="arguments">(&amp;OPTIONAL (VIEWPORT (CURRENT-VIEWPORT)))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Will return a vec4 packed with the origin and resolution. The format is as
+follows:
+
+    (v! origin-x origin-y resolution-x resolution-y)
+
+If now viewport is provided the the current viewport is used.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:WITH-FBO-VIEWPORT"/>
@@ -1243,7 +1271,22 @@ data you are using, for example the following is perfectly legal code:
                         <span class="arguments">((FBO &amp;OPTIONAL (ATTACHMENT 0)) &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This macro behaves similarly to with-viewport in that is sets the
+current viewport. However rather than passing in a viewport, one is
+created[0] based on the dimensions of the gpu-array bound as the specified
+attachment to the given fbo.
+
+By default color-attachment0 will be used but you can provide your own
+attachment index using the :attachment argument.
+
+It will remain as the current viewport until the end of the scope.
+
+[0] CEPL is free to reuse internal viewport objects where it makes sense instead
+    of consing up a new viewport. This means that the viewport inside the scope
+    may be eq to the viewport outside, but with different values in it's slots
+    for the duration of the body.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:WITH-VIEWPORT"/>
@@ -1256,7 +1299,10 @@ data you are using, for example the following is perfectly legal code:
                         <span class="arguments">(VIEWPORT &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This macro sets the current viewport to the viewport given as the argument.
+It will remain as the current viewport until the end of the scope.
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -2260,10 +2306,10 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM1213) :FUNC-ADD) ((:MODE-ALPHA DUM1214) :FUNC-ADD)
- ((:SOURCE-RGB DUM1215) :SRC-ALPHA) ((:SOURCE-ALPHA DUM1216) :SRC-ALPHA)
- ((:DESTINATION-RGB DUM1217) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DUM1218) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM1209) :FUNC-ADD) ((:MODE-ALPHA DUM1210) :FUNC-ADD)
+ ((:SOURCE-RGB DUM1211) :SRC-ALPHA) ((:SOURCE-ALPHA DUM1212) :SRC-ALPHA)
+ ((:DESTINATION-RGB DUM1213) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DUM1214) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -3352,6 +3398,19 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
+                  <a name="CEPL.GENERICS:DIMENSIONS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:DIMENSIONS" class="name">DIMENSIONS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="CEPL.GENERICS:DIR"/>
                   <article>
                     <header class="accessor">
@@ -3530,19 +3589,6 @@ on whether it is a texture-backed gpu-array or a buffer-backed gpu-array.
                       <span class="type">generic</span>
                       <code>
                         <h4><a href="#CEPL.GENERICS:DELTA" class="name">DELTA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:DIMENSIONS"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:DIMENSIONS" class="name">DIMENSIONS</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>

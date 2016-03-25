@@ -29,6 +29,12 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+(defmethod dimensions ((viewport viewport))
+  (viewport-dimensions viewport))
+
+(defmethod (setf dimensions) (value (viewport viewport))
+  (setf (viewport-dimensions viewport) value))
+
 (defun viewport-dimensions (viewport)
   (list (%viewport-resolution-x viewport)
         (%viewport-resolution-y viewport)))
@@ -36,6 +42,12 @@
 (defun viewport-resolution (viewport)
   (v! (%viewport-resolution-x viewport)
       (%viewport-resolution-y viewport)))
+
+(defmethod resolution ((viewport viewport))
+  (viewport-resolution viewport))
+
+(defmethod (setf resolution) (value (viewport viewport))
+  (setf (viewport-resolution viewport) value))
 
 (defun viewport-origin (viewport)
   (v! (%viewport-origin-x viewport)
@@ -101,16 +113,12 @@
 (defmacro %with-fbo-viewport ((fbo &optional (attachment 0)) &body body)
   "To be used by code than is managing the viewport state itself.
    composed dispatch would be an example"
-  `(%with-viewport (attachment-viewport (%attachment ,fbo ,attachment))
+  `(%with-viewport (cepl.fbos:attachment-viewport (%attachment ,fbo ,attachment))
      ,@body))
 
-(defun clone-viewport (viewport)
-  (make-viewport (viewport-dimensions viewport)
-		 (viewport-origin viewport)))
 
-(defun viewport-params-to-vec4 ()
-  (let ((viewport (current-viewport)))
-    (v! (%viewport-origin-x viewport)
-	(%viewport-origin-y viewport)
-	(%viewport-resolution-x viewport)
-	(%viewport-resolution-y viewport))))
+(defun viewport-params-to-vec4 (&optional (viewport (current-viewport)))
+  (v! (%viewport-origin-x viewport)
+      (%viewport-origin-y viewport)
+      (%viewport-resolution-x viewport)
+      (%viewport-resolution-y viewport)))
