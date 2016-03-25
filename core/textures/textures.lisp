@@ -48,7 +48,7 @@
 
 (defun generate-mipmaps (texture)
   (let ((type (texture-type texture)))
-    (with-texture-bound (texture)
+    (with-texture-bound texture
       (gl:generate-mipmap type))))
 
 (defun error-on-invalid-upload-formats (target image-format pixel-format pixel-type)
@@ -88,7 +88,7 @@
 				       pix-type)
       (unless (equal (dimensions c-array) dimensions)
 	(error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
-      (with-texture-bound ((gpu-array-t-texture gpu-array))
+      (with-texture-bound (gpu-array-t-texture gpu-array)
 	(%upload-tex texture texture-type level-num (dimensions c-array)
 		     layer-num face-num pix-format pix-type (pointer c-array)))))
   gpu-array)
@@ -234,14 +234,14 @@
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
 (defun make-texture-from-id (gl-object &key base-dimensions texture-type
-                                         image-format sampler-type
+                                         element-type sampler-type
                                          mipmap-levels layer-count cubes
                                          allocated mutable-p)
   (%%make-texture
    :id gl-object
    :base-dimensions base-dimensions
    :type texture-type
-   :image-format image-format
+   :image-format element-type
    :sampler-type sampler-type
    :mipmap-levels mipmap-levels
    :layer-count layer-count
@@ -458,7 +458,7 @@
                               :sampler-type (cepl.samplers::calc-sampler-type
 					     texture-type
 					     image-format))))
-                (with-texture-bound (texture)
+                (with-texture-bound texture
                   (allocate-texture texture)
                   (when initial-contents
                     (destructuring-bind (pformat ptype)
@@ -525,7 +525,7 @@
                      :backing-array array
                      :owns-array t)))
       ;; upload
-      (with-texture-bound (new-tex)
+      (with-texture-bound new-tex
         (%gl::tex-buffer :texture-buffer image-format
                          (gpu-buffer-id
 			  (cepl.gpu-arrays::gpu-array-buffer array)))
@@ -654,7 +654,7 @@
            (c-array (make-c-array nil :dimensions (dimensions object)
                                   :element-type p-format)))
       (destructuring-bind (format type) (compile-pixel-format p-format)
-        (with-texture-bound (texture)
+        (with-texture-bound texture
           (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
 			     (coerce level-num 'real)
 			     format

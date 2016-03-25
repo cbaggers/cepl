@@ -83,4 +83,6 @@
 	       (:file "core/gpu-arrays/docs")
 	       (:file "core/streams/docs")
 	       (:file "core/viewports/docs")
+	       (:file "core/textures/docs")
+	       (:file "core/samplers/docs")
 	       (:file "core/vaos/docs")))

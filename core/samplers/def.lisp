@@ -96,7 +96,8 @@
      ((:rg8ui :rg16ui :rg32ui :rgb8ui :rgb16ui :rgb32ui :rgba8ui :rgba16ui
               :rgba32ui :rgb10-a2ui :r8ui :r16ui :r32ui
               :depth24-stencil8 :depth32f-stencil8) :u)
-     (t (error "image-format unknown")))
+     (t (error "CEPL: Unable to calculate the sampler type for ~s. Mapping missing."
+	       image-format)))
    (if shadow-sampler
        (case texture-type
          (:texture-1d :sampler-1d-shadow)
@@ -106,7 +107,8 @@
          (:texture-1d-array :sampler-1d-array-shadow)
          (:texture-2d-array :sampler-2d-array-shadow)
          (:texture-cube-map-array :sampler-cube-array-shadow)
-         (t (error "shadow texture type not known")))
+         (t (error "CEPL: Unable to calculate the sampler type for ~s with texture type ~s. Mapping missing"
+		   image-format texture-type)))
        (case texture-type
          (:texture-1d :sampler-1d) (:texture-2d :sampler-2d)
          (:texture-3d :sampler-3d) (:texture-cube-map :sampler-cube)
@@ -117,7 +119,8 @@
          (:texture-buffer :sampler-buffer)
          (:texture-2d-multisample :sampler-2d-ms)
          (:texture-2d-multisample-array :sampler-2d-ms-array)
-         (t (error "texture type not known"))))))
+         (t (error "CEPL: Unable to calculate the sampler type for ~s with texture type ~s. Mapping missing"
+		   image-format texture-type))))))
 
 (defun %delete-sampler (sampler)
   (gl::delete-sampler (%sampler-id sampler)))

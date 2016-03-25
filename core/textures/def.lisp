@@ -20,6 +20,9 @@
           (texture-type object)
           (texture-base-dimensions object)))
 
+(defun texture-element-type (texture)
+  (texture-image-format texture))
+
 (defmethod element-type ((texture texture))
   (texture-image-format texture))
 
@@ -102,11 +105,11 @@
 ;;------------------------------------------------------------
 
 ;; [TODO] use with safe-exit thingy?
-(defmacro with-texture-bound ((texture &optional type) &body body)
+(defmacro with-texture-bound (texture &body body)
   (let ((tex (gensym "texture"))
         (res (gensym "result")))
     `(let ((,tex ,texture))
-       (bind-texture ,tex ,type)
+       (bind-texture ,tex)
        (let ((,res (progn ,@body)))
          (unbind-texture (texture-type ,tex))
          ,res))))

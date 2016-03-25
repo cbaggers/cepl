@@ -589,13 +589,12 @@
 	   :texture-id
 	   :texture-base-dimensions
 	   :texture-type
-	   :texture-image-format
+	   :texture-element-type
 	   :texture-sampler-type
 	   :texture-mipmap-levels
 	   :texture-layer-count
 	   :texture-cubes-p
 	   :texture-mutable-p
-	   :texture-sampler-object-id
 	   :buffer-texture
 	   :buffer-texture-p
 
@@ -603,18 +602,9 @@
 	   :make-texture
 	   :free-texture
 	   :generate-mipmaps
-	   :dimensions-at-mipmap-level
-	   :bind-texture
-	   :unbind-texture
 	   :with-texture-bound
 	   :texref
-	   :*immutable-available*
-
-	   :free-gpu-array
-	   ;; :free-gpu-array-t
-	   ;; :upload-c-array-to-gpu-array-t
-	   ;; :upload-from-buffer-to-gpu-array-t
-	   ))
+	   :*immutable-available*))
 
 (defpackage :cepl.gpu-arrays.texture-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

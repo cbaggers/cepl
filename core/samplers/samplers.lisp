@@ -7,7 +7,7 @@
      (setf (%sampler-lod-bias sampler) value)
      (%gl:sampler-parameter-f (%sampler-id sampler) :texture-lod-bias value))
     ((typep sampler 'texture)
-     (with-texture-bound (sampler)
+     (with-texture-bound sampler
        (%gl:tex-parameter-f (texture-type sampler) :texture-lod-bias value)))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
   sampler)
@@ -19,7 +19,7 @@
      (setf (%sampler-min-lod sampler) value)
      (%gl:sampler-parameter-f (%sampler-id sampler) :texture-min-lod value))
     ((typep sampler 'texture)
-     (with-texture-bound (sampler)
+     (with-texture-bound sampler
        (%gl:tex-parameter-f (texture-type sampler) :texture-min-lod value)))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
   sampler)
@@ -31,7 +31,7 @@
      (setf (%sampler-max-lod sampler) value)
      (%gl:sampler-parameter-f (%sampler-id sampler) :texture-max-lod value))
     ((typep sampler 'texture)
-     (with-texture-bound (sampler)
+     (with-texture-bound sampler
        (%gl:tex-parameter-f (texture-type sampler) :texture-max-lod value)))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
   sampler)
@@ -45,7 +45,7 @@
      (%gl::sampler-parameter-i (%sampler-id sampler) :texture-mag-filter
                                (%gl::foreign-enum-value '%gl:enum value)))
     ((typep sampler 'texture)
-     (with-texture-bound (sampler)
+     (with-texture-bound sampler
        (%gl::tex-parameter-i (texture-type sampler) :texture-mag-filter
                              (%gl::foreign-enum-value '%gl:enum value))))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
@@ -62,7 +62,7 @@
      (%gl::sampler-parameter-i (%sampler-id sampler) :texture-min-filter
                                (%gl::foreign-enum-value '%gl:enum value)))
     ((typep sampler 'texture)
-     (with-texture-bound (sampler)
+     (with-texture-bound sampler
        (%gl::tex-parameter-i (texture-type sampler) :texture-min-filter
                              (%gl::foreign-enum-value '%gl:enum value))))
     (t (error "Invalid type ~a of ~a for lod-bias" (type-of sampler) sampler)))
@@ -102,7 +102,7 @@
                                  (%gl::foreign-enum-value '%gl:enum (aref value 2)))
        (setf (%sampler-wrap sampler) value))
       ((typep sampler 'texture)
-       (with-texture-bound (sampler)
+       (with-texture-bound sampler
          (%gl::tex-parameter-i (texture-type sampler) :texture-wrap-s
                                (%gl::foreign-enum-value '%gl:enum (aref value 0)))
          (%gl::tex-parameter-i (texture-type sampler) :texture-wrap-t
@@ -140,7 +140,7 @@
               (%sampler-id sampler) :texture-compare-mode
               (%gl::foreign-enum-value '%gl:enum :none))))
         ((typep sampler 'texture)
-         (with-texture-bound (sampler)
+         (with-texture-bound sampler
            (if value
                (progn
                  (%gl:tex-parameter-i

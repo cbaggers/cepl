@@ -34,7 +34,7 @@
   (base-dimensions nil :type list)
   (type (error "") :type symbol)
   (image-format (error "") :type symbol)
-  (sampler-type (error "") :type symbol)
+  (sampler-type nil :type symbol)
   (mipmap-levels 0 :type fixnum)
   (layer-count 0 :type fixnum)
   (cubes-p nil :type boolean)
