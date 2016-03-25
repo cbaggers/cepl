@@ -55,6 +55,5 @@
 (defgeneric free-texture (texture))
 (defgeneric make-gpu-array (initial-contents &key))
 
-(defgeneric internal-format (object))
 (defgeneric element-type (array))
 (defgeneric element-byte-size (array))

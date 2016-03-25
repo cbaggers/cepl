@@ -93,7 +93,7 @@ dimension then their sizes must match exactly"))
 (defun gpu-array-element-type (gpu-array)
   (etypecase gpu-array
     (gpu-array-t
-     (cepl.types::gpu-array-t-internal-format gpu-array))
+     (cepl.types::gpu-array-t-image-format gpu-array))
     (gpu-array-bb
      (cepl.gpu-arrays.buffer-backed::gpu-array-bb-element-type gpu-array))))
 

@@ -84,7 +84,7 @@ the gpu-array within the array-textures. This only truly applies to gpu-arrays
 Will return the type of the elements in the gpu-array given.
 
 If this is a texture-backed gpu-array then the element-type will be the same as
-the 'internal-format' of the texture.
+the 'image-format' of the texture.
 ")
 
   (defun gpu-array-level-num

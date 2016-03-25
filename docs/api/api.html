@@ -573,7 +573,7 @@ or freeing data.
 Will return the type of the elements in the gpu-array given.
 
 If this is a texture-backed gpu-array then the element-type will be the same as
-the 'internal-format' of the texture.
+the 'image-format' of the texture.
 </pre>
                   </article>
                 </li><li>
@@ -1336,19 +1336,6 @@ It will remain as the current viewport until the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:GPU-ARRAY-T"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY-T" class="name">GPU-ARRAY-T</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="VARJO-LANG:TEXTURE"/>
                   <article>
                     <header class="class">
@@ -1357,45 +1344,6 @@ It will remain as the current viewport until the end of the scope.
                         <h4><a href="#VARJO-LANG:TEXTURE" class="name">TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BUFFER-TEXTURE-BACKING-ARRAY"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BUFFER-TEXTURE-BACKING-ARRAY" class="name">BUFFER-TEXTURE-BACKING-ARRAY</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BUFFER-TEXTURE-OWNS-ARRAY"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BUFFER-TEXTURE-OWNS-ARRAY" class="name">BUFFER-TEXTURE-OWNS-ARRAY</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:TEXTURE-ALLOCATED-P"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:TEXTURE-ALLOCATED-P" class="name">TEXTURE-ALLOCATED-P</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -1414,12 +1362,12 @@ It will remain as the current viewport until the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:TEXTURE-CUBES"/>
+                  <a name="%CEPL.TYPES:TEXTURE-CUBES-P"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#%CEPL.TYPES:TEXTURE-CUBES" class="name">TEXTURE-CUBES</a></h4>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-CUBES-P" class="name">TEXTURE-CUBES-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1440,12 +1388,12 @@ It will remain as the current viewport until the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:TEXTURE-INTERNAL-FORMAT"/>
+                  <a name="%CEPL.TYPES:TEXTURE-IMAGE-FORMAT"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#%CEPL.TYPES:TEXTURE-INTERNAL-FORMAT" class="name">TEXTURE-INTERNAL-FORMAT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:TEXTURE-IMAGE-FORMAT" class="name">TEXTURE-IMAGE-FORMAT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
@@ -1570,19 +1518,6 @@ It will remain as the current viewport until the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TEXTURES:FREE-GPU-ARRAY-T"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.TEXTURES:FREE-GPU-ARRAY-T" class="name">FREE-GPU-ARRAY-T</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="CEPL.TEXTURES:GENERATE-MIPMAPS"/>
                   <article>
                     <header class="function">
@@ -1619,7 +1554,7 @@ It will remain as the current viewport until the end of the scope.
                       <code>
                         <h4><a href="#CEPL.TEXTURES:MAKE-TEXTURE-FROM-ID" class="name">MAKE-TEXTURE-FROM-ID</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(GL-OBJECT &amp;KEY BASE-DIMENSIONS TEXTURE-TYPE INTERNAL-FORMAT SAMPLER-TYPE
+                        <span class="arguments">(GL-OBJECT &amp;KEY BASE-DIMENSIONS TEXTURE-TYPE IMAGE-FORMAT SAMPLER-TYPE
  MIPMAP-LEVELS LAYER-COUNT CUBES ALLOCATED MUTABLE-P)</span>
                       </code>
                     </header>
@@ -1660,32 +1595,6 @@ It will remain as the current viewport until the end of the scope.
                         <h4><a href="#CEPL.TEXTURES:UNBIND-TEXTURE" class="name">UNBIND-TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(TYPE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.TEXTURES:UPLOAD-C-ARRAY-TO-GPU-ARRAY-T"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.TEXTURES:UPLOAD-C-ARRAY-TO-GPU-ARRAY-T" class="name">UPLOAD-C-ARRAY-TO-GPU-ARRAY-T</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(GPU-ARRAY C-ARRAY &amp;OPTIONAL FORMAT TYPE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.TEXTURES:UPLOAD-FROM-BUFFER-TO-GPU-ARRAY-T"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.TEXTURES:UPLOAD-FROM-BUFFER-TO-GPU-ARRAY-T" class="name">UPLOAD-FROM-BUFFER-TO-GPU-ARRAY-T</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -2840,12 +2749,12 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.IMAGE-FORMATS:*VALID-INTERNAL-FORMATS-FOR-BUFFER-BACKED-TEXTURE*"/>
+                  <a name="CEPL.IMAGE-FORMATS:*VALID-IMAGE-FORMATS-FOR-BUFFER-BACKED-TEXTURE*"/>
                   <article>
                     <header class="special">
                       <span class="type">special</span>
                       <code>
-                        <h4><a href="#CEPL.IMAGE-FORMATS:*VALID-INTERNAL-FORMATS-FOR-BUFFER-BACKED-TEXTURE*" class="name">*VALID-INTERNAL-FORMATS-FOR-BUFFER-BACKED-TEXTURE*</a></h4>
+                        <h4><a href="#CEPL.IMAGE-FORMATS:*VALID-IMAGE-FORMATS-FOR-BUFFER-BACKED-TEXTURE*" class="name">*VALID-IMAGE-FORMATS-FOR-BUFFER-BACKED-TEXTURE*</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
@@ -2892,12 +2801,12 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.IMAGE-FORMATS:INTERNAL-FORMATP"/>
+                  <a name="CEPL.IMAGE-FORMATS:IMAGE-FORMATP"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.IMAGE-FORMATS:INTERNAL-FORMATP" class="name">INTERNAL-FORMATP</a></h4>
+                        <h4><a href="#CEPL.IMAGE-FORMATS:IMAGE-FORMATP" class="name">IMAGE-FORMATP</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(FORMAT)</span>
                       </code>
@@ -2918,12 +2827,12 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.IMAGE-FORMATS:VALID-INTERNAL-FORMAT-FOR-BUFFER-BACKED-TEXTUREP"/>
+                  <a name="CEPL.IMAGE-FORMATS:VALID-IMAGE-FORMAT-FOR-BUFFER-BACKED-TEXTUREP"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.IMAGE-FORMATS:VALID-INTERNAL-FORMAT-FOR-BUFFER-BACKED-TEXTUREP" class="name">VALID-INTERNAL-FORMAT-FOR-BUFFER-BACKED-TEXTUREP</a></h4>
+                        <h4><a href="#CEPL.IMAGE-FORMATS:VALID-IMAGE-FORMAT-FOR-BUFFER-BACKED-TEXTUREP" class="name">VALID-IMAGE-FORMAT-FOR-BUFFER-BACKED-TEXTUREP</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(FORMAT)</span>
                       </code>
@@ -3040,12 +2949,12 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:DESCRIBE-INTERNAL-FORMAT"/>
+                  <a name="CEPL.PIXEL-FORMATS:DESCRIBE-IMAGE-FORMAT"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:DESCRIBE-INTERNAL-FORMAT" class="name">DESCRIBE-INTERNAL-FORMAT</a></h4>
+                        <h4><a href="#CEPL.PIXEL-FORMATS:DESCRIBE-IMAGE-FORMAT" class="name">DESCRIBE-IMAGE-FORMAT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(FORMAT)</span>
                       </code>
@@ -3837,12 +3746,12 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.GENERICS:INTERNAL-FORMAT"/>
+                  <a name="CEPL.GENERICS:IMAGE-FORMAT"/>
                   <article>
                     <header class="generic">
                       <span class="type">generic</span>
                       <code>
-                        <h4><a href="#CEPL.GENERICS:INTERNAL-FORMAT" class="name">INTERNAL-FORMAT</a></h4>
+                        <h4><a href="#CEPL.GENERICS:IMAGE-FORMAT" class="name">IMAGE-FORMAT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
                       </code>
@@ -4530,38 +4439,38 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TYPES:INTERNAL-FORMAT-&gt;LISP-TYPE"/>
+                  <a name="CEPL.TYPES:IMAGE-FORMAT-&gt;LISP-TYPE"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.TYPES:INTERNAL-FORMAT-&gt;LISP-TYPE" class="name">INTERNAL-FORMAT-&gt;LISP-TYPE</a></h4>
+                        <h4><a href="#CEPL.TYPES:IMAGE-FORMAT-&gt;LISP-TYPE" class="name">IMAGE-FORMAT-&gt;LISP-TYPE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INTERNAL-FORMAT)</span>
+                        <span class="arguments">(IMAGE-FORMAT)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TYPES:INTERNAL-FORMAT-&gt;PIXEL-FORMAT"/>
+                  <a name="CEPL.TYPES:IMAGE-FORMAT-&gt;PIXEL-FORMAT"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.TYPES:INTERNAL-FORMAT-&gt;PIXEL-FORMAT" class="name">INTERNAL-FORMAT-&gt;PIXEL-FORMAT</a></h4>
+                        <h4><a href="#CEPL.TYPES:IMAGE-FORMAT-&gt;PIXEL-FORMAT" class="name">IMAGE-FORMAT-&gt;PIXEL-FORMAT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INTERNAL-FORMAT &amp;KEY (ERROR-IF-MISSING T))</span>
+                        <span class="arguments">(IMAGE-FORMAT &amp;KEY (ERROR-IF-MISSING T))</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TYPES:LISP-TYPE-&gt;INTERNAL-FORMAT"/>
+                  <a name="CEPL.TYPES:LISP-TYPE-&gt;IMAGE-FORMAT"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.TYPES:LISP-TYPE-&gt;INTERNAL-FORMAT" class="name">LISP-TYPE-&gt;INTERNAL-FORMAT</a></h4>
+                        <h4><a href="#CEPL.TYPES:LISP-TYPE-&gt;IMAGE-FORMAT" class="name">LISP-TYPE-&gt;IMAGE-FORMAT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(LISP-TYPE)</span>
                       </code>
@@ -4569,12 +4478,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.TYPES:PIXEL-FORMAT-&gt;INTERNAL-FORMAT"/>
+                  <a name="CEPL.TYPES:PIXEL-FORMAT-&gt;IMAGE-FORMAT"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.TYPES:PIXEL-FORMAT-&gt;INTERNAL-FORMAT" class="name">PIXEL-FORMAT-&gt;INTERNAL-FORMAT</a></h4>
+                        <h4><a href="#CEPL.TYPES:PIXEL-FORMAT-&gt;IMAGE-FORMAT" class="name">PIXEL-FORMAT-&gt;IMAGE-FORMAT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(PIXEL-FORMAT &amp;KEY (ERROR-IF-MISSING T))</span>
                       </code>

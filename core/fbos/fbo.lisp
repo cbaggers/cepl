@@ -43,7 +43,7 @@
 (defmethod print-object ((obj attachment) stream)
   (format stream "#<~a-ATTACHMENT (:fbo ~s)>"
           (if (%attachment-gpu-array obj)
-	      (let ((f (gpu-array-t-internal-format (%attachment-gpu-array obj))))
+	      (let ((f (gpu-array-t-image-format (%attachment-gpu-array obj))))
 		(cond
 		  ((color-renderable-formatp f) "COLOR")
 		  ((depth-formatp f) "DEPTH")
@@ -89,7 +89,7 @@
    :texture +null-texture+
    :texture-type :gl-internal
    :dimensions dimensions
-   :internal-format :gl-internal))
+   :image-format :gl-internal))
 
 (defun %set-default-fbo-viewport (new-dimensions)
   (let ((fbo %default-framebuffer))
@@ -460,7 +460,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	;; When attaching a non-cubemap, textarget should be the proper
 	;; texture-type: GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE, etc.
 	(cepl.textures::with-gpu-array-t tex-array
-	  (unless (attachment-compatible attachment internal-format)
+	  (unless (attachment-compatible attachment image-format)
 	    (error "attachment is not compatible with this array"))
 	  (let ((tex-id (texture-id texture)))
 	    (case (gpu-array-t-texture-type tex-array)
@@ -573,12 +573,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       x
       :draw-framebuffer))
 
-(defvar %possible-texture-keys '(:dimensions :internal-format :mipmap
+(defvar %possible-texture-keys '(:dimensions :image-format :mipmap
                                  :layer-count :cubes-p :rectangle
                                  :multisample :immutable :buffer-storage
                                  :lod-bias :min-lod :max-lod :minify-filter
                                  :magnify-filter :wrap :compare))
-(defvar %valid-texture-subset '(:dimensions :internal-format :mipmap
+(defvar %valid-texture-subset '(:dimensions :image-format :mipmap
                                 :immutable :lod-bias :min-lod :max-lod
                                 :minify-filter :magnify-filter :wrap :compare))
 
@@ -602,15 +602,15 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                 %valid-texture-subset))
      (destructuring-bind
            (&key (dimensions (viewport-dimensions (current-viewport)))
-                 (internal-format (%get-default-texture-format (first pattern)))
+                 (image-format (%get-default-texture-format (first pattern)))
                  mipmap (immutable t) lod-bias min-lod max-lod minify-filter
                  magnify-filter wrap compare)
          (rest pattern)
-       (assert (attachment-compatible (first pattern) internal-format))
+       (assert (attachment-compatible (first pattern) image-format))
        (cons (texref
 	      (make-texture nil
 			    :dimensions dimensions
-			    :element-type internal-format
+			    :element-type image-format
 			    :mipmap mipmap
 			    :immutable immutable
 			    :lod-bias lod-bias
@@ -639,12 +639,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
           ((char= char #\d) :depth-component24)
           (t (error "No default texture format for attachment: ~s" attachment)))))
 
-(defun attachment-compatible (attachment internal-format)
+(defun attachment-compatible (attachment image-format)
   (case attachment
-    ((:d :depth-attachment) (depth-formatp internal-format))
-    ((:s :stencil-attachment) (stencil-formatp internal-format))
-    ((:ds :depth-stencil-attachment) (depth-stencil-formatp internal-format))
-    (otherwise (color-renderable-formatp internal-format))))
+    ((:d :depth-attachment) (depth-formatp image-format))
+    ((:s :stencil-attachment) (stencil-formatp image-format))
+    ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
+    (otherwise (color-renderable-formatp image-format))))
 
 (defun fbo-detach (fbo attachment)
   ;; The texture argument is the texture object name you want to attach from.

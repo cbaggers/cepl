@@ -173,7 +173,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defvar *valid-internal-formats-for-buffer-backed-texture*
+(defvar *valid-image-formats-for-buffer-backed-texture*
   '(:r16 :r16f :r16i :r16ui :r32f :r32i :r32ui :r8 :r8i :r8ui :rg16 :rg16f
     :rg16i :rg16ui :rg32f :rg32i :rg32ui :rg8 :rg8i :rg8ui :rgb32f :rgb32i
     :rgb32ui :rgba16 :rgba16f :rgba16i :rgba16ui :rgba32f :rgba32i :rgba8
@@ -189,11 +189,11 @@
 
 ;;----------------------------------------------------------------------
 
-(defun internal-formatp (format)
+(defun image-formatp (format)
   (not (null (find format *image-formats*))))
 
-(defun valid-internal-format-for-buffer-backed-texturep (format)
-  (find format *valid-internal-formats-for-buffer-backed-texture*))
+(defun valid-image-format-for-buffer-backed-texturep (format)
+  (find format *valid-image-formats-for-buffer-backed-texture*))
 
 (defun color-renderable-formatp (format)
   (not (null (find format *color-renderable-formats*))))

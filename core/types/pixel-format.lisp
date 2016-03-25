@@ -9,7 +9,7 @@
 ;; Pixel Format
 ;;--------------
 ;; The pixel format struct is a more explorable representation of the
-;; internal-format of gl textures. Also they also help with the ugliness
+;; image-format of gl textures. Also they also help with the ugliness
 ;; of the texture api, where different parts want the texture information
 ;; in different ways. For example when defining a texture to hold :uint8's the
 ;; system calls the format :R8, but when uploading data to the texture it
@@ -112,12 +112,12 @@
       (print pf)
       (let ((cf (compile-pixel-format pf)))
         (format t "~%format: ~s~%type: ~s" (first cf) (second cf)))
-      (format t "~%internalFormat: ~s" (pixel-format->internal-format pf)))
+      (format t "~%internalFormat: ~s" (pixel-format->image-format pf)))
     (print "---------------"))
   t)
 
-(defun describe-internal-format (format)
-  (describe-pixel-format (internal-format->pixel-format format)))
+(defun describe-image-format (format)
+  (describe-pixel-format (image-format->pixel-format format)))
 
 (defun get-component-length (components)
   (case components
@@ -203,24 +203,24 @@
                                     len) 'keyword)
                     type)))))
 
-(defun internal-format->lisp-type (internal-format)
-  (let ((pformat (internal-format->pixel-format internal-format)))
+(defun image-format->lisp-type (image-format)
+  (let ((pformat (image-format->pixel-format image-format)))
     (if pformat
         (pixel-format->lisp-type pformat)
-        (error 'internal-format->lisp-type-failed
-               :type-name internal-format))))
+        (error 'image-format->lisp-type-failed
+               :type-name image-format))))
 
-(defun lisp-type->internal-format (lisp-type)
+(defun lisp-type->image-format (lisp-type)
   (let ((pformat (lisp-type->pixel-format lisp-type)))
-    (or (pixel-format->internal-format pformat :error-if-missing nil)
-        (error 'lisp-type->internal-format-failed
+    (or (pixel-format->image-format pformat :error-if-missing nil)
+        (error 'lisp-type->image-format-failed
                :type-name lisp-type))))
 
 ;;--------------------------------------------------------------
-;; Internal-Formats
+;; Image-Formats
 ;;------------------
 
-(defun pixel-format->internal-format
+(defun pixel-format->image-format
     (pixel-format &key (error-if-missing t))
   (let ((result (second (assoc (list (pixel-format-components pixel-format)
                                      (pixel-format-normalise pixel-format)
@@ -230,13 +230,13 @@
                                :test #'equal))))
     (or result
         (when error-if-missing
-          (error 'pixel-format->internal-format-failed
+          (error 'pixel-format->image-format-failed
                  :type-name pixel-format)))))
 
 ;; [TODO] REVERSED??
-(defun internal-format->pixel-format
-    (internal-format &key (error-if-missing t))
-  (let ((pf (first (rassoc internal-format *gl-pixel-to-internal-map*
+(defun image-format->pixel-format
+    (image-format &key (error-if-missing t))
+  (let ((pf (first (rassoc image-format *gl-pixel-to-internal-map*
                            :key #'car :test #'eq))))
     (if pf
         (destructuring-bind (components normalise type sizes)
@@ -246,8 +246,8 @@
            :sizes sizes :reversed nil
            :comp-length (get-component-length components)))
         (when error-if-missing
-          (error 'internal-format->pixel-format-failed
-                 :type-name internal-format)))))
+          (error 'image-format->pixel-format-failed
+                 :type-name image-format)))))
 
 
 ;;--------------------------------------------------------------

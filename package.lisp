@@ -66,14 +66,14 @@
 	   :make-tex-no-content-no-type
 	   :make-tex-array-not-match-type
 	   :make-tex-array-not-match-type2
-	   :internal-format->lisp-type-failed
-	   :lisp-type->internal-format-failed
-	   :pixel-format->internal-format-failed
-	   :internal-format->pixel-format-failed
+	   :image-format->lisp-type-failed
+	   :lisp-type->image-format-failed
+	   :pixel-format->image-format-failed
+	   :image-format->pixel-format-failed
 	   :buffer-backed-texture-invalid-args
 	   :buffer-backed-texture-invalid-samplers
-	   :buffer-backed-texture-invalid-internal-format
-	   :buffer-backed-texture-establish-internal-format
+	   :buffer-backed-texture-invalid-image-format
+	   :buffer-backed-texture-establish-image-format
 	   :failed-to-test-compile-gpu-func
 	   :dont-define-space-to-self
 	   :make-buffer-stream-with-no-gpu-arrays
@@ -134,7 +134,7 @@
            :pull1-g
            :push-g
 	   ;;--
-	   :internal-format
+	   :image-format
 	   :element-type
 	   :element-byte-size))
 
@@ -155,7 +155,7 @@
 	   :gpu-array-t-level-num
 	   :gpu-array-t-layer-num
 	   :gpu-array-t-face-num
-	   :gpu-array-t-internal-format
+	   :gpu-array-t-image-format
 	   :+null-texture-backed-gpu-array+
 
 	   :%make-gpu-array-bb
@@ -182,7 +182,7 @@
 	   :texture-id
 	   :texture-base-dimensions
 	   :texture-type
-	   :texture-internal-format
+	   :texture-image-format
 	   :texture-sampler-type
 	   :texture-mipmap-levels
 	   :texture-layer-count
@@ -297,10 +297,10 @@
 	:cepl.errors :%cepl.types)
   (:export :defstruct-g
 	   :lisp-type->pixel-format
-	   :internal-format->lisp-type
-	   :internal-format->pixel-format
-	   :lisp-type->internal-format
-	   :pixel-format->internal-format
+	   :image-format->lisp-type
+	   :image-format->pixel-format
+	   :lisp-type->image-format
+	   :pixel-format->image-format
 	   :pixel-format->lisp-type
 	   :uploadable-lisp-seq
 	   ;;---
@@ -436,8 +436,8 @@
 
 (defpackage :cepl.image-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types :cepl.errors)
-  (:export :internal-formatp
-	   :valid-internal-format-for-buffer-backed-texturep
+  (:export :image-formatp
+	   :valid-image-format-for-buffer-backed-texturep
 	   :color-renderable-formatp
 	   :depth-formatp
 	   :stencil-formatp
@@ -457,7 +457,7 @@
 	   :*stencil-formats*
 	   :*depth-stencil-formats*
 	   :*color-renderable-formats*
-	   :*valid-internal-formats-for-buffer-backed-texture*
+	   :*valid-image-formats-for-buffer-backed-texture*
 	   :*image-formats*))
 
 (defpackage :cepl.pixel-formats
@@ -472,7 +472,7 @@
 	   :pixel-format-reversed
 	   :pixel-format-comp-length
 	   :compile-pixel-format
-	   :describe-internal-format
+	   :describe-image-format
 	   :describe-pixel-format
 	   :get-component-length
 	   :valid-pixel-format-p))
@@ -589,7 +589,7 @@
 	   :texture-id
 	   :texture-base-dimensions
 	   :texture-type
-	   :texture-internal-format
+	   :texture-image-format
 	   :texture-sampler-type
 	   :texture-mipmap-levels
 	   :texture-layer-count

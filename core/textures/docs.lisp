@@ -33,8 +33,8 @@ Buffer textures have limitations over regular textures:
  - can only only have one gpu-array
  - that gpu-array must be one dimensional
  - can only be accessed in shaders with #'texel-fetch
- - can have a more limited number of valid internal-formats to choose from
-   see *valid-internal-formats-for-buffer-backed-texture* for details
+ - can have a more limited number of valid image-formats to choose from
+   see *valid-image-formats-for-buffer-backed-texture* for details
 ")
 
   (defstruct texture
@@ -158,7 +158,7 @@ This function returns the id of the GL Texture Object from the CEPL texture.
 Don't use this unless you know what you are doing on the GL side.
 ")
 
-  (defun texture-internal-format )
+  (defun texture-image-format )
 
   (defun make-texture
       "

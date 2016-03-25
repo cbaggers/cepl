@@ -33,7 +33,7 @@
   (id 0 :type real)
   (base-dimensions nil :type list)
   (type (error "") :type symbol)
-  (internal-format (error "") :type symbol)
+  (image-format (error "") :type symbol)
   (sampler-type (error "") :type symbol)
   (mipmap-levels 0 :type fixnum)
   (layer-count 0 :type fixnum)
@@ -44,7 +44,7 @@
 
 (defvar +null-texture+
   (%%make-texture :type nil
-		  :internal-format nil
+		  :image-format nil
 		  :sampler-type nil))
 
 ;;------------------------------------------------------------
@@ -82,7 +82,7 @@
   (level-num 0 :type fixnum)
   (layer-num 0 :type fixnum)
   (face-num 0 :type fixnum)
-  (internal-format nil :type symbol))
+  (image-format nil :type symbol))
 
 (defvar +null-texture-backed-gpu-array+
   (%make-gpu-array-bb

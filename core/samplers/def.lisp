@@ -79,10 +79,10 @@
 
 ;; [TODO] Add shadow samplers
 ;; [TODO] does cl-opengl use multisample instead of ms?
-(defun calc-sampler-type (texture-type internal-format &optional shadow-sampler)
+(defun calc-sampler-type (texture-type image-format &optional shadow-sampler)
   "Makes the keyword that names the sampler-type for the given texture-type and format"
   (cepl-utils:kwd
-   (case internal-format
+   (case image-format
      ((:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm
            :r3-g3-b2 :rgb4 :rgb5 :rgb8 :rgb8-snorm :rgb10 :rgb12
            :rgb16-snorm :rgba2 :rgba4
@@ -96,7 +96,7 @@
      ((:rg8ui :rg16ui :rg32ui :rgb8ui :rgb16ui :rgb32ui :rgba8ui :rgba16ui
               :rgba32ui :rgb10-a2ui :r8ui :r16ui :r32ui
               :depth24-stencil8 :depth32f-stencil8) :u)
-     (t (error "internal-format unknown")))
+     (t (error "image-format unknown")))
    (if shadow-sampler
        (case texture-type
          (:texture-1d :sampler-1d-shadow)

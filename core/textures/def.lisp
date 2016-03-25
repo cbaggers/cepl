@@ -20,6 +20,9 @@
           (texture-type object)
           (texture-base-dimensions object)))
 
+(defmethod element-type ((texture texture))
+  (texture-image-format texture))
+
 (defmethod free ((object texture))
   (free-texture object))
 
@@ -27,7 +30,7 @@
   (setf (texture-id texture) -1
 	(texture-base-dimensions texture) nil
 	(texture-type texture) nil
-	(texture-internal-format texture) nil
+	(texture-image-format texture) nil
 	(texture-sampler-type texture) nil
 	(texture-mipmap-levels texture) 0
 	(texture-layer-count texture) 0
@@ -56,9 +59,9 @@
 
 (defmethod print-object ((object gpu-array-t) stream)
   (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by ~s>"
-          (gpu-array-t-internal-format object)
+          (gpu-array-t-image-format object)
           (gpu-array-dimensions object)
-          (if (eq (gpu-array-t-internal-format object) :gl-internal)
+          (if (eq (gpu-array-t-image-format object) :gl-internal)
               :internal
               :texture)))
 
@@ -67,7 +70,7 @@
   (free-gpu-array-t))
 
 (defmethod element-type ((gpu-array gpu-array-t))
-  (gpu-array-t-internal-format gpu-array))
+  (gpu-array-t-image-format gpu-array))
 
 (defmethod free-gpu-array ((gpu-array gpu-array-t))
   (declare (ignore gpu-array))
@@ -84,7 +87,7 @@
 	(level-num (symb :level-num))
 	(layer-num (symb :layer-num))
 	(face-num (symb :face-num))
-	(internal-format (symb :internal-format)))
+	(image-format (symb :image-format)))
     `(let ((,arr ,gpu-array-t))
        (symbol-macrolet
 	   ((,texture (gpu-array-t-texture ,arr))
@@ -93,7 +96,7 @@
 	    (,level-num (gpu-array-t-level-num ,arr))
 	    (,layer-num (gpu-array-t-layer-num ,arr))
 	    (,face-num (gpu-array-t-face-num ,arr))
-	    (,internal-format (gpu-array-t-internal-format ,arr)))
+	    (,image-format (gpu-array-t-image-format ,arr)))
 	 ,@body))))
 
 ;;------------------------------------------------------------

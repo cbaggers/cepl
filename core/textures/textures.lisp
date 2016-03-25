@@ -34,7 +34,7 @@
 	   :face-num cube-face
 	   :dimensions (dimensions-at-mipmap-level
 			texture mipmap-level)
-	   :internal-format (texture-internal-format texture))
+	   :image-format (texture-image-format texture))
           (error "Texture index out of range"))))
 
 (defun valid-index-p (texture mipmap-level layer cube-face)
@@ -51,25 +51,25 @@
     (with-texture-bound (texture)
       (gl:generate-mipmap type))))
 
-(defun error-on-invalid-upload-formats (target internal-format pixel-format pixel-type)
-  (unless (and internal-format pixel-type pixel-format)
+(defun error-on-invalid-upload-formats (target image-format pixel-format pixel-type)
+  (unless (and image-format pixel-type pixel-format)
     (error "Could not establish all the required formats for the pixel transfer"))
   (when (eq target :texture-buffer)
     (error "You should not have reached this function as buffer backed textures have buffer-gpu-arrays as their backing stores"))
-  (when (and (find internal-format '(:depth-component :depth-component16
+  (when (and (find image-format '(:depth-component :depth-component16
                                      :depth-component24 :depth-component32f))
              (not (find target '(:texture_2d :proxy_texture_2d
                                  :texture_rectangle
                                  :proxy_texture_rectangle))))
     (error "Texture type is ~a. Cannot populate with ~a"
-           target internal-format))
+           target image-format))
   (when (and (eq pixel-format :depth-component)
-             (not (find internal-format
+             (not (find image-format
                         '(:depth-component :depth-component16
                           :depth-component24 :depth-component32f))))
     (error "Pixel data is a depth format however the texture is not"))
   (when (and (not (eq pixel-format :depth-component))
-             (find internal-format
+             (find image-format
                    '(:depth-component :depth-component16
                      :depth-component24 :depth-component32f)))
     (error "Pixel data is a depth format however the texture is not"))
@@ -84,7 +84,7 @@
          (pix-format (or format (first compiled-pf)))
          (pix-type (or type (second compiled-pf))))
     (with-gpu-array-t gpu-array
-      (error-on-invalid-upload-formats texture-type internal-format pix-format
+      (error-on-invalid-upload-formats texture-type image-format pix-format
 				       pix-type)
       (unless (equal (dimensions c-array) dimensions)
 	(error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
@@ -106,31 +106,31 @@
 			       face-num pix-format pix-type pointer)
   (case tex-type
     (:texture-1d (gl:tex-image-1d
-		  tex-type level-num (texture-internal-format tex)
+		  tex-type level-num (texture-image-format tex)
 		  (first dimensions) 0 pix-format pix-type
 		  pointer))
     (:texture-2d (gl:tex-image-2d
-		  tex-type level-num (texture-internal-format tex)
+		  tex-type level-num (texture-image-format tex)
 		  (first dimensions) (second dimensions) 0
 		  pix-format pix-type pointer))
     (:texture-3d (gl:tex-image-3d
-		  tex-type level-num (texture-internal-format tex)
+		  tex-type level-num (texture-image-format tex)
 		  (first dimensions) (second dimensions)
 		  (third dimensions) 0 pix-format pix-type
 		  pointer))
     (:texture-1d-array (gl:tex-image-2d
 			tex-type level-num
-			(texture-internal-format tex)
+			(texture-image-format tex)
 			(first dimensions) layer-num 0
 			pix-format pix-type pointer))
     (:texture-2d-array (gl:tex-image-3d
 			tex-type level-num
-			(texture-internal-format tex)
+			(texture-image-format tex)
 			(first dimensions) (second dimensions)
 			layer-num 0 pix-format pix-type pointer))
     (:texture-cube-map (gl:tex-image-2d
 			(nth face-num *cube-face-order*)
-			level-num (texture-internal-format tex)
+			level-num (texture-image-format tex)
 			(first dimensions) (second dimensions) 0
 			pix-format pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))
@@ -234,14 +234,14 @@
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
 (defun make-texture-from-id (gl-object &key base-dimensions texture-type
-                                         internal-format sampler-type
+                                         image-format sampler-type
                                          mipmap-levels layer-count cubes
                                          allocated mutable-p)
   (%%make-texture
    :id gl-object
    :base-dimensions base-dimensions
    :type texture-type
-   :internal-format internal-format
+   :image-format image-format
    :sampler-type sampler-type
    :mipmap-levels mipmap-levels
    :layer-count layer-count
@@ -257,7 +257,7 @@
                        lod-bias min-lod max-lod minify-filter magnify-filter
                        wrap compare (generate-mipmaps t))
   (let ((element-type (expand-gl-type-name element-type))
-	(internal-format (calc-internal-format element-type initial-contents)))
+	(image-format (calc-image-format element-type initial-contents)))
     (cond
       ;; ms
       (multisample (error "cepl: Multisample textures are not supported"))
@@ -265,7 +265,7 @@
       ((and initial-contents cubes)
        (%make-cube-texture dimensions mipmap layer-count cubes buffer-storage
                            rectangle multisample immutable initial-contents
-                           internal-format lod-bias min-lod max-lod
+                           image-format lod-bias min-lod max-lod
                            minify-filter magnify-filter wrap compare
                            generate-mipmaps))
       ;; initialize content needs to be turned into c-array
@@ -275,26 +275,26 @@
                                      immutable initial-contents lod-bias min-lod
                                      max-lod minify-filter magnify-filter wrap
                                      compare generate-mipmaps element-type
-				     internal-format))
+				     image-format))
       ;; buffer backed - note that by now if there were intitial contents, they
       ;;                 are now a c-array
       (buffer-storage
        (%make-buffer-texture (%texture-dimensions initial-contents dimensions)
-                             internal-format mipmap layer-count cubes
+                             image-format mipmap layer-count cubes
                              rectangle multisample immutable initial-contents
                              lod-bias min-lod max-lod minify-filter
                              magnify-filter wrap compare))
       ;; all other cases
       (t (%make-texture dimensions mipmap layer-count cubes buffer-storage
                         rectangle multisample immutable initial-contents
-                        internal-format lod-bias min-lod max-lod
+                        image-format lod-bias min-lod max-lod
                         minify-filter magnify-filter wrap compare
                         generate-mipmaps)))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun calc-dimensions (internal-format dimensions cube-tex)
-  (declare (ignore internal-format dimensions cube-tex)))
+(defun calc-dimensions (image-format dimensions cube-tex)
+  (declare (ignore image-format dimensions cube-tex)))
 
 ;; other
 ;; (listify dimensions)
@@ -308,53 +308,53 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun calc-internal-format (element-type initial-contents)
+(defun calc-image-format (element-type initial-contents)
   (cond
     ;; need to infer the type
     ((null element-type)
-     (%calc-internal-format-without-declared-format initial-contents))
+     (%calc-image-format-without-declared-format initial-contents))
     ;; need to ensure nothing conflicts with declaration
-    ((internal-formatp element-type)
-     (%calc-internal-format-with-declared-format element-type
+    ((image-formatp element-type)
+     (%calc-image-format-with-declared-format element-type
                                                  element-type
                                                  initial-contents))
     ;; need to ensure nothing conflicts with declaration
     ((pixel-format-p element-type)
-     (%calc-internal-format-with-pixel-format element-type
+     (%calc-image-format-with-pixel-format element-type
                                               initial-contents))
     ;;
-    (t (%calc-internal-format-with-lisp-type element-type
+    (t (%calc-image-format-with-lisp-type element-type
                                              initial-contents))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun %calc-internal-format-without-declared-format (initial-contents)
+(defun %calc-image-format-without-declared-format (initial-contents)
   ;; The user didnt declare an element-type so try and infer one
   (typecase initial-contents
     (null (error 'make-tex-no-content-no-type))
-    (c-array (lisp-type->internal-format
+    (c-array (lisp-type->image-format
               (element-type initial-contents)))
-    (uploadable-lisp-seq (lisp-type->internal-format
+    (uploadable-lisp-seq (lisp-type->image-format
 			  (cepl.c-arrays::lisp->gl-type
 			   (cepl.c-arrays::scan-for-type initial-contents))))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun %calc-internal-format-with-declared-format
-    (element-type internal-format initial-contents)
+(defun %calc-image-format-with-declared-format
+    (element-type image-format initial-contents)
   ;; Here the users declared the internal format in :element-type so
   ;; we need to make sure that no other arguments conflict with this
   (typecase initial-contents
-    (null internal-format)
-    (c-array (if (equal (lisp-type->internal-format
+    (null image-format)
+    (c-array (if (equal (lisp-type->image-format
                          (element-type initial-contents))
-                        internal-format)
-                 internal-format
+                        image-format)
+                 image-format
                  (error 'make-tex-array-not-match-type
                         :element-type element-type
-                        :internal-format internal-format
+                        :image-format image-format
                         :array-type (element-type initial-contents))))
-    (uploadable-lisp-seq internal-format) ;; we cant infer all types so we
+    (uploadable-lisp-seq image-format) ;; we cant infer all types so we
     ;; have to trust and then the
     ;; c-array code handle it
     (t (error 'make-tex-array-not-match-type2
@@ -363,20 +363,20 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun %calc-internal-format-with-pixel-format (pixel-format initial-contents)
+(defun %calc-image-format-with-pixel-format (pixel-format initial-contents)
   "Convert the pixel-format to an internal format and delegate to
-   %calc-internal-format"
-  (%calc-internal-format-with-declared-format
+   %calc-image-format"
+  (%calc-image-format-with-declared-format
    pixel-format
-   (pixel-format->internal-format pixel-format)
+   (pixel-format->image-format pixel-format)
    initial-contents))
 
-(defun %calc-internal-format-with-lisp-type (element-type initial-contents)
+(defun %calc-image-format-with-lisp-type (element-type initial-contents)
   "Convert the lisp type to an internal format and delegate to
-   %calc-internal-format"
-  (%calc-internal-format-with-declared-format
+   %calc-image-format"
+  (%calc-image-format-with-declared-format
    element-type
-   (lisp-type->internal-format element-type)
+   (lisp-type->image-format element-type)
    initial-contents))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -386,9 +386,9 @@
      rectangle multisample immutable initial-contents
      lod-bias min-lod max-lod minify-filter
      magnify-filter wrap compare generate-mipmaps
-     element-type internal-format)
+     element-type image-format)
   (declare (ignore element-type))
-  (let ((element-type (internal-format->lisp-type internal-format)))
+  (let ((element-type (image-format->lisp-type image-format)))
     (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions
 				     :element-type element-type))
       (make-texture tmp :mipmap mipmap
@@ -402,7 +402,7 @@
 
 (defun %make-cube-texture (dimensions mipmap layer-count cubes buffer-storage
                            rectangle multisample immutable initial-contents
-                           internal-format lod-bias min-lod max-lod minify-filter
+                           image-format lod-bias min-lod max-lod minify-filter
                            magnify-filter wrap compare generate-mipmaps)
   (assert (= 6 (length initial-contents)))
   (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
@@ -413,7 +413,7 @@
                          initial-contents)))
          (result (%make-texture dim mipmap layer-count cubes buffer-storage
                                 rectangle multisample immutable nil
-                                internal-format lod-bias min-lod max-lod
+                                image-format lod-bias min-lod max-lod
                                 minify-filter magnify-filter wrap compare
                                 generate-mipmaps)))
     (loop :for data :in initial-contents :for i :from 0 :do
@@ -422,7 +422,7 @@
 
 (defun %make-texture (dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
-                      internal-format lod-bias min-lod max-lod minify-filter
+                      image-format lod-bias min-lod max-lod minify-filter
                       magnify-filter wrap compare generate-mipmaps)
   (let* ((dimensions (listify dimensions))
 	 (dimensions (%texture-dimensions initial-contents dimensions)))
@@ -453,11 +453,11 @@
                               :mipmap-levels mipmap-levels
                               :layer-count layer-count
                               :cubes-p cubes
-                              :internal-format internal-format
+                              :image-format image-format
 			      :mutable-p (and immutable *immutable-available*)
                               :sampler-type (cepl.samplers::calc-sampler-type
 					     texture-type
-					     internal-format))))
+					     image-format))))
                 (with-texture-bound (texture)
                   (allocate-texture texture)
                   (when initial-contents
@@ -490,7 +490,7 @@
 ;;   (when (typep initial-contents 'gpu-array-t)
 ;;     (error "Cannot make a buffer-backed texture with a texture-backed gpu-array"))
 
-(defun %make-buffer-texture (dimensions internal-format mipmap layer-count cubes
+(defun %make-buffer-texture (dimensions image-format mipmap layer-count cubes
                              rectangle multisample immutable initial-contents
                              lod-bias min-lod max-lod minify-filter
                              magnify-filter wrap compare)
@@ -498,13 +498,13 @@
   (let* ((dimensions (listify dimensions))
          (element-type (if initial-contents
                            (element-type initial-contents)
-                           (internal-format->lisp-type internal-format)))
+                           (image-format->lisp-type image-format)))
          (texture-type (establish-texture-type
                         (length dimensions)
                         nil nil nil (every #'po2p dimensions) nil t nil)))
     ;; validation
     (assert-valid-args-for-buffer-backend-texture
-     internal-format cubes rectangle multisample mipmap layer-count
+     image-format cubes rectangle multisample mipmap layer-count
      lod-bias min-lod max-lod minify-filter magnify-filter wrap compare
      texture-type)
     ;; creation
@@ -519,40 +519,40 @@
                      :mipmap-levels 1
                      :layer-count 1
                      :cubes-p nil
-                     :internal-format internal-format
+                     :image-format image-format
                      :sampler-type (cepl.samplers::calc-sampler-type
-                                    texture-type internal-format)
+                                    texture-type image-format)
                      :backing-array array
                      :owns-array t)))
       ;; upload
       (with-texture-bound (new-tex)
-        (%gl::tex-buffer :texture-buffer internal-format
+        (%gl::tex-buffer :texture-buffer image-format
                          (gpu-buffer-id
 			  (cepl.gpu-arrays::gpu-array-buffer array)))
         (setf (texture-allocated-p new-tex) t)
         new-tex))))
 
 (defun assert-valid-args-for-buffer-backend-texture
-    (internal-format cubes rectangle multisample mipmap layer-count
+    (image-format cubes rectangle multisample mipmap layer-count
      lod-bias min-lod max-lod minify-filter magnify-filter wrap compare
      texture-type)
   (when (or mipmap (not (= layer-count 1)) cubes rectangle multisample)
     (error 'buffer-backed-texture-invalid-args))
   (when (or lod-bias min-lod max-lod minify-filter magnify-filter wrap compare)
     (error 'buffer-backed-texture-invalid-samplers))
-  (unless (valid-internal-format-for-buffer-backed-texturep internal-format)
-    (error 'buffer-backed-texture-invalid-internal-format
-           :type-name internal-format))
+  (unless (valid-image-format-for-buffer-backed-texturep image-format)
+    (error 'buffer-backed-texture-invalid-image-format
+           :type-name image-format))
   (unless (eq texture-type :texture-buffer)
-    (error 'buffer-backed-texture-establish-internal-format
+    (error 'buffer-backed-texture-establish-image-format
            :type-name texture-type)))
 
-(defun %find-tex-internal-format (element-format)
+(defun %find-tex-image-format (element-format)
   (if (pixel-format-p element-format)
-      (pixel-format->internal-format element-format)
+      (pixel-format->image-format element-format)
       (let ((pfo (lisp-type->pixel-format element-format)))
         (if pfo
-            (pixel-format->internal-format pfo)
+            (pixel-format->image-format pfo)
             element-format))))
 
 (defun allocate-texture (texture)
@@ -577,36 +577,36 @@
           ((:texture-1d :proxy-texture-1d)
            (tex-storage-1d texture-type
                            (texture-mipmap-levels texture)
-                           (texture-internal-format texture)
+                           (texture-image-format texture)
                            (first base-dimensions)))
           ((:texture-2d :proxy-texture-2d :texture-1d-array :texture-rectangle
                         :proxy-texture-rectangle :texture-cube-map
                         :proxy-texture-cube-map :proxy-texture-1d-array)
            (tex-storage-2d texture-type
                            (texture-mipmap-levels texture)
-                           (texture-internal-format texture)
+                           (texture-image-format texture)
                            (first base-dimensions)
                            (or (second base-dimensions) 0)))
           ((:texture-3d :proxy-texture-3d :texture-2d-array :texture-cube-array
                         :proxy-texture-cube-array :proxy-texture-2d-array)
            (tex-storage-3d texture-type
                            (texture-mipmap-levels texture)
-                           (texture-internal-format texture)
+                           (texture-image-format texture)
                            (first base-dimensions)
                            (or (second base-dimensions) 0)
                            (or (third base-dimensions) 0))))
         (setf (texture-allocated-p texture) t))))
 
-(defun tex-storage-1d (target levels internal-format width)
-  (%gl:tex-storage-1d target levels (gl::internal-format->int internal-format)
+(defun tex-storage-1d (target levels image-format width)
+  (%gl:tex-storage-1d target levels (gl::image-format->int image-format)
                       width))
 
-(defun tex-storage-2d (target levels internal-format width height)
-  (%gl:tex-storage-2d target levels (gl::internal-format->int internal-format)
+(defun tex-storage-2d (target levels image-format width height)
+  (%gl:tex-storage-2d target levels (gl::image-format->int image-format)
                       width height))
 
-(defun tex-storage-3d (target levels internal-format width height depth)
-  (%gl:tex-storage-3d target levels (gl::internal-format->int internal-format)
+(defun tex-storage-3d (target levels image-format width height depth)
+  (%gl:tex-storage-3d target levels (gl::image-format->int image-format)
                       width height depth))
 
 ;;------------------------------------------------------------
@@ -621,15 +621,15 @@
 (defmethod push-g ((object list) (destination gpu-array-t))
   (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
-                                   :element-type (internal-format->pixel-format
-                                                  (gpu-array-t-internal-format destination))))
+                                   :element-type (image-format->pixel-format
+                                                  (gpu-array-t-image-format destination))))
     (push-g c-a destination)))
 
 (defmethod push-g ((object array) (destination gpu-array-t))
   (with-c-array (c-a (make-c-array object
                                    :dimensions (dimensions destination)
-                                   :element-type (internal-format->pixel-format
-                                                  (gpu-array-t-internal-format destination))))
+                                   :element-type (image-format->pixel-format
+                                                  (gpu-array-t-image-format destination))))
     (push-g c-a destination)))
 
 ;; [TODO] This feels like could create non-optimal solutions
@@ -649,8 +649,8 @@
 ;; [TODO] Does not respect GL_PIXEL_PACK/UNPACK_BUFFER
 (defmethod pull1-g ((object gpu-array-t))
   (with-gpu-array-t object
-    (let* ((p-format (internal-format->pixel-format
-                      (gpu-array-t-internal-format object)))
+    (let* ((p-format (image-format->pixel-format
+                      (gpu-array-t-image-format object)))
            (c-array (make-c-array nil :dimensions (dimensions object)
                                   :element-type p-format)))
       (destructuring-bind (format type) (compile-pixel-format p-format)
