@@ -1,4 +1,4 @@
-(in-package :cepl.streams)
+(in-package :cepl.vaos)
 
 ;; [TODO] The terminology in here seems inconsistant, need to
 ;; nail this down
@@ -21,17 +21,18 @@
 
 ;; [TODO] Vao changes the inhabitants of :vertex-array etc
 ;;        this should be undone
-(let ((vao-cache nil))
-  (defun bind-vao (vao)
-    (unless (eq vao vao-cache)
-      (gl:bind-vertex-array vao)
-      (setf vao-cache vao)))
-  (defun force-bind-vao (vao)
-    (gl:bind-vertex-array vao)
-    (setf vao-cache vao)))
-(setf (documentation 'bind-vao 'function)
-      "Binds the vao specfied")
-(setf (symbol-function 'bind-vertex-array) #'bind-vao)
+(defun bind-vao (vao)
+  (gl:bind-vertex-array vao))
+
+(defun unbind-vao ()
+  (gl:bind-vertex-array 0))
+
+(defmacro with-vao-bound (vao &body body)
+  `(unwind-protect
+	(progn (bind-vao ,vao)
+	       ,@body)
+     (unbind-vao)))
+
 
 ;; [TODO] Types need full support. Read glVertexAttribPointer and work out
 ;;        what to do with gl_half_float, gl_double, gl_fixed, gl_int_2_10_10_10_rev
@@ -52,7 +53,7 @@
    You can also specify an element buffer to be used in the vao"
   (let ((vao (gl:gen-vertex-array))
         (attr-num 0))
-    (force-bind-vao vao)
+    (bind-vao vao)
     (loop for format in formats
        :do (let ((buffer (first format)))
              (cepl.gpu-buffers::force-bind-buffer buffer :array-buffer)
@@ -101,7 +102,7 @@
   (let ((element-buffer (when index-array (gpu-array-buffer index-array)))
         (vao gl-object)
         (attr 0))
-    (force-bind-vao vao)
+    (bind-vao vao)
     (loop :for gpu-array :in gpu-arrays :do
        (let* ((buffer (gpu-array-buffer gpu-array))
               (format (gpu-array-format gpu-array)))

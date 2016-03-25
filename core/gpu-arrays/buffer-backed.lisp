@@ -14,9 +14,6 @@
 
 ;; defmethod print-mem can be found further down the page
 
-(defmethod backed-by ((object gpu-array))
-  :buffer)
-
 (defmethod free ((object gpu-array))
   (free-gpu-array-b object))
 
@@ -61,6 +58,9 @@
 
 (defmethod dimensions ((object gpu-array))
   (gpu-array-dimensions object))
+
+(defun gpu-array-bb-element-type (gpu-array)
+  (first (gpu-array-format gpu-array)))
 
 (defmethod element-type ((object gpu-array))
   (first (gpu-array-format object)))
@@ -129,20 +129,6 @@ call to #'make-gpu-array were ~s"
   c-arr-dimensions provided-dimensions)
 
 (defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
-  "This function creates a list of gpu-arrays residing in a
-   single buffer in opengl. It create one gpu-array for each
-   c-array in the list passed in.
-
-   Access style is optional but if you are comfortable with
-   opengl, and know what type of usage pattern thsi array will
-   have, you can set this to any of the following:
-   (:stream-draw :stream-read :stream-copy :static-draw
-    :static-read :static-copy :dynamic-draw :dynamic-read
-    :dynamic-copy)"
-  ;;   Finally you can provide an existing buffer if you want to
-  ;; use it rather than creating a new buffer. Note that all
-  ;; existing data in the buffer will be destroyed in the process
-  ;; {TODO} Really? where?
   (let ((buffer (multi-buffer-data (make-gpu-buffer :managed t) c-arrays
                                    :array-buffer access-style)))
     (loop :for c-array :in c-arrays :for i :from 0 :collecting

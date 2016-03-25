@@ -36,18 +36,6 @@
 ;; [TODO] Need to unmap if something goes wrong
 (defmacro with-gpu-array-as-c-array
     ((temp-name gpu-array &key (access-type :read-write)) &body body)
-  "This macro is really handy if you need to have random access
-   to the data on the gpu. It takes a gpu-array and maps it
-   as a c-array which allows you to run any of the c-array
-   commands on it.
-
-   A simple example would be if we wanted to set the 3rd element
-   in a gpu array to 5.0 we could do the following:
-   (with-gpu-array-as-c-array (mygpuarray)
-     (setf (aref-c mygpuarray 2) 5.0))
-
-   The valid values for access are :read-only :write-only &
-   :read-write"
   (let ((ggpu-array (gensym "gpu-array")))
     `(let ((,ggpu-array ,gpu-array))
        (with-gpu-array-as-pointer (,temp-name ,ggpu-array :access-type ,access-type)
@@ -101,3 +89,15 @@ dimension then their sizes must match exactly"))
 (defmethod pull-g ((object gpu-array))
   (with-gpu-array-as-c-array (x object :access-type :read-only)
     (pull1-g x)))
+
+(defun gpu-array-element-type (gpu-array)
+  (etypecase gpu-array
+    (gpu-array-t
+     (cepl.types::gpu-array-t-internal-format gpu-array))
+    (gpu-array-bb
+     (cepl.gpu-arrays.buffer-backed::gpu-array-bb-element-type gpu-array))))
+
+(defun backed-by (gpu-array)
+  (etypecase gpu-array
+    (gpu-array-t :texture)
+    (gpu-array-bb :buffer)))

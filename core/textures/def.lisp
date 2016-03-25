@@ -94,21 +94,22 @@
     (setf (slot-value texture 'texture-id) -1)
     (%gl:delete-textures 1 id)))
 
-(defmethod backed-by ((object gpu-array-t)) :texture)
-
 ;;------------------------------------------------------------
 
 (defmethod print-object ((object gpu-array-t) stream)
   (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by ~s>"
-          (internal-format object)
-          (dimensions object)
-          (if (eq (internal-format object) :gl-internal)
+          (gpu-array-t-internal-format object)
+          (gpu-array-dimensions object)
+          (if (eq (gpu-array-t-internal-format object) :gl-internal)
               :internal
               :texture)))
 
 (defmethod free ((object gpu-array-t))
   (declare (ignore object))
   (free-gpu-array-t))
+
+(defmethod element-type ((gpu-array gpu-array-t))
+  (gpu-array-t-internal-format gpu-array))
 
 (defmethod free-gpu-array ((gpu-array gpu-array-t))
   (declare (ignore gpu-array))
@@ -128,13 +129,13 @@
 	(internal-format (symb :internal-format)))
     `(let ((,arr ,gpu-array-t))
        (symbol-macrolet
-	   ((,texture (list 'gpu-array-t-texture ,arr))
-	    (,texture-type (list 'gpu-array-t-texture-type ,arr))
-	    (,dimensions (list 'gpu-array-dimensions ,arr))
-	    (,level-num (list 'gpu-array-t-level-num ,arr))
-	    (,layer-num (list 'gpu-array-t-layer-num ,arr))
-	    (,face-num (list 'gpu-array-t-face-num ,arr))
-	    (,internal-format (list 'gpu-array-t-internal-format ,arr)))
+	   ((,texture (gpu-array-t-texture ,arr))
+	    (,texture-type (gpu-array-t-texture-type ,arr))
+	    (,dimensions (gpu-array-dimensions ,arr))
+	    (,level-num (gpu-array-t-level-num ,arr))
+	    (,layer-num (gpu-array-t-layer-num ,arr))
+	    (,face-num (gpu-array-t-face-num ,arr))
+	    (,internal-format (gpu-array-t-internal-format ,arr)))
 	 ,@body))))
 
 ;;------------------------------------------------------------

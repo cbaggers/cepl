@@ -589,7 +589,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; simple keyword pattern to texture
     ((keywordp pattern)
      (cons (texref
-	    (make-texture nil :dimensions (viewport-resolution (current-viewport))
+	    (make-texture nil :dimensions (viewport-dimensions (current-viewport))
 			  :element-type (%get-default-texture-format pattern)))
 	   t))
     ;; pattern with args for make-texture
@@ -600,7 +600,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
          (error "Only the following args to make-texture are allowed inside a make-fbo ~s"
                 %valid-texture-subset))
      (destructuring-bind
-           (&key (dimensions (viewport-resolution (current-viewport)))
+           (&key (dimensions (viewport-dimensions (current-viewport)))
                  (internal-format (%get-default-texture-format (first pattern)))
                  mipmap (immutable t) lod-bias min-lod max-lod minify-filter
                  magnify-filter wrap compare)

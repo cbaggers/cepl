@@ -32,17 +32,7 @@
 
 (defun make-buffer-stream (gpu-arrays &key index-array (start 0) length
                                         retain-arrays)
-  "This function simplifies making the buffer-stream if you are
-   storing the data in gpu-arrays.
 
-   Remember that you can also use gpu-sub-arrays in here if you
-   want to limit the data you are using, for example the
-   following is perfectly legal code:
-   (make-buffer-stream
-     :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
-                  ,(gpu-sub-array monster-col-data 1000 2000))
-     :index-array monster-index-array
-     :length 1000)"
   (let* ((gpu-arrays (listify gpu-arrays)))
     (make-buffer-stream-from-id (make-vao gpu-arrays index-array)
                                 gpu-arrays
@@ -54,17 +44,6 @@
 (defun make-buffer-stream-from-id (vao-gl-object gpu-arrays
                                    &key index-array (start 0) length
                                      retain-arrays)
-  "This function simplifies making the buffer-stream if you are
-   storing the data in gpu-arrays.
-
-   Remember that you can also use gpu-sub-arrays in here if you
-   want to limit the data you are using, for example the
-   following is perfectly legal code:
-   (make-buffer-stream
-     :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
-                  ,(gpu-sub-array monster-col-data 1000 2000))
-     :index-array monster-index-array
-     :length 1000)"
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
   (let* ((gpu-arrays (listify gpu-arrays))

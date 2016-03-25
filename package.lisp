@@ -357,8 +357,8 @@
 	   :viewport-origin-x
 	   :viewport-origin-y
 	   :make-viewport
+	   :viewport-dimensions
 	   :viewport-resolution
-	   :viewport-resolution-v!
 	   :viewport-origin
 	   :with-viewport
 	   :with-fbo-viewport
@@ -534,7 +534,7 @@
 	   :make-gpu-arrays
 	   :subseq-g))
 
-(defpackage :cepl.streams
+(defpackage :cepl.vaos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
@@ -542,21 +542,25 @@
   (:export :free-vao
 	   :free-vaos
 	   :bind-vao
-	   :force-bind-vao
+	   :unbind-vao
+	   :with-vao-bound
 	   :suitable-array-for-index-p
 	   :make-vao
-	   :make-vao-from-id
-	   ;;---
-	   :buffer-stream
+	   :make-vao-from-id))
+
+(defpackage :cepl.streams
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :cepl.generics :cepl.types :%cepl.types :split-sequence
+	:named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
+	:cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed :cepl.vaos)
+  (:export :buffer-stream
 	   :buffer-stream-p
 	   :buffer-stream-vao
 	   :buffer-stream-length
 	   :buffer-stream-index-type
 	   :buffer-stream-gpu-arrays
-	   :buffer-stream-managed
 	   :free-buffer-stream
-	   :make-buffer-stream
-	   :make-buffer-stream-from-id))
+	   :make-buffer-stream))
 
 (defpackage :cepl.ubos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -611,8 +615,7 @@
 	   :gpu-array-texture-type
 	   :gpu-array-level-num
 	   :gpu-array-layer-num
-	   :gpu-array-face-num
-	   :gpu-array-internal-format))
+	   :gpu-array-face-num))
 
 (defpackage :cepl.gpu-arrays
   ;; a place to put things that cross both kinds of gpu-array
@@ -628,12 +631,11 @@
 	   :gpu-array-buffer
 	   :gpu-array-format
 	   :gpu-array-access-style
-	   :gpu-array-texture
 	   :gpu-array-texture-type
 	   :gpu-array-level-num
 	   :gpu-array-layer-num
 	   :gpu-array-face-num
-	   :gpu-array-internal-format
+	   :gpu-array-element-type
 	   :free-gpu-array
 	   :make-gpu-array
 	   :make-gpu-arrays

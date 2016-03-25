@@ -29,11 +29,11 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun viewport-resolution (viewport)
+(defun viewport-dimensions (viewport)
   (list (%viewport-resolution-x viewport)
         (%viewport-resolution-y viewport)))
 
-(defun viewport-resolution-v! (viewport)
+(defun viewport-resolution (viewport)
   (v! (%viewport-resolution-x viewport)
       (%viewport-resolution-y viewport)))
 
@@ -55,16 +55,16 @@
   (when (eq (current-viewport) viewport)
     (%viewport viewport)))
 
-(defun (setf viewport-resolution) (value viewport)
+(defun (setf viewport-dimensions) (value viewport)
   (let ((value (if (typep value 'viewport)
-                   (viewport-resolution value)
+                   (viewport-dimensions value)
                    value)))
     (%set-resolution viewport (first value) (second value))))
 
-(defun (setf viewport-resolution-v!) (value viewport)
+(defun (setf viewport-resolution) (value viewport)
   (let ((value (if (typep value 'rtg-math.types:vec2)
                    (list (floor (v:x value)) (floor (v:y value)))
-                   (error "The value given to (setf viewport-resolution-v!) must be a vec2"))))
+                   (error "The value given to (setf viewport-resolution) must be a vec2"))))
     (%set-resolution viewport (first value) (second value))))
 
 (defmethod (setf size) (value (object viewport))
@@ -105,7 +105,7 @@
      ,@body))
 
 (defun clone-viewport (viewport)
-  (make-viewport (viewport-resolution viewport)
+  (make-viewport (viewport-dimensions viewport)
 		 (viewport-origin viewport)))
 
 (defun viewport-params-to-vec4 ()

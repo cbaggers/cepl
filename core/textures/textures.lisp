@@ -34,13 +34,13 @@
       (if (valid-index-p texture mipmap-level layer cube-face)
           (%make-gpu-array-t
 	   :texture texture
-	   :texture-type (gpu-array-t-texture-type texture)
+	   :texture-type (texture-type texture)
 	   :level-num mipmap-level
 	   :layer-num layer
 	   :face-num cube-face
 	   :dimensions (dimensions-at-mipmap-level
 			texture mipmap-level)
-	   :internal-format (gpu-array-t-internal-format texture))
+	   :internal-format (internal-format texture))
           (error "Texture index out of range"))))
 
 (defun valid-index-p (texture mipmap-level layer cube-face)

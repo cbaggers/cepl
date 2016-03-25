@@ -25,13 +25,14 @@
 		     :cepl.fbos
 		     :cepl.blending
 		     :cepl.pipelines
-		     :cepl.generics
-		     :cepl.gpu-buffers
 		     :cepl.image-formats
 		     :cepl.pixel-formats
 		     :cepl.ubos
 		     :cepl.render-state
 		     :cepl.space
+		     :cepl.generics
+		     :cepl.gpu-buffers
+		     :cepl.vaos
 		     :cepl.types
 		     :cepl.context)
    :template *template-dir*

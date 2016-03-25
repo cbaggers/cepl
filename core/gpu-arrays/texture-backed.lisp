@@ -14,6 +14,3 @@
 
 (defun gpu-array-face-num (gpu-array)
   (cepl.types::gpu-array-t-face-num gpu-array))
-
-(defun gpu-array-internal-format (gpu-array)
-  (cepl.types::gpu-array-t-internal-format gpu-array))
