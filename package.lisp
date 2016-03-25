@@ -185,6 +185,7 @@
 	   :allocated
 	   :allocatedp
 	   :sampler-object-id
+	   :+null-texture+
 
 	   :immutable-texture
 
@@ -527,7 +528,6 @@
 	:cepl.c-arrays :cepl.gpu-buffers)
   (:export :gpu-array-buffer
 	   :gpu-array-format
-	   :gpu-array-dimensions
 	   :gpu-array-access-style
 	   :free-gpu-array
 	   :make-gpu-array
@@ -623,6 +623,21 @@
 	:cepl.textures :%cepl.types)
   (:export :gpu-array
 	   :gpu-array-p
+	   :backed-by
+	   :gpu-array-dimensions
+	   :gpu-array-buffer
+	   :gpu-array-format
+	   :gpu-array-access-style
+	   :gpu-array-texture
+	   :gpu-array-texture-type
+	   :gpu-array-level-num
+	   :gpu-array-layer-num
+	   :gpu-array-face-num
+	   :gpu-array-internal-format
+	   :free-gpu-array
+	   :make-gpu-array
+	   :make-gpu-arrays
+	   :subseq-g
 	   :with-gpu-array-as-pointer
 	   :with-gpu-array-as-c-array))
 

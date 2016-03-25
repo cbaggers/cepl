@@ -96,13 +96,6 @@
 
 (defmethod backed-by ((object gpu-array-t)) :texture)
 
-(defmethod initialize-instance :after
-    ((array gpu-array-t) &key texture texture-type internal-format)
-  (when (null texture-type)
-    (setf (slot-value array 'texture-type) (gpu-array-t-texture-type texture)))
-  (when (null internal-format)
-    (setf (slot-value array 'internal-format) (internal-format texture))))
-
 ;;------------------------------------------------------------
 
 (defmethod print-object ((object gpu-array-t) stream)

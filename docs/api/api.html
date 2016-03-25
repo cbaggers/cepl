@@ -453,97 +453,32 @@ Frees the c-array at the end of the scope.
                     <pre class="docstring">
 GPU-ARRAY is a structure that respresents an array in gpu-memory.
 
-OpenGL has 2 places it lets you store data on the gpu. Textures, which are covered in cepl.textures, and gpu-buffers
+Depending on how the array was created it is said that the gpu-array is either
+'buffer-backed' or 'texture-backed'.
 
-GPU Buffers are blocks of unformatted gpu memory. Most commonly filled ordered
-data that is streamed into the rendering pipeline via the vertex shader, when
-used in this way you will often hear it be called a vertex buffer object (vbo)
-in opengl texts.
+- buffer-backed: Means it was created with #'make-gpu-array or #'make-gpu-arrays
+                 The data is stored in a gpu-buffer.
+- texture-backed: Means it was created along with a texture. Textures are
+                  structures that contain some number of gpu-arrays.
+                  The data is stored in texture memory.
+                  See 'texture' for more details.
 
-Given that
+Both have different performance characteristics, use cases and allow different
+element types, however they are both an ordered block of typed data.
+They can have multiple dimensions and you can pull-g and push-g data to and from
+them.
 
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:GPU-ARRAY-P"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY-P" class="name">GPU-ARRAY-P</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY"/>
-                  <article>
-                    <header class="macro">
-                      <span class="type">macro</span>
-                      <code>
-                        <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-AS-C-ARRAY</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">This macro is really handy if you need to have random access
-   to the data on the gpu. It takes a gpu-array and maps it
-   as a c-array which allows you to run any of the c-array
-   commands on it.
+Note for folks who are used to OpenGL:
+texture-backed gpu-arrays are what opengl would normally call 'images'. This is
+a pretty terrible name for them as it implices they only can hold image data, or
+that they are 2d only. In fact 'images' can have 1 to 3 dimensions, can have
+elements that are single bytes, floats, vectors of either or a large number of
+other types.
+'image' belies this nature and so CEPL chooses 'array'
 
-   A simple example would be if we wanted to set the 3rd element
-   in a gpu array to 5.0 we could do the following:
-   (with-gpu-array-as-c-array (mygpuarray)
-     (setf (aref-c mygpuarray 2) 5.0))
-
-   The valid values for access are :read-only :write-only &amp;
-   :read-write</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER"/>
-                  <article>
-                    <header class="macro">
-                      <span class="type">macro</span>
-                      <code>
-                        <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER" class="name">WITH-GPU-ARRAY-AS-POINTER</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">This macro is really handy if you need to have random access
-   to the data on the gpu. It takes a gpu-array and maps it
-   giving you the pointer</pre>
-                  </article>
-                </li></ul></li><li class="package">
-              <h3>
-                <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED" href="#CEPL.GPU-ARRAYS.BUFFER-BACKED">CEPL.GPU-ARRAYS.BUFFER-BACKED</a>
-                <span class="nicknames"/>
-              </h3>
-              <ul><li>
-                  <a name="%CEPL.TYPES:GPU-ARRAY"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:GPU-ARRAY" class="name">GPU-ARRAY</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-GPU-ARRAY is a structure that respresents an array in gpu-memory.
-
-OpenGL has 2 places it lets you store data on the gpu. Textures, which are covered in cepl.textures, and gpu-buffers
-
-GPU Buffers are blocks of unformatted gpu memory. Most commonly filled ordered
-data that is streamed into the rendering pipeline via the vertex shader, when
-used in this way you will often hear it be called a vertex buffer object (vbo)
-in opengl texts.
-
-Given that
-
+This also matches how the GLWiki chooses to explain them:
+&gt; an image is defined as a single array of pixels of a certain
+&gt; dimensionality (1D, 2D, or 3D), with a particular size, and a specific format.
 </pre>
                   </article>
                 </li><li>
@@ -557,7 +492,11 @@ Given that
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Return a list whose elements are the dimensions of the array.
+
+You can also use the generic function #'dimensions to get this info.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-ACCESS-STYLE"/>
@@ -570,7 +509,18 @@ Given that
                         <span class="arguments">(GPU-ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+When passed a buffer-backed gpu-array this function will return the access-style
+of the underlying gpu-buffer.
+
+The access-style of a gpu-array (or gpu-buffer) is a hint to OpenGL on how you
+intend to use the array. It is optional whether your gpu manufacturer's
+implementation of GL takes any notice of this option. When they do take notice
+of it, it will to optimize access to the underlying data.
+
+There are also no repercussions for accessing the data in a way contrary to the
+declared access-style (other than potential performance costs).
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-BUFFER"/>
@@ -583,7 +533,28 @@ Given that
                         <span class="arguments">(GPU-ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+When passed a buffer-backed gpu-array this function will return the gpu-buffer
+backing this array.
+
+Note that if you made the array with #'make-gpu-arrays then there will be
+multiple gpu-arrays sharing this buffer, so care should be taken when modifying
+or freeing data.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-FACE-NUM"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-FACE-NUM" class="name">GPU-ARRAY-FACE-NUM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-FORMAT"/>
@@ -601,6 +572,45 @@ Given that
    this gpu-array lives in.</pre>
                   </article>
                 </li><li>
+                  <a name="CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-INTERNAL-FORMAT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-INTERNAL-FORMAT" class="name">GPU-ARRAY-INTERNAL-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-LAYER-NUM"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-LAYER-NUM" class="name">GPU-ARRAY-LAYER-NUM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-LEVEL-NUM"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-LEVEL-NUM" class="name">GPU-ARRAY-LEVEL-NUM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="%CEPL.TYPES:GPU-ARRAY-P"/>
                   <article>
                     <header class="function">
@@ -609,6 +619,32 @@ Given that
                         <h4><a href="#%CEPL.TYPES:GPU-ARRAY-P" class="name">GPU-ARRAY-P</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-TEXTURE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-TEXTURE" class="name">GPU-ARRAY-TEXTURE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-TEXTURE-TYPE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-TEXTURE-TYPE" class="name">GPU-ARRAY-TEXTURE-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GPU-ARRAY)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -644,6 +680,19 @@ Given that
                         <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:SUBSEQ-G" class="name">SUBSEQ-G</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(ARRAY START &amp;OPTIONAL END)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GENERICS:BACKED-BY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.GENERICS:BACKED-BY" class="name">BACKED-BY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -685,6 +734,45 @@ Given that
    (:stream-draw :stream-read :stream-copy :static-draw
     :static-read :static-copy :dynamic-draw :dynamic-read
     :dynamic-copy)</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-AS-C-ARRAY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   as a c-array which allows you to run any of the c-array
+   commands on it.
+
+   A simple example would be if we wanted to set the 3rd element
+   in a gpu array to 5.0 we could do the following:
+   (with-gpu-array-as-c-array (mygpuarray)
+     (setf (aref-c mygpuarray 2) 5.0))
+
+   The valid values for access are :read-only :write-only &amp;
+   :read-write</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER" class="name">WITH-GPU-ARRAY-AS-POINTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   giving you the pointer</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -2080,10 +2168,10 @@ Given that
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM1213) :FUNC-ADD) ((:MODE-ALPHA DUM1214) :FUNC-ADD)
- ((:SOURCE-RGB DUM1215) :SRC-ALPHA) ((:SOURCE-ALPHA DUM1216) :SRC-ALPHA)
- ((:DESTINATION-RGB DUM1217) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DUM1218) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM1209) :FUNC-ADD) ((:MODE-ALPHA DUM1210) :FUNC-ADD)
+ ((:SOURCE-RGB DUM1211) :SRC-ALPHA) ((:SOURCE-ALPHA DUM1212) :SRC-ALPHA)
+ ((:DESTINATION-RGB DUM1213) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DUM1214) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring"/>

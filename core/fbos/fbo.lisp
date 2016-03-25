@@ -85,14 +85,11 @@
    :gpu-array (when enabled (%make-default-attachment-gpu-array dimensions))))
 
 (defun %make-default-attachment-gpu-array (dimensions)
-  (make-instance 'gpu-array-t
-                 :texture nil
-                 :texture-type :gl-internal
-                 :dimensions dimensions
-                 :level-num 0
-                 :layer-num 0
-                 :face-num 0
-                 :internal-format :gl-internal))
+  (%make-gpu-array-t
+   :texture +null-texture+
+   :texture-type :gl-internal
+   :dimensions dimensions
+   :internal-format :gl-internal))
 
 (defun %set-default-fbo-viewport (new-dimensions)
   (let ((fbo %default-framebuffer))

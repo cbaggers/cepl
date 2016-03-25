@@ -32,15 +32,15 @@
           (error "Texture index out of range")
           (slot-value texture 'backing-array))
       (if (valid-index-p texture mipmap-level layer cube-face)
-          (make-instance 'gpu-array-t
-                         :texture texture
-                         :texture-type (gpu-array-t-texture-type texture)
-                         :level-num mipmap-level
-                         :layer-num layer
-                         :face-num cube-face
-                         :dimensions (dimensions-at-mipmap-level
-                                      texture mipmap-level)
-                         :internal-format (gpu-array-t-internal-format texture))
+          (%make-gpu-array-t
+	   :texture texture
+	   :texture-type (gpu-array-t-texture-type texture)
+	   :level-num mipmap-level
+	   :layer-num layer
+	   :face-num cube-face
+	   :dimensions (dimensions-at-mipmap-level
+			texture mipmap-level)
+	   :internal-format (gpu-array-t-internal-format texture))
           (error "Texture index out of range"))))
 
 (defun valid-index-p (texture mipmap-level layer cube-face)
@@ -91,15 +91,14 @@
          (compiled-pf (compile-pixel-format element-pf))
          (pix-format (or format (first compiled-pf)))
          (pix-type (or type (second compiled-pf))))
-    (with-slots (texture dimensions level-num layer-num face-num internal-format
-                         texture-type) gpu-array
+    (with-gpu-array-t gpu-array
       (error-on-invalid-upload-formats texture-type internal-format pix-format
-                                       pix-type)
+				       pix-type)
       (unless (equal (dimensions c-array) dimensions)
-        (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
+	(error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
       (with-texture-bound ((gpu-array-t-texture gpu-array))
-        (%upload-tex texture texture-type level-num (dimensions c-array)
-                     layer-num face-num pix-format pix-type (pointer c-array)))))
+	(%upload-tex texture texture-type level-num (dimensions c-array)
+		     layer-num face-num pix-format pix-type (pointer c-array)))))
   gpu-array)
 
 ;; [TODO] add offsets
@@ -651,15 +650,17 @@
 ;; [TODO] implement gl-fill and fill arguments
 ;; [TODO] Does not respect GL_PIXEL_PACK/UNPACK_BUFFER
 (defmethod pull1-g ((object gpu-array-t))
-  (with-slots (layer-num level-num texture-type face-num
-                         internal-format texture) object
+  (with-gpu-array-t object
     (let* ((p-format (internal-format->pixel-format
                       (gpu-array-t-internal-format object)))
            (c-array (make-c-array nil :dimensions (dimensions object)
                                   :element-type p-format)))
       (destructuring-bind (format type) (compile-pixel-format p-format)
         (with-texture-bound (texture)
-          (%gl:get-tex-image texture-type level-num format type
+          (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
+			     (coerce level-num 'real)
+			     format
+			     type
                              (pointer c-array))))
       c-array)))
 

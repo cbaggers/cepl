@@ -18,7 +18,6 @@
   (staple:generate
    :cepl :packages '(:cepl.c-arrays
 		     :cepl.gpu-arrays
-		     :cepl.gpu-arrays.buffer-backed
 		     :cepl.streams
 		     :cepl.viewports
 		     :cepl.textures

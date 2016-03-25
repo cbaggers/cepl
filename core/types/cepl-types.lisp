@@ -35,6 +35,9 @@
    (allocated :initform nil :reader allocatedp)
    (sampler-object-id :initform 0)))
 
+(defvar +null-texture+
+  (make-instance 'gl-texture))
+
 ;;------------------------------------------------------------
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
