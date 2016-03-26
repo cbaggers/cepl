@@ -2959,19 +2959,6 @@ This function returns t if the supplied value is a sampler and nil otherwise
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.SAMPLERS:SAMPLER-TYPEP"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.SAMPLERS:SAMPLER-TYPEP" class="name">SAMPLER-TYPEP</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(TYPE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:SET-MINIFY-FILTER"/>
                   <article>
                     <header class="function">
@@ -3009,7 +2996,7 @@ based on the following:
                     <pre class="docstring">
 This macro is how you apply override a texture's sampling parameters.
 
-The sampler affects any sampling done by pipelines run inside the scope of 
+The sampler affects any sampling done by pipelines run inside the scope of
 with-sampling. After the scope the sampler is detatched.
 
 with-sampling is used as follows:
@@ -3018,7 +3005,7 @@ with-sampling is used as follows:
                     (*tex2* *sam*))
       (map-g #'prog-1 *stream* :tex *tex* :norm-map *tex2*))
 
-Where *sam* is a sampler that is attached to both of the textures *tex* and 
+Where *sam* is a sampler that is attached to both of the textures *tex* and
 *tex2*
 
 See https://github.com/cbaggers/cepl.examples/blob/master/examples/sampling.lisp
@@ -3041,20 +3028,48 @@ for a full example.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BLENDING-PARAMS"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+An FBO attachment is a slot where a texture-backed gpu-array can be attached.
+When the texture is attached the data from a pipeline rendering into the fbo is
+written into the texture.
+
+This is the heart of how multi-pass rendering is done in OpenGL. One pipeline
+writes data into textures that are then used as inputs to another pipeline[0].
+
+Attachments come in a few varieties:
+
+-- Color Attachments --
+
+Color attachments can only contain gpu-arrays whose element-type can be found in
+the *color-renderable-formats* list.
+
+Note that while OpenGL terminology mentions 'color' and 'image' a lot you are
+not limitted to only using textures or fbos for pictures. It is perfectly
+valid (and incredibly useful) to return data meaning all kinds of things other
+than colors.
+
+-- Depth Attachments --
+
+The depth attachment (when used) can only contain a gpu-array whos element-type
+can be found in *depth-formats*
+
+Usage Tip:
+Even if you don't plan on reading from this depth_attachment, any fbo that will
+be rendered to should have a depth attachment.
+
+-- Stencil Attachments (NOT SUPPORTED IN CURRENT CEPL VERSION) --
+
+The stencil attachment (when used) can only contain a gpu-array whos
+element-type can be found in *stencil-formats*
+
+-- Depth-Stencil Attachments (NOT SUPPORTED IN CURRENT CEPL VERSION) --
+
+The depth-stencil attachment (when used) can only contain a gpu-array whos
+element-type can be found in *depth-stencil-formats*
+
+This attachment is shorthand for 'both depth and stencil'. The gpu-array
+attached here becomes both the depth and stencil attachment.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:FBO"/>
@@ -3067,7 +3082,82 @@ for a full example.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A framebuffer object (FBO) is a structure that can be rendered into.
+
+When a FBO is rendered into the data from the pipeline is written into one or
+more of the attachments of the FBO
+
+An FBO attachment is a slot where a texture-backed gpu-array can be attached.
+When the texture is attached the data from a pipeline rendering into the fbo is
+written into the texture.
+
+This is the heart of how multi-pass rendering is done in OpenGL. One pipeline
+writes data into textures that are then used as inputs to another pipeline[0].
+
+A FBO can have:
+- 0 or more 'color attachments'
+- 0 or 1 'depth attachment'
+- 0 or 1 'stencil attachment'
+- 0 or 1 'depth-stencil attachment'
+
+Let's look at these in more detail:
+
+-- Color Attachments --
+
+Color attachments can only contain gpu-arrays whose element-type can be found in
+the *color-renderable-formats* list.
+
+Note that while OpenGL terminology mentions 'color' and 'image' a lot you are
+not limitted to only using textures or fbos for pictures. It is perfectly
+valid (and incredibly useful) to return data meaning all kinds of things other
+than colors.
+
+-- Depth Attachments --
+
+The depth attachment (when used) can only contain a gpu-array whos element-type
+can be found in *depth-formats*
+
+Usage Tip:
+Even if you don't plan on reading from this depth_attachment, any fbo that will
+be rendered to should have a depth attachment.
+
+-- Stencil Attachments (NOT SUPPORTED IN CURRENT CEPL VERSION) --
+
+The stencil attachment (when used) can only contain a gpu-array whos
+element-type can be found in *stencil-formats*
+
+-- Depth-Stencil Attachments (NOT SUPPORTED IN CURRENT CEPL VERSION) --
+
+The depth-stencil attachment (when used) can only contain a gpu-array whos
+element-type can be found in *depth-stencil-formats*
+
+This attachment is shorthand for 'both depth and stencil'. The gpu-array
+attached here becomes both the depth and stencil attachment.
+
+
+-- Choosing which attachment to render into --
+
+Making these choices is done with the 'with-fbo-bound macro. See it's docstring
+for further details
+
+
+[0] WARNING:
+
+It is possible to bind a texture to an FBO, bind that same texture to a shader,
+and then try to render with it at the same time.
+
+It is perfectly valid to bind one gpu-array from a texture to an FBO and then
+render with that texture, as long as you prevent yourself from sampling from
+that gpu-array. If you do try to read and write to the same image, you get
+undefined results.
+
+This means it may do what you want, the sampler may get old data, the sampler
+may get half old and half new data, or it may get garbage data. Any of these are
+possible outcomes.
+
+DO NOT DO THIS. What you will get is undefined behavior.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:ATTACHMENT"/>
@@ -3080,7 +3170,34 @@ for a full example.
                         <span class="arguments">(FBO ATTACHMENT-NAME)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function retrieves the attachment named by attachment-name from the
+given fbo.
+
+The attachment-name can be one of the following:
+
+ a positive integer - In which case this function returns the
+		      nth color-attachments where (= n attachment-name)
+
+ :d - the depth-attachment is returned
+
+ :s - the stencil-attachment is returned [0]
+
+ :ds - the depth-stencil-attachment is returned [0]
+
+
+You can also setf this function, the value can be either of the following:
+
+ texture-backed gpu-array - The given array is attached to the fbo
+                            at the location specified by attachment-name
+
+ a different attachment - The gpu-array from the given attachment is attached
+                          to the fbo at the location specified by
+                          attachment-name
+
+[0] WARNING:
+:s &amp; :ds are not supported in the current version of CEPL
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:ATTACHMENT-GPU-ARRAY"/>
@@ -3093,111 +3210,9 @@ for a full example.
                         <span class="arguments">(ATTACHMENT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.FBOS:BLENDING"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:BLENDING" class="name">BLENDING</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BLENDING-PARAMS"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(TARGET)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.FBOS:DESTINATION-ALPHA"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:DESTINATION-ALPHA" class="name">DESTINATION-ALPHA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.FBOS:DESTINATION-RGB"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:DESTINATION-RGB" class="name">DESTINATION-RGB</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.FBOS:MODE-ALPHA"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:MODE-ALPHA" class="name">MODE-ALPHA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.FBOS:MODE-RGB"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:MODE-RGB" class="name">MODE-RGB</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.FBOS:SOURCE-ALPHA"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:SOURCE-ALPHA" class="name">SOURCE-ALPHA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.FBOS:SOURCE-RGB"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:SOURCE-RGB" class="name">SOURCE-RGB</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the gpu-array conntect to the given attachment.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:ATTACHMENT-P"/>
@@ -3464,6 +3479,84 @@ for a full example.
                         <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-SOURCE-RGB" class="name">BLENDING-PARAMS-SOURCE-RGB</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.BLENDING:DESTINATION-ALPHA"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.BLENDING:DESTINATION-ALPHA" class="name">DESTINATION-ALPHA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.BLENDING:DESTINATION-RGB"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.BLENDING:DESTINATION-RGB" class="name">DESTINATION-RGB</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.BLENDING:MODE-ALPHA"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.BLENDING:MODE-ALPHA" class="name">MODE-ALPHA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.BLENDING:MODE-RGB"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.BLENDING:MODE-RGB" class="name">MODE-RGB</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.BLENDING:SOURCE-ALPHA"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.BLENDING:SOURCE-ALPHA" class="name">SOURCE-ALPHA</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.BLENDING:SOURCE-RGB"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.BLENDING:SOURCE-RGB" class="name">SOURCE-RGB</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ATTACHMENT)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>

@@ -2,7 +2,7 @@
 
 (defun blending-params (target)
   (typecase target
-    (fbo (cepl.fbos::%fbo-blending-params target))
+    (fbo (%fbo-blending-params target))
     (attachment (cepl.blending:make-blending-params
                  :mode-rgb (mode-rgb target)
                  :mode-alpha (mode-alpha target)
@@ -13,42 +13,41 @@
 
 (defun (setf blending-params) (value target)
   (typecase target
-    (fbo (setf (cepl.fbos::%fbo-blending-params target) value))
-    (attachment (setf (cepl.fbos::%attachment-blending-params target) value))))
+    (fbo (setf (%fbo-blending-params target) value))
+    (attachment (setf (%attachment-blending-params target) value))))
 
 (defmacro with-blending-param-slots ((&key fbo attachment) &body body)
   (cond
     (fbo
      `(macrolet
           ((mode-rgb (x)
-	     `(cepl.blending::blending-params-mode-rgb (cepl.fbos::%fbo-blending-params ,x)))
+	     `(cepl.blending::blending-params-mode-rgb (%fbo-blending-params ,x)))
            (mode-alpha (x)
-	     `(cepl.blending::blending-params-mode-alpha (cepl.fbos::%fbo-blending-params ,x)))
+	     `(cepl.blending::blending-params-mode-alpha (%fbo-blending-params ,x)))
            (source-rgb (x)
-	     `(cepl.blending::blending-params-source-rgb (cepl.fbos::%fbo-blending-params ,x)))
+	     `(cepl.blending::blending-params-source-rgb (%fbo-blending-params ,x)))
            (source-alpha (x)
-	     `(cepl.blending::blending-params-source-alpha (cepl.fbos::%fbo-blending-params ,x)))
+	     `(cepl.blending::blending-params-source-alpha (%fbo-blending-params ,x)))
            (destination-rgb (x) `(cepl.blending::blending-params-destination-rgb
-                                  (cepl.fbos::%fbo-blending-params ,x)))
+                                  (%fbo-blending-params ,x)))
            (destination-alpha (x) `(cepl.blending::blending-params-destination-alpha
-                                    (cepl.fbos::%fbo-blending-params ,x))))
+                                    (%fbo-blending-params ,x))))
         ,@body))
     (attachment
      `(macrolet
           ((mode-rgb (x) `(cepl.blending::blending-params-mode-rgb
-                           (cepl.fbos::%attachment-blending-params ,x)))
+                           (%attachment-blending-params ,x)))
            (mode-alpha (x) `(cepl.blending::blending-params-mode-alpha
-                             (cepl.fbos::%attachment-blending-params ,x)))
+                             (%attachment-blending-params ,x)))
            (source-rgb (x) `(cepl.blending::blending-params-source-rgb
-                             (cepl.fbos::%attachment-blending-params ,x)))
+                             (%attachment-blending-params ,x)))
            (source-alpha (x) `(cepl.blending::blending-params-source-alpha
-                               (cepl.fbos::%attachment-blending-params ,x)))
+                               (%attachment-blending-params ,x)))
            (destination-rgb (x) `(cepl.blending::blending-params-destination-rgb
-                                  (cepl.fbos::%attachment-blending-params ,x)))
+                                  (%attachment-blending-params ,x)))
            (destination-alpha (x) `(cepl.blending::blending-params-destination-alpha
-                                    (cepl.fbos::%attachment-blending-params ,x))))
+                                    (%attachment-blending-params ,x))))
         ,@body))))
-
 
 ;; Most of the code that uses blend modes will be in other files
 ;; as it is most needed in map-g and fbos
@@ -223,14 +222,14 @@
       (when (blending a) (%gl:disable-i :blend i))))
 
 (defun %loop-setting-per-attachment-blend-params (fbo)
-  (loop :for a :across (cepl.fbos::%fbo-attachment-color fbo) :for i :from 0 :do
+  (loop :for a :across (%fbo-attachment-color fbo) :for i :from 0 :do
      (when (blending a)
-       (if (cepl.fbos::%attachment-override-blending a)
+       (if (%attachment-override-blending a)
            (%blend-attachment-i a i)
            (%blend-fbo-i fbo i)))))
 
 (defun %blend-fbo (fbo)
-  (%blend-using-params (cepl.fbos::%fbo-blending-params fbo)))
+  (%blend-using-params (%fbo-blending-params fbo)))
 
 (defun %blend-using-params (params)
   (%gl:blend-equation-separate (blending-params-mode-rgb params)
@@ -242,7 +241,7 @@
 
 (defun %blend-fbo-i (fbo i)
   (with-blending-param-slots (:fbo fbo)
-    (%gl:blend-equation-separate-i i (cepl.fbos:mode-rgb fbo) (mode-alpha fbo))
+    (%gl:blend-equation-separate-i i (mode-rgb fbo) (mode-alpha fbo))
     (%gl:blend-func-separate-i i
                                (source-rgb fbo)
                                (destination-rgb fbo)
@@ -251,13 +250,155 @@
 
 (defun %blend-attachment-i (attachment i)
   (with-blending-param-slots (:attachment attachment)
-    (%gl:blend-equation-separate-i i (cepl.fbos:mode-rgb attachment)
+    (%gl:blend-equation-separate-i i (mode-rgb attachment)
                                    (mode-alpha attachment))
     (%gl:blend-func-separate-i i
                                (source-rgb attachment)
                                (destination-rgb attachment)
                                (source-alpha attachment)
                                (destination-alpha attachment))))
+
+
+;;----------------------------------------------------------------------
+
+;; doco for mode-rgb and mode-alpha, I need doco files
+;; "Choices are:
+;;
+;; :func-add - The source and destination colors are added to each other.
+;;             O = sS + dD. The The s and d are blending parameters that are
+;;             multiplied into each of S and D before the addition.
+;;
+;; :func-subtract - Subtracts the destination from the source. O = sS - dD.
+;;                  The source and dest are again multiplied by blending
+;;                  parameters.
+;;
+;; :func-reverse-subtract - Subtracts the source from the destination.
+;;                          O = sD - dS. The source and dest are multiplied by
+;;                          blending parameters.
+;;
+;; :min - The output color is the component-wise minimum value of the source
+;;            and dest colors. So performing :min in the RGB equation means that
+;;            Or = min(Sr, Dr), Og = min(Sg, Dg), and so forth.
+;;            The parameters s and d are ignored for this equation.
+;;
+;; :max - The output color is the component-wise maximum value of the source and
+;;        dest colors. The parameters s and d are ignored for this equation."
+
+(defun mode-rgb (attachment)
+  (typecase attachment
+    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+                  (mode-rgb attachment)))
+    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+           (mode-rgb attachment)))))
+
+(defun mode-alpha (attachment)
+  (typecase attachment
+    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+                  (mode-alpha attachment)))
+    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+           (mode-alpha attachment)))))
+
+(defun source-rgb (attachment)
+  (typecase attachment
+    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+                  (source-rgb attachment)))
+    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+           (source-rgb attachment)))))
+
+(defun source-alpha (attachment)
+  (typecase attachment
+    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+                  (source-alpha attachment)))
+    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+           (source-alpha attachment)))))
+
+(defun destination-rgb (attachment)
+  (typecase attachment
+    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+                  (destination-rgb attachment)))
+    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+           (destination-rgb attachment)))))
+
+(defun destination-alpha (attachment)
+  (typecase attachment
+    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+                  (destination-alpha attachment)))
+    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+           (destination-alpha attachment)))))
+
+(defun blending (attachment)
+  (%attachment-blending-enabled attachment))
+
+(defun (setf blending) (value attachment)
+  (setf (%attachment-blending-enabled attachment) (not (null value))))
+
+(let ((major-v 0))
+  (defun per-attachment-blending-available-p ()
+    (when (= major-v 0) (setf major-v (cl-opengl:get* :major-version)))
+    (>= major-v 4))
+  (labels ((check-version-for-per-attachment-params ()
+             (unless (per-attachment-blending-available-p)
+               (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0" (version-float *gl-context*)))))
+
+    (defun (setf mode-rgb) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (mode-rgb attachment) value))))
+        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+               (setf (mode-rgb attachment) value)))))
+
+    (defun (setf mode-alpha) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (mode-alpha attachment) value))))
+        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+               (setf (mode-alpha attachment) value)))))
+
+    (defun (setf source-rgb) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (source-rgb attachment) value))))
+        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+               (setf (source-rgb attachment) value)))))
+
+    (defun (setf source-alpha) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (source-alpha attachment) value))))
+        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+               (setf (source-alpha attachment) value)))))
+
+    (defun (setf destination-rgb) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (destination-rgb attachment) value))))
+        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+               (setf (destination-rgb attachment) value)))))
+
+    (defun (setf destination-alpha) (value attachment)
+      (typecase attachment
+        (attachment (progn
+                      (check-version-for-per-attachment-params)
+                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                        (setf (%attachment-override-blending attachment) t
+                              (destination-alpha attachment) value))))
+        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+               (setf (destination-alpha attachment) value)))))))
 
 
 ;;----------------------------------------------------------------------

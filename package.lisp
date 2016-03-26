@@ -694,30 +694,23 @@
         :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
 	:cepl.internals :cepl.image-formats :cepl.textures
-	:cepl.viewports )
+	:cepl.viewports)
   (:export :fbo
 	   :fbo-p
+	   :fbo-blending-params
 	   :attachment
 	   :attachment-p
-	   :blending-params
 	   :attachment-viewport
 	   :attachment-gpu-array
-	   :mode-rgb
-	   :mode-alpha
-	   :source-rgb
-	   :source-alpha
-	   :destination-rgb
-	   :destination-alpha
-	   :blending
 	   :per-attachment-blending-available-p
 	   :attachment
 	   :make-fbo-from-id
 	   :make-fbo
 	   :check-framebuffer-status
 	   :with-fbo-bound
-	   :fbo-attach
-	   :fbo-detach
-	   :clear))
+	   :clear
+	   :clear-fbo
+	   :clear-attachment))
 
 (defpackage :cepl.blending
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -739,7 +732,15 @@
 	   :constant-alpha
 	   :constant-color
 	   :current-blend-params
-	   :blend-func-namep))
+	   :blend-func-namep
+	   ;;--
+	   :mode-rgb
+	   :mode-alpha
+	   :source-rgb
+	   :source-alpha
+	   :destination-rgb
+	   :destination-alpha
+	   ))
 
 (defpackage :cepl.pipelines
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

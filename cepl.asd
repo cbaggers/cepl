@@ -68,7 +68,6 @@
                (:file "core/fbos/fbo")
 	       (:file "core/ubos/ubo")
                (:file "core/blending/blending-modes")
-	       (:file "core/fbos/fbo-blending")
                (:file "core/spaces/space-errors")
                (:file "core/spaces/space-walking")
                (:file "core/spaces/space-transforms")
@@ -85,4 +84,5 @@
 	       (:file "core/viewports/docs")
 	       (:file "core/textures/docs")
 	       (:file "core/samplers/docs")
+	       (:file "core/fbos/docs")
 	       (:file "core/vaos/docs")))

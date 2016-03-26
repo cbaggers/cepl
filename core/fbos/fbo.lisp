@@ -303,8 +303,6 @@
     fbo))
 
 (defun make-fbo (&rest fuzzy-attach-args)
-  "Will create an fbo and optionally attach the arguments using
-   #'fbo-gen-attach"
   (let ((fbo (make-fbo-from-id (first (gl:gen-framebuffers 1)))))
     (if fuzzy-attach-args
         (apply #'fbo-gen-attach fbo fuzzy-attach-args)
@@ -653,7 +651,14 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (setf (attachment fbo attachment) nil)
   (%gl:framebuffer-texture-layer :draw-framebuffer attachment 0 0 0))
 
-;; {TODO} wait..the fbo holds the clear mask?..huh then how to we clear single
-;;        attachments, that seems dumb
-(defun clear (&optional (fbo %current-fbo))
+(defun clear (&optional (target %current-fbo))
+  (if (typep target 'attachment)
+      (clear-attachment target)
+      (clear-fbo target)))
+
+(defun clear-fbo (fbo)
   (%gl:clear (%fbo-clear-mask fbo)))
+
+(defun clear-attachment (attachment)
+  (declare (ignore attachment))
+  (error "CEPL: clear-attachment is not yet implemented"))
