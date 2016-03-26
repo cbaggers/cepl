@@ -140,6 +140,8 @@
           (max-lod self) max-lod
           (minify-filter self) minify-filter
           (magnify-filter self) magnify-filter
-          (wrap self) wrap
+          (wrap self) (if (keywordp wrap)
+			  (vector wrap wrap wrap)
+			  wrap)
           (compare self) compare)
     self))

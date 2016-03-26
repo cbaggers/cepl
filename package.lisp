@@ -221,6 +221,15 @@
 	   :%sampler-expects-depth
 	   :%sampler-compare
 
+	   :lod-bias
+	   :min-lod
+	   :max-lod
+	   :magnify-filter
+	   :minify-filter
+	   :set-minify-filter
+	   :wrap
+	   :compare
+
 	   :%%make-fbo
 	   :fbo
 	   :fbo-p
@@ -604,7 +613,16 @@
 	   :generate-mipmaps
 	   :with-texture-bound
 	   :texref
-	   :*immutable-available*))
+	   :*immutable-available*
+
+	   :lod-bias
+	   :min-lod
+	   :max-lod
+	   :magnify-filter
+	   :minify-filter
+	   :set-minify-filter
+	   :wrap
+	   :compare))
 
 (defpackage :cepl.gpu-arrays.texture-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -647,7 +665,7 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.generics :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
-	:cepl.internals :cepl.textures :%cepl.types)
+	:cepl.internals :%cepl.types)
   (:export :sampler
 	   :sampler-p
 	   :make-sampler
@@ -669,9 +687,7 @@
 	   :set-minify-filter
 	   :wrap
 	   :compare
-	   :with-sampling
-	   :*sampler-types*
-	   :sampler-typep))
+	   :with-sampling))
 
 (defpackage :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
