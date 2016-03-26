@@ -599,15 +599,15 @@
         (setf (texture-allocated-p texture) t))))
 
 (defun tex-storage-1d (target levels image-format width)
-  (%gl:tex-storage-1d target levels (gl::image-format->int image-format)
+  (%gl:tex-storage-1d target levels (gl::internal-format->int image-format)
                       width))
 
 (defun tex-storage-2d (target levels image-format width height)
-  (%gl:tex-storage-2d target levels (gl::image-format->int image-format)
+  (%gl:tex-storage-2d target levels (gl::internal-format->int image-format)
                       width height))
 
 (defun tex-storage-3d (target levels image-format width height depth)
-  (%gl:tex-storage-3d target levels (gl::image-format->int image-format)
+  (%gl:tex-storage-3d target levels (gl::internal-format->int image-format)
                       width height depth))
 
 ;;------------------------------------------------------------

@@ -552,8 +552,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   "The are 3 kinds of valid argument:
    - keyword naming an attachment: This makes a new texture
      with size of (current-viewport) and attaches
-   - (keyword vector2): creates a new texture sized by the vector
-     and attaches it to attachment named by keyword
    - (keyword texarray): attaches the tex-array
    - (keyword texture): attaches the root tex-array
    - (keyword some-type) any types that supports the generic dimensions function
@@ -571,12 +569,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       x
       :draw-framebuffer))
 
-(defvar %possible-texture-keys '(:dimensions :image-format :mipmap
+(defvar %possible-texture-keys '(:dimensions :element-type :mipmap
                                  :layer-count :cubes-p :rectangle
                                  :multisample :immutable :buffer-storage
                                  :lod-bias :min-lod :max-lod :minify-filter
                                  :magnify-filter :wrap :compare))
-(defvar %valid-texture-subset '(:dimensions :image-format :mipmap
+(defvar %valid-texture-subset '(:dimensions :element-type :mipmap
                                 :immutable :lod-bias :min-lod :max-lod
                                 :minify-filter :magnify-filter :wrap :compare))
 
@@ -600,15 +598,15 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                 %valid-texture-subset))
      (destructuring-bind
            (&key (dimensions (viewport-dimensions (current-viewport)))
-                 (image-format (%get-default-texture-format (first pattern)))
+                 (element-type (%get-default-texture-format (first pattern)))
                  mipmap (immutable t) lod-bias min-lod max-lod minify-filter
                  magnify-filter wrap compare)
          (rest pattern)
-       (assert (attachment-compatible (first pattern) image-format))
+       (assert (attachment-compatible (first pattern) element-type))
        (cons (texref
 	      (make-texture nil
 			    :dimensions dimensions
-			    :element-type image-format
+			    :element-type element-type
 			    :mipmap mipmap
 			    :immutable immutable
 			    :lod-bias lod-bias

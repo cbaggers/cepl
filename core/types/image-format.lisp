@@ -193,7 +193,7 @@
   (not (null (find format *image-formats*))))
 
 (defun valid-image-format-for-buffer-backed-texturep (format)
-  (find format *valid-image-formats-for-buffer-backed-texture*))
+  (not (null (find format *valid-image-formats-for-buffer-backed-texture*))))
 
 (defun color-renderable-formatp (format)
   (not (null (find format *color-renderable-formats*))))

@@ -78,6 +78,8 @@
                (:file "core/repl")
 	       ;;---
                (:file "docs/api/package")
+	       (:file "core/types/docs-image-formats")
+	       (:file "core/types/docs-pixel-formats")
 	       (:file "core/c-arrays/docs")
 	       (:file "core/gpu-arrays/docs")
 	       (:file "core/streams/docs")

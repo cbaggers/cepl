@@ -301,7 +301,7 @@
          (struct-arg (varjo:v-typep varjo-type 'varjo:v-user-struct))
          (array-length (when (v-typep varjo-type 'v-array)
                          (apply #'* (v-dimensions varjo-type))))
-         (sampler (sampler-typep varjo-type))
+         (sampler (cepl.samplers::sampler-typep varjo-type))
          (ubo (member :ubo qualifiers)))
     (cond
       (ubo (make-ubo-assigner arg-name varjo-type glsl-name))

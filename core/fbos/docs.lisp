@@ -257,6 +257,64 @@ Lets look at the behaviour when given different arguments
 -- (make-fbo) --
 It is not valid is have an fbo with no attachments so this will fail
 
--- (make-fbo
+-- (make-fbo :c) or (make-fbo :c0)
+Make an fbo with one color attachment.
+CEPL with make a texture with dimensions equal to that of the current viewport
+and with the element-type :rgba (which is a sensible default for a color
+attachment)
+
+-- (make-fbo :c0 :c1)
+Make an fbo with two color attachments.
+CEPL with make the textures with dimensions equal to that of the current
+viewport and with the element-type :rgba (which is a sensible default for a
+color attachment)
+
+-- (make-fbo :d)
+Make an fbo with one depth attachment.
+CEPL with make a texture with dimensions equal to that of the current viewport
+and with the element-type :depth-component24 (which is a sensible default for a
+depth attachment)
+
+-- (make-fbo :c :c1 :d)
+Make an fbo with one depth attachment and two color attachments.
+
+-- (make-fbo (list :c some-gpu-array))
+Makes an fbo with one color attachment whos gpu-array is 'some-gpu-array'
+
+--  (make-fbo (list :c some-texture))
+Makes an fbo with one color attachment whos gpu-array is (texref some-texture)
+
+-- (make-fbo '(:c :dimensions (100 100) :element-type :rgba8))
+Makes an fbo with one color attachment whos gpu-array is taken from a new
+texture created by taking the arguments after :c and applying them to
+#'make-texture
+
+-- Any combination of the above --
+")
+
+  (defun make-fbo-from-id
+      "
+This function will make a CEPL fbo from an existing GL FBO
+
+It does no sanity checking on the inputs and does not check for completeness
+used with caution")
+
+  (defun per-attachment-blending-available-p
+      "
+This function will return t if you are on a version of opengl that supports
+setting blending parameters on framebuffer attachments. Otherwise it returns nil
+
+If the result is nil then you will only be able to change blend params on the
+first attachment. You can however enable blending on any number of attachments
+and they will inherit their params from attachment 0
+
+For more details see cepl.blending
+")
+
+  (defmacro with-fbo-bound
+      "
+This is the macro you use when you want to capture the output from a pipeline in
+an FBO
+
 
 "))

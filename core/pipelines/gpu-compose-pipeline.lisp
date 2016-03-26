@@ -62,7 +62,7 @@
            (setf initd t)
            ,(when post `(funcall ,post)))
          ;; symbol-macrolet will go here
-         (labels ((attachment (fbo attachment-name)
+         (labels ((attachment (%attachment-fbo attachment-name)
                     (slot-value (%attachment-gpu-array
                                  (%attachment fbo attachment-name))
                                 'texture)))
