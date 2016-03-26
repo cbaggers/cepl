@@ -454,7 +454,8 @@
                               :layer-count layer-count
                               :cubes-p cubes
                               :image-format image-format
-			      :mutable-p (and immutable *immutable-available*)
+			      :mutable-p (not (and immutable
+						   *immutable-available*))
                               :sampler-type (cepl.samplers::calc-sampler-type
 					     texture-type
 					     image-format))))
