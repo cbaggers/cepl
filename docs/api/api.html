@@ -3225,7 +3225,10 @@ This function returns the gpu-array conntect to the given attachment.
                         <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t when the given value is an attachment and otherwise
+returns nil.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:ATTACHMENT-VIEWPORT"/>
@@ -3238,7 +3241,10 @@ This function returns the gpu-array conntect to the given attachment.
                         <span class="arguments">(ATTACHMENT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function takes an attachment and returns a new viewport whos dimensions
+match those of the gpu-array connected to the attachment.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:CHECK-FRAMEBUFFER-STATUS"/>
@@ -3251,7 +3257,16 @@ This function returns the gpu-array conntect to the given attachment.
                         <span class="arguments">(FBO)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function asks OpenGL to check the given FBO and ensure that it is
+'complete'.
+
+For a full rundown on what it means for a fbo to be complete see:
+https://www.opengl.org/wiki/Framebuffer_Object#Framebuffer_Completeness
+
+All fbos made in CEPL using #'make-fbo are checked for completeness before
+being returned to the user.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:CLEAR"/>
@@ -3261,36 +3276,71 @@ This function returns the gpu-array conntect to the given attachment.
                       <code>
                         <h4><a href="#CEPL.FBOS:CLEAR" class="name">CLEAR</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;OPTIONAL (FBO %CURRENT-FBO))</span>
+                        <span class="arguments">(&amp;OPTIONAL (TARGET %CURRENT-FBO))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+What this function will clear depends on what is passed:
+
+- a fbo - See 'clearing fbos' below
+- an attachment - See 'clearing a single attachment' below
+- nothing - The 'current fbo' will be cleared
+
+-- Clearing Fbos --
+
+In this case clearing means that all the elements of the attachments will be set
+to a certain value. The value that the attachment's gpu-arrays will be set to
+varies based on the attachment.
+
+- color attachments: Will be set to the value set in #'gl:clear-color
+- depth attachments: Will be set to the value set in #'gl:clear-depth
+- stencil attachments: Will be set to the value set in #'gl:clear-stencil
+
+You can also use #'clear-fbo for this task
+
+
+-- Clearing a single attachment --
+
+Not currently implemented</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:FBO-ATTACH"/>
+                  <a name="CEPL.FBOS:CLEAR-ATTACHMENT"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:FBO-ATTACH" class="name">FBO-ATTACH</a></h4>
+                        <h4><a href="#CEPL.FBOS:CLEAR-ATTACHMENT" class="name">CLEAR-ATTACHMENT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(FBO TEX-ARRAY ATTACHMENT &amp;OPTIONAL (TARGET :FRAMEBUFFER))</span>
+                        <span class="arguments">(ATTACHMENT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Not currently implemented
+
+This function will clear a single attachment of a fbo.
+</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:FBO-DETACH"/>
+                  <a name="CEPL.FBOS:CLEAR-FBO"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:FBO-DETACH" class="name">FBO-DETACH</a></h4>
+                        <h4><a href="#CEPL.FBOS:CLEAR-FBO" class="name">CLEAR-FBO</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(FBO ATTACHMENT)</span>
+                        <span class="arguments">(FBO)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will set the elements of the attachments of the fbo to a
+certain value. The value that the attachment's gpu-arrays will be set to
+varies based on the attachment.
+
+- color attachments: Will be set to the value set in #'gl:clear-color
+- depth attachments: Will be set to the value set in #'gl:clear-depth
+- stencil attachments: Will be set to the value set in #'gl:clear-stencil
+
+You can also perform this action by calling #'clear with an fbo</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:FBO-P"/>
@@ -3303,7 +3353,10 @@ This function returns the gpu-array conntect to the given attachment.
                         <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will return t if the given value is an fbo, otherwise it will
+return nil
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:MAKE-FBO"/>
@@ -3316,8 +3369,51 @@ This function returns the gpu-array conntect to the given attachment.
                         <span class="arguments">(&amp;REST FUZZY-ATTACH-ARGS)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Will create an fbo and optionally attach the arguments using
-   #'fbo-gen-attach</pre>
+                    <pre class="docstring">
+This, like other make-* functions in CEPL has a large variety of valid
+arguments. The goal of this apparent complexity is to make exploration from the
+repl easy, whilst still allowing absolutely control when it is needed.
+
+Lets look at the behaviour when given different arguments
+
+
+-- (make-fbo) --
+It is not valid is have an fbo with no attachments so this will fail
+
+-- (make-fbo :c) or (make-fbo :c0)
+Make an fbo with one color attachment.
+CEPL with make a texture with dimensions equal to that of the current viewport
+and with the element-type :rgba (which is a sensible default for a color
+attachment)
+
+-- (make-fbo :c0 :c1)
+Make an fbo with two color attachments.
+CEPL with make the textures with dimensions equal to that of the current
+viewport and with the element-type :rgba (which is a sensible default for a
+color attachment)
+
+-- (make-fbo :d)
+Make an fbo with one depth attachment.
+CEPL with make a texture with dimensions equal to that of the current viewport
+and with the element-type :depth-component24 (which is a sensible default for a
+depth attachment)
+
+-- (make-fbo :c :c1 :d)
+Make an fbo with one depth attachment and two color attachments.
+
+-- (make-fbo (list :c some-gpu-array))
+Makes an fbo with one color attachment whos gpu-array is 'some-gpu-array'
+
+--  (make-fbo (list :c some-texture))
+Makes an fbo with one color attachment whos gpu-array is (texref some-texture)
+
+-- (make-fbo '(:c :dimensions (100 100) :element-type :rgba8))
+Makes an fbo with one color attachment whos gpu-array is taken from a new
+texture created by taking the arguments after :c and applying them to
+#'make-texture
+
+-- Any combination of the above --
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:MAKE-FBO-FROM-ID"/>
@@ -3330,8 +3426,11 @@ This function returns the gpu-array conntect to the given attachment.
                         <span class="arguments">(GL-OBJECT &amp;KEY COLOR-ATTACHMENTS DEPTH-ATTACHMENT)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Will create an fbo and optionally attach the arguments using
-   #'fbo-gen-attach</pre>
+                    <pre class="docstring">
+This function will make a CEPL fbo from an existing GL FBO
+
+It does no sanity checking on the inputs and does not check for completeness
+used with caution</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:PER-ATTACHMENT-BLENDING-AVAILABLE-P"/>
@@ -3344,20 +3443,16 @@ This function returns the gpu-array conntect to the given attachment.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:FBO"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:FBO" class="name">FBO</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will return t if you are on a version of opengl that supports
+setting blending parameters on framebuffer attachments. Otherwise it returns nil
+
+If the result is nil then you will only be able to change blend params on the
+first attachment. You can however enable blending on any number of attachments
+and they will inherit their params from attachment 0
+
+For more details see cepl.blending
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:WITH-FBO-BOUND"/>
@@ -3372,7 +3467,12 @@ This function returns the gpu-array conntect to the given attachment.
  &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This is the macro you use when you want to capture the output from a pipeline in
+an FBO
+
+
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
