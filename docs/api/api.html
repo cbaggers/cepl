@@ -779,7 +779,7 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                       <code>
                         <h4><a href="#CEPL.GENERICS:MAKE-GPU-ARRAY" class="name">MAKE-GPU-ARRAY</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE)</span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY ELEMENT-TYPE DIMENSIONS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3812,45 +3812,6 @@ that.
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.PIPELINES:*VERBOSE-COMPILES*"/>
-                  <article>
-                    <header class="special">
-                      <span class="type">special</span>
-                      <code>
-                        <h4><a href="#CEPL.PIPELINES:*VERBOSE-COMPILES*" class="name">*VERBOSE-COMPILES*</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.PIPELINES:*WARN-WHEN-CANT-TEST-COMPILE*"/>
-                  <article>
-                    <header class="special">
-                      <span class="type">special</span>
-                      <code>
-                        <h4><a href="#CEPL.PIPELINES:*WARN-WHEN-CANT-TEST-COMPILE*" class="name">*WARN-WHEN-CANT-TEST-COMPILE*</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.PIPELINES:UNDEFINE-GPU-FUNCTION"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.PIPELINES:UNDEFINE-GPU-FUNCTION" class="name">UNDEFINE-GPU-FUNCTION</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(NAME)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="CEPL.PIPELINES:DEF-GLSL-STAGE"/>
                   <article>
                     <header class="macro">
@@ -3861,15 +3822,7 @@ that.
                         <span class="arguments">(NAME ARGS BODY-STRING OUTPUTS)</span>
                       </code>
                     </header>
-                    <pre class="docstring">[0] makes a glsl-stage-spec that will be populated a stored later.
-
-   [1] use varjo to create a varjo-compile-result. We have to bodge a bit
-       of the data but it's worth it to not duplicate varjo's logic
-
-   [2] %make-stand-in-lisp-func-for-glsl-stage is called at expand time to write
-       a lisp function with the same signature as the glsl stage. This gives
-       code hinting and also a decent error message if you try calling it
-       cpu side.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:DEFINE-COMPILER-MACRO-G"/>
@@ -3978,7 +3931,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's bptc compressed formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*COLOR-RENDERABLE-FORMATS*"/>
@@ -3991,7 +3946,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's color renderable formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*DEPTH-FORMATS*"/>
@@ -4004,7 +3961,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's depth formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*DEPTH-STENCIL-FORMATS*"/>
@@ -4017,7 +3976,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's depth stencil formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*FLOATING-POINT-FORMATS*"/>
@@ -4030,7 +3991,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's floating point formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*IMAGE-FORMATS*"/>
@@ -4043,7 +4006,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's image formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*RED/GREEN-COMPRESSED-FORMATS*"/>
@@ -4056,7 +4021,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's red/green compressed formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*REGULAR-COLOR-FORMATS*"/>
@@ -4069,7 +4036,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's regular color formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*S3TC/DXT-COMPESSED-FORMATS*"/>
@@ -4082,7 +4051,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's s3tc/dxt compessed formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*SIGNED-INTEGRAL-FORMATS*"/>
@@ -4095,7 +4066,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's signed integral formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*SIGNED-NORMALIZED-INTEGER-FORMATS*"/>
@@ -4108,7 +4081,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's signed normalized integer formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*SPECIAL-COLOR-FORMATS*"/>
@@ -4121,7 +4096,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's special color formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*SRGB-COLOR-FORMATS*"/>
@@ -4134,7 +4111,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's srgb color formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*STENCIL-FORMATS*"/>
@@ -4147,7 +4126,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's stencil formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*UNSIGNED-INTEGRAL-FORMATS*"/>
@@ -4160,7 +4141,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's unsigned integral formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*UNSIGNED-NORMALIZED-INTEGER-FORMATS*"/>
@@ -4173,7 +4156,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's unsigned normalized integer formats
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:*VALID-IMAGE-FORMATS-FOR-BUFFER-BACKED-TEXTURE*"/>
@@ -4186,7 +4171,9 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A list of all of OpenGL's valid image formats for buffer backed texture
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:COLOR-RENDERABLE-FORMATP"/>
@@ -4199,7 +4186,10 @@ that.
                         <span class="arguments">(FORMAT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the value provided is a keyword that can be found in
+*color-renderable-formats*
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:DEPTH-FORMATP"/>
@@ -4212,7 +4202,10 @@ that.
                         <span class="arguments">(FORMAT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the value provided is a keyword that can be found in
+*depth-formats*
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:DEPTH-STENCIL-FORMATP"/>
@@ -4225,7 +4218,10 @@ that.
                         <span class="arguments">(FORMAT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the value provided is a keyword that can be found in
+*depth-stencil-formats*
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:IMAGE-FORMATP"/>
@@ -4238,7 +4234,10 @@ that.
                         <span class="arguments">(FORMAT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the value provided is a keyword that can be found in
+*image-formats*
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:STENCIL-FORMATP"/>
@@ -4251,7 +4250,10 @@ that.
                         <span class="arguments">(FORMAT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the value provided is a keyword that can be found in
+*stencil-formats*
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.IMAGE-FORMATS:VALID-IMAGE-FORMAT-FOR-BUFFER-BACKED-TEXTUREP"/>
@@ -4264,7 +4266,10 @@ that.
                         <span class="arguments">(FORMAT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the value provided is a keyword that can be found in
+*valid-image-formats-for-buffer-backed-texture*
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -4469,7 +4474,29 @@ that.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+A UBO is a structure that abstracts an OpenGL Uniform Buffer Object
+
+A Ubo is chunk of data stored in a gpu-buffer, which can be used as a uniform
+in shader pipelines.
+
+The advantage of using a UBO over just passing the data as regular unforms is
+that UBOs can be used to share uniforms between different programs, as well as
+quickly change between sets of uniforms for the same pipeline.
+
+Let's expand on that a little:
+
+Switching between uniform buffer bindings is typically faster than switching
+dozens of uniforms in a pipeline.
+
+Also, uniform buffer objects can typically store more data than non-buffered
+uniforms. So they can be used to store and access larger blocks of data than
+unbuffered uniform values.
+
+Lastly, they can be used to share information between different programs.
+So modifying a single buffer can effectively allow uniforms in multiple programs
+to be updated.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:UBO-DATA"/>
@@ -4482,7 +4509,9 @@ that.
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Returns the gpu-array that contains the data presented by this UBO
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:UBO-ID"/>
@@ -4495,7 +4524,9 @@ that.
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function return the id of the GL UBO abstracted by this CEPL UBO.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:UBO-INDEX"/>
@@ -4508,7 +4539,10 @@ that.
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the index into the ubo-data where the element defined by
+this ubo is located
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:UBO-OWNS-GPU-ARRAY"/>
@@ -4521,7 +4555,10 @@ that.
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the gpu-array was created by make-ubo or nil if it is
+using data from a gpu-array passed to make-ubo
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.UBOS:MAKE-UBO"/>
@@ -4534,7 +4571,24 @@ that.
                         <span class="arguments">(DATA &amp;OPTIONAL ELEMENT-TYPE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will make and return a new ubo
+
+You need only provide an element type and the lisp data to populate that type.
+
+For example, given the following type:
+
+   (defstruct-g test
+     (scale :float :accessor scale)
+     (age :int))
+
+You create a ubo using this type as follows:
+
+    (make-ubo '(1.2 10) 'test)
+
+If you wish to make a ubo from an element of a c-array or gpu-array please
+see the #'make-ubo-from-array function
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.UBOS:MAKE-UBO-FROM-ARRAY"/>
@@ -4547,7 +4601,20 @@ that.
                         <span class="arguments">(DATA &amp;OPTIONAL (INDEX 0) ELEMENT-TYPE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function takes a lisp-array, c-array or gpu-array and an index.
+It returns a new ubo with the specified element as the data of the ubo.
+
+If made from a c-array or lisp-array, a fresh gpu memory is allocated to hold
+the data
+
+If made from a gpu-array the ubo simply holds a reference to the gpu-array
+and the index. No new memory is allocated. This means that if that
+gpu-array is destroyed then this ubo is in an invalid state.
+This also means it is possible to do invalid things when rendering. For example
+say you used the ubo as an input whilst streaming vertex data from the same
+array. Consult GL documentation for details on such exceptional cases.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.UBOS:UBO-DATA-TYPE"/>
@@ -4560,7 +4627,9 @@ that.
                         <span class="arguments">(UBO)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the type of the data that is contained in the UBO
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -5198,7 +5267,7 @@ Be sure not to use those arrays after this function has been called.
                       <code>
                         <h4><a href="#CEPL.GENERICS:MAKE-GPU-ARRAY" class="name">MAKE-GPU-ARRAY</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE)</span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY ELEMENT-TYPE DIMENSIONS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -5380,13 +5449,22 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring">This is our opengl buffer object. Along with the opengl
-   buffer name (buffer-id) we also store the layout of the data
-   within the buffer.
-   This layout is as follows:
-   `((data-type data-index-length offset-in-bytes-into-buffer))
-   for example:
-   `((:float 3 0) ('vert-data 140 12))</pre>
+                    <pre class="docstring">
+gpu-buffer is a struct that abstracts a OpenGL 'Buffer Object'
+
+Along with the the ID of the GL Object itself it stores the layout of the data
+in the buffer.
+
+This layout is as follows:
+`((data-type data-index-length offset-in-bytes-into-buffer))
+
+for example:
+
+`((:float 3 0) ('vert-data 140 12))
+
+It is not expected that users will be using gpu-buffer's directly. Instead they
+are ususal interacted with via CEPL's gpu-array and ubo features.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:GPU-BUFFER-FORMAT"/>
@@ -5399,7 +5477,11 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when passed a gpu-buffer will return the format list used
+by the gpu-buffer to keep track of the types and layout of the data in the
+OpenGL Buffer Object
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:GPU-BUFFER-ID"/>
@@ -5412,7 +5494,14 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when passed a gpu-buffer will return the OpenGL buffer object
+from the gpu-buffer.
+
+It is not recommended to modify this directly as the changes from doing so won't
+be reflected in the layout of the gpu-buffer, which may potentially put the
+gpu-buffer (and and gpu-array or ubo using it) into an invalid state.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:BIND-BUFFER"/>
@@ -5425,7 +5514,9 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(BUFFER BUFFER-TARGET)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Binds the specified opengl buffer to the target</pre>
+                    <pre class="docstring">
+Binds the given gpu-buffer to the target on the GL Context
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:BUFFER-DATA"/>
@@ -5439,12 +5530,14 @@ declared access-style (other than potential performance costs).
  (SIZE (C-ARRAY-BYTE-SIZE C-ARRAY)))</span>
                       </code>
                     </header>
-                    <pre class="docstring">This function populates an opengl buffer with the contents
-   of the array. You also pass in the buffer type and the
-   draw type this buffer is to be used for.
+                    <pre class="docstring">
+This function populates the gpu-buffer with the contents of the c-array.
 
-   The function returns a buffer object with its format slot
-   populated with the details of the data stored within the buffer</pre>
+You also pass in the buffer type and the draw type this buffer is to be used
+for.
+
+The function returns a buffer object with its format slot populated with the
+details of the data stored within the buffer</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:BUFFER-DATA-RAW"/>
@@ -5458,12 +5551,15 @@ declared access-style (other than potential performance costs).
  (BYTE-OFFSET 0))</span>
                       </code>
                     </header>
-                    <pre class="docstring">This function populates an opengl buffer with the contents
-   of the array. You also pass in the buffer type and the
-   draw type this buffer is to be used for.
+                    <pre class="docstring">
+This function populates an opengl buffer with the 'data-byte-size' bytes of data
+from the given point, optionally at the offset provided.
 
-   The function returns a buffer object with its format slot
-   populated with the details of the data stored within the buffer</pre>
+You also pass in the buffer type and the draw type this buffer is to be
+used for.
+
+The function returns a buffer object with its format slot populated with the
+details of the data stored within the buffer</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:BUFFER-RESERVE-BLOCK"/>
@@ -5476,9 +5572,11 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(BUFFER TYPE DIMENSIONS BUFFER-TARGET USAGE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">This function creates an empty block of data in the opengl buffer
-   equal in size to (* length size-in-bytes-of-type).
-   It will remove ALL data currently in the buffer</pre>
+                    <pre class="docstring">
+This function creates an empty block of data in the opengl buffer equal in size
+to (* length size-in-bytes-of-type).
+
+It will remove ALL data currently in the buffer</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:BUFFER-RESERVE-BLOCK-RAW"/>
@@ -5491,11 +5589,13 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(BUFFER SIZE-IN-BYTES BUFFER-TARGET USAGE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">This function creates an empty block of data in the opengl buffer.
-   It will remove ALL data currently in the buffer. It also will not
-   update the format of the buffer so you must be sure to handle this
-   yourself. It is much safer to use this as an assistant function to
-   one which takes care of these issues</pre>
+                    <pre class="docstring">
+This function creates an empty block of data in the opengl buffer.
+It will remove ALL data currently in the buffer.
+
+It also will not update the format of the buffer so you must be sure to handle
+this yourself. It is much safer to use this as an assistant function to one
+which takes care of these issues</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:BUFFER-RESERVE-BLOCKS"/>
@@ -5508,12 +5608,15 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(BUFFER TYPES-AND-DIMENSIONS BUFFER-TARGET USAGE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">This function creates an empty block of data in the opengl buffer
-   equal in size to the sum of all of the
-   (* length size-in-bytes-of-type) in types-and-lengths.
-   types-and-lengths should be of the format:
-   `((type length) (type length) ...etc)
-   It will remove ALL data currently in the buffer</pre>
+                    <pre class="docstring">
+This function creates an empty block of data in the opengl buffer equal in size
+to the sum of all of the (* length size-in-bytes-of-type) in types-and-lengths.
+
+The types-and-lengths list should be of the format:
+
+    `((type length) (type length) ...etc)
+
+It will remove ALL data currently in the buffer</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:BUFFER-SUB-DATA"/>
@@ -5526,14 +5629,15 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(BUFFER C-ARRAY BYTE-OFFSET BUFFER-TARGET &amp;KEY (SAFE T))</span>
                       </code>
                     </header>
-                    <pre class="docstring">This function replaces a subsection of the data in the
-   specified buffer with the data in the c-array.
-   The byte offset specifies where you wish to start overwriting
-   data from.
-   When the :safe option is t, the function checks to see if the
-   data you are about to write into the buffer will cross the
-   boundaries between data already in the buffer and will emit
-   an error if you are.</pre>
+                    <pre class="docstring">
+This function replaces a subsection of the data in the specified buffer with
+the data in the c-array.
+
+The byte offset specifies where you wish to start overwriting data from.
+
+When the :safe option is t, the function checks to see if the data you are about
+to write into the buffer will cross the boundaries between data already in the
+buffer and will throw an error if you are.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:FREE-BUFFER"/>
@@ -5546,7 +5650,13 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(BUFFER)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when passed a gpu-buffer will free the memory on the gpu and
+'blank' the gpu-buffer.
+
+Blanking in this case means that the slots of the gpu-buffer will all be set to
+default values.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:FREE-BUFFERS"/>
@@ -5559,7 +5669,13 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(BUFFERS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when passed a list of  gpus-buffer will free the gpu memory for
+all the gpus-buffers and 'blank' them.
+
+Blanking in this case means that the slots of each gpu-buffer will all be set to
+default values.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:GPU-BUFFER-P"/>
@@ -5572,7 +5688,10 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the given value is a gpu-buffer. Otherwise it
+returns nil.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:MAKE-GPU-BUFFER"/>
@@ -5586,9 +5705,43 @@ declared access-style (other than potential performance costs).
  (MANAGED NIL))</span>
                       </code>
                     </header>
-                    <pre class="docstring">Creates a new opengl buffer object.
-   Optionally you can provide a c-array as the :initial-contents
-   to have the buffer populated with the contents of the array</pre>
+                    <pre class="docstring">
+This function creates and returns a new gpu-buffer.
+
+
+If you wish to populate the buffer during construction you can pass a c-array as
+the :initial-contents.
+
+
+The :usage argument is a hint to OpenGL on how you intend to use the gpu-buffer.
+It is optional whether your gpu manufacturer's implementation of GL takes any
+notice of this option. When they do take notice of it, it will to optimize
+access to the underlying data.
+
+
+The :target argument can take any of the following binding targets:
+
+Buffer Binding Target      Purpose
+:array-buffer              Vertex attributes
+:atomic-counter-buffer     Atomic counter storage
+:copy-read-buffer          Buffer copy source
+:copy-write-buffer         Buffer copy destination
+:dispatch-indirect-buffer  Indirect compute dispatch commands
+:draw-indirect-buffer      Indirect command arguments
+:element-array-buffer      Vertex array indices
+:pixel-pack-buffer         Pixel read target
+:pixel-unpack-buffer       Texture data source
+:query-buffer              Query result buffer
+:shader-storage-buffer     Read-write storage for shaders
+:texture-buffer            Texture data buffer
+:transform-feedback-buffer Transform feedback buffer
+:uniform-buffer            Uniform block storage
+
+Do note that the default of :array-buffer is perfectly fine for creating the
+gpu-buffer and uploading the data. It does not limit how the buffer can be used
+in future parts of your program.
+
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:MAKE-GPU-BUFFER-FROM-ID"/>
@@ -5602,7 +5755,45 @@ declared access-style (other than potential performance costs).
  (USAGE :STATIC-DRAW) (MANAGED NIL))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function takes an existing GL Buffer Object and wraps it in a new
+gpu-buffer.
+
+
+If you wish to populate the buffer during construction you can pass a c-array as
+the :initial-contents.
+
+
+The :usage argument is a hint to OpenGL on how you intend to use the gpu-buffer.
+It is optional whether your gpu manufacturer's implementation of GL takes any
+notice of this option. When they do take notice of it, it will to optimize
+access to the underlying data.
+
+
+The :target argument can take any of the following binding targets:
+
+Buffer Binding Target      Purpose
+:array-buffer              Vertex attributes
+:atomic-counter-buffer     Atomic counter storage
+:copy-read-buffer          Buffer copy source
+:copy-write-buffer         Buffer copy destination
+:dispatch-indirect-buffer  Indirect compute dispatch commands
+:draw-indirect-buffer      Indirect command arguments
+:element-array-buffer      Vertex array indices
+:pixel-pack-buffer         Pixel read target
+:pixel-unpack-buffer       Texture data source
+:query-buffer              Query result buffer
+:shader-storage-buffer     Read-write storage for shaders
+:texture-buffer            Texture data buffer
+:transform-feedback-buffer Transform feedback buffer
+:uniform-buffer            Uniform block storage
+
+Do note that the default of :array-buffer is perfectly fine for creating the
+gpu-buffer and uploading the data. It does not limit how the buffer can be used
+in future parts of your program.
+
+Managed is a piece of metadata used by CEPL for knowing when to release the
+gpu memory. This should be removed from the public API</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:MULTI-BUFFER-DATA"/>
@@ -5615,9 +5806,10 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">(BUFFER C-ARRAYS BUFFER-TARGET USAGE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">This beast will take a list of c-arrays and auto-magically
-   push them into a buffer taking care of both interleaving
-   and sequencial data and handling all the offsets.</pre>
+                    <pre class="docstring">
+This function takes a list of c-arrays and uploads all of the data to the
+gpu-buffer, it then updates the gpu-buffer-format with the new layout.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:UNBIND-BUFFER"/>
@@ -5630,7 +5822,9 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Unbinds any gpu-buffer currently bound to the GL Context
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:WITH-BUFFER"/>
@@ -5643,7 +5837,12 @@ declared access-style (other than potential performance costs).
                         <span class="arguments">((VAR-NAME BUFFER &amp;OPTIONAL (BUFFER-TARGET :ARRAY-BUFFER)) &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This macro binds the given gpu-buffer to the target on the GL Context for the
+duration of the body.
+
+The gpu-buffer is then unbound at the end.
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -5679,7 +5878,9 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(VAO)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Takes a GL VAO and deletes it
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VAOS:FREE-VAOS"/>
@@ -5692,7 +5893,11 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(VAOS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Takes a list of GL VAOs and deletes them.
+
+This function exists as a minor optimization.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VAOS:MAKE-VAO"/>
@@ -5705,11 +5910,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(GPU-ARRAYS &amp;OPTIONAL INDEX-ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring">makes a vao using a list of gpu-arrays as the source data
-   (remember that you can also use gpu-sub-array here if you
-   need a subsection of a gpu-array).
-   You can also specify an index-array which will be used as
-   the indicies when rendering</pre>
+                    <pre class="docstring">
+This function returns a new GL VAO when given
+
+- a list of gpu-arrays
+- optionally 1 gpu-array to be used as an index
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VAOS:SUITABLE-ARRAY-FOR-INDEX-P"/>
@@ -5790,7 +5996,11 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+g-pc is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  color: of type vec4 with an accessor method: col</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:G-PN"/>
@@ -5803,7 +6013,11 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+g-pn is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  normal: of type vec3 with an accessor method: norm</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:G-PNC"/>
@@ -5816,7 +6030,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+g-pnc is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  normal: of type vec3 with an accessor method: norm
+  color: of type vec4 with an accessor method: col</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:G-PNT"/>
@@ -5829,7 +6048,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+g-pnt is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  normal: of type vec3 with an accessor method: norm
+  texture: of type vec2 with an accessor method: tex</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:G-PNTC"/>
@@ -5842,7 +6066,13 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+g-pntc is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  normal: of type vec3 with an accessor method: norm
+  texture: of type vec2 with an accessor method: tex
+  color: of type vec4 with an accessor method: col</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:G-PT"/>
@@ -5855,7 +6085,11 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+g-pt is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  texture: of type vec2 with an accessor method: tex</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:IMAGE-FORMAT-&gt;LISP-TYPE"/>
@@ -5868,7 +6102,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(IMAGE-FORMAT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when given a image-format name, will attempt to find and
+return the name of a lisp type that is equivalent.
+
+If no such type is found then nil is returned
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:IMAGE-FORMAT-&gt;PIXEL-FORMAT"/>
@@ -5881,7 +6120,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(IMAGE-FORMAT &amp;KEY (ERROR-IF-MISSING T))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when given an image-format name, will attempt to find and
+return equivalent equivalent pixel-format.
+
+If no such type is found then nil is returned
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:LISP-TYPE-&gt;IMAGE-FORMAT"/>
@@ -5894,7 +6138,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(LISP-TYPE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when given a lisp type name, will attempt to find and
+return the name of a GL image-format that is equivalent.
+
+If no such type is found then nil is returned
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:PIXEL-FORMAT-&gt;IMAGE-FORMAT"/>
@@ -5907,7 +6156,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(PIXEL-FORMAT &amp;KEY (ERROR-IF-MISSING T))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when given a pixel-format object, will attempt to find and
+return the name of a GL image-format that is equivalent.
+
+If no such type is found then nil is returned
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:PIXEL-FORMAT-&gt;LISP-TYPE"/>
@@ -5920,7 +6174,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(PIXEL-FORMAT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when given a pixel-format object, will attempt to find and
+return the name of a lisp type that is equivalent.
+
+If no such type is found then nil is returned
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:LISP-TYPE-&gt;PIXEL-FORMAT"/>
@@ -5933,7 +6192,12 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                         <span class="arguments">(TYPE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function, when given a lisp type name, will attempt to find and
+return an equivalent pixel-format.
+
+If no such type is found then nil is returned
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TYPES:DEFSTRUCT-G"/>
@@ -5943,13 +6207,113 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                       <code>
                         <h4><a href="#CEPL.TYPES:DEFSTRUCT-G" class="name">DEFSTRUCT-G</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(NAME
- (&amp;KEY (ACCESORS T) (CONSTRUCTOR T) VARJO-CONSTRUCTOR (READERS T) (WRITERS T)
- (PULL-PUSH T) (ATTRIBS T) (POPULATE T))
- &amp;BODY SLOT-DESCRIPTIONS)</span>
+                        <span class="arguments">(NAME-AND-OPTIONS &amp;BODY SLOT-DESCRIPTIONS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+defstruct-g defines a struct that can be used both gpu-side (in gpu functions,
+gpu-arrays, ubos, etc) and also cpu-side (in c-arrays, other gstructs, etc)
+
+You create these using defstruct-g so lets look at an example right now:
+
+    (defstruct-g our-data
+      (position :vec3)
+      (val :int :accessor val))
+
+This should seem familiar if you have used common lisp's structs.
+
+You provide a name (with options if you need them) and the definitions for the
+slots. The format for a slot is:
+
+    (slot-name slot-type)
+
+    -or-
+
+    (slot-name slot-type :accessor accessor-name)
+
+-- make-* --
+
+Once defined you would create the above struct as follows:
+
+    (defvar x (make-our-data :position (v! 1 2 3) :val 5))
+
+This will return a fully populated struct in foreign memory. if values are not
+provided then the slots will be left uninitialized and the contents of the slot
+are unknown (and likely unsafe)
+It is rather rare to make a one-off struct like this as it is much more common
+to use the type in a data-structure like a c-arrays or gpu-array.
+
+
+-- Accessors --
+
+In the 'our-data' example above, the slot named 'position' doesnt have an
+accesor but the 'val' slot does.
+
+Both slots will get a lisp-struct-style accessor functions however because of
+the :accessor in val's slot definition a generic function named by the symbol
+after :accessor will also be created.
+
+For the example this means the functions #'our-data-position, #'our-data-val and
+the generic function #'val are available.
+
+Whilst :accessor results in a generic function on the cpu side (with the
+associated overheads) on the gpu side the function to be used is resolved
+statically and so there is not performance cost.
+
+
+-- Populate --
+
+defstruct-g also created an implentation for the generic function #'populate
+which takes lisp lists and set the slots in a struct using that data.
+
+For example for our 'our-data' struct we can say:
+
+    (populate x (list (v! 1 2 3) 5))
+
+And it will set 'position' to be the vector (v! 1 2 3) and set 'val' to be 5.
+
+
+-- Options --
+
+With the exception of :constructor the options for defstruct-g are rarely used
+but are documented here for the sake of completeness.
+
+  :constructor
+  Setting this to nil means that you will get *no* make- function
+  Setting this to any other symbol will name the constructor using that symbol
+  The default will is that the constructor will be called make-&lt;struct-name&gt;
+
+  :readers
+  Setting this to nil means that you will get *no* functions to get the
+  slots' data
+
+  :writers
+  Setting this to nil means that you will get *no* setf functions to set the
+  slots' data
+
+  :accesors
+  Setting this to nil means that you will get *neither* of the above.
+
+  :pull-push
+  Setting this to nil means that you will get *no* push-g or pull-g methods
+  defined for your type
+
+  :attribs
+  Setting this to nil means that defstruct-g will not be able to make
+  gpu-streams from arrays of this type.
+
+  :populate
+  Setting this to nil means that you will not get a populate function for
+  this type.
+
+
+Some of the above options are redundent in combination with others.
+For example the push-g method uses #'populate behind the scenes so with
+populate disabled you can have #'push-g for this type.
+
+CEPL currently does a poor job at communicating these conflicts to the user.
+
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>

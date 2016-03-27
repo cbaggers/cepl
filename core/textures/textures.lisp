@@ -80,7 +80,7 @@
   (when (or (and format (not type)) (and type (not format)))
     (error "cannot only specify either format or type, must be both or neither"))
   (let* ((element-pf (lisp-type->pixel-format c-array))
-         (compiled-pf (compile-pixel-format element-pf))
+         (compiled-pf (cepl.pixel-formats::compile-pixel-format element-pf))
          (pix-format (or format (first compiled-pf)))
          (pix-type (or type (second compiled-pf))))
     (with-gpu-array-t gpu-array
@@ -463,7 +463,7 @@
                   (allocate-texture texture)
                   (when initial-contents
                     (destructuring-bind (pformat ptype)
-                        (compile-pixel-format pixel-format)
+                        (cepl.pixel-formats::compile-pixel-format pixel-format)
                       (upload-c-array-to-gpu-array-t
                        (texref texture) initial-contents
                        pformat ptype)))
@@ -639,7 +639,7 @@
 ;;        case being just do what we do below
 (defmethod push-g ((object c-array) (destination gpu-array-t))
   (destructuring-bind (pformat ptype)
-      (compile-pixel-format (lisp-type->pixel-format object))
+      (cepl.pixel-formats::compile-pixel-format (lisp-type->pixel-format object))
     (upload-c-array-to-gpu-array-t destination object
                                   pformat ptype)))
 
@@ -654,7 +654,8 @@
                       (gpu-array-t-image-format object)))
            (c-array (make-c-array nil :dimensions (dimensions object)
                                   :element-type p-format)))
-      (destructuring-bind (format type) (compile-pixel-format p-format)
+      (destructuring-bind (format type)
+	  (cepl.pixel-formats::compile-pixel-format p-format)
         (with-texture-bound texture
           (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
 			     (coerce level-num 'real)

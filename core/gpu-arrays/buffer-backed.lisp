@@ -87,7 +87,7 @@
                            &key element-type dimensions
                              (access-style :static-draw))
   (declare (ignore initial-contents))
-  (let ((buffer (make-gpu-buffer :managed t)))
+  (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
     (%make-gpu-array-bb :buffer (buffer-reserve-block
 				 buffer element-type dimensions
 				 :array-buffer access-style)
@@ -104,7 +104,7 @@
 (defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw)
 			     dimensions)
-  (let ((buffer (make-gpu-buffer :managed t))
+  (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer))
 	(dimensions (listify dimensions))
 	(c-dimensions (dimensions initial-contents)))
     (when dimensions
@@ -129,8 +129,9 @@ call to #'make-gpu-array were ~s"
   c-arr-dimensions provided-dimensions)
 
 (defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
-  (let ((buffer (multi-buffer-data (make-gpu-buffer :managed t) c-arrays
-                                   :array-buffer access-style)))
+  (let ((buffer (multi-buffer-data
+		 (cepl.gpu-buffers::make-managed-gpu-buffer) c-arrays
+		 :array-buffer access-style)))
     (loop :for c-array :in c-arrays :for i :from 0 :collecting
        (%make-gpu-array-bb :buffer buffer
 			   :format-index i

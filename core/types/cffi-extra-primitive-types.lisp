@@ -71,7 +71,7 @@
                           `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))
                    ,(when (< len 5)
                           (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
-                            (when (cepl.pixel-formats:valid-pixel-format-p
+                            (when (cepl.pixel-formats::valid-pixel-format-p
 				   components comp-type t nil)
                               `(defmethod cepl.types:lisp-type->pixel-format ((comp-type (eql ,type)))
                                  (cepl.pixel-formats:pixel-format

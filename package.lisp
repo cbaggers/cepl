@@ -479,12 +479,7 @@
 	   :pixel-format-normalise
 	   :pixel-format-sizes
 	   :pixel-format-reversed
-	   :pixel-format-comp-length
-	   :compile-pixel-format
-	   :describe-image-format
-	   :describe-pixel-format
-	   :get-component-length
-	   :valid-pixel-format-p))
+	   :pixel-format-comp-length))
 
 (defpackage :cepl.c-arrays
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -522,7 +517,6 @@
            :buffer-data
            :buffer-data-raw
            :buffer-reserve-block
-           :buffer-reserve-block-raw
            :buffer-reserve-blocks
            :buffer-sub-data
            :free-buffer
@@ -555,9 +549,7 @@
 	   :bind-vao
 	   :unbind-vao
 	   :with-vao-bound
-	   :suitable-array-for-index-p
-	   :make-vao
-	   :make-vao-from-id))
+	   :make-vao))
 
 (defpackage :cepl.streams
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

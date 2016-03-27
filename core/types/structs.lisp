@@ -370,7 +370,8 @@
     (when (< len 5)
       (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
         (when (and (loop for i in slots always (eql (s-type i) type))
-                   (cepl.pixel-formats:valid-pixel-format-p components type t nil))
+                   (cepl.pixel-formats::valid-pixel-format-p
+		    components type t nil))
           `(defmethod lisp-type->pixel-format ((type (eql ',name)))
              (pixel-format ,components ',type)))))))
 

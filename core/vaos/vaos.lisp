@@ -76,11 +76,6 @@
                                     :unsigned-int))))
 
 (defun make-vao (gpu-arrays &optional index-array)
-  "makes a vao using a list of gpu-arrays as the source data
-   (remember that you can also use gpu-sub-array here if you
-   need a subsection of a gpu-array).
-   You can also specify an index-array which will be used as
-   the indicies when rendering"
   (let ((gpu-arrays (listify gpu-arrays)))
     (make-vao-from-id
      (progn (assert (and (every #'1d-p gpu-arrays)

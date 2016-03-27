@@ -32,7 +32,6 @@
 (let ((buffer-id-cache nil)
       (buffer-target-cache nil))
   (defun bind-buffer (buffer buffer-target)
-    "Binds the specified opengl buffer to the target"
     (let ((id (gpu-buffer-id buffer)))
       (unless (and (eq id buffer-id-cache)
                    (eq buffer-target buffer-target-cache))
@@ -78,21 +77,19 @@
                      (usage :static-draw)
                      (managed nil))
   (declare (symbol buffer-target usage))
-  "Creates a new opengl buffer object.
-   Optionally you can provide a c-array as the :initial-contents
-   to have the buffer populated with the contents of the array"
   (make-gpu-buffer-from-id (gen-buffer) :initial-contents initial-contents
                        :buffer-target buffer-target :usage usage
                        :managed managed))
 
+(defun make-managed-gpu-buffer (&key initial-contents
+				  (buffer-target :array-buffer)
+				  (usage :static-draw))
+  (make-gpu-buffer-from-id (gen-buffer) :initial-contents initial-contents
+                       :buffer-target buffer-target :usage usage
+                       :managed t))
+
 (defun buffer-data-raw (data-pointer data-type data-byte-size
                         buffer buffer-target usage &optional (byte-offset 0))
-  "This function populates an opengl buffer with the contents
-   of the array. You also pass in the buffer type and the
-   draw type this buffer is to be used for.
-
-   The function returns a buffer object with its format slot
-   populated with the details of the data stored within the buffer"
   (let ((data-type (safer-gl-type data-type)))
     (bind-buffer buffer buffer-target)
     (%gl:buffer-data buffer-target data-byte-size
@@ -105,12 +102,6 @@
                     &key
 		      (offset 0)
 		      (size (cepl.c-arrays::c-array-byte-size c-array)))
-  "This function populates an opengl buffer with the contents
-   of the array. You also pass in the buffer type and the
-   draw type this buffer is to be used for.
-
-   The function returns a buffer object with its format slot
-   populated with the details of the data stored within the buffer"
   (let ((data-type (element-type c-array)))
     (buffer-data-raw (pointer c-array) data-type size buffer buffer-target usage
                      (* offset (element-byte-size c-array)))))
@@ -118,14 +109,6 @@
 ;; [TODO] doesnt check for overflow off end of buffer
 (defun buffer-sub-data (buffer c-array byte-offset buffer-target
                         &key (safe t))
-  "This function replaces a subsection of the data in the
-   specified buffer with the data in the c-array.
-   The byte offset specifies where you wish to start overwriting
-   data from.
-   When the :safe option is t, the function checks to see if the
-   data you are about to write into the buffer will cross the
-   boundaries between data already in the buffer and will emit
-   an error if you are."
   (let ((byte-size (cepl.c-arrays::c-array-byte-size c-array)))
     (when (and safe (loop for format in (gpu-buffer-format buffer)
                        when (and (< byte-offset (third format))
@@ -141,9 +124,6 @@
   buffer)
 
 (defun multi-buffer-data (buffer c-arrays buffer-target usage)
-  "This beast will take a list of c-arrays and auto-magically
-   push them into a buffer taking care of both interleaving
-   and sequencial data and handling all the offsets."
   (let* ((c-array-byte-sizes (loop for c-array in c-arrays
                               collect
                                 (cepl.c-arrays::c-array-byte-size c-array)))
@@ -163,20 +143,12 @@
 
 (defun buffer-reserve-block-raw (buffer size-in-bytes buffer-target
                                  usage)
-  "This function creates an empty block of data in the opengl buffer.
-   It will remove ALL data currently in the buffer. It also will not
-   update the format of the buffer so you must be sure to handle this
-   yourself. It is much safer to use this as an assistant function to
-   one which takes care of these issues"
   (bind-buffer buffer buffer-target)
   (%gl:buffer-data buffer-target size-in-bytes
                    (cffi:null-pointer) usage)
   buffer)
 
 (defun buffer-reserve-block (buffer type dimensions buffer-target usage)
-  "This function creates an empty block of data in the opengl buffer
-   equal in size to (* length size-in-bytes-of-type).
-   It will remove ALL data currently in the buffer"
   (let ((type (safer-gl-type type)))
     (bind-buffer buffer buffer-target)
     (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
@@ -191,12 +163,6 @@
 
 (defun buffer-reserve-blocks (buffer types-and-dimensions
                               buffer-target usage)
-  "This function creates an empty block of data in the opengl buffer
-   equal in size to the sum of all of the
-   (* length size-in-bytes-of-type) in types-and-lengths.
-   types-and-lengths should be of the format:
-   `((type length) (type length) ...etc)
-   It will remove ALL data currently in the buffer"
   (let ((total-size-in-bytes 0))
     (setf (gpu-buffer-format buffer)
           (loop :for (type dimensions) :in types-and-dimensions :collect

@@ -44,6 +44,7 @@
   '(:uint8 :int8 :ushort :short :uint :int))
 
 (defparameter *gl-pixel-to-internal-map*
+  ;; (components normalise type sizes)
   '(((:depth t :short nil) :depth-component16)
     ((:depth t :int nil) :depth-component32)
     ((:depth t :float nil) :depth-component32f)
@@ -98,8 +99,8 @@
     ((:rgba t :uint8 (8 8 8 8)) :srgb8-alpha8)
     ((:rgba t :uint (10 10 10 2)) :rgb10-a2)
     ((:rgba nil :uint (10 10 10 2)) :rgb10-a2ui)
-    ((:rgb t :uint8 (2 2 2 2)) :rgba2)
-    ((:rgb t :ushort (4 4 4 4)) :rgba4)
+    ((:rgb t :uint8 (2 2 2 2)) :rgba2) ;;bug? rgb v rgba?
+    ((:rgb t :ushort (4 4 4 4)) :rgba4) ;;bug? rgb v rgba?
     ((:rgba t :short (5 5 5 1)) :rgb5-a1)
     ((:rgb t :uint8 (3 3 2)) :r3-g3-b2)))
 
