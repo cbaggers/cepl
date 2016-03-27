@@ -2032,12 +2032,7 @@ opposed to the usual texture memory. Returns nil otherwise
                         <span class="arguments">(TEXTURE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-Calling this with a texture asks OpenGL to generate mipmaps for the texture.
-
-You do not normally need to use this function as you can use the :mipmaps
-argument on #'make-texture. See #'make-texture for more details.
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.TEXTURES:MAKE-TEXTURE"/>
@@ -2053,132 +2048,7 @@ argument on #'make-texture. See #'make-texture for more details.
  WRAP COMPARE (GENERATE-MIPMAPS T))</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function allows you to make any kind of texture based on the arguments
-provided. Whilst the signature is quite intimidating your rarely need to use
-more than a few of the arguments to make a given texture.
-
-For example: (make-texture '(1 2 3 4)) will give you a valid texture.
-
-We will now go through the arguments and their behaviours:
-
-           - - - - - - - - - - - - - - - - - - - - - - - -
-
-:initial-contents :dimensions &amp; :element-type
-
-- with :initial-contents to nil:
-  In this case you need to provide dimensions and an element-type.
-
-- with :initial-contents populated.
-  The initial-contents can be a (potentially nested) list, array or c-array.
-
-  When the :initial-contents are a c-array then the dimensions and element-type
-  are taken from the c-array. As the data is already in foreign memory the
-  upload will be notable faster that from lisp-data-&gt;gpu as no type conversions
-  are needed
-
-  When the :initial-contents are an array then the dimension of the texture
-  will be the same as the array passed in. Remember OpenGL only allows up to
-  3 dimensions for the textures
-
-  When the :initial-contents is a flat list then each element is used as one
-  element in the textures gpu-array
-  If the :initial-contents is a nested list then you must either:
-  - specify multiple dimensions and an element-type
-  - specify an element-type to be some struct type, then nested lists are then
-    used to populate the fields of the foreign structs. For an example of this
-    please see this example: https://github.com/cbaggers/cepl.examples/blob/master/examples/triangle.lisp#L30.
-
-  If the :element-type is not provided then CEPL will look at every element in
-  the initial-contents and try and find the smallest (in bytes) foreign type
-  which works for every element. This mean if the array is full of single-floats
-  then CEPL will choose :float, not :double.
-  Naturally this behaviour is too slow for use in performance critical
-  applications however it is nice for experimentation and working from the repl.
-
-Extra element-type details:
-Unlike c-array and gpu-arrays (which use foreign types for their elements)
-textures have a different set of acceptable element-types. These are called
-'image formats'.
-
-If you provide a GL image-format as the :element-type CEPL will use it directly
-
-If you provide a (foreign) lisp type then CEPL will try to find the appropriate
-image-format for that type.
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:mipmap &amp; :generate-mipmaps
-
-If this is set to t then CEPL will make mipmaps for the texture. The texture
-will have (floor (log (apply #'max dimensions) 2)) levels of mipmaps
-
-If this is set to a positive integer CEPL will check that the number of levels
-is allowed for the dimensions given and make that many levels of mipmaps.
-
-If generate-mipmaps is t CEPL will ask OpenGL to generate content for all the
-mipmaps levels.
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:layer-count
-
-If this is set to a value greater than 1 then you are trying to create one of
-the following:
-
-:texture-1d-array
-:texture-2d-array
-:texture-cube-map-array
-
-Which one is created depends on the dimensions provided and whether cubes is t.
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:cubes
-If this is t then you are trying to make a cube-map texture
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:rectangle
-If this is t then you are trying to make a rectangle texture.
-
-This is different from a regular 2d texture (which can also be rectangular)
-
-This texture only has one 2-dimensional gpu-array. The texture cannot have
-mipmapping. Texture coordinates used for these textures are not normalized.
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:multisample
-This is not currently supported in CEPL
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:immutable
-Set this to nil if you definitely dont want to use immutable texture storage.
-See the docstring for 'texture for more details
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:buffer-storage
-If this is set to t you are trying to make a buffer-texture.
-
-If you set this to t then the element-type should NOT be an image-format. Use
-a foreign lisp type instead. Or leave it nil if you want CEPL to take the type
-from the initial-contents
-
-See the docstring for 'texture for more details.
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:lod-bias :min-lod :max-lod :minify-filter :magnify-filter :wrap :compare
-
-Use these if you want to set the sampling parameters on construction.
-
-If not provided then GL defaults will be used.
-
-See cepl.samplers for details on what these parameters mean.
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.TEXTURES:MAKE-TEXTURE-FROM-ID"/>
@@ -2192,14 +2062,7 @@ See cepl.samplers for details on what these parameters mean.
  MIPMAP-LEVELS LAYER-COUNT CUBES ALLOCATED MUTABLE-P)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-Wrap and existing GL Texture Object in a CEPL texture struct.
-
-This function does not do ANY sanity checking on the values provided, use only
-if you are 100% sure of what you are setting.
-
-For details on the meaning of the arguments see the docstring for #'make-texture
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:SET-MINIFY-FILTER"/>
@@ -2236,15 +2099,7 @@ based on the following:
                         <span class="arguments">(TEXTURE &amp;KEY (MIPMAP-LEVEL 0) (LAYER 0) (CUBE-FACE 0))</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function allows you to access a specific gpu-array from the texture.
-
-:mipmap-level is invalid if the texture doesnt have mipmaps
-
-:layer is invalid if the texture-type is not a 1d,2d or cube-map array-texture.
-
-:cube-face is invalid if the texture is not a cube-map texture
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.TEXTURES:TEXTURE-ELEMENT-TYPE"/>
@@ -4287,7 +4142,32 @@ This function returns t if the value provided is a keyword that can be found in
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+pixel-formats exist to aid the handling and conversion of types in CEPL.
+
+OpenGL does not make it easy to understand the types involved with textures.
+
+First there is the name of the type you would use in lisp (or C)
+
+Then there is the image-format (sometimes called internal-format) which
+specifies the format on the GPU
+
+Then there are the types and formats that must be specified when uploading or
+downloading data to/from a texture (or rather a texture-backed gpu-array).
+
+CEPL's pixel-fromat pulls together enough metadata that conversions to and from
+these various representations is easy.
+
+Technically you shouldnt need to use this directly as it will be handled by CEPL
+however if you ever have to deal with the formats directly, this type can be a
+boon.
+
+It doesnt cover every combination yet, but will in time. Anything missing is
+considered a bug, so please report it on Github so it can be added to the todo
+list.
+
+
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:PIXEL-FORMAT-COMP-LENGTH"/>
@@ -4300,7 +4180,10 @@ This function returns t if the value provided is a keyword that can be found in
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function when passed a pixel-format will return the number of components
+it has. The values will be from 1 upto 4
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:PIXEL-FORMAT-COMPONENTS"/>
@@ -4313,7 +4196,17 @@ This function returns t if the value provided is a keyword that can be found in
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the components of the given pixel-format as a keyword
+
+possible values are:
+:r
+:rg
+:rgb
+:rgba
+:stencil-only
+:depth
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:PIXEL-FORMAT-NORMALISE"/>
@@ -4326,7 +4219,13 @@ This function returns t if the value provided is a keyword that can be found in
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns whether values of the components belonging to the
+pixel-format are normalized.
+
+If t then sampling the values on the gpu will gives values in the
+range 0s0 → 1s0
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:PIXEL-FORMAT-REVERSED"/>
@@ -4339,7 +4238,12 @@ This function returns t if the value provided is a keyword that can be found in
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Some pixel-formats are 'reversed' meaning the component order in the data is
+reversed.
+
+This function will return t if the pixel format provided is a reversed-type
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:PIXEL-FORMAT-SIZES"/>
@@ -4352,7 +4256,12 @@ This function returns t if the value provided is a keyword that can be found in
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Some pixel-formats and image-formats are 'special' and have specifically sized
+components.
+
+This function will return a list of sizes in bits of the components.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:PIXEL-FORMAT-TYPE"/>
@@ -4365,7 +4274,15 @@ This function returns t if the value provided is a keyword that can be found in
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the lisp type of a single 'element' of the given
+pixel-format.
+
+For example:
+- the element type of a :vec3 is a :float.
+- the element type of a :vec2 is a :float.
+- the element type of a :int8 is a :int8
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIXEL-FORMATS:COMPILE-PIXEL-FORMAT"/>
@@ -4443,7 +4360,10 @@ This function returns t if the value provided is a keyword that can be found in
                         <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns t if the the given value is a pixel-format. Otherwise it
+returns nil
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIXEL-FORMATS:VALID-PIXEL-FORMAT-P"/>
@@ -4632,11 +4552,6 @@ This function returns the type of the data that is contained in the UBO
 </pre>
                   </article>
                 </li></ul></li><li class="package">
-              <h3>
-                <a name="CEPL.RENDER-STATE" href="#CEPL.RENDER-STATE">CEPL.RENDER-STATE</a>
-                <span class="nicknames"/>
-              </h3>
-              <ul/></li><li class="package">
               <h3>
                 <a name="CEPL.SPACE" href="#CEPL.SPACE">CEPL.SPACE</a>
                 <span class="nicknames"/>
@@ -6314,702 +6229,6 @@ populate disabled you can have #'push-g for this type.
 CEPL currently does a poor job at communicating these conflicts to the user.
 
 </pre>
-                  </article>
-                </li></ul></li><li class="package">
-              <h3>
-                <a name="CEPL.CONTEXT" href="#CEPL.CONTEXT">CEPL.CONTEXT</a>
-                <span class="nicknames"/>
-              </h3>
-              <ul><li>
-                  <a name="CEPL.CONTEXT:*GL-CONTEXT*"/>
-                  <article>
-                    <header class="special">
-                      <span class="type">special</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:*GL-CONTEXT*" class="name">*GL-CONTEXT*</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:GL-CONTEXT"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:GL-CONTEXT" class="name">GL-CONTEXT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:HAS-FEATURE"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:HAS-FEATURE" class="name">HAS-FEATURE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(X)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAKE-CONTEXT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAKE-CONTEXT" class="name">MAKE-CONTEXT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY (WIDTH 640) (HEIGHT 480) (TITLE &quot;&quot;) FULLSCREEN NO-FRAME (ALPHA-SIZE 0)
- (DEPTH-SIZE 16) (STENCIL-SIZE 8) (RED-SIZE 8) (GREEN-SIZE 8) (BLUE-SIZE 8)
- (BUFFER-SIZE 32) (DOUBLE-BUFFER T) HIDDEN (RESIZABLE T))</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:VERSION-FLOAT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:VERSION-FLOAT" class="name">VERSION-FLOAT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:COLOR-CLEAR-VALUE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:COLOR-CLEAR-VALUE" class="name">COLOR-CLEAR-VALUE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:COLOR-WRITEMASK"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:COLOR-WRITEMASK" class="name">COLOR-WRITEMASK</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:DEPTH-CLEAR-VALUE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:DEPTH-CLEAR-VALUE" class="name">DEPTH-CLEAR-VALUE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:DEPTH-FUNC~1"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:DEPTH-FUNC~1" class="name">DEPTH-FUNC~1</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:DEPTH-TEST"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:DEPTH-TEST" class="name">DEPTH-TEST</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:DEPTH-WRITEMASK"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:DEPTH-WRITEMASK" class="name">DEPTH-WRITEMASK</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:DOUBLEBUFFER"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:DOUBLEBUFFER" class="name">DOUBLEBUFFER</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:DRAW-BUFFER"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:DRAW-BUFFER" class="name">DRAW-BUFFER</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:DRAW-BUFFERI"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:DRAW-BUFFERI" class="name">DRAW-BUFFERI</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:DRAW-FRAMEBUFFER-BINDING"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:DRAW-FRAMEBUFFER-BINDING" class="name">DRAW-FRAMEBUFFER-BINDING</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:EXTENSION-COUNT"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:EXTENSION-COUNT" class="name">EXTENSION-COUNT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAJOR-VERSION"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAJOR-VERSION" class="name">MAJOR-VERSION</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-COLOR-ATTACHMENTS"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-COLOR-ATTACHMENTS" class="name">MAX-COLOR-ATTACHMENTS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-COLOR-TEXTURE-SAMPLES"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-COLOR-TEXTURE-SAMPLES" class="name">MAX-COLOR-TEXTURE-SAMPLES</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-DEPTH-TEXTURE-SAMPLES"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-DEPTH-TEXTURE-SAMPLES" class="name">MAX-DEPTH-TEXTURE-SAMPLES</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-DRAW-BUFFERS"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-DRAW-BUFFERS" class="name">MAX-DRAW-BUFFERS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-DUAL-SOURCE-DRAW-BUFFERS"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-DUAL-SOURCE-DRAW-BUFFERS" class="name">MAX-DUAL-SOURCE-DRAW-BUFFERS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-FRAMEBUFFER-HEIGHT"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-FRAMEBUFFER-HEIGHT" class="name">MAX-FRAMEBUFFER-HEIGHT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-FRAMEBUFFER-LAYERS"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-FRAMEBUFFER-LAYERS" class="name">MAX-FRAMEBUFFER-LAYERS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-FRAMEBUFFER-SAMPLES"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-FRAMEBUFFER-SAMPLES" class="name">MAX-FRAMEBUFFER-SAMPLES</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-FRAMEBUFFER-WIDTH"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-FRAMEBUFFER-WIDTH" class="name">MAX-FRAMEBUFFER-WIDTH</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-INTEGER-SAMPLES"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-INTEGER-SAMPLES" class="name">MAX-INTEGER-SAMPLES</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-SAMPLES"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-SAMPLES" class="name">MAX-SAMPLES</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MAX-SERVER-WAIT-TIMEOUT"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MAX-SERVER-WAIT-TIMEOUT" class="name">MAX-SERVER-WAIT-TIMEOUT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MIN-MAP-BUFFER-ALIGNMENT"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MIN-MAP-BUFFER-ALIGNMENT" class="name">MIN-MAP-BUFFER-ALIGNMENT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:MINOR-VERSION"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:MINOR-VERSION" class="name">MINOR-VERSION</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:READ-BUFFER"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:READ-BUFFER" class="name">READ-BUFFER</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:READ-FRAMEBUFFER-BINDING"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:READ-FRAMEBUFFER-BINDING" class="name">READ-FRAMEBUFFER-BINDING</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:RENDERBUFFER-BINDING"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:RENDERBUFFER-BINDING" class="name">RENDERBUFFER-BINDING</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-BACK-FAIL"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-BACK-FAIL" class="name">STENCIL-BACK-FAIL</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-BACK-FUNC"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-BACK-FUNC" class="name">STENCIL-BACK-FUNC</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-BACK-PASS-DEPTH-FAIL"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-BACK-PASS-DEPTH-FAIL" class="name">STENCIL-BACK-PASS-DEPTH-FAIL</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-BACK-PASS-DEPTH-PASS"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-BACK-PASS-DEPTH-PASS" class="name">STENCIL-BACK-PASS-DEPTH-PASS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-BACK-REF"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-BACK-REF" class="name">STENCIL-BACK-REF</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-BACK-VALUE-MASK"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-BACK-VALUE-MASK" class="name">STENCIL-BACK-VALUE-MASK</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-BACK-WRITEMASK"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-BACK-WRITEMASK" class="name">STENCIL-BACK-WRITEMASK</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-CLEAR-VALUE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-CLEAR-VALUE" class="name">STENCIL-CLEAR-VALUE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-FAIL"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-FAIL" class="name">STENCIL-FAIL</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-FUNC"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-FUNC" class="name">STENCIL-FUNC</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-PASS-DEPTH-FAIL"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-PASS-DEPTH-FAIL" class="name">STENCIL-PASS-DEPTH-FAIL</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-PASS-DEPTH-PASS"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-PASS-DEPTH-PASS" class="name">STENCIL-PASS-DEPTH-PASS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-REF"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-REF" class="name">STENCIL-REF</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-TEST"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-TEST" class="name">STENCIL-TEST</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-VALUE-MASK"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-VALUE-MASK" class="name">STENCIL-VALUE-MASK</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STENCIL-WRITEMASK"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STENCIL-WRITEMASK" class="name">STENCIL-WRITEMASK</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:STEREO"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:STEREO" class="name">STEREO</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.CONTEXT:SUPPORTED-SHADING-VERSIONS-COUNT"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.CONTEXT:SUPPORTED-SHADING-VERSIONS-COUNT" class="name">SUPPORTED-SHADING-VERSIONS-COUNT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:TIMESTAMP"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:TIMESTAMP" class="name">TIMESTAMP</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
                   </article>
                 </li></ul></li></ul>
         </article>

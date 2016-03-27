@@ -821,7 +821,9 @@
     :import-from ((:cepl-utils :deferror
 			       :print-mem
 			       :p->))
-    :export-from ((:cepl.space :p! :space-g :in))
+    :export-from ((:cepl.space :p! :space-g :in
+			       :*screen-space* :*ndc-space*
+			       :*clip-space* :*world-space*))
     :export (:make-project
 	     :quit
 	     :repl
@@ -831,7 +833,6 @@
 	     :swap
 	     :print-mem)
     :re-export (:cepl.generics
-		;; :cepl.context
 		:cepl.render-state
 		:cepl.viewports
 		:cepl.types

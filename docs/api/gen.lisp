@@ -28,13 +28,11 @@
 		     :cepl.image-formats
 		     :cepl.pixel-formats
 		     :cepl.ubos
-		     :cepl.render-state
 		     :cepl.space
 		     :cepl.generics
 		     :cepl.gpu-buffers
 		     :cepl.vaos
-		     :cepl.types
-		     :cepl.context)
+		     :cepl.types)
    :template *template-dir*
    :out *out-dir*
    :if-exists :supersede)
