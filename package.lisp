@@ -750,9 +750,7 @@
 	:cepl.gpu-arrays.buffer-backed :cepl.vaos :cepl.streams :cepl.ubos
 	:cepl.textures :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays
 	:cepl.samplers :cepl.fbos :cepl.blending)
-  (:export :*verbose-compiles*
-	   :*warn-when-cant-test-compile*
-	   :defun-g
+  (:export :defun-g
 	   :undefine-gpu-function
 	   :def-glsl-stage
 	   :defmacro-g
@@ -760,7 +758,9 @@
 	   :defpipeline
 	   :with-instances
 	   :g->
-	   :map-g))
+	   :map-g
+	   ;; :*verbose-compiles*
+	   ;; :*warn-when-cant-test-compile*))
 
 (defpackage :cepl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils

@@ -3471,7 +3471,58 @@ For more details see cepl.blending
 This is the macro you use when you want to capture the output from a pipeline in
 an FBO
 
+-- draw buffers-
+draw-buffers is an important argument, it allows you to direct the outputs from
+the fragment-shader of the pipeline into the fbo's color attachments.
+This means that your pipelines can write into multiple attachments (and thus
+multiple textures) at once.
 
+To use it either pass in:
+
+ nil - Which means that the fbo is bound but no attachments will be draw into
+       (rarely used)
+
+ t -  Which means the all attachments will be available to be drawn into
+      this will happen in order, so the first output from the fragment shader
+      will draw into the first attachment, the second output to the second
+      attachment, etc
+
+
+-- with-viewport --
+If with-viewport is t then with-fbo-bound adds a with-fbo-viewport that uses
+this fbo to this scope. This means that the current-viewport within this scope
+will be set to the equivalent of:
+
+    (make-viewport dimensions-of-fbo '(0 0))
+
+See the docstruct with-fbo-viewport for details on this behavior.
+
+One last detail is that you may want to take the dimensions of the viewport from
+an attachment other than attachment-0. To do this use the 'attachment-for-size
+argument and give the index of the color-attachment to use.
+
+-- with-blending --
+If with-blending is t then with-fbo-bound adds a with-blending that uses
+this fbo to this scope.
+This means that the blending parameters from your fbo will be used while
+rendering. For the details and version specific behaviours check out
+the docstring for cepl.blending:with-blending
+
+See the with-fbo-viewport for details on the behavior
+
+-- target --
+For target the choices are :framebuffer, :read_framebuffer and
+:draw_framebuffer.
+You normally dont need to worry about the target as the last two are only used
+when you need certain GL read and write operations to happen to different
+buffers. It remains for those who know they need this but otherwise you can
+let CEPL handle it.
+
+
+-- unbind --
+If unbind is set to nil then the fob is not unbound at the end of the scope.
+Only use this if you know you need it. Most often it is best to let CEPL control
+that.
 </pre>
                   </article>
                 </li></ul></li><li class="package">
@@ -4418,29 +4469,7 @@ an FBO
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-A UBO is a structure that abstracts an OpenGL Uniform Buffer Object
-
-A Ubo is chunk of data stored in a gpu-buffer, which can be used as a uniform
-in shader pipelines.
-
-The advantage of using a UBO over just passing the data as regular unforms is
-that UBOs can be used to share uniforms between different programs, as well as
-quickly change between sets of uniforms for the same pipeline.
-
-Let's expand on that a little:
-
-Switching between uniform buffer bindings is typically faster than switching
-dozens of uniforms in a pipeline.
-
-Also, uniform buffer objects can typically store more data than non-buffered
-uniforms. So they can be used to store and access larger blocks of data than
-unbuffered uniform values.
-
-Lastly, they can be used to share information between different programs.
-So modifying a single buffer can effectively allow uniforms in multiple programs
-to be updated.
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:UBO-DATA"/>
@@ -4453,9 +4482,7 @@ to be updated.
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-Returns the gpu-array that contains the data presented by this UBO
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:UBO-ID"/>
@@ -4468,9 +4495,7 @@ Returns the gpu-array that contains the data presented by this UBO
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function return the id of the GL UBO abstracted by this CEPL UBO.
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:UBO-INDEX"/>
@@ -4483,10 +4508,7 @@ This function return the id of the GL UBO abstracted by this CEPL UBO.
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function returns the index into the ubo-data where the element defined by
-this ubo is located
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:UBO-OWNS-GPU-ARRAY"/>
@@ -4499,10 +4521,7 @@ this ubo is located
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function returns t if the gpu-array was created by make-ubo or nil if it is
-using data from a gpu-array passed to make-ubo
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.UBOS:MAKE-UBO"/>
@@ -4515,24 +4534,7 @@ using data from a gpu-array passed to make-ubo
                         <span class="arguments">(DATA &amp;OPTIONAL ELEMENT-TYPE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function will make and return a new ubo
-
-You need only provide an element type and the lisp data to populate that type.
-
-For example, given the following type:
-
-   (defstruct-g test ()
-     (scale :float :accessor scale)
-     (age :int))
-
-You create a ubo using this type as follows:
-
-    (make-ubo '(1.2 10) 'test)
-
-If you wish to make a ubo from an element of a c-array or gpu-array please
-see the #'make-ubo-from-array function
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.UBOS:MAKE-UBO-FROM-ARRAY"/>
@@ -4545,20 +4547,7 @@ see the #'make-ubo-from-array function
                         <span class="arguments">(DATA &amp;OPTIONAL (INDEX 0) ELEMENT-TYPE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function takes a lisp-array, c-array or gpu-array and an index.
-It returns a new ubo with the specified element as the data of the ubo.
-
-If made from a c-array or lisp-array, a fresh gpu memory is allocated to hold
-the data
-
-If made from a gpu-array the ubo simply holds a reference to the gpu-array
-and the index. No new memory is allocated. This means that if that
-gpu-array is destroyed then this ubo is in an invalid state.
-This also means it is possible to do invalid things when rendering. For example
-say you used the ubo as an input whilst streaming vertex data from the same
-array. Consult GL documentation for details on such exceptional cases.
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.UBOS:UBO-DATA-TYPE"/>
@@ -4571,9 +4560,7 @@ array. Consult GL documentation for details on such exceptional cases.
                         <span class="arguments">(UBO)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function returns the type of the data that is contained in the UBO
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li></ul></li><li class="package">
               <h3>

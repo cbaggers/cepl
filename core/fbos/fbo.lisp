@@ -408,7 +408,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
            `(progn
               (%fbo-draw-buffers ,fbo)
               ,@(if with-blending
-                    `((%with-blending ,fbo t nil ,@body))
+                    `((cepl.blending::%with-blending ,fbo t nil ,@body))
                     body)))
           ((listp pattern)
            (destructuring-bind (pointer len attachments) pattern
