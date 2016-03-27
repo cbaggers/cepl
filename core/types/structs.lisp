@@ -70,38 +70,38 @@
 ;;------------------------------------------------------------
 
 ;;{TODO} Autowrap-name is name now...can clean up lots of code
-(defmacro defstruct-g (name (&key (accesors t) (constructor t) varjo-constructor
-                                  (readers t) (writers t) (pull-push t)
-                                  (attribs t) (populate t))
-                       &body slot-descriptions)
-  (let ((slots (mapcar (lambda (_) (normalize-slot-description
-                                    _ name (and readers accesors)
-                                    (and writers accesors)))
-                       slot-descriptions))
-        (autowrap-name name))
-    (when (validate-defstruct-g-form name slots)
-      `(progn
-         (eval-when (:compile-toplevel :load-toplevel :execute)
-           ,@(make-autowrap-record-def autowrap-name slots))
-         (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
-           :constructor ,(symb '%make- name))
-	 (eval-when (:compile-toplevel :load-toplevel :execute)
-	   ,(make-varjo-struct-def name slots varjo-constructor))
-     ,(make-varjo-struct-lookup name)
-     ,@(when (and readers accesors)
-                 (remove nil (mapcar (lambda (_)
-                                       (make-slot-getter _ name autowrap-name))
-                                     slots)))
-         ,@(when (and writers accesors)
-                 (remove nil (mapcar (lambda (_)
-                                       (make-slot-setter _ name autowrap-name))
-                                     slots)))
-         ,(when constructor (make-make-struct name autowrap-name slots))
-         ,(when attribs (make-struct-attrib-assigner name slots))
-         ,(make-struct-pixel-format name slots)
-         ,(when populate (make-populate autowrap-name slots))
-         ,@(when pull-push (make-pull-push autowrap-name slots))
-         ',name))))
+(defmacro defstruct-g (name-and-options &body slot-descriptions)
+  (dbind (name &key (accesors t) (constructor (symb 'make- name))
+	       (readers t) (writers t) (pull-push t) (attribs t) (populate t))
+      (listify name-and-options)
+    (let ((slots (mapcar (lambda (_) (normalize-slot-description
+				      _ name (and readers accesors)
+				      (and writers accesors)))
+			 slot-descriptions))
+	  (autowrap-name name))
+      (when (validate-defstruct-g-form name slots)
+	`(progn
+	   (eval-when (:compile-toplevel :load-toplevel :execute)
+	     ,@(make-autowrap-record-def autowrap-name slots))
+	   (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
+	     :constructor ,(symb '%make- name))
+	   (eval-when (:compile-toplevel :load-toplevel :execute)
+	     ,(make-varjo-struct-def name slots))
+	   ,(make-varjo-struct-lookup name)
+	   ,@(when (and readers accesors)
+		   (remove nil (mapcar (lambda (_)
+					 (make-slot-getter _ name autowrap-name))
+				       slots)))
+	   ,@(when (and writers accesors)
+		   (remove nil (mapcar (lambda (_)
+					 (make-slot-setter _ name autowrap-name))
+				       slots)))
+	   ,(when constructor (make-make-struct constructor autowrap-name slots))
+	   ,(when attribs (make-struct-attrib-assigner name slots))
+	   ,(make-struct-pixel-format name slots)
+	   ,(when populate (make-populate autowrap-name slots))
+	   ,@(when pull-push (make-pull-push autowrap-name slots))
+	   ',name)))))
 
 (defun normalize-slot-description (slot-description type-name readers writers)
   (destructuring-bind (name type &key normalised accessor) slot-description
@@ -126,14 +126,11 @@
 
 ;;------------------------------------------------------------
 
-(defun make-varjo-struct-def (name slots varjo-constructor)
+(defun make-varjo-struct-def (name slots)
   (let ((hidden-name (symb-package (symbol-package name)
                                    'v_ name )))
     `(v-defstruct
-         (,name
-          :shadowing ,hidden-name
-          ,@(when varjo-constructor `(:constructor ,varjo-constructor))
-          )
+         (,name :shadowing ,hidden-name)
          ()
        ,@(mapcar #'format-slot-for-varjo slots))))
 
@@ -205,9 +202,9 @@
           :bit-alignment 8)))
 
 ;;{TODO} should be setting fields here
-(defun make-make-struct (name awrap-type-name slots)
+(defun make-make-struct (constructor-name awrap-type-name slots)
   (let ((vars (loop :for s :in slots :collect (s-name s))))
-    `(defun ,(symb 'make- name) ,(cons '&key vars)
+    `(defun ,constructor-name ,(cons '&key vars)
        (let ((result (autowrap:alloc ',awrap-type-name)))
          ,@(loop :for s :in slots :for v :in vars :collect
               `(when ,v (setf (,(s-writer s) result) ,v)))

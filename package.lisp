@@ -311,7 +311,6 @@
 	   :lisp-type->image-format
 	   :pixel-format->image-format
 	   :pixel-format->lisp-type
-	   :uploadable-lisp-seq
 	   ;;---
 	   :g-pc
 	   :g-pn
@@ -338,6 +337,7 @@
            :expand-gl-type-name
 	   :color-attachment-enum
 	   :gl-type-size
+	   :uploadable-lisp-seq
 	   ;;---
 	   :def-compile-pass
 	   :def-deep-pass
@@ -750,7 +750,6 @@
 	:cepl.textures :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays
 	:cepl.samplers :cepl.fbos :cepl.blending)
   (:export :defun-g
-	   :undefine-gpu-function
 	   :def-glsl-stage
 	   :defmacro-g
 	   :define-compiler-macro-g

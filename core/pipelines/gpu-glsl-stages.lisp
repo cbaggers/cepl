@@ -18,15 +18,16 @@
 ;; extract details from args and delegate to %def-gpu-function
 ;; for the main logic
 (defmacro def-glsl-stage (name args body-string outputs)
-  "[0] makes a glsl-stage-spec that will be populated a stored later.
+  ;; [0] makes a glsl-stage-spec that will be populated a stored later.
 
-   [1] use varjo to create a varjo-compile-result. We have to bodge a bit
-       of the data but it's worth it to not duplicate varjo's logic
+  ;; [1] use varjo to create a varjo-compile-result. We have to bodge a bit
+  ;;     of the data but it's worth it to not duplicate varjo's logic
 
-   [2] %make-stand-in-lisp-func-for-glsl-stage is called at expand time to write
-       a lisp function with the same signature as the glsl stage. This gives
-       code hinting and also a decent error message if you try calling it
-       cpu side."
+  ;; [2] %make-stand-in-lisp-func-for-glsl-stage is called at expand time to write
+  ;;     a lisp function with the same signature as the glsl stage. This gives
+  ;;     code hinting and also a decent error message if you try calling it
+  ;;     cpu side.
+  ;;
   ;; split the argument list into the categoried we care about
   (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
 	       (instancing :&instancing))

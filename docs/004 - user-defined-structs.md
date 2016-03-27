@@ -1,15 +1,15 @@
 # User defined structs
 
-On of the really tricky parts of working with gpu data is lay it out in memory (and a lot of realted details that make my brain melt). Cepl simplifies this by providing a kind of struct that can be used both on the gpu and cpu.
+One of the really tricky parts of working with gpu data is laying it out in memory (and a lot of realted details that make my brain melt). Cepl simplifies this by providing a kind of struct that can be used both on the gpu and cpu.
 
 ### Defining
 
 You create these using defstruct-g so lets look at an example right now:
 
 ```
-	 (defstruct-g our-data ()
-	   (position :vec3)
-	   (val :int :accessor val))
+     (defstruct-g our-data
+       (position :vec3)
+       (val :int :accessor val))
 ```
 
 This should seem familiar if you have used common lisp's structs.
@@ -23,7 +23,7 @@ The format for a slot is
 
      -or-
 
-	 (slot-name slot-type :accessor accessor-name)
+     (slot-name slot-type :accessor accessor-name)
 ```
 
 ### Gimme one!
@@ -40,7 +40,7 @@ For those who havent seen it yet, the `v!` is used to make vectors. So here we a
 
 Notice that we are passing lisp data into this make function and cepl is transparently translating it to *c data*. More on this later.
 
-Remember that, like in c-like-languages, not providing values for the slots leaves the field undefined. The value in the slot will be garbage and trying to retrieve it may crash cepl.
+Remember that, like in C, not providing values for the slots leaves the field undefined. The value in the slot will be garbage and trying to retrieve it may crash cepl.
 
 ### Accessors
 
@@ -72,19 +72,26 @@ We will hear more about `populate` in the next chapter.
 
 ### Options
 
-So in our example struct:
+Let's look at another example struct:
 
 ```
-	 (defstruct-g our-data ()
+     (defstruct-g (our-data :writers nil
+                            ..
+                            ..)
        ...
-	   ...)
+       ...)
 ```
 
-we see that after the name of the struct there is a `()`. This is the place you can give defstruct-g extra options.
+we see that this time the name is inside a list along with one or more options. This is a lot like how we can give options to regular lisp structs.
 
 These options are rather technical, and are not likely to be of interest to most people.
 
 Ok with that out of the way let's have a look at them.
+
+**:constructor**
+Setting this to nil means that you will get *no* `make-` function
+Setting this to any other symbol will name the constructor using that symbol
+The default will is that the constructor will be called `make-<struct-name>`
 
 **:readers**
 Setting this to nil means that you will get *no* functions to get the slots data
@@ -94,12 +101,6 @@ Setting this to nil means that you will get *no* setf functions to set the slots
 
 **:accesors**
 Setting this to nil means that you will get *neither* of the above.
-
-**:constructor**
-Setting this to nil means that you will get *no* `make-` function
-
-**:varjo-constructor**
-Setting this to nil means that you will get *no* `make-` function in your shaders
 
 **:pull-push**
 Setting this to nil means that you will get *no* `push-g` or `pull-g` methods defined for your type

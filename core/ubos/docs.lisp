@@ -34,7 +34,7 @@ You need only provide an element type and the lisp data to populate that type.
 
 For example, given the following type:
 
-   (defstruct-g test ()
+   (defstruct-g test
      (scale :float :accessor scale)
      (age :int))
 

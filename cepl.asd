@@ -59,7 +59,6 @@
                (:file "core/pipelines/gpu-shader-pipeline")
                (:file "core/pipelines/gpu-compose-pipeline")
 	       (:file "core/textures/def")
-	       (:file "core/samplers/def")
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")
                (:file "core/pipelines/map-g")

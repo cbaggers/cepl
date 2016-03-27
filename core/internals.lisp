@@ -76,3 +76,5 @@
 (defun expand-gl-type-name (type)
   (or (second (assoc type *expanded-gl-type-names*))
       type))
+
+(deftype uploadable-lisp-seq () '(or list vector array))
