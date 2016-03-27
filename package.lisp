@@ -739,8 +739,7 @@
 	   :source-rgb
 	   :source-alpha
 	   :destination-rgb
-	   :destination-alpha
-	   ))
+	   :destination-alpha))
 
 (defpackage :cepl.pipelines
   (:use :cl :cffi :varjo :varjo-lang :rtg-math :split-sequence :named-readtables
@@ -760,7 +759,8 @@
 	   :g->
 	   :map-g
 	   ;; :*verbose-compiles*
-	   ;; :*warn-when-cant-test-compile*))
+	   ;; :*warn-when-cant-test-compile*
+	   ))
 
 (defpackage :cepl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils
@@ -769,97 +769,97 @@
 
 (defpackage :cepl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
-        :varjo :varjo-lang :cepl.generics :cepl.types :cepl.errors
+	:varjo :varjo-lang :cepl.generics :cepl.types :cepl.errors
 	:cepl.internals :cepl.pipelines)
   (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)
   (:export :get-transform :get-transform-via :p! :in :space! :make-space
-           :make-space*
-           :with-rendering-via
-           :*screen-space* :*ndc-space* :*clip-space* :*world-space*
-           :model-space-p :relational-space-p
-           :space :pos4 :space-g :pos4-g :let-model-space
-           :parent-space
-           :space-inverse-transform
-           :add-non-hierarchical-relationship
-           :update-non-hierarchical-relationship
-           :remove-non-hierarchical-relationship))
+	   :make-space*
+	   :with-rendering-via
+	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
+	   :model-space-p :relational-space-p
+	   :space :pos4 :space-g :pos4-g :let-model-space
+	   :parent-space
+	   :space-inverse-transform
+	   :add-non-hierarchical-relationship
+	   :update-non-hierarchical-relationship
+	   :remove-non-hierarchical-relationship))
 
 
 (macrolet
     ((def-re-exporting-package (name &key use shadow export re-export
-                                     import-from export-from)
+				     import-from export-from)
        (labels ((exported-symbols (package-name)
-		  (let ((package (find-package package-name))
-			result)
-		    (do-external-symbols (x package)
-		      (push (intern (symbol-name x) :keyword) result))
-		    result))
-                (calc-export-all (re)
-                  (exported-symbols re))
-                (calc-import-from (re)
-                  (rest re))
-                (calc-re-export (re)
-                  (typecase re
-                    (list (calc-import-from re))
-                    (symbol (calc-export-all re))))
-                (calc-exports-from (ef)
-                  (rest ef))
-                (calc-exports ()
-                  (append export (mapcan #'calc-re-export re-export)
-                          (mapcan #'calc-exports-from export-from)))
-                (calc-re-using (x)
-                  (if (listp x) (first x) x)))
-         (let ((use (append use (mapcar #'calc-re-using re-export)))
-               (exports (calc-exports)))
-           `(defpackage ,name
-              ,@(when use `((:use ,@use)))
-              ,@(when shadow `((:shadow ,@shadow)))
-              ,@(loop :for i :in import-from :collect (cons :import-from i))
-              ,@(loop :for i :in export-from :collect (cons :import-from i))
-              ,@(when exports `((:export ,@exports))))))))
+				  (let ((package (find-package package-name))
+					result)
+				    (do-external-symbols (x package)
+							 (push (intern (symbol-name x) :keyword) result))
+				    result))
+		(calc-export-all (re)
+				 (exported-symbols re))
+		(calc-import-from (re)
+				  (rest re))
+		(calc-re-export (re)
+				(typecase re
+				  (list (calc-import-from re))
+				  (symbol (calc-export-all re))))
+		(calc-exports-from (ef)
+				   (rest ef))
+		(calc-exports ()
+			      (append export (mapcan #'calc-re-export re-export)
+				      (mapcan #'calc-exports-from export-from)))
+		(calc-re-using (x)
+			       (if (listp x) (first x) x)))
+	 (let ((use (append use (mapcar #'calc-re-using re-export)))
+	       (exports (calc-exports)))
+	   `(defpackage ,name
+	      ,@(when use `((:use ,@use)))
+	      ,@(when shadow `((:shadow ,@shadow)))
+	      ,@(loop :for i :in import-from :collect (cons :import-from i))
+	      ,@(loop :for i :in export-from :collect (cons :import-from i))
+	      ,@(when exports `((:export ,@exports))))))))
   ;;
   (def-re-exporting-package :cepl
-      :use (:cl
-            :rtg-math.base-maths
-            :cl-fad
-            :named-readtables
-	    :cepl.errors
-	    :cepl.internals)
-      :shadow (:quit)
-      :import-from ((:cepl-utils :deferror
-                                 :print-mem
-                                 :p->))
-      :export-from ((:cepl.space :p! :space-g :in))
-      :export (:make-project
-               :quit
-               :repl
-               :step-host
-               :continuable
-	       :cls
-	       :swap
-	       :print-mem)
-      :re-export (:cepl.generics
-		  ;; :cepl.context
-		  :cepl.render-state
-		  :cepl.viewports
-		  :cepl.types
-		  :cepl.image-formats
-		  :cepl.pixel-formats
-		  :cepl.c-arrays
-		  :cepl.gpu-buffers
-		  :cepl.gpu-arrays.buffer-backed
-		  :cepl.gpu-arrays
-		  :cepl.streams
-		  :cepl.ubos
-		  :cepl.samplers
-		  :cepl.textures
-		  :cepl.fbos
-		  :cepl.blending
-		  :cepl.pipelines
-                  (:cepl.lifecycle :shutting-down-p)
-                  (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
-                             :radians :degrees))))
+    :use (:cl
+	  :rtg-math.base-maths
+	  :cl-fad
+	  :named-readtables
+	  :cepl.errors
+	  :cepl.internals)
+    :shadow (:quit)
+    :import-from ((:cepl-utils :deferror
+			       :print-mem
+			       :p->))
+    :export-from ((:cepl.space :p! :space-g :in))
+    :export (:make-project
+	     :quit
+	     :repl
+	     :step-host
+	     :continuable
+	     :cls
+	     :swap
+	     :print-mem)
+    :re-export (:cepl.generics
+		;; :cepl.context
+		:cepl.render-state
+		:cepl.viewports
+		:cepl.types
+		:cepl.image-formats
+		:cepl.pixel-formats
+		:cepl.c-arrays
+		:cepl.gpu-buffers
+		:cepl.gpu-arrays.buffer-backed
+		:cepl.gpu-arrays
+		:cepl.streams
+		:cepl.ubos
+		:cepl.samplers
+		:cepl.textures
+		:cepl.fbos
+		:cepl.blending
+		:cepl.pipelines
+		(:cepl.lifecycle :shutting-down-p)
+		(:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
+			   :radians :degrees))))
 
 
 
