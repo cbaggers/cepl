@@ -22,6 +22,6 @@
   (make-space* `(,*clip-space*)))
 
 ;; technically anyone can make a world space. But for optimization
-;; jungl wants to own this one.
+;; cepl wants to own this one.
 (defvar *world-space*
   (make-space* (list *identity-eye-space* (m4:identity) (m4:identity))))

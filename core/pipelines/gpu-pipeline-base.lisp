@@ -292,7 +292,7 @@ has not been cached yet")
                      (:tesselation-control . :tess-control-shader))))
   (defun varjo->gl-stage-names (stage-name)
     (or (cdr (assoc stage-name stage-names))
-        (error "JUNGL: ~a is not a known type of shader stage" stage-name))))
+        (error "CEPL: ~a is not a known type of shader stage" stage-name))))
 
 ;;--------------------------------------------------
 
@@ -305,7 +305,7 @@ has not been cached yet")
 
 ;;--------------------------------------------------
 
-(defun recompile-name (name) (symb-package :jungl '~~- name))
+(defun recompile-name (name) (symb-package :cepl '~~- name))
 
 ;;--------------------------------------------------
 

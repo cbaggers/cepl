@@ -743,10 +743,13 @@
 	   ))
 
 (defpackage :cepl.pipelines
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.generics :cepl.types :split-sequence :named-readtables
-        :cepl.internals :cepl.c-arrays :cepl.gpu-buffers
-        :cepl.context :cepl.errors :cepl.samplers :%cepl.types)
+  (:use :cl :cffi :varjo :varjo-lang :rtg-math :split-sequence :named-readtables
+        :cepl-utils :cepl.errors :cepl.generics :%cepl.types :cepl.types
+	:cepl.internals :cepl.render-state :cepl.viewports :cepl.context
+	:cepl.image-formats :cepl.pixel-formats :cepl.c-arrays :cepl.gpu-buffers
+	:cepl.gpu-arrays.buffer-backed :cepl.vaos :cepl.streams :cepl.ubos
+	:cepl.textures :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays
+	:cepl.samplers :cepl.fbos :cepl.blending)
   (:export :*verbose-compiles*
 	   :*warn-when-cant-test-compile*
 	   :defun-g
@@ -782,14 +785,16 @@
            :update-non-hierarchical-relationship
            :remove-non-hierarchical-relationship))
 
+
 (macrolet
     ((def-re-exporting-package (name &key use shadow export re-export
                                      import-from export-from)
        (labels ((exported-symbols (package-name)
-                  (let ((package (find-package package-name)))
-                    (loop :for x :being :each external-symbol :of package
-                       :when (eq (symbol-package x) package) :collect
-                       (intern (symbol-name x) :keyword))))
+		  (let ((package (find-package package-name))
+			result)
+		    (do-external-symbols (x package)
+		      (push (intern (symbol-name x) :keyword) result))
+		    result))
                 (calc-export-all (re)
                   (exported-symbols re))
                 (calc-import-from (re)

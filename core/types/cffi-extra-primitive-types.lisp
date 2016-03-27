@@ -50,7 +50,7 @@
       `(progn
          ,@(loop :for (type len comp-type) :in new-user-types
               :collect
-              (let* ((name (cepl-utils:symb 'jungl- type))
+              (let* ((name (cepl-utils:symb 'cepl- type))
                      (type-name (cepl-utils:symb name '-type))
                      (comp-bit-size (* 8 (cffi:foreign-type-size comp-type))))
                 `(progn

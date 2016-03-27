@@ -15,7 +15,7 @@
        (let ((,array-sym ,gpu-array))
 	 (unless (typep ,array-sym 'gpu-array)
 	   (if (typep ,array-sym 'gpu-array-t)
-	       (error "Unfortunately jungl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
+	       (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
 	       (error "with-gpu-array-* does not support the type ~s"
 		      (type-of ,array-sym))))
 	 (let ((,buffer-sym (gpu-array-buffer ,array-sym))

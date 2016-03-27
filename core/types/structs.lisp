@@ -180,7 +180,7 @@
 
 (defun %format-slot-for-autowrap (slot)
   (let* ((s-type (if (assoc (s-type slot) cffi::*extra-primitive-types*)
-                     (symb-package :cffi :jungl- (s-type slot))
+                     (symb-package :cffi :cepl- (s-type slot))
                      (s-type slot)))
          (a-type (autowrap:find-type s-type)))
     (list (kwd (s-name slot))
@@ -193,7 +193,7 @@
   (when (> (length (s-dimensions slot)) 1)
     (error "Cannot currently support multi dimensional autowrap arrays"))
   (let* ((e-type (if (assoc (s-element-type slot) cffi::*extra-primitive-types*)
-                     (symb-package :cffi :jungl- (s-element-type slot))
+                     (symb-package :cffi :cepl- (s-element-type slot))
                      (s-element-type slot)))
          (a-type (autowrap:find-type e-type)))
     (list (kwd (s-name slot))
