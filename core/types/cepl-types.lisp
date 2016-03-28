@@ -19,7 +19,7 @@
   (row-byte-size
    (error "cepl: c-array must be created with a pointer")
    :type fixnum)
-  (element-pixel-format nil :type (or null cepl.pixel-formats:pixel-format)))
+  (element-pixel-format nil :type (or null pixel-format)))
 
 ;;------------------------------------------------------------
 

@@ -74,7 +74,7 @@
                             (when (cepl.pixel-formats::valid-pixel-format-p
 				   components comp-type t nil)
                               `(defmethod cepl.types:lisp-type->pixel-format ((comp-type (eql ,type)))
-                                 (cepl.pixel-formats:pixel-format
+                                 (cepl.pixel-formats::pixel-format!
 				  ,components ',comp-type)))))
                    (autowrap:define-foreign-record
                        ',name
