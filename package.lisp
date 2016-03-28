@@ -780,7 +780,7 @@
 	:cepl.internals :cepl.pipelines :cepl.memory)
   (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)
-  (:export :get-transform :get-transform-via :p! :in :space! :make-space
+  (:export :get-transform :get-transform-via :sv! :in :space! :make-space
 	   :make-space*
 	   :with-rendering-via
 	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
@@ -837,7 +837,7 @@
     :import-from ((:cepl-utils :deferror
 			       :print-mem
 			       :p->))
-    :export-from ((:cepl.space :p! :space-g :in
+    :export-from ((:cepl.space :sv! :space-g :in
 			       :*screen-space* :*ndc-space*
 			       :*clip-space* :*world-space*))
     :export (:make-project

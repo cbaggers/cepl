@@ -22,8 +22,8 @@
 (defun has-space (node)
   (not (null (get-var *current-space* node))))
 
-(defun p!-form-p (node)
-  (ast-kindp node '%p!))
+(defun sv!-form-p (node)
+  (ast-kindp node '%sv!))
 
 (defun in-form-p (node)
   (and (ast-kindp node 'let)
@@ -36,7 +36,7 @@
    between two valid spaces"
   (and (ast-typep node 'pos4-g)
        (let ((origin (first (val-origins node))))
-	 (and (ast-kindp origin '%p!)
+	 (and (ast-kindp origin '%sv!)
 	      (has-space node)
 	      (has-space origin)
 	      (not (id= (flow-ids (ast-space node))
@@ -111,7 +111,7 @@
     ;; here we set how we get the transform we are uploading
     (set-arg-val var-name `(get-transform ,from-name ,to-name) env)
     ;; and here is the replacement code for our crossing the spaces
-    `(p! (* ,var-name ,val))))
+    `(sv! (* ,var-name ,val))))
 
 (defun inject-clip-or-ndc-space-reverse-transform (from-name to-name val env)
   (cond
@@ -137,8 +137,8 @@
        ;; further, if that might be the case then tell the next pass that we are
        ;; in clip-space and let the compiler take care of the rest
        (if (eq to-name '*clip-space*)
-	   `(p! ,code)
-	   `(in *clip-space* (p! ,code)))))))
+	   `(sv! ,code)
+	   `(in *clip-space* (sv! ,code)))))))
 
 
 (defun-g screen-space-to-clip-space ((ss-pos :vec4) (viewport :vec4))
@@ -164,7 +164,7 @@
    from a valid space to a null one."
   (and (ast-typep node 'pos4-g)
        (let ((origin (first (val-origins node))))
-	 (and (ast-kindp origin '%p!)
+	 (and (ast-kindp origin '%sv!)
 	      (not (has-space node))
 	      (has-space origin)))))
 
@@ -172,7 +172,7 @@
   (declare (ignore env))
   `(values-safe (v! ,node)))
 
-(defun p!->v! (node env)
+(defun sv!->v! (node env)
   (declare (ignore env))
   (let ((args (ast-args node)))
     `(v! ,@(butlast args))))
@@ -213,7 +213,7 @@
 
 (def-compile-pass (space-pass :depends-on cross-space-pass)
   (#'cross-to-null-space-form-p #'cross-to-null-space)
-  (#'p!-form-p  #'p!->v!)
+  (#'sv!-form-p  #'sv!->v!)
   (#'in-form-p  #'in-form->progn))
 
 (def-compile-pass (remove-redundent-v!-forms :depends-on space-pass)

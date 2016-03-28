@@ -89,7 +89,7 @@
 			      (simple-array single-float (4)))))
 (defvar *ndc-space*)
 
-(defun p! (vec &optional (space *ndc-space*))
+(defun sv! (vec &optional (space *ndc-space*))
   (%%-pos! :space space :point vec))
 
 ;; now #'to-space can be defined to take a space and a pos

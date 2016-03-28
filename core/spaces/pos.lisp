@@ -25,7 +25,7 @@
 
 (defvar *default-pos-space*)
 
-(defun p! (vec &optional (space *default-pos-space*))
+(defun sv! (vec &optional (space *default-pos-space*))
   (case= (length vec)
     (3 (%%-pos3! :space space :point vec))
     (4 (%%-pos4! :space space :point vec))))
@@ -41,10 +41,10 @@
   "makes a new point in the same location as the first but relative to the
    provided new space"
   (typecase pos
-    (pos3 (p! (m4:*v (get-transform (pos-space pos) new-space)
+    (pos3 (sv! (m4:*v (get-transform (pos-space pos) new-space)
 		      (pos3-point pos))
 	      new-space))
-    (pos4 (p! (m4:*v (get-transform (pos-space pos) new-space)
+    (pos4 (sv! (m4:*v (get-transform (pos-space pos) new-space)
 		      (pos4-point pos))
 	      new-space))))
 
@@ -55,24 +55,24 @@
   ((varjo::core :initform nil :reader varjo:core-typep)
    (varjo::glsl-string :initform "#<pos4-g>" :reader varjo:v-glsl-string)))
 
-(varjo:v-defmacro p! (v &rest r)
+(varjo:v-defmacro sv! (v &rest r)
   (if r
-      `(%p! ,v ,@r ,*current-space*)
-      `(%p! ,v ,*current-space*)))
+      `(%sv! ,v ,@r ,*current-space*)
+      `(%sv! ,v ,*current-space*)))
 
-(varjo:v-defun %p! (v s) "#<pos4-g(~a, ~a)>"
+(varjo:v-defun %sv! (v s) "#<pos4-g(~a, ~a)>"
 	       (:vec4 space-g) pos4-g)
 
-(varjo:v-defun %p! (v w s) "#<pos4-g(~a, ~a, ~a)>"
+(varjo:v-defun %sv! (v w s) "#<pos4-g(~a, ~a, ~a)>"
 	       (:vec3 :float space-g) pos4-g)
 
-(varjo:v-defun %p! (v1 v2 s) "#<pos4-g(~a, ~a, ~a)>"
+(varjo:v-defun %sv! (v1 v2 s) "#<pos4-g(~a, ~a, ~a)>"
 	       (:vec2 :vec2 space-g) pos4-g)
 
-(varjo:v-defun %p! (v1 z w s) "#<pos4-g(~a, ~a, ~a, ~a)>"
+(varjo:v-defun %sv! (v1 z w s) "#<pos4-g(~a, ~a, ~a, ~a)>"
 	       (:vec2 :float :float space-g) pos4-g)
 
-(varjo:v-defun %p! (x y z w s) "#<pos4-g(~a, ~a, ~a, ~a, ~a)>"
+(varjo:v-defun %sv! (x y z w s) "#<pos4-g(~a, ~a, ~a, ~a, ~a)>"
 	       (:float :float :float :float space-g) pos4-g)
 
 
