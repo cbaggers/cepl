@@ -34,7 +34,7 @@
 (defun cross-space-form-p (node)
   "Predicate for cases where a position is crossing
    between two valid spaces"
-  (and (ast-typep node 'pos4-g)
+  (and (ast-typep node 'svec4-g)
        (let ((origin (first (val-origins node))))
 	 (and (ast-kindp origin '%sv!)
 	      (has-space node)
@@ -162,7 +162,7 @@
 (defun cross-to-null-space-form-p (node)
   "Predicate for cases where position is crossing
    from a valid space to a null one."
-  (and (ast-typep node 'pos4-g)
+  (and (ast-typep node 'svec4-g)
        (let ((origin (first (val-origins node))))
 	 (and (ast-kindp origin '%sv!)
 	      (not (has-space node))

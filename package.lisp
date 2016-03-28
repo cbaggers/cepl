@@ -778,19 +778,13 @@
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
 	:varjo :varjo-lang :cepl.types :cepl.errors
 	:cepl.internals :cepl.pipelines :cepl.memory)
-  (:shadow :space)
   (:shadowing-import-from :rtg-math :m! :v!)
-  (:export :get-transform :get-transform-via :sv! :in :space! :make-space
-	   :make-space*
-	   :with-rendering-via
+  (:export :vec-space :make-space :make-space* :space!
+	   :parent-space :model-space-p :relational-space-p
+	   :get-transform :get-transform-via
+	   :with-rendering-via :in
 	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
-	   :model-space-p :relational-space-p
-	   :space :pos4 :space-g :pos4-g :let-model-space
-	   :parent-space
-	   :space-inverse-transform
-	   :add-non-hierarchical-relationship
-	   :update-non-hierarchical-relationship
-	   :remove-non-hierarchical-relationship))
+	   :sv! :svec4))
 
 
 (macrolet
@@ -837,9 +831,6 @@
     :import-from ((:cepl-utils :deferror
 			       :print-mem
 			       :p->))
-    :export-from ((:cepl.space :sv! :space-g :in
-			       :*screen-space* :*ndc-space*
-			       :*clip-space* :*world-space*))
     :export (:make-project
 	     :quit
 	     :repl
@@ -864,6 +855,7 @@
 		:cepl.fbos
 		:cepl.blending
 		:cepl.pipelines
+		:cepl.space
 		(:cepl.lifecycle :shutting-down-p)
 		(:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
 			   :radians :degrees))))

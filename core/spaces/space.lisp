@@ -39,13 +39,13 @@
 
 (defvar *last-space-id* -1)
 
-(defstruct (space (:constructor %make-space) (:conc-name %space-))
+(defstruct (vec-space (:constructor %make-space) (:conc-name %space-))
   (uid (incf *last-space-id*) :type fixnum :read-only t)
   (nht-id (error "id must be provided") :type fixnum :read-only t)
   (kind (error "space kind must be provided") :type (mod 3) :read-only t)
-  (parent nil :type (or null space) :read-only t)
-  (children nil :type (or null (array space (*))) :read-only t)
-  (root nil :type (or null space) :read-only t)
+  (parent nil :type (or null vec-space) :read-only t)
+  (children nil :type (or null (array vec-space (*))) :read-only t)
+  (root nil :type (or null vec-space) :read-only t)
   (neighbours (make-array 0 :element-type 'spatial-relationship
 			  :initial-element (%make-sr))
 	      :type (array spatial-relationship (*))
@@ -60,7 +60,7 @@
   ;; less deep node and thus early out.
   (depth (error "space depth must be provided") :type fixnum))
 
-(defmethod print-object ((space space) stream)
+(defmethod print-object ((space vec-space) stream)
   (case= (%space-kind space)
     (+model-space+ (format stream "#<R1-SPACE ~s>" (%space-uid space)))
     (+relational-space+ (format stream "#<R-SPACE ~s>" (%space-uid space)))
@@ -101,7 +101,7 @@
 
 (defun make-space-array ()
   (make-array *spaces-array-growth-rate*
-	      :element-type '(or null space)
+	      :element-type '(or null vec-space)
 	      :initial-element nil
 	      :adjustable t :fill-pointer 0))
 
@@ -110,7 +110,7 @@
 (defun %add-space-to-array (space)
   (when (>= (%space-nht-id space) (length spaces))
     (adjust-array spaces (+ *spaces-array-growth-rate* (length spaces))
-		  :element-type '(or null space)
+		  :element-type '(or null vec-space)
 		  :initial-element nil))
   (setf (aref spaces (%space-nht-id space)) space)
   space)
@@ -118,7 +118,7 @@
 (defun %space-ref (id)
   (aref spaces id))
 
-(defmethod free ((space space))
+(defmethod free ((space vec-space))
   (free-space space))
 
 (defun free-space (space)
@@ -271,9 +271,11 @@
 ;;----------------------------------------------------------------------
 ;; GPU
 
-(varjo::def-v-type-class space-g (varjo:v-type)
+(varjo::def-v-type-class vec-space-g (varjo:v-type)
   ((varjo::core :initform nil :reader varjo:core-typep)
-   (varjo::glsl-string :initform "#<space>" :reader varjo:v-glsl-string)))
+   (varjo::glsl-string :initform "#<vec-space>" :reader varjo:v-glsl-string)))
+
+(add-type-shadow 'vec-space 'vec-space-g)
 
 ;; a name for the space
 (defvar *current-space* (gensym "current-space"))
@@ -282,9 +284,9 @@
 ;; Helpers
 
 (defmacro kind-case ((space &key error) &key m r h)
-  (let ((space-g (gensym "space")))
-    `(let ((,space-g ,space))
-       (case= (%space-kind ,space-g)
+  (let ((vec-space-g (gensym "space")))
+    `(let ((,vec-space-g ,space))
+       (case= (%space-kind ,vec-space-g)
 	 (+model-space+
 	  ,(or m (when error
 		   '(error "m->m transform is not valid here"))))

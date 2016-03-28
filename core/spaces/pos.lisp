@@ -11,70 +11,72 @@
 
 (defstruct pos
   (space (error "positions can not be made without a space")
-	 :type space
+	 :type vec-space
 	 :read-only t))
 
 ;; (defstruct (pos2 (:include pos) (:constructor %%-pos2!))
 ;;   (point (v! 0 0) :type (simple-array single-float (2))))
 
-(defstruct (pos3 (:include pos) (:constructor %%-pos3!))
+(defstruct (svec3 (:include pos) (:constructor %%-svec3!))
   (point (v! 0 0 0) :type (simple-array single-float (3))))
 
-(defstruct (pos4 (:include pos) (:constructor %%-pos4!))
+(defstruct (svec4 (:include pos) (:constructor %%-svec4!))
   (point (v! 0 0 0 0) :type (simple-array single-float (4))))
 
 (defvar *default-pos-space*)
 
 (defun sv! (vec &optional (space *default-pos-space*))
   (case= (length vec)
-    (3 (%%-pos3! :space space :point vec))
-    (4 (%%-pos4! :space space :point vec))))
+    (3 (%%-svec3! :space space :point vec))
+    (4 (%%-svec4! :space space :point vec))))
 
 (defun to-space (destination-space pos)
   (typecase pos
-    (pos3 (m4:*v (get-transform (pos-space pos) destination-space)
-		 (pos3-point pos)))
-    (pos4 (m4:*v (get-transform (pos-space pos) destination-space)
-		 (pos4-point pos)))))
+    (svec3 (m4:*v (get-transform (pos-space pos) destination-space)
+		 (svec3-point pos)))
+    (svec4 (m4:*v (get-transform (pos-space pos) destination-space)
+		 (svec4-point pos)))))
 
 (defun re-space (new-space pos)
   "makes a new point in the same location as the first but relative to the
    provided new space"
   (typecase pos
-    (pos3 (sv! (m4:*v (get-transform (pos-space pos) new-space)
-		      (pos3-point pos))
+    (svec3 (sv! (m4:*v (get-transform (pos-space pos) new-space)
+		      (svec3-point pos))
 	      new-space))
-    (pos4 (sv! (m4:*v (get-transform (pos-space pos) new-space)
-		      (pos4-point pos))
+    (svec4 (sv! (m4:*v (get-transform (pos-space pos) new-space)
+		      (svec4-point pos))
 	      new-space))))
 
 ;;----------------------------------------------------------------------
 ;; gpu
 
-(varjo::def-v-type-class pos4-g (varjo:v-vec4)
+(varjo::def-v-type-class svec4-g (varjo:v-vec4)
   ((varjo::core :initform nil :reader varjo:core-typep)
-   (varjo::glsl-string :initform "#<pos4-g>" :reader varjo:v-glsl-string)))
+   (varjo::glsl-string :initform "#<svec4-g>" :reader varjo:v-glsl-string)))
+
+(add-type-shadow 'svec4 'svec4-g)
 
 (varjo:v-defmacro sv! (v &rest r)
   (if r
       `(%sv! ,v ,@r ,*current-space*)
       `(%sv! ,v ,*current-space*)))
 
-(varjo:v-defun %sv! (v s) "#<pos4-g(~a, ~a)>"
-	       (:vec4 space-g) pos4-g)
+(varjo:v-defun %sv! (v s) "#<svec4-g(~a, ~a)>"
+	       (:vec4 vec-space-g) svec4-g)
 
-(varjo:v-defun %sv! (v w s) "#<pos4-g(~a, ~a, ~a)>"
-	       (:vec3 :float space-g) pos4-g)
+(varjo:v-defun %sv! (v w s) "#<svec4-g(~a, ~a, ~a)>"
+	       (:vec3 :float vec-space-g) svec4-g)
 
-(varjo:v-defun %sv! (v1 v2 s) "#<pos4-g(~a, ~a, ~a)>"
-	       (:vec2 :vec2 space-g) pos4-g)
+(varjo:v-defun %sv! (v1 v2 s) "#<svec4-g(~a, ~a, ~a)>"
+	       (:vec2 :vec2 vec-space-g) svec4-g)
 
-(varjo:v-defun %sv! (v1 z w s) "#<pos4-g(~a, ~a, ~a, ~a)>"
-	       (:vec2 :float :float space-g) pos4-g)
+(varjo:v-defun %sv! (v1 z w s) "#<svec4-g(~a, ~a, ~a, ~a)>"
+	       (:vec2 :float :float vec-space-g) svec4-g)
 
-(varjo:v-defun %sv! (x y z w s) "#<pos4-g(~a, ~a, ~a, ~a, ~a)>"
-	       (:float :float :float :float space-g) pos4-g)
+(varjo:v-defun %sv! (x y z w s) "#<svec4-g(~a, ~a, ~a, ~a, ~a)>"
+	       (:float :float :float :float vec-space-g) svec4-g)
 
 
-(varjo:v-defun v! (p) "~a" (pos4-g) :vec4)
+(varjo:v-defun v! (p) "~a" (svec4-g) :vec4)
 (varjo:v-defun v! (p) "~a" (:vec4) :vec4)

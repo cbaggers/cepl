@@ -3,7 +3,7 @@
 (defun blending-params (target)
   (typecase target
     (fbo (%fbo-blending-params target))
-    (attachment (cepl.blending:make-blending-params
+    (attachment (make-blending-params
                  :mode-rgb (mode-rgb target)
                  :mode-alpha (mode-alpha target)
                  :source-rgb (source-rgb target)
@@ -21,31 +21,31 @@
     (fbo
      `(macrolet
           ((mode-rgb (x)
-	     `(cepl.blending::blending-params-mode-rgb (%fbo-blending-params ,x)))
+	     `(blending-params-mode-rgb (%fbo-blending-params ,x)))
            (mode-alpha (x)
-	     `(cepl.blending::blending-params-mode-alpha (%fbo-blending-params ,x)))
+	     `(blending-params-mode-alpha (%fbo-blending-params ,x)))
            (source-rgb (x)
-	     `(cepl.blending::blending-params-source-rgb (%fbo-blending-params ,x)))
+	     `(blending-params-source-rgb (%fbo-blending-params ,x)))
            (source-alpha (x)
-	     `(cepl.blending::blending-params-source-alpha (%fbo-blending-params ,x)))
-           (destination-rgb (x) `(cepl.blending::blending-params-destination-rgb
+	     `(blending-params-source-alpha (%fbo-blending-params ,x)))
+           (destination-rgb (x) `(blending-params-destination-rgb
                                   (%fbo-blending-params ,x)))
-           (destination-alpha (x) `(cepl.blending::blending-params-destination-alpha
+           (destination-alpha (x) `(blending-params-destination-alpha
                                     (%fbo-blending-params ,x))))
         ,@body))
     (attachment
      `(macrolet
-          ((mode-rgb (x) `(cepl.blending::blending-params-mode-rgb
+          ((mode-rgb (x) `(blending-params-mode-rgb
                            (%attachment-blending-params ,x)))
-           (mode-alpha (x) `(cepl.blending::blending-params-mode-alpha
+           (mode-alpha (x) `(blending-params-mode-alpha
                              (%attachment-blending-params ,x)))
-           (source-rgb (x) `(cepl.blending::blending-params-source-rgb
+           (source-rgb (x) `(blending-params-source-rgb
                              (%attachment-blending-params ,x)))
-           (source-alpha (x) `(cepl.blending::blending-params-source-alpha
+           (source-alpha (x) `(blending-params-source-alpha
                                (%attachment-blending-params ,x)))
-           (destination-rgb (x) `(cepl.blending::blending-params-destination-rgb
+           (destination-rgb (x) `(blending-params-destination-rgb
                                   (%attachment-blending-params ,x)))
-           (destination-alpha (x) `(cepl.blending::blending-params-destination-alpha
+           (destination-alpha (x) `(blending-params-destination-alpha
                                     (%attachment-blending-params ,x))))
         ,@body))))
 
@@ -234,44 +234,44 @@
 
 (defun mode-rgb (attachment)
   (typecase attachment
-    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+    (attachment (with-blending-param-slots (:attachment attachment)
                   (mode-rgb attachment)))
-    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+    (fbo (with-blending-param-slots (:fbo attachment)
            (mode-rgb attachment)))))
 
 (defun mode-alpha (attachment)
   (typecase attachment
-    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+    (attachment (with-blending-param-slots (:attachment attachment)
                   (mode-alpha attachment)))
-    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+    (fbo (with-blending-param-slots (:fbo attachment)
            (mode-alpha attachment)))))
 
 (defun source-rgb (attachment)
   (typecase attachment
-    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+    (attachment (with-blending-param-slots (:attachment attachment)
                   (source-rgb attachment)))
-    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+    (fbo (with-blending-param-slots (:fbo attachment)
            (source-rgb attachment)))))
 
 (defun source-alpha (attachment)
   (typecase attachment
-    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+    (attachment (with-blending-param-slots (:attachment attachment)
                   (source-alpha attachment)))
-    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+    (fbo (with-blending-param-slots (:fbo attachment)
            (source-alpha attachment)))))
 
 (defun destination-rgb (attachment)
   (typecase attachment
-    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+    (attachment (with-blending-param-slots (:attachment attachment)
                   (destination-rgb attachment)))
-    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+    (fbo (with-blending-param-slots (:fbo attachment)
            (destination-rgb attachment)))))
 
 (defun destination-alpha (attachment)
   (typecase attachment
-    (attachment (cepl.blending:with-blending-param-slots (:attachment attachment)
+    (attachment (with-blending-param-slots (:attachment attachment)
                   (destination-alpha attachment)))
-    (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+    (fbo (with-blending-param-slots (:fbo attachment)
            (destination-alpha attachment)))))
 
 (defun blending (attachment)
@@ -292,60 +292,60 @@
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                      (with-blending-param-slots (:attachment attachment)
                         (setf (%attachment-override-blending attachment) t
                               (mode-rgb attachment) value))))
-        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+        (fbo (with-blending-param-slots (:fbo attachment)
                (setf (mode-rgb attachment) value)))))
 
     (defun (setf mode-alpha) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                      (with-blending-param-slots (:attachment attachment)
                         (setf (%attachment-override-blending attachment) t
                               (mode-alpha attachment) value))))
-        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+        (fbo (with-blending-param-slots (:fbo attachment)
                (setf (mode-alpha attachment) value)))))
 
     (defun (setf source-rgb) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                      (with-blending-param-slots (:attachment attachment)
                         (setf (%attachment-override-blending attachment) t
                               (source-rgb attachment) value))))
-        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+        (fbo (with-blending-param-slots (:fbo attachment)
                (setf (source-rgb attachment) value)))))
 
     (defun (setf source-alpha) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                      (with-blending-param-slots (:attachment attachment)
                         (setf (%attachment-override-blending attachment) t
                               (source-alpha attachment) value))))
-        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+        (fbo (with-blending-param-slots (:fbo attachment)
                (setf (source-alpha attachment) value)))))
 
     (defun (setf destination-rgb) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                      (with-blending-param-slots (:attachment attachment)
                         (setf (%attachment-override-blending attachment) t
                               (destination-rgb attachment) value))))
-        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+        (fbo (with-blending-param-slots (:fbo attachment)
                (setf (destination-rgb attachment) value)))))
 
     (defun (setf destination-alpha) (value attachment)
       (typecase attachment
         (attachment (progn
                       (check-version-for-per-attachment-params)
-                      (cepl.blending:with-blending-param-slots (:attachment attachment)
+                      (with-blending-param-slots (:attachment attachment)
                         (setf (%attachment-override-blending attachment) t
                               (destination-alpha attachment) value))))
-        (fbo (cepl.blending:with-blending-param-slots (:fbo attachment)
+        (fbo (with-blending-param-slots (:fbo attachment)
                (setf (destination-alpha attachment) value)))))))
 
 

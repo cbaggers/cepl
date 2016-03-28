@@ -3,12 +3,12 @@
 ;;----------------------------------------------------------------------
 ;; ancestor walking function
 
-(declaim (ftype (function ((function (t space) t) space t)
+(declaim (ftype (function ((function (t vec-space) t) vec-space t)
                           t)
                 %reduce-ancestors))
 (defun %reduce-ancestors (function of-space initial-value)
-  (declare (type space of-space)
-	   (type (function (t space) t) function)
+  (declare (type vec-space of-space)
+	   (type (function (t vec-space) t) function)
            (optimize (speed 3) (safety 1) (debug 1)))
   (labels ((walk (accum space)
              (if space
@@ -17,18 +17,18 @@
                  accum)))
     (walk initial-value of-space)))
 
-(declaim (ftype (function ((function (t space) t)
-                           space
-                           space
+(declaim (ftype (function ((function (t vec-space) t)
+                           vec-space
+                           vec-space
                            t)
                           t)
                 %reduce-ancestors-until-space))
 (defun %reduce-ancestors-until-space (function of-space until-space
                                       initial-value)
-  (declare (type space of-space until-space)
-           (type (function (t space) t) function)
+  (declare (type vec-space of-space until-space)
+           (type (function (t vec-space) t) function)
            (optimize (speed 3) (safety 1) (debug 1)))
-  (assert (typep until-space 'space))
+  (assert (typep until-space 'vec-space))
   (labels ((walk (accum space)
              (cond ((eq space until-space) accum)
                    ((null space)
