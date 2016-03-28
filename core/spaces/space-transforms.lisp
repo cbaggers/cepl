@@ -54,7 +54,7 @@
 ;; Relational
 
 
-(defmacro with-rendering-via (via-space &body body)
+(defmacro with-space-routing-via (via-space &body body)
   `(if (route-restriction)
        (error "CEPL.SPACE: Encountered a with-routes-via block attempting to route all transforms via ~s however another restriction exists within the same dynamic scope: ~s" ,via-space (route-restriction))
        (progn

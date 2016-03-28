@@ -87,9 +87,6 @@
 (defun make-space (target-space transform-to &optional transform-from)
   (%make-model-space target-space transform-to transform-from))
 
-(defun space! (target-space transform-to &optional transform-from)
-  (%make-model-space target-space transform-to transform-from))
-
 (defun disconnect-space (space)
   (declare (ignore space))
   (error "Please implement disconnect-space"))

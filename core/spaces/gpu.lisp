@@ -11,6 +11,7 @@
 
 (defmacro in (space &body body)
   (declare (ignore space))
+  (error "cepl.space: The 'in' macro can only be used inside gpu functions.")
   `(progn ,@body))
 
 ;;----------------------------------------------------------------------

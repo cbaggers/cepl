@@ -94,4 +94,5 @@
 	       (:file "core/fbos/docs")
 	       (:file "core/blending/docs")
 	       (:file "core/ubos/docs")
-	       (:file "core/vaos/docs")))
+	       (:file "core/vaos/docs")
+	       (:file "core/spaces/docs")))

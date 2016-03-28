@@ -46,6 +46,74 @@ Let's see a simple example of a gpu function we can then break down
 
   (defmacro defpipeline
       "
+defpipeline is how we define named rendering pipelines in CEPL
+
+Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+(usually describing geometry), and a number of uniforms are used as inputs and
+the outputs of the pipelines are written into an FBO.
+
+There are many stages to the pipeline and a full explanation of the GPU pipeline
+is beyond the scope of this docstring. However it surfices to say that only
+4 stages are fully programmable (and a few more customizable).
+
+defpipeline lets you specify the code (shaders) to run the programmable
+parts (stages) of the pipeline.
+
+The available stages are:
+
+- vertex stage
+- tessellation - Not yet supported in CEPL
+- geometry     - Not yet supported in CEPL
+- fragment
+
+-- Defining a Pipeline From GPU FUnuctions--
+
+To define code that runs on the gpu in CEPL we use gpu functions (gfuncs). Which
+are defined with defun-g.
+
+Here is an example pipeline:
+
+    (defun-g vert ((position :vec4) &uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (defpipeline prog-1 ()
+	(g-> #'vert #'frag))
+
+Here we define a pipeline #'prog-1 which uses the gfunc #'vert as it's vertex
+shader and used the gfunc #'frag as the fragment shader.
+
+It is also possible to specify the name of the stages
+
+    (defpipeline prog-1 ()
+	(g-> :vertex #'vert :fragment #'frag))
+
+But this is not neccesary unless you need to distinguish between a tessellation
+or geometry stage.
+
+
+-- Passing values from Stage to Stage --
+
+The return values of the gpu functions that are used as stages are passed as the
+input arguments of the next. The exception to this rule is that the first return
+value from the vertex stage is taken as used by GL, so only the subsequent
+values are passed along.
+
+We can see this in the example above: #'vert returns 3 values but #'frag only
+receives 2.
+
+The values from the fragment stage are writen into the current FBO. This may be
+the default FBO, in which case you will likely see the result on the screen, or
+it may be a FBO of your own.
+
+By default GL only writed the fragment return value to the FBO. For handling
+multiple return values please see the docstring for with-fbo-bound.
+
+
+--  --
+
 
 ")
 

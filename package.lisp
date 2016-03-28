@@ -779,10 +779,10 @@
 	:varjo :varjo-lang :cepl.types :cepl.errors
 	:cepl.internals :cepl.pipelines :cepl.memory)
   (:shadowing-import-from :rtg-math :m! :v!)
-  (:export :vec-space :make-space :make-space* :space!
+  (:export :vec-space :make-space :make-space*
 	   :parent-space :model-space-p :relational-space-p
 	   :get-transform :get-transform-via
-	   :with-rendering-via :in
+	   :with-space-routing-via :in
 	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
 	   :sv! :svec4))
 
