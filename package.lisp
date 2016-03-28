@@ -740,18 +740,7 @@
 	   :blending-params-p
 	   :copy-blending-params
 	   :make-blending-params
-	   :blending-params-mode-rgb
-	   :blending-params-mode-alpha
-	   :blending-params-source-rgb
-	   :blending-params-source-alpha
-	   :blending-params-destination-rgb
-	   :blending-params-destination-alpha
-	   :with-blending-param-slots
 	   :with-blending
-	   :constant-alpha
-	   :constant-color
-	   :current-blend-params
-	   :blend-func-namep
 	   ;;--
 	   :mode-rgb
 	   :mode-alpha

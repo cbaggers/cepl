@@ -49,35 +49,6 @@
                                     (%attachment-blending-params ,x))))
         ,@body))))
 
-;; Most of the code that uses blend modes will be in other files
-;; as it is most needed in map-g and fbos
-
-;; (%gl:blend-func-separate-i draw-buffer-id src-rgb dst-rgb src-alpha dst-alpha)
-
-;; draw-buffer-id
-;;   For glBlendFuncSeparatei, specifies the index of the draw buffer for which
-;;   to set the blend functions.
-;; srcRGB
-;;   Specifies how the red, green, and blue blending factors are computed.
-;;   The initial value is GL_ONE.
-;; dstRGB
-;;   Specifies how the red, green, and blue destination blending factors are
-;;   computed. The initial value is GL_ZERO.
-;; srcAlpha
-;;   Specified how the alpha source blending factor is computed. The initial
-;;   value is GL_ONE.
-;; dstAlpha
-;;   Specified how the alpha destination blending factor is computed. The
-;;   initial value is GL_ZERO.
-
-;; Despite the apparent precision of the above equations, blending
-;; arithmetic is not exactly specified, because blending operates with
-;; imprecise integer color values. However, a blend factor that should be
-;; equal to 1 is guaranteed not to modify its multiplicand, and a blend
-;; factor equal to 0 reduces its multiplicand to 0. For example, when
-;; srcRGB​ is GL_SRC_ALPHA​, dstRGB​ is GL_ONE_MINUS_SRC_ALPHA​, and As0 is
-;; equal to 1, the equations reduce to simple replacement:
-
 (defvar *blend-color* (v! 0 0 0 0))
 
 (defun blend-func-namep (keyword)
@@ -174,7 +145,7 @@
     ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     (t ;; We have a pattern that tells us which attachments will be drawn into
      ;;   This means we dont have to loop and search for attachments, so we
-     ;;   call unroll the loop.
+     ;;   can unroll the loop.
      (%gen-attachment-blend pattern fbo body))))
 
 (defun %gen-attachment-blend (attachments fbo body)
@@ -260,29 +231,6 @@
 
 
 ;;----------------------------------------------------------------------
-
-;; doco for mode-rgb and mode-alpha, I need doco files
-;; "Choices are:
-;;
-;; :func-add - The source and destination colors are added to each other.
-;;             O = sS + dD. The The s and d are blending parameters that are
-;;             multiplied into each of S and D before the addition.
-;;
-;; :func-subtract - Subtracts the destination from the source. O = sS - dD.
-;;                  The source and dest are again multiplied by blending
-;;                  parameters.
-;;
-;; :func-reverse-subtract - Subtracts the source from the destination.
-;;                          O = sD - dS. The source and dest are multiplied by
-;;                          blending parameters.
-;;
-;; :min - The output color is the component-wise minimum value of the source
-;;            and dest colors. So performing :min in the RGB equation means that
-;;            Or = min(Sr, Dr), Og = min(Sg, Dg), and so forth.
-;;            The parameters s and d are ignored for this equation.
-;;
-;; :max - The output color is the component-wise maximum value of the source and
-;;        dest colors. The parameters s and d are ignored for this equation."
 
 (defun mode-rgb (attachment)
   (typecase attachment
