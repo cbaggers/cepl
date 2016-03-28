@@ -297,12 +297,50 @@
 	   :g-pnt
 	   :g-pntc
 	   :g-pt
+	   ;;---
 	   :bi-tangent
 	   :col
 	   :norm
 	   :pos
 	   :tangent
-	   :tex))
+	   :tex
+	   ;;---
+	   :g-pn-position
+	   :g-pn-normal
+	   :g-pc-position
+	   :g-pc-color
+	   :g-pt-position
+	   :g-pt-texture
+	   :g-pnc-position
+	   :g-pnc-normal
+	   :g-pnc-color
+	   :g-pnt-position
+	   :g-pnt-normal
+	   :g-pnt-texture
+	   :g-pntc-position
+	   :g-pntc-normal
+	   :g-pntc-texture
+	   :g-pntc-color
+	   :g-pnb-position
+	   :g-pnb-normal
+	   :g-pnb-tangent
+	   :g-pnb-bi-tangent
+	   :g-pncb-position
+	   :g-pncb-normal
+	   :g-pncb-tangent
+	   :g-pncb-bi-tangent
+	   :g-pncb-color
+	   :g-pntb-position
+	   :g-pntb-normal
+	   :g-pntb-tangent
+	   :g-pntb-bi-tangent
+	   :g-pntb-texture
+	   :g-pntcb-position
+	   :g-pntcb-normal
+	   :g-pntcb-tangent
+	   :g-pntcb-bi-tangent
+	   :g-pntcb-texture
+	   :g-pntcb-color))
 
 (defpackage :cepl.internals
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

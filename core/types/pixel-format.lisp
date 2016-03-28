@@ -164,7 +164,7 @@
       (list components type (if reversed (rest sizes) sizes)
             normalise reversed component-length))))
 
-(defun pixel-format (components &optional (type :uint8) (normalise t) reversed)
+(defun pixel-format! (components &optional (type :uint8) (normalise t) reversed)
   (destructuring-bind
         (components type sizes normalise reversed component-length)
       (process-pixel-format components type normalise reversed)
@@ -221,8 +221,7 @@
 ;; Image-Formats
 ;;------------------
 
-(defun pixel-format->image-format
-    (pixel-format &key (error-if-missing t))
+(defun pixel-format->image-format (pixel-format &key (error-if-missing t))
   (let ((result (second (assoc (list (pixel-format-components pixel-format)
                                      (pixel-format-normalise pixel-format)
                                      (pixel-format-type pixel-format)
@@ -257,4 +256,4 @@
 
 (defmethod lisp-type->pixel-format ((type t))
   (when (find type *valid-pixel-types*)
-    (pixel-format :r type)))
+    (cepl.pixel-formats::pixel-format! :r type)))

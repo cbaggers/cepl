@@ -20,4 +20,7 @@
   (error "Jungl: Cannot extract dimensions from ~s object:~%~s"
 	 (type-of object) object))
 
+(defmethod dimensions ((object array))
+  (array-dimensions object))
+
 ;;----------------------------------------------------------------------

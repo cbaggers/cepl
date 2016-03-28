@@ -44,4 +44,10 @@ This function returns a new GL VAO when given
 
 - a list of gpu-arrays
 - optionally 1 gpu-array to be used as an index
+")
+
+  (defun make-vao-from-id
+      "
+This function takes an existing OpenGL VAO and set it up to strema vertices from
+the given arrays.
 "))

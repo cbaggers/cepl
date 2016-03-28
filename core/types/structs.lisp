@@ -373,6 +373,6 @@
                    (cepl.pixel-formats::valid-pixel-format-p
 		    components type t nil))
           `(defmethod lisp-type->pixel-format ((type (eql ',name)))
-             (pixel-format ,components ',type)))))))
+             (cepl.pixel-formats::pixel-format! ,components ',type)))))))
 
 ;;------------------------------------------------------------

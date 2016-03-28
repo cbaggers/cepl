@@ -15,12 +15,6 @@
 (defmethod element-byte-size ((array c-array))
   (c-array-element-byte-size array))
 
-;; (defmethod row-byte-size ((array c-array))
-;;   (c-array-row-byte-size array))
-
-;; (defmethod element-pixel-format ((array c-array))
-;;   (c-array-element-pixel-format array))
-
 
 (defun blank-c-array-object (c-array)
   (setf (c-array-pointer c-array) (cffi:null-pointer))

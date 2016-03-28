@@ -47,7 +47,7 @@
            ,@body)))))
 
 
-(defmethod print-mem ((thing gpu-array) &optional (size-in-bytes 64) (offset 0))
+(defmethod print-mem ((thing gpu-array-bb) &optional (size-in-bytes 64) (offset 0))
   (with-gpu-array-as-pointer (a thing :access-type :read-only)
     (print-mem (cffi:inc-pointer a offset) size-in-bytes)))
 
@@ -59,13 +59,13 @@
     (clone-c-array x)))
 
 ;; allignmetn
-(defmethod push-g ((object list) (destination gpu-array))
+(defmethod push-g ((object list) (destination gpu-array-bb))
   (with-c-array (tmp (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (element-type destination)))
     (push-g tmp destination)))
 
-(defmethod push-g ((object c-array) (destination gpu-array))
+(defmethod push-g ((object c-array) (destination gpu-array-bb))
   (let* ((buffer (gpu-array-buffer destination))
          (format (gpu-array-format destination))
          (type (first format))
@@ -83,10 +83,10 @@ be <= length of the destination array. If the arrays have more than 1
 dimension then their sizes must match exactly"))
     destination))
 
-(defmethod pull1-g ((object gpu-array))
+(defmethod pull1-g ((object gpu-array-bb))
   (gpu-array-pull-1 object))
 
-(defmethod pull-g ((object gpu-array))
+(defmethod pull-g ((object gpu-array-bb))
   (with-gpu-array-as-c-array (x object :access-type :read-only)
     (pull1-g x)))
 

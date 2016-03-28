@@ -374,12 +374,12 @@ CEPL tries not to allocate new memory when the function is not explicitly about
 that.</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GENERICS:ELEMENT-BYTE-SIZE"/>
+                  <a name="CEPL.TYPES:ELEMENT-BYTE-SIZE"/>
                   <article>
                     <header class="generic">
                       <span class="type">generic</span>
                       <code>
-                        <h4><a href="#CEPL.GENERICS:ELEMENT-BYTE-SIZE" class="name">ELEMENT-BYTE-SIZE</a></h4>
+                        <h4><a href="#CEPL.TYPES:ELEMENT-BYTE-SIZE" class="name">ELEMENT-BYTE-SIZE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(ARRAY)</span>
                       </code>
@@ -389,12 +389,12 @@ Returns the size in bytes taken up by a single element of the c-array.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GENERICS:ELEMENT-TYPE"/>
+                  <a name="CEPL.TYPES:ELEMENT-TYPE"/>
                   <article>
                     <header class="generic">
                       <span class="type">generic</span>
                       <code>
-                        <h4><a href="#CEPL.GENERICS:ELEMENT-TYPE" class="name">ELEMENT-TYPE</a></h4>
+                        <h4><a href="#CEPL.TYPES:ELEMENT-TYPE" class="name">ELEMENT-TYPE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(ARRAY)</span>
                       </code>
@@ -499,12 +499,12 @@ You can also use the generic function #'dimensions to get this info.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GENERICS:BACKED-BY"/>
+                  <a name="CEPL.GPU-ARRAYS:BACKED-BY"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.GENERICS:BACKED-BY" class="name">BACKED-BY</a></h4>
+                        <h4><a href="#CEPL.GPU-ARRAYS:BACKED-BY" class="name">BACKED-BY</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(GPU-ARRAY)</span>
                       </code>
@@ -743,12 +743,12 @@ tries not to allocate new memory when the function is not explicitly about that.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GENERICS:FREE-GPU-ARRAY"/>
+                  <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:FREE-GPU-ARRAY"/>
                   <article>
                     <header class="generic">
                       <span class="type">generic</span>
                       <code>
-                        <h4><a href="#CEPL.GENERICS:FREE-GPU-ARRAY" class="name">FREE-GPU-ARRAY</a></h4>
+                        <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:FREE-GPU-ARRAY" class="name">FREE-GPU-ARRAY</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(GPU-ARRAY)</span>
                       </code>
@@ -772,14 +772,14 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GENERICS:MAKE-GPU-ARRAY"/>
+                  <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:MAKE-GPU-ARRAY"/>
                   <article>
                     <header class="generic">
                       <span class="type">generic</span>
                       <code>
-                        <h4><a href="#CEPL.GENERICS:MAKE-GPU-ARRAY" class="name">MAKE-GPU-ARRAY</a></h4>
+                        <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:MAKE-GPU-ARRAY" class="name">MAKE-GPU-ARRAY</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY ELEMENT-TYPE DIMENSIONS)</span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -2032,7 +2032,12 @@ opposed to the usual texture memory. Returns nil otherwise
                         <span class="arguments">(TEXTURE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Calling this with a texture asks OpenGL to generate mipmaps for the texture.
+
+You do not normally need to use this function as you can use the :mipmaps
+argument on #'make-texture. See #'make-texture for more details.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TEXTURES:MAKE-TEXTURE"/>
@@ -2048,7 +2053,132 @@ opposed to the usual texture memory. Returns nil otherwise
  WRAP COMPARE (GENERATE-MIPMAPS T))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function allows you to make any kind of texture based on the arguments
+provided. Whilst the signature is quite intimidating your rarely need to use
+more than a few of the arguments to make a given texture.
+
+For example: (make-texture '(1 2 3 4)) will give you a valid texture.
+
+We will now go through the arguments and their behaviours:
+
+           - - - - - - - - - - - - - - - - - - - - - - - -
+
+:initial-contents :dimensions &amp; :element-type
+
+- with :initial-contents to nil:
+  In this case you need to provide dimensions and an element-type.
+
+- with :initial-contents populated.
+  The initial-contents can be a (potentially nested) list, array or c-array.
+
+  When the :initial-contents are a c-array then the dimensions and element-type
+  are taken from the c-array. As the data is already in foreign memory the
+  upload will be notable faster that from lisp-data-&gt;gpu as no type conversions
+  are needed
+
+  When the :initial-contents are an array then the dimension of the texture
+  will be the same as the array passed in. Remember OpenGL only allows up to
+  3 dimensions for the textures
+
+  When the :initial-contents is a flat list then each element is used as one
+  element in the textures gpu-array
+  If the :initial-contents is a nested list then you must either:
+  - specify multiple dimensions and an element-type
+  - specify an element-type to be some struct type, then nested lists are then
+    used to populate the fields of the foreign structs. For an example of this
+    please see this example: https://github.com/cbaggers/cepl.examples/blob/master/examples/triangle.lisp#L30.
+
+  If the :element-type is not provided then CEPL will look at every element in
+  the initial-contents and try and find the smallest (in bytes) foreign type
+  which works for every element. This mean if the array is full of single-floats
+  then CEPL will choose :float, not :double.
+  Naturally this behaviour is too slow for use in performance critical
+  applications however it is nice for experimentation and working from the repl.
+
+Extra element-type details:
+Unlike c-array and gpu-arrays (which use foreign types for their elements)
+textures have a different set of acceptable element-types. These are called
+'image formats'.
+
+If you provide a GL image-format as the :element-type CEPL will use it directly
+
+If you provide a (foreign) lisp type then CEPL will try to find the appropriate
+image-format for that type.
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:mipmap &amp; :generate-mipmaps
+
+If this is set to t then CEPL will make mipmaps for the texture. The texture
+will have (floor (log (apply #'max dimensions) 2)) levels of mipmaps
+
+If this is set to a positive integer CEPL will check that the number of levels
+is allowed for the dimensions given and make that many levels of mipmaps.
+
+If generate-mipmaps is t CEPL will ask OpenGL to generate content for all the
+mipmaps levels.
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:layer-count
+
+If this is set to a value greater than 1 then you are trying to create one of
+the following:
+
+:texture-1d-array
+:texture-2d-array
+:texture-cube-map-array
+
+Which one is created depends on the dimensions provided and whether cubes is t.
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:cubes
+If this is t then you are trying to make a cube-map texture
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:rectangle
+If this is t then you are trying to make a rectangle texture.
+
+This is different from a regular 2d texture (which can also be rectangular)
+
+This texture only has one 2-dimensional gpu-array. The texture cannot have
+mipmapping. Texture coordinates used for these textures are not normalized.
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:multisample
+This is not currently supported in CEPL
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:immutable
+Set this to nil if you definitely dont want to use immutable texture storage.
+See the docstring for 'texture for more details
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:buffer-storage
+If this is set to t you are trying to make a buffer-texture.
+
+If you set this to t then the element-type should NOT be an image-format. Use
+a foreign lisp type instead. Or leave it nil if you want CEPL to take the type
+from the initial-contents
+
+See the docstring for 'texture for more details.
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:lod-bias :min-lod :max-lod :minify-filter :magnify-filter :wrap :compare
+
+Use these if you want to set the sampling parameters on construction.
+
+If not provided then GL defaults will be used.
+
+See cepl.samplers for details on what these parameters mean.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TEXTURES:MAKE-TEXTURE-FROM-ID"/>
@@ -2062,7 +2192,14 @@ opposed to the usual texture memory. Returns nil otherwise
  MIPMAP-LEVELS LAYER-COUNT CUBES ALLOCATED MUTABLE-P)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Wrap and existing GL Texture Object in a CEPL texture struct.
+
+This function does not do ANY sanity checking on the values provided, use only
+if you are 100% sure of what you are setting.
+
+For details on the meaning of the arguments see the docstring for #'make-texture
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:SET-MINIFY-FILTER"/>
@@ -2099,7 +2236,15 @@ based on the following:
                         <span class="arguments">(TEXTURE &amp;KEY (MIPMAP-LEVEL 0) (LAYER 0) (CUBE-FACE 0))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function allows you to access a specific gpu-array from the texture.
+
+:mipmap-level is invalid if the texture doesnt have mipmaps
+
+:layer is invalid if the texture-type is not a 1d,2d or cube-map array-texture.
+
+:cube-face is invalid if the texture is not a cube-map texture
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.TEXTURES:TEXTURE-ELEMENT-TYPE"/>
@@ -2157,12 +2302,12 @@ returned.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GENERICS:FREE-TEXTURE"/>
+                  <a name="CEPL.TEXTURES:FREE-TEXTURE"/>
                   <article>
                     <header class="generic">
                       <span class="type">generic</span>
                       <code>
-                        <h4><a href="#CEPL.GENERICS:FREE-TEXTURE" class="name">FREE-TEXTURE</a></h4>
+                        <h4><a href="#CEPL.TEXTURES:FREE-TEXTURE" class="name">FREE-TEXTURE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(TEXTURE)</span>
                       </code>
@@ -2865,6 +3010,156 @@ Where *sam* is a sampler that is attached to both of the textures *tex* and
 
 See https://github.com/cbaggers/cepl.examples/blob/master/examples/sampling.lisp
 for a full example.
+</pre>
+                  </article>
+                </li></ul></li><li class="package">
+              <h3>
+                <a name="CEPL.MEMORY" href="#CEPL.MEMORY">CEPL.MEMORY</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="CEPL.MEMORY:FREE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.MEMORY:FREE" class="name">FREE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+The function takes a CEPL object of any one of the following types.
+- c-array
+- gpu-buffer
+- gpu-array (texture backed or buffer backed)
+- buffer-stream
+- texture
+- ubo
+- fbo
+
+And deletes the internal GL object, frees any associated memory and blanks the
+CEPL object.
+
+'Blanking', in this case, means the fields of the object will be set to some
+default.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.MEMORY:PULL-G"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.MEMORY:PULL-G" class="name">PULL-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function takes a CEPL object containing foreign or gpu data as pulls the
+data into lisp performing any data conversions that are required on the way.
+
+CEPL types that can be pulled from are:
+- c-array
+- gpu-array (both texture-backed and buffer-backed)
+- texture
+- ubo
+- Any instance of a type defined using defstruct-g
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.MEMORY:PULL1-G"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.MEMORY:PULL1-G" class="name">PULL1-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function is a varient of pull-g which, rather than pulling the gpu or
+foreign data to lisp, will instead pull it 1 level closer to lisp.
+
+What is meant by that is that, if the data is in foreign memory then it will be
+pulled to lisp data (just like pull-g). However if you call pull1-g on data
+stored on the gpu, then the data will be pulled to foreign memory instead.
+
+To clarify:
+
+    (pull1-g c-array) -&gt; lisp list
+    (pull1-g gpu-array) -&gt; c-array
+
+You can use pull1-g on the following CEPL types.
+- c-array
+- gpu-array (both texture-backed and buffer-backed)
+- texture
+- ubo
+- Any instance of a type defined using defstruct-g
+
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.MEMORY:PUSH-G"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.MEMORY:PUSH-G" class="name">PUSH-G</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT DESTINATION)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function takes a CEPL object as a desination and some data to push to the
+desination.
+
+It will then upload that data to the destination doing any data conversions that
+are required on the way.
+
+CEPL types supported as destinations are:
+- c-array
+- gpu-array (both texture-backed and buffer-backed)
+- texture
+- ubo
+- Any instance of a type defined using defstruct-g
+</pre>
+                  </article>
+                </li></ul></li><li class="package">
+              <h3>
+                <a name="CEPL.MEASUREMENTS" href="#CEPL.MEASUREMENTS">CEPL.MEASUREMENTS</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="CEPL.MEASUREMENTS:DIMENSIONS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.MEASUREMENTS:DIMENSIONS" class="name">DIMENSIONS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+Returns the list containing the dimensions of the given value
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.MEASUREMENTS:RESOLUTION"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.MEASUREMENTS:RESOLUTION" class="name">RESOLUTION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+Returns the resolution of the given value as a vec*
 </pre>
                   </article>
                 </li></ul></li><li class="package">
@@ -4285,58 +4580,6 @@ For example:
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:COMPILE-PIXEL-FORMAT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:COMPILE-PIXEL-FORMAT" class="name">COMPILE-PIXEL-FORMAT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(PIXEL-FORMAT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:DESCRIBE-IMAGE-FORMAT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:DESCRIBE-IMAGE-FORMAT" class="name">DESCRIBE-IMAGE-FORMAT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(FORMAT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:DESCRIBE-PIXEL-FORMAT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:DESCRIBE-PIXEL-FORMAT" class="name">DESCRIBE-PIXEL-FORMAT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:GET-COMPONENT-LENGTH"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:GET-COMPONENT-LENGTH" class="name">GET-COMPONENT-LENGTH</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(COMPONENTS)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:PIXEL-FORMAT"/>
                   <article>
                     <header class="function">
@@ -4364,19 +4607,6 @@ For example:
 This function returns t if the the given value is a pixel-format. Otherwise it
 returns nil
 </pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.PIXEL-FORMATS:VALID-PIXEL-FORMAT-P"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.PIXEL-FORMATS:VALID-PIXEL-FORMAT-P" class="name">VALID-PIXEL-FORMAT-P</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(COMPONENTS TYPE NORMALISE REVERSED)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -4805,551 +5035,6 @@ This function returns the type of the data that is contained in the UBO
                   </article>
                 </li></ul></li><li class="package">
               <h3>
-                <a name="CEPL.GENERICS" href="#CEPL.GENERICS">CEPL.GENERICS</a>
-                <span class="nicknames"/>
-              </h3>
-              <ul><li>
-                  <a name="CEPL.GENERICS:POS"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:POS" class="name">POS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:BI-TANGENT"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:BI-TANGENT" class="name">BI-TANGENT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:COL"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:COL" class="name">COL</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:DIMENSIONS"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:DIMENSIONS" class="name">DIMENSIONS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:DIR"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:DIR" class="name">DIR</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:NORM"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:NORM" class="name">NORM</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:POS"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:POS" class="name">POS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:ROT"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:ROT" class="name">ROT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:SIZE"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:SIZE" class="name">SIZE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:TANGENT"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:TANGENT" class="name">TANGENT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:TEX"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:TEX" class="name">TEX</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:VEC"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:VEC" class="name">VEC</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:BACKED-BY"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:BACKED-BY" class="name">BACKED-BY</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(GPU-ARRAY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function takes a gpu-array and returns either :texture or :buffer depending
-on whether it is a texture-backed gpu-array or a buffer-backed gpu-array.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:ACTION"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:ACTION" class="name">ACTION</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:BUTTON"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:BUTTON" class="name">BUTTON</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:CLICKS"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:CLICKS" class="name">CLICKS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:DATA"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:DATA" class="name">DATA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:DELTA"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:DELTA" class="name">DELTA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:ELEMENT-BYTE-SIZE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:ELEMENT-BYTE-SIZE" class="name">ELEMENT-BYTE-SIZE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ARRAY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-Returns the size in bytes taken up by a single element of the c-array.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:ELEMENT-TYPE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:ELEMENT-TYPE" class="name">ELEMENT-TYPE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ARRAY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-Returns the type of the elements in the c-array.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:ETYPE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:ETYPE" class="name">ETYPE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:FREE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:FREE" class="name">FREE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:FREE-GPU-ARRAY"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:FREE-GPU-ARRAY" class="name">FREE-GPU-ARRAY</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(GPU-ARRAY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-When given a buffer-backed gpu-array this will do one of three things:
-
-If the gpu-array is the only gpu-array in the gpu-buffer then the gpu-buffer is
-freed and the gpu-array is blanked.
-
-If the gpu-array shares a gpu-buffer with other gpu-arrays and they are still
-live then blank this gpu-array.
-
-If the gpu-array shared a gpu-buffer with other gpu-buffer but they have all
-been freed then free the gpu-buffer and blank the gpu-array.
-
-Blanking the gpu-array means it's fields will be set to default values,
-for example dimensions will be nil, the texture will be null etc.
-
-The generic function #'free will call #'free-gpu-array when passed a gpu-array.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:FREE-TEXTURE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:FREE-TEXTURE" class="name">FREE-TEXTURE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(TEXTURE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function will free the texture and all texture-memory behind the texture's
-gpu-arrays.
-
-Be sure not to use those arrays after this function has been called.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:ID"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:ID" class="name">ID</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:KEY"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:KEY" class="name">KEY</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:MAKE-GPU-ARRAY"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:MAKE-GPU-ARRAY" class="name">MAKE-GPU-ARRAY</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY ELEMENT-TYPE DIMENSIONS)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function creates a buffer-backed gpu-array.
-Texture-backed gpu-array can only be created via #'make-texture
-
-make-gpu-array is very similar to make-c-array.
-
-It can be used in a few different ways:
-
-- with :initial-contents to nil:
-  In this case you need to provide dimensions and an element-type.
-
-- with :initial-contents populated.
-  The initial-contents can be a (potentially nested) list, array or c-array.
-
-  When the :initial-contents are a c-array then the dimensions and element-type
-  are taken from the c-array. As the data is already in foreign memory the
-  upload will be notable faster that from lisp-data-&gt;gpu as no type conversions
-  are needed
-
-  When the :initial-contents are an array then the dimension of the gpu-array
-  will be the same as the array passed in. CEPL currently only supports up
-  to 4D gpu-arrays.
-
-  When the :initial-contents is a flat list then each element is used as one
-  element in the gpu-array.
-  If the :initial-contents is a nested list then you must either:
-  - specify multiple dimensions and an element-type
-  - specify an element-type to be some struct type, then nested lists are then
-    used to populate the fields of the foreign structs. For an example of this
-    please see this example: https://github.com/cbaggers/cepl.examples/blob/master/examples/triangle.lisp#L30.
-
-  If the :element-type is not provided then CEPL will look at every element in
-  the initial-contents and try and find the smallest (in bytes) foreign type
-  which works for every element. This mean if the array is full of single-floats
-  then CEPL will choose :float, not :double.
-  Naturally this behaviour is too slow for use in performance critical
-  applications however it is nice for experimentation and working from the repl.
-
-  If you need what would be called a displaced array in lisp then please see the
-  subseq-g function.
-
-
-Access style is optional but if you are comfortable with
-opengl, and know what type of usage pattern this array will
-have, you can set this to any of the following:
-
-The access-style argument is a hint to OpenGL on how you intend to use
-the array. It is optional whether your gpu manufacturer's implementation of GL
-takes any notice of this option. When they do take notice of it, it will to
-optimize access to the underlying data.
-
-There are also no repercussions for accessing the data in a way contrary to the
-declared access-style (other than potential performance costs).
-
-:stream-draw  :static-draw  :dynamic-draw
-:stream-read  :static-read  :dynamic-read
-:stream-copy  :static-copy  :dynamic-copy
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:MAKE-VAO-FROM-ID"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:MAKE-VAO-FROM-ID" class="name">MAKE-VAO-FROM-ID</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(GL-OBJECT GPU-ARRAYS &amp;OPTIONAL INDEX-ARRAY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:POPULATE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:POPULATE" class="name">POPULATE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT DATA)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:PULL-G"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:PULL-G" class="name">PULL-G</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:PULL1-G"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:PULL1-G" class="name">PULL1-G</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:PUSH-G"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:PUSH-G" class="name">PUSH-G</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT DESTINATION)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:REPEATING"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:REPEATING" class="name">REPEATING</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:STATE"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:STATE" class="name">STATE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GENERICS:TIMESTAMP"/>
-                  <article>
-                    <header class="generic">
-                      <span class="type">generic</span>
-                      <code>
-                        <h4><a href="#CEPL.GENERICS:TIMESTAMP" class="name">TIMESTAMP</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li></ul></li><li class="package">
-              <h3>
                 <a name="CEPL.GPU-BUFFERS" href="#CEPL.GPU-BUFFERS">CEPL.GPU-BUFFERS</a>
                 <span class="nicknames"/>
               </h3>
@@ -5492,25 +5177,6 @@ This function creates an empty block of data in the opengl buffer equal in size
 to (* length size-in-bytes-of-type).
 
 It will remove ALL data currently in the buffer</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GPU-BUFFERS:BUFFER-RESERVE-BLOCK-RAW"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.GPU-BUFFERS:BUFFER-RESERVE-BLOCK-RAW" class="name">BUFFER-RESERVE-BLOCK-RAW</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(BUFFER SIZE-IN-BYTES BUFFER-TARGET USAGE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function creates an empty block of data in the opengl buffer.
-It will remove ALL data currently in the buffer.
-
-It also will not update the format of the buffer so you must be sure to handle
-this yourself. It is much safer to use this as an assistant function to one
-which takes care of these issues</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:BUFFER-RESERVE-BLOCKS"/>
@@ -5833,19 +5499,6 @@ This function returns a new GL VAO when given
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.VAOS:SUITABLE-ARRAY-FOR-INDEX-P"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.VAOS:SUITABLE-ARRAY-FOR-INDEX-P" class="name">SUITABLE-ARRAY-FOR-INDEX-P</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(ARRAY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="CEPL.VAOS:UNBIND-VAO"/>
                   <article>
                     <header class="function">
@@ -5864,17 +5517,20 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.GENERICS:MAKE-VAO-FROM-ID"/>
+                  <a name="CEPL.VAOS:MAKE-VAO-FROM-ID"/>
                   <article>
                     <header class="generic">
                       <span class="type">generic</span>
                       <code>
-                        <h4><a href="#CEPL.GENERICS:MAKE-VAO-FROM-ID" class="name">MAKE-VAO-FROM-ID</a></h4>
+                        <h4><a href="#CEPL.VAOS:MAKE-VAO-FROM-ID" class="name">MAKE-VAO-FROM-ID</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(GL-OBJECT GPU-ARRAYS &amp;OPTIONAL INDEX-ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function takes an existing OpenGL VAO and set it up to strema vertices from
+the given arrays.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VAOS:WITH-VAO-BOUND"/>
@@ -5901,112 +5557,6 @@ use a buffer-stream and let map-g handle when it should be bound and unbound.
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="CEPL.TYPES:G-PC"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.TYPES:G-PC" class="name">G-PC</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-g-pc is a CEPL gpu struct with the following slots:
-
-  position: of type vec3 with an accessor method: pos
-  color: of type vec4 with an accessor method: col</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.TYPES:G-PN"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.TYPES:G-PN" class="name">G-PN</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-g-pn is a CEPL gpu struct with the following slots:
-
-  position: of type vec3 with an accessor method: pos
-  normal: of type vec3 with an accessor method: norm</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.TYPES:G-PNC"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.TYPES:G-PNC" class="name">G-PNC</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-g-pnc is a CEPL gpu struct with the following slots:
-
-  position: of type vec3 with an accessor method: pos
-  normal: of type vec3 with an accessor method: norm
-  color: of type vec4 with an accessor method: col</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.TYPES:G-PNT"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.TYPES:G-PNT" class="name">G-PNT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-g-pnt is a CEPL gpu struct with the following slots:
-
-  position: of type vec3 with an accessor method: pos
-  normal: of type vec3 with an accessor method: norm
-  texture: of type vec2 with an accessor method: tex</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.TYPES:G-PNTC"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.TYPES:G-PNTC" class="name">G-PNTC</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-g-pntc is a CEPL gpu struct with the following slots:
-
-  position: of type vec3 with an accessor method: pos
-  normal: of type vec3 with an accessor method: norm
-  texture: of type vec2 with an accessor method: tex
-  color: of type vec4 with an accessor method: col</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.TYPES:G-PT"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.TYPES:G-PT" class="name">G-PT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-g-pt is a CEPL gpu struct with the following slots:
-
-  position: of type vec3 with an accessor method: pos
-  texture: of type vec2 with an accessor method: tex</pre>
-                  </article>
-                </li><li>
                   <a name="CEPL.TYPES:IMAGE-FORMAT-&gt;LISP-TYPE"/>
                   <article>
                     <header class="function">
@@ -6097,6 +5647,36 @@ If no such type is found then nil is returned
 </pre>
                   </article>
                 </li><li>
+                  <a name="CEPL.TYPES:ELEMENT-BYTE-SIZE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES:ELEMENT-BYTE-SIZE" class="name">ELEMENT-BYTE-SIZE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+Returns the size in bytes taken up by a single element of the c-array.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES:ELEMENT-TYPE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES:ELEMENT-TYPE" class="name">ELEMENT-TYPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+Returns the type of the elements in the c-array.
+</pre>
+                  </article>
+                </li><li>
                   <a name="CEPL.TYPES:LISP-TYPE-&gt;PIXEL-FORMAT"/>
                   <article>
                     <header class="generic">
@@ -6176,18 +5756,6 @@ associated overheads) on the gpu side the function to be used is resolved
 statically and so there is not performance cost.
 
 
--- Populate --
-
-defstruct-g also created an implentation for the generic function #'populate
-which takes lisp lists and set the slots in a struct using that data.
-
-For example for our 'our-data' struct we can say:
-
-    (populate x (list (v! 1 2 3) 5))
-
-And it will set 'position' to be the vector (v! 1 2 3) and set 'val' to be 5.
-
-
 -- Options --
 
 With the exception of :constructor the options for defstruct-g are rarely used
@@ -6218,8 +5786,8 @@ but are documented here for the sake of completeness.
   gpu-streams from arrays of this type.
 
   :populate
-  Setting this to nil means that you will not get a populate function for
-  this type.
+  Setting this to nil means that you will not get a internal populate function
+  for this type. &lt;DEPRECATED&gt;
 
 
 Some of the above options are redundent in combination with others.
@@ -6228,6 +5796,219 @@ populate disabled you can have #'push-g for this type.
 
 CEPL currently does a poor job at communicating these conflicts to the user.
 
+</pre>
+                  </article>
+                </li></ul></li><li class="package">
+              <h3>
+                <a name="CEPL.TYPES.PREDEFINED" href="#CEPL.TYPES.PREDEFINED">CEPL.TYPES.PREDEFINED</a>
+                <span class="nicknames"/>
+              </h3>
+              <ul><li>
+                  <a name="CEPL.TYPES.PREDEFINED:G-PC"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:G-PC" class="name">G-PC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+g-pc is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  color: of type vec4 with an accessor method: col</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:G-PN"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:G-PN" class="name">G-PN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+g-pn is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  normal: of type vec3 with an accessor method: norm</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:G-PNC"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:G-PNC" class="name">G-PNC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+g-pnc is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  normal: of type vec3 with an accessor method: norm
+  color: of type vec4 with an accessor method: col</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:G-PNT"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:G-PNT" class="name">G-PNT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+g-pnt is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  normal: of type vec3 with an accessor method: norm
+  texture: of type vec2 with an accessor method: tex</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:G-PNTC"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:G-PNTC" class="name">G-PNTC</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+g-pntc is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  normal: of type vec3 with an accessor method: norm
+  texture: of type vec2 with an accessor method: tex
+  color: of type vec4 with an accessor method: col</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:G-PT"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:G-PT" class="name">G-PT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+g-pt is a CEPL gpu struct with the following slots:
+
+  position: of type vec3 with an accessor method: pos
+  texture: of type vec2 with an accessor method: tex</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:BI-TANGENT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:BI-TANGENT" class="name">BI-TANGENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function, returns a :vec3 which is the bi-tangent of the instance.
+
+You can alternatively use the generic function #'bi-tangent to get this value.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:COL"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:COL" class="name">COL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function, returns a :vec4 which is the color of the instance.
+
+You can alternatively use the generic function #'col to get this value.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:NORM"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:NORM" class="name">NORM</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function, returns a :vec3 which is the normal of the instance.
+
+You can alternatively use the generic function #'norm to get this value.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:POS"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:POS" class="name">POS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function, returns a :vec3 which is the position of the instance.
+
+You can alternatively use the generic function #'pos to get this value.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:TANGENT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:TANGENT" class="name">TANGENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function, returns a :vec3 which is the tangent of the instance.
+
+You can alternatively use the generic function #'tangent to get this value.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES.PREDEFINED:TEX"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES.PREDEFINED:TEX" class="name">TEX</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function, returns a :vec2 which is the texture of the instance.
+
+You can alternatively use the generic function #'tex to get this value.
 </pre>
                   </article>
                 </li></ul></li></ul>
