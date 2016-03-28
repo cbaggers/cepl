@@ -22,6 +22,8 @@
 		     :cepl.viewports
 		     :cepl.textures
 		     :cepl.samplers
+		     :cepl.memory
+		     :cepl.measurements
 		     :cepl.fbos
 		     :cepl.blending
 		     :cepl.pipelines
@@ -29,10 +31,10 @@
 		     :cepl.pixel-formats
 		     :cepl.ubos
 		     :cepl.space
-		     :cepl.generics
 		     :cepl.gpu-buffers
 		     :cepl.vaos
-		     :cepl.types)
+		     :cepl.types
+		     :cepl.types.predefined)
    :template *template-dir*
    :out *out-dir*
    :if-exists :supersede)

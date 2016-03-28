@@ -58,18 +58,6 @@ This may not be a problem for your project but do it keep it in mind.
 
 Also note that I said `on the cpu`. As we are going to see, our shaders are statically typed so there is *zero* performace penatly for using `#'val` on the gpu (so do it!).
 
-### Populate
-
-cepl comes with a function called `populate` which can take lisp lists and set the slots in a struct using that data. For example for our `our-data` struct we can say:
-
-```
-(populate x (list (v! 1 2 3) 5))
-```
-
-And it will set `position` to be the vector `(v! 1 2 3)` and set `val` to be `5`.
-
-We will hear more about `populate` in the next chapter.
-
 ### Options
 
 Let's look at another example struct:

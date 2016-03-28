@@ -53,18 +53,6 @@ associated overheads) on the gpu side the function to be used is resolved
 statically and so there is not performance cost.
 
 
--- Populate --
-
-defstruct-g also created an implentation for the generic function #'populate
-which takes lisp lists and set the slots in a struct using that data.
-
-For example for our 'our-data' struct we can say:
-
-    (populate x (list (v! 1 2 3) 5))
-
-And it will set 'position' to be the vector (v! 1 2 3) and set 'val' to be 5.
-
-
 -- Options --
 
 With the exception of :constructor the options for defstruct-g are rarely used
@@ -95,8 +83,8 @@ but are documented here for the sake of completeness.
   gpu-streams from arrays of this type.
 
   :populate
-  Setting this to nil means that you will not get a populate function for
-  this type.
+  Setting this to nil means that you will not get a internal populate function
+  for this type. <DEPRECATED>
 
 
 Some of the above options are redundent in combination with others.

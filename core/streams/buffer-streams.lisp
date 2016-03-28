@@ -26,7 +26,7 @@
   (when (buffer-stream-managed buffer-stream)
     (free-vao (buffer-stream-vao buffer-stream)))
   ;; (when (buffer-stream-gpu-arrays buffer-stream)
-  ;;   (mapcar #'free-gpu-array-b (buffer-stream-gpu-arrays buffer-stream)))
+  ;;   (mapcar #'free-gpu-array-bb (buffer-stream-gpu-arrays buffer-stream)))
   (blank-buffer-stream buffer-stream))
 
 

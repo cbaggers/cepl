@@ -53,14 +53,6 @@
   (v! (%viewport-origin-x viewport)
       (%viewport-origin-y viewport)))
 
-(defmethod size ((object viewport))
-  (v! (%viewport-resolution-x object)
-      (%viewport-resolution-y object)))
-
-(defmethod pos ((object viewport))
-  (v! (%viewport-origin-x object)
-      (%viewport-origin-y object)))
-
 (defun %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
@@ -79,8 +71,6 @@
                    (error "The value given to (setf viewport-resolution) must be a vec2"))))
     (%set-resolution viewport (first value) (second value))))
 
-(defmethod (setf size) (value (object viewport))
-  (%set-resolution object (ceiling (v:x value)) (ceiling (v:y value))))
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun %viewport (viewport)

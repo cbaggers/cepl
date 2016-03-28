@@ -47,7 +47,8 @@ This is simply to show that we can use our structs from the previous chapter in 
 This little example shows that when we provide the `initial-contents` we can leave out the dimensions. The dimensions will be made the same dimensions as that of the data provided.
 
 *3:*
-Number 3 shows that you can even provide lisp data when the `element-type` is a cepl struct. In this case it will use `#'populate` (which we talked about in the last chapter) to fill in the values.
+Number 3 shows that you can even provide lisp data when the `element-type` is a cepl struct. In this case it will take each element
+of the list in order to fill in the slots of the struct.
 
 Here is the definition of that struct again:
 

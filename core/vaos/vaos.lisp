@@ -85,6 +85,8 @@
             (gl:gen-vertex-array))
      gpu-arrays index-array)))
 
+(defgeneric make-vao-from-id (gl-object gpu-arrays &optional index-array))
+
 (defmethod make-vao-from-id (gl-object (gpu-arrays list) &optional index-array)
   "makes a vao using a list of gpu-arrays as the source data
    (remember that you can also use gpu-sub-array here if you

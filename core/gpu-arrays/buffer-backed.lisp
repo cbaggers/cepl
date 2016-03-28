@@ -15,16 +15,17 @@
 ;; defmethod print-mem can be found further down the page
 
 (defmethod free ((object gpu-array))
-  (free-gpu-array-b object))
+  (free-gpu-array-bb object))
 
-(defmethod free-gpu-array ((gpu-array gpu-array))
-  (free-gpu-array-b gpu-array))
+(defgeneric cepl.gpu-arrays:free-gpu-array (gpu-array))
+(defmethod cepl.gpu-arrays:free-gpu-array ((gpu-array gpu-array))
+  (free-gpu-array-bb gpu-array))
 
 (defun gpu-array-buffer (gpu-array)
-  (cepl.types::gpu-array-bb-buffer gpu-array))
+  (%cepl.types::gpu-array-bb-buffer gpu-array))
 
 (defun gpu-array-access-style (gpu-array)
-  (cepl.types::gpu-array-bb-access-style gpu-array))
+  (%cepl.types::gpu-array-bb-access-style gpu-array))
 
 (defun blank-gpu-array-b-object (gpu-array)
   (setf (gpu-array-bb-buffer gpu-array) +null-gpu-buffer+
@@ -36,7 +37,7 @@
 ;; we only set the buffer slot type as undefined as the size and
 ;; offset dont change
 ;; If the buffer is managed and all formats are undefined then free it.
-(defun free-gpu-array-b (gpu-array)
+(defun free-gpu-array-bb (gpu-array)
   (let* ((buffer (gpu-array-bb-buffer gpu-array))
          (buffer-formats (gpu-buffer-format buffer)))
     (setf (first (nth (gpu-array-bb-format-index gpu-array) buffer-formats))
@@ -83,6 +84,9 @@
 ;; [TODO] Check to see we have all the data we need
 ;; [TODO] all make-gpu-array need the start argument specified
 ;; [TODO] all dimensions need checking for sanity..some clearly dont have any :D
+
+(defgeneric make-gpu-array (initial-contents &key))
+
 (defmethod make-gpu-array ((initial-contents null)
                            &key element-type dimensions
                              (access-style :static-draw))

@@ -276,7 +276,7 @@
 (defun make-t-slot-setter (slot awrap-type-name)
   `(,(s-def slot) (setf ,(s-writer slot))
      ,(s-slot-args slot `((value list) (wrapped-object ,awrap-type-name)))
-     (populate (,(s-reader slot) wrapped-object) value)))
+     (cepl.internals:populate (,(s-reader slot) wrapped-object) value)))
 
 (defun make-array-slot-setter (slot type-name awrap-type-name)
   (declare (ignore type-name))
@@ -349,12 +349,12 @@
        ,@(loop :for slot :in slots :for i :from 0 :collect
             `(,(s-writer slot) object))))
     (defmethod push-g ((object list) (destination ,autowrap-name))
-      (populate destination object))))
+      (cepl.internals:populate destination object))))
 
 ;;------------------------------------------------------------
 
 (defun make-populate (autowrap-name slots)
-  `(defmethod populate ((object ,autowrap-name) data)
+  `(defmethod cepl.internals:populate ((object ,autowrap-name) data)
      (unless (or (vectorp data) (listp data))
        (error "can only populate a struct of type ~a with a list or an array"
               ',autowrap-name))

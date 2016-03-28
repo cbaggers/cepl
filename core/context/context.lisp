@@ -120,7 +120,7 @@
 
 ;; GL_TIMESTAMP (GLint64, see glQueryCounter)
 ;; The 64-bit value of the current GL time.
-(def-cached-context-reader timestamp :no-defgeneric t)
+(def-cached-context-reader timestamp)
 
 ;;------------------------------------------------------------
 

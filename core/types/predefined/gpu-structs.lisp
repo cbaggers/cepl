@@ -1,4 +1,18 @@
-(in-package :cepl.types)
+(in-package :cepl.types.predefined)
+
+(defgeneric pos (object))
+(defgeneric col (object))
+(defgeneric norm (object))
+(defgeneric tangent (object))
+(defgeneric bi-tangent (object))
+(defgeneric tex (object))
+
+(defgeneric (setf pos) (val obj))
+(defgeneric (setf col) (val obj))
+(defgeneric (setf norm) (val obj))
+(defgeneric (setf tex) (val obj))
+(defgeneric (setf tangent) (val object))
+(defgeneric (setf bi-tangent) (val object))
 
 (defstruct-g g-pn
   (position :vec3 :accessor pos)

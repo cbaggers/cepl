@@ -2,14 +2,6 @@
 
 (defgeneric populate (object data))
 
-(defmethod dimensions ((object t))
-  (error "Jungl: Cannot extract dimensions from ~s object:~%~s"
-	 (type-of object) object))
-
-(defmethod resolution ((object t))
-  (error "Jungl: Cannot extract a resolution from ~s object:~%~s"
-	 (type-of object) object))
-
 (defun 1d-p (object)
   (= 1 (length (dimensions object))))
 
@@ -46,7 +38,6 @@
 (defgeneric s-prim-p (spec))
 (defgeneric s-extra-prim-p (spec))
 (defgeneric s-def (spec))
-(defgeneric make-vao-from-id (gl-object gpu-arrays &optional index-array))
 (defgeneric %collate-args (spec))
 (defgeneric %get-pipeline-uniforms (pipeline-spec call-form))
 

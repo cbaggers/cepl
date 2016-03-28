@@ -40,6 +40,8 @@
 	(texture-cubes-p texture) nil
 	(texture-allocated-p texture) nil))
 
+(defgeneric free-texture (texture))
+
 (defmethod free-texture ((texture texture))
   (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) (texture-id texture))
@@ -75,7 +77,7 @@
 (defmethod element-type ((gpu-array gpu-array-t))
   (gpu-array-t-image-format gpu-array))
 
-(defmethod free-gpu-array ((gpu-array gpu-array-t))
+(defmethod cepl.gpu-arrays:free-gpu-array ((gpu-array gpu-array-t))
   (declare (ignore gpu-array))
   (free-gpu-array-t))
 
