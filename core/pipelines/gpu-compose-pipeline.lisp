@@ -62,9 +62,9 @@
            (setf initd t)
            ,(when post `(funcall ,post)))
          ;; symbol-macrolet will go here
-         (labels ((attachment (%attachment-fbo attachment-name)
+         (labels ((attachment (fbo attachment-name)
                     (slot-value (%attachment-gpu-array
-                                 (%attachment fbo attachment-name))
+                                 (cepl.fbos::%attachment fbo attachment-name))
                                 'texture)))
            (declare (ignorable (function attachment)))
            (let ,(when all-draw-buffers `((,+db-pass-ptr-sym+ ,+db-ptr-sym+)))

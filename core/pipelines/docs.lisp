@@ -48,6 +48,14 @@ Let's see a simple example of a gpu function we can then break down
       "
 defpipeline is how we define named rendering pipelines in CEPL
 
+                - - - - - - - - - - - - - - - - - - -
+
+-- Defining a Pipeline From GPU Funuctions--
+
+defpipeline can both compose gpu function in rendering pipelines and also
+compose multiple pipelines into a multipass pipeline. We will look at both in
+turn below.
+
 Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
 (usually describing geometry), and a number of uniforms are used as inputs and
 the outputs of the pipelines are written into an FBO.
@@ -65,8 +73,6 @@ The available stages are:
 - tessellation - Not yet supported in CEPL
 - geometry     - Not yet supported in CEPL
 - fragment
-
--- Defining a Pipeline From GPU FUnuctions--
 
 To define code that runs on the gpu in CEPL we use gpu functions (gfuncs). Which
 are defined with defun-g.
@@ -112,7 +118,17 @@ By default GL only writed the fragment return value to the FBO. For handling
 multiple return values please see the docstring for with-fbo-bound.
 
 
---  --
+
+                - - - - - - - - - - - - - - - - - - -
+
+-- Defining Multipass Pipelines --
+
+Most often we dont want just one pass in our rendering code, we want to take the
+output of one pass and feed it straight into another. This can be done perfectly
+well with fbos & with-fbo-bound but defpipeline has some syntax that you may
+find nicer.
+
+Like before let's take an example
 
 
 ")

@@ -9,3 +9,7 @@
     `(progn
        (funcall ,pipeline-func ,+mapg-constant+ ,stream ,@uniforms)
        %current-fbo)))
+
+(defmacro map-g-into (fbo pipeline-func stream &rest uniforms)
+  `(with-fbo-bound ,(listify fbo)
+     (map-g ,pipeline-func ,stream ,@uniforms)))

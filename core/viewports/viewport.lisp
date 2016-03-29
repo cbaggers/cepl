@@ -97,13 +97,13 @@
 ;;       to make them current, then rendering with render to that viewport
 
 (defmacro with-fbo-viewport ((fbo &optional (attachment 0)) &body body)
-  `(with-viewport (attachment-viewport (%attachment ,fbo ,attachment))
+  `(with-viewport (cepl.fbos:attachment-viewport (cepl.fbos::%attachment ,fbo ,attachment))
      ,@body))
 
 (defmacro %with-fbo-viewport ((fbo &optional (attachment 0)) &body body)
   "To be used by code than is managing the viewport state itself.
    composed dispatch would be an example"
-  `(%with-viewport (cepl.fbos:attachment-viewport (%attachment ,fbo ,attachment))
+  `(%with-viewport (cepl.fbos:attachment-viewport (cepl.fbos::%attachment ,fbo ,attachment))
      ,@body))
 
 
