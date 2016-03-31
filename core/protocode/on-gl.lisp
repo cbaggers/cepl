@@ -67,3 +67,56 @@
 ;;
 ;; Less complexity, it's worth it
 ;;
+
+;;
+;; WAIT
+;;
+;; with-sampler sucks...why would you want the same sampler across all textures
+;; I mean look at this:
+
+(with-sampler s
+  (map-g #'test stream :tex-a a :tex-b b))
+
+;; fuck that
+;;
+;; sampler should really be like buffer-stream, it refers to a texture.
+;; then you sample from the sampler, nice.
+;;
+;; Also we can have specific types for all of these, a little extra type
+;; checking wont hurt :)
+;;
+;; Then maybe let's ditch sampling params from the texture and go full sampler.
+;;
+;; Got some real data on this
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; @gl-people: Are there any cases where setting the sampling params
+;; directly on a texture is better than using a sampler object? (putting
+;; aside the amount of code to use them & supporting v<3.3)
+
+;; erik [5:16 PM] @baggers: No, always use sampler objects, they
+;; rule. (edited)
+
+;; baggers [5:22 PM] @erik: badass, thanks!
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;
+;; Ok so lose sampler params from texture, sampler object only, adds semantic
+;; dual with gpu-stream so woo!
+
+
+;; High level view
+;;
+;; Data is stored in gpu-buffers and textures
+;;
+;; Both have contain gpu-arrays
+;;
+;; Depending on whether the array is contained in a gpu-buffer or a texture it is said to be buffer backed or texture backed
+;;
+;; Pipelines are made by composing gpu-functions with g-> and defun-g->
+;;
+;; Data is read from gpu-arrays using gpu-streams or ubos
+;;
+;; Data is read from textures using samplers
+;;
+;; Data leaving a pipeline gets written into a RenderTarget
+;;
+;; A render target contains an FBO and blending-params.
