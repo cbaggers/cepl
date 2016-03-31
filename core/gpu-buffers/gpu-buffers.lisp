@@ -56,37 +56,46 @@
 			    ,@body)
        (unbind-buffer ,var-name))))
 
-
-
-(defun make-gpu-buffer-from-id (gl-object &key initial-contents
-                                        (buffer-target :array-buffer)
-                                        (usage :static-draw)
-                                        (managed nil))
-  (declare (symbol buffer-target usage))
-  (let ((new-buffer (%make-gpu-buffer :id gl-object :managed managed)))
-    (if initial-contents
-        (buffer-data new-buffer initial-contents buffer-target
-                     usage)
-        new-buffer)))
-
 (defun gen-buffer ()
   (car (gl:gen-buffers 1)))
 
-(defun make-gpu-buffer (&key initial-contents
-                     (buffer-target :array-buffer)
-                     (usage :static-draw)
-                     (managed nil))
+(defun make-gpu-buffer-from-id (gl-object &key initial-contents
+					    (buffer-target :array-buffer)
+					    (usage :static-draw)
+					    (managed nil))
   (declare (symbol buffer-target usage))
-  (make-gpu-buffer-from-id (gen-buffer) :initial-contents initial-contents
-                       :buffer-target buffer-target :usage usage
-                       :managed managed))
+  (init-gpu-buffer-from-id
+   (make-uninitialized-gpu-buffer) gl-object initial-contents
+   buffer-target usage managed))
+
+(defun init-gpu-buffer-from-id (new-buffer gl-object initial-contents
+				buffer-target usage managed)
+  (declare (symbol buffer-target usage))
+  (setf (gpu-buffer-id new-buffer) gl-object
+	(gpu-buffer-managed new-buffer) managed
+	(gpu-buffer-format new-buffer) nil)
+  (if initial-contents
+      (buffer-data new-buffer initial-contents buffer-target usage)
+      new-buffer))
+
+(defun make-gpu-buffer (&key initial-contents
+			  (buffer-target :array-buffer)
+			  (usage :static-draw)
+			  (managed nil))
+  (declare (symbol buffer-target usage))
+  (cepl.memory::if-context
+   (init-gpu-buffer-from-id
+    %pre% (gen-buffer) initial-contents buffer-target usage managed)
+   (make-uninitialized-gpu-buffer)))
+
 
 (defun make-managed-gpu-buffer (&key initial-contents
 				  (buffer-target :array-buffer)
 				  (usage :static-draw))
-  (make-gpu-buffer-from-id (gen-buffer) :initial-contents initial-contents
-                       :buffer-target buffer-target :usage usage
-                       :managed t))
+  (cepl.memory::if-context
+   (init-gpu-buffer-from-id %pre% (gen-buffer) initial-contents
+			    buffer-target usage t)
+   (%make-gpu-buffer :id 0 :format '(:uninitialized) :managed nil)))
 
 (defun buffer-data-raw (data-pointer data-type data-byte-size
                         buffer buffer-target usage &optional (byte-offset 0))
@@ -125,8 +134,8 @@
 
 (defun multi-buffer-data (buffer c-arrays buffer-target usage)
   (let* ((c-array-byte-sizes (loop for c-array in c-arrays
-                              collect
-                                (cepl.c-arrays::c-array-byte-size c-array)))
+				collect
+				  (cepl.c-arrays::c-array-byte-size c-array)))
          (total-size (apply #'+ c-array-byte-sizes)))
     (bind-buffer buffer buffer-target)
     (buffer-data buffer (first c-arrays) buffer-target usage

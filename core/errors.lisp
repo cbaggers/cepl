@@ -150,3 +150,12 @@ Instead recieved: ~a"
 Arg names: ~s
 This is not currently supported by def-glsl-stage"
   arg-names)
+
+(deferror make-gpu-array-from-c-array-mismatched-dimensions ()
+    (c-arr-dimensions provided-dimensions)
+    "Jungl: make-gpu-array mismatched dimensions
+
+A call to #'make-gpu-array was made with a c-array as the initial-contents.
+The dimensions of the c-array are ~s, however the dimensions given in the
+call to #'make-gpu-array were ~s"
+  c-arr-dimensions provided-dimensions)

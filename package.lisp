@@ -78,7 +78,8 @@
 	   :dont-define-space-to-self
 	   :make-buffer-stream-with-no-gpu-arrays
 	   :invalid-context-for-def-glsl-stage
-	   :struct-in-glsl-stage-args))
+	   :struct-in-glsl-stage-args
+	   :make-gpu-array-from-c-array-mismatched-dimensions))
 
 (defpackage :cepl.host
   (:use :cl)
@@ -111,6 +112,7 @@
 	   :gpu-array-dimensions
 
 	   :%make-gpu-array-t
+	   :make-uninitialized-gpu-array-t
 	   :gpu-array-t
 	   :gpu-array-t-p
 	   :gpu-array-t-texture
@@ -122,6 +124,7 @@
 	   :+null-texture-backed-gpu-array+
 
 	   :%make-gpu-array-bb
+	   :make-uninitialized-gpu-array-bb
 	   :gpu-array-bb
 	   :gpu-array-bb-p
 	   :gpu-array-bb-buffer
@@ -131,6 +134,7 @@
 	   :+null-buffer-backed-gpu-array+
 
 	   :%make-gpu-buffer
+	   :make-uninitialized-gpu-buffer
 	   :gpu-buffer
 	   :gpu-buffer-p
 	   :gpu-buffer-id
@@ -842,6 +846,7 @@
     :re-export (:cepl.render-state
 		:cepl.viewports
 		:cepl.types
+		:cepl.memory
 		:cepl.image-formats
 		:cepl.pixel-formats
 		:cepl.c-arrays

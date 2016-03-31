@@ -28,8 +28,10 @@
   (free-c-array object))
 
 (defun free-c-array (c-array)
-  (foreign-free (c-array-pointer c-array))
-  (blank-c-array-object c-array))
+  (let ((ptr (c-array-pointer c-array)))
+    (unless (cffi:null-pointer-p ptr)
+      (foreign-free ptr)
+      (blank-c-array-object c-array))))
 
 (defmethod print-object ((object c-array) stream)
   (format stream "#<C-ARRAY :element-type ~s :dimensions ~a>"
@@ -55,6 +57,10 @@
 
 (defun gl-calc-byte-size (type dimensions)
   (%gl-calc-byte-size (gl-type-size type) dimensions))
+
+(defun steal-c-array (c-array)
+  (prog1 (%cepl.types::copy-c-array c-array)
+    (blank-c-array-object c-array)))
 
 (defun make-c-array-from-pointer (dimensions element-type pointer)
   (unless dimensions

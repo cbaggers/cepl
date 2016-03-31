@@ -56,6 +56,13 @@
 
 (defvar +null-gpu-buffer+ (%make-gpu-buffer))
 
+(defun make-uninitialized-gpu-buffer ()
+  (%make-gpu-buffer :id 0 :format '(:uninitialized) :managed nil))
+
+(defmethod cepl.memory::initialized-p ((object gpu-buffer))
+  (not (equal (gpu-buffer-format object)
+	      '(:uninitialized))))
+
 ;;------------------------------------------------------------
 
 (defstruct (gpu-array (:constructor %make-gpu-array))
@@ -86,6 +93,24 @@
   (%make-gpu-array-t
    :texture +null-texture+
    :texture-type nil))
+
+(defun make-uninitialized-gpu-array-bb ()
+  (%make-gpu-array-bb
+   :buffer +null-gpu-buffer+
+   :access-style :uninitialized))
+
+(defmethod cepl.memory::initialized-p ((object gpu-array-bb))
+  (not (eq (gpu-array-bb-access-style object)
+	   :uninitialized)))
+
+(defun make-uninitialized-gpu-array-t ()
+  (%make-gpu-array-t
+   :texture +null-texture+
+   :texture-type :uninitialized))
+
+(defmethod cepl.memory::initialized-p ((object gpu-array-t))
+  (not (eq (gpu-array-t-texture-type object)
+	   :uninitialized)))
 
 ;;------------------------------------------------------------
 

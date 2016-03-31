@@ -29,6 +29,7 @@
 	       (:file "core/measurements/measurements")
 	       (:file "core/types/cepl-types")
 	       (:file "core/memory/memory")
+	       (:file "core/memory/post-context-init")
                (:file "core/internals")
                (:file "core/types/types")
                (:file "core/spaces/constants")
