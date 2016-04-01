@@ -144,6 +144,7 @@
 
 	   :%%make-texture
 	   :%%make-buffer-texture
+	   :make-uninitialized-texture
 	   :texture
 	   :texture-p
 	   :texture-id
@@ -265,7 +266,10 @@
 	   :%viewport-resolution-x
 	   :%viewport-resolution-y
 	   :%viewport-origin-x
-	   :%viewport-origin-y))
+	   :%viewport-origin-y
+
+	   ;;---
+	   :holds-gl-object-ref-p))
 
 (defpackage :cepl.memory
   (:use :cl :cffi :%cepl.types)

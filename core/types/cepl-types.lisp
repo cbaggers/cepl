@@ -47,6 +47,12 @@
 		  :image-format nil
 		  :sampler-type nil))
 
+(defun make-uninitialized-texture ()
+  (%%make-texture :type :uninitialized :image-format :uninitialized))
+
+(defmethod cepl.memory::initialized-p ((object texture))
+  (not (eq (texture-type object) :uninitialized)))
+
 ;;------------------------------------------------------------
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
@@ -224,3 +230,18 @@
   (resolution-y 240 :type fixnum)
   (origin-x 0 :type fixnum)
   (origin-y 0 :type fixnum))
+
+;;------------------------------------------------------------
+
+(defun holds-gl-object-ref-p (object)
+  (typecase object
+    (texture t)
+    (gpu-buffer t)
+    (gpu-array t)
+    (gpu-array-bb t)
+    (gpu-array-t t)
+    (buffer-texture t)
+    (sampler t)
+    (ubo t)
+    (fbo t)
+    (buffer-stream t)))

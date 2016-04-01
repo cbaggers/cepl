@@ -3,22 +3,26 @@
 ;;------------------------------------------------------------
 
 (defmethod print-object ((object texture) stream)
-  (let ((m (texture-mipmap-levels object))
-        (l (texture-layer-count object))
-        (c (texture-cubes-p object)))
-    (format stream
-            "#<GL-~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]~@[ cubes:~a~]>"
-            (texture-type object)
-            (texture-base-dimensions object)
-            (when (> m 1) m)
-	    (when (> l 1) l)
-	    c)))
+  (if (initialized-p object)
+      (let ((m (texture-mipmap-levels object))
+	    (l (texture-layer-count object))
+	    (c (texture-cubes-p object)))
+	(format stream
+		"#<~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]~@[ cubes:~a~]>"
+		(texture-type object)
+		(texture-base-dimensions object)
+		(when (> m 1) m)
+		(when (> l 1) l)
+		c))
+      (format stream "#<TEXTURE :UNINITIALIZED>")))
 
 (defmethod print-object ((object buffer-texture) stream)
-  (format stream
-          "#<GL-~a (~{~a~^x~})>"
-          (texture-type object)
-          (texture-base-dimensions object)))
+  (if (initialized-p object)
+      (format stream
+	      "#<~a (~{~a~^x~})>"
+	      (texture-type object)
+	      (texture-base-dimensions object))
+      (format stream "#<TEXTURE :UNINITIALIZED>")))
 
 (defun texture-element-type (texture)
   (texture-image-format texture))
