@@ -149,7 +149,7 @@
   (or (%space-parent space)
       (case= (%space-kind space)
 	(+hierachical-space+
-	 (error "You have found bug in Jungl:~%Hierarchical space without parent found: ~s" space))
+	 (error "You have found bug in CEPL:~%Hierarchical space without parent found: ~s" space))
 	(+model-space+
 	 (error "Model spaces do not have a parent space.~%~s" space))
 	(+relational-space+

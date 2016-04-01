@@ -239,6 +239,7 @@
 	   :pixel-format-comp-length
 
 	   :make-raw-buffer-stream
+	   :make-uninitialized-buffer-stream
 	   :buffer-stream
 	   :buffer-stream-p
 	   :buffer-stream-vao

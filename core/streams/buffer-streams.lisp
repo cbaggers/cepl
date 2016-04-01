@@ -5,7 +5,7 @@
 ;;;------------;;;
 
 (defmethod print-object ((object buffer-stream) stream)
-  (format stream "#<JUNGL:BUFFER-STREAM (~s) :LENGTH ~s~@[ :ARRAYS ~s~]~@[ :INDEXED ~s~]>"
+  (format stream "#<CEPL:BUFFER-STREAM (~s) :LENGTH ~s~@[ :ARRAYS ~s~]~@[ :INDEXED ~s~]>"
 	  (buffer-stream-vao object)
 	  (buffer-stream-length object)
 	  (when (buffer-stream-gpu-arrays object)
@@ -32,18 +32,28 @@
 
 (defun make-buffer-stream (gpu-arrays &key index-array (start 0) length
                                         retain-arrays)
-
-  (let* ((gpu-arrays (listify gpu-arrays)))
-    (make-buffer-stream-from-id (make-vao gpu-arrays index-array)
-                                gpu-arrays
-                                :index-array index-array
-                                :start start
-                                :length length
-                                :retain-arrays retain-arrays)))
+  (unless gpu-arrays
+    (error 'make-buffer-stream-with-no-gpu-arrays))
+  (let ((gpu-arrays (listify gpu-arrays)))
+    (cepl.memory::if-context
+     (init-buffer-stream-from-id %pre% (make-vao gpu-arrays index-array)
+				 gpu-arrays index-array start length
+				 retain-arrays)
+     (make-uninitialized-buffer-stream)
+     gpu-arrays)))
 
 (defun make-buffer-stream-from-id (vao-gl-object gpu-arrays
                                    &key index-array (start 0) length
                                      retain-arrays)
+  (unless gpu-arrays
+    (error 'make-buffer-stream-with-no-gpu-arrays))
+  (let ((gpu-arrays (listify gpu-arrays)))
+    (init-buffer-stream-from-id
+     (make-raw-buffer-stream) vao-gl-object gpu-arrays
+     index-array start length retain-arrays)))
+
+(defun init-buffer-stream-from-id (stream-obj vao-gl-object gpu-arrays
+                                   index-array start length retain-arrays)
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
   (let* ((gpu-arrays (listify gpu-arrays))
@@ -55,12 +65,13 @@
                      (apply #'min (mapcar #'(lambda (x) (first (dimensions x)))
                                           gpu-arrays)))))
     (if (and (every #'1d-p gpu-arrays) (if index-array (1d-p index-array) t))
-        (make-raw-buffer-stream
-         :vao (make-vao-from-id vao-gl-object gpu-arrays index-array)
-         :start start
-         :length length
-         :index-type (when index-array (element-type index-array))
-         :managed t
-         :gpu-arrays (when retain-arrays
-                       (list gpu-arrays index-array)))
+        (progn
+	  (setf (buffer-stream-vao stream-obj) (make-vao-from-id vao-gl-object gpu-arrays index-array)
+		(buffer-stream-start stream-obj) start
+		(buffer-stream-length stream-obj) length
+		(buffer-stream-index-type stream-obj) (when index-array (element-type index-array))
+		(buffer-stream-managed stream-obj) t
+		(buffer-stream-gpu-arrays stream-obj) (when retain-arrays
+							(list gpu-arrays index-array)))
+	  stream-obj)
         (error "You can only make buffer-streams from 1D arrays"))))

@@ -62,7 +62,7 @@
   (error "make-ubo-from-buffer is not yet implemented"))
 
 (deferror make-ubo-from-array-bad-type () (data element-type)
-    "Jungl: Invalid element-type for make-ubo-from-array
+    "CEPL: Invalid element-type for make-ubo-from-array
 
 Attemped to make a ubo from ~s which but also specified that the element-type
 should be ~s" data element-type)

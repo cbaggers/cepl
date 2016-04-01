@@ -6,7 +6,7 @@
 (defgeneric (setf resolution) (value object))
 
 (defmethod resolution ((object t))
-  (error "Jungl: Cannot extract a resolution from ~s object:~%~s"
+  (error "CEPL: Cannot extract a resolution from ~s object:~%~s"
 	 (type-of object) object))
 
 
@@ -17,7 +17,7 @@
 (defgeneric (setf dimensions) (value object))
 
 (defmethod dimensions ((object t))
-  (error "Jungl: Cannot extract dimensions from ~s object:~%~s"
+  (error "CEPL: Cannot extract dimensions from ~s object:~%~s"
 	 (type-of object) object))
 
 (defmethod dimensions ((object array))

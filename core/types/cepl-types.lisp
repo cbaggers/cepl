@@ -227,6 +227,12 @@
   (gpu-arrays nil :type list)
   (managed nil :type boolean))
 
+(defun make-uninitialized-buffer-stream ()
+  (make-raw-buffer-stream :index-type :uninitialized))
+
+(defmethod cepl.memory::initialized-p ((object buffer-stream))
+  (not (eq (buffer-stream-index-type object) :uninitialized)))
+
 ;;------------------------------------------------------------
 
 ;;{NOTE} if optimization called for it this could easily be an
@@ -248,6 +254,5 @@
     (gpu-array-t t)
     (buffer-texture t)
     (sampler t)
-    (ubo t)
     (fbo t)
     (buffer-stream t)))

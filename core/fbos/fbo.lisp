@@ -306,7 +306,7 @@
   (let ((fbo (make-fbo-from-id (first (gl:gen-framebuffers 1)))))
     (if fuzzy-attach-args
         (apply #'fbo-gen-attach fbo fuzzy-attach-args)
-        (error "Jungl: FBOs must have at least one attachment"))
+        (error "CEPL: FBOs must have at least one attachment"))
     (check-framebuffer-status fbo)
     fbo))
 

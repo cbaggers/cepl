@@ -4,14 +4,14 @@
     "Cepl.Spaces: Limitations in cpu-side space transforms from
                    *screen-space* & *ndc-space*
 
-Jungl's `spaces` feature can transform between most spaces in the graph, however
+CEPL's `spaces` feature can transform between most spaces in the graph, however
 there are limitations for *screen-space* & *ndc-space*
 
 Transforming from *screen-space* or *ndc-space* back to *clip-space* (or earlier)
 is not expressible as a matrix. Instead it is a function using data only[0]
 available in the fragment shader (the gl-frag-coord).
 
-Jungl therefore requires you to explicitly specify the variable *screen-space*
+CEPL therefore requires you to explicitly specify the variable *screen-space*
 or *ndc-space* in your shader code and does not allow you to pass in either as a
 uniform[1].
 
@@ -23,7 +23,7 @@ Notes:
     screen-space vec4, however this would mean you couldnt be certain if you
     were going to recieve a matrix or a function requiring more conditionals
     and incurring a performance hit.
-    Jungl prefers to optimize for the normal case and clarify the details of the
+    CEPL prefers to optimize for the normal case and clarify the details of the
     edge cases in the documentation (and this error message)
 
 [1] One possible way of avoiding this issue would be to upload a struct that
