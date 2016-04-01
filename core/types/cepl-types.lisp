@@ -142,6 +142,12 @@
   (expects-depth nil :type boolean)
   (compare nil :type symbol))
 
+(defun make-uninitialized-sampler ()
+  (%make-sampler :compare :uninitialized))
+
+(defmethod cepl.memory::initialized-p ((object sampler))
+  (not (eq (%sampler-compare object) :uninitialized)))
+
 ;;------------------------------------------------------------
 
 (defstruct (ubo (:constructor %make-ubo))

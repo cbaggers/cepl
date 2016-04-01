@@ -134,17 +134,29 @@
 (defun make-sampler (&key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
                        (minify-filter :linear) (magnify-filter :linear)
                        (wrap #(:repeat :repeat :repeat)) (compare :none))
-  (let ((self (%make-sampler :id (first (gl::gen-samplers 1)))))
-    (setf (lod-bias self) lod-bias
-          (min-lod self) min-lod
-          (max-lod self) max-lod
-          (minify-filter self) minify-filter
-          (magnify-filter self) magnify-filter
-          (wrap self) (if (keywordp wrap)
-			  (vector wrap wrap wrap)
-			  wrap)
-          (compare self) compare)
-    self))
+  (cepl.memory::if-context
+   (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
+		     magnify-filter wrap compare)
+   (make-uninitialized-sampler)))
+
+(defun make-sampler-now (sampler-obj lod-bias min-lod max-lod minify-filter
+			 magnify-filter wrap compare)
+  (setf (%sampler-id sampler-obj) (first (gl::gen-samplers 1))
+        (lod-bias sampler-obj) lod-bias
+	(min-lod sampler-obj) min-lod
+	(max-lod sampler-obj) max-lod
+	(minify-filter sampler-obj) minify-filter
+	(magnify-filter sampler-obj) magnify-filter
+	(wrap sampler-obj) (if (keywordp wrap)
+			       (vector wrap wrap wrap)
+			       wrap)
+	(compare sampler-obj) compare)
+  sampler-obj)
+
+(defmethod print-object ((object sampler) stream)
+  (if (initialized-p object)
+      (call-next-method object stream)
+      (format stream "#<SAMPLER :UNINITIALIZED>")))
 
 ;;----------------------------------------------------------------------
 

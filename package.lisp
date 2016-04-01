@@ -176,6 +176,7 @@
 	   :copy-blending-params
 
 	   :%make-sampler
+	   :make-uninitialized-sampler
 	   :sampler
 	   :sampler-p
 	   :%sampler-id
@@ -693,7 +694,7 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
-	:cepl.internals :%cepl.types)
+	:cepl.internals :%cepl.types :cepl.memory)
   (:export :sampler
 	   :sampler-p
 	   :make-sampler
