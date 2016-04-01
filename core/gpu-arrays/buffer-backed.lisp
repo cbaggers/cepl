@@ -8,9 +8,11 @@
 ;;;-----------;;;
 
 (defmethod print-object ((object gpu-array) stream)
-  (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :BUFFER>"
-          (element-type object)
-          (gpu-array-dimensions object)))
+  (if (initialized-p object)
+      (format stream "#<GPU-ARRAY :element-type ~s :dimensions ~a :backed-by :BUFFER>"
+	      (element-type object)
+	      (gpu-array-dimensions object))
+      (format stream "#<GPU-ARRAY :UNINITIALIZED :backed-by :BUFFER>")))
 
 ;; defmethod print-mem can be found further down the page
 
@@ -87,6 +89,8 @@
 
 (defgeneric make-gpu-array (initial-contents &key))
 
+;;---------------------------------------------------------------
+;; no initial-contents
 (defmethod make-gpu-array ((initial-contents null)
                            &key element-type dimensions
                              (access-style :static-draw))
@@ -104,16 +108,34 @@
      (init %pre%)
      (make-uninitialized-gpu-array-bb))))
 
+;;---------------------------------------------------------------
+;; from lisp-data
+
 (defmethod make-gpu-array ((initial-contents t)
                            &key dimensions element-type (access-style :static-draw))
-  (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
-				       :element-type element-type))
-    (make-gpu-array c-array :access-style access-style)))
-
-(defun init-gpu-array-from-c-array (arr initial-contents access-style)
   (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
+    (cepl.memory::if-context
+     (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
+					  :element-type element-type))
+       (init-gpu-array-from-c-array %pre% c-array access-style dimensions))
+     (make-uninitialized-gpu-array-bb buf)
+     (list buffer))))
+
+;;---------------------------------------------------------------
+;; from c-array
+
+(defun init-gpu-array-from-c-array (arr initial-contents access-style
+				    dimensions)
+  (let ((dimensions (listify dimensions))
+	(c-dimensions (dimensions initial-contents)))
+    (when dimensions
+      (asserting (and (every #'= c-dimensions dimensions)
+		      (= (length c-dimensions) (length dimensions)))
+		 make-gpu-array-from-c-array-mismatched-dimensions
+		 :c-arr-dimensions c-dimensions
+		 :provided-dimensions dimensions))
     (setf (gpu-array-bb-buffer arr) (buffer-data
-				     buffer
+				     (gpu-array-bb-buffer arr)
 				     initial-contents
 				     :array-buffer access-style)
 	  (gpu-array-bb-format-index arr) 0
@@ -123,17 +145,14 @@
 
 (defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw) dimensions)
-  (let ((dimensions (listify dimensions))
-	(c-dimensions (dimensions initial-contents)))
-    (when dimensions
-      (asserting (and (every #'= c-dimensions dimensions)
-		      (= (length c-dimensions) (length dimensions)))
-		 make-gpu-array-from-c-array-mismatched-dimensions
-		 :c-arr-dimensions c-dimensions
-		 :provided-dimensions dimensions))
+  (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
     (cepl.memory::if-context
-     (init-gpu-array-from-c-array %pre% initial-contents access-style)
-     (make-uninitialized-gpu-array-bb))))
+     (init-gpu-array-from-c-array %pre% initial-contents access-style dimensions)
+     (make-uninitialized-gpu-array-bb buffer)
+     (list buffer))))
+
+;;---------------------------------------------------------------
+;; from multiple c-arrays
 
 (defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
   (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
@@ -145,6 +164,8 @@
 			   :format-index i
 			   :dimensions (dimensions c-array)
 			   :access-style access-style))))
+
+;;---------------------------------------------------------------
 
 (defun subseq-g (array start &optional end)
   (let ((dimensions (dimensions array)))

@@ -270,6 +270,7 @@
 (defpackage :cepl.memory
   (:use :cl :cffi :%cepl.types)
   (:export :free
+	   :initialized-p
 	   ;;---
 	   :pull-g
            :pull1-g

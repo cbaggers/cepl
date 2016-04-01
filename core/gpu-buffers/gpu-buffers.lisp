@@ -6,6 +6,11 @@
 
 ;; [TODO] Should buffers have pull-g and push-g? of course! do it :)
 
+(defmethod print-object ((object gpu-buffer) stream)
+  (if (initialized-p object)
+      (call-next-method object stream)
+      (format stream "#<GPU-BUFFER :UNITIALIZED>")))
+
 (defmethod free ((object gpu-buffer))
   (free-buffer object))
 

@@ -94,9 +94,9 @@
    :texture +null-texture+
    :texture-type nil))
 
-(defun make-uninitialized-gpu-array-bb ()
+(defun make-uninitialized-gpu-array-bb (&optional buffer)
   (%make-gpu-array-bb
-   :buffer +null-gpu-buffer+
+   :buffer (or buffer +null-gpu-buffer+)
    :access-style :uninitialized))
 
 (defmethod cepl.memory::initialized-p ((object gpu-array-bb))
