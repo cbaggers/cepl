@@ -143,7 +143,7 @@ names are depended on by the functions named later in the list"
   (remove nil
           (map-hash
            (lambda (k v)
-             (when (and (typep v 'shader-pipeline-spec)
+             (when (and (typep v 'pipeline-spec)
                         (member name (slot-value v 'stages)))
                k))
            *gpu-pipeline-specs*)))
@@ -169,26 +169,16 @@ names are depended on by the functions named later in the list"
 
 (defconstant +cache-last-compile-result+ t)
 
-(defclass shader-pipeline-spec ()
+(defclass pipeline-spec ()
   ((name :initarg :name)
    (stages :initarg :stages)
    (change-spec :initarg :change-spec)
    (context :initarg :context)
    (cached-compile-results :initform nil)))
 
-(defclass compose-pipeline-spec ()
-  ((name :initarg :name)
-   (pipelines :initarg :pipelines)
-   (in-args :initarg :in-args)
-   (uniforms :initarg :uniforms)
-   (context :initarg :context)))
-
-(defun make-shader-pipeline-spec (name stages change-spec context)
-  (make-instance 'shader-pipeline-spec :name name :stages stages
+(defun make-pipeline-spec (name stages change-spec context)
+  (make-instance 'pipeline-spec :name name :stages stages
                  :change-spec change-spec :context context))
-(defun make-compose-pipeline-spec (name pipelines in-args uniforms context)
-  (make-instance 'compose-pipeline-spec :name name :pipelines pipelines
-                 :in-args in-args :uniforms uniforms :context context))
 
 (defun pipeline-spec (name)
   (gethash name *gpu-pipeline-specs*))
@@ -247,41 +237,6 @@ has not been cached yet")
       (setf (gethash name *gpu-program-cache*)
             (gl:create-program))))
 
-;;;--------------------------------------------------------------
-;;; PIPELINE ;;;
-;;;----------;;;
-
-(defmacro defpipeline (name args gpu-pipe-form &body options)
-  (assert (eq (first gpu-pipe-form) 'G->))
-  (let* ((gpipe-args (rest gpu-pipe-form)))
-    (assert (not (null gpipe-args)))
-    (cond ((and (listp (first gpipe-args)) (eq (caar gpipe-args) 'function))
-           (%defpipeline-gfuncs name args gpipe-args options))
-          ((listp (first gpipe-args))
-           (%defpipeline-compose name args options gpipe-args))
-          (t (error "Invalid defpipeline syntax")))))
-
-(defun ensure-no-name-collision ()
-  )
-
-;;--------------------------------------------------
-
-(defun parse-options (pipeline-name options context)
-  (labels ((tokenp (x)
-             (and (symbolp x)
-                  (or (keywordp x)
-                      (char= (aref (symbol-name x) 0)
-                             #\&)))))
-    (let* ((result
-            (mapcar #'cons
-                    (cons nil (remove-if-not #'tokenp options))
-                    (split-sequence-if #'tokenp options)))
-           (result (if (equal (first result) '(nil))
-                       (rest result)
-                       result)))
-      (assert-valid-options pipeline-name result context)
-      result)))
-
 ;;--------------------------------------------------
 
 (let ((stage-names '((:vertex . :vertex-shader)
@@ -314,8 +269,6 @@ has not been cached yet")
 
 ;;--------------------------------------------------
 
-(defmacro g-> (&rest forms)
-  (declare (ignore forms))
-  (error "Sorry, g-> can currently only be used inside defpipeline"))
+
 
 ;;--------------------------------------------------

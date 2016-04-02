@@ -320,8 +320,8 @@
    probably be removed.
 
    stage pairs are of the form (stage-name . gpu-function-name)"
-  (let ((cut-pos (or (position :context args) (length args))))
-    (destructuring-bind (&key context) (subseq args cut-pos)
+  (let ((cut-pos (or (position :post args) (length args))))
+    (destructuring-bind (&key post) (subseq args cut-pos)
       (list
        (let ((args (subseq args 0 cut-pos)))
          (if (and (= (length args) 2) (not (some #'keywordp args)))
@@ -331,8 +331,8 @@
                                 :if (keywordp a) :do (setf stages (cons a (subseq stages (1+ (position a stages)))))
                                 :else :collect (cons (or (pop stages) (error "Invalid gpipe arguments, no more stages"))
                                                      (cadr a)))))
-               (remove :context results :key #'car))))
-       context))))
+               (remove :post results :key #'car))))
+       post))))
 
 ;;--------------------------------------------------
 

@@ -182,15 +182,6 @@
 					 :destination-alpha :zero)
 		   :type blending-params))
 
-(defun make-uninitialized-fbo ()
-  (%%make-fbo :attachment-color (make-array 0 :element-type 'attachment
-					    :initial-element +null-attachement+)
-	      :draw-buffer-map +null-attachement+
-	      :clear-mask -13))
-
-(defmethod cepl.memory::initialized-p ((object fbo))
-  (not (= (%fbo-clear-mask object) -13)))
-
 (defstruct (attachment (:constructor %make-attachment)
                        (:conc-name %attachment-))
   (fbo nil :type (or null fbo))
@@ -208,6 +199,15 @@
 
 (defvar +null-attachement+
   (%make-attachment))
+
+(defun make-uninitialized-fbo ()
+  (%%make-fbo :attachment-color (make-array 0 :element-type 'attachment
+					    :initial-element +null-attachement+)
+	      :draw-buffer-map +null-attachement+
+	      :clear-mask -13))
+
+(defmethod cepl.memory::initialized-p ((object fbo))
+  (not (= (%fbo-clear-mask object) -13)))
 
 ;;------------------------------------------------------------
 

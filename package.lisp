@@ -358,9 +358,7 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors :cepl.measurements)
-  (:export :%collate-args
-           :%get-pipeline-uniforms
-           :1d-p
+  (:export :1d-p
            :clear-gl-context-cache
            :gl-assign-attrib-pointers
            :s-arrayp

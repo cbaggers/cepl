@@ -118,7 +118,7 @@
      (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
 					  :element-type element-type))
        (init-gpu-array-from-c-array %pre% c-array access-style dimensions))
-     (make-uninitialized-gpu-array-bb buf)
+     (make-uninitialized-gpu-array-bb buffer)
      (list buffer))))
 
 ;;---------------------------------------------------------------
