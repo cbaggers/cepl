@@ -254,21 +254,18 @@
                      &key dimensions element-type (mipmap nil)
                        (layer-count 1) (cubes nil) (rectangle nil)
                        (multisample nil) (immutable t) (buffer-storage nil)
-                       lod-bias min-lod max-lod minify-filter magnify-filter
-                       wrap compare (generate-mipmaps t))
+                       (generate-mipmaps t))
   (cepl.memory::if-context
    (make-texture-now %pre% initial-contents dimensions element-type mipmap
 		     layer-count cubes rectangle multisample immutable
-		     buffer-storage lod-bias min-lod max-lod minify-filter
-		     magnify-filter wrap compare generate-mipmaps)
+		     buffer-storage generate-mipmaps)
    (make-uninitialized-texture)
    (when (typep initial-contents 'gpu-array-bb)
      (list initial-contents))))
 
 (defun make-texture-now (tex-obj initial-contents dimensions element-type mipmap
 			 layer-count cubes rectangle multisample immutable
-			 buffer-storage lod-bias min-lod max-lod minify-filter
-			 magnify-filter wrap compare generate-mipmaps)
+			 buffer-storage generate-mipmaps)
   ;;
   (let ((element-type (expand-gl-type-name element-type))
 	(image-format (calc-image-format element-type initial-contents)))
@@ -279,32 +276,24 @@
       ((and initial-contents cubes)
        (%make-cube-texture tex-obj dimensions mipmap layer-count cubes
 			   buffer-storage rectangle multisample immutable
-			   initial-contents image-format lod-bias min-lod
-			   max-lod minify-filter magnify-filter wrap compare
-                           generate-mipmaps))
+			   initial-contents image-format generate-mipmaps))
       ;; initialize content needs to be turned into c-array
       ((and initial-contents (typep initial-contents 'uploadable-lisp-seq))
        (%make-texture-with-lisp-data tex-obj dimensions mipmap layer-count cubes
                                      buffer-storage rectangle multisample
-                                     immutable initial-contents lod-bias min-lod
-                                     max-lod minify-filter magnify-filter wrap
-                                     compare generate-mipmaps element-type
-				     image-format))
+                                     immutable initial-contents generate-mipmaps
+				     element-type image-format))
       ;; buffer backed - note that by now if there were intitial contents, they
       ;;                 are now a c-array
       (buffer-storage
        (%make-buffer-texture tex-obj
 			     (%texture-dimensions initial-contents dimensions)
                              image-format mipmap layer-count cubes
-                             rectangle multisample immutable initial-contents
-                             lod-bias min-lod max-lod minify-filter
-                             magnify-filter wrap compare))
+                             rectangle multisample immutable initial-contents))
       ;; all other cases
       (t (%make-texture tex-obj dimensions mipmap layer-count cubes
 			buffer-storage rectangle multisample immutable
-			initial-contents image-format lod-bias min-lod max-lod
-                        minify-filter magnify-filter wrap compare
-                        generate-mipmaps)))))
+			initial-contents image-format generate-mipmaps)))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
@@ -399,22 +388,18 @@
 (defun %make-texture-with-lisp-data
     (tex-obj dimensions mipmap layer-count cubes buffer-storage
      rectangle multisample immutable initial-contents
-     lod-bias min-lod max-lod minify-filter
-     magnify-filter wrap compare generate-mipmaps
-     element-type image-format)
+     generate-mipmaps element-type image-format)
   (declare (ignore element-type))
   (let ((element-type (image-format->lisp-type image-format)))
     (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions
 				     :element-type element-type))
       (make-texture-now tex-obj tmp nil nil mipmap layer-count cubes rectangle
-			multisample immutable buffer-storage lod-bias min-lod
-			max-lod minify-filter magnify-filter wrap compare
+			multisample immutable buffer-storage
 			generate-mipmaps))))
 
 (defun %make-cube-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
                            rectangle multisample immutable initial-contents
-                           image-format lod-bias min-lod max-lod minify-filter
-                           magnify-filter wrap compare generate-mipmaps)
+                           image-format generate-mipmaps)
   (assert (= 6 (length initial-contents)))
   (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
          (dim (if (every (lambda (_) (equal target-dim (dimensions _)))
@@ -424,17 +409,14 @@
                          initial-contents)))
          (result (%make-texture tex-obj dim mipmap layer-count cubes
 				buffer-storage rectangle multisample immutable
-				nil image-format lod-bias min-lod max-lod
-                                minify-filter magnify-filter wrap compare
-                                generate-mipmaps)))
+				nil image-format generate-mipmaps)))
     (loop :for data :in initial-contents :for i :from 0 :do
        (push-g data (texref result :cube-face i)))
     result))
 
 (defun %make-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
-                      image-format lod-bias min-lod max-lod minify-filter
-                      magnify-filter wrap compare generate-mipmaps)
+                      image-format generate-mipmaps)
   (let* ((dimensions (listify dimensions))
 	 (dimensions (%texture-dimensions initial-contents dimensions)))
     ;; check for power of two - handle or warn
@@ -479,20 +461,6 @@
                        pformat ptype)))
                   (when (and generate-mipmaps (> mipmap-levels 1))
                     (generate-mipmaps tex-obj)))
-                (when lod-bias
-                  (setf (cepl.samplers:lod-bias tex-obj) lod-bias))
-                (when min-lod
-                  (setf (cepl.samplers:min-lod tex-obj) min-lod))
-                (when max-lod
-                  (setf (cepl.samplers:max-lod tex-obj) max-lod))
-                (when minify-filter
-                  (setf (cepl.samplers:minify-filter tex-obj) minify-filter))
-                (when magnify-filter
-                  (setf (cepl.samplers:magnify-filter tex-obj) magnify-filter))
-                (when wrap
-                  (setf (cepl.samplers:wrap tex-obj) wrap))
-                (when compare
-                  (setf (cepl.samplers:compare tex-obj) compare))
                 tex-obj))
           (error "This combination of texture features is invalid")))))
 
@@ -503,8 +471,7 @@
 
 (defun %make-buffer-texture (tex-obj dimensions image-format mipmap layer-count
 			     cubes rectangle multisample immutable
-			     initial-contents lod-bias min-lod max-lod
-			     minify-filter magnify-filter wrap compare)
+			     initial-contents)
   (declare (ignore immutable))
   (let* ((dimensions (listify dimensions))
          (element-type (if initial-contents
@@ -516,7 +483,6 @@
     ;; validation
     (assert-valid-args-for-buffer-backend-texture
      image-format cubes rectangle multisample mipmap layer-count
-     lod-bias min-lod max-lod minify-filter magnify-filter wrap compare
      texture-type)
     ;; creation
     (let* ((array (if initial-contents
@@ -544,12 +510,9 @@
 
 (defun assert-valid-args-for-buffer-backend-texture
     (image-format cubes rectangle multisample mipmap layer-count
-     lod-bias min-lod max-lod minify-filter magnify-filter wrap compare
      texture-type)
   (when (or mipmap (not (= layer-count 1)) cubes rectangle multisample)
     (error 'buffer-backed-texture-invalid-args))
-  (when (or lod-bias min-lod max-lod minify-filter magnify-filter wrap compare)
-    (error 'buffer-backed-texture-invalid-samplers))
   (unless (valid-image-format-for-buffer-backed-texturep image-format)
     (error 'buffer-backed-texture-invalid-image-format
            :type-name image-format))
