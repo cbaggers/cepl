@@ -123,7 +123,8 @@
 ;;------------------------------------------------------------
 
 (defstruct sampler-id-box
-  (id -1 :type fixnum))
+  (id -1 :type fixnum)
+  (shared nil :type boolean))
 
 ;; {TODO} border-color
 (defstruct (sampler (:constructor %make-sampler)

@@ -150,6 +150,7 @@
 	   :texture-id
 	   :texture-base-dimensions
 	   :texture-type
+	   :texture-last-sampler-id
 	   :texture-image-format
 	   :texture-mipmap-levels
 	   :texture-layer-count
@@ -174,7 +175,6 @@
 	   :copy-blending-params
 
 	   :%make-sampler
-	   :make-sampler-id-box
 	   :make-uninitialized-sampler
 	   :sampler
 	   :sampler-p
@@ -190,6 +190,11 @@
 	   :%sampler-wrap
 	   :%sampler-expects-depth
 	   :%sampler-compare
+
+	   :sampler-id-box
+	   :make-sampler-id-box
+	   :make-sampler-id-box-id
+	   :make-sampler-id-box-shared
 
 	   :lod-bias
 	   :min-lod

@@ -134,19 +134,24 @@
 (defun sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
 			 (minify-filter :linear) (magnify-filter :linear)
 			 (wrap #(:repeat :repeat :repeat)) (compare :none))
+  (unless (and texture (typep texture 'texture))
+    (error
+     "CEPL: Attempted to sample ~s but it is only legal to sample textures."
+     texture))
   (cepl.memory::if-context
    (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
 		     magnify-filter wrap compare)
    (make-uninitialized-sampler texture)
    (list texture)))
 
-(let ((cached nil)
-      (has nil))
-  (defun has-sampler-support-p ()
-    (if cached
-	has
-	(setf cached t
-	      has (has-feature "GL_ARB_sampler_objects")))))
+(declaim (type boolean *samplers-available*))
+(defvar *samplers-available* t)
+
+(defun check-sampler-feature ()
+  (unless (has-feature "GL_ARB_sampler_objects")
+    (setf *samplers-available* nil)))
+
+(push #'check-sampler-feature *on-context*)
 
 (defvar *fake-sampler-id* 0)
 (defun get-sampler-id-box (lod-bias min-lod max-lod minify-filter
@@ -154,9 +159,11 @@
   ;; this will have the lovely logic for deduping sampler-ids
   (declare (ignore lod-bias min-lod max-lod minify-filter
 		   magnify-filter wrap compare))
-  (make-sampler-id-box :id (if (has-sampler-support-p)
-			       (first (gl::gen-samplers 1))
-			       (incf *fake-sampler-id*))))
+  (make-sampler-id-box
+   :id (if *samplers-available*
+	   (first (gl::gen-samplers 1))
+	   (incf *fake-sampler-id*))))
+
 
 (defun make-sampler-now (sampler-obj lod-bias min-lod max-lod minify-filter
 			 magnify-filter wrap compare)
@@ -182,7 +189,7 @@
 (defmethod print-object ((object sampler) stream)
   (if (initialized-p object)
       ;;(call-next-method object stream)
-      (format stream "#<~s ~s>"
+      (format stream "#<~a ~s>"
 	      (%sampler-type object)
 	      (%sampler-texture object))
       (format stream "#<SAMPLER :UNINITIALIZED>")))

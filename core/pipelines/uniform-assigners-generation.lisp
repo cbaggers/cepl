@@ -54,7 +54,9 @@
 		      (error "incorrect type of sampler passed to shader"))
 		    (active-texture-num ,i-unit)
 		    (bind-texture (%sampler-texture ,arg-name))
-		    (gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
+		    (if cepl.samplers::*samplers-available*
+			(gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
+			(cepl.textures::fallback-sampler-set ,arg-name))
 		    (uniform-sampler ,id-name ,i-unit))))))
 
 (defun make-ubo-assigner (arg-name varjo-type glsl-name)

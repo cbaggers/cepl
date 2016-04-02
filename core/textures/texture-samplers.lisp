@@ -86,3 +86,16 @@
 	 (texture-type texture) :texture-compare-mode
 	 (%gl::foreign-enum-value '%gl:enum :none))))
   texture)
+
+(defun fallback-sampler-set (sampler)
+  (let ((texture (%sampler-texture sampler))
+	(id (%sampler-id sampler)))
+    (unless (= id (texture-last-sampler-id texture))
+      (setf (tex-lod-bias texture) (%sampler-lod-bias sampler)
+	    (tex-min-lod texture) (%sampler-min-lod sampler)
+	    (tex-max-lod texture) (%sampler-max-lod sampler)
+	    (tex-minify-filter texture) (%sampler-minify-filter sampler)
+	    (tex-magnify-filter texture) (%sampler-magnify-filter sampler)
+	    (tex-wrap texture) (%sampler-wrap sampler)
+	    (tex-compare texture) (%sampler-compare sampler)))
+    sampler))
