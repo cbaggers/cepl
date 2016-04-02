@@ -38,7 +38,6 @@
 	(texture-base-dimensions texture) nil
 	(texture-type texture) nil
 	(texture-image-format texture) nil
-	(texture-sampler-type texture) nil
 	(texture-mipmap-levels texture) 0
 	(texture-layer-count texture) 0
 	(texture-cubes-p texture) nil

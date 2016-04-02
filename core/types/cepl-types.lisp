@@ -28,12 +28,10 @@
   (base-dimensions nil :type list)
   (type (error "") :type symbol)
   (image-format (error "") :type symbol)
-  (sampler-type nil :type symbol)
   (mipmap-levels 0 :type fixnum)
   (layer-count 0 :type fixnum)
   (cubes-p nil :type boolean)
   (allocated-p nil :type boolean)
-  (sampler-object-id 0 :type real)
   (mutable-p nil :type boolean)
   ;; last-sampler-id is used for perf optimizations
   ;; on gl v<3.3
@@ -41,8 +39,7 @@
 
 (defvar +null-texture+
   (%%make-texture :type nil
-		  :image-format nil
-		  :sampler-type nil))
+		  :image-format nil))
 
 (defun make-uninitialized-texture ()
   (%%make-texture :type :uninitialized :image-format :uninitialized))
@@ -132,7 +129,8 @@
 (defstruct (sampler (:constructor %make-sampler)
                     (:conc-name %sampler-))
   (id-box (make-sampler-id-box) :type sampler-id-box)
-  (texture +null-texture+ :type texture)
+  (type (error "") :type symbol)
+  (texture (error "") :type texture)
   (lod-bias 0.0 :type single-float)
   (min-lod -1000.0 :type single-float)
   (max-lod 1000.0 :type single-float)
@@ -149,11 +147,11 @@
 (defun (setf %sampler-id) (value sampler)
   (setf (%sampler-id-box sampler) value))
 
-(defun make-uninitialized-sampler ()
-  (%make-sampler :compare :uninitialized))
+(defun make-uninitialized-sampler (texture)
+  (%make-sampler :texture texture :type :uninitialized))
 
 (defmethod cepl.memory::initialized-p ((object sampler))
-  (not (eq (%sampler-compare object) :uninitialized)))
+  (not (eq (%sampler-type object) :uninitialized)))
 
 ;;------------------------------------------------------------
 

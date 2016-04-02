@@ -234,15 +234,13 @@
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
 (defun make-texture-from-id (gl-object &key base-dimensions texture-type
-                                         element-type sampler-type
-                                         mipmap-levels layer-count cubes
-                                         allocated mutable-p)
+                                         element-type mipmap-levels
+					 layer-count cubes allocated mutable-p)
   (%%make-texture
    :id gl-object
    :base-dimensions base-dimensions
    :type texture-type
    :image-format element-type
-   :sampler-type sampler-type
    :mipmap-levels mipmap-levels
    :layer-count layer-count
    :cubes-p cubes
@@ -447,10 +445,7 @@
 		      (texture-layer-count tex-obj) layer-count
 		      (texture-cubes-p tex-obj) cubes
 		      (texture-image-format tex-obj) image-format
-		      (texture-mutable-p tex-obj) (not (and immutable *immutable-available*))
-		      (texture-sampler-type tex-obj) (cepl.samplers::calc-sampler-type
-						      texture-type
-						      image-format))
+		      (texture-mutable-p tex-obj) (not (and immutable *immutable-available*)))
                 (with-texture-bound tex-obj
                   (allocate-texture tex-obj)
                   (when initial-contents
@@ -496,8 +491,6 @@
 	    (texture-layer-count tex-obj) 1
 	    (texture-cubes-p tex-obj) nil
 	    (texture-image-format tex-obj) image-format
-	    (texture-sampler-type tex-obj) (cepl.samplers::calc-sampler-type
-					    texture-type image-format)
 	    (buffer-texture-backing-array tex-obj) array
 	    (buffer-texture-owns-array tex-obj) t)
       ;; upload

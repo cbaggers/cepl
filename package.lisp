@@ -151,13 +151,11 @@
 	   :texture-base-dimensions
 	   :texture-type
 	   :texture-image-format
-	   :texture-sampler-type
 	   :texture-mipmap-levels
 	   :texture-layer-count
 	   :texture-cubes-p
 	   :texture-mutable-p
 	   :texture-allocated-p
-	   :texture-sampler-object-id
 	   :buffer-texture
 	   :buffer-texture-p
 	   :buffer-texture-backing-array
@@ -181,6 +179,7 @@
 	   :sampler
 	   :sampler-p
 	   :%sampler-id
+	   :%sampler-type
 	   :%sampler-texture
 	   :%sampler-lod-bias
 	   :%sampler-min-lod
@@ -699,7 +698,7 @@
 	:cepl.internals :%cepl.types :cepl.memory)
   (:export :sampler
 	   :sampler-p
-	   :make-sampler
+	   :sample
 	   ;; :sampler-id
 	   ;; :sampler-lod-bias
 	   ;; :sampler-min-lod

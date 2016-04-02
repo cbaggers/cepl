@@ -131,13 +131,14 @@
       (%gl:delete-samplers (length ids) array))))
 
 
-(defun make-sampler (&key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
-                       (minify-filter :linear) (magnify-filter :linear)
-                       (wrap #(:repeat :repeat :repeat)) (compare :none))
+(defun sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
+			 (minify-filter :linear) (magnify-filter :linear)
+			 (wrap #(:repeat :repeat :repeat)) (compare :none))
   (cepl.memory::if-context
    (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
 		     magnify-filter wrap compare)
-   (make-uninitialized-sampler)))
+   (make-uninitialized-sampler texture)
+   (list texture)))
 
 (let ((cached nil)
       (has nil))
@@ -159,23 +160,31 @@
 
 (defun make-sampler-now (sampler-obj lod-bias min-lod max-lod minify-filter
 			 magnify-filter wrap compare)
-  (setf (%sampler-id sampler-obj) (get-sampler-id-box
-				   lod-bias min-lod max-lod minify-filter
-				   magnify-filter wrap compare)
-        (lod-bias sampler-obj) lod-bias
-	(min-lod sampler-obj) min-lod
-	(max-lod sampler-obj) max-lod
-	(minify-filter sampler-obj) minify-filter
-	(magnify-filter sampler-obj) magnify-filter
-	(wrap sampler-obj) (if (keywordp wrap)
-			       (vector wrap wrap wrap)
-			       wrap)
-	(compare sampler-obj) compare)
+  (let* ((texture (%sampler-texture sampler-obj))
+	 (sampler-type (cepl.samplers::calc-sampler-type
+			(texture-type texture)
+			(texture-image-format texture))))
+    (setf (%sampler-id sampler-obj) (get-sampler-id-box
+				     lod-bias min-lod max-lod minify-filter
+				     magnify-filter wrap compare)
+	  (%sampler-type sampler-obj) sampler-type
+	  (lod-bias sampler-obj) lod-bias
+	  (min-lod sampler-obj) min-lod
+	  (max-lod sampler-obj) max-lod
+	  (minify-filter sampler-obj) minify-filter
+	  (magnify-filter sampler-obj) magnify-filter
+	  (wrap sampler-obj) (if (keywordp wrap)
+				 (vector wrap wrap wrap)
+				 wrap)
+	  (compare sampler-obj) compare))
   sampler-obj)
 
 (defmethod print-object ((object sampler) stream)
   (if (initialized-p object)
-      (call-next-method object stream)
+      ;;(call-next-method object stream)
+      (format stream "#<~s ~s>"
+	      (%sampler-type object)
+	      (%sampler-texture object))
       (format stream "#<SAMPLER :UNINITIALIZED>")))
 
 ;;----------------------------------------------------------------------

@@ -225,12 +225,6 @@ abstractions over the opengl features that would modify the storage.
 [0] - https://www.opengl.org/wiki/Immutable_Storage_Texture#Texture_completeness
 ")
 
-  (defun texture-sampler-type
-      "
-This function will return the sampler-type of a given texture. The sampler type
-is the type you use when passing this texture as a uniform to a gpu-function.
-")
-
   (defun texture-type
       "
 This function will return the type of the given texture.

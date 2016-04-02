@@ -515,7 +515,7 @@ example:
 
 ")
 
-    (defun make-sampler
+    (defun sampler
 	"
 Make-sampler creates a new texture sampler that can be used to override the
 sampling parameters of a texture.
