@@ -29,7 +29,8 @@
 				      :source-alpha :one
 				      :destination-rgb :zero
 				      :destination-alpha :zero)))
-  (%%make-fbo
+  (%init-fbo
+   (make-uninitialized-fbo)
    :id id
    :attachment-color attachment-color
    :draw-buffer-map draw-buffer-map
@@ -37,6 +38,38 @@
    :clear-mask clear-mask
    :is-default is-default
    :blending-params blending-params))
+
+(defun %init-fbo (fbo-obj &key (id -1)
+		    (attachment-color
+		     (make-array (max-draw-buffers *gl-context*)
+				 :element-type 'attachment
+				 :initial-contents
+				 (loop :for i
+				    :below (max-draw-buffers *gl-context*)
+				    :collect (%make-attachment))))
+		    (draw-buffer-map
+		     (foreign-alloc 'cl-opengl-bindings:enum :count
+				    (max-draw-buffers *gl-context*)
+				    :initial-element :none))
+		    (attachment-depth (%make-attachment))
+		    (clear-mask (cffi:foreign-bitfield-value
+				 '%gl::ClearBufferMask '(:color-buffer-bit)))
+		    (is-default nil)
+		    (blending-params (make-blending-params
+				      :mode-rgb :func-add
+				      :mode-alpha :func-add
+				      :source-rgb :one
+				      :source-alpha :one
+				      :destination-rgb :zero
+				      :destination-alpha :zero)))
+  (setf (%fbo-id fbo-obj) id
+	(%fbo-attachment-color fbo-obj) attachment-color
+	(%fbo-draw-buffer-map fbo-obj) draw-buffer-map
+	(%fbo-attachment-depth fbo-obj) attachment-depth
+	(%fbo-clear-mask fbo-obj) clear-mask
+	(%fbo-is-default fbo-obj) is-default
+	(%fbo-blending-params fbo-obj) blending-params)
+  fbo-obj)
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -53,11 +86,13 @@
           (%fbo-id (%attachment-fbo obj))))
 
 (defmethod print-object ((object fbo) stream)
-  (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENT ~a~]>"
-          (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
-          (loop :for i :from 0 :for j :across (%fbo-attachment-color object)
-             :when (%attachment-gpu-array j) :collect i)
-          (and (%attachment-gpu-array (%fbo-attachment-depth object)) t)))
+  (if (initialized-p object)
+      (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENT ~a~]>"
+	      (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
+	      (loop :for i :from 0 :for j :across (%fbo-attachment-color object)
+		 :when (%attachment-gpu-array j) :collect i)
+	      (and (%attachment-gpu-array (%fbo-attachment-depth object)) t))
+      (format stream "#<FBO :UNINITIALIZED>")))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -303,12 +338,19 @@
     fbo))
 
 (defun make-fbo (&rest fuzzy-attach-args)
-  (let ((fbo (make-fbo-from-id (first (gl:gen-framebuffers 1)))))
-    (if fuzzy-attach-args
-        (apply #'fbo-gen-attach fbo fuzzy-attach-args)
-        (error "CEPL: FBOs must have at least one attachment"))
-    (check-framebuffer-status fbo)
-    fbo))
+  (cepl.memory::if-context
+   (make-fbo-now %pre% fuzzy-attach-args)
+   (make-uninitialized-fbo)
+   (remove-if-not #'holds-gl-object-ref-p
+		  (cepl-utils:flatten fuzzy-attach-args))))
+
+(defun make-fbo-now (fbo-obj fuzzy-attach-args)
+  (setf (%fbo-id fbo-obj) (first (gl:gen-framebuffers 1)))
+  (if fuzzy-attach-args
+      (apply #'fbo-gen-attach fbo-obj fuzzy-attach-args)
+      (error "CEPL: FBOs must have at least one attachment"))
+  (check-framebuffer-status fbo-obj)
+  fbo-obj)
 
 (defun check-framebuffer-status (fbo)
   (%bind-fbo fbo :framebuffer)
@@ -340,12 +382,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                      "any framebuffer attachment is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures of the same target.")
                     (otherwise "An error occurred")))))
     (%unbind-fbo)))
-
-(defun make-fbos (&optional (count 1))
-  (unless (> count 0)
-    (error "Attempting to create invalid number of framebuffers: ~s" count))
-  (mapcar (lambda (x) (let ((f (%make-fbo :id x))) (%update-fbo-state f) f))
-          (gl:gen-framebuffers count)))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

@@ -200,6 +200,7 @@
 	   :compare
 
 	   :%%make-fbo
+	   :make-uninitialized-fbo
 	   :fbo
 	   :fbo-p
 	   :%fbo-id
