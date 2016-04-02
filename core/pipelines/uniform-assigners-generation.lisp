@@ -48,12 +48,13 @@
      :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path))
                   (,i-unit (incf image-unit)))
      :uploaders `((when (>= ,id-name 0)
-		    (unless (eq (texture-sampler-type ,arg-name)
+		    (unless (eq (texture-sampler-type
+				 (%sampler-texture ,arg-name))
 				,(cepl.types::type->spec type))
-		      (error "incorrect texture type passed to shader"))
+		      (error "incorrect type of sampler passed to shader"))
 		    (active-texture-num ,i-unit)
-		    (bind-texture ,arg-name)
-		    (gl:bind-sampler ,i-unit (slot-value ,arg-name 'sampler-object-id))
+		    (bind-texture (%sampler-texture ,arg-name))
+		    (gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
 		    (uniform-sampler ,id-name ,i-unit))))))
 
 (defun make-ubo-assigner (arg-name varjo-type glsl-name)

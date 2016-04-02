@@ -527,24 +527,4 @@ docstring for the 'sampler type
     (defun sampler-p
 	"
 This function returns t if the supplied value is a sampler and nil otherwise
-")
-
-    (defmacro with-sampling
-	"
-This macro is how you apply override a texture's sampling parameters.
-
-The sampler affects any sampling done by pipelines run inside the scope of
-with-sampling. After the scope the sampler is detatched.
-
-with-sampling is used as follows:
-
-    (with-sampling ((*tex* *sam*)
-                    (*tex2* *sam*))
-      (map-g #'prog-1 *stream* :tex *tex* :norm-map *tex2*))
-
-Where *sam* is a sampler that is attached to both of the textures *tex* and
-*tex2*
-
-See https://github.com/cbaggers/cepl.examples/blob/master/examples/sampling.lisp
-for a full example.
 "))

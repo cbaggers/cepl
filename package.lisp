@@ -176,10 +176,12 @@
 	   :copy-blending-params
 
 	   :%make-sampler
+	   :make-sampler-id-box
 	   :make-uninitialized-sampler
 	   :sampler
 	   :sampler-p
 	   :%sampler-id
+	   :%sampler-texture
 	   :%sampler-lod-bias
 	   :%sampler-min-lod
 	   :%sampler-max-lod
@@ -715,8 +717,7 @@
 	   :minify-filter
 	   :set-minify-filter
 	   :wrap
-	   :compare
-	   :with-sampling))
+	   :compare))
 
 (defpackage :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

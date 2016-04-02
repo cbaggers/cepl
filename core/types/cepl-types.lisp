@@ -34,7 +34,10 @@
   (cubes-p nil :type boolean)
   (allocated-p nil :type boolean)
   (sampler-object-id 0 :type real)
-  (mutable-p nil :type boolean))
+  (mutable-p nil :type boolean)
+  ;; last-sampler-id is used for perf optimizations
+  ;; on gl v<3.3
+  (last-sampler-id 0 :type real))
 
 (defvar +null-texture+
   (%%make-texture :type nil
@@ -122,10 +125,14 @@
 
 ;;------------------------------------------------------------
 
+(defstruct sampler-id-box
+  (id -1 :type fixnum))
+
 ;; {TODO} border-color
 (defstruct (sampler (:constructor %make-sampler)
                     (:conc-name %sampler-))
-  (id -1 :type fixnum)
+  (id-box (make-sampler-id-box) :type sampler-id-box)
+  (texture +null-texture+ :type texture)
   (lod-bias 0.0 :type single-float)
   (min-lod -1000.0 :type single-float)
   (max-lod 1000.0 :type single-float)
@@ -135,6 +142,12 @@
   (wrap #(:repeat :repeat :repeat) :type vector)
   (expects-depth nil :type boolean)
   (compare nil :type symbol))
+
+(defun %sampler-id (sampler)
+  (sampler-id-box-id (%sampler-id-box sampler)))
+
+(defun (setf %sampler-id) (value sampler)
+  (setf (%sampler-id-box sampler) value))
 
 (defun make-uninitialized-sampler ()
   (%make-sampler :compare :uninitialized))
