@@ -23,12 +23,6 @@
 
 ;;------------------------------------------------------------
 
-;;{TODO} While I see why I started abstracting this using classes
-;;       We cannot extend core functionality of gl, thus uses
-;;       extensible constructs is optimizing for a case that can
-;;       never happen. We should go for structs, ubyte and macros
-;;       to hide the ugly, optimize for helping the compiler
-
 (defstruct (texture (:constructor %%make-texture))
   (id 0 :type real)
   (base-dimensions nil :type list)
