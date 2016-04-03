@@ -179,6 +179,7 @@
 	   :sampler
 	   :sampler-p
 	   :%sampler-id
+	   :%sampler-id-box
 	   :%sampler-type
 	   :%sampler-texture
 	   :%sampler-lod-bias
@@ -193,8 +194,8 @@
 
 	   :sampler-id-box
 	   :make-sampler-id-box
-	   :make-sampler-id-box-id
-	   :make-sampler-id-box-shared
+	   :sampler-id-box-id
+	   :sampler-id-box-shared-p
 
 	   :lod-bias
 	   :min-lod

@@ -144,25 +144,61 @@
    (make-uninitialized-sampler texture)
    (list texture)))
 
+;;----------------------------------------------------------------------
+
 (declaim (type boolean *samplers-available*))
+(declaim (type sampler-id-box *default-sampler-id-box*))
 (defvar *samplers-available* t)
+(defvar *default-sampler-id-box* (make-sampler-id-box))
 
 (defun check-sampler-feature ()
   (unless (has-feature "GL_ARB_sampler_objects")
     (setf *samplers-available* nil)))
 
-(push #'check-sampler-feature *on-context*)
+(defun make-default-sampler-id-box ()
+  (when (= (sampler-id-box-id *default-sampler-id-box*) -1)
+    (setf *default-sampler-id-box*
+	  (make-sampler-id-box :id (%get-id) :shared-p t))))
+
+(defun sampler-on-context ()
+  (check-sampler-feature)
+  (make-default-sampler-id-box))
+
+(push #'sampler-on-context *on-context*)
+
+;;----------------------------------------------------------------------
 
 (defvar *fake-sampler-id* 0)
+
+(defun %get-id ()
+  (if *samplers-available*
+      (first (gl::gen-samplers 1))
+      (incf *fake-sampler-id*)))
+
+(defun wrap-eq (wrap-a wrap-b)
+  (loop :for a :across wrap-a
+     :for b :across wrap-b
+     :always (eq a b)))
+
 (defun get-sampler-id-box (lod-bias min-lod max-lod minify-filter
 			   magnify-filter wrap compare)
   ;; this will have the lovely logic for deduping sampler-ids
-  (declare (ignore lod-bias min-lod max-lod minify-filter
-		   magnify-filter wrap compare))
-  (make-sampler-id-box
-   :id (if *samplers-available*
-	   (first (gl::gen-samplers 1))
-	   (incf *fake-sampler-id*))))
+  (if (and (= lod-bias 0.0) (= min-lod -1000.0) (= max-lod 1000.0)
+	   (eq minify-filter :linear) (eq magnify-filter :linear)
+	   (wrap-eq wrap #(:repeat :repeat :repeat))
+	   (eq compare :none))
+      *default-sampler-id-box*
+      (make-sampler-id-box :id (%get-id))))
+
+(defun note-change (sampler)
+  (print :change-noted)
+  ;; check if need to change box
+  (when (sampler-id-box-shared-p (%sampler-id-box sampler))
+    ;; change box
+    ;; (in future we can look up based on some hash)
+    (setf (%sampler-id-box sampler)
+	  (make-sampler-id-box :id (%get-id))))
+  sampler)
 
 
 (defun make-sampler-now (sampler-obj lod-bias min-lod max-lod minify-filter
@@ -174,16 +210,17 @@
     (setf (%sampler-id sampler-obj) (get-sampler-id-box
 				     lod-bias min-lod max-lod minify-filter
 				     magnify-filter wrap compare)
-	  (%sampler-type sampler-obj) sampler-type
-	  (lod-bias sampler-obj) lod-bias
-	  (min-lod sampler-obj) min-lod
-	  (max-lod sampler-obj) max-lod
-	  (minify-filter sampler-obj) minify-filter
-	  (magnify-filter sampler-obj) magnify-filter
-	  (wrap sampler-obj) (if (keywordp wrap)
-				 (vector wrap wrap wrap)
-				 wrap)
-	  (compare sampler-obj) compare))
+	  (%sampler-type sampler-obj) sampler-type)
+
+    (%set-lod-bias sampler-obj lod-bias)
+    (%set-min-lod sampler-obj min-lod)
+    (%set-max-lod sampler-obj max-lod)
+    (%set-minify-filter sampler-obj minify-filter)
+    (%set-magnify-filter sampler-obj magnify-filter)
+    (%set-wrap sampler-obj (if (keywordp wrap)
+			       (vector wrap wrap wrap)
+			       wrap))
+    (%set-compare sampler-obj compare))
   sampler-obj)
 
 (defmethod print-object ((object sampler) stream)
@@ -198,32 +235,101 @@
 
 (defun lod-bias (sampler) (%sampler-lod-bias sampler))
 (defun (setf lod-bias) (value sampler)
-  (setf (%sampler-lod-bias sampler) value)
-  (%gl:sampler-parameter-f (%sampler-id sampler) :texture-lod-bias value)
-  sampler)
+  (unless (= (lod-bias sampler) value)
+    (%set-lod-bias sampler value)
+    (note-change sampler))
+  value)
 
 (defun min-lod (sampler) (%sampler-min-lod sampler))
 (defun (setf min-lod) (value sampler)
-  (setf (%sampler-min-lod sampler) value)
-  (%gl:sampler-parameter-f (%sampler-id sampler) :texture-min-lod value)
-  sampler)
+  (unless (= (min-lod sampler) value)
+    (%set-min-lod sampler value)
+    (note-change sampler))
+  value)
 
 (defun max-lod (sampler) (%sampler-max-lod sampler))
 (defun (setf max-lod) (value sampler)
-  (setf (%sampler-max-lod sampler) value)
-  (%gl:sampler-parameter-f (%sampler-id sampler) :texture-max-lod value)
-  sampler)
+  (unless (= (max-lod sampler) value)
+    (%set-max-lod sampler value)
+    (note-change sampler))
+  value)
 
 (defun magnify-filter (sampler) (%sampler-magnify-filter sampler))
 (defun (setf magnify-filter) (value sampler)
   (assert (member value '(:linear :nearest)))
+  (unless (eq (magnify-filter sampler) value)
+    (%set-magnify-filter sampler value)
+    (note-change sampler))
+  value)
+
+(defun minify-filter (sampler) (%sampler-minify-filter sampler))
+(defun (setf minify-filter) (value sampler)
+  (unless (eq (minify-filter sampler) value)
+    (%set-minify-filter sampler value)
+    (note-change sampler))
+  value)
+
+;; remembering the gl names for the interpolation is a bit annoying so
+;; this function does it for you, alas because it takes two arguments it
+;; doesnt work well as a setf func.
+(defun set-minify-filter (sampler for-level &key (between-levels nil))
+  (setf (minify-filter sampler) (calc-minify-filter for-level between-levels)))
+
+(defun calc-minify-filter (between-arrays-on-this-level
+			   between-arrays-on-different-levels)
+  (assert (and (member between-arrays-on-this-level '(:linear :nearest))
+               (member between-arrays-on-different-levels '(:linear :nearest))))
+  (if between-arrays-on-different-levels
+      (if (eq between-arrays-on-different-levels :linear)
+          (if (eq between-arrays-on-this-level :linear)
+              :linear-mipmap-linear
+              :nearest-mipmap-linear)
+          (if (eq between-arrays-on-this-level :linear)
+              :linear-mipmap-nearest
+              :nearest-mipmap-nearest))
+      between-arrays-on-this-level))
+
+(defun wrap (sampler) (%sampler-wrap sampler))
+(defun (setf wrap) (value sampler)
+  (let ((value (if (keywordp value)
+		   (vector value value value)
+		   value)))
+    (unless (wrap-eq (wrap sampler) value)
+      (%set-wrap sampler value)
+      (note-change sampler)))
+  value)
+
+(defun compare (sampler) (%sampler-compare sampler))
+(defun (setf compare) (value sampler)
+  (unless (eq (compare sampler) value)
+    (%set-compare sampler value)
+    (note-change sampler))
+  value)
+
+;;----------------------------------------------------------------------
+
+(defun %set-lod-bias (sampler value)
+  (setf (%sampler-lod-bias sampler) value)
+  (%gl:sampler-parameter-f (%sampler-id sampler) :texture-lod-bias value)
+  sampler)
+
+(defun %set-min-lod (sampler value)
+  (setf (%sampler-min-lod sampler) value)
+  (%gl:sampler-parameter-f (%sampler-id sampler) :texture-min-lod value)
+  sampler)
+
+(defun %set-max-lod (sampler value)
+  (setf (%sampler-max-lod sampler) value)
+  (%gl:sampler-parameter-f (%sampler-id sampler) :texture-max-lod value)
+  sampler)
+
+(defun %set-magnify-filter (sampler value)
   (setf (%sampler-magnify-filter sampler) value)
   (%gl::sampler-parameter-i (%sampler-id sampler) :texture-mag-filter
 			    (%gl::foreign-enum-value '%gl:enum value))
   sampler)
 
-(defun minify-filter (sampler) (%sampler-minify-filter sampler))
-(defun (setf minify-filter) (value sampler)
+(defun %set-minify-filter (sampler value)
   (when (member value '(:linear-mipmap-linear :nearest-mipmap-linear
 			:linear-mipmap-nearest :nearest-mipmap-nearest))
     (setf (%sampler-expects-mipmap sampler) t))
@@ -232,27 +338,7 @@
 			    (%gl::foreign-enum-value '%gl:enum value))
   sampler)
 
-;; remembering the gl names for the interpolation is a bit annoying so
-;; this function does it for you, alas because it takes two arguments it
-;; doesnt work well as a setf func.
-(defun set-minify-filter (sampler for-level &key (between-levels nil))
-  (setf (minify-filter sampler) (calc-minify-filter for-level between-levels)))
-
-(defun calc-minify-filter (for-level between-levels)
-  (assert (and (member for-level '(:linear :nearest))
-               (member between-levels '(:linear :nearest))))
-  (if between-levels
-      (if (eq between-levels :linear)
-          (if (eq for-level :linear)
-              :linear-mipmap-linear
-              :nearest-mipmap-linear)
-          (if (eq for-level :linear)
-              :linear-mipmap-nearest
-              :nearest-mipmap-nearest))
-      for-level))
-
-(defun wrap (sampler) (%sampler-wrap sampler))
-(defun (setf wrap) (value sampler)
+(defun %set-wrap (sampler value)
   (let ((options '(:repeat :mirrored-repeat :clamp-to-edge :clamp-to-border
                    :mirror-clamp-to-edge))
 	(value (if (keywordp value)
@@ -261,17 +347,16 @@
     (assert (and (vectorp value)
 		 (= (length value) 3)
 		 (every (lambda (x) (member x options)) value)))
+    (setf (%sampler-wrap sampler) value)
     (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-s
 			      (%gl::foreign-enum-value '%gl:enum (aref value 0)))
     (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-t
 			      (%gl::foreign-enum-value '%gl:enum (aref value 1)))
     (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-r
-			      (%gl::foreign-enum-value '%gl:enum (aref value 2)))
-    (setf (%sampler-wrap sampler) value))
+			      (%gl::foreign-enum-value '%gl:enum (aref value 2))))
   sampler)
 
-(defun compare (sampler) (%sampler-compare sampler))
-(defun (setf compare) (value sampler)
+(defun %set-compare (sampler value)
   (setf (%sampler-compare sampler)
 	(or value :none))
   (if (and value (not (eq :none value)))
@@ -297,6 +382,8 @@
        (%sampler-id sampler) :texture-compare-mode
        (%gl::foreign-enum-value '%gl:enum :none)))
   sampler)
+
+;;----------------------------------------------------------------------
 
 (defvar *sampler-types*
   '(:isampler-1d :isampler-1d-array :isampler-2d :isampler-2d-array
@@ -330,3 +417,21 @@
 (defun sampler-typep (type)
   (or (member type *sampler-types*)
       (varjo:v-typep type 'v-sampler)))
+
+;; (defun has-default-params (sampler)
+;;   (and (= (%sampler-lod-bias sampler) 0.0)
+;;        (= (%sampler-min-lod sampler) -1000.0)
+;;        (= (%sampler-max-lod sampler) 1000.0)
+;;        (eq (%sampler-minify-filter sampler) :linear)
+;;        (eq (%sampler-magnify-filter sampler) :linear)
+;;        (wrap-eq (%sampler-wrap sampler) #(:repeat :repeat :repeat))
+;;        (eq (%sampler-compare sampler) :none)))
+
+;; (defun has-same-params (sampler-a sampler-b)
+;;   (and (= (%sampler-lod-bias sampler-a) (%sampler-lod-bias sampler-b))
+;;        (= (%sampler-min-lod sampler-a) (%sampler-min-lod sampler-b))
+;;        (= (%sampler-max-lod sampler-a) (%sampler-max-lod sampler-b))
+;;        (eq (%sampler-minify-filter sampler-a) (%sampler-minify-filter sampler-b))
+;;        (eq (%sampler-magnify-filter sampler-a) (%sampler-magnify-filter sampler-b))
+;;        (wrap-eq (%sampler-wrap sampler-a) (%sampler-wrap sampler-b))
+;;        (eq (%sampler-compare sampler-a) (%sampler-compare sampler-b))))
