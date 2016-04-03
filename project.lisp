@@ -20,7 +20,7 @@ from the repl. So what else could we do?
 So far I feel there are two main alternatives:
 
 - Start the session such that everything [including the repl] run in thread 0
-  by default.
+  by default and let you make threads as you need.
 - Give you some macro to run a form on thread 0. [For the rest of this document
   we will call this macro 'on-main]
 
@@ -44,11 +44,8 @@ Another benefit is for people running dual-graphics cards [e.g. optimus] who
 will want to run their lisp session with the powerful gpu and the editor on the
 integrated one.
 
-Possible Alternatives:
-One nice alternative would be able to start your session [in something like
-swank] and then move the thread the repl is evaluating on to thread 0. This
-would avoid the need for the 'start session script' but wouldn't fix the issue
-faced by those running multiple graphics card setups.")
+Luckily in the `docs/single-thread-swank.md` file you can get a function that
+starts slime in the required mode from inside emacs.")
 
 (deferror make-project-needs-quickproject () ()
     "make-project: Can't find quickproject

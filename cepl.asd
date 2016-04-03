@@ -10,16 +10,17 @@
   :license "BSD 2 Clause"
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :serial t
-  :depends-on (#:cl-autowrap
-               #:cl-plus-c
+  :depends-on (#:cffi
+	       #:cl-autowrap
                #:cl-fad
                #:cl-opengl
+               #:cl-plus-c
                #:cl-ppcre
-               #:rtg-math
-               #:varjo
-               #:named-readtables
+               #:documentation-utils
                #:fn
-               #:documentation-utils)
+               #:named-readtables
+               #:rtg-math
+               #:varjo)
   :components ((:file "package")
                (:file "host/api")
                (:file "core/utils")
