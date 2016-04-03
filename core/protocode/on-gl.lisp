@@ -102,7 +102,8 @@
 ;; Ok so lose sampler params from texture, sampler object only, adds semantic
 ;; dual with gpu-stream so woo!
 
-
+;;----------------------------------------------------------------------
+;;
 ;; High level view
 ;;
 ;; Data is stored in gpu-buffers and textures
@@ -111,12 +112,10 @@
 ;;
 ;; Depending on whether the array is contained in a gpu-buffer or a texture it is said to be buffer backed or texture backed
 ;;
-;; Pipelines are made by composing gpu-functions with g-> and defun-g->
+;; Pipelines are made by composing gpu-functions with g-> and def-g->
 ;;
 ;; Data is read from gpu-arrays using gpu-streams or ubos
 ;;
 ;; Data is read from textures using samplers
 ;;
-;; Data leaving a pipeline gets written into a RenderTarget
-;;
-;; A render target contains an FBO and blending-params.
+;; Data leaving a pipeline gets written into an FBO
