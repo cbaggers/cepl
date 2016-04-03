@@ -635,8 +635,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
      (destructuring-bind
            (&key (dimensions (viewport-dimensions (current-viewport)))
                  (element-type (%get-default-texture-format (first pattern)))
-                 mipmap (immutable t) lod-bias min-lod max-lod minify-filter
-                 magnify-filter wrap compare)
+                 mipmap (immutable t))
          (rest pattern)
        (assert (attachment-compatible (first pattern) element-type))
        (cons (texref
@@ -644,14 +643,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 			    :dimensions dimensions
 			    :element-type element-type
 			    :mipmap mipmap
-			    :immutable immutable
-			    :lod-bias lod-bias
-			    :min-lod min-lod
-			    :max-lod max-lod
-			    :minify-filter minify-filter
-			    :magnify-filter magnify-filter
-			    :wrap wrap
-			    :compare compare))
+			    :immutable immutable))
 	     t)))
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t) (cons (second pattern) t))
