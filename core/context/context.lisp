@@ -1,7 +1,5 @@
 (in-package :cepl.context)
 
-(defvar *gl-context* nil)
-
 ;; This is an object which can be used to access data about the gl-context
 ;; it employs caching for any of the areas where the data won't change during
 ;; the execution or where the changes would be known.

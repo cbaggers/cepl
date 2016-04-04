@@ -25,6 +25,7 @@
                (:file "host/api")
                (:file "core/utils")
                (:file "project")
+	       (:file "core/context/vars")
                (:file "core/lifecycle")
                (:file "core/continuable")
                (:file "core/measurements/measurements")
