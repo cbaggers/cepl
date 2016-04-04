@@ -637,8 +637,6 @@
   (with-c-array (c-array (pull1-g object))
     (pull1-g c-array)))
 
-
-
 (defun active-texture-num (num)
   (gl:active-texture (+ #x84C0 num)))
 

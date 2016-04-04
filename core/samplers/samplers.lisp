@@ -183,12 +183,15 @@
 (defun get-sampler-id-box (lod-bias min-lod max-lod minify-filter
 			   magnify-filter wrap compare)
   ;; this will have the lovely logic for deduping sampler-ids
-  (if (and (= lod-bias 0.0) (= min-lod -1000.0) (= max-lod 1000.0)
-	   (eq minify-filter :linear) (eq magnify-filter :linear)
-	   (wrap-eq wrap #(:repeat :repeat :repeat))
-	   (eq compare :none))
-      *default-sampler-id-box*
-      (make-sampler-id-box :id (%get-id))))
+  (let ((wrap (if (keywordp wrap)
+		  (vector wrap wrap wrap)
+		  wrap)))
+    (if (and (= lod-bias 0.0) (= min-lod -1000.0) (= max-lod 1000.0)
+	     (eq minify-filter :linear) (eq magnify-filter :linear)
+	     (wrap-eq wrap #(:repeat :repeat :repeat))
+	     (eq compare :none))
+	*default-sampler-id-box*
+	(make-sampler-id-box :id (%get-id)))))
 
 (defun note-change (sampler)
   (print :change-noted)

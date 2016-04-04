@@ -266,36 +266,40 @@
   (defun get-gl-attachment-keyword (x)
     (unless (> max-draw-buffers 0)
       (setf max-draw-buffers (max-draw-buffers *gl-context*)))
-    (cond ((eq x :c) (color-attachment-enum 0))
-          ((eq x :d) #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
-          ((eq x :s) #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
-          ((eq x :ds) #.(cffi:foreign-enum-value
-                         '%gl:enum :depth-stencil-attachment))
-          (t (if (<= x max-draw-buffers)
-                 (color-attachment-enum x)
-                 (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
-                        x max-draw-buffers))))))
+    (case x
+      (:c (color-attachment-enum 0))
+      (:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
+      (:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
+      (:ds #.(cffi:foreign-enum-value
+	      '%gl:enum :depth-stencil-attachment))
+      (otherwise
+       (if (<= x max-draw-buffers)
+	   (color-attachment-enum x)
+	   (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
+		  x max-draw-buffers))))))
 
 (define-compiler-macro get-gl-attachment-keyword (&whole whole x)
-  (cond ((eq x :c) (color-attachment-enum 0))
-        ((eq x :d) #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
-        ((eq x :s) #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
-        ((eq x :ds) #.(cffi:foreign-enum-value
-                       '%gl:enum :depth-stencil-attachment))
-        (t whole)))
+  (case x
+    (:c (color-attachment-enum 0))
+    (:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
+    (:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
+    (:ds #.(cffi:foreign-enum-value
+	    '%gl:enum :depth-stencil-attachment))
+    (otherwise whole)))
 
 (defun binding-shorthand (x)
   (when (symbolp x)
-    (cond ((string-equal x "C") 0)
-          ((string-equal x "D") :d)
-          ((string-equal x "S") :s)
-          ((string-equal x "ds") :ds)
-          (t (let ((name (symbol-name x)))
-               (when (and (>= (length name) 2) (char= #\C (aref name 0)))
-                 (let ((num (parse-integer name :start 1)))
-                   (when (and (>= num 0)
-                              (< num (max-draw-buffers *gl-context*)))
-                     num))))))))
+    (cond
+      ((string-equal x "C") 0)
+      ((string-equal x "D") :d)
+      ((string-equal x "S") :s)
+      ((string-equal x "DS") :ds)
+      (t (let ((name (symbol-name x)))
+	   (when (and (>= (length name) 2) (char= #\C (aref name 0)))
+	     (let ((num (parse-integer name :start 1)))
+	       (when (and (>= num 0)
+			  (< num (max-draw-buffers *gl-context*)))
+		 num))))))))
 
 ;;--------------------------------------------------------------
 
@@ -601,20 +605,16 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                     (mapcar #'listify args)))))
 
 (defun %extract-target (x)
-  (if (member x '(:draw-framebuffer :read-framebuffer :framebuffer :framebuffer))
+  (if (member x '(:draw-framebuffer :read-framebuffer
+		  :framebuffer :framebuffer))
       x
       :draw-framebuffer))
 
-(defvar %possible-texture-keys '(:dimensions :element-type :mipmap
-                                 :layer-count :cubes-p :rectangle
-                                 :multisample :immutable :buffer-storage
-                                 :lod-bias :min-lod :max-lod :minify-filter
-                                 :magnify-filter :wrap :compare))
-(defvar %valid-texture-subset '(:dimensions :element-type :mipmap
-                                :immutable :lod-bias :min-lod :max-lod
-                                :minify-filter :magnify-filter :wrap :compare))
+(defvar %possible-texture-keys
+  '(:dimensions :element-type :mipmap :layer-count :cubes-p :rectangle
+    :multisample :immutable :buffer-storage))
 
-
+(defvar %valid-texture-subset '(:dimensions :element-type :mipmap :immutable))
 
 (defun %gen-textures (pattern)
   (assert (or (listp pattern) (keywordp pattern)))
