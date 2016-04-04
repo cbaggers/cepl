@@ -31,6 +31,7 @@
 	       (:file "core/memory/memory")
                (:file "core/types/cepl-types")
                (:file "core/memory/post-context-init")
+	       (:file "core/types/initalized-p")
                (:file "core/internals")
                (:file "core/types/types")
                (:file "core/spaces/constants")

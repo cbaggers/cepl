@@ -44,9 +44,6 @@
 (defun make-uninitialized-texture ()
   (%%make-texture :type :uninitialized :image-format :uninitialized))
 
-(defmethod cepl.memory::initialized-p ((object texture))
-  (not (eq (texture-type object) :uninitialized)))
-
 ;;------------------------------------------------------------
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
@@ -58,10 +55,6 @@
 
 (defun make-uninitialized-gpu-buffer ()
   (%make-gpu-buffer :id 0 :format '(:uninitialized) :managed nil))
-
-(defmethod cepl.memory::initialized-p ((object gpu-buffer))
-  (not (equal (gpu-buffer-format object)
-	      '(:uninitialized))))
 
 ;;------------------------------------------------------------
 
@@ -99,18 +92,10 @@
    :buffer (or buffer +null-gpu-buffer+)
    :access-style :uninitialized))
 
-(defmethod cepl.memory::initialized-p ((object gpu-array-bb))
-  (not (eq (gpu-array-bb-access-style object)
-	   :uninitialized)))
-
 (defun make-uninitialized-gpu-array-t ()
   (%make-gpu-array-t
    :texture +null-texture+
    :texture-type :uninitialized))
-
-(defmethod cepl.memory::initialized-p ((object gpu-array-t))
-  (not (eq (gpu-array-t-texture-type object)
-	   :uninitialized)))
 
 ;;------------------------------------------------------------
 
@@ -150,9 +135,6 @@
 
 (defun make-uninitialized-sampler (texture)
   (%make-sampler :texture texture :type :uninitialized))
-
-(defmethod cepl.memory::initialized-p ((object sampler))
-  (not (eq (%sampler-type object) :uninitialized)))
 
 ;;------------------------------------------------------------
 
@@ -218,9 +200,6 @@
 	      :draw-buffer-map +null-attachement+
 	      :clear-mask -13))
 
-(defmethod cepl.memory::initialized-p ((object fbo))
-  (not (= (%fbo-clear-mask object) -13)))
-
 ;;------------------------------------------------------------
 
 (defstruct pixel-format
@@ -247,9 +226,6 @@
 (defun make-uninitialized-buffer-stream ()
   (make-raw-buffer-stream :index-type :uninitialized))
 
-(defmethod cepl.memory::initialized-p ((object buffer-stream))
-  (not (eq (buffer-stream-index-type object) :uninitialized)))
-
 ;;------------------------------------------------------------
 
 ;;{NOTE} if optimization called for it this could easily be an
@@ -259,6 +235,9 @@
   (resolution-y 240 :type fixnum)
   (origin-x 0 :type fixnum)
   (origin-y 0 :type fixnum))
+
+(defgeneric viewport (camera))
+(defgeneric (setf viewport) (value camera))
 
 ;;------------------------------------------------------------
 

@@ -777,8 +777,8 @@
 	   :def-glsl-stage
 	   :defmacro-g
 	   :define-compiler-macro-g
-	   :defpipeline
 	   :with-instances
+	   :def-g->
 	   :g->
 	   :map-g
 	   ;; :*verbose-compiles*
@@ -859,6 +859,7 @@
 		:cepl.viewports
 		:cepl.types
 		:cepl.memory
+		:cepl.measurements
 		:cepl.image-formats
 		:cepl.pixel-formats
 		:cepl.c-arrays
@@ -873,6 +874,7 @@
 		:cepl.blending
 		:cepl.pipelines
 		:cepl.space
+		:cepl.types.predefined
 		(:cepl.lifecycle :shutting-down-p)
 		(:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
 			   :radians :degrees))))

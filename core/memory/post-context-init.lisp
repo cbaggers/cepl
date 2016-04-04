@@ -1,15 +1,17 @@
 (in-package :cepl.memory)
 
+;;----------------------------------------------------------------------
+
+(defgeneric initialized-p (object))
+
+;;----------------------------------------------------------------------
+
 (defvar *post-context-init* nil)
 
 (defstruct delayed
   (waiting-on nil :type list)
   (thunk (error "delayed must have a constructor thunk")
 	 :type function))
-
-(defgeneric initialized-p (object))
-
-(defmethod initialized-p ((object t)) t)
 
 (defun delay-initialization (init-thunk waiting-on-these-resources)
   (push (make-delayed :waiting-on waiting-on-these-resources
