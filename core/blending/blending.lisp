@@ -97,7 +97,7 @@
 (defun current-blend-params ()
   (copy-blending-params
    (or %current-blend-params
-       (attachment-viewport (attachment %default-framebuffer 0)))))
+       (attachment-viewport %default-framebuffer 0))))
 
 (defmacro with-blending (blending-params &body body)
   (let ((b-params (gensym "blending-params")))
@@ -157,7 +157,7 @@
              `(%current-blend-params (%fbo-blending-params ,fbo))
              (loop :for a :in attachments :for s :in a-syms
                 :for o :in override-syms :append
-                `((,s (%attachment ,fbo ,a))
+                `((,s (attachment ,fbo ,a))
                   (,o (%attachment-override-blending ,s)))))
        (let ((per-attachment-blendingp (per-attachment-blending-available-p)))
          ;; If any of the attachments are inheriting the blending from the fbo

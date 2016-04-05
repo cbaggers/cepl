@@ -77,7 +77,9 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun %make-default-framebuffer (dimensions &optional (double-buffering t) (depth t))
+(defun %make-default-framebuffer
+    (dimensions &optional (double-buffering t) (depth t))
+  ;;
   (labels ((gen-array (dimensions)
 	     (%make-gpu-array-t
 	      :texture +null-texture+
@@ -114,8 +116,9 @@
       (setf dimensions new-dimensions))))
 
 ;; {TODO} this is pretty wasteful but will do for now
-(defun attachment-viewport (attachment)
-  (make-viewport (gpu-array-dimensions (%attachment-gpu-array attachment))
+(defun attachment-viewport (fbo attachment-name)
+
+  (make-viewport (gpu-array-dimensions (attachment fbo attachment-name))
                  (v! 0 0)))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -129,8 +132,7 @@
         (cffi:foreign-bitfield-value
          '%gl::ClearBufferMask
          `(:color-buffer-bit
-           ,@(and (%attachment-gpu-array (%fbo-attachment-depth fbo))
-                  '(:depth-buffer-bit))
+           ,@(and (%fbo-depth-array fbo) '(:depth-buffer-bit))
            ;; ,@(list (and (attachment-gpu-array (%fbo-attachment-stencil object))
            ;;              :stencil-buffer-bit))
            )))
@@ -139,9 +141,9 @@
 (defun update-draw-buffer-map (fbo)
   (let ((ptr (%fbo-draw-buffer-map fbo))
         (default-fbo (%fbo-is-default fbo)))
-    (loop :for i :from 0 :for attachment :across (%fbo-attachment-color fbo) :do
+    (loop :for i :from 0 :for arr :across (%fbo-color-arrays fbo) :do
        (setf (mem-aref ptr 'cl-opengl-bindings:enum i)
-             (if (%attachment-gpu-array attachment)
+             (if arr
                  (if default-fbo
                      (default-fbo-attachment-enum i)
                      (color-attachment-enum i))
@@ -155,49 +157,50 @@
   (defun default-fbo-attachment-enum (attachment-num)
     (aref vals attachment-num)))
 
-;;--------------------------------------------------------------
-;; Macro to write the helper func and compiler macro
+;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; NOTE: The following seperation is to allow shadowing in compose-pipelines
+(defun attachment (fbo attachment-name)
+  (case attachment-name
+    (:d (%fbo-depth-array fbo))
+    ;;(:s (is-stencil :stencil-attachment))
+    ;;(:ds (is-stencil :depth-stencil-attachment))
+    (otherwise (aref (%fbo-color-arrays fbo) attachment-name))))
 
-(defun replace-gpu-array-in-attachment (gpu-array attachment)
-  (setf (%attachment-gpu-array attachment) gpu-array))
+(defun %fbo-owns (fbo attachment-name)
+  (case attachment-name
+    (:d (%fbo-owns-depth-array fbo))
+    ;;(:s (is-stencil :stencil-attachment))
+    ;;(:ds (is-stencil :depth-stencil-attachment))
+    (otherwise (aref (%fbo-owns-color-arrays fbo) attachment-name))))
 
-(defun attachment-gpu-array (attachment)
-  (%attachment-gpu-array attachment))
+(defun (setf %fbo-owns) (value fbo attachment-name)
+  (case attachment-name
+    (:d (setf (%fbo-owns-depth-array fbo) value))
+    ;;(:s (is-stencil :stencil-attachment))
+    ;;(:ds (is-stencil :depth-stencil-attachment))
+    (otherwise (setf (aref (%fbo-owns-color-arrays fbo) attachment-name)
+		     t))))
 
-(defun (setf attachment-gpu-array) (value attachment)
-  (let* ((fbo (%attachment-fbo attachment))
-         (color-index (or (find attachment (%fbo-attachment-color fbo)) -1))
-         (is-depth (eq attachment (%fbo-attachment-depth fbo)))
-         ;;{TODO} add is-stencil here
-         (attachment-enum (cond (is-depth :depth-attachment)
-                                ;;(is-stencil :stencil-attachment)
-                                (t (color-attachment-enum color-index)))))
-
-    (when (%fbo-is-default fbo) (error "Cannot modify attachments of default-framebuffer"))
-    (unless (or (>= color-index 0) is-depth)
-      (error "FBO Internal state mismatch - Attachment thinks it belongs to an fbo, the fbo disagrees."))
+(defun (setf attachment) (value fbo attachment-name)
+  (when (%fbo-is-default fbo)
+    (error "Cannot modify attachments of default-framebuffer"))
+  (let* ((color-index attachment-name)
+	 (attachment-enum
+	  (case attachment-name
+	    (:d :depth-attachment)
+	    ;;(:s (is-stencil :stencil-attachment))
+	    (otherwise (color-attachment-enum attachment-name)))))
     ;; update gl
     (fbo-detach fbo attachment-enum)
     (fbo-attach fbo value attachment-enum)
     ;; update structs
-    (setf (%attachment-gpu-array attachment) value)
-    (%update-fbo-state (%attachment-fbo attachment))
+    (if (eq attachment-enum :d)
+	(setf (%fbo-depth-array fbo) value)
+	(setf (aref (%fbo-color-arrays fbo) color-index) value))
+    (%update-fbo-state fbo)
     ;; and we're done
-    attachment))
+    value))
 
-
-
-;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; NOTE: The following seperation is to allow shadowing in compose-pipelines
-(defun attachment (fbo attachment-name)
-  (%attachment fbo attachment-name))
-
-(defun %attachment (fbo attachment-name)
-  (case attachment-name
-    (:d (%fbo-attachment-depth fbo))
-    ;; (:s (%fbo-attachment-depth fbo))
-    ;; (:ds (%fbo-attachment-depth fbo))
-    (otherwise (aref (%fbo-attachment-color fbo) attachment-name))))
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (let ((max-draw-buffers -1))
@@ -391,12 +394,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;; {TODO} Ensure image formats are color-renderable for color attachments
 ;;
-(defun fbo-attach (fbo tex-array attachment &optional (target :framebuffer))
+(defun fbo-attach (fbo tex-array attachment-name &optional (target :framebuffer))
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target can be '(:framebuffer :read-framebuffer :draw-framebuffer)
   (dbind (tex-array . owned-by-fbo) (listify tex-array)
-    (setf (%attachment-owns-gpu-array (attachment fbo attachment)) owned-by-fbo)
-    (let ((attach-enum (get-gl-attachment-keyword attachment)))
+    (setf (%fbo-owns fbo attachment-name) owned-by-fbo)
+    (let ((attach-enum (get-gl-attachment-keyword attachment-name)))
       (with-fbo-bound (fbo :target target :with-viewport nil :draw-buffers nil)
 	;; FBOs have the following attachment points:
 	;; GL_COLOR_ATTACHMENTi: These are an implementation-dependent number of
@@ -424,22 +427,22 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	;; When attaching a non-cubemap, textarget should be the proper
 	;; texture-type: GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE, etc.
 	(cepl.textures::with-gpu-array-t tex-array
-	  (unless (attachment-compatible attachment image-format)
+	  (unless (attachment-compatible attachment-name image-format)
 	    (error "attachment is not compatible with this array"))
 	  (let ((tex-id (texture-id texture)))
 	    (case (gpu-array-t-texture-type tex-array)
 	      ;; A 1D texture contains 2D images that have the vertical height of 1.
 	      ;; Each individual image can be uniquely identified by a mipmap level.
-	      (:texture-1d (progn
-			     (setf (attachment-gpu-array fbo attachment) tex-array)
-			     (gl:framebuffer-texture-1d target attach-enum :texture-1d
-							tex-id level-num)))
+	      (:texture-1d
+	       (setf (attachment fbo attachment-name) tex-array)
+	       (gl:framebuffer-texture-1d target attach-enum :texture-1d
+					  tex-id level-num))
 	      ;; A 2D texture contains 2D images. Each individual image can be
 	      ;; uniquely identified by a mipmap level.
-	      (:texture-2d (progn
-			     (setf (attachment-gpu-array fbo attachment) tex-array)
-			     (gl:framebuffer-texture-2d target attach-enum :texture-2d
-							tex-id level-num)))
+	      (:texture-2d
+	       (setf (attachment fbo attachment-name) tex-array)
+	       (gl:framebuffer-texture-2d target attach-enum :texture-2d
+					  tex-id level-num))
 	      ;; Each mipmap level of a 3D texture is considered a set of 2D images,
 	      ;; with the number of these being the extent of the Z coordinate.
 	      ;; Each integer value for the depth of a 3D texture mipmap level is a
@@ -447,10 +450,10 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	      ;; layer and a mipmap level.
 	      ;; A single mipmap level of a 3D texture is a layered image, where the
 	      ;; number of layers is the depth of that particular mipmap level.
-	      (:texture-3d (progn
-			     (setf (attachment-gpu-array fbo attachment) tex-array)
-			     (%gl:framebuffer-texture-layer target attach-enum tex-id
-							    level-num layer-num)))
+	      (:texture-3d
+	       (setf (attachment fbo attachment-name) tex-array)
+	       (%gl:framebuffer-texture-layer target attach-enum tex-id
+					      level-num layer-num))
 	      ;; Each mipmap level of a 1D Array Textures contains a number of images,
 	      ;; equal to the count images in the array. While these images are
 	      ;; technically one-dimensional, they are promoted to 2D status for FBO
@@ -459,10 +462,10 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	      ;; (the array index) and a mipmap level.
 	      ;; A single mipmap level of a 1D Array Texture is a layered image, where
 	      ;; the number of layers is the array size.
-	      (:texture-1d-array (progn
-				   (setf (attachment-gpu-array fbo attachment) tex-array)
-				   (%gl:framebuffer-texture-layer
-				    target attach-enum tex-id level-num layer-num)))
+	      (:texture-1d-array
+	       (setf (attachment fbo attachment-name) tex-array)
+	       (%gl:framebuffer-texture-layer target attach-enum tex-id
+					      level-num layer-num))
 	      ;; 2D Array textures are much like 3D textures, except instead of the
 	      ;; number of Z slices, it is the array count. Each 2D image in an array
 	      ;; texture can be uniquely identified by a layer (the array index) and a
@@ -470,17 +473,16 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	      ;; going down the mipmap hierarchy.
 	      ;; A single mipmap level of a 2D Array Texture is a layered image, where
 	      ;; the number of layers is the array size.
-	      (:texture-2d-array (progn
-				   (setf (attachment-gpu-array fbo attachment) tex-array)
-				   (%gl:framebuffer-texture-layer
-				    target attach-enum tex-id level-num layer-num)))
+	      (:texture-2d-array
+	       (setf (attachment fbo attachment-name) tex-array)
+	       (%gl:framebuffer-texture-layer target attach-enum tex-id
+					      level-num layer-num))
 	      ;; A Rectangle Texture has a single 2D image, and thus is identified by
 	      ;; mipmap level 0.
 	      (:texture-rectangle
-	       (progn
-		 (setf (attachment-gpu-array fbo attachment) tex-array)
-		 (gl:framebuffer-texture-2d target attach-enum :texture-2d
-					    tex-id 0)))
+	       (setf (attachment fbo attachment-name) tex-array)
+	       (gl:framebuffer-texture-2d target attach-enum :texture-2d
+					  tex-id 0))
 	      ;; When attaching a cubemap, you must use the Texture2D function, and
 	      ;; the textarget must be one of the 6 targets for cubemap binding.
 	      ;; Cubemaps contain 6 targets, each of which is a 2D image. Thus, each
@@ -497,11 +499,10 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 	      ;; 4 	GL_TEXTURE_CUBE_MAP_POSITIVE_Z
 	      ;; 5 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
 	      (:texture-cube-map
-	       (progn
-		 (setf (attachment-gpu-array fbo attachment) tex-array)
-		 (gl:framebuffer-texture-2d
-		  target attach-enum '&&&CUBEMAP-TARGET&&&
-		  tex-id level-num)))
+	       (setf (attachment fbo attachment-name) tex-array)
+	       (gl:framebuffer-texture-2d target attach-enum
+					  '&&&CUBEMAP-TARGET&&&
+					  tex-id level-num))
 	      ;; Buffer Textures work like 1D texture, only they have a single image,
 	      ;; identified by mipmap level 0.
 	      (:texture-buffer (error "attaching to buffer textures has not been implmented yet"))
@@ -589,8 +590,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
           ((char= char #\d) :depth-component24)
           (t (error "No default texture format for attachment: ~s" attachment)))))
 
-(defun attachment-compatible (attachment image-format)
-  (case attachment
+(defun attachment-compatible (attachment-name image-format)
+  (case attachment-name
     ((:d :depth-attachment) (depth-formatp image-format))
     ((:s :stencil-attachment) (stencil-formatp image-format))
     ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
@@ -606,9 +607,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (%gl:framebuffer-texture-layer :draw-framebuffer attachment 0 0 0))
 
 (defun clear (&optional (target %current-fbo))
-  (if (typep target 'attachment)
-      (clear-attachment target)
-      (clear-fbo target)))
+  (clear-fbo target))
 
 (defun clear-fbo (fbo)
   (%gl:clear (%fbo-clear-mask fbo)))

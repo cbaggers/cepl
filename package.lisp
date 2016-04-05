@@ -212,23 +212,15 @@
 	   :fbo-p
 	   :%fbo-id
 	   :%fbo-color-arrays
+	   :%fbo-owns-color-arrays
 	   :%fbo-color-blending
 	   :%fbo-depth-array
+	   :%fbo-owns-depth-array
 	   :%fbo-depth-blending
 	   :%fbo-draw-buffer-map
 	   :%fbo-clear-mask
 	   :%fbo-is-default
 	   :%fbo-blending-params
-
-	   :%make-attachment
-	   :attachment
-	   :attachment-p
-	   :%attachment-fbo
-	   :%attachment-gpu-array
-	   :%attachment-owns-gpu-array
-	   :%attachment-blending-enabled
-	   :%attachment-override-blending
-	   :%attachment-blending-params
 
 	   :%make-ubo
 	   :ubo

@@ -163,7 +163,10 @@
   ;;
   (color-arrays (error "") :type (array (or null gpu-array-t) *))
   (color-blending (error "") :type (array (or null blending-params) *))
+  (owns-color-arrays (make-array 0 :element-type 'boolean :initial-element nil)
+		     :type (array boolean *))
   (depth-array nil :type (or null gpu-array-t))
+  (owns-depth-array nil :type boolean)
   (depth-blending nil :type (or null blending-params))
   ;;
   (draw-buffer-map (error ""))
@@ -179,14 +182,12 @@
 					 :destination-alpha :zero)
 		   :type blending-params))
 
-(defvar +null-attachement+
-  (%make-attachment))
-
 (defun make-uninitialized-fbo ()
-  (%%make-fbo :attachment-color (make-array 0 :element-type 'attachment
-					    :initial-element +null-attachement+)
-	      :draw-buffer-map +null-attachement+
-	      :clear-mask -13))
+  (%%make-fbo
+   :color-arrays (make-array 0 :element-type '(or null gpu-array-t)
+			     :initial-element +null-attachement+)
+   :draw-buffer-map nil
+   :clear-mask -13))
 
 ;;------------------------------------------------------------
 
