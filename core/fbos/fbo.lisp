@@ -6,39 +6,6 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun %make-fbo (&key (id -1)
-		    (attachment-color
-		     (make-array (max-draw-buffers *gl-context*)
-				 :element-type 'attachment
-				 :initial-contents
-				 (loop :for i
-				    :below (max-draw-buffers *gl-context*)
-				    :collect (%make-attachment))))
-		    (draw-buffer-map
-		     (foreign-alloc 'cl-opengl-bindings:enum :count
-				    (max-draw-buffers *gl-context*)
-				    :initial-element :none))
-		    (attachment-depth (%make-attachment))
-		    (clear-mask (cffi:foreign-bitfield-value
-				 '%gl::ClearBufferMask '(:color-buffer-bit)))
-		    (is-default nil)
-		    (blending-params (make-blending-params
-				      :mode-rgb :func-add
-				      :mode-alpha :func-add
-				      :source-rgb :one
-				      :source-alpha :one
-				      :destination-rgb :zero
-				      :destination-alpha :zero)))
-  (%init-fbo
-   (make-uninitialized-fbo)
-   :id id
-   :attachment-color attachment-color
-   :draw-buffer-map draw-buffer-map
-   :attachment-depth attachment-depth
-   :clear-mask clear-mask
-   :is-default is-default
-   :blending-params blending-params))
-
 (defun %init-fbo (fbo-obj &key (id -1)
 		    (attachment-color
 		     (make-array (max-draw-buffers *gl-context*)
@@ -99,7 +66,8 @@
 (defun %make-default-framebuffer (dimensions &optional (double-buffering t) (depth t))
   (let ((result
          (%update-fbo-state
-          (%make-fbo
+          (%init-fbo
+	   (make-uninitialized-fbo)
            :id 0
            :is-default t
            :attachment-color
@@ -146,14 +114,7 @@
 
 (defun %update-fbo-state (fbo)
   (update-draw-buffer-map fbo)
-  (update-clear-mask fbo)
-  (update-parent-for-all-attachments fbo))
-
-(defun update-parent-for-all-attachments (fbo)
-  (loop :for a :across (%fbo-attachment-color fbo) :do
-     (setf (%attachment-fbo a) fbo))
-  (setf (%attachment-fbo (%fbo-attachment-depth fbo)) fbo)
-  fbo)
+  (update-clear-mask fbo))
 
 (defun update-clear-mask (fbo)
   (setf (%fbo-clear-mask fbo)
@@ -189,16 +150,8 @@
 ;;--------------------------------------------------------------
 ;; Macro to write the helper func and compiler macro
 
-(defun replace-attachment-array (gpu-array attachment)
-  ;; {TODO} ^^ seems like a bad name
-  (%make-attachment
-   :gpu-array gpu-array
-   :owns-gpu-array (%attachment-owns-gpu-array attachment)
-   :blending-enabled (%attachment-blending-enabled attachment)
-   :override-blending (%attachment-override-blending attachment)
-   :blending-params (cepl.blending:copy-blending-params
-		     (%attachment-blending-params
-		      attachment))))
+(defun replace-gpu-array-in-attachment (gpu-array attachment)
+  (setf (%attachment-gpu-array attachment) gpu-array))
 
 (defun attachment-gpu-array (attachment)
   (%attachment-gpu-array attachment))
@@ -245,14 +198,11 @@
   (typecase value
     (gpu-array-t
      (if (eq :d attachment-name)
-         (setf (%fbo-attachment-depth fbo)
-               (replace-attachment-array
-                value
-                (%fbo-attachment-depth fbo)))
+	 (setf (%attachment-gpu-array (%fbo-attachment-depth fbo)) value)
          (setf (aref (%fbo-attachment-color fbo) attachment-name)
-               (replace-attachment-array
-                value
-                (aref (%fbo-attachment-color fbo) attachment-name)))))
+	       (setf (%attachment-gpu-array
+		      (aref (%fbo-attachment-color fbo) attachment-name))
+		     value))))
     (attachment
      (if (eq :d attachment-name)
          (setf (%fbo-attachment-depth fbo) value)
@@ -334,7 +284,7 @@
 (defun make-fbo-from-id (gl-object &key color-attachments depth-attachment)
   "Will create an fbo and optionally attach the arguments using
    #'fbo-gen-attach"
-  (let ((fbo (%make-fbo :id gl-object)))
+  (let ((fbo (%init-fbo (make-uninitialized-fbo) :id gl-object)))
     (loop :for c :in color-attachments :for i :from 0 :do
        (when c (setf (attachment fbo i) c)))
     (when depth-attachment
@@ -674,6 +624,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   ;; The texture argument is the texture object name you want to attach from.
   ;; If you pass zero as texture, this has the effect of clearing the attachment
   ;; for this attachment, regardless of what kind of image was attached there.
+  ;;
+  ;; the attachment argument is the attachment-name
   (setf (attachment fbo attachment) nil)
   (%gl:framebuffer-texture-layer :draw-framebuffer attachment 0 0 0))
 
