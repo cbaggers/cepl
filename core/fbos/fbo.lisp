@@ -13,18 +13,18 @@
 
 (defun ensure-fbo-array-size (arr size)
   (if (< (length arr) size)
-      (adjust-array arr size :fill-pointer t)
+      (adjust-array arr size :fill-pointer t :initial-element nil)
       arr))
 
 (defun add-elem-to-fbo-array (elem arr pos)
-  (ensure-fbo-array-size arr pos)
+  (ensure-fbo-array-size arr (1+ pos))
   (setf (aref arr pos) elem))
 
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun %init-fbo (fbo-obj
-		  &key (id -1) color-arrays color-blending
+		  &key id color-arrays color-blending
 		    depth-array depth-blending
 		    draw-buffer-map  clear-mask
 		    is-default blending-params)
@@ -158,13 +158,25 @@
     (aref vals attachment-num)))
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; NOTE: The following seperation is to allow shadowing in compose-pipelines
-(defun attachment (fbo attachment-name)
+
+(defun %attachment (fbo attachment-name)
   (case attachment-name
     (:d (%fbo-depth-array fbo))
     ;;(:s (is-stencil :stencil-attachment))
     ;;(:ds (is-stencil :depth-stencil-attachment))
     (otherwise (aref (%fbo-color-arrays fbo) attachment-name))))
+
+(defun (setf %attachment) (value fbo attachment-name)
+  (case attachment-name
+    (:d (setf (%fbo-depth-array fbo) value))
+    ;;(:s (is-stencil :stencil-attachment))
+    ;;(:ds (is-stencil :depth-stencil-attachment))
+    (otherwise
+     (add-elem-to-fbo-array value (%fbo-color-arrays fbo) attachment-name))))
+
+;; NOTE: The following seperation is to allow shadowing in compose-pipelines
+(defun attachment (fbo attachment-name)
+  (%attachment fbo attachment-name))
 
 (defun %fbo-owns (fbo attachment-name)
   (case attachment-name
@@ -178,28 +190,21 @@
     (:d (setf (%fbo-owns-depth-array fbo) value))
     ;;(:s (is-stencil :stencil-attachment))
     ;;(:ds (is-stencil :depth-stencil-attachment))
-    (otherwise (setf (aref (%fbo-owns-color-arrays fbo) attachment-name)
-		     t))))
+    (otherwise (add-elem-to-fbo-array value (%fbo-owns-color-arrays fbo)
+				      attachment-name))))
 
 (defun (setf attachment) (value fbo attachment-name)
   (when (%fbo-is-default fbo)
     (error "Cannot modify attachments of default-framebuffer"))
-  (let* ((color-index attachment-name)
-	 (attachment-enum
-	  (case attachment-name
-	    (:d :depth-attachment)
-	    ;;(:s (is-stencil :stencil-attachment))
-	    (otherwise (color-attachment-enum attachment-name)))))
-    ;; update gl
-    (fbo-detach fbo attachment-enum)
-    (fbo-attach fbo value attachment-enum)
-    ;; update structs
-    (if (eq attachment-enum :d)
-	(setf (%fbo-depth-array fbo) value)
-	(setf (aref (%fbo-color-arrays fbo) color-index) value))
-    (%update-fbo-state fbo)
-    ;; and we're done
-    value))
+  ;; update gl
+  (fbo-detach fbo attachment-name)
+  (fbo-attach fbo value attachment-name)
+  ;; update structs
+  (setf (%attachment fbo attachment-name) value)
+  ;;
+  (%update-fbo-state fbo)
+  ;;
+  value)
 
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -597,14 +602,19 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
     (otherwise (color-renderable-formatp image-format))))
 
-(defun fbo-detach (fbo attachment)
+(defun fbo-detach (fbo attachment-name)
   ;; The texture argument is the texture object name you want to attach from.
   ;; If you pass zero as texture, this has the effect of clearing the attachment
   ;; for this attachment, regardless of what kind of image was attached there.
   ;;
   ;; the attachment argument is the attachment-name
-  (setf (attachment fbo attachment) nil)
-  (%gl:framebuffer-texture-layer :draw-framebuffer attachment 0 0 0))
+  (setf (%attachment fbo attachment-name) nil)
+  (let ((enum
+	  (case attachment-name
+	    (:d :depth-attachment)
+	    ;;(:s (is-stencil :stencil-attachment))
+	    (otherwise (color-attachment-enum attachment-name)))))
+    (%gl:framebuffer-texture-layer :draw-framebuffer enum 0 0 0)))
 
 (defun clear (&optional (target %current-fbo))
   (clear-fbo target))

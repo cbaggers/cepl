@@ -16,3 +16,6 @@
 (defmethod initialized-p ((object gpu-array-t))
   (not (eq (gpu-array-t-texture-type object)
 	   :uninitialized)))
+
+(defmethod initialized-p ((object fbo))
+  (not (= (%fbo-clear-mask object) -13)))
