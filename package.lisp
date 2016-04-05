@@ -211,9 +211,11 @@
 	   :fbo
 	   :fbo-p
 	   :%fbo-id
-	   :%fbo-attachment-color
+	   :%fbo-color-arrays
+	   :%fbo-color-blending
+	   :%fbo-depth-array
+	   :%fbo-depth-blending
 	   :%fbo-draw-buffer-map
-	   :%fbo-attachment-depth
 	   :%fbo-clear-mask
 	   :%fbo-is-default
 	   :%fbo-blending-params

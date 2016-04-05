@@ -160,10 +160,13 @@
 (defstruct (fbo (:constructor %%make-fbo)
                 (:conc-name %fbo-))
   (id -1 :type fixnum)
-  (attachment-color (error "")
-                    :type (array attachment *))
+  ;;
+  (color-arrays (error "") :type (array (or null gpu-array-t) *))
+  (color-blending (error "") :type (array (or null blending-params) *))
+  (depth-array nil :type (or null gpu-array-t))
+  (depth-blending nil :type (or null blending-params))
+  ;;
   (draw-buffer-map (error ""))
-  (attachment-depth (%make-attachment) :type attachment)
   (clear-mask (cffi:foreign-bitfield-value
                '%gl::ClearBufferMask '(:color-buffer-bit))
               :type fixnum)
@@ -175,21 +178,6 @@
 					 :destination-rgb :zero
 					 :destination-alpha :zero)
 		   :type blending-params))
-
-(defstruct (attachment (:constructor %make-attachment)
-                       (:conc-name %attachment-))
-  (fbo nil :type (or null fbo))
-  (gpu-array nil :type (or null gpu-array-t))
-  (owns-gpu-array nil :type boolean)
-  (blending-enabled nil :type boolean)
-  (override-blending nil :type boolean)
-  (blending-params (cepl.blending:make-blending-params
-		    :mode-rgb :func-add
-		    :mode-alpha :func-add
-		    :source-rgb :one
-		    :source-alpha :one
-		    :destination-rgb :zero
-		    :destination-alpha :zero) :type blending-params))
 
 (defvar +null-attachement+
   (%make-attachment))
