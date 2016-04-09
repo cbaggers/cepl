@@ -23,14 +23,22 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun %init-fbo (fbo-obj
-                  &key id color-arrays color-blending
-                    depth-array depth-blending
-                    draw-buffer-map  clear-mask
-                    is-default blending-params)
-  ;;
+(defun post-gl-init (fbo-obj &key id draw-buffer-map clear-mask)
   (setf (%fbo-id fbo-obj) (or id (first (gl:gen-framebuffers 1))))
-  ;;
+  (setf (%fbo-clear-mask fbo-obj)
+        (or clear-mask
+            (cffi:foreign-bitfield-value
+             '%gl::ClearBufferMask '(:color-buffer-bit))))
+  (setf (%fbo-draw-buffer-map fbo-obj)
+        (or draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
+                                           (max-draw-buffers *gl-context*)
+                                           :initial-element :none)))
+  fbo-obj)
+
+(defun pre-gl-init (fbo-obj
+		    &key color-arrays color-blending
+		      depth-array depth-blending
+		      is-default blending-params)
   (setf (%fbo-color-arrays fbo-obj)
         (or color-arrays (make-fbo-array 'gpu-array-t)))
   ;;
@@ -40,16 +48,6 @@
   (setf (%fbo-depth-array fbo-obj) depth-array)
   ;;
   (setf (%fbo-depth-blending fbo-obj) depth-blending)
-  ;;
-  (setf (%fbo-draw-buffer-map fbo-obj)
-        (or draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
-                                           (max-draw-buffers *gl-context*)
-                                           :initial-element :none)))
-  ;;
-  (setf (%fbo-clear-mask fbo-obj)
-        (or clear-mask
-            (cffi:foreign-bitfield-value
-             '%gl::ClearBufferMask '(:color-buffer-bit))))
   ;;
   (setf (%fbo-is-default fbo-obj) is-default)
   ;;
@@ -88,17 +86,18 @@
               :image-format :gl-internal)))
     (let ((result
            (%update-fbo-state
-            (%init-fbo
-             (make-uninitialized-fbo)
-             :id 0
-             :is-default t
-             :color-arrays
-             (make-array (if double-buffering 2 1)
-                         :element-type 'gpu-array-t :initial-contents
-                         (cons (gen-array dimensions)
-                               (when double-buffering
-                                 (list (gen-array dimensions)))))
-             :depth-array (when depth (gen-array dimensions))))))
+	    (post-gl-init
+	     (pre-gl-init
+	      (make-uninitialized-fbo)
+	      :is-default t
+	      :color-arrays
+	      (make-array (if double-buffering 2 1)
+			  :element-type 'gpu-array-t :initial-contents
+			  (cons (gen-array dimensions)
+				(when double-buffering
+				  (list (gen-array dimensions)))))
+	      :depth-array (when depth (gen-array dimensions)))
+	     :id 0))))
       (update-clear-mask result)
       (setf %default-framebuffer result
             %current-fbo result)
@@ -243,16 +242,18 @@
 (defun (setf attachment) (value fbo attachment-name)
   (when (%fbo-is-default fbo)
     (error "Cannot modify attachments of default-framebuffer"))
-  (let ((current-value (%attachment fbo attachment-name)))
+  (let ((current-value (%attachment fbo attachment-name))
+	(initialized (initialized-p fbo)))
     ;; update the fbo
     (setf (%attachment fbo attachment-name) value)
-    ;; update gl
-    (when current-value
-      (fbo-detach fbo attachment-name))
-    (when value
-      (fbo-attach fbo value attachment-name)))
-  ;; update cached gl details
-  (%update-fbo-state fbo)
+    (when initialized
+      ;; update gl
+      (when current-value
+	(fbo-detach fbo attachment-name))
+      (when value
+	(fbo-attach fbo value attachment-name))
+      ;; update cached gl details
+      (%update-fbo-state fbo)))
   ;;
   value)
 
@@ -261,27 +262,32 @@
 (let ((max-draw-buffers -1))
   (defun get-gl-attachment-keyword (x)
     (unless (> max-draw-buffers 0)
-      (setf max-draw-buffers (max-draw-buffers *gl-context*)))
+      (when cepl.context:*gl-context*
+	(setf max-draw-buffers (max-draw-buffers *gl-context*))))
     (case x
       (:c (color-attachment-enum 0))
       (:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
       (:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
       (:ds #.(cffi:foreign-enum-value
-              '%gl:enum :depth-stencil-attachment))
+	      '%gl:enum :depth-stencil-attachment))
       (otherwise
        (if (<= x max-draw-buffers)
-           (color-attachment-enum x)
-           (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
-                  x max-draw-buffers))))))
+	   (color-attachment-enum x)
+	   (if cepl.context:*gl-context*
+	       (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
+		      x max-draw-buffers)
+	       (color-attachment-enum x)))))))
 
 (define-compiler-macro get-gl-attachment-keyword (&whole whole x)
-  (case x
-    (:c (color-attachment-enum 0))
-    (:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
-    (:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
-    (:ds #.(cffi:foreign-enum-value
-            '%gl:enum :depth-stencil-attachment))
-    (otherwise whole)))
+  (if (numberp x)
+      (color-attachment-enum x)
+      (case x
+	(:c (color-attachment-enum 0))
+	(:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
+	(:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
+	(:ds #.(cffi:foreign-enum-value
+		'%gl:enum :depth-stencil-attachment))
+	(otherwise whole))))
 
 (defun binding-shorthand (x)
   (when (symbolp x)
@@ -328,17 +334,25 @@
 ;;--------------------------------------------------------------
 
 (defun make-fbo (&rest fuzzy-attach-args)
-  (cepl.memory::if-context
-   (make-fbo-now %pre% fuzzy-attach-args)
-   (make-uninitialized-fbo)
-   (remove-if-not #'holds-gl-object-ref-p
-                  (cepl-utils:flatten fuzzy-attach-args))))
 
-(defun make-fbo-now (fbo-obj fuzzy-attach-args)
-  (%init-fbo fbo-obj)
-  (if fuzzy-attach-args
-      (apply #'fbo-gen-attach fbo-obj fuzzy-attach-args)
-      (error "CEPL: FBOs must have at least one attachment"))
+  (let ((fbo-obj (pre-gl-init (make-uninitialized-fbo))))
+    (if fuzzy-attach-args
+	(apply #'fbo-gen-attach fbo-obj fuzzy-attach-args)
+	(error "CEPL: FBOs must have at least one attachment"))
+    (cepl.memory::if-context
+     (make-fbo-now %pre%)
+     fbo-obj
+     (remove-if-not #'holds-gl-object-ref-p
+		    (cepl-utils:flatten fuzzy-attach-args)))))
+
+(defun make-fbo-now (fbo-obj)
+  (post-gl-init fbo-obj)
+  (loop :for a :across (%fbo-color-arrays fbo-obj)
+     :for i :from 0 :do
+     (when a (setf (attachment fbo-obj i) a)))
+  (when (attachment fbo-obj :d)
+    (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
+  (%update-fbo-state fbo-obj)
   (check-framebuffer-status fbo-obj)
   fbo-obj)
 
