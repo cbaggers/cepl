@@ -9,7 +9,7 @@
 (let ((available-extensions nil))
   (defun has-feature (x)
     (unless available-extensions
-      (let* ((exts (if (> (gl:major-version) 3)
+      (let* ((exts (if (>= (gl:major-version) 3)
                        (loop :for i :below (gl:get-integer :num-extensions)
                           :collect (%gl:get-string-i :extensions i))
                        ;; OpenGL version < 3
@@ -23,7 +23,9 @@
     (not (null (find x available-extensions :test #'equal)))))
 
 (defun ensure-cepl-compatible-setup ()
-  (unless (>= (gl:major-version) 3)
+  (unless (or (> (gl:major-version) 3)
+	      (and (= (gl:major-version) 3)
+		   (>= (gl:minor-version) 1)))
     (error "Cepl requires OpenGL 3.1 or higher. Found: ~a.~a"
            (gl:major-version) (gl:minor-version))))
 

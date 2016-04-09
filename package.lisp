@@ -643,16 +643,7 @@
 	   :generate-mipmaps
 	   :with-texture-bound
 	   :texref
-	   :*immutable-available*
-
-	   :lod-bias
-	   :min-lod
-	   :max-lod
-	   :magnify-filter
-	   :minify-filter
-	   :set-minify-filter
-	   :wrap
-	   :compare))
+	   :*immutable-available*))
 
 (defpackage :cepl.gpu-arrays.texture-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -859,6 +850,7 @@
 		:cepl.c-arrays
 		:cepl.gpu-buffers
 		:cepl.gpu-arrays.buffer-backed
+		:cepl.gpu-arrays.texture-backed
 		:cepl.gpu-arrays
 		:cepl.streams
 		:cepl.ubos

@@ -23,10 +23,10 @@
     (error "Cannot get the cube-face from a texture that wasnt made with :cubes-p t:~%~a" texture))
   (if (eq (texture-type texture) :texture-buffer)
       (if (> (+ mipmap-level layer cube-face) 0)
-          (error "Texture index out of range")
-          (buffer-texture-backing-array texture))
+	  (error "Texture index out of range")
+	  (buffer-texture-backing-array texture))
       (if (valid-index-p texture mipmap-level layer cube-face)
-          (%make-gpu-array-t
+	  (%make-gpu-array-t
 	   :texture texture
 	   :texture-type (texture-type texture)
 	   :level-num mipmap-level
@@ -35,14 +35,15 @@
 	   :dimensions (dimensions-at-mipmap-level
 			texture mipmap-level)
 	   :image-format (texture-image-format texture))
-          (error "Texture index out of range"))))
+	  (error "Texture index out of range"))))
 
 (defun valid-index-p (texture mipmap-level layer cube-face)
-  (and (< mipmap-level (texture-mipmap-levels texture))
-       (< layer (texture-layer-count texture))
-       (if (texture-cubes-p texture)
-	   (<= cube-face 6)
-	   (= 0 cube-face))))
+  (or (= 0 mipmap-level layer cube-face)
+      (and (< mipmap-level (texture-mipmap-levels texture))
+	   (< layer (texture-layer-count texture))
+	   (if (texture-cubes-p texture)
+	       (<= cube-face 6)
+	       (= 0 cube-face)))))
 
 ;;------------------------------------------------------------
 
@@ -57,7 +58,7 @@
   (when (eq target :texture-buffer)
     (error "You should not have reached this function as buffer backed textures have buffer-gpu-arrays as their backing stores"))
   (when (and (find image-format '(:depth-component :depth-component16
-                                     :depth-component24 :depth-component32f))
+				  :depth-component24 :depth-component32f))
              (not (find target '(:texture_2d :proxy_texture_2d
                                  :texture_rectangle
                                  :proxy_texture_rectangle))))
@@ -318,15 +319,15 @@
     ;; need to ensure nothing conflicts with declaration
     ((image-formatp element-type)
      (%calc-image-format-with-declared-format element-type
-                                                 element-type
-                                                 initial-contents))
+					      element-type
+					      initial-contents))
     ;; need to ensure nothing conflicts with declaration
     ((pixel-format-p element-type)
      (%calc-image-format-with-pixel-format element-type
-                                              initial-contents))
+					   initial-contents))
     ;;
     (t (%calc-image-format-with-lisp-type element-type
-                                             initial-contents))))
+					  initial-contents))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
@@ -606,7 +607,7 @@
   (destructuring-bind (pformat ptype)
       (cepl.pixel-formats::compile-pixel-format (lisp-type->pixel-format object))
     (upload-c-array-to-gpu-array-t destination object
-                                  pformat ptype)))
+				   pformat ptype)))
 
 (defmethod pull-g ((object texture))
   (pull-g (texref object)))

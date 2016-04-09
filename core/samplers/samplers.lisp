@@ -173,7 +173,7 @@
 (defun %get-id ()
   (if *samplers-available*
       (first (gl::gen-samplers 1))
-      (incf *fake-sampler-id*)))
+      (decf *fake-sampler-id*)))
 
 (defun wrap-eq (wrap-a wrap-b)
   (loop :for a :across wrap-a
@@ -221,8 +221,8 @@
     (%set-minify-filter sampler-obj minify-filter)
     (%set-magnify-filter sampler-obj magnify-filter)
     (%set-wrap sampler-obj (if (keywordp wrap)
-			       (vector wrap wrap wrap)
-			       wrap))
+    			       (vector wrap wrap wrap)
+    			       wrap))
     (%set-compare sampler-obj compare))
   sampler-obj)
 

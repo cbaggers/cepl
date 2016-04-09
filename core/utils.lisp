@@ -478,7 +478,8 @@ source: ~s~%list-to-match: ~s" list list-to-match)
     (loop :for c :across string
        :if (char= c delimiter) :do (push nil result)
        :else :do (push c (first result)))
-    (mapcar (lambda (x) (concatenate 'string x))
+    (mapcar (lambda (x)
+	      (concatenate 'string (reverse x)))
 	    (reverse result))))
 
 (defun ni-call (package-name func-name &rest args)
