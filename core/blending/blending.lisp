@@ -127,21 +127,20 @@
     ((eq pattern t)
      ;; We cant, at compile time, tell which attachments will be used so loop
      ;; through the attachment list and set everything up
-     `(let ((attachments (%fbo-attachment-color ,fbo))
-            (per-attachment-blendingp (per-attachment-blending-available-p))
+     `(let ((per-attachment-blendingp (per-attachment-blending-available-p))
             (%current-blend-params (%fbo-blending-params ,fbo)))
         ;; if we dont support per attachemnt blend params then we use the
         ;; params from the fbo
         (when (not per-attachment-blendingp) (%blend-fbo ,fbo))
         ;; enable all the attachment that have requested blending
-        (%loop-enabling-attachments attachments)
+        (cepl.fbos::loop-enabling-attachments ,fbo)
         ;; if we support per attachment blending then we go set their params
         (when per-attachment-blendingp
           (%loop-setting-per-attachment-blend-params ,fbo))
         ;; the important bit :)
         ,@body
         ;; go disable all the attachments that were enabled
-        (%loop-disabling-attachments attachments)))
+        (cepl.fbos::loop-disabling-attachments ,fbo)))
     ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     (t ;; We have a pattern that tells us which attachments will be drawn into
      ;;   This means we dont have to loop and search for attachments, so we
@@ -183,14 +182,6 @@
        ;; go disable all the attachments that were enabled
        ,@(loop :for a :in a-syms :for i :from 0 :collect
             `(when (blending ,a) (%gl:disable-i :blend ,i))))))
-
-(defmacro %loop-enabling-attachments (attachments)
-  `(loop :for a :across ,attachments :for i :from 0 :do
-      (when (blending a) (%gl:enable-i :blend i))))
-
-(defmacro %loop-disabling-attachments (attachments)
-  `(loop :for a :across ,attachments :for i :from 0 :do
-      (when (blending a) (%gl:disable-i :blend i))))
 
 (defun %loop-setting-per-attachment-blend-params (fbo)
   (loop :for a :across (%fbo-attachment-color fbo) :for i :from 0 :do

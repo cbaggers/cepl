@@ -212,15 +212,17 @@
 	   :fbo-p
 	   :%fbo-id
 	   :%fbo-color-arrays
-	   :%fbo-owns-color-arrays
-	   :%fbo-color-blending
 	   :%fbo-depth-array
-	   :%fbo-owns-depth-array
-	   :%fbo-depth-blending
 	   :%fbo-draw-buffer-map
 	   :%fbo-clear-mask
 	   :%fbo-is-default
 	   :%fbo-blending-params
+	   :make-att
+	   :att
+	   :att-array
+	   :att-blend
+	   :att-bparams
+	   :att-owned-p
 
 	   :%make-ubo
 	   :ubo
@@ -282,8 +284,7 @@
 	   ;;---
 	   :pull-g
            :pull1-g
-           :push-g
-	   ))
+           :push-g))
 
 (defpackage :cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -723,7 +724,7 @@
 	   :attachment-viewport
 	   :attachment-gpu-array
 	   :per-attachment-blending-available-p
-	   :attachment
+	   :attachment-tex
 	   :make-fbo-from-id
 	   :make-fbo
 	   :check-framebuffer-status
@@ -766,6 +767,7 @@
 	   :def-g->
 	   :g->
 	   :map-g
+	   :map-g-into
 	   ;; :*verbose-compiles*
 	   ;; :*warn-when-cant-test-compile*
 	   ))

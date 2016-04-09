@@ -157,22 +157,21 @@
 
 ;;------------------------------------------------------------
 
+(defstruct att
+  (array nil :type (or null gpu-array-t))
+  (blend nil :type boolean)
+  (bparams nil :type (or null blending-params))
+  (owned-p nil :type boolean))
+
 (defstruct (fbo (:constructor %%make-fbo)
                 (:conc-name %fbo-))
   (id -1 :type fixnum)
   ;;
-  (color-arrays
-   (error "attachment array must be provided when initializing an fbo")
-   :type (array (or null gpu-array-t) *))
-  (color-blending
-   (error "attachment blending must be provided when initializing an fbo")
-   :type (array (or null blending-params) *))
-  (owns-color-arrays (make-array 0 :element-type 'boolean :initial-element nil
-				 :adjustable t :fill-pointer 0)
-		     :type (array boolean *))
-  (depth-array nil :type (or null gpu-array-t))
-  (owns-depth-array nil :type boolean)
-  (depth-blending nil :type (or null blending-params))
+  (color-arrays (make-array 0 :element-type 'att
+			    :initial-element (make-att) :adjustable t
+			    :fill-pointer 0)
+   :type (array att *))
+  (depth-array (make-att) :type att)
   ;;
   (draw-buffer-map
    (error "draw-buffer array must be provided when initializing an fbo"))
@@ -190,12 +189,6 @@
 
 (defun make-uninitialized-fbo ()
   (%%make-fbo
-   :color-arrays (make-array 0 :element-type '(or null gpu-array-t)
-			     :initial-element nil :adjustable t
-			     :fill-pointer 0)
-   :color-blending (make-array 0 :element-type 'boolean
-			       :initial-element nil :adjustable t
-			       :fill-pointer 0)
    :draw-buffer-map nil
    :clear-mask -13))
 

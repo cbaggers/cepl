@@ -2,52 +2,39 @@
 
 ;; {TODO} A fragment shader can output different data to any of these by
 ;;        linking out variables to attachments with the glBindFragDataLocation
-;;        function
+;;        function, sounds kind like a multiple-value-bind.
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
 
-(defun make-fbo-array (type)
-  (make-array 0 :element-type `(or null ,type)
-              :initial-element nil :adjustable t
-              :fill-pointer 0))
+(defun fbo-color-arrays (fbo)
+  (loop :for i :across (%fbo-color-arrays fbo) :collect (att-array i)))
 
-(defun ensure-fbo-array-size (arr size)
-  (if (< (length arr) size)
-      (adjust-array arr size :fill-pointer t :initial-element nil)
-      arr))
+;;----------------------------------------------------------------------
 
-(defun add-elem-to-fbo-array (elem arr pos)
-  (ensure-fbo-array-size arr (1+ pos))
-  (setf (aref arr pos) elem))
+(defun ensure-fbo-array-size (fbo desired-size)
+  (let* ((arr (%fbo-color-arrays fbo))
+	 (len (length arr)))
+    (if (< len desired-size)
+	(progn
+	  (loop :for i :below (- desired-size len) :do
+	     (vector-push-extend (make-att) arr))
+	  arr)
+	arr)))
 
-
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-(defun post-gl-init (fbo-obj &key id draw-buffer-map clear-mask)
-  (setf (%fbo-id fbo-obj) (or id (first (gl:gen-framebuffers 1))))
-  (setf (%fbo-clear-mask fbo-obj)
-        (or clear-mask
-            (cffi:foreign-bitfield-value
-             '%gl::ClearBufferMask '(:color-buffer-bit))))
-  (setf (%fbo-draw-buffer-map fbo-obj)
-        (or draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
-                                           (max-draw-buffers *gl-context*)
-                                           :initial-element :none)))
-  fbo-obj)
+;;----------------------------------------------------------------------
 
 (defun pre-gl-init (fbo-obj
-		    &key color-arrays color-blending
-		      depth-array depth-blending
-		      is-default blending-params)
-  (setf (%fbo-color-arrays fbo-obj)
-        (or color-arrays (make-fbo-array 'gpu-array-t)))
+		    &key color-arrays depth-array is-default blending-params)
+  (when color-arrays
+    (setf (%fbo-color-arrays fbo-obj)
+	  (make-array (length color-arrays)
+		      :element-type 'att
+		      :initial-contents (mapcar (lambda (x) (make-att :array x))
+						color-arrays))))
   ;;
-  (setf (%fbo-color-blending fbo-obj)
-        (or color-blending (make-fbo-array 'blending-params)))
-  ;;
-  (setf (%fbo-depth-array fbo-obj) depth-array)
-  ;;
-  (setf (%fbo-depth-blending fbo-obj) depth-blending)
+  (when depth-array
+    (setf (%fbo-depth-array fbo-obj)
+	  (make-att :array depth-array)))
   ;;
   (setf (%fbo-is-default fbo-obj) is-default)
   ;;
@@ -62,18 +49,30 @@
   ;;
   fbo-obj)
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+(defun post-gl-init (fbo-obj &key id draw-buffer-map clear-mask)
+  (setf (%fbo-id fbo-obj) (or id (first (gl:gen-framebuffers 1))))
+  (setf (%fbo-clear-mask fbo-obj)
+        (or clear-mask
+            (cffi:foreign-bitfield-value
+             '%gl::ClearBufferMask '(:color-buffer-bit))))
+  (setf (%fbo-draw-buffer-map fbo-obj)
+        (or draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
+                                           (max-draw-buffers *gl-context*)
+                                           :initial-element :none)))
+  fbo-obj)
+
+;;----------------------------------------------------------------------
 
 (defmethod print-object ((object fbo) stream)
   (if (initialized-p object)
       (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENT ~a~]>"
               (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
-              (loop :for i :from 0 :for j :across (%fbo-color-arrays object)
+              (loop :for i :from 0 :for j :in (fbo-color-arrays object)
                  :when j :collect i)
-              (and (%fbo-depth-array object) t))
+              (when (attachment object :d) t))
       (format stream "#<FBO :UNINITIALIZED>")))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
 
 (defun %make-default-framebuffer
     (dimensions &optional (double-buffering t) (depth t))
@@ -90,12 +89,9 @@
 	     (pre-gl-init
 	      (make-uninitialized-fbo)
 	      :is-default t
-	      :color-arrays
-	      (make-array (if double-buffering 2 1)
-			  :element-type 'gpu-array-t :initial-contents
-			  (cons (gen-array dimensions)
-				(when double-buffering
-				  (list (gen-array dimensions)))))
+	      :color-arrays (cons (gen-array dimensions)
+				  (when double-buffering
+				    (list (gen-array dimensions))))
 	      :depth-array (when depth (gen-array dimensions)))
 	     :id 0))))
       (update-clear-mask result)
@@ -106,32 +102,32 @@
 
 (defun %set-default-fbo-viewport (new-dimensions)
   (let ((fbo %default-framebuffer))
-    (loop :for a :across (%fbo-color-arrays fbo) :do
+    (loop :for a :in (fbo-color-arrays fbo) :do
        (when a
-         (cepl.textures::with-gpu-array-t a
-           (setf dimensions new-dimensions))))
+	 (cepl.textures::with-gpu-array-t a
+	   (setf dimensions new-dimensions))))
     (cepl.textures::with-gpu-array-t
-        (%fbo-depth-array fbo)
+        (attachment fbo :d)
       (setf dimensions new-dimensions))))
+
 
 ;; {TODO} this is pretty wasteful but will do for now
 (defun attachment-viewport (fbo attachment-name)
-
   (make-viewport (gpu-array-dimensions (attachment fbo attachment-name))
                  (v! 0 0)))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
 
 (defun %update-fbo-state (fbo)
-  (update-draw-buffer-map fbo)
-  (update-clear-mask fbo))
+  (update-clear-mask
+   (update-draw-buffer-map fbo)))
 
 (defun update-clear-mask (fbo)
   (setf (%fbo-clear-mask fbo)
         (cffi:foreign-bitfield-value
          '%gl::ClearBufferMask
          `(:color-buffer-bit
-           ,@(and (%fbo-depth-array fbo) '(:depth-buffer-bit))
+           ,@(when (%fbo-depth-array fbo) '(:depth-buffer-bit))
            ;; ,@(list (and (attachment-gpu-array (%fbo-attachment-stencil object))
            ;;              :stencil-buffer-bit))
            )))
@@ -140,13 +136,14 @@
 (defun update-draw-buffer-map (fbo)
   (let ((ptr (%fbo-draw-buffer-map fbo))
         (default-fbo (%fbo-is-default fbo)))
-    (loop :for i :from 0 :for arr :across (%fbo-color-arrays fbo) :do
-       (setf (mem-aref ptr 'cl-opengl-bindings:enum i)
-             (if arr
-                 (if default-fbo
-                     (default-fbo-attachment-enum i)
-                     (color-attachment-enum i))
-                 :none))))
+    (loop :for i :from 0 :for att :across (%fbo-color-arrays fbo) :do
+       (let ((arr (att-array att)))
+	 (setf (mem-aref ptr 'cl-opengl-bindings:enum i)
+	       (if arr
+		   (if default-fbo
+		       (default-fbo-attachment-enum i)
+		       (color-attachment-enum i))
+		   :none)))))
   fbo)
 
 (let ((vals #(#.(cffi:foreign-enum-value '%gl:enum :back-left)
@@ -156,84 +153,86 @@
   (defun default-fbo-attachment-enum (attachment-num)
     (aref vals attachment-num)))
 
-;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
 
 (defun %fbo-owns (fbo attachment-name)
   (case attachment-name
-    (:d (%fbo-owns-depth-array fbo))
+    (:d (att-owned-p (%fbo-depth-array fbo)))
     ;;(:s (... :stencil-attachment))
     ;;(:ds (... :depth-stencil-attachment))
-    (otherwise (aref (%fbo-owns-color-arrays fbo) attachment-name))))
+    (otherwise (att-owned-p (aref (%fbo-color-arrays fbo) attachment-name)))))
 
 (defun (setf %fbo-owns) (value fbo attachment-name)
   (case attachment-name
-    (:d (setf (%fbo-owns-depth-array fbo) value))
+    (:d (setf (att-owned-p (%fbo-depth-array fbo)) value))
     ;;(:s (... :stencil-attachment))
     ;;(:ds (... :depth-stencil-attachment))
-    (otherwise (add-elem-to-fbo-array value (%fbo-owns-color-arrays fbo)
-                                      attachment-name))))
+    (otherwise
+     (let ((arr (%fbo-color-arrays fbo))
+	   (index attachment-name))
+       (ensure-fbo-array-size fbo (1+ index))
+       (setf (att-owned-p (aref arr index)) value)))))
 
-;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
 
 (defun attachment-blending (fbo attachment-name)
   (case attachment-name
-    (:d (%fbo-depth-array fbo))
+    (:d (let ((att (%fbo-depth-array fbo)))
+	  (or (att-bparams att) (att-blend att))))
     ;;(:s (... :stencil-attachment))
     ;;(:ds (... :depth-stencil-attachment))
     (otherwise
-     (let ((arr (%fbo-color-blending fbo)))
-       (if (< attachment-name (length arr))
-           (aref arr attachment-name)
+     (let ((arr (%fbo-color-arrays fbo))
+	   (index attachment-name))
+       (if (< index (length arr))
+	   (let ((att (aref arr index)))
+	     (or (att-bparams att)
+		 (att-blend att)))
            nil)))))
 
 (defun (setf attachment-blending) (value fbo attachment-name)
-  (case attachment-name
-    (:d (setf (%fbo-depth-blending fbo) value))
-    ;;(:s (... :stencil-attachment))
-    ;;(:ds (... :depth-stencil-attachment))
-    (otherwise
-     (add-elem-to-fbo-array value (%fbo-color-blending fbo) attachment-name))))
+  (let ((att (case attachment-name
+	       (:d (%fbo-depth-array fbo))
+	       ;;(:s (... :stencil-attachment))
+	       ;;(:ds (... :depth-stencil-attachment))
+	       (otherwise
+		(let ((arr (%fbo-color-arrays fbo)))
+		  (ensure-fbo-array-size fbo (1+ attachment-name))
+		  (aref arr attachment-name))))))
+    ;;
+    (if (blending-params-p value)
+	(setf (att-bparams att) value)
+	(setf (att-bparams att) nil))
+    (setf (att-blend att) (not (null value)))))
 
-(defun if-nil-blend (fbo index)
-  (let ((arr (%fbo-color-blending fbo)))
-    (if (< index (length arr))
-        (unless (aref arr index)
-          (setf (aref arr index) (make-blending-params)))
-        (add-elem-to-fbo-array (make-blending-params) arr index))))
-
-(defun nulls-color-blending (fbo index)
-  (let ((arr (%fbo-color-blending fbo)))
-    (when (< index (length arr))
-      (setf (aref arr index) nil))))
-
-;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
 
 (defun %attachment (fbo attachment-name)
   (case attachment-name
-    (:d (%fbo-depth-array fbo))
+    (:d (att-array (%fbo-depth-array fbo)))
     ;;(:s (... :stencil-attachment))
     ;;(:ds (... :depth-stencil-attachment))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo)))
        (if (< attachment-name (length arr))
-           (aref arr attachment-name)
+           (att-array (aref arr attachment-name))
            nil)))))
 
 (defun (setf %attachment) (value fbo attachment-name)
   (case attachment-name
     (:d
-     (if value
-         (unless (%fbo-depth-blending fbo)
-           (setf (%fbo-depth-blending fbo) (make-blending-params)))
-         (setf (%fbo-depth-blending fbo) nil))
-     (setf (%fbo-depth-array fbo) value))
+     (when (not value)
+       (setf (att-bparams (%fbo-depth-array fbo)) nil))
+     (setf (att-array (%fbo-depth-array fbo)) value))
     ;;(:s (... :stencil-attachment))
     ;;(:ds (... :depth-stencil-attachment))
     (otherwise
-     (if value
-         (if-nil-blend fbo attachment-name)
-         (nulls-color-blending fbo attachment-name))
-     (add-elem-to-fbo-array value (%fbo-color-arrays fbo) attachment-name))))
+     (let ((index attachment-name)
+	   (arr (%fbo-color-arrays fbo)))
+       (ensure-fbo-array-size fbo (1+ index))
+       (when (not value)
+	 (setf (att-bparams (aref arr index)) nil))
+       (setf (att-array (aref arr attachment-name)) value)))))
 
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
 (defun attachment (fbo attachment-name)
@@ -257,7 +256,12 @@
   ;;
   value)
 
-;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
+
+(defun attachment-tex (fbo attachment-name)
+  (gpu-array-t-texture (%attachment fbo attachment-name)))
+
+;;----------------------------------------------------------------------
 
 (let ((max-draw-buffers -1))
   (defun get-gl-attachment-keyword (x)
@@ -309,6 +313,7 @@
   (let ((len (if (%fbo-is-default fbo)
                  1
                  (max-draw-buffers *gl-context*))))
+    ;; {TODO}        vvv--^^^--- why use max, why not length of color-arrays?
     (%gl:draw-buffers len (%fbo-draw-buffer-map fbo))))
 
 ;;--------------------------------------------------------------
@@ -352,7 +357,7 @@
   (post-gl-init fbo-obj)
   (loop :for a :across (%fbo-color-arrays fbo-obj)
      :for i :from 0 :do
-     (when a (setf (attachment fbo-obj i) a)))
+     (when a (setf (attachment fbo-obj i) (att-array a))))
   (when (attachment fbo-obj :d)
     (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
   (%update-fbo-state fbo-obj)
@@ -390,7 +395,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                     (otherwise "An error occurred")))))
     (%unbind-fbo)))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
 
 (defun %delete-fbo (fbo)
   (gl:delete-framebuffers (listify (%fbo-id fbo))))
@@ -401,7 +406,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       (error "Cannot free the default framebuffer")
       (print "FREE FBO NOT IMPLEMENTED - LEAKING")))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;----------------------------------------------------------------------
 
 (defun %bind-fbo (fbo target)
   ;; The target parameter for this object can take one of 3 values:
@@ -689,3 +694,13 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defun clear-attachment (attachment)
   (declare (ignore attachment))
   (error "CEPL: clear-attachment is not yet implemented"))
+
+;;--------------------------------------------------------------
+
+(defun loop-enabling-attachments (fbo)
+  (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
+     (when (att-blend a) (%gl:enable-i :blend i))))
+
+(defun loop-disabling-attachments (fbo)
+  (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
+     (when (att-blend a) (%gl:disable-i :blend i))))
