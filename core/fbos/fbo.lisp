@@ -335,15 +335,18 @@
 
 (defun make-fbo (&rest fuzzy-attach-args)
 
-  (let ((fbo-obj (pre-gl-init (make-uninitialized-fbo))))
-    (if fuzzy-attach-args
-	(apply #'fbo-gen-attach fbo-obj fuzzy-attach-args)
-	(error "CEPL: FBOs must have at least one attachment"))
+  (let* ((fbo-obj (pre-gl-init (make-uninitialized-fbo)))
+	 (arrays
+	  (if fuzzy-attach-args
+	      (apply #'fbo-gen-attach fbo-obj fuzzy-attach-args)
+	      (error "CEPL: FBOs must have at least one attachment"))))
     (cepl.memory::if-context
      (make-fbo-now %pre%)
      fbo-obj
-     (remove-if-not #'holds-gl-object-ref-p
-		    (cepl-utils:flatten fuzzy-attach-args)))))
+     (append
+      (remove-if-not #'holds-gl-object-ref-p
+		     (cepl-utils:flatten fuzzy-attach-args))
+      arrays))))
 
 (defun make-fbo-now (fbo-obj)
   (post-gl-init fbo-obj)
@@ -469,7 +472,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (mapcar (lambda (texture-pair attachment-name)
             (dbind (tex-array . owned-by-fbo) texture-pair
               (setf (%fbo-owns fbo attachment-name) owned-by-fbo)
-              (setf (attachment fbo attachment-name) tex-array)))
+              (setf (attachment fbo attachment-name) tex-array)
+	      tex-array))
           (mapcar #'%gen-textures args)
           (mapcar (lambda (x) (binding-shorthand (first x)))
                   (mapcar #'listify args))))

@@ -26,16 +26,31 @@
 	  (error "Texture index out of range")
 	  (buffer-texture-backing-array texture))
       (if (valid-index-p texture mipmap-level layer cube-face)
-	  (%make-gpu-array-t
-	   :texture texture
-	   :texture-type (texture-type texture)
-	   :level-num mipmap-level
-	   :layer-num layer
-	   :face-num cube-face
-	   :dimensions (dimensions-at-mipmap-level
-			texture mipmap-level)
-	   :image-format (texture-image-format texture))
+	  (let ((result
+		 (%make-gpu-array-t
+		  :texture texture
+		  :texture-type (texture-type texture)
+		  :level-num mipmap-level
+		  :layer-num layer
+		  :face-num cube-face
+		  :dimensions (dimensions-at-mipmap-level
+			       texture mipmap-level)
+		  :image-format (texture-image-format texture))))
+
+	    (when (not cepl.context:*gl-context*)
+	      (cepl.memory::delay-initialization
+	       (lambda () (reinit-on-context result))
+	       (list texture)))
+	    result)
 	  (error "Texture index out of range"))))
+
+(defun reinit-on-context (gpu-array)
+  (let ((texture (gpu-array-t-texture gpu-array)))
+    (setf (gpu-array-t-texture-type gpu-array) (texture-type texture)
+	  (gpu-array-dimensions gpu-array) (dimensions-at-mipmap-level
+					    texture (gpu-array-t-level-num
+						     gpu-array))
+	  (gpu-array-t-image-format gpu-array) (texture-image-format texture))))
 
 (defun valid-index-p (texture mipmap-level layer cube-face)
   (or (= 0 mipmap-level layer cube-face)
