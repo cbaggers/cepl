@@ -41,8 +41,13 @@
   (%%make-texture :type nil
 		  :image-format nil))
 
-(defun make-uninitialized-texture ()
-  (%%make-texture :type :uninitialized :image-format :uninitialized))
+(defun make-uninitialized-texture (&optional buffer-backed-p)
+  (if buffer-backed-p
+      (%%make-buffer-texture
+       :type :uninitialized :image-format :uninitialized
+       :backing-array buffer-backed-p)
+      (%%make-texture
+       :type :uninitialized :image-format :uninitialized)))
 
 ;;------------------------------------------------------------
 

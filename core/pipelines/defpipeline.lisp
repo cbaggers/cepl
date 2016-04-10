@@ -162,7 +162,7 @@
 			   #'fallback-iuniform-func))))
        ,@(let ((u-lets (mapcat #'first uniform-assigners)))
 	      (loop for u in u-lets collect (cons 'setf u)))
-       (%post-init ,(car post))
+       (%post-init ,post)
        prog-id)))
 
 (defun def-dispatch-func (name init-func-name stage-names context

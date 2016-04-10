@@ -525,6 +525,7 @@
 	:named-readtables :cepl.errors :cepl.internals :cepl.image-formats
 	:cepl.pixel-formats :cepl.memory :cepl.measurements)
   (:export :with-c-array
+	   :with-c-arrays
            :element-byte-size
            :element-type
            :pointer
