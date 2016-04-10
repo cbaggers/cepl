@@ -783,7 +783,7 @@
 	:varjo :varjo-lang :cepl.types :cepl.errors
 	:cepl.internals :cepl.pipelines :cepl.memory)
   (:shadowing-import-from :rtg-math :m! :v!)
-  (:export :vec-space :make-space :make-space*
+  (:export :space :vec-space :make-space :make-space*
 	   :parent-space :model-space-p :relational-space-p
 	   :get-transform :get-transform-via
 	   :with-space-routing-via :in
