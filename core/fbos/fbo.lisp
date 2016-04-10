@@ -222,17 +222,19 @@
   (case attachment-name
     (:d
      (when (not value)
-       (setf (att-bparams (%fbo-depth-array fbo)) nil))
+       (setf (att-blend (%fbo-depth-array fbo)) nil
+	     (att-bparams (%fbo-depth-array fbo)) nil))
      (setf (att-array (%fbo-depth-array fbo)) value))
     ;;(:s (... :stencil-attachment))
     ;;(:ds (... :depth-stencil-attachment))
     (otherwise
-     (let ((index attachment-name)
-	   (arr (%fbo-color-arrays fbo)))
-       (ensure-fbo-array-size fbo (1+ index))
-       (when (not value)
-	 (setf (att-bparams (aref arr index)) nil))
-       (setf (att-array (aref arr attachment-name)) value)))))
+     (let ((arr (%fbo-color-arrays fbo)))
+       (ensure-fbo-array-size fbo (1+ attachment-name))
+       (let ((att (aref arr attachment-name)))
+	 (when (not value)
+	   (setf (att-blend att) nil)
+	   (setf (att-bparams att) nil))
+	 (setf (att-array att) value))))))
 
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
 (defun attachment (fbo attachment-name)
@@ -696,11 +698,3 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (error "CEPL: clear-attachment is not yet implemented"))
 
 ;;--------------------------------------------------------------
-
-(defun loop-enabling-attachments (fbo)
-  (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
-     (when (att-blend a) (%gl:enable-i :blend i))))
-
-(defun loop-disabling-attachments (fbo)
-  (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
-     (when (att-blend a) (%gl:disable-i :blend i))))

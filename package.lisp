@@ -723,6 +723,7 @@
 	   :attachment-p
 	   :attachment-viewport
 	   :attachment-gpu-array
+	   :attachment-blending
 	   :per-attachment-blending-available-p
 	   :attachment-tex
 	   :make-fbo-from-id
