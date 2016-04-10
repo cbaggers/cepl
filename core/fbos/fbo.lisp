@@ -426,23 +426,22 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (gl:bind-framebuffer target (%fbo-id fbo)))
 
 (defun %unbind-fbo ()
-  (gl:bind-framebuffer :framebuffer 0))
-
+  (%bind-fbo %default-framebuffer :framebuffer))
 
 (defmacro with-fbo-bound ((fbo &key (target :framebuffer) (unbind t)
                               (with-viewport t) (attachment-for-size 0)
                               (with-blending t) (draw-buffers t))
                          &body body)
-  `(let* ((%current-fbo ,fbo))
+  `(let* ((last-fbo %current-fbo)
+	  (%current-fbo ,fbo))
      (%bind-fbo %current-fbo ,target)
      ,(%write-draw-buffer-pattern-call
        draw-buffers '%current-fbo with-blending
        `(,@(if with-viewport
                `(with-fbo-viewport (%current-fbo ,attachment-for-size))
                '(progn))
-           ,@body
-           (when ,unbind (%unbind-fbo))
-           %current-fbo))))
+           (prog1 (progn ,@body)
+	     (when ,unbind (%bind-fbo last-fbo)))))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)
