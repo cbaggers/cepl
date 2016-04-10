@@ -130,9 +130,11 @@
 	   :gpu-array-bb
 	   :gpu-array-bb-p
 	   :gpu-array-bb-buffer
-	   :gpu-array-bb-format-index
 	   :gpu-array-bb-start
 	   :gpu-array-bb-access-style
+	   :gpu-array-bb-element-type
+	   :gpu-array-bb-byte-size
+	   :gpu-array-bb-offset-in-bytes-into-buffer
 	   :+null-buffer-backed-gpu-array+
 
 	   :%make-gpu-buffer
@@ -140,7 +142,7 @@
 	   :gpu-buffer
 	   :gpu-buffer-p
 	   :gpu-buffer-id
-	   :gpu-buffer-format
+	   :gpu-buffer-arrays
 	   :gpu-buffer-managed
 	   :+null-gpu-buffer+
 

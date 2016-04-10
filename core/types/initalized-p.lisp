@@ -6,8 +6,8 @@
   (not (eq (texture-type object) :uninitialized)))
 
 (defmethod initialized-p ((object gpu-buffer))
-  (not (equal (gpu-buffer-format object)
-	      '(:uninitialized))))
+  (not (eq (gpu-buffer-arrays object)
+	   %cepl.types::+uninitialized-buffer-array+)))
 
 (defmethod initialized-p ((object gpu-array-bb))
   (not (eq (gpu-array-bb-access-style object)

@@ -53,13 +53,18 @@
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
   (id 0 :type fixnum)
-  (format nil :type list)
+  (arrays (make-array 0 :element-type 'gpu-array-bb
+		      :initial-element +null-buffer-backed-gpu-array+)
+	  :type (array gpu-array-bb (*)))
   (managed nil :type boolean))
 
 (defvar +null-gpu-buffer+ (%make-gpu-buffer))
+(defvar +uninitialized-buffer-array+
+  (make-array 0 :element-type 'gpu-array-bb
+	      :initial-element +null-buffer-backed-gpu-array+))
 
 (defun make-uninitialized-gpu-buffer ()
-  (%make-gpu-buffer :id 0 :format '(:uninitialized) :managed nil))
+  (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+ :managed nil))
 
 ;;------------------------------------------------------------
 
@@ -69,9 +74,12 @@
 (defstruct (gpu-array-bb (:constructor %make-gpu-array-bb)
 			 (:include gpu-array))
   (buffer (error "") :type gpu-buffer)
-  (format-index 0 :type fixnum)
   (start 0 :type fixnum)
-  (access-style :static-draw :type symbol))
+  (access-style :static-draw :type symbol)
+  ;; buffer-data
+  (element-type nil :type symbol) ;; data-type
+  (byte-size 0 :type (unsigned-byte 16)) ;; data-index-length
+  (offset-in-bytes-into-buffer 0 :type (unsigned-byte 16)))) ;; offset-in-bytes-into-buffer
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)
 			(:include gpu-array))
