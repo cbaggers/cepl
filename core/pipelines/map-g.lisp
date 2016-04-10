@@ -11,5 +11,5 @@
        %current-fbo)))
 
 (defmacro map-g-into (fbo pipeline-func stream &rest uniforms)
-  `(with-fbo-bound ,(listify fbo)
+  `(with-fbo-bound (,fbo)
      (map-g ,pipeline-func ,stream ,@uniforms)))

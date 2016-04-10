@@ -118,7 +118,10 @@
   (values (intern (apply #'mkstr args))))
 
 (defun symb-package (package &rest args)
-  (values (intern (apply #'cepl-utils:mkstr args) package)))
+  (values (intern (apply #'cepl-utils:mkstr args)
+		  (if (packagep package)
+		      package
+		      (find-package package)))))
 
 (defun make-keyword (&rest args)
   "This takes a list of symbols (or strings) and outputs one
@@ -509,3 +512,40 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 (defun just-ignore (&rest args)
   (declare (ignore args))
   nil)
+
+(defpackage :defxstar-hidden)
+
+(defstruct (defxstar-hidden::boop6
+	     (:constructor defxstar-hidden::make-boop6)
+	     (:conc-name nil)
+	     (:predicate defxstar-hidden::boop-p))
+  defxstar-hidden::boop-x defxstar-hidden::boop-y)
+
+(defun defx* (defname name slots)
+  (labels ((extract-slot-def (x)
+	     (dbind (slot-name _ &key type) x
+	       (declare (ignore _))
+	       (list (symb name :- slot-name)  nil :type (or type t))))
+	   (extract-let (x)
+	     (dbind (name val &key type) x
+	       (declare (ignore type))
+	       (list name val)))
+	   (extract-init (x)
+	     (let ((slot-name (first x)))
+	       (list (kwd name :- slot-name) slot-name))))
+    (let* ((data-name (symb-package :defxstar-hidden name :-data))
+	   (cname (symb-package :defxstar-hidden :%make- data-name)))
+      `(progn
+	 (defstruct (,data-name (:constructor ,cname)
+				(:predicate nil)
+				(:conc-name nil))
+	   ,@(mapcar #'extract-slot-def slots))
+	 (,defname ,name
+	   (let* ,(mapcar #'extract-let slots)
+	     (,cname ,@(mapcan #'extract-init slots))))))))
+
+(defmacro defvar* (name &body slots)
+  (defx* 'defvar name slots))
+
+(defmacro defparameter* (name &body slots)
+  (defx* 'defparameter name slots))

@@ -46,7 +46,9 @@
            :ni-val
            :n-of
            :n-of*
-           :just-ignore))
+           :just-ignore
+	   :defvar*
+	   :defparameter*))
 
 (defpackage :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
@@ -834,7 +836,9 @@
     :shadow (:quit)
     :import-from ((:cepl-utils :deferror
 			       :print-mem
-			       :p->))
+			       :p->
+			       :defvar*
+			       :defparameter*))
     :export (:make-project
 	     :quit
 	     :repl
@@ -842,7 +846,9 @@
 	     :continuable
 	     :cls
 	     :swap
-	     :print-mem)
+	     :print-mem
+	     :defvar*
+	     :defparameter*)
     :re-export (:cepl.render-state
 		:cepl.viewports
 		:cepl.types
