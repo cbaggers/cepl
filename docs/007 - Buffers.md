@@ -56,17 +56,6 @@ This function creates an empty block of data in the opengl buffer large enough t
 
 It will remove ALL data currently in the buffer
 
-`#'buffer-reserve-blocks`
-
-```
-     Signature: (buffer types-and-dimensions buffer-target usage)
-```
-This function creates an empty block of data in the opengl buffer large enoug to contain all the elements of types defines in types-and-dimensions.
-
-types-and-dimensions should be of the format: `((type length) (type length) ...etc)`
-
-It will remove ALL data currently in the buffer"
-
 
 ### Uploading Data
 

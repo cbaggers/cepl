@@ -16,7 +16,7 @@
 
 (defun blank-buffer-object (buffer)
   (setf (gpu-buffer-id buffer) 0)
-  (setf (gpu-buffer-arrays buffer) nil)
+  (setf (gpu-buffer-arrays buffer) +null-gpu-buffer+)
   (setf (gpu-buffer-managed buffer) nil)
   buffer)
 
@@ -105,8 +105,8 @@
 				  (usage :static-draw))
   (cepl.memory::if-context
    (init-gpu-buffer-now %pre% (gen-buffer) initial-contents
-				buffer-target usage t)
-   (%make-gpu-buffer :id 0 :format '(:uninitialized) :managed nil)))
+			buffer-target usage t)
+   (make-uninitialized-gpu-buffer)))
 
 (defun buffer-data-raw (data-pointer byte-size buffer
 			&optional (target :array-buffer) (usage :static-draw)
@@ -175,38 +175,29 @@
     (%gl:buffer-sub-data :array-buffer byte-offset byte-size (pointer c-array)))
   gpu-array)
 
-(defun buffer-reserve-block-raw (buffer size-in-bytes target
-                                 usage)
+(defun buffer-reserve-block-raw (buffer byte-size target usage)
   (bind-buffer buffer target)
-  (%gl:buffer-data target size-in-bytes
-                   (cffi:null-pointer) usage)
+  (%gl:buffer-data target byte-size (cffi:null-pointer) usage)
   buffer)
 
 (defun buffer-reserve-block (buffer type dimensions target usage)
   (let ((type (safer-gl-type type)))
     (bind-buffer buffer target)
     (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
-    (let* ((dimensions (if (listp dimensions) dimensions (list dimensions)))
+    (let* ((dimensions (listify dimensions))
            (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions)))
-      (buffer-reserve-block-raw buffer
-                                byte-size
-                                target
-                                usage)
-      (setf (gpu-buffer-format buffer) `((,type ,byte-size ,0))))
+      (buffer-reserve-block-raw buffer byte-size target usage)
+      (setf (gpu-buffer-arrays buffer)
+	    (make-array 1 :element-type 'gpu-array-bb :initial-element
+		    (%make-gpu-array-bb
+		     :dimensions (list byte-size)
+		     :buffer buffer
+		     :start 0
+		     :access-style usage
+		     :element-type :uint8
+		     :byte-size byte-size
+		     :offset-in-bytes-into-buffer 0))))
     buffer))
-
-(defun buffer-reserve-blocks (buffer types-and-dimensions
-                              target usage)
-  (let ((total-size-in-bytes 0))
-    (setf (gpu-buffer-format buffer)
-          (loop :for (type dimensions) :in types-and-dimensions :collect
-             (let ((type (safer-gl-type type)))
-               (progn (let ((size-in-bytes (cepl.c-arrays::gl-calc-byte-size
-					    type dimensions)))
-                        (incf total-size-in-bytes size-in-bytes)
-                        `(,type ,size-in-bytes ,total-size-in-bytes))))))
-    (buffer-reserve-block-raw buffer total-size-in-bytes target usage))
-  buffer)
 
 ;;---------------------------------------------------------------
 

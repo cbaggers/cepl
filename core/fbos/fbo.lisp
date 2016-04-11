@@ -441,7 +441,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                `(with-fbo-viewport (%current-fbo ,attachment-for-size))
                '(progn))
            (prog1 (progn ,@body)
-	     (when ,unbind (%bind-fbo last-fbo)))))))
+	     ;; {TODO} this use of target is wrong-v
+	     (when ,unbind (%bind-fbo last-fbo ,target)))))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)

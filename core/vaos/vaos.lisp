@@ -102,15 +102,15 @@
     (bind-vao vao)
     (loop :for gpu-array :in gpu-arrays :do
        (let* ((buffer (gpu-array-buffer gpu-array))
-              (format (gpu-array-format gpu-array)))
+	      (elem-type (gpu-array-bb-element-type gpu-array))
+	      (offset (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
          (cepl.gpu-buffers::force-bind-buffer buffer :array-buffer)
          (setf attr (+ attr (gl-assign-attrib-pointers
-                             (let ((type (first format)))
-                               (if (listp type) (second type) type))
+                             (if (listp elem-type) (second elem-type) elem-type)
                              attr
-                             (+ (third format)
+                             (+ offset
                                 (cepl.c-arrays::gl-calc-byte-size
-				 (first format)
+				 elem-type
 				 (list (gpu-array-bb-start gpu-array)))))))))
     (when element-buffer
       (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))

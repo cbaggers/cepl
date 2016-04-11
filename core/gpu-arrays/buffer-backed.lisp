@@ -52,32 +52,23 @@
 
 ;;---------------------------------------------------------------
 
-(defun gpu-array-format (gpu-array)
-  "Returns a list containing the element-type, the length of the
-   array and the offset in bytes from the beginning of the buffer
-   this gpu-array lives in."
-  (nth (gpu-array-bb-format-index gpu-array)
-       (gpu-buffer-format (gpu-array-buffer gpu-array))))
-
 (defmethod dimensions ((object gpu-array))
   (gpu-array-dimensions object))
 
-(defun gpu-array-bb-element-type (gpu-array)
-  (first (gpu-array-format gpu-array)))
-
-(defmethod element-type ((object gpu-array))
-  (first (gpu-array-format object)))
+(defmethod element-type ((object gpu-array-bb))
+  (gpu-array-bb-element-type object))
 
 ;; [TODO] This looks wrong, the beginning right? NO!
 ;;        remember that the gpu-array could be a sub-array
-;;        in that case the
+;;        in that case the correct index into the buffer is
+;;        the byte-offset + the start
 (defun gpu-array-offset (gpu-array)
   "Returns the offset in bytes from the beginning of the buffer
    that this gpu-array is stored at"
-  (let ((format (gpu-array-format gpu-array)))
-    (+ (third format) (cepl.c-arrays::gl-calc-byte-size
-		       (first format)
-		       (list (gpu-array-bb-start gpu-array))))))
+  (+ (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)
+     (cepl.c-arrays::gl-calc-byte-size
+      (gpu-array-bb-element-type gpu-array)
+      (list (gpu-array-bb-start gpu-array)))))
 
 ;;---------------------------------------------------------------
 

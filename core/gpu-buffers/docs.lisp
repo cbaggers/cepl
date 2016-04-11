@@ -161,18 +161,6 @@ It also will not update the format of the buffer so you must be sure to handle
 this yourself. It is much safer to use this as an assistant function to one
 which takes care of these issues")
 
-  (defun buffer-reserve-blocks
-      "
-This function creates an empty block of data in the opengl buffer equal in size
-to the sum of all of the (* length size-in-bytes-of-type) in types-and-lengths.
-
-The types-and-lengths list should be of the format:
-
-    `((type length) (type length) ...etc)
-
-It will remove ALL data currently in the buffer")
-
-
   (defun buffer-data
   "
 This function populates the gpu-buffer with the contents of the c-array.

@@ -558,7 +558,6 @@
            :buffer-data
            :buffer-data-raw
            :buffer-reserve-block
-           :buffer-reserve-blocks
            :buffer-sub-data
            :free-buffer
            :free-buffers

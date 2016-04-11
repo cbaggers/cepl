@@ -41,30 +41,12 @@
   (%%make-texture :type nil
 		  :image-format nil))
 
-(defun make-uninitialized-texture (&optional buffer-backed-p)
-  (if buffer-backed-p
-      (%%make-buffer-texture
-       :type :uninitialized :image-format :uninitialized
-       :backing-array buffer-backed-p)
-      (%%make-texture
-       :type :uninitialized :image-format :uninitialized)))
-
 ;;------------------------------------------------------------
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
   (id 0 :type fixnum)
-  (arrays (make-array 0 :element-type 'gpu-array-bb
-		      :initial-element +null-buffer-backed-gpu-array+)
-	  :type (array gpu-array-bb (*)))
+  (arrays (error "") :type (array gpu-array-bb (*)))
   (managed nil :type boolean))
-
-(defvar +null-gpu-buffer+ (%make-gpu-buffer))
-(defvar +uninitialized-buffer-array+
-  (make-array 0 :element-type 'gpu-array-bb
-	      :initial-element +null-buffer-backed-gpu-array+))
-
-(defun make-uninitialized-gpu-buffer ()
-  (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+ :managed nil))
 
 ;;------------------------------------------------------------
 
@@ -79,7 +61,7 @@
   ;; buffer-data
   (element-type nil :type symbol) ;; data-type
   (byte-size 0 :type (unsigned-byte 16)) ;; data-index-length
-  (offset-in-bytes-into-buffer 0 :type (unsigned-byte 16)))) ;; offset-in-bytes-into-buffer
+  (offset-in-bytes-into-buffer 0 :type (unsigned-byte 16))) ;; offset-in-bytes-into-buffer
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)
 			(:include gpu-array))
@@ -89,26 +71,6 @@
   (layer-num 0 :type fixnum)
   (face-num 0 :type fixnum)
   (image-format nil :type symbol))
-
-(defvar +null-texture-backed-gpu-array+
-  (%make-gpu-array-bb
-   :buffer +null-gpu-buffer+
-   :access-style :invalid))
-
-(defvar +null-buffer-backed-gpu-array+
-  (%make-gpu-array-t
-   :texture +null-texture+
-   :texture-type nil))
-
-(defun make-uninitialized-gpu-array-bb (&optional buffer)
-  (%make-gpu-array-bb
-   :buffer (or buffer +null-gpu-buffer+)
-   :access-style :uninitialized))
-
-(defun make-uninitialized-gpu-array-t ()
-  (%make-gpu-array-t
-   :texture +null-texture+
-   :texture-type :uninitialized))
 
 ;;------------------------------------------------------------
 
@@ -145,9 +107,6 @@
 
 (defun (setf %sampler-id) (value sampler)
   (setf (%sampler-id-box sampler) value))
-
-(defun make-uninitialized-sampler (texture)
-  (%make-sampler :texture texture :type :uninitialized))
 
 ;;------------------------------------------------------------
 
@@ -200,11 +159,6 @@
 					 :destination-alpha :zero)
 		   :type blending-params))
 
-(defun make-uninitialized-fbo ()
-  (%%make-fbo
-   :draw-buffer-map nil
-   :clear-mask -13))
-
 ;;------------------------------------------------------------
 
 (defstruct pixel-format
@@ -227,9 +181,6 @@
   (index-type nil :type symbol)
   (gpu-arrays nil :type list)
   (managed nil :type boolean))
-
-(defun make-uninitialized-buffer-stream ()
-  (make-raw-buffer-stream :index-type :uninitialized))
 
 ;;------------------------------------------------------------
 
@@ -257,3 +208,54 @@
     (sampler t)
     (fbo t) ;; 20160402 - only one left to delay
     (buffer-stream t)))
+
+;;------------------------------------------------------------
+
+(defvar +null-gpu-buffer+
+  (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
+
+(defun make-uninitialized-gpu-buffer ()
+  (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+ :managed nil))
+
+(defun make-uninitialized-texture (&optional buffer-backed-p)
+  (if buffer-backed-p
+      (%%make-buffer-texture
+       :type :uninitialized :image-format :uninitialized
+       :backing-array buffer-backed-p)
+      (%%make-texture
+       :type :uninitialized :image-format :uninitialized)))
+
+(defun make-uninitialized-gpu-array-bb (&optional buffer)
+  (%make-gpu-array-bb
+   :buffer (or buffer +null-gpu-buffer+)
+   :access-style :uninitialized))
+
+(defun make-uninitialized-gpu-array-t ()
+  (%make-gpu-array-t
+   :texture +null-texture+
+   :texture-type :uninitialized))
+
+(defun make-uninitialized-sampler (texture)
+  (%make-sampler :texture texture :type :uninitialized))
+
+(defun make-uninitialized-fbo ()
+  (%%make-fbo
+   :draw-buffer-map nil
+   :clear-mask -13))
+
+(defun make-uninitialized-buffer-stream ()
+  (make-raw-buffer-stream :index-type :uninitialized))
+
+(defvar +null-texture-backed-gpu-array+
+  (%make-gpu-array-bb
+   :buffer +null-gpu-buffer+
+   :access-style :invalid))
+
+(defvar +null-buffer-backed-gpu-array+
+  (%make-gpu-array-t
+   :texture +null-texture+
+   :texture-type nil))
+
+(defvar +uninitialized-buffer-array+
+  (make-array 0 :element-type 'gpu-array-bb
+	      :initial-element +null-buffer-backed-gpu-array+))

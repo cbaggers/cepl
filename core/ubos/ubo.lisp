@@ -70,24 +70,18 @@ should be ~s" data element-type)
 ;;---------------------------------------------------
 
 (defun ubo-data-type (ubo)
-  (first (gpu-array-format (ubo-data ubo))))
+  (gpu-array-bb-element-type (ubo-data ubo)))
 
 ;;---------------------------------------------------
 
 (defun %bind-ubo (ubo)
   (let* ((data (ubo-data ubo))
-         (buffer-id (gpu-buffer-id
-		     (gpu-array-buffer data)))
-         (offset (destructuring-bind (type len byte-offset)
-		     (gpu-array-format data)
-		   (declare (ignore len))
-		   (+ byte-offset
-		      (cepl.c-arrays::gl-calc-byte-size
-		       type (list (ubo-index ubo))))))
-         (size (destructuring-bind (type len byte-offset)
-		   (gpu-array-format data)
-		 (declare (ignore len byte-offset))
-		 (gl-type-size type))))
+	 (type (ubo-data-type ubo))
+         (buffer-id (gpu-buffer-id (gpu-array-buffer data)))
+         (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer data)
+		    (cepl.c-arrays::gl-calc-byte-size
+		     type (list (ubo-index ubo)))))
+         (size (gl-type-size type)))
     (%gl:bind-buffer-range :uniform-buffer (ubo-id ubo)
                            buffer-id offset size))
   ubo)
