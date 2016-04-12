@@ -128,7 +128,6 @@
 		    (%make-gpu-array-bb
 		     :dimensions (list byte-size)
 		     :buffer buffer
-		     :start 0
 		     :access-style usage
 		     :element-type :uint8
 		     :byte-size byte-size
@@ -161,7 +160,6 @@
 		:collect (%make-gpu-array-bb
 			  :dimensions (list byte-size)
 			  :buffer buffer
-			  :start 0
 			  :access-style usage
 			  :element-type :uint8
 			  :byte-size byte-size
@@ -204,7 +202,6 @@ gpu-array: ~s (byte-size: ~s)"
 		    (%make-gpu-array-bb
 		     :dimensions (list byte-size)
 		     :buffer buffer
-		     :start 0
 		     :access-style usage
 		     :element-type :uint8
 		     :byte-size byte-size

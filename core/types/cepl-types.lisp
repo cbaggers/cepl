@@ -56,7 +56,6 @@
 (defstruct (gpu-array-bb (:constructor %make-gpu-array-bb)
 			 (:include gpu-array))
   (buffer (error "") :type gpu-buffer)
-  (start 0 :type fixnum)
   (access-style :static-draw :type symbol)
   ;; buffer-data
   (element-type nil :type symbol) ;; data-type

@@ -43,7 +43,9 @@
                 (make-c-array-from-pointer
                  (gpu-array-dimensions ,ggpu-array)
                  (element-type ,ggpu-array)
-                 (cffi:inc-pointer ,temp-name (cepl.gpu-arrays.buffer-backed::gpu-array-offset ,ggpu-array)))))
+                 (cffi:inc-pointer
+		  ,temp-name
+		  (gpu-array-bb-offset-in-bytes-into-buffer ,ggpu-array)))))
            ,@body)))))
 
 
@@ -66,8 +68,7 @@
     (push-g tmp destination)))
 
 (defmethod push-g ((object c-array) (destination gpu-array-bb))
-  (let* ((buffer (gpu-array-buffer destination))
-         (type (gpu-array-bb-element-type destination))
+  (let* ((type (gpu-array-bb-element-type destination))
          (ob-dimen (dimensions object))
          (des-dimen (dimensions object)))
     (if (and (eq (element-type object) type)
@@ -76,12 +77,7 @@
                  (equal ob-dimen des-dimen)))
         (setf (gpu-array-bb-buffer destination)
 	      (cepl.gpu-buffers::gpu-array-sub-data
-	       destination object :types-must-match t)
-              ;; (buffer-sub-data
-	      ;;  buffer object
-	      ;;  (cepl.gpu-arrays.buffer-backed::gpu-array-offset destination)
-	      ;;  :array-buffer)
-	      )
+	       destination object :types-must-match t))
         (error "If the arrays are 1D then the length of the source array must
 be <= length of the destination array. If the arrays have more than 1
 dimension then their sizes must match exactly"))

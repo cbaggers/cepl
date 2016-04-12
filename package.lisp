@@ -130,7 +130,6 @@
 	   :gpu-array-bb
 	   :gpu-array-bb-p
 	   :gpu-array-bb-buffer
-	   :gpu-array-bb-start
 	   :gpu-array-bb-access-style
 	   :gpu-array-bb-element-type
 	   :gpu-array-bb-byte-size

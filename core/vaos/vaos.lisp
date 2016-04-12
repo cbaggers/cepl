@@ -33,42 +33,6 @@
 	       ,@body)
      (unbind-vao)))
 
-
-;; [TODO] Types need full support. Read glVertexAttribPointer and work out
-;;        what to do with gl_half_float, gl_double, gl_fixed, gl_int_2_10_10_10_rev
-;;        & gl_unsigned_int_2_10_10_10_rev
-;; [TODO] Read about glVertexAttribLPointer
-
-;; [TODO] Use suitable-array-for-index-p
-;; [TODO] Sanity check dimensions of buffer contents?
-(defun make-vao-from-formats (formats &key element-buffer)
-  "Makes a vao from a list of buffer formats.
-   The formats list should be laid out as follows:
-   `((buffer1 (attr-format1) (attr-format2))
-     (buffer2 (attr-format3) (attr-format4)))
-   with each attr-format laid out as follows:
-   `(component-type normalized-flag stride pointer)
-   if you have the type and offset of the data this can be generated
-   by using the function gl-type-format.
-   You can also specify an element buffer to be used in the vao"
-  (let ((vao (gl:gen-vertex-array))
-        (attr-num 0))
-    (bind-vao vao)
-    (loop for format in formats
-       :do (let ((buffer (first format)))
-             (cepl.gpu-buffers::force-bind-buffer buffer :array-buffer)
-             (loop :for (type normalized stride pointer)
-                :in (rest format)
-		:do (just-ignore normalized)
-                :do (setf attr-num
-                          (+ attr-num
-                             (gl-assign-attrib-pointers
-                              type pointer stride))))))
-    (when element-buffer
-      (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))
-    (bind-vao 0)
-    vao))
-
 (defun suitable-array-for-index-p (array)
   (and (eql (length (gpu-buffer-arrays (gpu-array-buffer array))) 1)
        (1d-p array)
@@ -105,13 +69,9 @@
 	      (elem-type (gpu-array-bb-element-type gpu-array))
 	      (offset (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
          (cepl.gpu-buffers::force-bind-buffer buffer :array-buffer)
-         (setf attr (+ attr (gl-assign-attrib-pointers
-                             (if (listp elem-type) (second elem-type) elem-type)
-                             attr
-                             (+ offset
-                                (cepl.c-arrays::gl-calc-byte-size
-				 elem-type
-				 (list (gpu-array-bb-start gpu-array)))))))))
+         (incf attr (gl-assign-attrib-pointers
+		     (if (listp elem-type) (second elem-type) elem-type)
+		     attr offset))))
     (when element-buffer
       (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)

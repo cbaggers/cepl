@@ -32,7 +32,6 @@
 (defun blank-gpu-array-b-object (gpu-array)
   (setf (gpu-array-dimensions gpu-array) nil
 	(gpu-array-bb-buffer gpu-array) +null-gpu-buffer+
-        (gpu-array-bb-start gpu-array) 0
 	(gpu-array-bb-access-style gpu-array) :uninitialized
 	(gpu-array-bb-element-type gpu-array) nil
 	(gpu-array-bb-byte-size gpu-array) 0
@@ -56,18 +55,6 @@
 
 (defmethod element-type ((object gpu-array-bb))
   (gpu-array-bb-element-type object))
-
-;; [TODO] This looks wrong, the beginning right? NO!
-;;        remember that the gpu-array could be a sub-array
-;;        in that case the correct index into the buffer is
-;;        the byte-offset + the start
-(defun gpu-array-offset (gpu-array)
-  "Returns the offset in bytes from the beginning of the buffer
-   that this gpu-array is stored at"
-  (+ (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)
-     (cepl.c-arrays::gl-calc-byte-size
-      (gpu-array-bb-element-type gpu-array)
-      (list (gpu-array-bb-start gpu-array)))))
 
 ;;---------------------------------------------------------------
 
@@ -95,7 +82,6 @@
 	  (gpu-array-bb-buffer child) (gpu-array-bb-buffer parent)
 	  (gpu-array-bb-access-style child) (gpu-array-bb-access-style parent)
 	  (gpu-array-bb-element-type child) element-type
-	  (gpu-array-bb-start child) 0 ;; remove
 	  (gpu-array-bb-byte-size child) byte-size)
     (setf (gpu-array-bb-offset-in-bytes-into-buffer child)
 	  (+ (gpu-array-bb-offset-in-bytes-into-buffer parent) offset))
