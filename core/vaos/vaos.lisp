@@ -70,7 +70,7 @@
     vao))
 
 (defun suitable-array-for-index-p (array)
-  (and (eql (length (gpu-buffer-format (gpu-array-buffer array))) 1)
+  (and (eql (length (gpu-buffer-arrays (gpu-array-buffer array))) 1)
        (1d-p array)
        (find (element-type array) '(:uint8 :ushort :uint :unsigned-short
                                     :unsigned-int))))

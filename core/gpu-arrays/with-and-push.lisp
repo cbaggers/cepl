@@ -77,10 +77,11 @@
         (setf (gpu-array-bb-buffer destination)
 	      (cepl.gpu-buffers::gpu-array-sub-data
 	       destination object :types-must-match t)
-              (buffer-sub-data
-	       buffer object
-	       (cepl.gpu-arrays.buffer-backed::gpu-array-offset destination)
-	       :array-buffer))
+              ;; (buffer-sub-data
+	      ;;  buffer object
+	      ;;  (cepl.gpu-arrays.buffer-backed::gpu-array-offset destination)
+	      ;;  :array-buffer)
+	      )
         (error "If the arrays are 1D then the length of the source array must
 be <= length of the destination array. If the arrays have more than 1
 dimension then their sizes must match exactly"))

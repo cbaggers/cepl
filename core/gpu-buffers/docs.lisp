@@ -37,13 +37,6 @@ be reflected in the layout of the gpu-buffer, which may potentially put the
 gpu-buffer (and and gpu-array or ubo using it) into an invalid state.
 ")
 
-  (defun gpu-buffer-format
-      "
-This function, when passed a gpu-buffer will return the format list used
-by the gpu-buffer to keep track of the types and layout of the data in the
-OpenGL Buffer Object
-")
-
 
   (defun make-gpu-buffer
       "
@@ -185,7 +178,7 @@ buffer and will throw an error if you are.")
   (defun multi-buffer-data
       "
 This function takes a list of c-arrays and uploads all of the data to the
-gpu-buffer, it then updates the gpu-buffer-format with the new layout.
+gpu-buffer.
 ")
 
   (defun buffer-data-raw

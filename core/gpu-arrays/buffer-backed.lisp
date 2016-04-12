@@ -30,25 +30,24 @@
   (%cepl.types::gpu-array-bb-access-style gpu-array))
 
 (defun blank-gpu-array-b-object (gpu-array)
-  (setf (gpu-array-bb-buffer gpu-array) +null-gpu-buffer+
-        (gpu-array-bb-format-index gpu-array) 0
+  (setf (gpu-array-dimensions gpu-array) nil
+	(gpu-array-bb-buffer gpu-array) +null-gpu-buffer+
         (gpu-array-bb-start gpu-array) 0
-        (gpu-array-dimensions gpu-array) nil
-        (gpu-array-bb-access-style gpu-array) nil))
+	(gpu-array-bb-access-style gpu-array) :uninitialized
+	(gpu-array-bb-element-type gpu-array) nil
+	(gpu-array-bb-byte-size gpu-array) 0
+	(gpu-array-bb-offset-in-bytes-into-buffer gpu-array) 0))
 
 ;; we only set the buffer slot type as undefined as the size and
 ;; offset dont change
 ;; If the buffer is managed and all formats are undefined then free it.
 (defun free-gpu-array-bb (gpu-array)
-  (let* ((buffer (gpu-array-bb-buffer gpu-array))
-         (buffer-formats (gpu-buffer-format buffer)))
-    (setf (first (nth (gpu-array-bb-format-index gpu-array) buffer-formats))
-          :UNDEFINED)
+  (let* ((buffer (gpu-array-bb-buffer gpu-array)))
+    (blank-gpu-array-b-object gpu-array)
     (when (and (cepl.gpu-buffers::gpu-buffer-managed buffer)
-               (loop :for format :in buffer-formats :always
-                  (eq (car format) :UNDEFINED)))
+	       (not (some #'initialized-p (gpu-buffer-arrays buffer))))
       (free-buffer buffer)))
-  (blank-gpu-array-b-object gpu-array))
+  nil)
 
 ;;---------------------------------------------------------------
 
@@ -79,6 +78,28 @@
 ;; [TODO] all dimensions need checking for sanity..some clearly dont have any :D
 
 (defgeneric make-gpu-array (initial-contents &key))
+
+;;---------------------------------------------------------------
+
+(defun make-gpu-array-share-data (gpu-array-to-modify gpu-array-with-data
+				  byte-offset-into-source-data element-type
+				  dimensions &optional byte-size)
+  (let* ((parent gpu-array-with-data)
+	 (child gpu-array-to-modify)
+	 (offset byte-offset-into-source-data)
+	 (dimensions (listify dimensions))
+	 (byte-size (if byte-size byte-size
+			(cepl.c-arrays::gl-calc-byte-size
+			 element-type dimensions))))
+    (setf (gpu-array-dimensions child) dimensions
+	  (gpu-array-bb-buffer child) (gpu-array-bb-buffer parent)
+	  (gpu-array-bb-access-style child) (gpu-array-bb-access-style parent)
+	  (gpu-array-bb-element-type child) element-type
+	  (gpu-array-bb-start child) 0 ;; remove
+	  (gpu-array-bb-byte-size child) byte-size)
+    (setf (gpu-array-bb-offset-in-bytes-into-buffer child)
+	  (+ (gpu-array-bb-offset-in-bytes-into-buffer parent) offset))
+    child))
 
 ;;---------------------------------------------------------------
 ;; no initial-contents

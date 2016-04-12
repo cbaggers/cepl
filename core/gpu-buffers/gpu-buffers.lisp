@@ -16,7 +16,7 @@
 
 (defun blank-buffer-object (buffer)
   (setf (gpu-buffer-id buffer) 0)
-  (setf (gpu-buffer-arrays buffer) +null-gpu-buffer+)
+  (setf (gpu-buffer-arrays buffer) (make-uninitialized-gpu-array-bb))
   (setf (gpu-buffer-managed buffer) nil)
   buffer)
 
@@ -76,9 +76,14 @@
 		    :initial-element +null-buffer-backed-gpu-array+
 		    :adjustable t :fill-pointer 0))
   (if initial-contents
-      (buffer-data new-buffer initial-contents
-		   :target buffer-target :usage usage)
+      (if (list-of-c-arrays-p initial-contents)
+	  (multi-buffer-data new-buffer initial-contents buffer-target usage)
+	  (buffer-data new-buffer initial-contents
+		       :target buffer-target :usage usage))
       new-buffer))
+
+(defun list-of-c-arrays-p (x)
+  (and (listp x) (every #'c-array-p x)))
 
 (defun make-gpu-buffer-from-id (gl-object &key initial-contents
 					    (buffer-target :array-buffer)
@@ -94,6 +99,9 @@
 			  (usage :static-draw)
 			  (managed nil))
   (declare (symbol buffer-target usage))
+  (assert (or (null initial-contents)
+	      (typep initial-contents 'c-array)
+	      (list-of-c-arrays-p initial-contents)))
   (cepl.memory::if-context
    (init-gpu-buffer-now
     %pre% (gen-buffer) initial-contents buffer-target usage managed)
@@ -160,17 +168,21 @@
 			  :offset-in-bytes-into-buffer offset)
 		:do (incf offset byte-size)))))
     (loop :for c :in c-arrays :for g :across (gpu-buffer-arrays buffer) :do
-       (gpu-array-sub-data g c)))
+       (gpu-array-sub-data g c :types-must-match nil)))
   buffer)
 
-(defun gpu-array-sub-data (gpu-array c-array &key (type-must-match t))
-  (when type-must-match
+(defun gpu-array-sub-data (gpu-array c-array &key (types-must-match t))
+  (when types-must-match
     (assert (equal (element-type gpu-array) (element-type c-array))))
   (let ((byte-size (cepl.c-arrays::c-array-byte-size c-array))
 	(byte-offset (gpu-array-bb-offset-in-bytes-into-buffer
 		      gpu-array)))
-    (unless (> byte-size (gpu-array-bb-byte-size gpu-array))
-      (error "The data you are trying to sub into the gpu-array does not fit"))
+    (unless (>= (gpu-array-bb-byte-size gpu-array) byte-size)
+      (error "The data you are trying to sub into the gpu-array does not fit
+c-array: ~s (byte-size: ~s)
+gpu-array: ~s (byte-size: ~s)"
+	     c-array byte-size
+	     gpu-array (gpu-array-bb-byte-size gpu-array)))
     (bind-buffer (gpu-array-bb-buffer gpu-array) :array-buffer)
     (%gl:buffer-sub-data :array-buffer byte-offset byte-size (pointer c-array)))
   gpu-array)

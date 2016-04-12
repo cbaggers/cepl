@@ -553,7 +553,7 @@
            :gpu-buffer
 	   :gpu-buffer-p
            :gpu-buffer-id
-           :gpu-buffer-format
+           :gpu-buffer-arrays
            :bind-buffer
            :buffer-data
            :buffer-data-raw
