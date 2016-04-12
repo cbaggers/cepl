@@ -133,15 +133,10 @@
 		 :c-arr-dimensions c-dimensions
 		 :provided-dimensions dimensions))
     (let* ((source (buffer-data (gpu-array-bb-buffer arr)
-			       c-array :usage access-style))
-	   (base-arr (aref )))
-      (make-gpu-array-share-data
-       arr )
-      (setf (gpu-array-bb-buffer arr) source
-	    (gpu-array-bb-format-index arr) 0
-	    (gpu-array-dimensions arr) (dimensions c-array)
-	    (gpu-array-bb-access-style arr) access-style)))
-  arr)
+				c-array :usage access-style))
+	   (base-arr (aref (gpu-buffer-arrays source) 0)))
+      (make-gpu-array-share-data arr base-arr 0 (c-array-element-type c-array)
+				 dimensions))))
 
 (defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw) dimensions)
@@ -167,16 +162,27 @@
 ;;---------------------------------------------------------------
 ;; from multiple c-arrays
 
+(defun init-gpu-arrays-from-c-arrays (g-arrays c-arrays access-style)
+  (let ((buffer (gpu-array-bb-buffer (first g-arrays))))
+    (multi-buffer-data buffer c-arrays :array-buffer access-style)
+    (loop :for dest :in g-arrays
+       :for src :across (gpu-buffer-arrays buffer)
+       :for c-array :in c-arrays :do
+       (make-gpu-array-share-data dest src 0 (c-array-element-type c-array)
+				  (c-array-dimensions c-array)))))
+
 (defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
-  (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
-    (cepl.memory::delay-initialization
-     (lambda () (multi-buffer-data c-arrays buffer :array-buffer access-style))
-     (list buffer))
-    (loop :for c-array :in c-arrays :for i :from 0 :collecting
-       (%make-gpu-array-bb :buffer buffer
-			   :format-index i
-			   :dimensions (dimensions c-array)
-			   :access-style access-style))))
+  (let* ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer))
+	 (g-arrays (mapcar (lambda (c-array)
+			     (%make-gpu-array-bb
+			      :buffer buffer
+			      :dimensions (dimensions c-array)
+			      :access-style access-style))
+			   c-arrays)))
+    (cepl.memory::if-context
+     (init-gpu-arrays-from-c-arrays %pre% c-arrays access-style)
+     g-arrays
+     (list buffer))))
 
 ;;---------------------------------------------------------------
 
@@ -184,17 +190,16 @@
   (let ((dimensions (dimensions array)))
     (if (> (length dimensions) 1)
         (error "Cannot take subseq of multidimensional array")
-        (let* ((length (first dimensions))
-               (parent-start (gpu-array-bb-start array))
-               (new-start (+ parent-start (max 0 start)))
-               (end (or end length)))
-          (if (and (< start end) (< start length) (<= end length))
-              (%make-gpu-array-bb
-	       :buffer (gpu-array-buffer array)
-	       :format-index (gpu-array-bb-format-index array)
-	       :start new-start
-	       :dimensions (list (- end start))
-	       :access-style (gpu-array-access-style array))
+        (let* ((source-len (first dimensions))
+               (type (gpu-array-bb-element-type array))
+               (end (or end source-len)))
+          (if (and (< start end)
+		   (< start source-len)
+		   (<= end source-len))
+              (make-gpu-array-share-data
+	       (make-uninitialized-gpu-array-bb) array
+	       (cepl.c-arrays::gl-calc-byte-size type start) type
+	       (list (- end start)))
               (error "Invalid subseq start or end for c-array"))))))
 
 ;; {TODO} copy buffer to buffer: glCopyBufferSubData
