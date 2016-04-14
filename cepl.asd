@@ -100,4 +100,5 @@
                (:file "core/blending/docs")
                (:file "core/ubos/docs")
                (:file "core/vaos/docs")
-               (:file "core/spaces/docs")))
+               (:file "core/spaces/docs")
+	       (:file "core/pipelines/docs")))

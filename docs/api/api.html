@@ -465,14 +465,13 @@ Depending on how the array was created it is said that the gpu-array is either
                   The data is stored in texture memory.
                   See 'texture' for more details.
 
-Both have different performance characteristics, use cases and allow different
-element types, however they are both an ordered block of typed data.
-They can have multiple dimensions and you can pull-g and push-g data to and from
-them.
+Both have different use cases and allow different element types, however they
+are both an ordered block of typed data. They can have multiple dimensions and
+you can push-g and pull-g data to and from them.
 
 Note for folks who are used to OpenGL:
 texture-backed gpu-arrays are what opengl would normally call 'images'. This is
-a pretty terrible name for them as it implices they only can hold image data, or
+a pretty terrible name for them as it implies they only can hold image data, or
 that they are 2d only. In fact 'images' can have 1 to 3 dimensions, can have
 elements that are single bytes, floats, vectors of either or a large number of
 other types.
@@ -698,7 +697,7 @@ The reason to use this rather than (mapcar #'make-gpu-array c-arrays-list) is
 that all of the gpu-arrays created will share the same gpu-buffer.
 
 Usually you will know if you need this instead of #'make-gpu-array as you will
-have some gpu performance characteristic in mind.
+have some behaviour or performance characteristic in mind.
 </pre>
                   </article>
                 </li><li>
@@ -918,7 +917,7 @@ gpu-array and/or gpu-buffers.
 To render in cepl we map a buffer-stream over a gpu-pipeline. The buffer-stream
 contains data (usually geometry) that is passed to the vertex-shader.
 
-A gpu-stream composes various sources of gpu-data together. So if, for example,
+A buffer-stream composes various sources of gpu-data together. So if, for example,
 the vertex shader took 3 arguments of types :vec2 :vec3 :float. Then you could
 make a stream that composes 3 gpu-arrays with element-types :vec2 :vec3 :float
 and map this over the pipeline.
@@ -1494,11 +1493,15 @@ the opengl features that would modify the storage.
 
 -- Sampling --
 Sampling is the process of fetching a value from a texture at a given position.
-There are a number of values that can be tweaked that affect how the sampling is
-done. These values can be set either on the texture itself or on a 'sampler'.
+It is interesting as, because of things like mipmaping, the usual case is that
+reading a single value from a texture involves reading from more than one of
+it's gpu-arrays and combining the resultson some fashion.
+
+To control this process GL (and thus CEPL) have a special object called a
+sampler. Samplers have a number of values that can be tweaked that affect how
+the sampling is done.
 
 To find out more see the Cepl.Samplers section.
-
 
 [0] - more correctly the default-fbo
 [1] - https://www.opengl.org/wiki/Immutable_Storage_Texture#Texture_completeness
@@ -1814,16 +1817,6 @@ a foreign lisp type instead. Or leave it nil if you want CEPL to take the type
 from the initial-contents
 
 See the docstring for 'texture for more details.
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:lod-bias :min-lod :max-lod :minify-filter :magnify-filter :wrap :compare
-
-Use these if you want to set the sampling parameters on construction.
-
-If not provided then GL defaults will be used.
-
-See cepl.samplers for details on what these parameters mean.
 </pre>
                   </article>
                 </li><li>
@@ -1977,13 +1970,12 @@ by map-g and the pipeline itself.
                       </code>
                     </header>
                     <pre class="docstring">
-A sampler is a structure which holds texture 'sampling parameters' and can be
-applied to textures to affect how data is read from them in shader pipelines.
+As sampler is a structure which we pass to the a gpu-pipeline to specify how the
+pipeline should read from a particular texture (also known as sampling the
+texture).
 
-Sampling is the process of fetching a value from a texture at a given position.
-There are a number of values that can be tweaked that affect how the sampling is
-done. These values can be set either on the texture itself or on a 'sampler'.
-
+They are created by calling #'sample on a texture. You can then modify the
+various parameters and the pass the sampler to a pipeline as a uniform.
 
 Sampling Parameters cover four main aspects of how the values are read:
 
@@ -2558,7 +2550,34 @@ example:
  (WRAP #(:REPEAT :REPEAT :REPEAT)) (COMPARE :NONE))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function takes a texture and optionally some sampling parameters and
+returns a sampler.
+
+The sampler is an object that is passed to a pipeline so that the shaders in
+the gpu-functions in the pipeline can read from the gpu-arrays in the texture.
+
+For details on what the parameters are and mean see the docstring for the
+'sampler type
+
+-- Note about GL Versions --
+
+Sampler Objects were introduced in GL 3.3. So for now CEPL needs at least v3.3
+in future we hope to lower the requirement to 3.1 but this will take some extra
+work.
+
+-- NOTE For those with GL experience --
+
+You will have noticed that in CEPL your sampler is tied to one texture which is
+unlike in regular GL where a sample object can be used to override the sampling
+parameters of any number of textures. At first this would seem very wasteful
+however CEPL does not use 1 GL Sampler Object per CEPL sampler. The ID sharing
+is done based on the parameters.
+
+This means you get the same number of sampler objects as your would normally
+but with the added benefit that samplers are semantically dual with gpu-streams
+giving greater api consistancy.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:SAMPLER-P"/>
@@ -2643,7 +2662,12 @@ default.
                         <span class="arguments">(OBJECT)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+When given an object holding a gpu resource this function will return whether
+that object has been initialized.
+
+This will be t unless the GL context has not yet been created.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.MEMORY:PULL-G"/>
@@ -2785,8 +2809,8 @@ When a FBO is rendered into the data from the pipeline is written into one or
 more of the attachments of the FBO
 
 An FBO attachment is a slot where a texture-backed gpu-array can be attached.
-When the texture is attached the data from a pipeline rendering into the fbo is
-written into the texture.
+When the gpu-array is attached the data from a pipeline rendering into the fbo
+is written into that gpu-array.
 
 This is the heart of how multi-pass rendering is done in OpenGL. One pipeline
 writes data into textures that are then used as inputs to another pipeline[0].
@@ -2837,62 +2861,16 @@ attached here becomes both the depth and stencil attachment.
 Making these choices is done with the 'with-fbo-bound macro. See it's docstring
 for further details
 
-
 [0] WARNING:
 
 It is possible to bind a texture to an FBO, bind that same texture to a shader,
-and then try to render with it at the same time.
-
-It is perfectly valid to bind one gpu-array from a texture to an FBO and then
-render with that texture, as long as you prevent yourself from sampling from
-that gpu-array. If you do try to read and write to the same image, you get
-undefined results.
+and then try to sample from it at the same time. You will get undefined results.
 
 This means it may do what you want, the sampler may get old data, the sampler
 may get half old and half new data, or it may get garbage data. Any of these are
 possible outcomes.
 
-DO NOT DO THIS. What you will get is undefined behavior.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.FBOS:ATTACHMENT"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:ATTACHMENT" class="name">ATTACHMENT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(FBO ATTACHMENT-NAME)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function retrieves the attachment named by attachment-name from the
-given fbo.
-
-The attachment-name can be one of the following:
-
- a positive integer - In which case this function returns the
-		      nth color-attachments where (= n attachment-name)
-
- :d - the depth-attachment is returned
-
- :s - the stencil-attachment is returned [0]
-
- :ds - the depth-stencil-attachment is returned [0]
-
-
-You can also setf this function, the value can be either of the following:
-
- texture-backed gpu-array - The given array is attached to the fbo
-                            at the location specified by attachment-name
-
- a different attachment - The gpu-array from the given attachment is attached
-                          to the fbo at the location specified by
-                          attachment-name
-
-[0] WARNING:
-:s &amp; :ds are not supported in the current version of CEPL
+Do Not Do This!
 </pre>
                   </article>
                 </li><li>
@@ -2906,7 +2884,18 @@ You can also setf this function, the value can be either of the following:
                         <span class="arguments">(FBO ATTACHMENT-NAME)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns the blending parameters that will be used when rendering
+into the specified attachment on the given fbo
+
+Blending parameters tell OpenGL how values written into a gpu-array should be
+combined with any values that are already present.
+
+The canonical use for this is implementing transparency.
+
+The details of blending parameters and where they can be used is best covered in
+the docstring for the 'blending-params struct.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:ATTACHMENT-TEX"/>
@@ -2933,8 +2922,8 @@ You can also setf this function, the value can be either of the following:
                       </code>
                     </header>
                     <pre class="docstring">
-This function takes an attachment and returns a new viewport whos dimensions
-match those of the gpu-array connected to the attachment.
+This function takes an fbo and attachment-name and returns a new viewport whos
+dimensionsmatch those of the gpu-array connected to the attachment.
 </pre>
                   </article>
                 </li><li>
@@ -3071,14 +3060,14 @@ Lets look at the behaviour when given different arguments
 -- (make-fbo) --
 It is not valid is have an fbo with no attachments so this will fail
 
--- (make-fbo :c) or (make-fbo :c0)
-Make an fbo with one color attachment.
+-- (make-fbo 0)
+Make an fbo with one color attachment in attachment slot 0.
 CEPL with make a texture with dimensions equal to that of the current viewport
 and with the element-type :rgba (which is a sensible default for a color
 attachment)
 
--- (make-fbo :c0 :c1)
-Make an fbo with two color attachments.
+-- (make-fbo 0 1)
+Make an fbo with two color attachments 1 in each of attachment slots 0 &amp; 1.
 CEPL with make the textures with dimensions equal to that of the current
 viewport and with the element-type :rgba (which is a sensible default for a
 color attachment)
@@ -3089,18 +3078,18 @@ CEPL with make a texture with dimensions equal to that of the current viewport
 and with the element-type :depth-component24 (which is a sensible default for a
 depth attachment)
 
--- (make-fbo :c :c1 :d)
-Make an fbo with one depth attachment and two color attachments.
+-- (make-fbo 0 1 :d)
+Make an fbo with two color attachments and one depth attachment.
 
--- (make-fbo (list :c some-gpu-array))
+-- (make-fbo (list 0 some-gpu-array))
 Makes an fbo with one color attachment whos gpu-array is 'some-gpu-array'
 
---  (make-fbo (list :c some-texture))
+--  (make-fbo (list 0 some-texture))
 Makes an fbo with one color attachment whos gpu-array is (texref some-texture)
 
--- (make-fbo '(:c :dimensions (100 100) :element-type :rgba8))
+-- (make-fbo '(0 :dimensions (100 100) :element-type :rgba8))
 Makes an fbo with one color attachment whos gpu-array is taken from a new
-texture created by taking the arguments after :c and applying them to
+texture created by taking the arguments after 0 and applying them to
 #'make-texture
 
 -- Any combination of the above --
@@ -3142,8 +3131,13 @@ For more details see cepl.blending
                       </code>
                     </header>
                     <pre class="docstring">
-This is the macro you use when you want to capture the output from a pipeline in
-an FBO
+This is one macro you use when you want to capture the output from a pipeline in
+an FBO.
+
+with-fbo-bound will capture any rendering from any map-g calls inside it body.
+
+Also look at the docs for map-g-into and map-g-into* for a full picture of your
+options
 
 -- draw buffers-
 draw-buffers is an important argument, it allows you to direct the outputs from
@@ -3181,8 +3175,6 @@ this fbo to this scope.
 This means that the blending parameters from your fbo will be used while
 rendering. For the details and version specific behaviours check out
 the docstring for cepl.blending:with-blending
-
-See the with-fbo-viewport for details on the behavior
 
 -- target --
 For target the choices are :framebuffer, :read_framebuffer and
@@ -3635,11 +3627,10 @@ blending-params object with the same settings as the one passed.
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB MODE-RGB) :FUNC-ADD) ((:MODE-ALPHA MODE-ALPHA) :FUNC-ADD)
- ((:SOURCE-RGB SOURCE-RGB) :SRC-ALPHA)
- ((:SOURCE-ALPHA SOURCE-ALPHA) :SRC-ALPHA)
- ((:DESTINATION-RGB DESTINATION-RGB) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DESTINATION-ALPHA) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM2231) :FUNC-ADD) ((:MODE-ALPHA DUM2232) :FUNC-ADD)
+ ((:SOURCE-RGB DUM2233) :SRC-ALPHA) ((:SOURCE-ALPHA DUM2234) :SRC-ALPHA)
+ ((:DESTINATION-RGB DUM2235) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DUM2236) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3715,7 +3706,103 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(NAME CONTEXT &amp;BODY GPIPE-ARGS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+def-g-&gt; is how we define named rendering pipelines in CEPL.
+
+Rendering pipelines are constructed by composing gpu-functions.
+
+Rendering in OpenGL is descibed as a pipeline where a buffer-stream of
+data (usually describing geometry), and a number of uniforms are used as inputs
+and the outputs of the pipelines are written into an FBO.
+
+There are many stages to the pipeline and a full explanation of the GPU pipeline
+is beyond the scope of this docstring. However it surfices to say that only
+4 stages are fully programmable (and a few more customizable).
+
+def-g-&gt; lets you specify the code (shaders) to run the programmable
+parts (stages) of the pipeline.
+
+The available stages are:
+
+- vertex stage
+- tessellation - Not yet supported in CEPL
+- geometry     - Not yet supported in CEPL
+- fragment
+
+To define code that runs on the gpu in CEPL we use gpu functions (gfuncs). Which
+are defined with defun-g.
+
+Here is an example pipeline:
+
+    (defun-g vert ((position :vec4) &amp;uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (def-g-&gt; prog-1 ()
+      #'vert #'frag)
+
+Here we define a pipeline #'prog-1 which uses the gfunc #'vert as it's vertex
+shader and used the gfunc #'frag as the fragment shader.
+
+It is also possible to specify the name of the stages
+
+    (def-g-&gt; prog-1 ()
+      :vertex #'vert
+      :fragment #'frag)
+
+But this is not neccesary unless you need to distinguish between tessellation
+or geometry stages.
+
+
+-- Passing values from Stage to Stage --
+
+The return values of the gpu functions that are used as stages are passed as the
+input arguments of the next. The exception to this rule is that the first return
+value from the vertex stage is taken and used by GL, so only the subsequent
+values are passed along.
+
+We can see this in the example above: #'vert returns 3 values but #'frag only
+receives 2.
+
+The values from the fragment stage are writen into the current FBO. This may be
+the default FBO, in which case you will likely see the result on the screen, or
+it may be a FBO of your own.
+
+By default GL only writed the fragment return value to the FBO. For handling
+multiple return values please see the docstring for with-fbo-bound.
+
+-- Using our pipelines --
+
+To call a pipeline we use the map-g macro (or one of it's siblings
+map-g-into/map-g-into*). The doc-strings for those macros go into more details
+but the basics are that map-g maps a gpu-stream over our pipeline and the
+results of the pipeline are fed into the 'current' fbo.
+
+We pass our stream to map-g as the first argument after the pipeline, we then
+pass the uniforms in the same style as keyword arguments. For example let's see
+our prog-1 pipeline again:
+
+    (defun-g vert ((position :vec4) &amp;uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (def-g-&gt; prog-1 ()
+      #'vert #'frag)
+
+We can call this as follows:
+
+    (map-g #'prog-1 v4-stream :i game-time)
+
+-- Anonymous Pipelines --
+
+def-g-&gt; is going to have a partner macro called g-&gt; which will create
+anonymous pipelines (like the difference between lambda &amp; defun). However it
+is not yet implemented.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:DEF-GLSL-STAGE"/>
@@ -3728,7 +3815,38 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(NAME ARGS BODY-STRING OUTPUTS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+def-glsl-stage is useful when you wish to define a CEPL pipeline stage in glsl
+rather than lisp. This is especially useful if you want to use some
+pre-exisiting glsl without rewriting it to lisp.
+
+It is used like this:
+
+    (def-glsl-stage frag-glsl ((&quot;color_in&quot; :vec4) &amp;context :330 :fragment)
+      &quot;void main() {
+	   color_out = color_in;
+       }&quot;
+      ((&quot;color_out&quot; :vec4)))
+
+It differs from a regular defun-g definition in a few ways.
+
+- argument names are specified using strings.
+
+- &amp;context is mandatory. You must specify what shader stage this can be used for
+  and also what version/s this stage requires
+
+- You are defining the entire stage, not just a function body. This means you
+  can define local shader functions etc
+
+- You have to specify the outputs in lisp aswell as the inputs. This allows CEPL
+  to compose this stage in pipelines with regular CEPL gpu functions.
+
+CEPL will write all the in, out and uniform definitions for your shader so do
+not specify those yourself.
+
+This stage fully supports livecoding, so feel free to change and recomplile the
+text in the stage at runtime.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:DEFINE-COMPILER-MACRO-G"/>
@@ -3741,7 +3859,14 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(NAME LAMBDA-LIST &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This lets you define a compiler-macro that only works with gpu-functions.
+
+The &amp;context lambda list keyword allows you to restrict this macro to only be
+valid in gpu functions with compatible contexts.
+
+&amp;whole and &amp;environment are not supported.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:DEFMACRO-G"/>
@@ -3754,7 +3879,14 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(NAME LAMBDA-LIST &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This lets you a define a macro that only works in gpu code.
+
+The &amp;context lambda list keyword allows you to restrict this macro to only be
+valid in gpu functions with compatible contexts.
+
+&amp;whole and &amp;environment are not supported.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:DEFUN-G"/>
@@ -3767,7 +3899,58 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(NAME ARGS &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Define a function that runs on the gpu.</pre>
+                    <pre class="docstring">
+Defun-g let's you define a function which will be run on the gpu.
+Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
+
+Gpu functions try to feel similar to regular CL functions however naturally
+there are some differences.
+
+The first and most obvious one is that whilst gpu function can be called
+from other gpu functions, they cannot be called from lisp functions directly.
+They first must be composed into a pipeline using def-g-&gt;.
+
+When a gfunc is composed into a pipeline then that function takes on the role of
+one of the 'shader stages' of the pipeline. For a proper breakdown of pipelines
+see the docstring for def-g-&gt;.
+
+
+Let's see a simple example of a gpu function we can then break down
+
+    ;;       {0}          {3}          {1}         {2}
+    (defun-g example ((vert my-struct) &amp;uniform (loop :float))
+      (values (v! (+ (my-struct-pos vert) ;; {4}
+		     (v! (sin loop) (cos loop) 0))
+		  1.0)
+	      (my-struct-col vert)))
+
+
+{0} So like the normal defun we specify a name first, and the arguments as a
+    list straight afterwards
+
+{1} The &amp;uniform lambda keyword says that arguments following it are 'uniform
+    arguments'. A uniform is an argument which has the same value for the entire
+    stage.
+    &amp;optional and &amp;key are not supported
+
+{2} Here is our definition for the uniform value. If used in a pipeline as a
+    vertex shader #'example will be called once for every value in the
+    gpu-stream given. That means the 'vert' argument will have a different value
+    for each of the potentially millions of invocations in that ONE pipeline
+    call, however 'loop' will have the same value for the entire pipeline call.
+
+{2 &amp; 3} All arguments must have their types declared
+
+{4} Here we see we are using CL's values special form. CEPL fully supports
+    multiple value return in your shaders. If our function #'example was called
+    from another gpu-function then you can use multiple-value-bind to bind the
+    returned values. If however our example function were used as a stage in a
+    pipeline then the multiple returned values will be mapped to the multiple
+    arguments of the next stage in the pipeline.
+
+That's the basics of gpu-functions. For more details on how they can be used
+in pipelines please see the documentation for def-g-&gt;.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:G-&gt;"/>
@@ -3780,7 +3963,11 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(CONTEXT &amp;REST FORMS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Making anonymous pipelines is not yet supported in CEPL. But it will be!
+
+g-&gt; is used to compose gpu-functions together into anonymous pipelines
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:MAP-G"/>
@@ -3793,7 +3980,37 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+The map-g macro maps a gpu-stream over our pipeline and the results of the
+pipeline are fed into the 'current' fbo.
+
+This is how we run our pipelines and thus is how we render in CEPL.
+
+The arguments to map-g are going to depend on what gpu-functions were composed
+in the pipeline you are calling. However the layout is always as follows.
+
+- the pipeline function: The first argument is always the pipeline you wish to
+  map the data over.
+
+- The stream: The next argument will be the gpu-stream which will be used as the
+  inputs to the vertex-shader of the pipeline. The type of the gpu-stream  must
+  be mappable onto types of the non uniform args of the gpu-function being used
+  as the vertex-shader.
+
+- Uniform args: Next you must provide the uniform arguments. These are passed in
+  the same fashion as regular &amp;key arguments.
+
+CEPL will then run the pipeline with the given args and the results will be fed
+into the current FBO. If no FBO has been bound by the user then the current FBO
+will be the default FBO which will most likely mean you are rendering into the
+window visable on your screen.
+
+If an FBO has been bound then the value/s from the fragment shader will be
+written into the attachments of the FBO. To control this please see the
+doc-string for with-fbo-bound. The default behaviour is that each of the
+multiple returns values from the gpu-function used as the fragment shader will
+be written into the respective attachments of the FBO (first value to first attachment, second value to second attachment, etc)
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:MAP-G-INTO"/>
@@ -3806,7 +4023,49 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(FBO PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+The map-g-into macro maps a gpu-stream over our pipeline and the results of the
+pipeline are fed into the supplied fbo.
+
+This is how we run our pipelines and thus is how we render in CEPL.
+
+The arguments to map-g-into are going to depend on what gpu-functions were
+composed in the pipeline you are calling. However the layout is always as
+follows:
+
+- target fbo: This is where the results of the pipeline will be written.
+
+- the pipeline function: The first argument is always the pipeline you wish to
+  map the data over.
+
+- The stream: The next argument will be the gpu-stream which will be used as the
+  inputs to the vertex-shader of the pipeline. The type of the gpu-stream  must
+  be mappable onto types of the non uniform args of the gpu-function being used
+  as the vertex-shader.
+
+- Uniform args: Next you must provide the uniform arguments. These are passed in
+  the same fashion as regular &amp;key arguments.
+
+CEPL will then run the pipeline with the given args and the results will be fed
+into the specified FBO. The value/s from the fragment shader will be
+written into the attachments of the FBO. If you need to  control this in the
+fashion usualy provided by with-fbo-bound then please see the doc-string for
+ map-g-into*.
+
+The default behaviour is that each of the multiple returns values from the
+gpu-function used as the fragment shader will be written into the respective
+attachments of the FBO (first value to first attachment, second value to
+second attachment, etc)
+
+Internally map-g-into wraps call to map-g in with-fbo-bound. The with-fbo-bound
+has it's default configuration which means that:
+
+- the viewport being will be the dimensions of the gpu-array in the first fbo attachment
+- and blending is enabled
+
+If you want to use map-g-into and have control over these options please use
+map-g-into*
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:WITH-INSTANCES"/>
@@ -3819,7 +4078,25 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(COUNT &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+The with-instances macro is used to enable instancing. You specify number number
+of instances with the count argument.
+
+An example of it's usage is as follows:
+
+    (with-instances 1000
+      (map-g #'draw-grass grass-data :tex *grass-texture*))
+
+This behaves kind of like you had written the following..
+
+    (dotimes (x 1000)
+      (map-g #'draw-grass grass-data :tex *grass-texture*))
+
+..except MUCH more efficiently as you did not have to submit 1000 draw calls.
+
+Another difference is that, in the pipeline, the variable gl-instance-id will
+contain the index of which of the 1000 instances is currently being drawn.
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -4998,15 +5275,15 @@ This behaves as if all the calls to #'get-transform were actually called to
                     <pre class="docstring">
 gpu-buffer is a struct that abstracts a OpenGL 'Buffer Object'
 
-Along with the the ID of the GL Object itself it stores the layout of the data
-in the buffer.
+Along with the the ID of the GL Object itself it stores the unformatted data
+as an array of gpu-arrays.
 
-This layout is as follows:
-`((data-type data-index-length offset-in-bytes-into-buffer))
+Every gpu-array in the buffer will have an element-type of :uint8, even if this
+buffer was created for a gpu-array with a different element-type.
 
-for example:
-
-`((:float 3 0) ('vert-data 140 12))
+For example (make-gpu-array '(.1 .2 .3 .4)) will make a gpu-array of 4 float.
+However the buffer backing this gpu-array will contain a single array with
+element-type :uint8 and a length of 16.
 
 It is not expected that users will be using gpu-buffer's directly. Instead they
 are ususal interacted with via CEPL's gpu-array and ubo features.
@@ -5023,7 +5300,10 @@ are ususal interacted with via CEPL's gpu-array and ubo features.
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns an array of the raw :uint8 gpu-arrays that make up the
+data in this gpu-buffer.
+</pre>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:GPU-BUFFER-ID"/>

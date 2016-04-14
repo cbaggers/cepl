@@ -11,21 +11,21 @@ there are some differences.
 
 The first and most obvious one is that whilst gpu function can be called
 from other gpu functions, they cannot be called from lisp functions directly.
-They first must be composed into a pipeline using defpipeline.
+They first must be composed into a pipeline using def-g->.
 
 When a gfunc is composed into a pipeline then that function takes on the role of
 one of the 'shader stages' of the pipeline. For a proper breakdown of pipelines
-see the docstring for defpipeline.
+see the docstring for def-g->.
 
 
 Let's see a simple example of a gpu function we can then break down
 
     ;;       {0}          {3}          {1}         {2}
-    (defun-g vert ((vert my-struct) &uniform (loop :float))
+    (defun-g example ((vert my-struct) &uniform (loop :float))
       (values (v! (+ (my-struct-pos vert) ;; {4}
 		     (v! (sin loop) (cos loop) 0))
 		  1.0)
-	      (my-struct-col vert))) ;;{5}
+	      (my-struct-col vert)))
 
 
 {0} So like the normal defun we specify a name first, and the arguments as a
@@ -33,38 +33,43 @@ Let's see a simple example of a gpu function we can then break down
 
 {1} The &uniform lambda keyword says that arguments following it are 'uniform
     arguments'. A uniform is an argument which has the same value for the entire
-    stage
+    stage.
+    &optional and &key are not supported
 
+{2} Here is our definition for the uniform value. If used in a pipeline as a
+    vertex shader #'example will be called once for every value in the
+    gpu-stream given. That means the 'vert' argument will have a different value
+    for each of the potentially millions of invocations in that ONE pipeline
+    call, however 'loop' will have the same value for the entire pipeline call.
 
+{2 & 3} All arguments must have their types declared
 
-- Type: All the function's aruments must have their types declared
+{4} Here we see we are using CL's values special form. CEPL fully supports
+    multiple value return in your shaders. If our function #'example was called
+    from another gpu-function then you can use multiple-value-bind to bind the
+    returned values. If however our example function were used as a stage in a
+    pipeline then the multiple returned values will be mapped to the multiple
+    arguments of the next stage in the pipeline.
 
-- No &optional or &key: Instead we have &uniform and &context
-
-
+That's the basics of gpu-functions. For more details on how they can be used
+in pipelines please see the documentation for def-g->.
 ")
 
-  (defmacro defpipeline
+  (defmacro def-g->
       "
-defpipeline is how we define named rendering pipelines in CEPL
+def-g-> is how we define named rendering pipelines in CEPL.
 
-                - - - - - - - - - - - - - - - - - - -
+Rendering pipelines are constructed by composing gpu-functions.
 
--- Defining a Pipeline From GPU Funuctions--
-
-defpipeline can both compose gpu function in rendering pipelines and also
-compose multiple pipelines into a multipass pipeline. We will look at both in
-turn below.
-
-Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
-(usually describing geometry), and a number of uniforms are used as inputs and
-the outputs of the pipelines are written into an FBO.
+Rendering in OpenGL is descibed as a pipeline where a buffer-stream of
+data (usually describing geometry), and a number of uniforms are used as inputs
+and the outputs of the pipelines are written into an FBO.
 
 There are many stages to the pipeline and a full explanation of the GPU pipeline
 is beyond the scope of this docstring. However it surfices to say that only
 4 stages are fully programmable (and a few more customizable).
 
-defpipeline lets you specify the code (shaders) to run the programmable
+def-g-> lets you specify the code (shaders) to run the programmable
 parts (stages) of the pipeline.
 
 The available stages are:
@@ -85,26 +90,27 @@ Here is an example pipeline:
     (defun-g frag ((s :float) (c :float))
       (v! s c 0.4 1.0))
 
-    (defpipeline prog-1 ()
-	(g-> #'vert #'frag))
+    (def-g-> prog-1 ()
+      #'vert #'frag)
 
 Here we define a pipeline #'prog-1 which uses the gfunc #'vert as it's vertex
 shader and used the gfunc #'frag as the fragment shader.
 
 It is also possible to specify the name of the stages
 
-    (defpipeline prog-1 ()
-	(g-> :vertex #'vert :fragment #'frag))
+    (def-g-> prog-1 ()
+      :vertex #'vert
+      :fragment #'frag)
 
-But this is not neccesary unless you need to distinguish between a tessellation
-or geometry stage.
+But this is not neccesary unless you need to distinguish between tessellation
+or geometry stages.
 
 
 -- Passing values from Stage to Stage --
 
 The return values of the gpu functions that are used as stages are passed as the
 input arguments of the next. The exception to this rule is that the first return
-value from the vertex stage is taken as used by GL, so only the subsequent
+value from the vertex stage is taken and used by GL, so only the subsequent
 values are passed along.
 
 We can see this in the example above: #'vert returns 3 values but #'frag only
@@ -117,90 +123,186 @@ it may be a FBO of your own.
 By default GL only writed the fragment return value to the FBO. For handling
 multiple return values please see the docstring for with-fbo-bound.
 
+-- Using our pipelines --
 
+To call a pipeline we use the map-g macro (or one of it's siblings
+map-g-into/map-g-into*). The doc-strings for those macros go into more details
+but the basics are that map-g maps a gpu-stream over our pipeline and the
+results of the pipeline are fed into the 'current' fbo.
 
-                - - - - - - - - - - - - - - - - - - -
+We pass our stream to map-g as the first argument after the pipeline, we then
+pass the uniforms in the same style as keyword arguments. For example let's see
+our prog-1 pipeline again:
 
--- Defining Multipass Pipelines --
+    (defun-g vert ((position :vec4) &uniform (i :float))
+      (values position (sin i) (cos i)))
 
-Most often we dont want just one pass in our rendering code, we want to take the
-output of one pass and feed it straight into another. This can be done perfectly
-well with fbos & with-fbo-bound but defpipeline has some syntax that you may
-find nicer.
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
 
-Like before let's take an example
+    (def-g-> prog-1 ()
+      #'vert #'frag)
 
+We can call this as follows:
 
+    (map-g #'prog-1 v4-stream :i game-time)
+
+-- Anonymous Pipelines --
+
+def-g-> is going to have a partner macro called g-> which will create
+anonymous pipelines (like the difference between lambda & defun). However it
+is not yet implemented.
 ")
 
   (defmacro map-g
       "
+The map-g macro maps a gpu-stream over our pipeline and the results of the
+pipeline are fed into the 'current' fbo.
 
+This is how we run our pipelines and thus is how we render in CEPL.
+
+The arguments to map-g are going to depend on what gpu-functions were composed
+in the pipeline you are calling. However the layout is always as follows.
+
+- the pipeline function: The first argument is always the pipeline you wish to
+  map the data over.
+
+- The stream: The next argument will be the gpu-stream which will be used as the
+  inputs to the vertex-shader of the pipeline. The type of the gpu-stream  must
+  be mappable onto types of the non uniform args of the gpu-function being used
+  as the vertex-shader.
+
+- Uniform args: Next you must provide the uniform arguments. These are passed in
+  the same fashion as regular &key arguments.
+
+CEPL will then run the pipeline with the given args and the results will be fed
+into the current FBO. If no FBO has been bound by the user then the current FBO
+will be the default FBO which will most likely mean you are rendering into the
+window visable on your screen.
+
+If an FBO has been bound then the value/s from the fragment shader will be
+written into the attachments of the FBO. To control this please see the
+doc-string for with-fbo-bound. The default behaviour is that each of the
+multiple returns values from the gpu-function used as the fragment shader will
+be written into the respective attachments of the FBO (first value to first attachment, second value to second attachment, etc)
 ")
 
-;; (defmacro with-fbo-bound
-;;       "
-;; This is one macro you use when you want to capture the output from a pipeline in
-;; an FBO.
+  (defmacro map-g-into
+      "
+The map-g-into macro maps a gpu-stream over our pipeline and the results of the
+pipeline are fed into the supplied fbo.
 
-;; with-fbo-bound will capture any rendering from any map-g calls inside it body.
+This is how we run our pipelines and thus is how we render in CEPL.
 
-;; Also look at the docs for map-g-into and map-g-into* for a full picture of your
-;; options
+The arguments to map-g-into are going to depend on what gpu-functions were
+composed in the pipeline you are calling. However the layout is always as
+follows:
 
-;; -- draw buffers-
-;; draw-buffers is an important argument, it allows you to direct the outputs from
-;; the fragment-shader of the pipeline into the fbo's color attachments.
-;; This means that your pipelines can write into multiple attachments (and thus
-;; multiple textures) at once.
+- target fbo: This is where the results of the pipeline will be written.
 
-;; To use it either pass in:
+- the pipeline function: The first argument is always the pipeline you wish to
+  map the data over.
 
-;;  nil - Which means that the fbo is bound but no attachments will be draw into
-;;        (rarely used)
+- The stream: The next argument will be the gpu-stream which will be used as the
+  inputs to the vertex-shader of the pipeline. The type of the gpu-stream  must
+  be mappable onto types of the non uniform args of the gpu-function being used
+  as the vertex-shader.
 
-;;  t -  Which means the all attachments will be available to be drawn into
-;;       this will happen in order, so the first output from the fragment shader
-;;       will draw into the first attachment, the second output to the second
-;;       attachment, etc
+- Uniform args: Next you must provide the uniform arguments. These are passed in
+  the same fashion as regular &key arguments.
 
+CEPL will then run the pipeline with the given args and the results will be fed
+into the specified FBO. The value/s from the fragment shader will be
+written into the attachments of the FBO. If you need to  control this in the
+fashion usualy provided by with-fbo-bound then please see the doc-string for
+ map-g-into*.
 
-;; -- with-viewport --
-;; If with-viewport is t then with-fbo-bound adds a with-fbo-viewport that uses
-;; this fbo to this scope. This means that the current-viewport within this scope
-;; will be set to the equivalent of:
+The default behaviour is that each of the multiple returns values from the
+gpu-function used as the fragment shader will be written into the respective
+attachments of the FBO (first value to first attachment, second value to
+second attachment, etc)
 
-;;     (make-viewport dimensions-of-fbo '(0 0))
+Internally map-g-into wraps call to map-g in with-fbo-bound. The with-fbo-bound
+has it's default configuration which means that:
 
-;; See the docstruct with-fbo-viewport for details on this behavior.
+- the viewport being will be the dimensions of the gpu-array in the first fbo attachment
+- and blending is enabled
 
-;; One last detail is that you may want to take the dimensions of the viewport from
-;; an attachment other than attachment-0. To do this use the 'attachment-for-size
-;; argument and give the index of the color-attachment to use.
+If you want to use map-g-into and have control over these options please use
+map-g-into*
+")
 
-;; -- with-blending --
-;; If with-blending is t then with-fbo-bound adds a with-blending that uses
-;; this fbo to this scope.
-;; This means that the blending parameters from your fbo will be used while
-;; rendering. For the details and version specific behaviours check out
-;; the docstring for cepl.blending:with-blending
+  (defmacro map-g-into*
+      "
+The map-g-into* macro is a variant of map-g-into which differs in that you have
+more control over how the fbo is bound.
 
-;; See the with-fbo-viewport for details on the behavior
+Like map-g-into, map-g-into* maps a gpu-stream over our pipeline and the
+results of the pipeline are fed into the supplied fbo.
 
-;; -- target --
-;; For target the choices are :framebuffer, :read_framebuffer and
-;; :draw_framebuffer.
-;; You normally dont need to worry about the target as the last two are only used
-;; when you need certain GL read and write operations to happen to different
-;; buffers. It remains for those who know they need this but otherwise you can
-;; let CEPL handle it.
+This is how we run our pipelines and thus is how we render in CEPL.
 
+The arguments to map-g-into* are going to depend on what gpu-functions were
+composed in the pipeline you are calling. However the layout is always as
+follows.
 
-;; -- unbind --
-;; If unbind is set to nil then the fob is not unbound at the end of the scope.
-;; Only use this if you know you need it. Most often it is best to let CEPL control
-;; that.
-;; ")
+- fbo: This is where the results of the pipeline will be written.
+
+- target: For target the choices are :framebuffer, :read_framebuffer and
+          :draw_framebuffer.
+	  You normally dont need to worry about the target as the last two are
+          only used when you need certain GL read and write operations to
+          happen to different buffers. It remains for those who know they need
+          this but otherwise you can let CEPL handle it.
+
+- with-viewport: If with-viewport is t then with-fbo-bound adds a
+                 with-fbo-viewport that uses this fbo to this scope. This means
+                 that the current-viewport within this scope will be set to the
+                 equivalent of:
+
+		     (make-viewport dimensions-of-fbo '(0 0))
+
+		 See the docstruct with-fbo-viewport for details on this
+                 behavior.
+
+		 One last detail is that you may want to take the dimensions of
+                 the viewport from an attachment other than attachment-0.
+                 To do this use the 'attachment-for-size argument and give the
+                 index of the color-attachment to use.
+
+- with-blending: If with-blending is t then with-fbo-bound adds a with-blending
+                 that uses this fbo to this scope.
+		 This means that the blending parameters from your fbo will be
+                 used while rendering. For the details and version specific
+                 behaviours check out the docstring for with-blending
+
+- attachment-for-size: see above
+
+- the pipeline function: The first argument is always the pipeline you wish to
+  map the data over.
+
+- The stream: The next argument will be the gpu-stream which will be used as the
+  inputs to the vertex-shader of the pipeline. The type of the gpu-stream  must
+  be mappable onto types of the non uniform args of the gpu-function being used
+  as the vertex-shader.
+
+- Uniform args: Next you must provide the uniform arguments. These are passed in
+  the same fashion as regular &key arguments.
+
+CEPL will then run the pipeline with the given args and the results will be fed
+into the specified FBO. The value/s from the fragment shader will be
+written into the attachments of the FBO. If you need to control this in the
+fashion usualy provided by with-fbo-bound then please see the doc-string for
+ map-g-into*.
+
+The default behaviour is that each of the multiple returns values from the
+gpu-function used as the fragment shader will be written into the respective
+attachments of the FBO (first value to first attachment, second value to
+second attachment, etc)
+
+Internally map-g-into* wraps call to map-g in with-fbo-bound. The with-fbo-bound
+has it's default configuration which means that:
+")
 
   (defmacro def-glsl-stage
       "
@@ -279,8 +381,7 @@ contain the index of which of the 1000 instances is currently being drawn.
 
   (defmacro g->
       "
-g-> is used to compose gpu-functions or pipelines together.
+Making anonymous pipelines is not yet supported in CEPL. But it will be!
 
-Currently it can only be used with defpipeline but in future using this outside
-of a defpipeline will create an anonomous gpu function
+g-> is used to compose gpu-functions together into anonymous pipelines
 "))

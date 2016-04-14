@@ -6,25 +6,30 @@
     "
 gpu-buffer is a struct that abstracts a OpenGL 'Buffer Object'
 
-Along with the the ID of the GL Object itself it stores the layout of the data
-in the buffer.
+Along with the the ID of the GL Object itself it stores the unformatted data
+as an array of gpu-arrays.
 
-This layout is as follows:
-`((data-type data-index-length offset-in-bytes-into-buffer))
+Every gpu-array in the buffer will have an element-type of :uint8, even if this
+buffer was created for a gpu-array with a different element-type.
 
-for example:
-
-`((:float 3 0) ('vert-data 140 12))
+For example (make-gpu-array '(.1 .2 .3 .4)) will make a gpu-array of 4 float.
+However the buffer backing this gpu-array will contain a single array with
+element-type :uint8 and a length of 16.
 
 It is not expected that users will be using gpu-buffer's directly. Instead they
 are ususal interacted with via CEPL's gpu-array and ubo features.
 ")
 
-
   (defun gpu-buffer-p
       "
 This function returns t if the given value is a gpu-buffer. Otherwise it
 returns nil.
+")
+
+  (defun gpu-buffer-arrays
+      "
+This function returns an array of the raw :uint8 gpu-arrays that make up the
+data in this gpu-buffer.
 ")
 
   (defun gpu-buffer-id
@@ -163,17 +168,6 @@ for.
 
 The function returns a buffer object with its format slot populated with the
 details of the data stored within the buffer")
-
-  (defun buffer-sub-data
-  "
-This function replaces a subsection of the data in the specified buffer with
-the data in the c-array.
-
-The byte offset specifies where you wish to start overwriting data from.
-
-When the :safe option is t, the function checks to see if the data you are about
-to write into the buffer will cross the boundaries between data already in the
-buffer and will throw an error if you are.")
 
   (defun multi-buffer-data
       "

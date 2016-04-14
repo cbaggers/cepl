@@ -557,7 +557,6 @@
            :buffer-data
            :buffer-data-raw
            :buffer-reserve-block
-           :buffer-sub-data
            :free-buffer
            :free-buffers
            :make-gpu-buffer
@@ -576,7 +575,8 @@
 	   :free-gpu-array
 	   :make-gpu-array
 	   :make-gpu-arrays
-	   :subseq-g))
+	   :subseq-g
+	   :subseq-g-raw))
 
 (defpackage :cepl.vaos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

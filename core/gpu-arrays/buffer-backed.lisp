@@ -173,11 +173,15 @@
 ;;---------------------------------------------------------------
 
 (defun subseq-g (array start &optional end)
+  (subseq-g-raw array start end nil))
+
+(defun subseq-g-raw (array start end &key new-element-type)
   (let ((dimensions (dimensions array)))
     (if (> (length dimensions) 1)
         (error "Cannot take subseq of multidimensional array")
         (let* ((source-len (first dimensions))
-               (type (gpu-array-bb-element-type array))
+               (type (or new-element-type
+			 (gpu-array-bb-element-type array)))
                (end (or end source-len)))
           (if (and (< start end)
 		   (< start source-len)

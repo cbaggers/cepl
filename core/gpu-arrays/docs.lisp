@@ -212,6 +212,32 @@ specific times so as not to get blocked by rendering commands. As such CEPL
 tries not to allocate new memory when the function is not explicitly about that.
 ")
 
+    (defun subseq-g-raw
+      "
+This function returns a gpu-array which contains a subset of the gpu-array
+passed into this function optionally allowing you to change the element-type
+of the resulting gpu-array.
+
+It does not copy the foreign data, instead this array points to within the data
+of the original array. This means these arrays now share data (like a displaced
+array in standard CL.
+
+Due to this you have to be very careful when freeing the underlying array as
+this will affect any other array sharing that data.
+
+Also you have to be careful that the new element-type you choose makes sense
+given the data already in the arrays. For example taking an gpu-array of :vec4
+and making an gpu-array of :float will give you sensible values, however making
+a gpu-array of :int will give you garbage.
+
+Unless you have a very specific use-case then it is best to use #'subseq-g
+
+The reason that this arguably more dangerous behaviour is default is efficiency.
+Mofidying gpu memory in performance critical applications should be done at
+specific times so as not to get blocked by rendering commands. As such CEPL
+tries not to allocate new memory when the function is not explicitly about that.
+")
+
   (defun backed-by
       "
 This function takes a gpu-array and returns either :texture or :buffer depending

@@ -317,8 +317,6 @@ This means that the blending parameters from your fbo will be used while
 rendering. For the details and version specific behaviours check out
 the docstring for cepl.blending:with-blending
 
-See the with-fbo-viewport for details on the behavior
-
 -- target --
 For target the choices are :framebuffer, :read_framebuffer and
 :draw_framebuffer.
