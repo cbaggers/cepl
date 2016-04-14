@@ -235,7 +235,32 @@ texture.
 
   (defun sample
       "
-BOOP!
+This function takes a texture and optionally some sampling parameters and
+returns a sampler.
+
+The sampler is an object that is passed to a pipeline so that the shaders in
+the gpu-functions in the pipeline can read from the gpu-arrays in the texture.
+
+For details on what the parameters are and mean see the docstring for the
+'sampler type
+
+-- Note about GL Versions --
+
+Sampler Objects were introduced in GL 3.3. So for now CEPL needs at least v3.3
+in future we hope to lower the requirement to 3.1 but this will take some extra
+work.
+
+-- NOTE For those with GL experience --
+
+You will have noticed that in CEPL your sampler is tied to one texture which is
+unlike in regular GL where a sample object can be used to override the sampling
+parameters of any number of textures. At first this would seem very wasteful
+however CEPL does not use 1 GL Sampler Object per CEPL sampler. The ID sharing
+is done based on the parameters.
+
+This means you get the same number of sampler objects as your would normally
+but with the added benefit that samplers are semantically dual with gpu-streams
+giving greater api consistancy.
 ")
 
   (defun compare
@@ -517,15 +542,6 @@ example:
     (setf (wrap texture-or-sampler) :clamp-to-edge)
 
 
-")
-
-    (defun sampler
-	"
-Make-sampler creates a new texture sampler that can be used to override the
-sampling parameters of a texture.
-
-For details on what a sampler is and what the parameters are and mean see the
-docstring for the 'sampler type
 ")
 
     (defun sampler-p

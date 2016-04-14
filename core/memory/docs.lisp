@@ -70,4 +70,12 @@ You can use pull1-g on the following CEPL types.
 - ubo
 - Any instance of a type defined using defstruct-g
 
+")
+
+  (defun initialized-p
+      "
+When given an object holding a gpu resource this function will return whether
+that object has been initialized.
+
+This will be t unless the GL context has not yet been created.
 "))

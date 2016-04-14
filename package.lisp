@@ -722,10 +722,7 @@
   (:export :fbo
 	   :fbo-p
 	   :fbo-blending-params
-	   :attachment
-	   :attachment-p
 	   :attachment-viewport
-	   :attachment-gpu-array
 	   :attachment-blending
 	   :per-attachment-blending-available-p
 	   :attachment-tex

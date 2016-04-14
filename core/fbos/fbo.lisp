@@ -271,7 +271,6 @@
       (when cepl.context:*gl-context*
 	(setf max-draw-buffers (max-draw-buffers *gl-context*))))
     (case x
-      (:c (color-attachment-enum 0))
       (:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
       (:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
       (:ds #.(cffi:foreign-enum-value
@@ -288,26 +287,11 @@
   (if (numberp x)
       (color-attachment-enum x)
       (case x
-	(:c (color-attachment-enum 0))
 	(:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
 	(:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
 	(:ds #.(cffi:foreign-enum-value
 		'%gl:enum :depth-stencil-attachment))
 	(otherwise whole))))
-
-(defun binding-shorthand (x)
-  (when (symbolp x)
-    (cond
-      ((string-equal x "C") 0)
-      ((string-equal x "D") :d)
-      ((string-equal x "S") :s)
-      ((string-equal x "DS") :ds)
-      (t (let ((name (symbol-name x)))
-           (when (and (>= (length name) 2) (char= #\C (aref name 0)))
-             (let ((num (parse-integer name :start 1)))
-               (when (and (>= num 0)
-                          (< num (max-draw-buffers *gl-context*)))
-                 num))))))))
 
 ;;--------------------------------------------------------------
 
@@ -327,8 +311,7 @@
                  (if (listp var-form)
                      `(,(second var-form) (attachment ,expr
                                                       ,(kwd (first var-form))))
-                     `(,var-form (attachment ,expr
-                                             ,(binding-shorthand var-form))))))
+                     `(,var-form (attachment ,expr ,var-form)))))
        ,@body)))
 
 
@@ -482,7 +465,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
               (setf (attachment fbo attachment-name) tex-array)
 	      tex-array))
           (mapcar #'%gen-textures args)
-          (mapcar (lambda (x) (binding-shorthand (first x)))
+          (mapcar (lambda (x) (first x))
                   (mapcar #'listify args))))
 
 ;; Attaching Images

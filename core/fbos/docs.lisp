@@ -9,8 +9,8 @@ When a FBO is rendered into the data from the pipeline is written into one or
 more of the attachments of the FBO
 
 An FBO attachment is a slot where a texture-backed gpu-array can be attached.
-When the texture is attached the data from a pipeline rendering into the fbo is
-written into the texture.
+When the gpu-array is attached the data from a pipeline rendering into the fbo
+is written into that gpu-array.
 
 This is the heart of how multi-pass rendering is done in OpenGL. One pipeline
 writes data into textures that are then used as inputs to another pipeline[0].
@@ -61,72 +61,22 @@ attached here becomes both the depth and stencil attachment.
 Making these choices is done with the 'with-fbo-bound macro. See it's docstring
 for further details
 
-
 [0] WARNING:
 
 It is possible to bind a texture to an FBO, bind that same texture to a shader,
-and then try to render with it at the same time.
-
-It is perfectly valid to bind one gpu-array from a texture to an FBO and then
-render with that texture, as long as you prevent yourself from sampling from
-that gpu-array. If you do try to read and write to the same image, you get
-undefined results.
+and then try to sample from it at the same time. You will get undefined results.
 
 This means it may do what you want, the sampler may get old data, the sampler
 may get half old and half new data, or it may get garbage data. Any of these are
 possible outcomes.
 
-DO NOT DO THIS. What you will get is undefined behavior.
-")
-
-  (defstruct attachment
-    "
-An FBO attachment is a slot where a texture-backed gpu-array can be attached.
-When the texture is attached the data from a pipeline rendering into the fbo is
-written into the texture.
-
-This is the heart of how multi-pass rendering is done in OpenGL. One pipeline
-writes data into textures that are then used as inputs to another pipeline[0].
-
-Attachments come in a few varieties:
-
--- Color Attachments --
-
-Color attachments can only contain gpu-arrays whose element-type can be found in
-the *color-renderable-formats* list.
-
-Note that while OpenGL terminology mentions 'color' and 'image' a lot you are
-not limitted to only using textures or fbos for pictures. It is perfectly
-valid (and incredibly useful) to return data meaning all kinds of things other
-than colors.
-
--- Depth Attachments --
-
-The depth attachment (when used) can only contain a gpu-array whos element-type
-can be found in *depth-formats*
-
-Usage Tip:
-Even if you don't plan on reading from this depth_attachment, any fbo that will
-be rendered to should have a depth attachment.
-
--- Stencil Attachments (NOT SUPPORTED IN CURRENT CEPL VERSION) --
-
-The stencil attachment (when used) can only contain a gpu-array whos
-element-type can be found in *stencil-formats*
-
--- Depth-Stencil Attachments (NOT SUPPORTED IN CURRENT CEPL VERSION) --
-
-The depth-stencil attachment (when used) can only contain a gpu-array whos
-element-type can be found in *depth-stencil-formats*
-
-This attachment is shorthand for 'both depth and stencil'. The gpu-array
-attached here becomes both the depth and stencil attachment.
+Do Not Do This!
 ")
 
   (defun attachment
       "
 This function retrieves the attachment named by attachment-name from the
-given fbo.
+given fbo. The result is a gpu-array
 
 The attachment-name can be one of the following:
 
@@ -140,22 +90,23 @@ The attachment-name can be one of the following:
  :ds - the depth-stencil-attachment is returned [0]
 
 
-You can also setf this function, the value can be either of the following:
+You can also setf this function, the value must be a texture-backed gpu-array
+with a valid element-type for that attachment.
 
- texture-backed gpu-array - The given array is attached to the fbo
-                            at the location specified by attachment-name
+For color attachments this means the element type must be a member of
+the *color-renderable-formats* list
 
- a different attachment - The gpu-array from the given attachment is attached
-                          to the fbo at the location specified by
-                          attachment-name
+For color attachments this means the element type must be a member of
+the *depth-formats* list
+
+For stencil attachments this means the element type must be a member of
+the *stencil-formats* list
+
+For depth-stencil attachments this means the element type must be a member of
+the *depth-stencil-formats* list
 
 [0] WARNING:
 :s & :ds are not supported in the current version of CEPL
-")
-
-  (defun attachment-gpu-array
-      "
-This function returns the gpu-array conntect to the given attachment.
 ")
 
   (defun fbo-blending-params
@@ -171,16 +122,24 @@ The details of blending parameters and where they can be used is best covered in
 the docstring for the 'blending-params struct.
 ")
 
-  (defun attachment-p
+  (defun attachment-blending
       "
-This function returns t when the given value is an attachment and otherwise
-returns nil.
+This function returns the blending parameters that will be used when rendering
+into the specified attachment on the given fbo
+
+Blending parameters tell OpenGL how values written into a gpu-array should be
+combined with any values that are already present.
+
+The canonical use for this is implementing transparency.
+
+The details of blending parameters and where they can be used is best covered in
+the docstring for the 'blending-params struct.
 ")
 
   (defun attachment-viewport
       "
-This function takes an attachment and returns a new viewport whos dimensions
-match those of the gpu-array connected to the attachment.
+This function takes an fbo and attachment-name and returns a new viewport whos
+dimensionsmatch those of the gpu-array connected to the attachment.
 ")
 
   (defun check-framebuffer-status
@@ -257,14 +216,14 @@ Lets look at the behaviour when given different arguments
 -- (make-fbo) --
 It is not valid is have an fbo with no attachments so this will fail
 
--- (make-fbo :c) or (make-fbo :c0)
-Make an fbo with one color attachment.
+-- (make-fbo 0)
+Make an fbo with one color attachment in attachment slot 0.
 CEPL with make a texture with dimensions equal to that of the current viewport
 and with the element-type :rgba (which is a sensible default for a color
 attachment)
 
--- (make-fbo :c0 :c1)
-Make an fbo with two color attachments.
+-- (make-fbo 0 1)
+Make an fbo with two color attachments 1 in each of attachment slots 0 & 1.
 CEPL with make the textures with dimensions equal to that of the current
 viewport and with the element-type :rgba (which is a sensible default for a
 color attachment)
@@ -275,18 +234,18 @@ CEPL with make a texture with dimensions equal to that of the current viewport
 and with the element-type :depth-component24 (which is a sensible default for a
 depth attachment)
 
--- (make-fbo :c :c1 :d)
-Make an fbo with one depth attachment and two color attachments.
+-- (make-fbo 0 1 :d)
+Make an fbo with two color attachments and one depth attachment.
 
--- (make-fbo (list :c some-gpu-array))
+-- (make-fbo (list 0 some-gpu-array))
 Makes an fbo with one color attachment whos gpu-array is 'some-gpu-array'
 
---  (make-fbo (list :c some-texture))
+--  (make-fbo (list 0 some-texture))
 Makes an fbo with one color attachment whos gpu-array is (texref some-texture)
 
--- (make-fbo '(:c :dimensions (100 100) :element-type :rgba8))
+-- (make-fbo '(0 :dimensions (100 100) :element-type :rgba8))
 Makes an fbo with one color attachment whos gpu-array is taken from a new
-texture created by taking the arguments after :c and applying them to
+texture created by taking the arguments after 0 and applying them to
 #'make-texture
 
 -- Any combination of the above --
@@ -313,8 +272,13 @@ For more details see cepl.blending
 
   (defmacro with-fbo-bound
       "
-This is the macro you use when you want to capture the output from a pipeline in
-an FBO
+This is one macro you use when you want to capture the output from a pipeline in
+an FBO.
+
+with-fbo-bound will capture any rendering from any map-g calls inside it body.
+
+Also look at the docs for map-g-into and map-g-into* for a full picture of your
+options
 
 -- draw buffers-
 draw-buffers is an important argument, it allows you to direct the outputs from

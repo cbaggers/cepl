@@ -138,6 +138,70 @@ Like before let's take an example
 
 ")
 
+;; (defmacro with-fbo-bound
+;;       "
+;; This is one macro you use when you want to capture the output from a pipeline in
+;; an FBO.
+
+;; with-fbo-bound will capture any rendering from any map-g calls inside it body.
+
+;; Also look at the docs for map-g-into and map-g-into* for a full picture of your
+;; options
+
+;; -- draw buffers-
+;; draw-buffers is an important argument, it allows you to direct the outputs from
+;; the fragment-shader of the pipeline into the fbo's color attachments.
+;; This means that your pipelines can write into multiple attachments (and thus
+;; multiple textures) at once.
+
+;; To use it either pass in:
+
+;;  nil - Which means that the fbo is bound but no attachments will be draw into
+;;        (rarely used)
+
+;;  t -  Which means the all attachments will be available to be drawn into
+;;       this will happen in order, so the first output from the fragment shader
+;;       will draw into the first attachment, the second output to the second
+;;       attachment, etc
+
+
+;; -- with-viewport --
+;; If with-viewport is t then with-fbo-bound adds a with-fbo-viewport that uses
+;; this fbo to this scope. This means that the current-viewport within this scope
+;; will be set to the equivalent of:
+
+;;     (make-viewport dimensions-of-fbo '(0 0))
+
+;; See the docstruct with-fbo-viewport for details on this behavior.
+
+;; One last detail is that you may want to take the dimensions of the viewport from
+;; an attachment other than attachment-0. To do this use the 'attachment-for-size
+;; argument and give the index of the color-attachment to use.
+
+;; -- with-blending --
+;; If with-blending is t then with-fbo-bound adds a with-blending that uses
+;; this fbo to this scope.
+;; This means that the blending parameters from your fbo will be used while
+;; rendering. For the details and version specific behaviours check out
+;; the docstring for cepl.blending:with-blending
+
+;; See the with-fbo-viewport for details on the behavior
+
+;; -- target --
+;; For target the choices are :framebuffer, :read_framebuffer and
+;; :draw_framebuffer.
+;; You normally dont need to worry about the target as the last two are only used
+;; when you need certain GL read and write operations to happen to different
+;; buffers. It remains for those who know they need this but otherwise you can
+;; let CEPL handle it.
+
+
+;; -- unbind --
+;; If unbind is set to nil then the fob is not unbound at the end of the scope.
+;; Only use this if you know you need it. Most often it is best to let CEPL control
+;; that.
+;; ")
+
   (defmacro def-glsl-stage
       "
 def-glsl-stage is useful when you wish to define a CEPL pipeline stage in glsl
