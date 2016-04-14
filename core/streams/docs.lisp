@@ -9,7 +9,7 @@ gpu-array and/or gpu-buffers.
 To render in cepl we map a buffer-stream over a gpu-pipeline. The buffer-stream
 contains data (usually geometry) that is passed to the vertex-shader.
 
-A gpu-stream composes various sources of gpu-data together. So if, for example,
+A buffer-stream composes various sources of gpu-data together. So if, for example,
 the vertex shader took 3 arguments of types :vec2 :vec3 :float. Then you could
 make a stream that composes 3 gpu-arrays with element-types :vec2 :vec3 :float
 and map this over the pipeline.

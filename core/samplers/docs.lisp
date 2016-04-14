@@ -3,13 +3,12 @@
 (docs:define-docs
   (defstruct sampler
     "
-A sampler is a structure which holds texture 'sampling parameters' and can be
-applied to textures to affect how data is read from them in shader pipelines.
+As sampler is a structure which we pass to the a gpu-pipeline to specify how the
+pipeline should read from a particular texture (also known as sampling the
+texture).
 
-Sampling is the process of fetching a value from a texture at a given position.
-There are a number of values that can be tweaked that affect how the sampling is
-done. These values can be set either on the texture itself or on a 'sampler'.
-
+They are created by calling #'sample on a texture. You can then modify the
+various parameters and the pass the sampler to a pipeline as a uniform.
 
 Sampling Parameters cover four main aspects of how the values are read:
 
@@ -232,6 +231,11 @@ Where ref is the reference value given to the texture lookup function by
 GLSL, and texture is the value fetched from the texture. So :LESS will be
 true if the reference value is strictly less than the value pulled from the
 texture.
+")
+
+  (defun sample
+      "
+BOOP!
 ")
 
   (defun compare

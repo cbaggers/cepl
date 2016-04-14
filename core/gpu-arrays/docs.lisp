@@ -15,14 +15,13 @@ Depending on how the array was created it is said that the gpu-array is either
                   The data is stored in texture memory.
                   See 'texture' for more details.
 
-Both have different performance characteristics, use cases and allow different
-element types, however they are both an ordered block of typed data.
-They can have multiple dimensions and you can pull-g and push-g data to and from
-them.
+Both have different use cases and allow different element types, however they
+are both an ordered block of typed data. They can have multiple dimensions and
+you can push-g and pull-g data to and from them.
 
 Note for folks who are used to OpenGL:
 texture-backed gpu-arrays are what opengl would normally call 'images'. This is
-a pretty terrible name for them as it implices they only can hold image data, or
+a pretty terrible name for them as it implies they only can hold image data, or
 that they are 2d only. In fact 'images' can have 1 to 3 dimensions, can have
 elements that are single bytes, floats, vectors of either or a large number of
 other types.
@@ -192,7 +191,7 @@ The reason to use this rather than (mapcar #'make-gpu-array c-arrays-list) is
 that all of the gpu-arrays created will share the same gpu-buffer.
 
 Usually you will know if you need this instead of #'make-gpu-array as you will
-have some gpu performance characteristic in mind.
+have some behaviour or performance characteristic in mind.
 ")
 
   (defun subseq-g

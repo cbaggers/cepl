@@ -156,11 +156,15 @@ the opengl features that would modify the storage.
 
 -- Sampling --
 Sampling is the process of fetching a value from a texture at a given position.
-There are a number of values that can be tweaked that affect how the sampling is
-done. These values can be set either on the texture itself or on a 'sampler'.
+It is interesting as, because of things like mipmaping, the usual case is that
+reading a single value from a texture involves reading from more than one of
+it's gpu-arrays and combining the resultson some fashion.
+
+To control this process GL (and thus CEPL) have a special object called a
+sampler. Samplers have a number of values that can be tweaked that affect how
+the sampling is done.
 
 To find out more see the Cepl.Samplers section.
-
 
 [0] - more correctly the default-fbo
 [1] - https://www.opengl.org/wiki/Immutable_Storage_Texture#Texture_completeness
@@ -383,16 +387,6 @@ a foreign lisp type instead. Or leave it nil if you want CEPL to take the type
 from the initial-contents
 
 See the docstring for 'texture for more details.
-
-          - - - - - - - - - - - - - - - - - - - - - - - -
-
-:lod-bias :min-lod :max-lod :minify-filter :magnify-filter :wrap :compare
-
-Use these if you want to set the sampling parameters on construction.
-
-If not provided then GL defaults will be used.
-
-See cepl.samplers for details on what these parameters mean.
 ")
 
   (defun make-texture-from-id

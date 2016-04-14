@@ -12,7 +12,7 @@
       <p class="description">Fast lispy way to work with OpenGL</p>
     </header>
     <div id="content">
-
+      
         <article><h2>CEPL (Code Evaluate Play Loop) - [ALPHA]</h2>
 
 <p>CEPL is a lispy and REPL friendly library for working with OpenGL.</p>
@@ -23,7 +23,7 @@
 
 <p>CEPL is in alpha. The API is closing in the what it needs to be but there are still many bugs.</p>
 
-<p>See the <a href="https://github.com/cbaggers/cepl.examples">cepl.examples repository</a> for some examples of how cepl can be used</p>
+<p>See the <a href="https://github.com/cbaggers/cepl.examples">cepl.examples repository</a> for some examples of how CEPL can be used</p>
 
 <p>Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y</p>
 
@@ -34,27 +34,41 @@
 <ul>
 <li>cffi</li>
 <li>cl-autowrap</li>
-<li>cl-plus-c</li>
 <li>cl-fad</li>
 <li>cl-opengl</li>
+<li>cl-plus-c</li>
 <li>cl-ppcre</li>
-<li>named-readtables</li>
+<li>documentation-utils</li>
 <li>fn</li>
+<li>named-readtables</li>
 <li>rtg-math</li>
 <li>varjo</li>
 </ul>
 
 <h4>C Library dependency</h4>
 
-<p>Cepl uses OpenGL so you need to make sure this is available on your machine. Installing your GPU drivers will usually handle this.</p>
+<p>CEPL uses OpenGL so you need to make sure this is available on your machine. Installing your GPU drivers will usually handle this.</p>
 
-<h4>Cepl's Host</h4>
+<h4>CEPL's Host</h4>
 
-<p>Cepl abstracts working with OpenGL but is not responsible for creating a window or GL context, this is handled by a <code>Host</code>. Right now the only supported host is <code>SDL2</code>, the system to load is called <code>cepl.sdl2</code>, you can find it here: <a href="https://github.com/cbaggers/cepl.sdl2">cepl.sdl2</a></p>
+<p>CEPL abstracts working with OpenGL but is not responsible for creating a window or GL context, this is handled by a <code>Host</code>. Right now the only supported host is <code>SDL2</code>, the system to load is called <code>cepl.sdl2</code>, you can find it here: <a href="https://github.com/cbaggers/cepl.sdl2">cepl.sdl2</a></p>
 
 <h3>Getting Started</h3>
 
-<p>The best way to get started is to make a new project that uses cepl. Do the following in your repl to get set up:</p>
+<p><em>Note:</em> On <code>Windows</code> and <code>OSX</code> and are using <code>slime</code> you will want to add the code specifed in <code>docs/single-thread-swank.md</code> to your emacs config file, and use the command <code>slime-style</code> which will start <code>slime</code> in a more OpenGL friendly mode. Then follow the rest of this as usual.</p>
+
+<p>To load CEPL and the default host (<code>sdl2</code>) do the following:</p>
+
+<ul>
+<li><code>(ql:quickproject :cepl.sdl2)</code></li>
+<li><code>(cepl:repl)</code></li>
+</ul>
+
+<p>You should see an empty window appear, OpenGL is now initialized and you can use CEPL as you like.</p>
+
+<h3>Making a CEPL Project</h3>
+
+<p>The best way to get started is to make a new project that uses CEPL. Do the following in your repl to get set up:</p>
 
 <ul>
 <li>First, run <code>(ql:quickload :cepl)</code></li>
@@ -66,53 +80,28 @@
 <li><a href="https://github.com/cbaggers/cepl.devil">cepl.devil</a> for loading images</li>
 </ul>
 
-<p>You are now ready to get started. How this is done varies a little between OS:</p>
-
-<h4>Linux</h4>
-
-<p>Simply run:
+<p>You are now ready to get started, simply run:
 - <code>(ql:quickproject &quot;my-proj&quot;)</code>
 - <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code>
-- and lastly <code>(cepl:repl)</code></p>
-
-<p>This will bring use the host (<code>sdl2</code>) to create a window &amp; initialize opengl. You now are ready to go, have fun!</p>
-
-<h4>Windows &amp; OSX</h4>
-
-<ul>
-<li>In your new <code>my-proj</code> directory you will find a file called <code>run-session.lisp</code></li>
-<li>Run your lisp, loading this file. I use sbcl so it looks like this <code>sbcl --load &quot;run-session.lisp</code>.</li>
-<li>You can then connect your editor to this session (at port 4005) and carry on as usual. I use <code>slime</code> and <code>emacs</code> so I type <code>M-x slime-connect</code> and hit the <code><a href="http://l1sp.org/cl/return">return</a></code> key twice.</li>
-<li>Now you can run <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code> and <code>(cepl:repl)</code>.</li>
-</ul>
-
-<p>This will bring use the host (<code>sdl2</code>) to create a window &amp; initialize opengl. You now are ready to go, have fun!</p>
-
-<h4>Q: Why is the Windows/OSX start procedure more complicated?</h4>
-
-<p><em>A:</em> Both these platforms have restrictions over which thread is allowed to interact with the window manager (I will call this the 'UI thread'). This would be fine except that, when developing, most common-lisp programmers use a system like <code>slime</code> or <code>sly</code> to connect their editor to their lisp session and those systems normally run your code in a different thread.</p>
-
-<p>The choices are then to frequently dispatch jobs to the 'UI thread' (and accept that overhead) or start <code>slime</code>/<code>sly</code> in a way that guarentees the thread. In cepl we choose the latter as, although it does add one step to starting your project, it means you can ignore the detail whilst you are working.</p>
-
-<p>To get a full breakdown of the above issue run <code>(cepl:make-project :why)</code> in your repl.</p>
+- and finally (if you havent already) <code>(cepl:repl)</code></p>
 
 <h4>Windows C Library Hack</h4>
 
 <p>If you are having issues getting the c libraries to load and just need to rule out whether lisp can find them, try putting them in the same folder as the lisp exe. For example <code>C:\Program Files\sbcl\</code>.</p>
 </article>
-
+      
       <article>
-
+        
           <h2>Copyright</h2>
           <span>cepl</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=BSD 2 Clause">BSD 2 Clause</a></span> license.
-
+          
             © <span>Chris Bagley (Baggers) &lt;techsnuffle@gmail.com&gt;</span>
             .
-
-
-
+          
+          
+        
       </article>
-
+      
         <article id="symbol-index">
           <h2>Package Index</h2>
           <ul><li class="package">
@@ -434,6 +423,19 @@ Binds the c-array to the variable named by the var-name argument.
 Frees the c-array at the end of the scope.
 </pre>
                   </article>
+                </li><li>
+                  <a name="CEPL.C-ARRAYS:WITH-C-ARRAYS"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.C-ARRAYS:WITH-C-ARRAYS" class="name">WITH-C-ARRAYS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((VAR-NAME C-ARRAYS) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
                 </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.GPU-ARRAYS" href="#CEPL.GPU-ARRAYS">CEPL.GPU-ARRAYS</a>
@@ -593,21 +595,6 @@ the texture's cubeface that contains this gpu-array. This only truly applies to
 gpu-arrays belonging to cubemap textures, for all gpu-arrays this number will
 always be 0.
 </pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-FORMAT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:GPU-ARRAY-FORMAT" class="name">GPU-ARRAY-FORMAT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(GPU-ARRAY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">Returns a list containing the element-type, the length of the
-   array and the offset in bytes from the beginning of the buffer
-   this gpu-array lives in.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-ARRAYS.TEXTURE-BACKED:GPU-ARRAY-LAYER-NUM"/>
@@ -1116,6 +1103,19 @@ the window size changes.
 </pre>
                   </article>
                 </li><li>
+                  <a name="%CEPL.TYPES:VIEWPORT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#%CEPL.TYPES:VIEWPORT" class="name">VIEWPORT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CAMERA)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="CEPL.VIEWPORTS:VIEWPORT-DIMENSIONS"/>
                   <article>
                     <header class="accessor">
@@ -1505,273 +1505,6 @@ To find out more see the Cepl.Samplers section.
 </pre>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:COMPARE"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:COMPARE" class="name">COMPARE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(SAMPLER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function sets the comparison mode of the texture or sampler given
-
--WARNING-
-
-This feature is currently unsupported until shadow samplers are more fully
-tested in CEPL. Use at your own risk
-
-
--- Comparison --
-
-Depth textures (textures that have a depth component image format) can be
-sampled in one of two ways. They can be sampled as a normal texture, which
-simply retrieves the depth value (with filtering applied). This will return a
-vec4 containing a single floating-point value.
-
-They can also be fetched in comparison mode. This means that sampling from
-the texture requires a value to compare to those pulled from the texture;
-this value is called the reference value. The result of the comparison
-depends on the comparison function set in the texture. If the function
-succeeds, the resulting value is 1s0; if it fails, it is 0s0.
-
-When linear filtering is used, the actual returned value is
-implementation-defined. However, the value will be on the range 0 → 1 and
-will be proportional to the number of neighboring texels that pass the
-comparison based on the single given value.
-
-If the texture is a normalized integer depth format, then the reference value
-is clamped to 0 → 1, to match the values from the texture. Otherwise, the value
-is not clamped.
-
-Using this mode requires two special settings. First, the sampler used in GLSL
-must be a shadow sampler. Second, the texture used in that sampler must have
-activated depth comparison mode. Attempting to use a texture without comparison
-with a shadow sampler, or vice-versa, will result in an error upon rendering.
-
-To set the texture to comparison mode, set the :texture-compare-mode
-texture parameter to :compare-ref-to-texture. The comparison function to
-use when comparing the reference to the texture is set with the
-:texture-compare-func texture parameter. Acceptable values are:
-
-:never (always fails)
-:always (always succeeds)
-:less
-:lequal
-:equal,
-:not-equal
-:gequal
-:greater
-
-The comparison works as follows: (funcall operator ref texture)
-Where ref is the reference value given to the texture lookup function by
-GLSL, and texture is the value fetched from the texture. So :LESS will be
-true if the reference value is strictly less than the value pulled from the
-texture.
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:LOD-BIAS"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:LOD-BIAS" class="name">LOD-BIAS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(SAMPLER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function sets the lod-bias of the given texture or sampler
-
-
--- LOD --
-
-There is a pair of sampling parameters that affect the mipmap image selection:
-:max-lod and :min-lod (floating-point values).
-
-The way these work in mipmap selection is quite complicated; the specification
-goes into full detail about it.
-
-example:
-
-    (setf (min-lod texture-or-sampler) value)
-    (setf (max-lod texture-or-sampler) value)
-
-
-LOD bias:
-The mipmap image selection process can be adjusted coarsely by using the
-:lod-bias sampling parameter. This bias will be added to the mipmap
-LOD calculation (as well as added to the bias specified in one of the texture
-accessing functions in GLSL), which is used to select the image. A positive bias
-means that larger mipmaps will be selected even when the texture is viewed from
-farther away. This can cause visual aliasing, but in small quantities it can
-make textures a bit more sharp.
-
-    (setf (lod-bias texture-or-sampler) value)
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:MAGNIFY-FILTER"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:MAGNIFY-FILTER" class="name">MAGNIFY-FILTER</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(SAMPLER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function takes a sampler or texture and sets the approach used when the
-area of the fragment in texture space is smaller than a texel.
-
-
--- The magnification filter --
-
-The magnification filter is controlled by the :magnify-filter texture parameter.
-This value can be :linear or :nearest.
-
-If :nearest is used, then the implementation will select the texel nearest the
-texture coordinate; this is commonly called 'point sampling').
-
-If :linear is used, the implementation will perform a weighted linear blend
-between the nearest adjacent samples.
-
-    (setf (magnify-filter tex-or-sampler) :linear)
-    (setf (magnify-filter tex-or-sampler) :nearest)
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:MAX-LOD"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:MAX-LOD" class="name">MAX-LOD</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(SAMPLER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function sets the max-lod of the given texture or sampler
-
-
--- LOD --
-
-Together with :min-lod this sampling parameter affects the mipmap image
-selection.
-
-The way these work in mipmap selection is quite complicated; the specification
-goes into full detail about it.
-
-example:
-
-    (setf (min-lod texture-or-sampler) value)
-    (setf (max-lod texture-or-sampler) value)
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:MIN-LOD"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:MIN-LOD" class="name">MIN-LOD</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(SAMPLER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function sets the min-lod of the given texture or sampler
-
-
--- LOD --
-
-Together with :max-lod this sampling parameter affects the mipmap image
-selection.
-
-The way these work in mipmap selection is quite complicated; the specification
-goes into full detail about it.
-
-example:
-
-    (setf (min-lod texture-or-sampler) value)
-    (setf (max-lod texture-or-sampler) value)
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:MINIFY-FILTER"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:MINIFY-FILTER" class="name">MINIFY-FILTER</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(SAMPLER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function takes a sampler or texture and sets the approach used when the
-area of the fragment in texture space is larger than a texel.
-
--- The minification filter --
-
-The minification filter is controlled by the :texture-min-filter texture
-parameter. To understand these values better, it is important to discuss what
-the particular options are. Here is the full list:
-
-:nearest                 :linear
-:nearest-mipmap-nearest  :nearest-mipmap-linear
-:linear-mipmap-nearest   :linear-mipmap-linear
-
-When doing minification, you can choose to use mipmapping or not. Using
-mipmapping means selecting between multiple mipmaps based on the angle and size
-of the texture relative to the screen. Whether you use mipmapping or not,
-you can still select between linear blending of the particular layer or nearest.
-And if you do use mipmapping, you can choose to either select a single mipmap to
-sample from, or you can sample the two adjacent mipmaps and linearly blend the
-resulting values to get the final result.
-
-The OpenGL minification settings for these are as follows:
-Param Setting            Lin within mip-level
-:nearest                 No
-:linear                  Yes
-:nearest-mipmap-nearest  No
-:linear-mipmap-nearest   Yes
-:nearest-mipmap-linear   No
-:linear-mipmap-linear    Yes
-
-Param Setting            Has mipmapping
-:nearest                 No
-:linear                  No
-:nearest-mipmap-nearest  Yes
-:linear-mipmap-nearest   Yes
-:nearest-mipmap-linear   Yes
-:linear-mipmap-linear    Yes
-
-Param Setting            Linear between mip-levels
-:nearest                 -
-:linear                  -
-:nearest-mipmap-nearest  No
-:linear-mipmap-nearest   No
-:nearest-mipmap-linear   Yes
-:linear-mipmap-linear    Yes
-
-Remembering these combinations can be annoying so CEPL provides an additional
-function called #'set-minify-filter see the docstring for details
-
-examples:
-
-    (setf (minify-filter tex-or-sampler) :linear)
-    (setf (minify-filter tex-or-sampler) :nearest-mipmap-nearest)
-    (setf-minify-filter tex-or-sampler :nearest :nearest)
-
-</pre>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:TEXTURE-BASE-DIMENSIONS"/>
                   <article>
                     <header class="accessor">
@@ -1891,22 +1624,6 @@ abstractions over the opengl features that would modify the storage.
 </pre>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:TEXTURE-SAMPLER-TYPE"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:TEXTURE-SAMPLER-TYPE" class="name">TEXTURE-SAMPLER-TYPE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function will return the sampler-type of a given texture. The sampler type
-is the type you use when passing this texture as a uniform to a gpu-function.
-</pre>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:TEXTURE-TYPE"/>
                   <article>
                     <header class="accessor">
@@ -1933,76 +1650,6 @@ The possible values are:
 :texture-cube-map-array
 :texture-2d-multisample
 :texture-2d-multisample-array
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:WRAP"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:WRAP" class="name">WRAP</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(SAMPLER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function sets the wrap parameter of the texture or sampler given.
-
-When setf'ing this parameter you can provide either one approach to be used
-for all 3 potential dimensions of the texture, or you can provide a vector
-of the 3 approaches you want to used.
-
-
--- Wrapping --
-
-When using normalized texture coordinates we are used to thinking about our
-coordinate being between 0s0 and 1s0 and that value dictating where we are
-sampling from.
-
-However normalized texture coordinates are not limited to values between
-0s0 and 1s0. They can be any floating-point number.
-
-When a texture coordinate is not within the 0 → 1 range, some means must be
-employed to decide what the color value will be.
-
-The different approaches are as follows:
-
- :repeat: the texture coordinate wraps around the texture. so a texture
-          coordinate of -0.2 becomes the equivalent of 0.8.
-
- :mirrored-repeat: the texture coordinate wraps around like a mirror.
-                   -0.2 becomes 0.2, -1.2 becomes 0.8, etc.
-
- :clamp-to-edge: the texture coordinate is clamped to the 0 → 1 range.
-
- :clamp-to-border: the texture coordinate is clamped to the 0 → 1
-                   range, but the edge texels are blended with a
-                   constant border color.
-
- :mirror-clamp-to-edge: (only available with OpenGL 4.4 or
-                        :arb-texture-mirror-clamp-to-edge) the texture
-                        is clamped to the -1 → 1 range, but mirrors the
-                        negative direction with the positive. Basically,
-                        it acts as :clamp-to-edge, except that it
-                        takes the absolute value of the texture
-                        coordinates before clamping.
-
-This also applies to Rectangle Textures, except that the range at which they
-apply edge sampling is based on the texel width/height of the texture, not
-the normalized 0 → 1 range.
-
-This does not apply to Buffer Textures, as they must use the texelFetch sampling
-functions and thus cannot sample outside of the texel range of the texture.
-
-example:
-
-    (setf (wrap texture-or-sampler)
-          #(:clamp-to-edge :repeat-to-edge :clamp-to-edge))
-
-    (setf (wrap texture-or-sampler) :clamp-to-edge)
-
-
 </pre>
                   </article>
                 </li><li>
@@ -2049,8 +1696,7 @@ argument on #'make-texture. See #'make-texture for more details.
                         <span class="qualifiers"></span>
                         <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE (MIPMAP NIL) (LAYER-COUNT 1)
  (CUBES NIL) (RECTANGLE NIL) (MULTISAMPLE NIL) (IMMUTABLE T)
- (BUFFER-STORAGE NIL) LOD-BIAS MIN-LOD MAX-LOD MINIFY-FILTER MAGNIFY-FILTER
- WRAP COMPARE (GENERATE-MIPMAPS T))</span>
+ (BUFFER-STORAGE NIL) (GENERATE-MIPMAPS T))</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -2188,8 +1834,8 @@ See cepl.samplers for details on what these parameters mean.
                       <code>
                         <h4><a href="#CEPL.TEXTURES:MAKE-TEXTURE-FROM-ID" class="name">MAKE-TEXTURE-FROM-ID</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(GL-OBJECT &amp;KEY BASE-DIMENSIONS TEXTURE-TYPE ELEMENT-TYPE SAMPLER-TYPE
- MIPMAP-LEVELS LAYER-COUNT CUBES ALLOCATED MUTABLE-P)</span>
+                        <span class="arguments">(GL-OBJECT &amp;KEY BASE-DIMENSIONS TEXTURE-TYPE ELEMENT-TYPE MIPMAP-LEVELS
+ LAYER-COUNT CUBES ALLOCATED MUTABLE-P)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -2199,30 +1845,6 @@ This function does not do ANY sanity checking on the values provided, use only
 if you are 100% sure of what you are setting.
 
 For details on the meaning of the arguments see the docstring for #'make-texture
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:SET-MINIFY-FILTER"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:SET-MINIFY-FILTER" class="name">SET-MINIFY-FILTER</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(SAMPLER FOR-LEVEL &amp;KEY (BETWEEN-LEVELS NIL))</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-As the naming of the values for #'minify-filter are quite confusing this
-function allows you to set the minify filter for the given texture or sampler
-based on the following:
-
-- for-level: what sampling should be used between texels on the current
-             mipmap level. The value can be :linear or :nearest
-
-- between-level: what sampling should be used between texels on different
-                 mipmap levels. The value can be :linear or :nearest
-                 This argument is optional.
 </pre>
                   </article>
                 </li><li>
@@ -2924,24 +2546,19 @@ example:
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.SAMPLERS:MAKE-SAMPLER"/>
+                  <a name="CEPL.SAMPLERS:SAMPLE"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.SAMPLERS:MAKE-SAMPLER" class="name">MAKE-SAMPLER</a></h4>
+                        <h4><a href="#CEPL.SAMPLERS:SAMPLE" class="name">SAMPLE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY (LOD-BIAS 0.0) (MIN-LOD -1000.0) (MAX-LOD 1000.0) (MINIFY-FILTER :LINEAR)
- (MAGNIFY-FILTER :LINEAR) (WRAP #(:REPEAT :REPEAT :REPEAT)) (COMPARE :NONE))</span>
+                        <span class="arguments">(TEXTURE &amp;KEY (LOD-BIAS 0.0) (MIN-LOD -1000.0) (MAX-LOD 1000.0)
+ (MINIFY-FILTER :LINEAR) (MAGNIFY-FILTER :LINEAR)
+ (WRAP #(:REPEAT :REPEAT :REPEAT)) (COMPARE :NONE))</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-Make-sampler creates a new texture sampler that can be used to override the
-sampling parameters of a texture.
-
-For details on what a sampler is and what the parameters are and mean see the
-docstring for the 'sampler type
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:SAMPLER-P"/>
@@ -2982,36 +2599,6 @@ based on the following:
                  This argument is optional.
 </pre>
                   </article>
-                </li><li>
-                  <a name="CEPL.SAMPLERS:WITH-SAMPLING"/>
-                  <article>
-                    <header class="macro">
-                      <span class="type">macro</span>
-                      <code>
-                        <h4><a href="#CEPL.SAMPLERS:WITH-SAMPLING" class="name">WITH-SAMPLING</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(BINDINGS-PAIRS &amp;BODY BODY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This macro is how you apply override a texture's sampling parameters.
-
-The sampler affects any sampling done by pipelines run inside the scope of
-with-sampling. After the scope the sampler is detatched.
-
-with-sampling is used as follows:
-
-    (with-sampling ((*tex* *sam*)
-                    (*tex2* *sam*))
-      (map-g #'prog-1 *stream* :tex *tex* :norm-map *tex2*))
-
-Where *sam* is a sampler that is attached to both of the textures *tex* and
-*tex2*
-
-See https://github.com/cbaggers/cepl.examples/blob/master/examples/sampling.lisp
-for a full example.
-</pre>
-                  </article>
                 </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.MEMORY" href="#CEPL.MEMORY">CEPL.MEMORY</a>
@@ -3044,6 +2631,19 @@ CEPL object.
 'Blanking', in this case, means the fields of the object will be set to some
 default.
 </pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.MEMORY:INITIALIZED-P"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.MEMORY:INITIALIZED-P" class="name">INITIALIZED-P</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.MEMORY:PULL-G"/>
@@ -3168,60 +2768,6 @@ Returns the resolution of the given value as a vec*
                 <span class="nicknames"/>
               </h3>
               <ul><li>
-                  <a name="%CEPL.TYPES:ATTACHMENT"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:ATTACHMENT" class="name">ATTACHMENT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-An FBO attachment is a slot where a texture-backed gpu-array can be attached.
-When the texture is attached the data from a pipeline rendering into the fbo is
-written into the texture.
-
-This is the heart of how multi-pass rendering is done in OpenGL. One pipeline
-writes data into textures that are then used as inputs to another pipeline[0].
-
-Attachments come in a few varieties:
-
--- Color Attachments --
-
-Color attachments can only contain gpu-arrays whose element-type can be found in
-the *color-renderable-formats* list.
-
-Note that while OpenGL terminology mentions 'color' and 'image' a lot you are
-not limitted to only using textures or fbos for pictures. It is perfectly
-valid (and incredibly useful) to return data meaning all kinds of things other
-than colors.
-
--- Depth Attachments --
-
-The depth attachment (when used) can only contain a gpu-array whos element-type
-can be found in *depth-formats*
-
-Usage Tip:
-Even if you don't plan on reading from this depth_attachment, any fbo that will
-be rendered to should have a depth attachment.
-
--- Stencil Attachments (NOT SUPPORTED IN CURRENT CEPL VERSION) --
-
-The stencil attachment (when used) can only contain a gpu-array whos
-element-type can be found in *stencil-formats*
-
--- Depth-Stencil Attachments (NOT SUPPORTED IN CURRENT CEPL VERSION) --
-
-The depth-stencil attachment (when used) can only contain a gpu-array whos
-element-type can be found in *depth-stencil-formats*
-
-This attachment is shorthand for 'both depth and stencil'. The gpu-array
-attached here becomes both the depth and stencil attachment.
-</pre>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:FBO"/>
                   <article>
                     <header class="class">
@@ -3310,12 +2856,12 @@ DO NOT DO THIS. What you will get is undefined behavior.
 </pre>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:ATTACHMENT"/>
+                  <a name="CEPL.FBOS:ATTACHMENT"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#%CEPL.TYPES:ATTACHMENT" class="name">ATTACHMENT</a></h4>
+                        <h4><a href="#CEPL.FBOS:ATTACHMENT" class="name">ATTACHMENT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(FBO ATTACHMENT-NAME)</span>
                       </code>
@@ -3350,35 +2896,30 @@ You can also setf this function, the value can be either of the following:
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:ATTACHMENT-GPU-ARRAY"/>
+                  <a name="CEPL.FBOS:ATTACHMENT-BLENDING"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#CEPL.FBOS:ATTACHMENT-GPU-ARRAY" class="name">ATTACHMENT-GPU-ARRAY</a></h4>
+                        <h4><a href="#CEPL.FBOS:ATTACHMENT-BLENDING" class="name">ATTACHMENT-BLENDING</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
+                        <span class="arguments">(FBO ATTACHMENT-NAME)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function returns the gpu-array conntect to the given attachment.
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:ATTACHMENT-P"/>
+                  <a name="CEPL.FBOS:ATTACHMENT-TEX"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#%CEPL.TYPES:ATTACHMENT-P" class="name">ATTACHMENT-P</a></h4>
+                        <h4><a href="#CEPL.FBOS:ATTACHMENT-TEX" class="name">ATTACHMENT-TEX</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT)</span>
+                        <span class="arguments">(FBO ATTACHMENT-NAME)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function returns t when the given value is an attachment and otherwise
-returns nil.
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:ATTACHMENT-VIEWPORT"/>
@@ -3388,7 +2929,7 @@ returns nil.
                       <code>
                         <h4><a href="#CEPL.FBOS:ATTACHMENT-VIEWPORT" class="name">ATTACHMENT-VIEWPORT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
+                        <span class="arguments">(FBO ATTACHMENT-NAME)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3566,23 +3107,6 @@ texture created by taking the arguments after :c and applying them to
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.FBOS:MAKE-FBO-FROM-ID"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.FBOS:MAKE-FBO-FROM-ID" class="name">MAKE-FBO-FROM-ID</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(GL-OBJECT &amp;KEY COLOR-ATTACHMENTS DEPTH-ATTACHMENT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function will make a CEPL fbo from an existing GL FBO
-
-It does no sanity checking on the inputs and does not check for completeness
-used with caution</pre>
-                  </article>
-                </li><li>
                   <a name="CEPL.FBOS:PER-ATTACHMENT-BLENDING-AVAILABLE-P"/>
                   <article>
                     <header class="function">
@@ -3593,7 +3117,16 @@ used with caution</pre>
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will return t if you are on a version of opengl that supports
+setting blending parameters on framebuffer attachments. Otherwise it returns nil
+
+If the result is nil then you will only be able to change blend params on the
+first attachment. You can however enable blending on any number of attachments
+and they will inherit their params from attachment 0
+
+For more details see cepl.blending
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:WITH-FBO-BOUND"/>
@@ -3827,7 +3360,7 @@ and As0 is equal to 1, the equations reduce to simple replacement:
                       <code>
                         <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS" class="name">BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(TARGET)</span>
+                        <span class="arguments">(FBO &amp;OPTIONAL ATTACHMENT-NAME)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3839,96 +3372,6 @@ blending-params struct
 </pre>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:BLENDING-PARAMS-DESTINATION-ALPHA"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-DESTINATION-ALPHA" class="name">BLENDING-PARAMS-DESTINATION-ALPHA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BLENDING-PARAMS-DESTINATION-RGB"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-DESTINATION-RGB" class="name">BLENDING-PARAMS-DESTINATION-RGB</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BLENDING-PARAMS-MODE-ALPHA"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-MODE-ALPHA" class="name">BLENDING-PARAMS-MODE-ALPHA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BLENDING-PARAMS-MODE-RGB"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-MODE-RGB" class="name">BLENDING-PARAMS-MODE-RGB</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BLENDING-PARAMS-SOURCE-ALPHA"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-SOURCE-ALPHA" class="name">BLENDING-PARAMS-SOURCE-ALPHA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-
-</pre>
-                  </article>
-                </li><li>
-                  <a name="%CEPL.TYPES:BLENDING-PARAMS-SOURCE-RGB"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:BLENDING-PARAMS-SOURCE-RGB" class="name">BLENDING-PARAMS-SOURCE-RGB</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-
-</pre>
-                  </article>
-                </li><li>
                   <a name="CEPL.BLENDING:DESTINATION-ALPHA"/>
                   <article>
                     <header class="accessor">
@@ -3936,7 +3379,7 @@ blending-params struct
                       <code>
                         <h4><a href="#CEPL.BLENDING:DESTINATION-ALPHA" class="name">DESTINATION-ALPHA</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
+                        <span class="arguments">(FBO &amp;OPTIONAL ATTACHMENT-NAME)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3978,7 +3421,7 @@ blending-params struct.
                       <code>
                         <h4><a href="#CEPL.BLENDING:DESTINATION-RGB" class="name">DESTINATION-RGB</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
+                        <span class="arguments">(FBO &amp;OPTIONAL ATTACHMENT-NAME)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4020,7 +3463,7 @@ blending-params struct.
                       <code>
                         <h4><a href="#CEPL.BLENDING:MODE-ALPHA" class="name">MODE-ALPHA</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
+                        <span class="arguments">(FBO &amp;OPTIONAL ATTACHMENT-NAME)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4048,7 +3491,7 @@ blending-params struct.
                       <code>
                         <h4><a href="#CEPL.BLENDING:MODE-RGB" class="name">MODE-RGB</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
+                        <span class="arguments">(FBO &amp;OPTIONAL ATTACHMENT-NAME)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4076,7 +3519,7 @@ blending-params struct.
                       <code>
                         <h4><a href="#CEPL.BLENDING:SOURCE-ALPHA" class="name">SOURCE-ALPHA</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
+                        <span class="arguments">(FBO &amp;OPTIONAL ATTACHMENT-NAME)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4118,7 +3561,7 @@ blending-params struct.
                       <code>
                         <h4><a href="#CEPL.BLENDING:SOURCE-RGB" class="name">SOURCE-RGB</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(ATTACHMENT)</span>
+                        <span class="arguments">(FBO &amp;OPTIONAL ATTACHMENT-NAME)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4153,19 +3596,6 @@ blending-params struct.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:BLEND-FUNC-NAMEP"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.BLENDING:BLEND-FUNC-NAMEP" class="name">BLEND-FUNC-NAMEP</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(KEYWORD)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:BLENDING-PARAMS-P"/>
                   <article>
                     <header class="function">
@@ -4198,19 +3628,6 @@ blending-params object with the same settings as the one passed.
 </pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.BLENDING:CURRENT-BLEND-PARAMS"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.BLENDING:CURRENT-BLEND-PARAMS" class="name">CURRENT-BLEND-PARAMS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:MAKE-BLENDING-PARAMS"/>
                   <article>
                     <header class="function">
@@ -4218,10 +3635,11 @@ blending-params object with the same settings as the one passed.
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM2029) :FUNC-ADD) ((:MODE-ALPHA DUM2030) :FUNC-ADD)
- ((:SOURCE-RGB DUM2031) :SRC-ALPHA) ((:SOURCE-ALPHA DUM2032) :SRC-ALPHA)
- ((:DESTINATION-RGB DUM2033) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DUM2034) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB MODE-RGB) :FUNC-ADD) ((:MODE-ALPHA MODE-ALPHA) :FUNC-ADD)
+ ((:SOURCE-RGB SOURCE-RGB) :SRC-ALPHA)
+ ((:SOURCE-ALPHA SOURCE-ALPHA) :SRC-ALPHA)
+ ((:DESTINATION-RGB DESTINATION-RGB) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DESTINATION-ALPHA) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4281,25 +3699,25 @@ These values will be used unless overriden by blend settings in an fbo.
 CEPL ensures the blending settings are undone at the end of the scope.
 </pre>
                   </article>
-                </li><li>
-                  <a name="CEPL.BLENDING:WITH-BLENDING-PARAM-SLOTS"/>
-                  <article>
-                    <header class="macro">
-                      <span class="type">macro</span>
-                      <code>
-                        <h4><a href="#CEPL.BLENDING:WITH-BLENDING-PARAM-SLOTS" class="name">WITH-BLENDING-PARAM-SLOTS</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">((&amp;KEY FBO ATTACHMENT) &amp;BODY BODY)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
                 </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.PIPELINES" href="#CEPL.PIPELINES">CEPL.PIPELINES</a>
                 <span class="nicknames"/>
               </h3>
               <ul><li>
+                  <a name="CEPL.PIPELINES:DEF-G-&gt;"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.PIPELINES:DEF-G-&gt;" class="name">DEF-G-&gt;</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME CONTEXT &amp;BODY GPIPE-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="CEPL.PIPELINES:DEF-GLSL-STAGE"/>
                   <article>
                     <header class="macro">
@@ -4339,19 +3757,6 @@ CEPL ensures the blending settings are undone at the end of the scope.
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.PIPELINES:DEFPIPELINE"/>
-                  <article>
-                    <header class="macro">
-                      <span class="type">macro</span>
-                      <code>
-                        <h4><a href="#CEPL.PIPELINES:DEFPIPELINE" class="name">DEFPIPELINE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(NAME ARGS GPU-PIPE-FORM &amp;BODY OPTIONS)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="CEPL.PIPELINES:DEFUN-G"/>
                   <article>
                     <header class="macro">
@@ -4372,7 +3777,7 @@ CEPL ensures the blending settings are undone at the end of the scope.
                       <code>
                         <h4><a href="#CEPL.PIPELINES:G-&gt;" class="name">G-&gt;</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;REST FORMS)</span>
+                        <span class="arguments">(CONTEXT &amp;REST FORMS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -4386,6 +3791,19 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <h4><a href="#CEPL.PIPELINES:MAP-G" class="name">MAP-G</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.PIPELINES:MAP-G-INTO"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.PIPELINES:MAP-G-INTO" class="name">MAP-G-INTO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FBO PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -4918,19 +4336,6 @@ For example:
 </pre>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:PIXEL-FORMAT"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT" class="name">PIXEL-FORMAT</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(COMPONENTS &amp;OPTIONAL (TYPE :UINT8) (NORMALISE T) REVERSED)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="%CEPL.TYPES:PIXEL-FORMAT-P"/>
                   <article>
                     <header class="function">
@@ -5177,56 +4582,170 @@ This function returns the type of the data that is contained in the UBO
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.SPACE:POS4"/>
+                  <a name="CEPL.SPACE:SVEC4"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.SPACE:POS4" class="name">POS4</a></h4>
+                        <h4><a href="#CEPL.SPACE:SVEC4" class="name">SVEC4</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This is a 4 component spatial vector type. A spatial vector is a vector that
+also stores which vector-space it is in.
+</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.SPACE:POS4-G"/>
+                  <a name="CEPL.SPACE:VEC-SPACE"/>
                   <article>
                     <header class="class">
                       <span class="type">class</span>
                       <code>
-                        <h4><a href="#CEPL.SPACE:POS4-G" class="name">POS4-G</a></h4>
+                        <h4><a href="#CEPL.SPACE:VEC-SPACE" class="name">VEC-SPACE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.SPACE:SPACE"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.SPACE:SPACE" class="name">SPACE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.SPACE:SPACE-G"/>
-                  <article>
-                    <header class="class">
-                      <span class="type">class</span>
-                      <code>
-                        <h4><a href="#CEPL.SPACE:SPACE-G" class="name">SPACE-G</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This type is an abstraction over the concept of a vector-space.
+
+In graphics programming we are very used to using matrices to describe
+transforms. The matrix describes the transform for any given point in
+vector-space to a point in another vector-space.
+
+Some spaces are very commonly mentioned when discuss rendering, spaces like
+world-space, camera-space, clip-space, etc. However when it comes to our
+programs we have to work with the transform (matrix) rather the space directly.
+
+In CEPL we have a feature to allow working with vector spaces as a first class
+object, the vec-space. We uses these vec-spaces in our GPU code and CEPL
+statically analyses our code to work out what matrices are needed and uploads
+them as uniforms.
+
+By doing this, our GPU ends up running code that only has the 'normal' types
+(matrices and vectors) which means we pay no performace cost for the features
+
+Working with vec-spaces directly means our code more closely reflects how we
+talk about the problems we are trying to solve. As we will see below it also
+makes it much harder to perform 'invalid' spatial calculations.
+
+
+-- Lexical Space --
+
+In many graphics related texts we talk about performing a calculation in a
+certain space.
+
+In CEPL we express this with the 'in' macro
+
+    (in *world-space*
+      (some-calculation)
+      (more-calculations))
+
+Everything that is happening in this scope is happening 'in *world-space*'
+
+the 'in' macro can be nested:
+
+    (in *clip-space*
+      (let ((z (in *world-space*
+		 (let ((x (sv! 0 1 2 3)))
+		   ...
+		   x))))
+	z))
+
+Here z is in *clip-space* and x is in *world-space*
+
+
+-- Spatial Vectors --
+
+In the above example we also introduce another type: spatial-vectors
+
+sv! behave exactly the same as v! in that it produces a vector, however
+instead of making a regular vector the code above will make a spatial-vector.
+
+Spatial vectors are vectors which store which space they were created in.
+
+The advantage of this is that CEPL can detect if they leave that space and enter
+a different space. When that happens CEPL will automatically transform the
+vector to the new space.
+
+We can see this in the example above. The value in 'x' is a spatial vector that
+was created in world space, however as the value moves up the stack to be
+stored in 'z' it leaves the scope of *world-space* and enters *clip-space*.
+At this point CEPL will multiply the vector with a
+'world-space-to-clip-space matrix'.
+
+This is awesome as it means that if you are working with spatial vectors in the
+same scope, you are guarenteed that they are in the same space.
+
+Another advantage is that in most case CEPL can calculate these transform
+matrices on the CPU and upload them as uniforms, which makes this code very
+fast.
+
+
+-- Defining Spaces --
+
+Currently vec-spaces can only be defined in cpu code. They must be passed to
+gpu functions as uniforms.
+
+All spaces are defined relative to another space. A vec-space is either a
+hierarchical-space, relational-space or a model-space.
+
+A hierarchical-space is a space which is a child of another space. When the
+parent space is transformed, the child space is also transformed. You can
+see this relationship as how your hand has a position and orientation but will
+be transformed by the parent, the lower-arm. The lower arm in turn is a child
+of the upper arm, and so on. Hierarchical spaces are WIP and not currently
+exposed in CEPL
+
+A relational-space x is a space whose relationship to another space can be
+defined with a matrix, but which is not affected by changes to that other space.
+
+A relational-space can have any number of spaces as neighbours, however
+in the case where there is only one neighbour space, the space is known as a
+model-space.
+
+Making a model space is very easy.
+
+    (make-space neighbour-space
+		transform-to-neighbour-matrix4
+		transform-from-neighbour-matrix4)
+
+the transform-from-neighbour-matrix4 transform is optional where the inverse can
+be calculated.
+
+To make a relational space you use #'make-space* and pass in a list where the
+sublists are the same as the arguments to make-space
+
+
+-- Spaces &amp; Implicit-Uniforms
+
+If the vec-space is stored in a variable with global scope then CEPL's
+implicit-uniforms feature means you can use the space without explicitly adding
+the uniform argument yourself.
+
+See the docstring for defun-g for more details on implicit-uniforms.
+
+
+-- Immutable Relationships --
+
+Whilst the transforms between neighbouring spaces are mutable.
+It is not possible to add new neighbours to an existing vec-space x, except by
+making a new vec-space as specifying x as it's neighbour.
+
+
+-- Predefined Spaces --
+
+CEPL defines a few commonly used spaces for you. Other than *world-space* they
+are all spaces used in the GLSL pipeline:
+
+ *world-space*
+ *clip-space*
+ *ndc-space*
+ *screen-space*
+
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:GET-TRANSFORM"/>
@@ -5239,7 +4758,13 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">(FROM-SPACE TO-SPACE &amp;OPTIONAL (INITIAL-M4 (IDENTITY)))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will return the mat4 that describes the transform between
+from-space and to-space.
+
+If you have an existing matrix you wish to use as the base of the transform then
+you case pass it as the initial-m4 argument
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:GET-TRANSFORM-VIA"/>
@@ -5252,7 +4777,13 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">(FROM-SPACE TO-SPACE VIA-SPACE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will return the mat4 that describes the transform between
+from-space and to-space, via the specified via-space.
+
+This is very useful in cases where there are multiple possible routes to the
+to-space and you wish to restrict which route is taken.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:MAKE-SPACE"/>
@@ -5265,7 +4796,18 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">(TARGET-SPACE TRANSFORM-TO &amp;OPTIONAL TRANSFORM-FROM)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns a new vec-space when passed:
+
+- The space which this new space will be defined in relation to
+
+- A mat4 which describes the transform from this new space to the target-space
+
+- (optional) A mat4 which describes the transform from the target-space to this
+             new space.
+
+As the new vec-space will have only 1 neighbour it will be a model-space
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:MAKE-SPACE*"/>
@@ -5278,7 +4820,18 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">(&amp;REST RELATIONSHIPS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns a new vec-space when passed as in the following format:
+
+    (list (neighbour-space1 mat4-to-neighbour-space1 mat4-from-neighbour-space1)
+          (neighbour-space2 mat4-to-neighbour-space2 mat4-from-neighbour-space2)
+          ... etc ...)
+
+Just like in #'make-space, the mat4-from-neighbour-space transform is optional.
+
+As this function produces a vec-space with multiple neighbour spaces, the
+resulting vec-space is known as a relational-space.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:MODEL-SPACE-P"/>
@@ -5291,20 +4844,13 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">(SPACE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
-                  <a name="CEPL.SPACE:P!"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.SPACE:P!" class="name">P!</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(VEC &amp;OPTIONAL (SPACE *DEFAULT-POS-SPACE*))</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+When passed a vec-space this function will return t if the vec-space is a
+'model-space'
+
+In CEPL this means that this vec-space on has one non-hierarchical relationship
+with another space.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:PARENT-SPACE"/>
@@ -5317,7 +4863,10 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">(SPACE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+When given a hierarchical vec-space, this function will return the space that
+has this vec-space as a child
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:RELATIONAL-SPACE-P"/>
@@ -5330,20 +4879,40 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">(SPACE)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+When passed a vec-space this function will return t if the vec-space is a
+'relational-space'
+
+In CEPL this means that this vec-space is a child of another vec-space.
+</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.SPACE:SPACE!"/>
+                  <a name="CEPL.SPACE:SV!"/>
                   <article>
                     <header class="function">
                       <span class="type">function</span>
                       <code>
-                        <h4><a href="#CEPL.SPACE:SPACE!" class="name">SPACE!</a></h4>
+                        <h4><a href="#CEPL.SPACE:SV!" class="name">SV!</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(TARGET-SPACE TRANSFORM-TO &amp;OPTIONAL TRANSFORM-FROM)</span>
+                        <span class="arguments">(VEC &amp;OPTIONAL (SPACE *DEFAULT-POS-SPACE*))</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function is only useful inside gpu functions.
+
+It returns a new spatial vector. A spatial vector is much like a regular vector
+except that the vector-space in which it resides is stored along with the
+vector's components.
+
+If a spatial vector leaves the lexical scope of the vec-space it was defined in,
+then it is automatically transformed into the vec-space of the surrounding
+scope.
+
+See the docstring for the 'in' macro for more details.
+
+For more info on the behaviour of CEPL's space feature as a whole please see the
+docstring for the vec-space struct.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:IN"/>
@@ -5356,20 +4925,59 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">(SPACE &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This macro is only valid inside gpu functions.
+
+It defines a scope which is said to be 'in the vec-space' given as the first
+argument. This means that any spatial-vectors created in this scope will be
+declared in this space.
+
+If the value that is returned from the scope of the 'in' is a spatial-vector
+then the vector is transformed from the space of the inner scope to the space of
+the outer scope.
+
+For example:
+
+    (in *clip-space*
+      (let ((z (in *world-space*
+		   (let ((x (sv! 0 1 2 3)))
+		     ...
+		     x))))
+	z))
+
+In the code above the spatial-vector x is defined in *world-space*. However
+as it is used in the tail position of the innermost let, it will leave the
+*world-space* scope and enter the *clip-space* scope. At that point the
+spatial-vector will be multiplied with the mat4 that describes the
+*world-space* → *clip-space* transform.
+
+All of this information is resolved statically at compile-time by CEPL. The 'in'
+forms are removed and the spatial-vectors are replaced with regular ones. CEPL
+will calculate the mat4 transforms between the used spaces on the CPU and upload
+them as uniforms.
+
+This means that the final glsl will only contain standard glsl vectors and
+matrices and will perform as well as any other handwritten glsl code.
+</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.SPACE:WITH-RENDERING-VIA"/>
+                  <a name="CEPL.SPACE:WITH-SPACE-ROUTING-VIA"/>
                   <article>
                     <header class="macro">
                       <span class="type">macro</span>
                       <code>
-                        <h4><a href="#CEPL.SPACE:WITH-RENDERING-VIA" class="name">WITH-RENDERING-VIA</a></h4>
+                        <h4><a href="#CEPL.SPACE:WITH-SPACE-ROUTING-VIA" class="name">WITH-SPACE-ROUTING-VIA</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(VIA-SPACE &amp;BODY BODY)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This macro ensures that all routes calculated between spaces go via the specifed
+vec-space.
+
+This behaves as if all the calls to #'get-transform were actually called to
+#'get-transform-via with the given vec-space used as the via-space.
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -5405,21 +5013,17 @@ are ususal interacted with via CEPL's gpu-array and ubo features.
 </pre>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:GPU-BUFFER-FORMAT"/>
+                  <a name="%CEPL.TYPES:GPU-BUFFER-ARRAYS"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#%CEPL.TYPES:GPU-BUFFER-FORMAT" class="name">GPU-BUFFER-FORMAT</a></h4>
+                        <h4><a href="#%CEPL.TYPES:GPU-BUFFER-ARRAYS" class="name">GPU-BUFFER-ARRAYS</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>
                     </header>
-                    <pre class="docstring">
-This function, when passed a gpu-buffer will return the format list used
-by the gpu-buffer to keep track of the types and layout of the data in the
-OpenGL Buffer Object
-</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="%CEPL.TYPES:GPU-BUFFER-ID"/>
@@ -5464,8 +5068,8 @@ Binds the given gpu-buffer to the target on the GL Context
                       <code>
                         <h4><a href="#CEPL.GPU-BUFFERS:BUFFER-DATA" class="name">BUFFER-DATA</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(BUFFER C-ARRAY BUFFER-TARGET USAGE &amp;KEY (OFFSET 0)
- (SIZE (C-ARRAY-BYTE-SIZE C-ARRAY)))</span>
+                        <span class="arguments">(BUFFER C-ARRAY &amp;KEY (TARGET :ARRAY-BUFFER) (USAGE :STATIC-DRAW) (OFFSET 0)
+ BYTE-SIZE)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -5485,8 +5089,8 @@ details of the data stored within the buffer</pre>
                       <code>
                         <h4><a href="#CEPL.GPU-BUFFERS:BUFFER-DATA-RAW" class="name">BUFFER-DATA-RAW</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(DATA-POINTER DATA-TYPE DATA-BYTE-SIZE BUFFER BUFFER-TARGET USAGE &amp;OPTIONAL
- (BYTE-OFFSET 0))</span>
+                        <span class="arguments">(DATA-POINTER BYTE-SIZE BUFFER &amp;OPTIONAL (TARGET :ARRAY-BUFFER)
+ (USAGE :STATIC-DRAW) (BYTE-OFFSET 0))</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -5507,7 +5111,7 @@ details of the data stored within the buffer</pre>
                       <code>
                         <h4><a href="#CEPL.GPU-BUFFERS:BUFFER-RESERVE-BLOCK" class="name">BUFFER-RESERVE-BLOCK</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(BUFFER TYPE DIMENSIONS BUFFER-TARGET USAGE)</span>
+                        <span class="arguments">(BUFFER TYPE DIMENSIONS TARGET USAGE)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -5515,27 +5119,6 @@ This function creates an empty block of data in the opengl buffer equal in size
 to (* length size-in-bytes-of-type).
 
 It will remove ALL data currently in the buffer</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.GPU-BUFFERS:BUFFER-SUB-DATA"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.GPU-BUFFERS:BUFFER-SUB-DATA" class="name">BUFFER-SUB-DATA</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(BUFFER C-ARRAY BYTE-OFFSET BUFFER-TARGET &amp;KEY (SAFE T))</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function replaces a subsection of the data in the specified buffer with
-the data in the c-array.
-
-The byte offset specifies where you wish to start overwriting data from.
-
-When the :safe option is t, the function checks to see if the data you are about
-to write into the buffer will cross the boundaries between data already in the
-buffer and will throw an error if you are.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.GPU-BUFFERS:FREE-BUFFER"/>
@@ -5701,12 +5284,12 @@ gpu memory. This should be removed from the public API</pre>
                       <code>
                         <h4><a href="#CEPL.GPU-BUFFERS:MULTI-BUFFER-DATA" class="name">MULTI-BUFFER-DATA</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(BUFFER C-ARRAYS BUFFER-TARGET USAGE)</span>
+                        <span class="arguments">(BUFFER C-ARRAYS TARGET USAGE)</span>
                       </code>
                     </header>
                     <pre class="docstring">
 This function takes a list of c-arrays and uploads all of the data to the
-gpu-buffer, it then updates the gpu-buffer-format with the new layout.
+gpu-buffer.
 </pre>
                   </article>
                 </li><li>
@@ -6330,7 +5913,7 @@ You can alternatively use the generic function #'tex to get this value.
                   </article>
                 </li></ul></li></ul>
         </article>
-
+      
     </div>
   </body>
 </html>
