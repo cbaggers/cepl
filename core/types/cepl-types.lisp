@@ -59,8 +59,8 @@
   (access-style :static-draw :type symbol)
   ;; buffer-data
   (element-type nil :type symbol) ;; data-type
-  (byte-size 0 :type (unsigned-byte 16)) ;; data-index-length
-  (offset-in-bytes-into-buffer 0 :type (unsigned-byte 16))) ;; offset-in-bytes-into-buffer
+  (byte-size 0 :type (unsigned-byte 64)) ;; data-index-length
+  (offset-in-bytes-into-buffer 0 :type (unsigned-byte 64))) ;; offset-in-bytes-into-buffer
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)
 			(:include gpu-array))
@@ -213,9 +213,6 @@
 (defvar +null-gpu-buffer+
   (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
 
-(defun make-uninitialized-gpu-buffer ()
-  (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+ :managed nil))
-
 (defun make-uninitialized-texture (&optional buffer-backed-p)
   (if buffer-backed-p
       (%%make-buffer-texture
@@ -258,3 +255,6 @@
 (defvar +uninitialized-buffer-array+
   (make-array 0 :element-type 'gpu-array-bb
 	      :initial-element +null-buffer-backed-gpu-array+))
+
+(defun make-uninitialized-gpu-buffer ()
+  (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+ :managed nil))

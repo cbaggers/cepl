@@ -71,6 +71,7 @@
 (defun make-gpu-array-share-data (gpu-array-to-modify gpu-array-with-data
 				  byte-offset-into-source-data element-type
 				  dimensions &optional byte-size)
+  (assert dimensions)
   (let* ((parent gpu-array-with-data)
 	 (child gpu-array-to-modify)
 	 (offset byte-offset-into-source-data)
@@ -141,7 +142,8 @@
     (cepl.memory::if-context
      (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
 					  :element-type element-type))
-       (init-gpu-array-from-c-array %pre% c-array access-style dimensions))
+       (init-gpu-array-from-c-array %pre% c-array access-style
+				    (c-array-dimensions c-array)))
      (make-uninitialized-gpu-array-bb buffer)
      (list buffer))))
 
@@ -173,7 +175,7 @@
 ;;---------------------------------------------------------------
 
 (defun subseq-g (array start &optional end)
-  (subseq-g-raw array start end nil))
+  (subseq-g-raw array start end :new-element-type nil))
 
 (defun subseq-g-raw (array start end &key new-element-type)
   (let ((dimensions (dimensions array)))

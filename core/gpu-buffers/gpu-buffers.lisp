@@ -171,7 +171,8 @@
 
 (defun gpu-array-sub-data (gpu-array c-array &key (types-must-match t))
   (when types-must-match
-    (assert (equal (element-type gpu-array) (element-type c-array))))
+    (assert (equal (gpu-array-bb-element-type gpu-array)
+		   (c-array-element-type c-array))))
   (let ((byte-size (cepl.c-arrays::c-array-byte-size c-array))
 	(byte-offset (gpu-array-bb-offset-in-bytes-into-buffer
 		      gpu-array)))
@@ -191,28 +192,20 @@ gpu-array: ~s (byte-size: ~s)"
   buffer)
 
 (defun buffer-reserve-block (buffer type dimensions target usage)
-  (let ((type (safer-gl-type type)))
-    (bind-buffer buffer target)
-    (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
-    (let* ((dimensions (listify dimensions))
-           (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions)))
-      (buffer-reserve-block-raw buffer byte-size target usage)
-      (setf (gpu-buffer-arrays buffer)
-	    (make-array 1 :element-type 'gpu-array-bb :initial-element
-		    (%make-gpu-array-bb
-		     :dimensions (list byte-size)
-		     :buffer buffer
-		     :access-style usage
-		     :element-type :uint8
-		     :byte-size byte-size
-		     :offset-in-bytes-into-buffer 0))))
-    buffer))
+  (bind-buffer buffer target)
+  (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
+  (let* ((dimensions (listify dimensions))
+	 (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions)))
+    (buffer-reserve-block-raw buffer byte-size target usage)
+    (setf (gpu-buffer-arrays buffer)
+	  (make-array 1 :element-type 'gpu-array-bb :initial-element
+		      (%make-gpu-array-bb
+		       :dimensions (list byte-size)
+		       :buffer buffer
+		       :access-style usage
+		       :element-type :uint8
+		       :byte-size byte-size
+		       :offset-in-bytes-into-buffer 0))))
+  buffer)
 
 ;;---------------------------------------------------------------
-
-(defun safer-gl-type (type)
-  "In some cases cl-opengl doesnt like certain types. :ushort is the main case
-as it prefers :unsigned-short. This function fixes this"
-  (if (eq type :ushort)
-      :unsigned-short
-      type))

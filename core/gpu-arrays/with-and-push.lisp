@@ -75,9 +75,8 @@
              (if (= 1 (length des-dimen) (length ob-dimen))
                  (<= (first ob-dimen) (first des-dimen))
                  (equal ob-dimen des-dimen)))
-        (setf (gpu-array-bb-buffer destination)
-	      (cepl.gpu-buffers::gpu-array-sub-data
-	       destination object :types-must-match t))
+        (cepl.gpu-buffers::gpu-array-sub-data
+	 destination object :types-must-match t)
         (error "If the arrays are 1D then the length of the source array must
 be <= length of the destination array. If the arrays have more than 1
 dimension then their sizes must match exactly"))

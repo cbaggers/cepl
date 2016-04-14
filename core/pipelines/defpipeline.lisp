@@ -237,13 +237,15 @@
      (bind-vao (buffer-stream-vao stream))
      (if (= |*instance-count*| 0)
          (if index-type
-             (%gl:draw-elements draw-type
-                                (buffer-stream-length stream)
-                                (gl::cffi-type-to-gl index-type)
-                                (make-pointer 0))
-             (%gl:draw-arrays draw-type
-                              (buffer-stream-start stream)
-                              (buffer-stream-length stream)))
+	     (locally (declare (optimize (speed 3) (safety 0)))
+	       (%gl:draw-elements draw-type
+				  (buffer-stream-length stream)
+				  (gl::cffi-type-to-gl index-type)
+				  (make-pointer 0)))
+	     (locally (declare (optimize (speed 3) (safety 0)))
+	       (%gl:draw-arrays draw-type
+				(buffer-stream-start stream)
+				(buffer-stream-length stream))))
          (if index-type
              (%gl:draw-elements-instanced
               draw-type
