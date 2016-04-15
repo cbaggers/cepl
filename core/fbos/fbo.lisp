@@ -50,7 +50,7 @@
   fbo-obj)
 
 (defun post-gl-init (fbo-obj &key id draw-buffer-map clear-mask)
-  (setf (%fbo-id fbo-obj) (or id (first (gl:gen-framebuffers 1))))
+  (setf (%fbo-id fbo-obj) (or id (first (gl::gen-framebuffers 1))))
   (setf (%fbo-clear-mask fbo-obj)
         (or clear-mask
             (cffi:foreign-bitfield-value
@@ -383,7 +383,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 ;;----------------------------------------------------------------------
 
 (defun %delete-fbo (fbo)
-  (gl:delete-framebuffers (listify (%fbo-id fbo))))
+  (gl::delete-framebuffers (listify (%fbo-id fbo))))
 
 
 (defmethod free ((thing fbo))
@@ -616,10 +616,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defvar %valid-texture-subset '(:dimensions :element-type :mipmap :immutable))
 
 (defun %gen-textures (pattern)
-  (assert (or (listp pattern) (keywordp pattern)))
+  (assert (or (listp pattern) (keywordp pattern)
+	      (numberp pattern)))
   (cond
     ;; simple keyword pattern to texture
-    ((keywordp pattern)
+    ((or (keywordp pattern)
+	 (numberp pattern))
      (cons (texref
             (make-texture
 	     nil :dimensions (viewport-dimensions (current-viewport))
@@ -657,11 +659,9 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
              t))))
 
 (defun %get-default-texture-format (attachment)
-  (assert (keywordp attachment))
-  (let ((char (char-downcase (aref (symbol-name attachment) 0))))
-    (cond ((char= char #\c) :rgba8)
-          ((char= char #\d) :depth-component24)
-          (t (error "No default texture format for attachment: ~s" attachment)))))
+  (cond ((numberp attachment) :rgba8)
+	((eq attachment :d) :depth-component24)
+	(t (error "No default texture format for attachment: ~s" attachment))))
 
 (defun attachment-compatible (attachment-name image-format)
   (case attachment-name
