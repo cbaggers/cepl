@@ -1,5 +1,12 @@
 (in-package :cepl.samplers)
 
+;;----------------------------------------------------------------------
+
+(defun sampler-texture (sampler)
+  (%sampler-texture sampler))
+
+;;----------------------------------------------------------------------
+
 ;; Sampler types
 
 ;; There are a number of sampler types. The various sampler types are separated

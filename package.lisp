@@ -693,6 +693,7 @@
 	:cepl.internals :%cepl.types :cepl.memory)
   (:export :sampler
 	   :sampler-p
+	   :sampler-texture
 	   :sample
 	   ;; :sampler-id
 	   ;; :sampler-lod-bias
