@@ -102,10 +102,11 @@
 
 (defun %set-default-fbo-viewport (new-dimensions)
   (let ((fbo %default-framebuffer))
-    (loop :for a :in (fbo-color-arrays fbo) :do
-       (when a
-	 (cepl.textures::with-gpu-array-t a
-	   (setf dimensions new-dimensions))))
+    ;; - - -
+    (loop :for a :across (%fbo-color-arrays fbo) :when a :do
+       (cepl.textures::with-gpu-array-t (att-array a)
+	 (setf dimensions new-dimensions)))
+    ;; - - -
     (cepl.textures::with-gpu-array-t
         (attachment fbo :d)
       (setf dimensions new-dimensions))))
@@ -120,14 +121,15 @@
 
 (defun %update-fbo-state (fbo)
   (update-clear-mask
-   (update-draw-buffer-map fbo)))
+   (update-draw-buffer-map
+    fbo)))
 
 (defun update-clear-mask (fbo)
   (setf (%fbo-clear-mask fbo)
         (cffi:foreign-bitfield-value
          '%gl::ClearBufferMask
          `(:color-buffer-bit
-           ,@(when (%fbo-depth-array fbo) '(:depth-buffer-bit))
+           ,@(when (att-array (%fbo-depth-array fbo)) '(:depth-buffer-bit))
            ;; ,@(list (and (attachment-gpu-array (%fbo-attachment-stencil object))
            ;;              :stencil-buffer-bit))
            )))
@@ -406,7 +408,9 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   ;; GL_ACCUM, and so forth. FBOs do not have these.
   ;; Instead, FBOs have a different set of images. Each FBO image represents an
   ;; attachment point, a location in the FBO where an image can be attached.
-  (gl:bind-framebuffer target (%fbo-id fbo)))
+  (if (eq fbo %default-framebuffer)
+      (gl:bind-framebuffer :framebuffer 0)
+      (gl:bind-framebuffer target (%fbo-id fbo))))
 
 (defun %unbind-fbo ()
   (%bind-fbo %default-framebuffer :framebuffer))
@@ -674,7 +678,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (clear-fbo target))
 
 (defun clear-fbo (fbo)
-  (%gl:clear (%fbo-clear-mask fbo)))
+  (with-fbo-bound (fbo :with-blending nil :with-viewport nil :draw-buffers nil)
+    (%gl:clear (%fbo-clear-mask fbo))))
 
 (defun clear-attachment (attachment)
   (declare (ignore attachment))

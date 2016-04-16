@@ -330,4 +330,12 @@ let CEPL handle it.
 If unbind is set to nil then the fob is not unbound at the end of the scope.
 Only use this if you know you need it. Most often it is best to let CEPL control
 that.
-"))
+")
+
+  (defun attachment-tex
+      "This function take an fbo and the name of an attachment. It then returns
+the texture that backs the gpu-array in the specified attachment.
+
+It is equivalent to writing:
+
+    (gpu-array-texture (attachment fbo attachmnent-name))"))
