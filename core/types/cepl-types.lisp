@@ -243,14 +243,14 @@
   (make-raw-buffer-stream :index-type :uninitialized))
 
 (defvar +null-texture-backed-gpu-array+
-  (%make-gpu-array-bb
-   :buffer +null-gpu-buffer+
-   :access-style :invalid))
-
-(defvar +null-buffer-backed-gpu-array+
   (%make-gpu-array-t
    :texture +null-texture+
    :texture-type nil))
+
+(defvar +null-buffer-backed-gpu-array+
+  (%make-gpu-array-bb
+   :buffer +null-gpu-buffer+
+   :access-style :invalid))
 
 (defvar +uninitialized-buffer-array+
   (make-array 0 :element-type 'gpu-array-bb
