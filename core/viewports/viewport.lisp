@@ -70,6 +70,11 @@
                    (error "The value given to (setf viewport-resolution) must be a vec2"))))
     (%set-resolution viewport (first value) (second value))))
 
+(defun (setf viewport-origin) (value viewport)
+  (setf (%viewport-origin-x viewport) (floor (v:x value))
+	(%viewport-origin-y viewport) (floor (v:y value)))
+  value)
+
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun %viewport (viewport)

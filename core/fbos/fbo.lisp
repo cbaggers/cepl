@@ -448,10 +448,11 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
           ((listp pattern)
            (destructuring-bind (pointer len attachments) pattern
              (assert (numberp len))
-             `(progn (%gl:draw-buffers ,len ,pointer)
-                     (%with-blending ,fbo ,attachments nil ,@body)
-                     (cffi:incf-pointer
-                      ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum)))))))))
+             `(progn
+		(%gl:draw-buffers ,len ,pointer)
+		(%with-blending ,fbo ,attachments nil ,@body)
+		(cffi:incf-pointer
+		 ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum)))))))))
 
 
 (defun fbo-gen-attach (fbo &rest args)
@@ -678,7 +679,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (clear-fbo target))
 
 (defun clear-fbo (fbo)
-  (with-fbo-bound (fbo :with-blending nil :with-viewport nil :draw-buffers nil)
+  (with-fbo-bound (fbo :with-blending nil :with-viewport nil)
     (%gl:clear (%fbo-clear-mask fbo))))
 
 (defun clear-attachment (attachment)

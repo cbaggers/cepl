@@ -47,6 +47,9 @@
 (defun color-attachment-enum (attachment-num)
   (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :color-attachment0)))
 
+(defun draw-buffer-enum (buffer-num)
+  (+ buffer-num #.(cffi:foreign-enum-value '%gl:enum :draw-buffer0)))
+
 (defvar %default-framebuffer nil)
 (defvar %current-fbo nil)
 (defvar *gl-window* nil)

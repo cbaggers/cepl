@@ -203,10 +203,6 @@
 ;;     Which buffers are being drawn to. This is selected from the currently bound GL_DRAW_FRAMEBUFFER. See glDrawBuffer. The initial value is GL_BACK if there are back buffers, otherwise it is GL_FRONT.
 (def-context-reader draw-buffer)
 
-;; GL_DRAW_BUFFERi (symbolic constant, see glDrawBuffers)
-;;     params returns one value, a symbolic constant indicating which buffers are being drawn to by the corresponding output color. This is selected from the currently bound GL_DRAW_FRAMEBUFFER The initial value of GL_DRAW_BUFFER0 is GL_BACK if there are back buffers, otherwise it is GL_FRONT. The initial values of draw buffers for all other output colors is GL_NONE. i can be from 0 up to the value of MAX_DRAW_BUFFERS minus one.
-(def-context-reader draw-bufferi)
-
 ;; GL_DRAW_FRAMEBUFFER_BINDING (name, initially 0, see glBindFramebuffer)
 ;;     The framebuffer object currently bound to the GL_DRAW_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
 (def-context-reader draw-framebuffer-binding)
@@ -334,3 +330,13 @@
 ;; GL_STEREO (boolean)
 ;;     Whether stereo buffers (left and right) are supported.
 (def-context-reader stereo)
+
+;;------------------------------------------------------------
+
+;; GL_DRAW_BUFFERi (symbolic constant, see glDrawBuffers)
+;;     params returns one value, a symbolic constant indicating which buffers are being drawn to by the corresponding output color. This is selected from the currently bound GL_DRAW_FRAMEBUFFER The initial value of GL_DRAW_BUFFER0 is GL_BACK if there are back buffers, otherwise it is GL_FRONT. The initial values of draw buffers for all other output colors is GL_NONE. i can be from 0 up to the value of MAX_DRAW_BUFFERS minus one.
+(defgeneric draw-buffer-i (context buffer-num))
+
+(defmethod draw-buffer-i ((context gl-context) (buffer-num integer))
+  (declare (ignore context))
+  (cl-opengl:get* (kwd :draw-buffer buffer-num)))

@@ -374,6 +374,7 @@
            :*expanded-gl-type-names*
            :expand-gl-type-name
 	   :color-attachment-enum
+	   :draw-buffer-enum
 	   :gl-type-size
 	   :uploadable-lisp-seq
 	   ;;---
@@ -439,7 +440,7 @@
            :depth-writemask
            :doublebuffer
            :draw-buffer
-           :draw-bufferi
+           :draw-buffer-i
            :draw-framebuffer-binding
            :max-color-attachments
            :max-color-texture-samples
