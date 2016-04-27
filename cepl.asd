@@ -1,6 +1,6 @@
 ;;;; cepl.asd
 
-#+(and darwin sbcl)
+#+sbcl
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (sb-int:set-floating-point-modes :traps nil))
 
