@@ -263,6 +263,12 @@ but with the added benefit that samplers are semantically dual with gpu-streams
 giving greater api consistancy.
 ")
 
+  (defun sampler-texture
+      "
+This function takes a sampler as it's only argument and returns the texture
+being sampled by the sampler.
+")
+
   (defun compare
       "
 This function sets the comparison mode of the texture or sampler given

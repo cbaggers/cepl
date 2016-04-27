@@ -1,4 +1,4 @@
-(in-package :cepl)
+(in-package :cepl.c-arrays)
 
 (docs:define-docs
   (defstruct c-array
@@ -153,4 +153,39 @@ Returns the size in bytes taken up by a single element of the c-array.
   (defun element-type
       "
 Returns the type of the elements in the c-array.
+")
+
+  (defun across-c-ptr
+      "
+This function takes two arguments:
+
+- A function that takes a pointer and a fixnum
+- A c-array
+
+across-c-ptr will then call the given function once for every element in the
+c-array passing in the pointer to an element of the array and the index to that
+element.
+")
+
+  (defun map-c-into
+      "
+When given a destination c-array, a function and a source c-array this function
+will map the function across every element of the source c-array and write the
+results of the function destrucively into the destination c-array.
+")
+
+  (defun map-c
+      "
+When given a function and a c-array this function will map the function across
+every element of the c-array and write the results of the function into a new
+c-array with the same element-type and dimensions as the original c-array.
+
+You may also pass in an optional foreign type that will be used as the element
+type of the new array.
+")
+
+  (defun ptr-index
+      "
+This function takes a c-array and some subscripts and will return the ptr to the
+specified element of the c-array
 "))

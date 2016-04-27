@@ -218,6 +218,28 @@ You can also use the generic function #'POINTER to get the same result.
 </pre>
                   </article>
                 </li><li>
+                  <a name="CEPL.C-ARRAYS:ACROSS-C-PTR"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.C-ARRAYS:ACROSS-C-PTR" class="name">ACROSS-C-PTR</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FUNCTION C-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function takes two arguments:
+
+- A function that takes a pointer and a fixnum
+- A c-array
+
+across-c-ptr will then call the given function once for every element in the
+c-array passing in the pointer to an element of the array and the index to that
+element.
+</pre>
+                  </article>
+                </li><li>
                   <a name="%CEPL.TYPES:C-ARRAY-P"/>
                   <article>
                     <header class="function">
@@ -330,6 +352,59 @@ will store the pointer as where the data is expected to be.
 
 This function does allocate the memory or validate the type or dimensions so be
 very careful when using this function.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.C-ARRAYS:MAP-C"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.C-ARRAYS:MAP-C" class="name">MAP-C</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FUNCTION C-ARRAY &amp;OPTIONAL DESTINATION-ELEMENT-TYPE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+When given a function and a c-array this function will map the function across
+every element of the c-array and write the results of the function into a new
+c-array with the same element-type and dimensions as the original c-array.
+
+You may also pass in an optional foreign type that will be used as the element
+type of the new array.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.C-ARRAYS:MAP-C-INTO"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.C-ARRAYS:MAP-C-INTO" class="name">MAP-C-INTO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(DESTINATION-C-ARRAY FUNCTION SOURCE-C-ARRAY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+When given a destination c-array, a function and a source c-array this function
+will map the function across every element of the source c-array and write the
+results of the function destrucively into the destination c-array.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.C-ARRAYS:PTR-INDEX"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.C-ARRAYS:PTR-INDEX" class="name">PTR-INDEX</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(C-ARRAY &amp;OPTIONAL (X 0) (Y 0 Y-SET) (Z 0 Z-SET) (W 0 W-SET))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function takes a c-array and some subscripts and will return the ptr to the
+specified element of the c-array
 </pre>
                   </article>
                 </li><li>
@@ -1136,6 +1211,24 @@ generic function #'resolution
 </pre>
                   </article>
                 </li><li>
+                  <a name="CEPL.VIEWPORTS:VIEWPORT-ORIGIN"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-ORIGIN" class="name">VIEWPORT-ORIGIN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIEWPORT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function returns the origin of the viewport.
+
+This is the top-left corner of the rectangle within the window that OpenGL (and
+thus CEPL) will draw into
+</pre>
+                  </article>
+                </li><li>
                   <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION"/>
                   <article>
                     <header class="accessor">
@@ -1203,24 +1296,6 @@ then the result will be the default viewport.
                     </header>
                     <pre class="docstring">
 This function returns a new viewport with the specified resolution and origin
-</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.VIEWPORTS:VIEWPORT-ORIGIN"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-ORIGIN" class="name">VIEWPORT-ORIGIN</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(VIEWPORT)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">
-This function returns the origin of the viewport.
-
-This is the top-left corner of the rectangle within the window that OpenGL (and
-thus CEPL) will draw into
 </pre>
                   </article>
                 </li><li>
@@ -2595,6 +2670,22 @@ This function returns t if the supplied value is a sampler and nil otherwise
 </pre>
                   </article>
                 </li><li>
+                  <a name="CEPL.SAMPLERS:SAMPLER-TEXTURE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.SAMPLERS:SAMPLER-TEXTURE" class="name">SAMPLER-TEXTURE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function takes a sampler as it's only argument and returns the texture
+being sampled by the sampler.
+</pre>
+                  </article>
+                </li><li>
                   <a name="%CEPL.TYPES:SET-MINIFY-FILTER"/>
                   <article>
                     <header class="function">
@@ -2908,7 +2999,12 @@ the docstring for the 'blending-params struct.
                         <span class="arguments">(FBO ATTACHMENT-NAME)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">This function take an fbo and the name of an attachment. It then returns
+the texture that backs the gpu-array in the specified attachment.
+
+It is equivalent to writing:
+
+    (gpu-array-texture (attachment fbo attachmnent-name))</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.FBOS:ATTACHMENT-VIEWPORT"/>
@@ -3627,10 +3723,10 @@ blending-params object with the same settings as the one passed.
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM2231) :FUNC-ADD) ((:MODE-ALPHA DUM2232) :FUNC-ADD)
- ((:SOURCE-RGB DUM2233) :SRC-ALPHA) ((:SOURCE-ALPHA DUM2234) :SRC-ALPHA)
- ((:DESTINATION-RGB DUM2235) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DUM2236) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM2265) :FUNC-ADD) ((:MODE-ALPHA DUM2266) :FUNC-ADD)
+ ((:SOURCE-RGB DUM2267) :SRC-ALPHA) ((:SOURCE-ALPHA DUM2268) :SRC-ALPHA)
+ ((:DESTINATION-RGB DUM2269) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DUM2270) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -5854,6 +5950,45 @@ Returns the size in bytes taken up by a single element of the c-array.
                     </header>
                     <pre class="docstring">
 Returns the type of the elements in the c-array.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES:GET-TYPED-FROM-FOREIGN"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES:GET-TYPED-FROM-FOREIGN" class="name">GET-TYPED-FROM-FOREIGN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TYPE-NAME)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function, when given a foreign type name returns a function that when given
+a pointer reads the named type foreign from the pointer.
+
+For example (get-typed-from-foreign :vec3) returns a function that when given a
+pointer to a :vec3 will return a lisp vec3.
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.TYPES:GET-TYPED-TO-FOREIGN"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.TYPES:GET-TYPED-TO-FOREIGN" class="name">GET-TYPED-TO-FOREIGN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(TYPE-NAME)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function, when given a foreign type name returns a function that when given
+a pointer and a lisp value, converts and writes the value to the foreign
+location specified by the pointer pointer.
+
+For example (get-typed-to-foreign :vec3) returns a function that when given a
+pointer and a lisp vec3 will write the value into foreign memory.
 </pre>
                   </article>
                 </li><li>

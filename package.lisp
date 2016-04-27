@@ -267,6 +267,8 @@
 	   :c-array-row-byte-size
 	   :c-array-struct-element-typep
 	   :c-array-element-pixel-format
+	   :c-array-element-from-foreign
+	   :c-array-element-to-foreign
 
 	   :%make-viewport
 	   :viewport
@@ -289,6 +291,11 @@
            :pull1-g
            :push-g))
 
+(defpackage :cepl.types.foreign
+  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+        :split-sequence :named-readtables
+	:cepl.errors :%cepl.types :cepl.memory))
+
 (defpackage :cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :split-sequence :named-readtables
@@ -302,7 +309,10 @@
 	   :pixel-format->lisp-type
 	   ;;---
 	   :element-type
-	   :element-byte-size))
+	   :element-byte-size
+	   ;;---
+	   :get-typed-from-foreign
+	   :get-typed-to-foreign))
 
 (defpackage :cepl.types.predefined
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -542,7 +552,11 @@
            :free-c-array
            :make-c-array
            :make-c-array-from-pointer
-           :subseq-c))
+           :subseq-c
+	   :across-c-ptr
+	   :map-c-into
+	   :map-c
+	   :ptr-index))
 
 (defpackage :cepl.gpu-buffers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

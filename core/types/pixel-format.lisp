@@ -29,7 +29,7 @@
   '(:r :g :b :rg :rgb :rgba :bgr :bgra :depth :depth-stencil))
 
 (defvar *valid-pixel-types*
-  '(:uint8 :int8 :ushort :short :uint :int :float))
+  '(:uint8 :int8 :ushort :short :uint :int :float :half-float))
 
 (defvar *valid-pixel-packed-sizes*
   '(((3 3 2) :uint8) ((:r 2 3 3) :uint8)
@@ -67,10 +67,10 @@
     ((:rg t :float nil) :rg32f)
     ((:rgb t :float nil) :rgb32f)
     ((:rgba t :float nil) :rgba32f)
-    ((:r t :float nil) :r16f)
-    ((:rg t :float nil) :rg16f)
-    ((:rgb t :float nil) :rgb16f)
-    ((:rgba t :float nil) :rgba16f)
+    ((:r t :half-float nil) :r16f)
+    ((:rg t :half-float nil) :rg16f)
+    ((:rgb t :half-float nil) :rgb16f)
+    ((:rgba t :half-float nil) :rgba16f)
     ((:r nil :int8 nil) :r8i)
     ((:r nil :uint8 nil) :r8ui)
     ((:r nil :short nil) :r16i)

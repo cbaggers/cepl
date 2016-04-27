@@ -99,7 +99,8 @@
 	   ,(when constructor (make-make-struct constructor autowrap-name slots))
 	   ,(when attribs (make-struct-attrib-assigner name slots))
 	   ,(make-struct-pixel-format name slots)
-	   ,(when populate (make-populate autowrap-name slots))
+	   ,@(when populate (make-populate autowrap-name slots name))
+	   ,@(make-foreign-conversions name)
 	   ,@(when pull-push (make-pull-push autowrap-name slots))
 	   ',name)))))
 
@@ -353,16 +354,45 @@
 
 ;;------------------------------------------------------------
 
-(defun make-populate (autowrap-name slots)
-  `(defmethod cepl.internals:populate ((object ,autowrap-name) data)
-     (unless (or (vectorp data) (listp data))
-       (error "can only populate a struct of type ~a with a list or an array"
-              ',autowrap-name))
-     ,@(loop :for slot :in slots :for i :from 0 :collect
-          `(setf (,(s-writer slot) object) (elt data ,i)))
-     object))
+(defun make-populate (autowrap-name slots struct-name)
+  (let ((typed-name (symb :populate- struct-name)))
+    `((defun ,typed-name (object data)
+	(declare (type ,autowrap-name object))
+	(unless (or (vectorp data) (listp data))
+	  (error "can only populate a struct of type ~a with a list or an array"
+		 ',autowrap-name))
+	,@(loop :for slot :in slots :for i :from 0 :collect
+	     `(setf (,(s-writer slot) object) (elt data ,i)))
+	object)
+      (defmethod populate ((object ,autowrap-name) data)
+	(,typed-name object data)))))
 
 ;;------------------------------------------------------------
+
+(defun make-foreign-conversions (type)
+  (let* ((from (cepl-utils:symb-package
+		:cepl.types.foreign type '-from-foreign))
+	 (to (cepl-utils:symb-package
+	      :cepl.types.foreign type '-to-foreign))
+	 (typed-populate (symb :populate- type)))
+    `((declaim (inline ,from))
+      (declaim (inline ,to))
+      (defun ,from (ptr)
+	(declare (type cffi:foreign-pointer ptr)
+		 (optimize (speed 3) (safety 0) (debug 0)))
+	(autowrap:wrap-pointer ptr ',type))
+      (defun ,to (ptr value)
+	(declare (type cffi:foreign-pointer ptr)
+		 (optimize (speed 3) (safety 0) (debug 0)))
+	(,typed-populate (autowrap:wrap-pointer ptr ',type) value))
+      (export '(,to ,from) :cepl.types.foreign)
+      (defmethod get-typed-from-foreign ((type-name (eql ',type)))
+	#',from)
+      (defmethod get-typed-to-foreign ((type-name (eql ',type)))
+	#',to))))
+
+;;------------------------------------------------------------
+
 
 (defun make-struct-pixel-format (name slots)
   (let* ((type (s-type (first slots)))

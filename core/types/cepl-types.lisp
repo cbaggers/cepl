@@ -19,7 +19,13 @@
   (row-byte-size
    (error "cepl: c-array must be created with a pointer")
    :type fixnum)
-  (element-pixel-format nil :type (or null pixel-format)))
+  (element-pixel-format nil :type (or null pixel-format))
+  (element-from-foreign
+   (error "cepl: c-array must be created with a from-foreign function")
+   :type function)
+  (element-to-foreign
+   (error "cepl: c-array must be created with a to-foreign function")
+   :type (function (foreign-pointer t) t)))
 
 ;;------------------------------------------------------------
 

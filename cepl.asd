@@ -18,6 +18,7 @@
                #:cl-ppcre
                #:documentation-utils
                #:fn
+	       #:ieee-floats
                #:named-readtables
                #:rtg-math
                #:varjo)
@@ -48,7 +49,13 @@
                (:file "core/types/image-format")
                (:file "core/types/pixel-format")
                (:file "core/types/cffi-extra-primitive-types")
-               (:file "core/c-arrays/c-arrays")
+	       (:file "core/types/cffi-helpers")
+               (:file "core/c-arrays/def")
+	       (:file "core/c-arrays/aref-c")
+	       (:file "core/c-arrays/populate")
+	       (:file "core/c-arrays/make")
+	       (:file "core/c-arrays/map")
+	       (:file "core/c-arrays/rest")
                (:file "core/types/structs")
                (:file "core/gpu-buffers/gpu-buffers")
                (:file "core/gpu-arrays/buffer-backed")

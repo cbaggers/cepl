@@ -141,4 +141,23 @@ This function, when given a pixel-format object, will attempt to find and
 return the name of a lisp type that is equivalent.
 
 If no such type is found then nil is returned
+")
+
+  (defun get-typed-from-foreign
+      "
+This function, when given a foreign type name returns a function that when given
+a pointer reads the named type foreign from the pointer.
+
+For example (get-typed-from-foreign :vec3) returns a function that when given a
+pointer to a :vec3 will return a lisp vec3.
+")
+
+  (defun get-typed-to-foreign
+      "
+This function, when given a foreign type name returns a function that when given
+a pointer and a lisp value, converts and writes the value to the foreign
+location specified by the pointer pointer.
+
+For example (get-typed-to-foreign :vec3) returns a function that when given a
+pointer and a lisp vec3 will write the value into foreign memory.
 "))
