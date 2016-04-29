@@ -123,7 +123,7 @@
 				c-array :usage access-style))
 	   (base-arr (aref (gpu-buffer-arrays source) 0)))
       (make-gpu-array-share-data arr base-arr 0 (c-array-element-type c-array)
-				 dimensions))))
+				 c-dimensions))))
 
 (defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw) dimensions)
