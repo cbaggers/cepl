@@ -370,10 +370,8 @@
 ;;------------------------------------------------------------
 
 (defun make-foreign-conversions (type)
-  (let* ((from (cepl-utils:symb-package
-		:cepl.types.foreign type '-from-foreign))
-	 (to (cepl-utils:symb-package
-	      :cepl.types.foreign type '-to-foreign))
+  (let* ((from (cepl-utils:symb type '-from-foreign))
+	 (to (cepl-utils:symb type '-to-foreign))
 	 (typed-populate (symb :populate- type)))
     `((declaim (inline ,from))
       (declaim (inline ,to))
@@ -385,7 +383,6 @@
 	(declare (type cffi:foreign-pointer ptr)
 		 (optimize (speed 3) (safety 0) (debug 0)))
 	(,typed-populate (autowrap:wrap-pointer ptr ',type) value))
-      (export '(,to ,from) :cepl.types.foreign)
       (defmethod get-typed-from-foreign ((type-name (eql ',type)))
 	#',from)
       (defmethod get-typed-to-foreign ((type-name (eql ',type)))
