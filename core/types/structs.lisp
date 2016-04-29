@@ -364,7 +364,7 @@
 	,@(loop :for slot :in slots :for i :from 0 :collect
 	     `(setf (,(s-writer slot) object) (elt data ,i)))
 	object)
-      (defmethod populate ((object ,autowrap-name) data)
+      (defmethod cepl.internals:populate ((object ,autowrap-name) data)
 	(,typed-name object data)))))
 
 ;;------------------------------------------------------------
