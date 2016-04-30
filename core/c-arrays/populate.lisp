@@ -80,4 +80,4 @@
 	    row-byte-size)))
 
 (defun gl-calc-byte-size (type dimensions)
-  (%gl-calc-byte-size (gl-type-size type) dimensions))
+  (%gl-calc-byte-size (gl-type-size type) (listify dimensions)))
