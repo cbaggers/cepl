@@ -62,7 +62,8 @@ quickproject and then run this again.")
   ;; project's better, we can add lots of little helpers here when they
   ;; pick the only valid option. See the skitter.sdl2 example for an
   ;; example
-  (let ((qp (find-package :quickproject))
+  (let ((name (if (keywordp name) (symbol-name name) name))
+	(qp (find-package :quickproject))
 	(depends-on (cepl-utils:listify depends-on)))
     (when (eq pathname :why)
       (error 'make-project-missing-default-implementation))
