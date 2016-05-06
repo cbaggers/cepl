@@ -60,12 +60,18 @@
       (cffi:foreign-type-size type)
       (autowrap:foreign-type-size type)))
 
-(defparameter *expanded-gl-type-names*
-  '((:uint :unsigned-int) (:uint8 :unsigned-byte)
-    (:int8 :signed-byte) (:ushort :unsigned-short)))
-
-(defun expand-gl-type-name (type)
-  (or (second (assoc type *expanded-gl-type-names*))
-      type))
+(defun cffi-type->gl-type (type)
+  (case type
+    ((:char :signed-char) :byte)
+    ((:uchar :unsigned-char) :unsigned-byte)
+    ((:short :signed-short) :short)
+    ((:ushort :unsigned-short) :unsigned-short)
+    ((:int :signed-int) :int)
+    ((:uint :unsigned-int) :unsigned-int)
+    (:int8 :signed-byte)
+    (:uint8 :unsigned-byte)
+    (:float :float)
+    (:double :double)
+    (otherwise type)))
 
 (deftype uploadable-lisp-seq () '(or list vector array))

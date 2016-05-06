@@ -240,7 +240,7 @@
 	     (locally (declare (optimize (speed 3) (safety 0)))
 	       (%gl:draw-elements draw-type
 				  (buffer-stream-length stream)
-				  (gl::cffi-type-to-gl index-type)
+				  (cffi-type->gl-type index-type)
 				  (make-pointer 0)))
 	     (locally (declare (optimize (speed 3) (safety 0)))
 	       (%gl:draw-arrays draw-type
@@ -250,7 +250,7 @@
              (%gl:draw-elements-instanced
               draw-type
               (buffer-stream-length stream)
-              (gl::cffi-type-to-gl index-type)
+              (cffi-type->gl-type index-type)
               (make-pointer 0)
               |*instance-count*|)
              (%gl:draw-arrays-instanced
