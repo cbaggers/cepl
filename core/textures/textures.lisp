@@ -287,7 +287,7 @@
 			 layer-count cubes rectangle multisample immutable
 			 buffer-storage generate-mipmaps)
   ;;
-  (let ((element-type (expand-gl-type-name element-type))
+  (let ((element-type (cffi-type->gl-type element-type))
 	(image-format (calc-image-format element-type initial-contents)))
     (cond
       ;; ms

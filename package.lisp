@@ -382,7 +382,7 @@
            :s-prim-p
            :symbol-names-cepl-structp
            :*expanded-gl-type-names*
-           :expand-gl-type-name
+           :cffi-type->gl-type
 	   :color-attachment-enum
 	   :draw-buffer-enum
 	   :gl-type-size

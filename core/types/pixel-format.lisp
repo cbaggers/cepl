@@ -182,7 +182,7 @@
                        components))
          (sizes (pixel-format-sizes pixel-format))
          (type (pixel-format-type pixel-format))
-         (expanded-type (expand-gl-type-name (if (eq type :int8) :uint8 type))))
+         (expanded-type (cffi-type->gl-type (if (eq type :int8) :uint8 type))))
     (let ((format (if (pixel-format-normalise pixel-format)
                       gl-comps
                       (intern (format nil "~a-INTEGER" gl-comps) 'keyword)))

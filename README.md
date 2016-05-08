@@ -12,6 +12,13 @@ See the [cepl.examples repository](https://github.com/cbaggers/cepl.examples) fo
 
 Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 
+### Documentation
+
+Currently we have full documentation of every exported symbol in the CEPL package. You can find this [here: CEPL API Docs](http://techsnuffle.com/cepl/api.html)
+
+Guides will be provided in future, however these take much longer to write.
+
+I can also be reached by my email (techsnuffle [at] gmail · com) and sometimes on #lispgames IRC. Come to #lispgames anyway though, theres some lovely folks, all lispy dialects welcome!
 
 ### Requirements
 
