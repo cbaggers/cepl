@@ -199,9 +199,14 @@
       (let ((len (pixel-format-comp-length pixel-format))
             (type (pixel-format-type pixel-format)))
         (values (if (> len 1)
-                    (intern (format nil "~@[~a-~]VEC~a"
-                                    (unless (eq type :float) type)
-                                    len) 'keyword)
+                    (intern
+		     (format nil "~@[~a-~]VEC~a"
+			     (case type
+			       (:float nil)
+			       (:half-float :half)
+			       (otherwise type))
+			     len)
+		     'keyword)
                     type)))))
 
 (defun image-format->lisp-type (image-format)

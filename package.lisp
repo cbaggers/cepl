@@ -738,6 +738,7 @@
   (:export :fbo
 	   :fbo-p
 	   :fbo-blending-params
+	   :attachment
 	   :attachment-viewport
 	   :attachment-blending
 	   :per-attachment-blending-available-p
