@@ -1,4 +1,4 @@
-## CEPL (Code Evaluate Play Loop) - [ALPHA]
+## CEPL (Code Evaluate Play Loop) - [BETA]
 
 CEPL is a lispy and REPL friendly library for working with OpenGL.
 
