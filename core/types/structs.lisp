@@ -246,9 +246,9 @@
 (defun make-array-slot-getter (slot awrap-type-name)
   `(,(s-def slot) ,(s-reader slot)
      ,(s-slot-args slot `((wrapped-object ,awrap-type-name)))
-     (make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot)
-                                (plus-c:c-ref wrapped-object ,awrap-type-name
-                                              ,(kwd (s-name slot)) plus-c::&))))
+     (cepl.c-arrays::make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot)
+					       (plus-c:c-ref wrapped-object ,awrap-type-name
+							     ,(kwd (s-name slot)) plus-c::&))))
 
 (defun make-slot-setter (slot type-name awrap-type-name)
   (when (s-writer slot)
@@ -283,7 +283,7 @@
   (declare (ignore type-name))
   `(,(s-def slot) (setf ,(s-writer slot))
      ,(s-slot-args slot `((value list) (wrapped-object ,awrap-type-name)))
-     (c-populate (,(s-reader slot) wrapped-object) value)))
+     (cepl.c-arrays::c-populate (,(s-reader slot) wrapped-object) value)))
 
 ;;------------------------------------------------------------
 
