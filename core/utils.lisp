@@ -118,7 +118,10 @@
   (values (intern (apply #'mkstr args))))
 
 (defun symb-package (package &rest args)
-  (values (intern (apply #'cepl-utils:mkstr args) package)))
+  (values (intern (apply #'cepl-utils:mkstr args)
+		  (if (packagep package)
+		      package
+		      (find-package package)))))
 
 (defun make-keyword (&rest args)
   "This takes a list of symbols (or strings) and outputs one
@@ -325,15 +328,13 @@
 (defmacro deferror (name (&key (error-type 'error) prefix)
                             (&rest args) error-string &body body)
   (unless (every #'symbolp args) (error "can only take simple args"))
-  (loop :for arg :in args :do
-     (setf body (subst `(,arg condition) arg body :test #'eq)))
   `(define-condition ,name (,error-type)
-     (,@(loop :for arg :in args :collect
-           `(,arg :initarg ,(kwd arg) :reader ,arg)))
+     (,@(loop :for arg :in args :collect `(,arg :initarg ,(kwd arg))))
      (:report (lambda (condition stream)
                 (declare (ignorable condition))
-                (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
-                        ,@body)))))
+		(with-slots ,args condition
+		    (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
+			    ,@body))))))
 
 (defmacro asserting (form error-name &rest keys-to-error)
   `(unless ,form (error ',error-name ,@keys-to-error)))
@@ -480,7 +481,8 @@ source: ~s~%list-to-match: ~s" list list-to-match)
     (loop :for c :across string
        :if (char= c delimiter) :do (push nil result)
        :else :do (push c (first result)))
-    (mapcar (lambda (x) (concatenate 'string x))
+    (mapcar (lambda (x)
+	      (concatenate 'string (reverse x)))
 	    (reverse result))))
 
 (defun ni-call (package-name func-name &rest args)
@@ -510,3 +512,40 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 (defun just-ignore (&rest args)
   (declare (ignore args))
   nil)
+
+(defpackage :defxstar-hidden)
+
+(defstruct (defxstar-hidden::boop6
+	     (:constructor defxstar-hidden::make-boop6)
+	     (:conc-name nil)
+	     (:predicate defxstar-hidden::boop-p))
+  defxstar-hidden::boop-x defxstar-hidden::boop-y)
+
+(defun defx* (defname name slots)
+  (labels ((extract-slot-def (x)
+	     (dbind (slot-name _ &key type) x
+	       (declare (ignore _))
+	       (list (symb name :- slot-name)  nil :type (or type t))))
+	   (extract-let (x)
+	     (dbind (name val &key type) x
+	       (declare (ignore type))
+	       (list name val)))
+	   (extract-init (x)
+	     (let ((slot-name (first x)))
+	       (list (kwd name :- slot-name) slot-name))))
+    (let* ((data-name (symb-package :defxstar-hidden name :-data))
+	   (cname (symb-package :defxstar-hidden :%make- data-name)))
+      `(progn
+	 (defstruct (,data-name (:constructor ,cname)
+				(:predicate nil)
+				(:conc-name nil))
+	   ,@(mapcar #'extract-slot-def slots))
+	 (,defname ,name
+	   (let* ,(mapcar #'extract-let slots)
+	     (,cname ,@(mapcan #'extract-init slots))))))))
+
+(defmacro defvar* (name &body slots)
+  (defx* 'defvar name slots))
+
+(defmacro defparameter* (name &body slots)
+  (defx* 'defparameter name slots))

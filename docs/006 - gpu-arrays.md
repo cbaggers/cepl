@@ -113,7 +113,7 @@ And this would work, but it means that when the gpu want to render the first ver
 Instead if we make an struct like this:
 
 ```
-	 (defstruct-g goat-vertex ()
+	 (defstruct-g goat-vertex
 	   (position :vec3)
 	   (uv :vec2)
 	   (normal :vec3))

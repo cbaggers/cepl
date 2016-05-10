@@ -47,7 +47,8 @@ This is simply to show that we can use our structs from the previous chapter in 
 This little example shows that when we provide the `initial-contents` we can leave out the dimensions. The dimensions will be made the same dimensions as that of the data provided.
 
 *3:*
-Number 3 shows that you can even provide lisp data when the `element-type` is a cepl struct. In this case it will use `#'populate` (which we talked about in the last chapter) to fill in the values.
+Number 3 shows that you can even provide lisp data when the `element-type` is a cepl struct. In this case it will take each element
+of the list in order to fill in the slots of the struct.
 
 Here is the definition of that struct again:
 
@@ -67,7 +68,7 @@ What happens is that `#'make-c-array` scans each element of the lisp data and tr
 Now this feature is very handy (especially in the repl) but there are some caveats.
 
 - It can only infer a few types:
-  `:ubyte` `:byte` `:int` `:float` & `:double`
+  `:uint8` `:int8` `:int` `:float` & `:double`
 
 - Scanning for types is not fast:
   This is a great feature to use at the repl, because odds are cepl can work out the type fast enough that you won't notice a delay. **However** this is not a good type to use in performance critical code, so if you need the speed, always specify your `element-type`
@@ -76,7 +77,7 @@ Now this feature is very handy (especially in the repl) but there are some cavea
 This shows two things:
 
 First: that c-arrays can take arrays (of multiple dimensions also)
-Second: The `element-type` that cepl will give this array is `:ubyte`. The reason is that all the elements are between 0 & 255.
+Second: The `element-type` that cepl will give this array is `:uint8`. The reason is that all the elements are between 0 & 255.
 
 If we were to write:
 
@@ -84,7 +85,7 @@ If we were to write:
 	 (make-c-array #2A((1 -2) (3 4)))
 ```
 
-The the `element-type` would be `:byte`.
+The the `element-type` would be `:int8`.
 
 
 ### More `#'make-c-array` args

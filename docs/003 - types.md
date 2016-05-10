@@ -35,12 +35,12 @@ name         size in bytes     component-type     lisp-type
 :uvec3       12                :uint              (simple-array unsigned-integer (2)) *
 :uvec4       16                :uint              (simple-array unsigned-integer (2)) *
 
-:ubyte-vec2  2                 :ubyte             (simple-array (integer 0 255) (2)) *
-:ubyte-vec3  3                 :ubyte             (simple-array (integer 0 255) (2)) *
-:ubyte-vec4  4                 :ubyte             (simple-array (integer 0 255) (2)) *
-:byte-vec2   2                 :byte              (simple-array (integer -127 128) (2)) *
-:byte-vec3   3                 :byte              (simple-array (integer -127 128) (2)) *
-:byte-vec4   4                 :byte              (simple-array (integer -127 128) (2)) *
+:uint8-vec2  2                 :uint8             (simple-array (integer 0 255) (2)) *
+:uint8-vec3  3                 :uint8             (simple-array (integer 0 255) (2)) *
+:uint8-vec4  4                 :uint8             (simple-array (integer 0 255) (2)) *
+:int8-vec2   2                 :int8              (simple-array (integer -127 128) (2)) *
+:int8-vec3   3                 :int8              (simple-array (integer -127 128) (2)) *
+:int8-vec4   4                 :int8              (simple-array (integer -127 128) (2)) *
 
 :mat2        16                :float             (simple-array single-float (4))
 :mat3        36                :float             (simple-array single-float (9))

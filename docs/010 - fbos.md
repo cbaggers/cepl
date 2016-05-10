@@ -77,14 +77,14 @@ Let's make one now.
 This is a way of making a fbo with one color attachment. Let's make an fbo with 2 color attachments
 
 ```
-(make-fbo :c :c1)
+(make-fbo 0 1)
 #<FBO COLOR-ATTACHMENTS (0 1)>
 ```
 
 How about with 2 color and 1 depth attachment
 
 ```
-CEPL> (make-fbo :c :c1 :d)
+CEPL> (make-fbo 0 1 :d)
 #<FBO COLOR-ATTACHMENTS (0 1) DEPTH-ATTACHMENT T>
 ```
 

@@ -34,7 +34,7 @@ If you have read chapter `005` you will have seen that gpu-arrays tell you what 
 gives us this:
 
 ```
-     #<GPU-ARRAY :element-type :UBYTE :dimensions (3) :backed-by :BUFFER>
+     #<GPU-ARRAY :element-type :UINT8 :dimensions (3) :backed-by :BUFFER>
 ```
 
 Which is a gpu-array *backed by* an opengl buffer, which meant the data for the array was stored in an opengl buffer.
@@ -89,13 +89,13 @@ As does `push-g`
 As before we can make an array without initializing the contents
 
 ```
-CEPL> (make-texture nil :dimensions 10 :element-type :ubyte)
+CEPL> (make-texture nil :dimensions 10 :element-type :uint8)
 #<GL-TEXTURE-1D (10)>
 CEPL> (texref *)
 #<GPU-ARRAY :element-type :R8 :dimensions (10) :backed-by :TEXTURE>
 ```
 
-Eagle-eyed readers will notice that the `:element-type` we provided was `:ubyte` yet the `:element-type` of the gpu-array is `:r8`. Textures have special type names for their data and Cepl is just picking the matching type. OpenGL's textures types are a topic of their own so I'll cover it a bit later. For now just know that Cepl lets you use regular types when it can work out the equivalent **or** the official OpenGL names.
+Eagle-eyed readers will notice that the `:element-type` we provided was `:uint8` yet the `:element-type` of the gpu-array is `:r8`. Textures have special type names for their data and Cepl is just picking the matching type. OpenGL's textures types are a topic of their own so I'll cover it a bit later. For now just know that Cepl lets you use regular types when it can work out the equivalent **or** the official OpenGL names.
 
 #### More dimensions
 
@@ -104,7 +104,7 @@ We can make 2D and 3D textures as we would expect
 CEPL> (make-texture #2A ((1 2 3) (4 5 6)))
 #<GL-TEXTURE-2D (2x3)>
 
-CEPL> (make-texture nil :dimensions '(10 10 10) :element-type :ubyte)
+CEPL> (make-texture nil :dimensions '(10 10 10) :element-type :uint8)
 #<GL-TEXTURE-3D (10x10x10)>
 ```
 
@@ -137,7 +137,7 @@ There are two mipmap related `&keys` in `#'make-texture`, `:mipmap` and `:genera
 - `:generate-mipmaps` is either `t` or `nil` and specifies whether GL will generate the mipmap images for you or not.
 
 ```
-CEPL> (defvar x2d (make-texture nil :dimensions '(512 512) :element-type :ubyte-vec4  :mipmap 4 :generate-mipmaps t))
+CEPL> (defvar x2d (make-texture nil :dimensions '(512 512) :element-type :uint8-vec4  :mipmap 4 :generate-mipmaps t))
 #<GL-TEXTURE-2D (512x512) mip-levels:4>
 ```
 
@@ -169,7 +169,7 @@ The way we sample the data from cube textures is cool, you can read all the gory
 To make a cube-texture in Cepl we can write the following:
 
 ```
-CEPL> (defvar c (make-texture nil :dimensions '(10 10) :element-type :ubyte-vec4 :cubes t))
+CEPL> (defvar c (make-texture nil :dimensions '(10 10) :element-type :uint8-vec4 :cubes t))
 #<GL-TEXTURE-CUBE-MAP (10x10)>
 ```
 
@@ -197,7 +197,7 @@ Array-Textures can be arrays of 1D, 2D, 3D or Cube texture. Cepl tries to get th
 To make an array texture we do this using the `:layer-count` `&key` argument
 
 ```
-(make-texture nil :dimensions 10 :element-type :ubyte-vec4 :layer-count 8)
+(make-texture nil :dimensions 10 :element-type :uint8-vec4 :layer-count 8)
 ERROR
 ```
 Woops, seems Cepl has a bug. You can track this here: https://github.com/cbaggers/cepl/issues/48
@@ -218,14 +218,14 @@ There are a bunch of limitations to buffer textures (other than being 1D)
 Making them is super easy though
 
 ```
-CEPL> (defvar b (make-texture nil :dimensions 10 :element-type :ubyte-vec4 :buffer-storage t))
+CEPL> (defvar b (make-texture nil :dimensions 10 :element-type :uint8-vec4 :buffer-storage t))
 #<GL-TEXTURE-BUFFER (10)>
 ```
 And the fun bit is, we have the perfect type for the gpu-array :)
 
 ```
 CEPL> (texref b)
-#<GPU-ARRAY :element-type :UBYTE-VEC4 :dimensions (10) :backed-by :BUFFER>
+#<GPU-ARRAY :element-type :UINT8-VEC4 :dimensions (10) :backed-by :BUFFER>
 ```
 Yup, a **buffer-backed** gpu-array!
 
@@ -237,7 +237,7 @@ Yup, a **buffer-backed** gpu-array!
 Interesting restrictions but it can be useful.
 
 ```
-CEPL> (make-texture nil :dimensions '(10 20) :element-type :ubyte-vec4 :rectangle t)
+CEPL> (make-texture nil :dimensions '(10 20) :element-type :uint8-vec4 :rectangle t)
 #<GL-TEXTURE-RECTANGLE (10x20)>
 ```
 
@@ -276,7 +276,7 @@ Things that are in a questionable state:
 Auto conversion:
 Cepl can help with types by providing conversions from lisp types to their equivalent image formats.
 
-The convertable types are: `:ubyte :byte :ushort :short :uint :int :float`
+The convertable types are: `:uint8 :int8 :ushort :short :uint :int :float`
 
 Of course opengl has many more potential format that this so feel free to use any of the following formats.
 

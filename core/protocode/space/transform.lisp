@@ -54,7 +54,7 @@
 ;; lets do this as a matrix
 
 (defun matrix-for-ndc-space->screen-space (depth-range viewport)
-  (destructuring-bind (width height) (viewport-resolution viewport)
+  (destructuring-bind (width height) (viewport-dimensions viewport)
     (dvec* ((vo-x vo-y) (jungl::viewport-origin viewport)
 	    (near far) depth-range)
       (m! (/ width 2)  0.0           0.0                 (+ vo-x (/ width 2))
@@ -89,7 +89,7 @@
 			      (simple-array single-float (4)))))
 (defvar *ndc-space*)
 
-(defun p! (vec &optional (space *ndc-space*))
+(defun sv! (vec &optional (space *ndc-space*))
   (%%-pos! :space space :point vec))
 
 ;; now #'to-space can be defined to take a space and a pos
