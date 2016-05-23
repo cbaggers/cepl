@@ -265,7 +265,7 @@ giving greater api consistancy.
 
   (defun sampler-texture
       "
-This function takes a sampler as it's only argument and returns the texture
+This function takes a sampler as its only argument and returns the texture
 being sampled by the sampler.
 ")
 

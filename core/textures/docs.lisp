@@ -158,7 +158,7 @@ the opengl features that would modify the storage.
 Sampling is the process of fetching a value from a texture at a given position.
 It is interesting as, because of things like mipmaping, the usual case is that
 reading a single value from a texture involves reading from more than one of
-it's gpu-arrays and combining the resultson some fashion.
+its gpu-arrays and combining the resultson some fashion.
 
 To control this process GL (and thus CEPL) have a special object called a
 sampler. Samplers have a number of values that can be tweaked that affect how

@@ -16,7 +16,7 @@ All the 'C' memory is being handled through cffi so all of the mappings are defi
 
 ### What's with the naming?
 
-If you have already had a peek below you will have seen many keywords being used as names. This is a pattern used by cffi for it's in-built types and when we added the additional core graphics types (vec3, mat4 etc) it felt bad when they were plain symbols (as very quickly you get used to keyword meaning in-built type).
+If you have already had a peek below you will have seen many keywords being used as names. This is a pattern used by cffi for its in-built types and when we added the additional core graphics types (vec3, mat4 etc) it felt bad when they were plain symbols (as very quickly you get used to keyword meaning in-built type).
 
 So the rule has become that that core types have optional keyword names and all users defined types have regular symbols names (just like cffi)
 

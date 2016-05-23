@@ -58,7 +58,7 @@ attached here becomes both the depth and stencil attachment.
 
 -- Choosing which attachment to render into --
 
-Making these choices is done with the 'with-fbo-bound macro. See it's docstring
+Making these choices is done with the 'with-fbo-bound macro. See its docstring
 for further details
 
 [0] WARNING:

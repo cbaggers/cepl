@@ -13,7 +13,7 @@
     </header>
     <div id="content">
       
-        <article><h2>CEPL (Code Evaluate Play Loop) - [ALPHA]</h2>
+        <article><h2>CEPL (Code Evaluate Play Loop) - [Beta]</h2>
 
 <p>CEPL is a lispy and REPL friendly library for working with OpenGL.</p>
 
@@ -21,15 +21,23 @@
 
 <p>The usual approach to using it is to start it at the beginning of your lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code> is treated for text.</p>
 
-<p>CEPL is in alpha. The API is closing in the what it needs to be but there are still many bugs.</p>
+<p>CEPL is in alpha. The API is closing in on what it needs to be but there are still many bugs.</p>
 
 <p>See the <a href="https://github.com/cbaggers/cepl.examples">cepl.examples repository</a> for some examples of how CEPL can be used</p>
 
 <p>Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y</p>
 
+<h3>Documentation</h3>
+
+<p>Currently we have full documentation of every exported symbol in the CEPL package. You can find this <a href="http://techsnuffle.com/cepl/api.html">here: CEPL API Docs</a></p>
+
+<p>Guides will be provided in future, however these take much longer to write.</p>
+
+<p>I can also be reached by my email (techsnuffle [at] gmail · com) and sometimes on #lispgames IRC. Come to #lispgames anyway though, theres some lovely folks, all lispy dialects welcome!</p>
+
 <h3>Requirements</h3>
 
-<p>All of the following will be download automatically by quicklisp</p>
+<p>All of the following will be downloaded automatically by quicklisp</p>
 
 <ul>
 <li>cffi</li>
@@ -55,12 +63,12 @@
 
 <h3>Getting Started</h3>
 
-<p><em>Note:</em> On <code>Windows</code> and <code>OSX</code> and are using <code>slime</code> you will want to add the code specifed in <code>docs/single-thread-swank.md</code> to your emacs config file, and use the command <code>slime-style</code> which will start <code>slime</code> in a more OpenGL friendly mode. Then follow the rest of this as usual.</p>
+<p><em>Note:</em> On <code>Windows</code> and <code>OSX</code> and are using <code>slime</code> you may want to add the code specifed in <code>docs/single-thread-swank.md</code> to your emacs config file, and use the command <code>slime-style</code> which will start <code>slime</code> in a more OpenGL friendly mode. Then follow the rest of this as usual.</p>
 
 <p>To load CEPL and the default host (<code>sdl2</code>) do the following:</p>
 
 <ul>
-<li><code>(ql:quickproject :cepl.sdl2)</code></li>
+<li><code>(ql:quicload :cepl.sdl2)</code></li>
 <li><code>(cepl:repl)</code></li>
 </ul>
 
@@ -81,7 +89,7 @@
 </ul>
 
 <p>You are now ready to get started, simply run:
-- <code>(ql:quickproject &quot;my-proj&quot;)</code>
+- <code>(ql:quickload &quot;my-proj&quot;)</code>
 - <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code>
 - and finally (if you havent already) <code>(cepl:repl)</code></p>
 
@@ -121,7 +129,7 @@
                       </code>
                     </header>
                     <pre class="docstring">
-C-ARRAY is a structure that respresents an array in foreign memory.
+C-ARRAY is a structure that represents an array in foreign memory.
 
 cepl keeps not only the pointer to the foreign data in this structure
 but also metadata that makes moving this data to (and from) the gpu or
@@ -282,9 +290,9 @@ original. The contents in foreign memory are copied.
                       </code>
                     </header>
                     <pre class="docstring">
-Frees the foreign memory accosted with the c-array and 'blanks' the c-array.
+Frees the foreign memory allocated with the c-array and 'blanks' the c-array.
 
-Blanking the c-array means it's fields will be set to default values,
+Blanking the c-array means its fields will be set to default values,
 for example dimensions will be 0, the pointer will be null etc.
 
 The generic function #'free will call #'free-c-array when passed a c-array.
@@ -490,7 +498,7 @@ Returns the pointer to the start of the foreign data that makes up the array
                       <code>
                         <h4><a href="#CEPL.C-ARRAYS:WITH-C-ARRAY" class="name">WITH-C-ARRAY</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">((VAR-NAME C-ARRAY) &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -506,7 +514,7 @@ Frees the c-array at the end of the scope.
                       <code>
                         <h4><a href="#CEPL.C-ARRAYS:WITH-C-ARRAYS" class="name">WITH-C-ARRAYS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">((VAR-NAME C-ARRAYS) &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -528,7 +536,7 @@ Frees the c-array at the end of the scope.
                       </code>
                     </header>
                     <pre class="docstring">
-GPU-ARRAY is a structure that respresents an array in gpu-memory.
+GPU-ARRAY is a structure that represents an array in gpu-memory.
 
 Depending on how the array was created it is said that the gpu-array is either
 'buffer-backed' or 'texture-backed'.
@@ -826,7 +834,7 @@ live then blank this gpu-array.
 If the gpu-array shared a gpu-buffer with other gpu-buffer but they have all
 been freed then free the gpu-buffer and blank the gpu-array.
 
-Blanking the gpu-array means it's fields will be set to default values,
+Blanking the gpu-array means its fields will be set to default values,
 for example dimensions will be nil, the texture will be null etc.
 
 The generic function #'free will call #'free-gpu-array when passed a gpu-array.
@@ -910,7 +918,7 @@ declared access-style (other than potential performance costs).
                       <code>
                         <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-AS-C-ARRAY</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -947,7 +955,7 @@ The valid values for the :access argument are :read-only :write-only or
                       <code>
                         <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER" class="name">WITH-GPU-ARRAY-AS-POINTER</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -1169,7 +1177,7 @@ Viewport is a structure that represents a retangular region of the window that
 CEPL can draw into.
 
 There is always a viewport current when rendering. If one of your own is not
-current then CEPL will use it's default viewport, the resolution of which is the
+current then CEPL will use its default viewport, the resolution of which is the
 same as that of the window when it was created.
 
 The default viewport can be modified, so feel free to update the resolution if
@@ -1342,7 +1350,7 @@ If now viewport is provided the the current viewport is used.
                       <code>
                         <h4><a href="#CEPL.VIEWPORTS:WITH-FBO-VIEWPORT" class="name">WITH-FBO-VIEWPORT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">((FBO &amp;OPTIONAL (ATTACHMENT 0)) &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -1358,7 +1366,7 @@ It will remain as the current viewport until the end of the scope.
 
 [0] CEPL is free to reuse internal viewport objects where it makes sense instead
     of consing up a new viewport. This means that the viewport inside the scope
-    may be eq to the viewport outside, but with different values in it's slots
+    may be eq to the viewport outside, but with different values in its slots
     for the duration of the body.
 </pre>
                   </article>
@@ -1370,7 +1378,7 @@ It will remain as the current viewport until the end of the scope.
                       <code>
                         <h4><a href="#CEPL.VIEWPORTS:WITH-VIEWPORT" class="name">WITH-VIEWPORT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(VIEWPORT &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -1570,7 +1578,7 @@ the opengl features that would modify the storage.
 Sampling is the process of fetching a value from a texture at a given position.
 It is interesting as, because of things like mipmaping, the usual case is that
 reading a single value from a texture involves reading from more than one of
-it's gpu-arrays and combining the resultson some fashion.
+its gpu-arrays and combining the resultson some fashion.
 
 To control this process GL (and thus CEPL) have a special object called a
 sampler. Samplers have a number of values that can be tweaked that affect how
@@ -2017,7 +2025,7 @@ Be sure not to use those arrays after this function has been called.
                       <code>
                         <h4><a href="#CEPL.TEXTURES:WITH-TEXTURE-BOUND" class="name">WITH-TEXTURE-BOUND</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(TEXTURE &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -2681,7 +2689,7 @@ This function returns t if the supplied value is a sampler and nil otherwise
                       </code>
                     </header>
                     <pre class="docstring">
-This function takes a sampler as it's only argument and returns the texture
+This function takes a sampler as its only argument and returns the texture
 being sampled by the sampler.
 </pre>
                   </article>
@@ -2949,7 +2957,7 @@ attached here becomes both the depth and stencil attachment.
 
 -- Choosing which attachment to render into --
 
-Making these choices is done with the 'with-fbo-bound macro. See it's docstring
+Making these choices is done with the 'with-fbo-bound macro. See its docstring
 for further details
 
 [0] WARNING:
@@ -2962,6 +2970,52 @@ may get half old and half new data, or it may get garbage data. Any of these are
 possible outcomes.
 
 Do Not Do This!
+</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.FBOS:ATTACHMENT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.FBOS:ATTACHMENT" class="name">ATTACHMENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FBO ATTACHMENT-NAME)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">
+This function retrieves the attachment named by attachment-name from the
+given fbo. The result is a gpu-array
+
+The attachment-name can be one of the following:
+
+ a positive integer - In which case this function returns the
+		      nth color-attachments where (= n attachment-name)
+
+ :d - the depth-attachment is returned
+
+ :s - the stencil-attachment is returned [0]
+
+ :ds - the depth-stencil-attachment is returned [0]
+
+
+You can also setf this function, the value must be a texture-backed gpu-array
+with a valid element-type for that attachment.
+
+For color attachments this means the element type must be a member of
+the *color-renderable-formats* list
+
+For color attachments this means the element type must be a member of
+the *depth-formats* list
+
+For stencil attachments this means the element type must be a member of
+the *stencil-formats* list
+
+For depth-stencil attachments this means the element type must be a member of
+the *depth-stencil-formats* list
+
+[0] WARNING:
+:s &amp; :ds are not supported in the current version of CEPL
 </pre>
                   </article>
                 </li><li>
@@ -3221,9 +3275,7 @@ For more details see cepl.blending
                       <code>
                         <h4><a href="#CEPL.FBOS:WITH-FBO-BOUND" class="name">WITH-FBO-BOUND</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">((FBO &amp;KEY (TARGET :FRAMEBUFFER) (UNBIND T) (WITH-VIEWPORT T)
- (ATTACHMENT-FOR-SIZE 0) (WITH-BLENDING T) (DRAW-BUFFERS T))
- &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3723,10 +3775,11 @@ blending-params object with the same settings as the one passed.
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM2265) :FUNC-ADD) ((:MODE-ALPHA DUM2266) :FUNC-ADD)
- ((:SOURCE-RGB DUM2267) :SRC-ALPHA) ((:SOURCE-ALPHA DUM2268) :SRC-ALPHA)
- ((:DESTINATION-RGB DUM2269) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DUM2270) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB MODE-RGB) :FUNC-ADD) ((:MODE-ALPHA MODE-ALPHA) :FUNC-ADD)
+ ((:SOURCE-RGB SOURCE-RGB) :SRC-ALPHA)
+ ((:SOURCE-ALPHA SOURCE-ALPHA) :SRC-ALPHA)
+ ((:DESTINATION-RGB DESTINATION-RGB) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DESTINATION-ALPHA) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3775,7 +3828,7 @@ docstring for blending-params.
                       <code>
                         <h4><a href="#CEPL.BLENDING:WITH-BLENDING" class="name">WITH-BLENDING</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(BLENDING-PARAMS &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3799,7 +3852,7 @@ CEPL ensures the blending settings are undone at the end of the scope.
                       <code>
                         <h4><a href="#CEPL.PIPELINES:DEF-G-&gt;" class="name">DEF-G-&gt;</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(NAME CONTEXT &amp;BODY GPIPE-ARGS)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3839,7 +3892,7 @@ Here is an example pipeline:
     (def-g-&gt; prog-1 ()
       #'vert #'frag)
 
-Here we define a pipeline #'prog-1 which uses the gfunc #'vert as it's vertex
+Here we define a pipeline #'prog-1 which uses the gfunc #'vert as its vertex
 shader and used the gfunc #'frag as the fragment shader.
 
 It is also possible to specify the name of the stages
@@ -3871,7 +3924,7 @@ multiple return values please see the docstring for with-fbo-bound.
 
 -- Using our pipelines --
 
-To call a pipeline we use the map-g macro (or one of it's siblings
+To call a pipeline we use the map-g macro (or one of its siblings
 map-g-into/map-g-into*). The doc-strings for those macros go into more details
 but the basics are that map-g maps a gpu-stream over our pipeline and the
 results of the pipeline are fed into the 'current' fbo.
@@ -3908,7 +3961,7 @@ is not yet implemented.
                       <code>
                         <h4><a href="#CEPL.PIPELINES:DEF-GLSL-STAGE" class="name">DEF-GLSL-STAGE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(NAME ARGS BODY-STRING OUTPUTS)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3952,7 +4005,7 @@ text in the stage at runtime.
                       <code>
                         <h4><a href="#CEPL.PIPELINES:DEFINE-COMPILER-MACRO-G" class="name">DEFINE-COMPILER-MACRO-G</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(NAME LAMBDA-LIST &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3972,7 +4025,7 @@ valid in gpu functions with compatible contexts.
                       <code>
                         <h4><a href="#CEPL.PIPELINES:DEFMACRO-G" class="name">DEFMACRO-G</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(NAME LAMBDA-LIST &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3992,7 +4045,7 @@ valid in gpu functions with compatible contexts.
                       <code>
                         <h4><a href="#CEPL.PIPELINES:DEFUN-G" class="name">DEFUN-G</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(NAME ARGS &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4056,7 +4109,7 @@ in pipelines please see the documentation for def-g-&gt;.
                       <code>
                         <h4><a href="#CEPL.PIPELINES:G-&gt;" class="name">G-&gt;</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(CONTEXT &amp;REST FORMS)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4073,7 +4126,7 @@ g-&gt; is used to compose gpu-functions together into anonymous pipelines
                       <code>
                         <h4><a href="#CEPL.PIPELINES:MAP-G" class="name">MAP-G</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4116,7 +4169,7 @@ be written into the respective attachments of the FBO (first value to first atta
                       <code>
                         <h4><a href="#CEPL.PIPELINES:MAP-G-INTO" class="name">MAP-G-INTO</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(FBO PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -4154,7 +4207,7 @@ attachments of the FBO (first value to first attachment, second value to
 second attachment, etc)
 
 Internally map-g-into wraps call to map-g in with-fbo-bound. The with-fbo-bound
-has it's default configuration which means that:
+has its default configuration which means that:
 
 - the viewport being will be the dimensions of the gpu-array in the first fbo attachment
 - and blending is enabled
@@ -4171,14 +4224,14 @@ map-g-into*
                       <code>
                         <h4><a href="#CEPL.PIPELINES:WITH-INSTANCES" class="name">WITH-INSTANCES</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(COUNT &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
 The with-instances macro is used to enable instancing. You specify number number
 of instances with the count argument.
 
-An example of it's usage is as follows:
+An example of its usage is as follows:
 
     (with-instances 1000
       (map-g #'draw-grass grass-data :tex *grass-texture*))
@@ -5105,7 +5158,7 @@ See the docstring for defun-g for more details on implicit-uniforms.
 
 Whilst the transforms between neighbouring spaces are mutable.
 It is not possible to add new neighbours to an existing vec-space x, except by
-making a new vec-space as specifying x as it's neighbour.
+making a new vec-space as specifying x as its neighbour.
 
 
 -- Predefined Spaces --
@@ -5295,7 +5348,7 @@ docstring for the vec-space struct.
                       <code>
                         <h4><a href="#CEPL.SPACE:IN" class="name">IN</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(SPACE &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -5341,7 +5394,7 @@ matrices and will perform as well as any other handwritten glsl code.
                       <code>
                         <h4><a href="#CEPL.SPACE:WITH-SPACE-ROUTING-VIA" class="name">WITH-SPACE-ROUTING-VIA</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(VIA-SPACE &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -5691,7 +5744,7 @@ Unbinds any gpu-buffer currently bound to the GL Context
                       <code>
                         <h4><a href="#CEPL.GPU-BUFFERS:WITH-BUFFER" class="name">WITH-BUFFER</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">((VAR-NAME BUFFER &amp;OPTIONAL (BUFFER-TARGET :ARRAY-BUFFER)) &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -5816,7 +5869,7 @@ the given arrays.
                       <code>
                         <h4><a href="#CEPL.VAOS:WITH-VAO-BOUND" class="name">WITH-VAO-BOUND</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(VAO &amp;BODY BODY)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -6017,7 +6070,7 @@ If no such type is found then nil is returned
                       <code>
                         <h4><a href="#CEPL.TYPES:DEFSTRUCT-G" class="name">DEFSTRUCT-G</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(NAME-AND-OPTIONS &amp;BODY SLOT-DESCRIPTIONS)</span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">

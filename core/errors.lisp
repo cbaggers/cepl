@@ -4,7 +4,7 @@
     "CEPL - Pipeline: The following stages don't have specifications ~s.~%This most likely means they havent been compiled yet or that the names are incorrect" invalid-names)
 
 (deferror gfun-invalid-arg-format () (gfun-name invalid-pair)
-    "CEPL - defun-g: defun-g expects it's parameter args to be typed in the~%format (var-name type) but instead ~s was found in the definition for ~s" invalid-pair gfun-name)
+    "CEPL - defun-g: defun-g expects its parameter args to be typed in the~%format (var-name type) but instead ~s was found in the definition for ~s" invalid-pair gfun-name)
 
 (deferror gpu-func-spec-not-found () (spec-name)
     "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s"

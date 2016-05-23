@@ -4,7 +4,7 @@ Cepl is a sane interface to the modern opengl api.
 
 ### OpenGL Background
 
-OpenGL gets a bad rap for it's api, and for good reason, it is actually 2 (pretty much) incompatible apis in one box.
+OpenGL gets a bad rap for its api, and for good reason, it is actually 2 (pretty much) incompatible apis in one box.
 
 The first api is the old fixed function pipeline and the other is the modern shader based pipeline. The ugly thing is that these apis often reuse functions even when the behaviour underneath is very different. This makes for a very fustrating experience.
 

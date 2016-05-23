@@ -7,7 +7,7 @@ Viewport is a structure that represents a retangular region of the window that
 CEPL can draw into.
 
 There is always a viewport current when rendering. If one of your own is not
-current then CEPL will use it's default viewport, the resolution of which is the
+current then CEPL will use its default viewport, the resolution of which is the
 same as that of the window when it was created.
 
 The default viewport can be modified, so feel free to update the resolution if
@@ -99,6 +99,6 @@ It will remain as the current viewport until the end of the scope.
 
 [0] CEPL is free to reuse internal viewport objects where it makes sense instead
     of consing up a new viewport. This means that the viewport inside the scope
-    may be eq to the viewport outside, but with different values in it's slots
+    may be eq to the viewport outside, but with different values in its slots
     for the duration of the body.
 "))
