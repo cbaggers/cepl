@@ -65,7 +65,7 @@ Are not supported yet, sorry
 
 Cepl really tries to ensure that you don't make an fbo that is in an invalid state. Getting those kinds of *'fbo incompleteness'* bugs is very annoying and rather easy to do in regular GL.
 
-Because of this Cepl is very flexible with it's `make-fbo` syntax, we will go those the general patterns below.
+Because of this Cepl is very flexible with its `make-fbo` syntax, we will go those the general patterns below.
 
 Let's make one now.
 

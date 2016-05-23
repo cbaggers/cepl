@@ -9,7 +9,7 @@ It's a fair question though the answer is a little convoluted:
 On OSX [and possibly windows 10?] you are only allowed to run window manager
 operations on thread 0. The end result of this is that, for systems like sdl2,
 you need to pump the events on that thread. This is made more complicated by the
-fact that your repl may run in a separate thread [if you are using swank in it's
+fact that your repl may run in a separate thread [if you are using swank in its
 default mode for example.
 
 If CEPL were an engine this would be super easy, we would control the main loop,
@@ -50,7 +50,7 @@ starts slime in the required mode from inside emacs.")
 (deferror make-project-needs-quickproject () ()
     "make-project: Can't find quickproject
 
-cepl uses the excellent quickproject to make it's projects, please load
+cepl uses the excellent quickproject to make its projects, please load
 quickproject and then run this again.")
 
 (defvar *template-dir*

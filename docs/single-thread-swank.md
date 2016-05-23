@@ -1,6 +1,6 @@
 # Slime and threading on Windows and OSX
 
-Slime by default creates a bunch of threads to help with it's internal operations. This can be problematic when working with OpenGL (and thus CEPL) as compiling a `.lisp` file will run in a different thread to the thread the `REPL` runs in.
+Slime by default creates a bunch of threads to help with its internal operations. This can be problematic when working with OpenGL (and thus CEPL) as compiling a `.lisp` file will run in a different thread to the thread the `REPL` runs in.
 
 Luckily `slime` can be run with different communication `styles`, including a single threaded mode.
 By default this is a little fiddly from emacs so if you add the following to your `.emacs` file:

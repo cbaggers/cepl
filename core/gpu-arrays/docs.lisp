@@ -3,7 +3,7 @@
 (docs:define-docs
   (defstruct gpu-array
     "
-GPU-ARRAY is a structure that respresents an array in gpu-memory.
+GPU-ARRAY is a structure that represents an array in gpu-memory.
 
 Depending on how the array was created it is said that the gpu-array is either
 'buffer-backed' or 'texture-backed'.
@@ -257,7 +257,7 @@ live then blank this gpu-array.
 If the gpu-array shared a gpu-buffer with other gpu-buffer but they have all
 been freed then free the gpu-buffer and blank the gpu-array.
 
-Blanking the gpu-array means it's fields will be set to default values,
+Blanking the gpu-array means its fields will be set to default values,
 for example dimensions will be nil, the texture will be null etc.
 
 The generic function #'free will call #'free-gpu-array when passed a gpu-array.

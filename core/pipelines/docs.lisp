@@ -93,7 +93,7 @@ Here is an example pipeline:
     (def-g-> prog-1 ()
       #'vert #'frag)
 
-Here we define a pipeline #'prog-1 which uses the gfunc #'vert as it's vertex
+Here we define a pipeline #'prog-1 which uses the gfunc #'vert as its vertex
 shader and used the gfunc #'frag as the fragment shader.
 
 It is also possible to specify the name of the stages
@@ -125,7 +125,7 @@ multiple return values please see the docstring for with-fbo-bound.
 
 -- Using our pipelines --
 
-To call a pipeline we use the map-g macro (or one of it's siblings
+To call a pipeline we use the map-g macro (or one of its siblings
 map-g-into/map-g-into*). The doc-strings for those macros go into more details
 but the basics are that map-g maps a gpu-stream over our pipeline and the
 results of the pipeline are fed into the 'current' fbo.
@@ -223,7 +223,7 @@ attachments of the FBO (first value to first attachment, second value to
 second attachment, etc)
 
 Internally map-g-into wraps call to map-g in with-fbo-bound. The with-fbo-bound
-has it's default configuration which means that:
+has its default configuration which means that:
 
 - the viewport being will be the dimensions of the gpu-array in the first fbo attachment
 - and blending is enabled
@@ -301,7 +301,7 @@ attachments of the FBO (first value to first attachment, second value to
 second attachment, etc)
 
 Internally map-g-into* wraps call to map-g in with-fbo-bound. The with-fbo-bound
-has it's default configuration which means that:
+has its default configuration which means that:
 ")
 
   (defmacro def-glsl-stage
@@ -363,7 +363,7 @@ valid in gpu functions with compatible contexts.
 The with-instances macro is used to enable instancing. You specify number number
 of instances with the count argument.
 
-An example of it's usage is as follows:
+An example of its usage is as follows:
 
     (with-instances 1000
       (map-g #'draw-grass grass-data :tex *grass-texture*))

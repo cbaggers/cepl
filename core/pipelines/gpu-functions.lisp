@@ -73,7 +73,7 @@
        first too all affected pipelines.
 
    [5] At runtime this looks for any gpu function that listed this function as
-       one of it's missing dependencies and calls %test-&-update-spec on them.
+       one of its missing dependencies and calls %test-&-update-spec on them.
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing

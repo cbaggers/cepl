@@ -2,7 +2,7 @@
 
 ;;----------------------------------------------------------------------
 ;; The code in this file enables def-glsl-stage.
-;; An example of it's usage is:
+;; An example of its usage is:
 
 ;; (def-glsl-stage test (("a" :float) &context :vertex :330)
 ;;   "void main ()

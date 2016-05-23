@@ -126,7 +126,7 @@ See the docstring for defun-g for more details on implicit-uniforms.
 
 Whilst the transforms between neighbouring spaces are mutable.
 It is not possible to add new neighbours to an existing vec-space x, except by
-making a new vec-space as specifying x as it's neighbour.
+making a new vec-space as specifying x as its neighbour.
 
 
 -- Predefined Spaces --

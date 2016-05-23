@@ -91,7 +91,7 @@ CEPL is now ready to use.
       "
 Call this to shutdown CEPL.
 
-Aswell from it's own internal work, CEPL will ask the host to shut itself down.
+As well as its own internal work, CEPL will ask the host to shut itself down.
 ")
 
   (defun step-host

@@ -1,4 +1,4 @@
-## CEPL (Code Evaluate Play Loop) - [ALPHA]
+## CEPL (Code Evaluate Play Loop) - [Beta]
 
 CEPL is a lispy and REPL friendly library for working with OpenGL.
 
@@ -6,7 +6,7 @@ Its goal is to feel like lisp just always had support for GPU programming in the
 
 The usual approach to using it is to start it at the beginning of your lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how `*standard-output*` is treated for text.
 
-CEPL is in alpha. The API is closing in the what it needs to be but there are still many bugs.
+CEPL is in alpha. The API is closing in on what it needs to be but there are still many bugs.
 
 See the [cepl.examples repository](https://github.com/cbaggers/cepl.examples) for some examples of how CEPL can be used
 
@@ -22,7 +22,7 @@ I can also be reached by my email (techsnuffle [at] gmail · com) and sometimes 
 
 ### Requirements
 
-All of the following will be download automatically by quicklisp
+All of the following will be downloaded automatically by quicklisp
 
 * cffi
 * cl-autowrap
@@ -49,11 +49,11 @@ CEPL abstracts working with OpenGL but is not responsible for creating a window 
 
 ### Getting Started
 
-_Note:_ On `Windows` and `OSX` and are using `slime` you will want to add the code specifed in `docs/single-thread-swank.md` to your emacs config file, and use the command `slime-style` which will start `slime` in a more OpenGL friendly mode. Then follow the rest of this as usual.
+_Note:_ On `Windows` and `OSX` and are using `slime` you may want to add the code specifed in `docs/single-thread-swank.md` to your emacs config file, and use the command `slime-style` which will start `slime` in a more OpenGL friendly mode. Then follow the rest of this as usual.
 
 To load CEPL and the default host (`sdl2`) do the following:
 
-- `(ql:quickproject :cepl.sdl2)`
+- `(ql:quicload :cepl.sdl2)`
 - `(cepl:repl)`
 
 You should see an empty window appear, OpenGL is now initialized and you can use CEPL as you like.
@@ -72,7 +72,7 @@ The best way to get started is to make a new project that uses CEPL. Do the foll
  - [cepl.devil](https://github.com/cbaggers/cepl.devil) for loading images
 
 You are now ready to get started, simply run:
-- `(ql:quickproject "my-proj")`
+- `(ql:quickload "my-proj")`
 - `(in-package :my-proj)`
 - and finally (if you havent already) `(cepl:repl)`
 

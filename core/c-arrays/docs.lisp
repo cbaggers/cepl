@@ -3,7 +3,7 @@
 (docs:define-docs
   (defstruct c-array
     "
-C-ARRAY is a structure that respresents an array in foreign memory.
+C-ARRAY is a structure that represents an array in foreign memory.
 
 cepl keeps not only the pointer to the foreign data in this structure
 but also metadata that makes moving this data to (and from) the gpu or
@@ -62,9 +62,9 @@ original. The contents in foreign memory are copied.
 
   (defun free-c-array
       "
-Frees the foreign memory accosted with the c-array and 'blanks' the c-array.
+Frees the foreign memory allocated with the c-array and 'blanks' the c-array.
 
-Blanking the c-array means it's fields will be set to default values,
+Blanking the c-array means its fields will be set to default values,
 for example dimensions will be 0, the pointer will be null etc.
 
 The generic function #'free will call #'free-c-array when passed a c-array.
