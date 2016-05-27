@@ -19,12 +19,10 @@
       ;; check the arguments are sanely formatted
       (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
-      ;; equivalent types need to be swapped out
-      (let* ((in-args in-args)
-	     (uniforms uniforms))
-	;; now the meat
-        (%def-gpu-function name in-args uniforms context body instancing
-                           nil nil doc-string declarations)))))
+      (assert (null context))
+      ;; now the meat
+      (%def-gpu-function name in-args uniforms body instancing
+                         doc-string declarations))))
 
 (defun assert-arg-format (gfunc-name x)
   (unless (listp x)
@@ -40,23 +38,13 @@
 
 ;;--------------------------------------------------
 
-(defun %def-gpu-function (name in-args uniforms context body instancing
-                          equivalent-inargs equivalent-uniforms
+(defun %def-gpu-function (name in-args uniforms body instancing
                           doc-string declarations)
   "This is the meat of defun-g. it is broken down as follows:
 
    [0] makes a gpu-func-spec that will be populated a stored later.
 
-   [1] turn this function definiton into a macro that injects a labels form
-       containing the function body and whos body is a call to that local
-       function. This may seem like madness but it will make sense soon.
-       So now this means that wherever you call the function in shader code
-       there will be a local function and call.
-
-       One of the optimizations that varjo does is find all functions that are
-       identical and merge them.
-       This works as there are no local functions in glsl, they are all moved to
-       shader-global scope.
+   [1] Adds a external function definition to varjo
 
    [2] %test-&-update-spec compiles the code to check for errors and log
        dependencies. (this is called at runtime)
@@ -76,29 +64,19 @@
        one of its missing dependencies and calls %test-&-update-spec on them.
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
-  (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
-                                   equivalent-inargs equivalent-uniforms nil nil
-                                   doc-string declarations nil))) ;;[0]
+  (let ((spec (%make-gpu-func-spec name in-args uniforms nil body instancing
+                                   nil nil nil nil doc-string declarations
+                                   nil)));;[0]
     ;; this gets the functions used in the body of this function
     ;; it is *not* recursive
-    (let* ((in-arg-names (mapcar #'first in-args))
-	   (uniform-names (mapcar #'first uniforms))
-	   (macro-func-name (gensym (symbol-name name)))
-	   (fbody `(list 'varjo-lang:labels-no-implicit ;;[1]
-			 '((,macro-func-name (,@in-args ,@uniforms) ,@body))
-			 (list ',macro-func-name
-			       ,@in-arg-names ,@uniform-names)))
-	   (to-compile `(lambda (,@in-arg-names ,@uniform-names) ;;[1]
-			  ,fbody)))
-      (%update-gpu-function-data spec nil nil)
-      (varjo::add-macro name (compile nil to-compile)
-			context varjo::*global-env*);;[1]
-      `(progn
-         (%test-&-update-spec ,(%serialize-gpu-func-spec spec));;[2]
-         ,(%make-stand-in-lisp-func spec);;[3]
-         (%recompile-gpu-function-and-pipelines ',name);;[4]
-	 (update-specs-with-missing-dependencies);;[5]
-	 ',name))))
+    (%update-gpu-function-data spec nil nil)
+    (varjo::add-external-function name in-args uniforms body);;[1]
+    `(progn
+       (%test-&-update-spec ,(%serialize-gpu-func-spec spec));;[2]
+       ,(%make-stand-in-lisp-func spec);;[3]
+       (%recompile-gpu-function-and-pipelines ',name);;[4]
+       (update-specs-with-missing-dependencies);;[5]
+       ',name)))
 
 (defvar *warn-when-cant-test-compile* t)
 
@@ -117,28 +95,29 @@
    that transform between the public uniform arguments and the internal ones."
   (with-gpu-func-spec spec
     (handler-case
-	(varjo:with-stemcell-infer-hook
-	    #'try-guessing-a-varjo-type-for-symbol
-	  (let ((compiled
-		 (v-translate in-args uniforms
-			      (union '(:vertex :fragment :iuniforms :330)
-				     context)
-			      `(progn ,@body)
-			      nil)))
-	    (setf actual-uniforms (uniforms compiled) ;;[2]
-		  uniform-transforms (with-hash (uv 'uniform-vals)
-					 (third-party-metadata compiled)
-				       (map-hash #'list uv)))
-	    (%update-gpu-function-data
-	     spec
-	     (remove-if-not #'gpu-func-spec (varjo:used-macros compiled)) ;;[1]
-	     compiled)))
+        (varjo:with-stemcell-infer-hook
+            #'try-guessing-a-varjo-type-for-symbol
+          (let ((compiled
+                 (v-translate in-args uniforms
+                              (union '(:vertex :fragment :iuniforms :330)
+                                     context)
+                              `(progn ,@body)
+                              nil)))
+            (setf actual-uniforms (uniforms compiled) ;;[2]
+                  uniform-transforms (with-hash (uv 'uniform-vals)
+                                         (third-party-metadata compiled)
+                                       (map-hash #'list uv)))
+            (%update-gpu-function-data
+             spec
+             (remove-if-not #'gpu-func-spec (varjo:used-macros compiled)) ;;[1]
+             compiled)))
+      ;; vv- called if failed
       (varjo-conditions:could-not-find-function (e) ;;[0]
-	(setf missing-dependencies (list (slot-value e 'varjo::name)))
-	(when *warn-when-cant-test-compile*
-	  (format t "~% cepl: the function ~s was not found when compiling ~s"
-		  (first missing-dependencies) name))
-	(%update-gpu-function-data spec nil nil)))))
+        (setf missing-dependencies (list (slot-value e 'varjo::name)))
+        (when *warn-when-cant-test-compile*
+          (format t "~% cepl: the function ~s was not found when compiling ~s"
+                  (first missing-dependencies) name))
+        (%update-gpu-function-data spec nil nil)))))
 
 (defun %recompile-gpu-function-and-pipelines (name)
   "Recompile all pipelines that depend on the named gpu function or any other
