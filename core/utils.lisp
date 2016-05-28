@@ -23,6 +23,21 @@
 (defmacro dbind (lambda-list expressions &body body)
   `(destructuring-bind ,lambda-list ,expressions ,@body))
 
+(defun assocr (item alist &key (key nil keyp) (test nil testp)
+                            (test-not nil notp))
+  (cdr (apply #'assoc item alist (append (when keyp (list :key key))
+                                         (when testp (list :test test))
+                                         (when notp (list test-not))))))
+
+
+(define-compiler-macro assocr (item alist &key (key nil keyp)
+                                    (test nil testp)
+                                    (test-not nil notp))
+  `(cdr (assoc ,item ,alist
+               ,@(when keyp (list :key key))
+               ,@(when testp (list :test test))
+               ,@(when notp (list test-not)))))
+
 (defmacro assoc-bind (lambda-list alist &body body)
   (let* ((g (gensym "alist"))
          (bindings (loop :for l :in lambda-list :collect
@@ -407,6 +422,17 @@
          (tail head))
     (labels ((do-it (k v)
                (rplacd tail (setq tail (list (funcall function k v))))))
+      (maphash #'do-it hash-table))
+    (cdr head)))
+
+(defun filter-hash (function hash-table)
+  "map through a hash and actually return something"
+  (let* ((head (list nil))
+         (tail head))
+    (labels ((do-it (k v)
+	       (let ((x (funcall function k v)))
+		 (when x
+		   (rplacd tail (setq tail (list x)))))))
       (maphash #'do-it hash-table))
     (cdr head)))
 

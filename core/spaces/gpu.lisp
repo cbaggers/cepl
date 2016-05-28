@@ -142,17 +142,17 @@
 	   `(in *clip-space* (sv! ,code)))))))
 
 
-(defun-g screen-space-to-clip-space ((ss-pos :vec4) (viewport :vec4))
-  (/ (v! (- (* (v:s~ ss-pos :xy) 2.0)
-	    (/ (* (v:s~ viewport :xy) 2.0)
-	       (* (v:s~ viewport :zw) 2.0))
-	    (v! 1 1))
-	 (/ (- (* 2.0 (v:z gl-frag-coord))
-	       (near gl-depth-range)
-	       (far gl-depth-range))
-	    (- (near gl-depth-range) (far gl-depth-range)))
-	 1.0)
-     (v:w gl-frag-coord)))
+;; (defun-g screen-space-to-clip-space ((ss-pos :vec4) (viewport :vec4))
+;;   (/ (v! (- (* (v:s~ ss-pos :xy) 2.0)
+;; 	    (/ (* (v:s~ viewport :xy) 2.0)
+;; 	       (* (v:s~ viewport :zw) 2.0))
+;; 	    (v! 1 1))
+;; 	 (/ (- (* 2.0 (v:z gl-frag-coord))
+;; 	       (near gl-depth-range)
+;; 	       (far gl-depth-range))
+;; 	    (- (near gl-depth-range) (far gl-depth-range)))
+;; 	 1.0)
+;;      (v:w gl-frag-coord)))
 
 (defun %gen-space->space-name (from-name to-name)
   "generate a name for the uniform that will contain the

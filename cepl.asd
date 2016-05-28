@@ -61,6 +61,7 @@
                (:file "core/gpu-arrays/buffer-backed")
                (:file "core/vaos/vaos")
                (:file "core/streams/buffer-streams")
+	       (:file "core/pipelines/generics")
                (:file "core/pipelines/uniforms")
                (:file "core/pipelines/map-g-constant")
                (:file "core/pipelines/compile-passes")

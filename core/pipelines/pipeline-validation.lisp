@@ -22,9 +22,9 @@
 	     :pipeline-name pipeline-name :keys keys))))
 
 (defun assert-valid-gpipe-shader-implicit-form (pipeline-name gpipe-args)
-  (let ((valid-forms (remove-if-not #'function-formp gpipe-args))
-        (invalid-forms (remove-if #'function-formp gpipe-args)))
-    (unless (every #'function-formp gpipe-args)
+  (let ((valid-forms (remove-if-not #'stage-formp gpipe-args))
+        (invalid-forms (remove-if #'stage-formp gpipe-args)))
+    (unless (every #'stage-formp gpipe-args)
       (error 'invalid-shader-gpipe-form
              :pipeline-name pipeline-name
              :valid-forms valid-forms
@@ -33,7 +33,7 @@
 
 (defun assert-valid-stage-specs (names)
   (labels ((check (x) (if (gpu-func-spec x) nil x)))
-    (let ((invalid-names (remove nil (mapcar #'check names))))
+    (let ((invalid-names (remove-if #'gpu-func-spec (mapcar #'check names))))
       (when invalid-names
         (error 'invalid-stages :invalid-names invalid-names)))))
 
@@ -44,7 +44,25 @@
   (labels ((check (x) (member (car x) valid-keys)))
     (remove-if #'check options)))
 
-(defun function-formp (x) (and (listp x) (eq (first x) 'function)))
+(defun function-formp (x)
+  (and (listp x)
+       (eq (first x) 'function)
+       (= (length x) 2)
+       (or (symbolp (second x))
+	   (listp (second x)))))
+
+(defun typed-defp (x)
+  (and (listp x)
+       (symbolp (first x))
+       (every (lambda (s)
+		(or (listp s)
+		    (symbolp s)))
+	      (rest x))))
+
+(defun stage-formp (x)
+  (or (function-formp x)
+      (symbolp x)
+      (listp x)))
 
 (defun xsymbolp (x)
   (and (symbolp x) (not (keywordp x))))

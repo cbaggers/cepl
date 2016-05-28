@@ -5,8 +5,8 @@
 ;;; ARG ASSIGNERS ;;;
 ;;;---------------;;;
 
-(defun stages->uniform-assigners (stage-names)
-  (mapcar λ(make-arg-assigners _) (aggregate-uniforms stage-names nil t)))
+(defun stages->uniform-assigners (stage-keys)
+  (mapcar λ(make-arg-assigners _) (aggregate-uniforms stage-keys nil t)))
 
 (defun make-arg-assigners (uniform-arg)
   (varjo:with-v-arg (arg-name varjo-type~1 qualifiers glsl-name) uniform-arg

@@ -37,6 +37,8 @@
            :split-seq-by-seq
            :print-mem
            :map-hash
+	   :filter-hash
+	   :assocr
            :with-hash
            :with-hash*
            :last1
@@ -52,8 +54,7 @@
 
 (defpackage :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
-  (:export :invalid-stages
-	   :gfun-invalid-arg-format
+  (:export :gfun-invalid-arg-format
 	   :gpu-func-spec-not-found
 	   :dispatch-called-outside-of-map-g
 	   :invalid-keywords-for-shader-gpipe-args
@@ -81,7 +82,9 @@
 	   :make-buffer-stream-with-no-gpu-arrays
 	   :invalid-context-for-def-glsl-stage
 	   :struct-in-glsl-stage-args
-	   :make-gpu-array-from-c-array-mismatched-dimensions))
+	   :make-gpu-array-from-c-array-mismatched-dimensions
+	   :multiple-gpu-func-matches
+	   :stage-not-found))
 
 (defpackage :cepl.host
   (:use :cl)

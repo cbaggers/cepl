@@ -1,14 +1,12 @@
 (in-package :cepl.errors)
 
-(deferror invalid-stages () (invalid-names)
-    "CEPL - Pipeline: The following stages don't have specifications ~s.~%This most likely means they havent been compiled yet or that the names are incorrect" invalid-names)
-
 (deferror gfun-invalid-arg-format () (gfun-name invalid-pair)
     "CEPL - defun-g: defun-g expects its parameter args to be typed in the~%format (var-name type) but instead ~s was found in the definition for ~s" invalid-pair gfun-name)
 
-(deferror gpu-func-spec-not-found () (spec-name)
-    "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s"
-  spec-name)
+(deferror gpu-func-spec-not-found () (name types)
+    "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s
+with the in-arg types ~a"
+  name types)
 
 (deferror dispatch-called-outside-of-map-g () (name)
     "Looks like you tried to call the pipeline ~s without using map-g.~%" name)
@@ -159,3 +157,20 @@ A call to #'make-gpu-array was made with a c-array as the initial-contents.
 The dimensions of the c-array are ~s, however the dimensions given in the
 call to #'make-gpu-array were ~s"
   c-arr-dimensions provided-dimensions)
+
+(deferror multiple-gpu-func-matches () (designator possible-choices)
+    "CEPL: def-g-> found a stage that was incorrectly specified.
+
+The problematic defintition was: ~s
+
+The problem is in this case was that CEPL found multiple GPU function
+definitions with the same name so was unable to pick the correct one.
+
+Instead of ~s please use one of the following:
+~{~s~^~%~}"
+  designator designator possible-choices)
+
+(deferror stage-not-found () (designator)
+    "CEPL - def-g->: Could not find a gpu-function called ~s.
+This most likely means it hasn't been compiled yet or that the name is incorrect"
+  designator)

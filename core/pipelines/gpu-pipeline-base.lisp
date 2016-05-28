@@ -3,11 +3,10 @@
 
 ;;{TODO} Almost everything in here could really benefit from being optimized
 
-(defvar *gpu-func-specs* (make-hash-table :test #'eq))
-(defvar *dependent-gpu-functions* (make-hash-table :test #'eq))
+(defvar *gpu-func-specs* nil)
+(defvar *dependent-gpu-functions* nil)
 (defvar *gpu-program-cache* (make-hash-table :test #'eq))
 (defvar *gpu-pipeline-specs* (make-hash-table :test #'eq))
-
 
 ;;--------------------------------------------------
 
@@ -84,28 +83,119 @@
      (declare (ignorable name in-args uniforms outputs context compiled))
      ,@body))
 
-(defun %serialize-gpu-func-spec (spec)
+(defun serialize-gpu-func-spec (spec)
   (with-gpu-func-spec spec
     `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
                           ',instancing ',equivalent-inargs ',equivalent-uniforms
 			  ',actual-uniforms ',uniform-transforms
                           ,doc-string ',declarations ',missing-dependencies)))
 
-(defun gpu-func-spec (name &optional error-if-missing)
-  (or (gethash name *gpu-func-specs*)
+;;--------------------------------------------------
+
+(defclass func-key ()
+  ((name :initarg :name :reader name)
+   (in-arg-types :initarg :types :reader in-args)))
+
+(defun new-func-key (name in-args-types)
+  (make-instance
+   'func-key
+   :name name
+   :types in-args-types))
+
+(defmethod print-object ((obj func-key) stream)
+  (format stream "#<func-key (~s ~{~s~})>"
+	  (name obj) (in-args obj)))
+
+(defmethod func-key ((spec gpu-func-spec))
+  (new-func-key (slot-value spec 'name)
+		(mapcar #'second (slot-value spec 'in-args))))
+
+(defmethod func-key ((spec varjo::external-function))
+  (new-func-key (varjo::name spec)
+		(mapcar #'second (varjo::in-args spec))))
+
+(defmethod func-key ((key func-key))
+  key)
+
+(defmethod inject-func-key ((spec gpu-func-spec))
+  `(new-func-key ',(slot-value spec 'name)
+		 ',(mapcar #'second (slot-value spec 'in-args))))
+
+(defmethod inject-func-key ((spec func-key))
+  `(new-func-key ',(name spec) ',(in-args spec)))
+
+(defmethod func-key= ((x func-key) (y func-key))
+  (and (eq (name x) (name y))
+       (equal (in-args x) (in-args y))))
+
+(defmethod func-key= ((x varjo::external-function) y)
+  (func-key= (func-key x) y))
+
+(defmethod func-key= (x (y varjo::external-function))
+  (func-key= x (func-key y)))
+
+;;--------------------------------------------------
+
+(defmethod gpu-func-spec (key &optional error-if-missing)
+  (gpu-func-spec (func-key key) error-if-missing))
+
+(defmethod gpu-func-spec ((func-key func-key) &optional error-if-missing)
+  (or (assocr func-key *gpu-func-specs* :test #'func-key=)
+      (when error-if-missing
+        (error 'gpu-func-spec-not-found
+	       :name (name func-key)
+	       :types (in-args func-key)))))
+
+(defmethod (setf gpu-func-spec) (value key &optional error-if-missing)
+  (setf (gpu-func-spec (func-key key) error-if-missing) value))
+
+(defmethod (setf gpu-func-spec) (value (key func-key) &optional error-if-missing)
+  (when error-if-missing
+    (gpu-func-spec key t))
+  (setf *gpu-func-specs*
+	(remove-duplicates (acons key value *gpu-func-specs*)
+			   :key #'car :test #'func-key=
+			   :from-end t)))
+
+(defun gpu-func-specs (name &optional error-if-missing)
+  (or (remove nil
+	      (mapcar λ(dbind (k . v) _
+			 (when (eq (name k) name)
+			   v))
+		      *gpu-func-specs*))
       (when error-if-missing
         (error 'gpu-func-spec-not-found :spec-name name))))
 
-(defun (setf gpu-func-spec) (value name &optional error-if-missing)
-  (when (and error-if-missing (null (gethash name *gpu-func-specs*)))
-    (error "gpu-func-spec: gpu function ~a not found" name))
-  (setf (gethash name *gpu-func-specs*) value))
+(defmethod %unsubscibe-from-all (spec)
+  (%unsubscibe-from-all (func-key spec)))
 
-(defun funcs-that-use-this-func (name)
-  (gethash name *dependent-gpu-functions*))
+(defmethod %unsubscibe-from-all (func-key)
+  "As the name would suggest this removes one function's dependency on another
+   It is used by #'%test-&-update-spec via #'%update-gpu-function-data"
+  (labels ((%remove-gpu-function-from-dependancy-table (pair)
+	     (dbind (key dependencies) pair
+	       (when (member func-key dependencies
+			     :test #'func-key=)
+		 (setf (funcs-that-use-this-func key)
+		       (remove func-key dependencies :test #'func-key=))))))
+    (map nil #'%remove-gpu-function-from-dependancy-table
+	 *dependent-gpu-functions*)))
 
-(defun (setf funcs-that-use-this-func) (value name)
-  (setf (gethash name *dependent-gpu-functions*) value))
+(defmethod funcs-that-use-this-func (key)
+  (funcs-that-use-this-func (func-key key)))
+
+(defmethod funcs-that-use-this-func ((key func-key))
+  (assocr key *dependent-gpu-functions*
+	  :test #'func-key=))
+
+(defmethod (setf funcs-that-use-this-func) (value (key func-key))
+  (setf (funcs-that-use-this-func (func-key key)) value))
+
+(defmethod (setf funcs-that-use-this-func) (value (key func-key))
+  (setf *dependent-gpu-functions*
+	(remove-duplicates (acons key value *gpu-func-specs*)
+			   :key #'car :test #'func-key=
+			   :from-end t)))
 
 (defun funcs-these-funcs-use (names &optional (include-names t))
   (remove-duplicates
@@ -115,55 +205,54 @@
    :from-end t
    :test #'eq))
 
-(defun funcs-this-func-uses (name)
+(defun funcs-this-func-uses (key)
   "Recursivly searches for functions by this function.
 Sorts the list of function names by dependency so the earlier
 names are depended on by the functions named later in the list"
   (mapcar #'car
           (remove-duplicates
-           (sort (%funcs-this-func-uses name) #'> :key #'cdr)
+           (sort (%funcs-this-func-uses key) #'> :key #'cdr)
 	   :from-end t
            :key #'car)))
 
-(defun %funcs-this-func-uses (name &optional (depth 0))
-  (assert (and (symbolp name) (not (keywordp name))))
+(defmethod %funcs-this-func-uses ((key func-key) &optional (depth 0))
   (let ((this-func-calls
-         (remove nil (map-hash
-                      (lambda (k v)
-                        (when (member name v)
-                          (cons k depth)))
+         (remove nil (mapcar
+                      λ(dbind (k v) _
+			 (when (member key v)
+			   (cons k depth)))
                       *dependent-gpu-functions*))))
     (append this-func-calls
             (apply #'append
-                   (mapcar (lambda (x)
-                             (%funcs-this-func-uses (car x) (1+ depth)))
+                   (mapcar λ(%funcs-this-func-uses (car _) (1+ depth))
                            this-func-calls)))))
 
-(defun pipelines-that-use-this-as-a-stage (name)
+(defmethod pipelines-that-use-this-as-a-stage ((func-key func-key))
   (remove nil
           (map-hash
            (lambda (k v)
              (when (and (typep v 'pipeline-spec)
-                        (member name (slot-value v 'stages)))
+                        (member func-key (slot-value v 'stages)
+				:test #'func-key=))
                k))
            *gpu-pipeline-specs*)))
 
 (defun update-specs-with-missing-dependencies ()
-  (map-hash λ(with-gpu-func-spec _1
-	       (when missing-dependencies
-		 (%test-&-update-spec _1)
-		 _))
-	    *gpu-func-specs*))
+  (map 'nil λ(dbind (k . v) _
+	       (with-gpu-func-spec v
+		 (when missing-dependencies
+		   (%test-&-update-spec v)
+		   k)))
+       *gpu-func-specs*))
 
-(defun recompile-pipelines-that-use-this-as-a-stage (name)
+(defmethod recompile-pipelines-that-use-this-as-a-stage ((key func-key))
   "Recompile all pipelines that depend on the named gpu function or any other
    gpu function that depends on the named gpu function. It does this by
    triggering a recompile on all pipelines that depend on this glsl-stage"
-  (mapcar (lambda (_)
-            (let ((recompile-pipeline-name (recompile-name _)))
-	      (when (fboundp recompile-pipeline-name)
-		(funcall (symbol-function recompile-pipeline-name)))))
-          (pipelines-that-use-this-as-a-stage name)))
+  (mapcar λ(let ((recompile-pipeline-name (recompile-name _)))
+	     (when (fboundp recompile-pipeline-name)
+	       (funcall (symbol-function recompile-pipeline-name))))
+          (pipelines-that-use-this-as-a-stage key)))
 
 ;;--------------------------------------------------
 
