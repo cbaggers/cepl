@@ -46,7 +46,7 @@
       (%update-glsl-stage-data spec)
       `(progn
 	 ,(%make-stand-in-lisp-func-for-glsl-stage spec);;[2]
-	 (recompile-pipelines-that-use-this-as-a-stage ',name)
+	 (recompile-pipelines-that-use-this-as-a-stage ,(inject-func-key spec))
 	 ',name))))
 
 (defun assert-context (name context)
@@ -111,7 +111,17 @@
 	    #'varjo::gen-out-var-strings
 	    #'varjo::final-uniform-strings
 	    #'varjo::final-string-compose
-	    #'varjo::code-obj->result-object)))))))
+	    #'varjo::code-obj->result-object
+	    #'tweak-result-object)))))))
+
+(defun tweak-result-object (result-obj)
+  (setf (in-args result-obj)
+	(mapcar (lambda (x)
+		  (cons (first x)
+			(cons (type->type-spec (second x))
+			      (subseq x 2))))
+		(in-args result-obj)))
+  result-obj)
 
 (defun process-glsl-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg

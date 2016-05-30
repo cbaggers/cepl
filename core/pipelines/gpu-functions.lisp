@@ -115,6 +115,9 @@
                   (first missing-dependencies) name))
         (%update-gpu-function-data spec nil nil)))))
 
+(defmethod %recompile-gpu-function-and-pipelines (key)
+  (%recompile-gpu-function-and-pipelines (func-key key)))
+
 (defmethod %recompile-gpu-function-and-pipelines ((key func-key))
   "Recompile all pipelines that depend on the named gpu function or any other
    gpu function that depends on the named gpu function. It does this by doing
@@ -145,22 +148,21 @@
 
 (defun %update-glsl-stage-data (spec)
   "[0] Add or update the spec"
-  (with-slots (name) spec
-    (setf (gpu-func-spec name) spec)));;[0]
+  (setf (gpu-func-spec spec) spec));;[0]
 
-(defmethod %subscribe-to-gpu-func ((func varjo::external-function)
-				   subscribe-to-spec)
+(defmethod %subscribe-to-gpu-func (func subscribe-to)
   "As the name would suggest this makes one function dependent on another
    It is used by #'%test-&-update-spec via #'%update-gpu-function-data "
-  (assert (not (func-key= func subscribe-to-spec)))
-  (let ((key (func-key func)))
-    (symbol-macrolet ((func-specs (funcs-that-use-this-func subscribe-to-spec)))
-      (when (and (gpu-func-spec subscribe-to-spec)
+  (let ((func (func-key func))
+	(subscribe-to (func-key subscribe-to)))
+    (assert (not (func-key= func subscribe-to)))
+    (symbol-macrolet ((func-specs (funcs-that-use-this-func subscribe-to)))
+      (when (and (gpu-func-spec subscribe-to)
 		 (not (member func func-specs :test #'func-key=)))
 	(format t "; func ~s subscribed to ~s~%"
-		(with-gpu-func-spec (gpu-func-spec key) name)
-		(with-gpu-func-spec subscribe-to-spec name))
-	(push key func-specs)))))
+		(name func)
+		(name subscribe-to))
+	(push func func-specs)))))
 
 (defun make-stand-in-lisp-func (spec)
   "Makes a regular lisp function with the same names and arguments
@@ -314,22 +316,22 @@
    stage pairs are of the form (stage-name . gpu-function-name)"
   (let ((cut-pos (or (position :post args) (length args))))
     (destructuring-bind (&key post) (subseq args cut-pos)
-      (list
-       (if (and (= (length args) 2) (not (some #'keywordp args)))
-	   (list (cons :vertex (get-stage-key (first args)))
-		 (cons :fragment (get-stage-key (second args))))
-	   (dbind (&key vertex tesselation-control
-			tesselation-evaluation geometry
-			fragment post) args
-	     (declare (ignore post))
-	     (list (cons :vertex (get-stage-key vertex))
-		   (cons :tesselation-control
-			 (get-stage-key tesselation-control))
-		   (cons :tesselation-evaluation
-			 (get-stage-key tesselation-evaluation))
-		   (cons :geometry (get-stage-key geometry))
-		   (cons :fragment (get-stage-key fragment)))))
-       post))))
+      (let ((args (subseq args 0 cut-pos)))
+	(list
+	 (if (and (= (length args) 2) (not (some #'keywordp args)))
+	     (list (cons :vertex (get-stage-key (first args)))
+		   (cons :fragment (get-stage-key (second args))))
+	     (dbind (&key vertex tesselation-control
+			  tesselation-evaluation geometry
+			  fragment) args
+	       (list (cons :vertex (get-stage-key vertex))
+		     (cons :tesselation-control
+			   (get-stage-key tesselation-control))
+		     (cons :tesselation-evaluation
+			   (get-stage-key tesselation-evaluation))
+		     (cons :geometry (get-stage-key geometry))
+		     (cons :fragment (get-stage-key fragment)))))
+	 post)))))
 
 ;;--------------------------------------------------
 

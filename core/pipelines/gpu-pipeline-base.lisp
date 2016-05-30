@@ -3,10 +3,10 @@
 
 ;;{TODO} Almost everything in here could really benefit from being optimized
 
-(defvar *gpu-func-specs* nil)
-(defvar *dependent-gpu-functions* nil)
-(defvar *gpu-program-cache* (make-hash-table :test #'eq))
-(defvar *gpu-pipeline-specs* (make-hash-table :test #'eq))
+(defparameter *gpu-func-specs* nil)
+(defparameter *dependent-gpu-functions* nil)
+(defparameter *gpu-program-cache* (make-hash-table :test #'eq))
+(defparameter *gpu-pipeline-specs* (make-hash-table :test #'eq))
 
 ;;--------------------------------------------------
 
@@ -125,14 +125,21 @@
   `(new-func-key ',(name spec) ',(in-args spec)))
 
 (defmethod func-key= ((x func-key) (y func-key))
-  (and (eq (name x) (name y))
-       (equal (in-args x) (in-args y))))
+  (unless (or (null x) (null y))
+    (and (eq (name x) (name y))
+	 (equal (in-args x) (in-args y)))))
 
-(defmethod func-key= ((x varjo::external-function) y)
-  (func-key= (func-key x) y))
+(defmethod func-key= (x (y func-key))
+  (unless (or (null x) (null y))
+    (func-key= (func-key x) y)))
 
-(defmethod func-key= (x (y varjo::external-function))
-  (func-key= x (func-key y)))
+(defmethod func-key= ((x func-key) y)
+  (unless (or (null x) (null y))
+    (func-key= x (func-key y))))
+
+(defmethod func-key= (x y)
+  (unless (or (null x) (null y))
+    (func-key= (func-key x) (func-key y))))
 
 ;;--------------------------------------------------
 
@@ -169,13 +176,12 @@
 (defmethod %unsubscibe-from-all (spec)
   (%unsubscibe-from-all (func-key spec)))
 
-(defmethod %unsubscibe-from-all (func-key)
+(defmethod %unsubscibe-from-all ((func-key func-key))
   "As the name would suggest this removes one function's dependency on another
    It is used by #'%test-&-update-spec via #'%update-gpu-function-data"
   (labels ((%remove-gpu-function-from-dependancy-table (pair)
-	     (dbind (key dependencies) pair
-	       (when (member func-key dependencies
-			     :test #'func-key=)
+	     (dbind (key . dependencies) pair
+	       (when (member func-key dependencies :test #'func-key=)
 		 (setf (funcs-that-use-this-func key)
 		       (remove func-key dependencies :test #'func-key=))))))
     (map nil #'%remove-gpu-function-from-dependancy-table
@@ -188,12 +194,12 @@
   (assocr key *dependent-gpu-functions*
 	  :test #'func-key=))
 
-(defmethod (setf funcs-that-use-this-func) (value (key func-key))
+(defmethod (setf funcs-that-use-this-func) (value key)
   (setf (funcs-that-use-this-func (func-key key)) value))
 
 (defmethod (setf funcs-that-use-this-func) (value (key func-key))
   (setf *dependent-gpu-functions*
-	(remove-duplicates (acons key value *gpu-func-specs*)
+	(remove-duplicates (acons key value *dependent-gpu-functions*)
 			   :key #'car :test #'func-key=
 			   :from-end t)))
 
@@ -218,7 +224,7 @@ names are depended on by the functions named later in the list"
 (defmethod %funcs-this-func-uses ((key func-key) &optional (depth 0))
   (let ((this-func-calls
          (remove nil (mapcar
-                      λ(dbind (k v) _
+                      λ(dbind (k . v) _
 			 (when (member key v)
 			   (cons k depth)))
                       *dependent-gpu-functions*))))
@@ -256,7 +262,7 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defconstant +cache-last-compile-result+ t)
+(defvar +cache-last-compile-result+ t)
 
 (defclass pipeline-spec ()
   ((name :initarg :name)
@@ -290,31 +296,43 @@ See the +cache-last-compile-result+ constant for more details")
   "Either ~s is not a pipeline/gpu-function or the code for this asset
 has not been cached yet")
 
+(defun %pull-spec-common (asset-name)
+  (labels ((gfunc-spec (x)
+	     (let ((specs (gpu-func-specs x)))
+	       (case= (length specs)
+		 (0 nil)
+		 (1 (first specs))
+		 (otherwise :too-many)))))
+    (if +cache-last-compile-result+
+	(let ((spec (or (pipeline-spec asset-name) (gfunc-spec asset-name))))
+	  (typecase spec
+	    (null (%pull-g-soft-message asset-name))
+	    (keyword (pull-g-soft-multi-func-message asset-name))
+	    (otherwise (slot-value spec 'cached-compile-results))))
+	 +pull*-g-not-enabled-message+)))
+
 (defmethod pull1-g ((asset-name symbol))
-  (if +cache-last-compile-result+
-      (or (slot-value (or (pipeline-spec asset-name)
-			  (gpu-func-spec asset-name))
-		      'cached-compile-results)
-	  (%pull-g-soft-message asset-name))
-      +pull*-g-not-enabled-message+))
+  (%pull-spec-common asset-name))
+
+(defmethod pull1-g ((asset-name list))
+  (%pull-spec-common asset-name))
 
 (defmethod pull-g ((asset-name symbol))
-  (if +cache-last-compile-result+
-      (cond
-	((pipeline-spec asset-name)
-	 (let ((p (slot-value (pipeline-spec asset-name)
-			      'cached-compile-results)))
-	   (if p
-	       (mapcar #'varjo:glsl-code p)
-	       (%pull-g-soft-message asset-name))))
-	((gpu-func-spec asset-name)
-	 (let ((ast (slot-value (gpu-func-spec asset-name)
-				'cached-compile-results)))
-	   (if ast
-	       (ast->code ast)
-	       (%pull-g-soft-message asset-name))))
-	(t (%pull-g-soft-message asset-name)))
-      +pull*-g-not-enabled-message+))
+  (let ((compiled (%pull-spec-common asset-name)))
+    (when compiled
+      (etypecase compiled
+	(null (%pull-g-soft-message asset-name))
+	(string compiled)
+	(list (mapcar #'varjo:glsl-code compiled))
+	(varjo::varjo-compile-result (ast->code compiled))))))
+
+(defun pull-g-soft-multi-func-message (asset-name)
+  (format nil "CEPL: When trying to pull the gpu function ~a we found multiple
+overloads and didnt know which to pull for you. Please try again using one of
+the following:
+~{~a~}" asset-name (mapcar λ(cons (slot-value _ 'name)
+				  (mapcar #'second (slot-value _ 'in-args)))
+			   (gpu-func-specs asset-name))))
 
 (defun %pull-g-soft-message (asset-name)
   (format nil +pull-g-not-cached-template+ asset-name))
