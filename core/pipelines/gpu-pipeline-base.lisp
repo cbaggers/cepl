@@ -164,6 +164,19 @@
 			   :key #'car :test #'func-key=
 			   :from-end t)))
 
+(defmethod forget-gpu-func (name in-arg-types &optional error-if-missing)
+  (let* ((func-key (new-func-key name in-arg-types))
+	 (spec (gpu-func-spec func-key nil)))
+    (if spec
+	(progn
+	  (setf *gpu-func-specs*
+		(remove func-key *gpu-func-specs* :test #'func-key= :key #'car))
+	  spec)
+	(when error-if-missing
+	  (error 'gpu-func-spec-not-found
+		 :name (name func-key)
+		 :types (in-args func-key))))))
+
 (defun gpu-func-specs (name &optional error-if-missing)
   (or (remove nil
 	      (mapcar λ(dbind (k . v) _
