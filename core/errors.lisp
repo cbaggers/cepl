@@ -75,11 +75,12 @@ Example valid forms:
 no initial-contents to infer the type from")
 
 (deferror make-tex-array-not-match-type ()
-    (element-type image-format array-type)
+    (element-type pixel-format supposed-type array-type)
     "CEPL - make-texture: Trying to make texture but the element-type given was
-~s which implies an image-format of ~s. This conflicts with the array
-element-type of ~s"
-  element-type image-format array-type)
+~s which implies an pixel-format of ~s.
+That pixel-format would require an array element-type of ~s.
+This conflicts with the array element-type of ~s"
+  element-type pixel-format supposed-type array-type)
 
 (deferror make-tex-array-not-match-type2 () (element-type initial-contents)
     "CEPL - make-texture: Trying to make texture with an element-type of ~s,
@@ -174,3 +175,11 @@ Instead of ~s please use one of the following:
     "CEPL - def-g->: Could not find a gpu-function called ~s.
 This most likely means it hasn't been compiled yet or that the name is incorrect"
   designator)
+
+(deferror pixel-format-in-bb-texture () (pixel-format)
+    "CEPL: make-texture was making a buffer backed texture, however a
+pixel-format was provided. This is invalid as pixel conversion is not done when
+uploading data to a buffer backed texture.
+
+Pixel-format: ~s"
+  pixel-format)
