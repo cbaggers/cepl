@@ -1,72 +1,37 @@
+(in-package :cepl)
+
 (defun cpu-side ()
   (p-> #'specify-vertices
-       #'render-vertices))
+    #'render-vertices))
 
-(defpipeline full-gl-pipeline
-    (g-> ;; vertex-processing
-         vertex-shader                 ;; user defined
-	 #'limited-primitive-assembly
-	 tessellation-shader           ;; user defined
-	 geometry-shader               ;; user defined
-	 ;; vertex-post-processing
-	 #'transform-feedback
-	 #'clip-primitives
-	 #'perspective-divide
-	 #'viewport-transform
-	 #'primitive-assembly
-	 #'cull-faces
-	 ;; rasterize
-	 #'rasterize
-	 ;; fragment processing
-	 #'fragment-shader             ;; user defined
-	 ;; per sample operations
-	 ;; culling tests; if a test is active and the fragment fails the test,
-	 ;; the underlying pixels/samples are not updated (usually)
-	 #'pixel-ownership-test
-	 #'scissor-test
-	 #'stencil-test
-	 #'depth-test
-	 ;; blending
-	 #'color-blending
-	 ;; output
-	 #'write-to-framebuffer
-))
-
-(defun-g pixel-ownership-test ()
-  "Fails if the fragment's pixel is not \"owned\" by OpenGL (if
-   another window is overlapping with the GL window). Always passes
-   when using a Framebuffer Object. Failure means that the pixel
-   contains undefined values.")
-
-(defun-g scissor-test ()
-  "When enabled, the test fails if the fragment's pixel lies outside
-   of a specified rectangle of the screen.")
-
-(defun-g stencil-test ()
-  "When enabled, the test fails if the stencil value provided by the
-   test does not compare as the user specifies against the stencil
-   value from the underlying sample in the stencil buffer. Note that
-   the stencil value in the framebuffer can still be modified even if
-   the stencil test fails (and even if the depth test fails).")
-
-(defun-g depth-test ()
-  "When enabled, the test fails if the fragment's depth does not
-   compare as the user specifies against the depth value from the
-   underlying sample in the depth buffer.")
-
-(defun-g color-blending ()
-  "For each fragment color value, there is a specific blending
-   operation between it and the color already in the framebuffer at
-   that location. Logical Operations may also take place in lieu of
-   blending, which perform bitwise operations between the fragment
-   colors and framebuffer colors.")
-
-(defun-g write-to-framebuffer ()
-  "The fragment data is written to the framebuffer. Masking
-  operations allow the user to prevent writes to certain
-  values. Color, depth, and stencil writes can be masked on and off;
-  individual color channels can be masked as well.")
-
+(def-g-> full-gl-pipeline
+  ;; vertex-processing
+  vertex-shader                 ;; user defined
+  #'limited-primitive-assembly
+  tessellation-shader           ;; user defined
+  geometry-shader               ;; user defined
+  ;; vertex-post-processing
+  #'transform-feedback
+  #'clip-primitives
+  #'perspective-divide
+  #'viewport-transform
+  #'primitive-assembly
+  #'cull-faces
+  ;; rasterize
+  #'rasterize
+  ;; fragment processing
+  fragment-shader             ;; user defined
+  ;; per sample operations
+  ;; culling tests; if a test is active and the fragment fails the test,
+  ;; the underlying pixels/samples are not updated (usually)
+  #'pixel-ownership-test
+  #'scissor-test
+  #'stencil-test
+  #'depth-test
+  ;; blending
+  #'color-blending
+  ;; output
+  #'write-to-framebuffer)
 
 (defun-g limited-primitive-assembly ()
   "If tessellation or geometry shaders are active, then a limited form of
@@ -94,7 +59,7 @@
   operations, on a per-vertex basis."
   nil)
 
-(defun-implicit-g perspective-divide (vertex)
+(defun-g perspective-divide (vertex)
   "The clip-space positions returned from the clipping stage are
   transformed into normalized device coordinates (NDC) via this
   equation:
@@ -103,9 +68,6 @@
 	 (v! (/ x w) (/ y w) (/ z w))))
     ...)"
   (transform-to +ndc-space+ (coord vertex)))
-
-(defvar +ndc-space+ (define-implicit-space))
-(defvar +window-space+ (define-implicit-space))
 
 (defun-g viewport-transform ()
   "The viewport transform defines the transformation of vertex
@@ -170,6 +132,45 @@
    This last set of data is computed by interpolating between the data
    values in the vertices for the fragment. The style of interpolation is
    defined by the shader that outputed those values.")
+
+(defun-g pixel-ownership-test ()
+  "Fails if the fragment's pixel is not \"owned\" by OpenGL (if
+   another window is overlapping with the GL window). Always passes
+   when using a Framebuffer Object. Failure means that the pixel
+   contains undefined values.")
+
+(defun-g scissor-test ()
+  "When enabled, the test fails if the fragment's pixel lies outside
+   of a specified rectangle of the screen.")
+
+(defun-g stencil-test ()
+  "When enabled, the test fails if the stencil value provided by the
+   test does not compare as the user specifies against the stencil
+   value from the underlying sample in the stencil buffer. Note that
+   the stencil value in the framebuffer can still be modified even if
+   the stencil test fails (and even if the depth test fails).")
+
+(defun-g depth-test ()
+  "When enabled, the test fails if the fragment's depth does not
+   compare as the user specifies against the depth value from the
+   underlying sample in the depth buffer.")
+
+(defun-g color-blending ()
+  "For each fragment color value, there is a specific blending
+   operation between it and the color already in the framebuffer at
+   that location. Logical Operations may also take place in lieu of
+   blending, which perform bitwise operations between the fragment
+   colors and framebuffer colors.")
+
+(defun-g write-to-framebuffer ()
+  "The fragment data is written to the framebuffer. Masking
+   operations allow the user to prevent writes to certain
+   values. Color, depth, and stencil writes can be masked on and off;
+   individual color channels can be masked as well.")
+
+(defvar +ndc-space+ (define-implicit-space))
+(defvar +window-space+ (define-implicit-space))
+
 
 ;;----------------------------------------------------------------------
 ;; CPU
