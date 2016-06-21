@@ -95,8 +95,8 @@
     ((:rgba nil :ushort nil) :rgba16ui)
     ((:rgba nil :int nil) :rgba32i)
     ((:rgba nil :uint nil) :rgba32ui)
-    ((:rgb t :uint8 (8 8 8)) :srgb8)
-    ((:rgba t :uint8 (8 8 8 8)) :srgb8-alpha8)
+    ((:rgb t :uint8-vec3 (8 8 8)) :srgb8)
+    ((:rgba t :uint8-vec4 (8 8 8 8)) :srgb8-alpha8)
     ((:rgba t :uint (10 10 10 2)) :rgb10-a2)
     ((:rgba nil :uint (10 10 10 2)) :rgb10-a2ui)
     ((:rgb t :uint8 (2 2 2 2)) :rgba2) ;;bug? rgb v rgba?
