@@ -90,23 +90,23 @@
    that transform between the public uniform arguments and the internal ones."
   (with-gpu-func-spec spec
     (handler-case
-        (varjo:with-stemcell-infer-hook
-            #'try-guessing-a-varjo-type-for-symbol
-          (let ((compiled
-                 (v-translate in-args uniforms
-                              (union '(:vertex :fragment :iuniforms :330)
-                                     context)
-                              `(progn ,@body)
-                              nil)))
-            (setf actual-uniforms (uniforms compiled) ;;[2]
-                  uniform-transforms (with-hash (uv 'uniform-vals)
-                                         (third-party-metadata compiled)
-                                       (map-hash #'list uv)))
-            (%update-gpu-function-data
-             spec
-             (remove-if-not #'gpu-func-spec
-			    (varjo::used-external-functions compiled)) ;;[1]
-             compiled)))
+	(varjo:with-constant-inject-hook #'try-injecting-a-constant
+	  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
+	    (let ((compiled
+		   (v-translate in-args uniforms
+				(union '(:vertex :fragment :iuniforms :330)
+				       context)
+				`(progn ,@body)
+				nil)))
+	      (setf actual-uniforms (uniforms compiled) ;;[2]
+		    uniform-transforms (with-hash (uv 'uniform-vals)
+					   (third-party-metadata compiled)
+					 (map-hash #'list uv)))
+	      (%update-gpu-function-data
+	       spec
+	       (remove-if-not #'gpu-func-spec
+			      (varjo::used-external-functions compiled)) ;;[1]
+	       compiled))))
       ;; vv- called if failed
       (varjo-conditions:could-not-find-function (e) ;;[0]
         (setf missing-dependencies (list (slot-value e 'varjo::name)))
@@ -244,9 +244,10 @@
    Each pair contains:
    - the shader stage (e.g. vertex fragment etc)
    - the name of the gpu function to use for this stage"
-  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-    (v-rolling-translate
-     (mapcar #'parsed-gpipe-args->v-translate-args parsed-gpipe-args))))
+  (varjo:with-constant-inject-hook #'try-injecting-a-constant
+    (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
+      (v-rolling-translate
+       (mapcar #'parsed-gpipe-args->v-translate-args parsed-gpipe-args)))))
 
 (defun parsed-gpipe-args->v-translate-args (stage-pair)
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
@@ -334,6 +335,15 @@
 	 post)))))
 
 ;;--------------------------------------------------
+
+(defun try-injecting-a-constant (constant-name)
+  (assert (constantp constant-name))
+  (let ((val (symbol-value constant-name)))
+    (typecase val
+      (single-float val)
+      (double-float val)
+      ((signed-byte 32) val)
+      ((unsigned-byte 32) val))))
 
 (defun try-guessing-a-varjo-type-for-symbol (s)
   "This function is provided to varjo to allow inference of the
