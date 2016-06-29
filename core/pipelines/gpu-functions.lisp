@@ -232,8 +232,8 @@
 
 ;;--------------------------------------------------
 
-(defun get-func-as-stage-code (name)
-  (with-gpu-func-spec (gpu-func-spec name)
+(defun get-func-as-stage-code (stage)
+  (with-gpu-func-spec stage
     (list in-args uniforms context body)))
 
 ;;--------------------------------------------------
@@ -247,7 +247,8 @@
   (varjo:with-constant-inject-hook #'try-injecting-a-constant
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
       (v-rolling-translate
-       (mapcar #'parsed-gpipe-args->v-translate-args parsed-gpipe-args)))))
+       (mapcar #'parsed-gpipe-args->v-translate-args
+	       parsed-gpipe-args)))))
 
 (defun parsed-gpipe-args->v-translate-args (stage-pair)
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
@@ -262,11 +263,11 @@
    [2] validate that either the gpu-function's context didnt specify a stage
        explicitly or that, if it did, that it matches the stage it is being used
        for now"
-  (dbind (stage-type . stage-name) stage-pair
-    (if (typep (gpu-func-spec stage-name) 'glsl-stage-spec)
-	(with-glsl-stage-spec (gpu-func-spec stage-name)
+  (dbind (stage-type . stage) stage-pair
+    (if (typep (gpu-func-spec stage) 'glsl-stage-spec)
+	(with-glsl-stage-spec (gpu-func-spec stage)
 	  compiled);;[0]
-	(dbind (in-args uniforms context code) (get-func-as-stage-code stage-name)
+	(dbind (in-args uniforms context code) (get-func-as-stage-code stage)
 	  ;;[2]
 	  (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
 			     context)))

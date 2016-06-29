@@ -183,3 +183,8 @@ uploading data to a buffer backed texture.
 
 Pixel-format: ~s"
   pixel-format)
+
+(deferror glsl-version-conflict () (pairs)
+    "CEPL: When trying to compile the pipeline we found some stages which have
+conflicting glsl version requirements
+~{~s~%~}" pairs)

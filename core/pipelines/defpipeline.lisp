@@ -101,10 +101,25 @@
   (make-shader (varjo->gl-stage-names (varjo:stage-type compiled-stage))
                (varjo:glsl-code compiled-stage)))
 
+(defun pairs-key-to-stage (stage-pairs)
+  (mapcar λ(dbind (name . key) _ (cons name (gpu-func-spec key)))
+	  stage-pairs))
+
+(defun swap-versions (stage-pairs glsl-version)
+  (mapcar λ(dbind (x . s) _
+	     (let ((new-context
+		    (cons glsl-version
+			  (remove-if λ(find _ varjo::*supported-versions*)
+				     (with-gpu-func-spec s context)))))
+	       (cons x (clone-stage-spec s :new-context new-context))))
+	  stage-pairs))
+
 (defun %compile-link-and-upload (name stage-pairs)
-  (let* ((compiled-stages (%varjo-compile-as-pipeline stage-pairs))
-         (stages-objects (mapcar #'%gl-make-shader-from-varjo
-                                 compiled-stages)))
+  (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
+	 (glsl-version (compute-glsl-version stage-pairs))
+	 (stage-pairs (swap-versions stage-pairs glsl-version))
+	 (compiled-stages (%varjo-compile-as-pipeline stage-pairs))
+         (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
     (format t "~&; uploading (~a ...)~&" name)
     (let ((prog-id (request-program-id-for name)))
       (link-shaders stages-objects prog-id compiled-stages)
@@ -112,6 +127,30 @@
 	(add-compile-results-to-pipeline name compiled-stages))
       (mapcar #'%gl:delete-shader stages-objects)
       (values compiled-stages prog-id))))
+
+(defun compute-glsl-version (stage-pairs)
+  ;; - If not specified & the context is not yet available then use
+  ;;   the highest version available.
+  ;;
+  ;; - If not specified & the context is available then use the context
+  ;;   info to pick the highest glsl version supported
+  ;;
+  ;; - If one stage specifes a version and the others dont then use that
+  ;;   stage's version
+  (labels ((get-version (pair)
+	     (with-gpu-func-spec (cdr pair)
+	       (first (remove-if-not λ(member _ varjo::*supported-versions*)
+				     context)))))
+    (let* ((versions (mapcar #'get-version stage-pairs))
+	   (trimmed (remove-duplicates (remove nil versions))))
+      (case= (length trimmed)
+	(0 (cepl.context::get-best-glsl-version))
+	(1 (first trimmed))
+	(otherwise (throw-version-error stage-pairs versions))))))
+
+(defun throw-version-error (pairs versions)
+  (let ((issue (remove-if-not #'second (mapcar λ(list (car _) _1) pairs versions))))
+    (error 'glsl-version-conflict :pairs issue)))
 
 (defun %create-implicit-uniform-uploader (compiled-stages)
   (let ((uniforms (mapcat #'varjo:implicit-uniforms compiled-stages)))

@@ -90,6 +90,31 @@
 			  ',actual-uniforms ',uniform-transforms
                           ,doc-string ',declarations ',missing-dependencies)))
 
+(defun clone-stage-spec (spec &key new-name new-in-args new-uniforms new-context
+				new-body new-instancing new-equivalent-inargs
+				new-equivalent-uniforms	new-actual-uniforms
+				new-uniform-transforms new-doc-string
+				new-declarations new-missing-dependencies)
+  (with-gpu-func-spec spec
+    (make-instance
+     (etypecase spec
+       (gpu-func-spec 'gpu-func-spec)
+       (glsl-stage-spec 'glsl-stage-spec))
+     :name (or name new-name)
+     :in-args (or in-args new-in-args)
+     :uniforms (or uniforms new-uniforms)
+     :context (or context new-context)
+     :body (or body new-body)
+     :instancing (or instancing new-instancing)
+     :equivalent-inargs (or equivalent-inargs new-equivalent-inargs)
+     :equivalent-uniforms (or equivalent-uniforms new-equivalent-uniforms)
+     :actual-uniforms (or actual-uniforms new-actual-uniforms)
+     :uniform-transforms (or uniform-transforms new-uniform-transforms)
+     :doc-string (or doc-string new-doc-string)
+     :declarations (or declarations new-declarations)
+     :missing-dependencies (or missing-dependencies
+			       new-missing-dependencies))))
+
 ;;--------------------------------------------------
 
 (defclass func-key ()
