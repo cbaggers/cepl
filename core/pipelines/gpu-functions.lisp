@@ -325,13 +325,19 @@
 	     (dbind (&key vertex tesselation-control
 			  tesselation-evaluation geometry
 			  fragment) args
-	       (list (cons :vertex (get-stage-key vertex))
-		     (cons :tesselation-control
-			   (get-stage-key tesselation-control))
-		     (cons :tesselation-evaluation
-			   (get-stage-key tesselation-evaluation))
-		     (cons :geometry (get-stage-key geometry))
-		     (cons :fragment (get-stage-key fragment)))))
+	       (remove nil
+		       (list (when vertex
+			       (cons :vertex (get-stage-key vertex)))
+			     (when tesselation-control
+			       (cons :tesselation-control
+				     (get-stage-key tesselation-control)))
+			     (when tesselation-evaluation
+			       (cons :tesselation-evaluation
+				     (get-stage-key tesselation-evaluation)))
+			     (when geometry
+			       (cons :geometry (get-stage-key geometry)))
+			     (when fragment
+			       (cons :fragment (get-stage-key fragment)))))))
 	 post)))))
 
 ;;--------------------------------------------------
