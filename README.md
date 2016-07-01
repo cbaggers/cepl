@@ -53,7 +53,7 @@ _Note:_ On `Windows` and `OSX` and are using `slime` you may want to add the cod
 
 To load CEPL and the default host (`sdl2`) do the following:
 
-- `(ql:quicload :cepl.sdl2)`
+- `(ql:quickload :cepl.sdl2)`
 - `(cepl:repl)`
 
 You should see an empty window appear, OpenGL is now initialized and you can use CEPL as you like.
