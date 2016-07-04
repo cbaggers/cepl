@@ -21,7 +21,7 @@
 
 ;;--------------------------------------------------------------
 
-;; [TODO] Need 3rd option for normalised?..:na for floats
+;; [TODO] Need 3rd option for normalized?..:na for floats
 ;; [TODO] Add guaranteed flags to formats
 ;; [TODO] add half float
 ;; [TODO] add :stencil-only
@@ -44,7 +44,7 @@
   '(:uint8 :int8 :ushort :short :uint :int))
 
 (defparameter *gl-pixel-to-internal-map*
-  ;; (components normalise type sizes)
+  ;; (components normalize type sizes)
   '(((:depth t :short nil) :depth-component16)
     ((:depth t :int nil) :depth-component32)
     ((:depth t :float nil) :depth-component32f)
@@ -125,7 +125,7 @@
     (:depth 1) (:depth-stencil 2)
     (t (length (symbol-name components)))))
 
-(defun valid-pixel-format-p (components type normalise reversed)
+(defun valid-pixel-format-p (components type normalize reversed)
   (let ((component-length (get-component-length components)))
     (when (and (find components *valid-pixel-components*)
                (if (listp type) (eql component-length (length type)) t))
@@ -138,12 +138,12 @@
                        (or (assoc (if reversed (cons :r type) type)
                                   *valid-pixel-packed-sizes* :test #'equal)
                            '(nil nil)))))
-        (when (and type (not (and (not normalise)
+        (when (and type (not (and (not normalize)
                                   (not (find type *gl-integral-pixel-types*)))))
           (list components type (if reversed (rest sizes) sizes)
-                normalise reversed component-length))))))
+                normalize reversed component-length))))))
 
-(defun process-pixel-format (components type normalise reversed)
+(defun process-pixel-format (components type normalize reversed)
   (unless (find components *valid-pixel-components*)
     (error "Not a valid pixel component layout.~%~s not found in '~s"
            components *valid-pixel-components*))
@@ -159,18 +159,18 @@
                      '(nil nil))))
       (unless type (error "Not a known pixel type: <components:~a type:~a>"
                           components type))
-      (when (and (not normalise) (not (find type *gl-integral-pixel-types*)))
-        (error "The type ~a cannot hold un-normalised integers" type))
+      (when (and (not normalize) (not (find type *gl-integral-pixel-types*)))
+        (error "The type ~a cannot hold un-normalized integers" type))
       (list components type (if reversed (rest sizes) sizes)
-            normalise reversed component-length))))
+            normalize reversed component-length))))
 
-(defun pixel-format! (components &optional (type :uint8) (normalise t) reversed)
+(defun pixel-format! (components &optional (type :uint8) (normalize t) reversed)
   (destructuring-bind
-        (components type sizes normalise reversed component-length)
-      (process-pixel-format components type normalise reversed)
+        (components type sizes normalize reversed component-length)
+      (process-pixel-format components type normalize reversed)
     (make-pixel-format :components components :type type
                        :sizes (if reversed (rest sizes) sizes)
-                       :normalise normalise :reversed reversed
+                       :normalize normalize :reversed reversed
                        :comp-length component-length)))
 
 ;; [TODO] swap intern for cepl-utils:kwd
@@ -183,7 +183,7 @@
          (sizes (pixel-format-sizes pixel-format))
          (type (pixel-format-type pixel-format))
          (expanded-type (cffi-type->gl-type (if (eq type :int8) :uint8 type))))
-    (let ((format (if (pixel-format-normalise pixel-format)
+    (let ((format (if (pixel-format-normalize pixel-format)
                       gl-comps
                       (intern (format nil "~a-INTEGER" gl-comps) 'keyword)))
           (type (if sizes
@@ -228,7 +228,7 @@
 
 (defun pixel-format->image-format (pixel-format &key (error-if-missing t))
   (let ((result (second (assoc (list (pixel-format-components pixel-format)
-                                     (pixel-format-normalise pixel-format)
+                                     (pixel-format-normalize pixel-format)
                                      (pixel-format-type pixel-format)
                                      (pixel-format-sizes pixel-format))
                                *gl-pixel-to-internal-map*
@@ -244,10 +244,10 @@
   (let ((pf (first (rassoc image-format *gl-pixel-to-internal-map*
                            :key #'car :test #'eq))))
     (if pf
-        (destructuring-bind (components normalise type sizes)
+        (destructuring-bind (components normalize type sizes)
             pf
           (make-pixel-format
-           :components components :type type :normalise normalise
+           :components components :type type :normalize normalize
            :sizes sizes :reversed nil
            :comp-length (get-component-length components)))
         (when error-if-missing

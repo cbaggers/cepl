@@ -59,7 +59,7 @@ For example:
 - the element type of a :int8 is a :int8
 ")
 
-  (defun pixel-format-normalise
+  (defun pixel-format-normalize
       "
 This function returns whether values of the components belonging to the
 pixel-format are normalized.

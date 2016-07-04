@@ -169,7 +169,7 @@
 (defstruct pixel-format
   (components (error "") :type symbol)
   (type (error "") :type symbol)
-  (normalise t :type boolean)
+  (normalize t :type boolean)
   (sizes nil :type list)
   (reversed nil :type boolean)
   (comp-length 0 :type fixnum))

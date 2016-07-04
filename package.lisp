@@ -243,7 +243,7 @@
 	   :pixel-format-p
 	   :pixel-format-components
 	   :pixel-format-type
-	   :pixel-format-normalise
+	   :pixel-format-normalize
 	   :pixel-format-sizes
 	   :pixel-format-reversed
 	   :pixel-format-comp-length
@@ -529,7 +529,7 @@
 	   :pixel-format-p
 	   :pixel-format-components
 	   :pixel-format-type
-	   :pixel-format-normalise
+	   :pixel-format-normalize
 	   :pixel-format-sizes
 	   :pixel-format-reversed
 	   :pixel-format-comp-length))
