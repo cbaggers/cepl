@@ -26,6 +26,9 @@
 (defun sv!-form-p (node)
   (ast-kindp node '%sv!))
 
+(defun get-transform-form-p (node)
+  (ast-kindp node 'get-transform))
+
 (defun in-form-p (node)
   (and (ast-kindp node 'let)
        (dbind (args . body) (ast-args node)
@@ -35,13 +38,49 @@
 (defun cross-space-form-p (node)
   "Predicate for cases where a position is crossing
    between two valid spaces"
-  (and (ast-typep node 'svec4-g)
-       (let ((origin (first (val-origins node))))
-	 (and (ast-kindp origin '%sv!)
-	      (has-space node)
-	      (has-space origin)
-	      (not (id= (flow-ids (ast-space node))
-			(flow-ids (ast-space origin))))))))
+  (or (and (ast-typep node 'svec4-g)
+	   (let ((origin (first (val-origins node))))
+	     (and (ast-kindp origin '%sv!)
+		  (has-space node)
+		  (has-space origin)
+		  (not (id= (flow-ids (ast-space node))
+			    (flow-ids (ast-space origin)))))))
+      (get-transform-form-p node)))
+
+(defun transform-cross-space-form (node env)
+  (if (get-transform-form-p node)
+      (get-transform-transform node env)
+      (cross-space->matrix-multiply node env)))
+
+(defun get-transform-transform (node env)
+  (dbind (space-a space-b) (ast-args node)
+    (get-space->space-transform space-a space-b env)))
+
+(defun get-space->space-transform (from-space to-space env)
+  ;;[0] get or create the transforms table. Note that env is the
+  ;;    'transform environment' we add a transforms hash-table to
+  ;;    to this for reasons best known to past me :|
+  (let* ((transforms
+	  (or (gethash 'transforms env)
+	      (setf (gethash 'transforms env)
+		    (make-hash-table :test #'equal))))
+	 ;; Query the origin of the node's flow id and get the ast-node/s it
+	 ;; was from
+	 (to-name (origin-name (first (flow-id-origins (flow-ids to-space)
+						       t to-space))))
+	 (from-name (origin-name (first (flow-id-origins (flow-ids from-space)
+							 t from-space)))))
+    ;;
+    ;; when we have to transform from *screen-space* or *ndc-space* we are in
+    ;; a more tricky situation as the transform is a function of the vector,
+    ;; a matrix alone cannot capture the transform.
+    ;; To handle this situation (in a way that won't kill performace) we
+    ;; require that the source space (screen or ndc) is explicit, in code, at
+    ;; compile time.
+    ;;
+    (if (or (eq from-name '*screen-space*) (eq from-name '*ndc-space*))
+	(error "CEPL: get-transform is not currently supported for transform from *screen-space* or *ndc-space*")
+	(get-regular-space-transform from-name to-name transforms env))))
 
 (defun cross-space->matrix-multiply (node env)
   ;;[0] get or create the transforms table. Note that env is the
@@ -89,18 +128,16 @@
 		   `(v! ,node))))
       (if (or (eq from-name '*screen-space*) (eq from-name '*ndc-space*))
 	  (inject-clip-or-ndc-space-reverse-transform from-name to-name val env)
-	  (inject-regular-space-transform from-name from-space
-					  to-name to-space
-					  transforms val env)))))
+	  (inject-regular-space-transform
+	   from-name to-name transforms val env)))))
 
-(defun inject-regular-space-transform (from-name from-space to-name to-space
-				       transforms val env)
+(defun get-regular-space-transform (from-name to-name transforms env)
   (let* (;; Now we are done with the searching, time to use the results
 	 ;;
 	 ;; we could have multiple of the same transform so we should
 	 ;; deduplicate. This is a hacky way to get a key
-	 (key (concatenate 'string (v-glsl-name to-space)
-			   (v-glsl-name from-space)))
+	 (key (concatenate 'string (symbol-name to-name)
+			   (symbol-name from-name)))
 	 ;; and let's make a name for the lisp variable containing the
 	 ;; space->space transform
 	 (var-name (or (gethash key transforms)
@@ -111,6 +148,13 @@
     (set-uniform var-name :mat4 env)
     ;; here we set how we get the transform we are uploading
     (set-arg-val var-name `(get-transform ,from-name ,to-name) env)
+    ;; and here is the name of transform we needed
+    var-name))
+
+(defun inject-regular-space-transform (from-name to-name transforms val env)
+  ;; we need to add the transform uniform and get it's name
+  (let* ((var-name (get-regular-space-transform
+		    from-name to-name transforms env)))
     ;; and here is the replacement code for our crossing the spaces
     `(sv! (* ,var-name ,val))))
 
@@ -204,13 +248,13 @@
   (declare (ignore env))
   (first (ast-args node)))
 
-
 (def-compile-pass remove-redundent-in-forms
   (#'redundent-in-form-p  #'in-form->progn))
 
+;;(#'get-transform-form-p #'get-transform-transform)
 (def-deep-pass (cross-space-pass :depends-on remove-redundent-in-forms)
     :filter #'cross-space-form-p
-    :transform #'cross-space->matrix-multiply)
+    :transform #'transform-cross-space-form)
 
 (def-compile-pass (space-pass :depends-on cross-space-pass)
   (#'cross-to-null-space-form-p #'cross-to-null-space)
