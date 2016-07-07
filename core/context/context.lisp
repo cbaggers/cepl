@@ -99,6 +99,11 @@
                        (/ (minor-version context) 10))))
     (coerce version 'single-float)))
 
+(defun split-float-version (float)
+  (let* ((fix (round float .1)))
+    (multiple-value-bind (maj min) (floor fix 10)
+      (list maj min))))
+
 ;; GL_MAX_SERVER_WAIT_TIMEOUT (64-bit integer, at least 0, see glWaitSync)
 ;; The maximum glWaitSync timeout interval.
 (def-cached-context-reader max-server-wait-timeout)

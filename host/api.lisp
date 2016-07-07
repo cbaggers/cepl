@@ -11,7 +11,7 @@
     (width height title fullscreen
      no-frame alpha-size depth-size stencil-size
      red-size green-size blue-size buffer-size
-     double-buffer hidden resizable)
+     double-buffer hidden resizable gl-version)
   (:documentation
    "Implement this method and return a list containing:
     - gl-context as the first element

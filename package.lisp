@@ -440,6 +440,7 @@
            :major-version
            :minor-version
            :version-float
+           :split-float-version
            :max-server-wait-timeout
            :min-map-buffer-alignment
            :extension-count
