@@ -2,22 +2,6 @@
 
 ;;----------------------------------------------------------------------
 
-(defun ptr-index (c-array &optional (x 0) (y 0 y-set) (z 0 z-set) (w 0 w-set))
-  (declare (c-array c-array)
-	   (fixnum x y z w)
-	   (optimize (speed 3) (safety 0) (debug 1)))
-  (cond (w-set (ptr-index-4d c-array x y z w))
-	(z-set (ptr-index-3d c-array x y z))
-	(y-set (ptr-index-2d c-array x y))
-	(t (ptr-index-1d c-array x))))
-
-(define-compiler-macro ptr-index
-    (c-array &optional x (y 0 y-set) (z 0 z-set) (w 0 w-set))
-  (cond (w-set `(ptr-index-4d ,c-array ,x ,y ,z ,w))
-	(z-set `(ptr-index-3d ,c-array ,x ,y ,z))
-	(y-set `(ptr-index-2d ,c-array ,x ,y))
-	(t `(ptr-index-1d ,c-array ,x))))
-
 (declaim (inline ptr-index-1d)
 	 (ftype (function (c-array fixnum) cffi-sys:foreign-pointer)
 		ptr-index-1d))
@@ -100,6 +84,22 @@
 	 (inc-pointer (c-array-pointer c-array)
 		      byte-offset))))
 
+
+(defun ptr-index (c-array &optional (x 0) (y 0 y-set) (z 0 z-set) (w 0 w-set))
+  (declare (c-array c-array)
+	   (fixnum x y z w)
+	   (optimize (speed 3) (safety 0) (debug 1)))
+  (cond (w-set (ptr-index-4d c-array x y z w))
+	(z-set (ptr-index-3d c-array x y z))
+	(y-set (ptr-index-2d c-array x y))
+	(t (ptr-index-1d c-array x))))
+
+(define-compiler-macro ptr-index
+    (c-array &optional x (y 0 y-set) (z 0 z-set) (w 0 w-set))
+  (cond (w-set `(ptr-index-4d ,c-array ,x ,y ,z ,w))
+	(z-set `(ptr-index-3d ,c-array ,x ,y ,z))
+	(y-set `(ptr-index-2d ,c-array ,x ,y))
+	(t `(ptr-index-1d ,c-array ,x))))
 
 ;;----------------------------------------------------------------------
 
