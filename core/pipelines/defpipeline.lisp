@@ -108,15 +108,13 @@
 (defun swap-versions (stage-pairs glsl-version)
   (mapcar λ(dbind (x . s) _
 	     (let ((new-context
-		    (cons glsl-version
-			  (remove-if λ(find _ varjo::*supported-versions*)
-				     (with-gpu-func-spec s context)))))
+		    (swap-version glsl-version (with-gpu-func-spec s context))))
 	       (cons x (clone-stage-spec s :new-context new-context))))
 	  stage-pairs))
 
 (defun %compile-link-and-upload (name stage-pairs)
   (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
-	 (glsl-version (compute-glsl-version stage-pairs))
+	 (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
 	 (stage-pairs (swap-versions stage-pairs glsl-version))
 	 (compiled-stages (%varjo-compile-as-pipeline stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
@@ -128,7 +126,7 @@
       (mapcar #'%gl:delete-shader stages-objects)
       (values compiled-stages prog-id))))
 
-(defun compute-glsl-version (stage-pairs)
+(defun compute-glsl-version-from-stage-pairs (stage-pairs)
   ;; - If not specified & the context is not yet available then use
   ;;   the highest version available.
   ;;
@@ -137,19 +135,16 @@
   ;;
   ;; - If one stage specifes a version and the others dont then use that
   ;;   stage's version
-  (labels ((get-version (pair)
+  (labels ((get-context (pair)
 	     (with-gpu-func-spec (cdr pair)
-	       (first (remove-if-not λ(member _ varjo::*supported-versions*)
-				     context)))))
-    (let* ((versions (mapcar #'get-version stage-pairs))
-	   (trimmed (remove-duplicates (remove nil versions))))
-      (case= (length trimmed)
-	(0 (cepl.context::get-best-glsl-version))
-	(1 (first trimmed))
-	(otherwise (throw-version-error stage-pairs versions))))))
+	       context)))
+    (or (apply #'compute-glsl-version (mapcar #'get-context stage-pairs))
+	(throw-version-error stage-pairs versions))))
 
 (defun throw-version-error (pairs versions)
-  (let ((issue (remove-if-not #'second (mapcar λ(list (car _) _1) pairs versions))))
+  (let ((issue (remove-if-not #'second
+			      (mapcar λ(list (car _) _1)
+				      pairs versions))))
     (error 'glsl-version-conflict :pairs issue)))
 
 (defun %create-implicit-uniform-uploader (compiled-stages)

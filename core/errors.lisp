@@ -188,3 +188,7 @@ Pixel-format: ~s"
     "CEPL: When trying to compile the pipeline we found some stages which have
 conflicting glsl version requirements
 ~{~s~%~}" pairs)
+
+(deferror glsl-version-conflict-in-gpu-func () (name context)
+    "CEPL: When trying to compile ~a we found multiple glsl versions.
+Context: ~a" name context)

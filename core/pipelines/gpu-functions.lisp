@@ -73,6 +73,20 @@
        (update-specs-with-missing-dependencies);;[5]
        ',name)))
 
+(defun swap-version (glsl-version context)
+  (cons glsl-version (remove-if λ(find _ varjo::*supported-versions*) context)))
+
+(defun compute-glsl-version (&rest contexts)
+  (labels ((get-version (context)
+	     (first (remove-if-not λ(member _ varjo::*supported-versions*)
+				   context))))
+    (let* ((versions (mapcar #'get-version contexts))
+	   (trimmed (remove-duplicates (remove nil versions))))
+      (case= (length trimmed)
+	(0 (cepl.context::get-best-glsl-version))
+	(1 (first trimmed))
+	(otherwise nil)))))
+
 (defvar *warn-when-cant-test-compile* t)
 
 (defun %test-&-update-spec (spec)
@@ -92,12 +106,15 @@
     (handler-case
 	(varjo:with-constant-inject-hook #'try-injecting-a-constant
 	  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-	    (let ((compiled
-		   (v-translate in-args uniforms
-				(union '(:vertex :fragment :iuniforms :330)
-				       context)
-				`(progn ,@body)
-				nil)))
+	    (let* ((context (union '(:vertex :fragment :iuniforms) context))
+		   (context (swap-version
+			     (or (compute-glsl-version context)
+				 (error 'glsl-version-conflict-in-gpu-func
+					:name name
+					:context context))
+			     context))
+		   (compiled
+		    (v-translate in-args uniforms context `(progn ,@body) nil)))
 	      (setf actual-uniforms (uniforms compiled) ;;[2]
 		    uniform-transforms (with-hash (uv 'uniform-vals)
 					   (third-party-metadata compiled)
