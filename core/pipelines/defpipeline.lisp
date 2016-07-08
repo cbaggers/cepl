@@ -138,8 +138,10 @@
   (labels ((get-context (pair)
 	     (with-gpu-func-spec (cdr pair)
 	       context)))
-    (or (apply #'compute-glsl-version (mapcar #'get-context stage-pairs))
-	(throw-version-error stage-pairs versions))))
+    (let ((contexts (mapcar #'get-context stage-pairs)))
+      (or (apply #'compute-glsl-version contexts)
+	  (throw-version-error
+	   stage-pairs (mapcar #'get-version-from-context contexts))))))
 
 (defun throw-version-error (pairs versions)
   (let ((issue (remove-if-not #'second

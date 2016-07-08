@@ -73,19 +73,20 @@
        (update-specs-with-missing-dependencies);;[5]
        ',name)))
 
+(defun get-version-from-context (context)
+  (first (remove-if-not λ(member _ varjo::*supported-versions*)
+			context)))
+
 (defun swap-version (glsl-version context)
   (cons glsl-version (remove-if λ(find _ varjo::*supported-versions*) context)))
 
 (defun compute-glsl-version (&rest contexts)
-  (labels ((get-version (context)
-	     (first (remove-if-not λ(member _ varjo::*supported-versions*)
-				   context))))
-    (let* ((versions (mapcar #'get-version contexts))
-	   (trimmed (remove-duplicates (remove nil versions))))
-      (case= (length trimmed)
-	(0 (cepl.context::get-best-glsl-version))
-	(1 (first trimmed))
-	(otherwise nil)))))
+  (let* ((versions (mapcar #'get-version-from-context contexts))
+	 (trimmed (remove-duplicates (remove nil versions))))
+    (case= (length trimmed)
+      (0 (cepl.context::get-best-glsl-version))
+      (1 (first trimmed))
+      (otherwise nil))))
 
 (defvar *warn-when-cant-test-compile* t)
 
