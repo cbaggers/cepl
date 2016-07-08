@@ -193,11 +193,12 @@
   (with-gpu-func-spec spec
     (let ((arg-names (mapcar #'first in-args))
           (uniform-names (mapcar #'first uniforms)))
-      `(defun ,name (,@arg-names
-		     ,@(when uniforms (cons (symb :&key) uniform-names)))
-	 ,@(when doc-string (list doc-string))
-         (declare (ignore ,@arg-names ,@uniform-names))
-         (warn "GPU Functions cannot currently be used from the cpu")))))
+      `(setf (symbol-function ',name)
+	     (lambda (,@arg-names
+		      ,@(when uniforms (cons (symb :&key) uniform-names)))
+	       ,@(when doc-string (list doc-string))
+	       (declare (ignore ,@arg-names ,@uniform-names))
+	       (warn "GPU Functions cannot currently be used from the cpu"))))))
 
 ;;--------------------------------------------------
 
