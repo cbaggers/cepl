@@ -39,7 +39,8 @@
 
    [0] makes a gpu-func-spec that will be populated a stored later.
 
-   [1] Adds a external function definition to varjo
+   [1] Adds a external function definition to varjo also make sure it will be
+       called on load
 
    [2] %test-&-update-spec compiles the code to check for errors and log
        dependencies. (this is called at runtime)
@@ -67,6 +68,7 @@
     (%update-gpu-function-data spec nil nil)
     (varjo::add-external-function name in-args uniforms body);;[1]
     `(progn
+       (varjo::add-external-function ',name ',in-args ',uniforms ',body);;[1]
        (%test-&-update-spec ,(serialize-gpu-func-spec spec));;[2]
        ,(make-stand-in-lisp-func spec);;[3]
        (%recompile-gpu-function-and-pipelines ,(inject-func-key spec));;[4]
