@@ -30,7 +30,6 @@
            (gl:major-version) (gl:minor-version))))
 
 (defun %set-default-gl-options ()
-  (print "Setting default options")
   (gl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)

@@ -14,6 +14,9 @@
                     'gl-context :handle context-handle :window window))
           (dimensions (list width height)))
       (ensure-cepl-compatible-setup)
+      (format t "New context v~s.~s"
+	      (major-version context)
+	      (minor-version context))
       (%set-default-gl-options)
       (setf *gl-context* context
             *gl-window* (window context)
