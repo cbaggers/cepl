@@ -225,7 +225,7 @@
 
 ;; GL_MAX_DRAW_BUFFERS (integer, at least 8, see glDrawBuffers)
 ;;     The maximum number of simultaneous outputs that may be written in a fragment shader.
-(def-context-reader max-draw-buffers)
+(def-cached-context-reader max-draw-buffers)
 
 ;; GL_MAX_DUAL_SOURCE_DRAW_BUFFERS (integer, at least 1, see glBlendFunc and glBlendFuncSeparate)
 ;;     The maximum number of active draw buffers when using dual-source blending.
