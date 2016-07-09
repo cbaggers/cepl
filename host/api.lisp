@@ -2,10 +2,11 @@
 
 ;; This is what the backend has to implement
 
-(defgeneric init ()
+(defgeneric init (&optional init-flags)
   (:documentation
    "Implement this method and initialize your system inside it.
-    This is called as the first step of cepl initializing."))
+    This is called as the first step of cepl initializing.
+    init-flags are host specific flags that can be passed from cepl"))
 
 (defgeneric request-context
     (width height title fullscreen

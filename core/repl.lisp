@@ -5,11 +5,13 @@
   (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%"))
 
 (defun init (&optional (width 320) (height 240) (title "CEPL") (resizable t)
-               requested-gl-version)
+               requested-gl-version host-init-flags)
   (handler-case
       (find-method #'cepl.host:init nil nil)
     (error () (error "Cepl.Host: Init could not be found. Have you loaded a host?")))
-  (cepl.host:init)
+  (if host-init-flags
+      (cepl.host:init host-init-flags)
+      (cepl.host:init))
   (cepl.context:make-context :width width :height height :resizable resizable
 			     :title title :gl-version requested-gl-version)
   (cepl.lifecycle::change-state :interactive)
