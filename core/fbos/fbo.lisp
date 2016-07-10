@@ -300,8 +300,7 @@
 (defun %fbo-draw-buffers (fbo)
   (let ((len (if (%fbo-is-default fbo)
                  1
-                 (max-draw-buffers *gl-context*))))
-    ;; {TODO}        vvv--^^^--- why use max, why not length of color-arrays?
+                 (length (%fbo-color-arrays fbo)))))
     (%gl:draw-buffers len (%fbo-draw-buffer-map fbo))))
 
 ;;--------------------------------------------------------------
