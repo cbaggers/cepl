@@ -5,7 +5,7 @@
 
 (deferror gpu-func-spec-not-found () (name types)
     "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s
-with the in-arg types ~a"
+with the in-arg types ~s"
   name types)
 
 (deferror dispatch-called-outside-of-map-g () (name)
@@ -192,3 +192,22 @@ conflicting glsl version requirements
 (deferror glsl-version-conflict-in-gpu-func () (name context)
     "CEPL: When trying to compile ~a we found multiple glsl versions.
 Context: ~a" name context)
+
+(deferror delete-multi-func-error () (name choices)
+    "CEPL: When trying to delete the gpu function ~a we found multiple
+overloads and didnt know which to delete for you. Please try again using one of
+the following:
+~{~s~%~}" name choices)
+
+(deferror multi-func-error () (name choices)
+    "CEPL: When trying find the gpu function ~a we found multiple overloads and
+didnt know which to return for you. Please try again using one of
+the following:
+~{~s~%~}" name choices)
+
+;; Please remember the following 2 things
+;;
+;; - add your condition's name to the package export
+;; - keep this comment at the bottom of the file.
+;;
+;; Thanks :)

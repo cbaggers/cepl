@@ -417,3 +417,41 @@
     ((signed-byte 32) :int)
     ((unsigned-byte 32) :uint)
     (t (error "Cant guess a suitable type for ~s" x))))
+
+;;--------------------------------------------------
+
+(defmethod delete-gpu-function ((gfunc-description null)
+				&optional (error-if-missing t))
+  (when error-if-missing
+    (error 'gpu-func-spec-not-found :name gfunc-description :types nil)))
+
+(defmethod delete-gpu-function ((gfunc-description symbol)
+				&optional (error-if-missing t))
+  (let ((choices (gpu-functions gfunc-description)))
+    (if (= (length choices) 1)
+	(delete-gpu-function (first choices) error-if-missing)
+	(error 'cepl.errors::delete-multi-func-error
+	       :name gfunc-description
+	       :choices choices))))
+
+(defmethod delete-gpu-function ((gfunc-description func-key)
+				&optional (error-if-missing t))
+  (delete-gpu-function
+   (cons (name gfunc-description) (in-args gfunc-description))
+   error-if-missing))
+
+(defmethod delete-gpu-function ((gfunc-description list)
+				&optional (error-if-missing t))
+  (dbind (name . in-arg-types) gfunc-description
+    (let* ((func-key (new-func-key name in-arg-types))
+	   (spec (gpu-func-spec func-key nil)))
+      (if spec
+	  (progn
+	    (setf *gpu-func-specs* (remove func-key *gpu-func-specs*
+					   :test #'func-key= :key #'car))
+	    (varjo::delete-external-function name in-arg-types))
+	  (when error-if-missing
+	    (error 'gpu-func-spec-not-found
+		   :name (name func-key)
+		   :types (in-args func-key))))
+      gfunc-description)))

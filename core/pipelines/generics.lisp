@@ -14,5 +14,6 @@
 (defgeneric recompile-pipelines-that-use-this-as-a-stage (key))
 (defgeneric func-key (source))
 (defgeneric %subscribe-to-gpu-func (func subscribe-to))
-(defgeneric forget-gpu-func (name in-arg-types &optional error-if-missing))
 (defgeneric (setf funcs-that-use-this-func) (value key))
+(defgeneric delete-gpu-function (gfunc-description &optional error-if-missing))
+(defgeneric %gpu-function (name))

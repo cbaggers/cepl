@@ -121,6 +121,10 @@
   ((name :initarg :name :reader name)
    (in-arg-types :initarg :types :reader in-args)))
 
+(defmethod make-load-form ((key func-key) &optional environment)
+   (declare (ignore environment))
+   `(new-func-key ',(name key) ',(in-args key)))
+
 (defun new-func-key (name in-args-types)
   (make-instance
    'func-key
@@ -128,7 +132,7 @@
    :types in-args-types))
 
 (defmethod print-object ((obj func-key) stream)
-  (format stream "#<func-key (~s ~{~s~})>"
+  (format stream "#<GPU-FUNCTION (~s ~{~s~})>"
 	  (name obj) (in-args obj)))
 
 (defmethod func-key ((spec gpu-func-spec))
@@ -188,19 +192,6 @@
 	(remove-duplicates (acons key value *gpu-func-specs*)
 			   :key #'car :test #'func-key=
 			   :from-end t)))
-
-(defmethod forget-gpu-func (name in-arg-types &optional error-if-missing)
-  (let* ((func-key (new-func-key name in-arg-types))
-	 (spec (gpu-func-spec func-key nil)))
-    (if spec
-	(progn
-	  (setf *gpu-func-specs*
-		(remove func-key *gpu-func-specs* :test #'func-key= :key #'car))
-	  spec)
-	(when error-if-missing
-	  (error 'gpu-func-spec-not-found
-		 :name (name func-key)
-		 :types (in-args func-key))))))
 
 (defun gpu-func-specs (name &optional error-if-missing)
   (or (remove nil
@@ -298,6 +289,31 @@ names are depended on by the functions named later in the list"
 	       (funcall (symbol-function recompile-pipeline-name))))
           (pipelines-that-use-this-as-a-stage key)))
 
+(defmethod %gpu-function ((name symbol))
+  (let ((choices (gpu-functions name)))
+    (case= (length choices)
+      (0 (error 'gpu-func-spec-not-found :name name :types nil))
+      (1 (%gpu-function (first choices)))
+      (otherwise (error 'multi-func-error :name name :choices choices)))))
+
+(defmethod %gpu-function ((name null))
+  (error 'gpu-func-spec-not-found :name name :types nil))
+
+(defmethod %gpu-function ((name list))
+  (dbind (name . in-arg-types) name
+    (let ((key (new-func-key name in-arg-types)))
+      (if (gpu-func-spec key)
+	  key
+	  (error 'gpu-func-spec-not-found :name name :types in-arg-types)))))
+
+(defmacro gpu-function (name)
+  (%gpu-function name))
+
+(defun gpu-functions (name)
+  (mapcar λ(cons (slot-value _ 'name)
+		 (mapcar #'second (slot-value _ 'in-args)))
+	  (gpu-func-specs name)))
+
 ;;--------------------------------------------------
 
 (defvar +cache-last-compile-result+ t)
@@ -368,9 +384,9 @@ has not been cached yet")
   (format nil "CEPL: When trying to pull the gpu function ~a we found multiple
 overloads and didnt know which to pull for you. Please try again using one of
 the following:
-~{~a~}" asset-name (mapcar λ(cons (slot-value _ 'name)
+~{~s~%~}" asset-name (mapcar λ(cons (slot-value _ 'name)
 				  (mapcar #'second (slot-value _ 'in-args)))
-			   (gpu-func-specs asset-name))))
+			     (gpu-func-specs asset-name))))
 
 (defun %pull-g-soft-message (asset-name)
   (format nil +pull-g-not-cached-template+ asset-name))
@@ -411,9 +427,5 @@ the following:
 
 (let ((current-key 0))
   (defun %gen-pass-key () (incf current-key)))
-
-;;--------------------------------------------------
-
-
 
 ;;--------------------------------------------------
