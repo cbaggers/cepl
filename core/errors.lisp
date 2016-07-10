@@ -205,6 +205,34 @@ didnt know which to return for you. Please try again using one of
 the following:
 ~{~s~%~}" name choices)
 
+(deferror attachments-with-different-sizes (:print-circle nil) (args sizes)
+    "CEPL: Whilst making an fbo we saw that some of the attachments will end up
+having different dimensions: ~a
+
+Whilst this is not an error according to GL it can trip people up because
+according to the spec:
+
+ > If the attachment sizes are not all identical, rendering will
+ > be limited to the largest area that can fit in all of the
+ > attachments (an intersection of rectangles having a lower left
+ > of (0 0) and an upper right of (width height) for each attachment).
+
+If you want to make an fbo with differing arguments please call make-fbo
+with `:matching-dimensions nil` in the arguments e.g.
+
+ (MAKE-FBO ~{~%     ~a~})
+
+"
+  sizes
+  (labels ((ffa (a)
+	     (typecase a
+	       ((or null keyword) (format nil "~s" a))
+	       ((or list symbol) (format nil "'~s" a))
+	       (otherwise (format nil "~s" a)))))
+    (append (mapcar #'ffa args)
+	    '(":MATCHING-DIMENSIONS NIL"))))
+
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

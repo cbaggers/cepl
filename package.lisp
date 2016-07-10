@@ -91,7 +91,8 @@
 	   :shader-pipeline-non-null-args
 	   :stage-not-found
 	   :struct-in-glsl-stage-args
-	   :multi-func-error))
+	   :multi-func-error
+	   :attachments-with-different-sizes))
 
 (defpackage :cepl.host
   (:use :cl)

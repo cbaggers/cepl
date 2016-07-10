@@ -1,4 +1,5 @@
 (in-package :cepl.fbos)
+(in-readtable fn:fn-reader)
 
 ;; {TODO} A fragment shader can output different data to any of these by
 ;;        linking out variables to attachments with the glBindFragDataLocation
@@ -324,20 +325,28 @@
 
 ;;--------------------------------------------------------------
 
-(defun make-fbo (&rest fuzzy-attach-args)
+(defun extract-matching-dimension-value (args)
+  (let* ((p (position :matching-dimensions args))
+	 (v (if p (elt args (1+ p)) t)))
+    (values v (if p (append (subseq args 0 p) (subseq args (+ 2 p)))
+		  args))))
 
-  (let* ((fbo-obj (pre-gl-init (make-uninitialized-fbo)))
-	 (arrays
-	  (if fuzzy-attach-args
-	      (apply #'fbo-gen-attach fbo-obj fuzzy-attach-args)
-	      (error "CEPL: FBOs must have at least one attachment"))))
-    (cepl.memory::if-context
-     (make-fbo-now %pre%)
-     fbo-obj
-     (append
-      (remove-if-not #'holds-gl-object-ref-p
-		     (cepl-utils:flatten fuzzy-attach-args))
-      arrays))))
+(defun make-fbo (&rest fuzzy-attach-args)
+  (multiple-value-bind (check-dimensions-matchp fuzzy-attach-args)
+      (extract-matching-dimension-value fuzzy-attach-args)
+    (let* ((fbo-obj (pre-gl-init (make-uninitialized-fbo)))
+	   (arrays
+	    (if fuzzy-attach-args
+		(apply #'fbo-gen-attach fbo-obj check-dimensions-matchp
+		       fuzzy-attach-args)
+		(error "CEPL: FBOs must have at least one attachment"))))
+      (cepl.memory::if-context
+       (make-fbo-now %pre%)
+       fbo-obj
+       (append
+	(remove-if-not #'holds-gl-object-ref-p
+		       (cepl-utils:flatten fuzzy-attach-args))
+	arrays)))))
 
 (defun make-fbo-now (fbo-obj)
   (post-gl-init fbo-obj)
@@ -455,7 +464,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 		 ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum)))))))))
 
 
-(defun fbo-gen-attach (fbo &rest args)
+(defun fbo-gen-attach (fbo check-dimensions-matchp &rest args)
   "The are 3 kinds of valid argument:
    - keyword naming an attachment: This makes a new texture
      with size of (current-viewport) and attaches
@@ -464,6 +473,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
    - (keyword some-type) any types that supports the generic dimensions function
                          creates a new texture at the framesize of the object
                          and attaches it to attachment named by keyword"
+  (when check-dimensions-matchp
+    (let ((dims (mapcar #'extract-dimension-from-make-fbo-pattern args)))
+      (unless (every λ(equal (first dims) _) (rest dims))
+	(error 'attachments-with-different-sizes
+	       :args args
+	       :sizes dims))))
   (mapcar (lambda (texture-pair attachment-name)
             (dbind (tex-array . owned-by-fbo) texture-pair
               (setf (%fbo-owns fbo attachment-name) owned-by-fbo)
@@ -472,6 +487,28 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
           (mapcar #'%gen-textures args)
           (mapcar (lambda (x) (first x))
                   (mapcar #'listify args))))
+
+(defun extract-dimension-from-make-fbo-pattern (pattern)
+  (assert (or (listp pattern) (keywordp pattern) (numberp pattern)))
+  (cond
+    ;; simple keyword pattern to texture
+    ((or (keywordp pattern) (numberp pattern))
+     (viewport-dimensions (current-viewport)))
+    ;; pattern with args for make-texture
+    ((some (lambda (x) (member x %possible-texture-keys)) pattern)
+     (destructuring-bind
+	   (&key (dimensions (viewport-dimensions (current-viewport)))
+		 &allow-other-keys)
+         (rest pattern)
+        dimensions))
+    ;; use an existing gpu-array
+    ((typep (second pattern) 'gpu-array-t)
+     (dimensions (second pattern)))
+    ;; use the first gpu-array in texture
+    ((typep (second pattern) 'texture)
+     (dimensions (texref (second pattern))))
+    ;; take the dimensions from some object
+    (t (dimensions (second pattern)))))
 
 ;; Attaching Images
 
