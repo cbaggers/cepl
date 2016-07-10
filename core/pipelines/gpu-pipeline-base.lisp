@@ -294,7 +294,10 @@ names are depended on by the functions named later in the list"
     (case= (length choices)
       (0 (error 'gpu-func-spec-not-found :name name :types nil))
       (1 (%gpu-function (first choices)))
-      (otherwise (error 'multi-func-error :name name :choices choices)))))
+      (otherwise (restart-case
+		     (error 'multi-func-error :name name :choices choices)
+		   (use-value ()
+		     (%gpu-function (interactive-pick-gpu-function name))))))))
 
 (defmethod %gpu-function ((name null))
   (error 'gpu-func-spec-not-found :name name :types nil))
@@ -313,6 +316,22 @@ names are depended on by the functions named later in the list"
   (mapcar λ(cons (slot-value _ 'name)
 		 (mapcar #'second (slot-value _ 'in-args)))
 	  (gpu-func-specs name)))
+
+(defun read-gpu-function-choice (intro-text gfunc-name)
+  (let ((choices (gpu-functions gfunc-name)))
+    (when choices
+      (format t "~%~a~{~%~a: ~a~}~%Choice: "
+	      intro-text
+	      (mapcan #'list (alexandria:iota (length choices)) choices))
+      (let ((choice (read-integers)))
+	(if (= 1 (length choice))
+	    (elt choices (first choice))
+	    nil)))))
+
+(defun interactive-pick-gpu-function (name)
+  (read-gpu-function-choice
+   "Please choose which of the following functions you wish to use"
+   name))
 
 ;;--------------------------------------------------
 
@@ -361,7 +380,9 @@ has not been cached yet")
 	(let ((spec (or (pipeline-spec asset-name) (gfunc-spec asset-name))))
 	  (typecase spec
 	    (null (%pull-g-soft-message asset-name))
-	    (keyword (pull-g-soft-multi-func-message asset-name))
+	    (keyword (let ((alt (pull-g-soft-multi-func-message asset-name)))
+		       (when alt
+			 (slot-value (gpu-func-spec alt) 'cached-compile-results))))
 	    (otherwise (slot-value spec 'cached-compile-results))))
 	 +pull*-g-not-enabled-message+)))
 
@@ -381,12 +402,11 @@ has not been cached yet")
 	(varjo::varjo-compile-result (ast->code compiled))))))
 
 (defun pull-g-soft-multi-func-message (asset-name)
-  (format nil "CEPL: When trying to pull the gpu function ~a we found multiple
-overloads and didnt know which to pull for you. Please try again using one of
-the following:
-~{~s~%~}" asset-name (mapcar λ(cons (slot-value _ 'name)
-				  (mapcar #'second (slot-value _ 'in-args)))
-			     (gpu-func-specs asset-name))))
+  (let ((choices (gpu-functions asset-name)))
+    (restart-case
+	(error 'multi-func-error :name asset-name :choices choices)
+      (use-value ()
+	(%gpu-function (interactive-pick-gpu-function asset-name))))))
 
 (defun %pull-g-soft-message (asset-name)
   (format nil +pull-g-not-cached-template+ asset-name))

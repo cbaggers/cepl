@@ -430,9 +430,11 @@
   (let ((choices (gpu-functions gfunc-description)))
     (if (= (length choices) 1)
 	(delete-gpu-function (first choices) error-if-missing)
-	(error 'cepl.errors::delete-multi-func-error
-	       :name gfunc-description
-	       :choices choices))))
+	(restart-case (error 'delete-multi-func-error
+			     :name gfunc-description
+			     :choices choices)
+	  (use-value ()
+	    (interactive-delete-gpu-function gfunc-description))))))
 
 (defmethod delete-gpu-function ((gfunc-description func-key)
 				&optional (error-if-missing t))
@@ -455,3 +457,14 @@
 		   :name (name func-key)
 		   :types (in-args func-key))))
       gfunc-description)))
+
+
+
+(defun interactive-delete-gpu-function (name)
+  (let ((picked
+	 (read-gpu-function-choice
+	  "Please choose which of the following functions you wish to delete"
+	  name)))
+    (when picked
+      (format t "~%Deleting ~s" picked)
+      (delete-gpu-function picked))))
