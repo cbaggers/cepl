@@ -340,7 +340,13 @@
 ;------------ERRORS-----------;
 
 ;;[TODO] need better arg test
-(defmacro deferror (name (&key (error-type 'error) prefix)
+(defmacro deferror (name (&key (error-type 'error) prefix
+			       (print-circle nil print-circle?)
+			       (print-escape nil print-escape?)
+			       (print-length nil print-length?)
+			       (print-level nil print-level?)
+			       (print-lines nil print-lines?)
+			       (print-right-margin nil print-right-margin?))
                             (&rest args) error-string &body body)
   (unless (every #'symbolp args) (error "can only take simple args"))
   `(define-condition ,name (,error-type)
@@ -348,8 +354,26 @@
      (:report (lambda (condition stream)
                 (declare (ignorable condition))
 		(with-slots ,args condition
+		  (let ((*print-circle* (if ,print-circle?
+					    ,print-circle
+					    *print-circle*))
+			(*print-escape* (if ,print-escape?
+					    ,print-escape
+					    *print-escape*))
+			(*print-length* (if ,print-length?
+					    ,print-length
+					    *print-length*))
+			(*print-level* (if ,print-level?
+					   ,print-level
+					   *print-level*))
+			(*print-lines* (if ,print-lines?
+					   ,print-lines
+					   *print-lines*))
+			(*print-right-margin* (if ,print-right-margin?
+						  ,print-right-margin
+						  *print-right-margin*)))
 		    (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
-			    ,@body))))))
+			    ,@body)))))))
 
 (defmacro asserting (form error-name &rest keys-to-error)
   `(unless ,form (error ',error-name ,@keys-to-error)))
