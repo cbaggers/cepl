@@ -50,7 +50,8 @@
            :n-of*
            :just-ignore
 	   :defvar*
-	   :defparameter*))
+	   :defparameter*
+	   :read-integers))
 
 (defpackage :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)

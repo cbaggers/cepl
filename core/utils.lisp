@@ -575,3 +575,10 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 
 (defmacro defparameter* (name &body slots)
   (defx* 'defparameter name slots))
+
+(defun read-integers (&optional (stream *standard-input*) (eof-error-p t)
+			eof-value recursive-p)
+  (let* ((str (read-line stream eof-error-p eof-value recursive-p))
+	 (split (split-sequence:split-sequence #\space str))
+	 (nums (mapcar #'parse-integer split)))
+    nums))
