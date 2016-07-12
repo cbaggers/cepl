@@ -439,6 +439,18 @@
 	       :supposed-type supposed-type
 	       :array-type (element-type initial-contents)))))
 
+(defmethod check-mipmap-level-count-valid ((level-count integer)
+					   (dimensions list))
+  (let ((max-levels (calc-max-num-mipmap-levels dimensions)))
+    (if (<= level-count max-levels)
+	level-count
+	(error "Invalid number of mipmap levels specified (~a) for dimensions ~a
+Max is: ~s"
+	       level-count dimensions max-levels))))
+
+(defun calc-max-num-mipmap-levels (dimensions)
+  (floor (log (apply #'max dimensions) 2)))
+
 (defun %make-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
                       image-format pixel-format generate-mipmaps)
@@ -455,15 +467,11 @@
                           (not (null mipmap)) (> layer-count 1) cubes
                           (every #'po2p dimensions) multisample
                           buffer-storage rectangle))
-           (mipmap-levels (let ((max-levels (floor (log (apply #'max dimensions) 2))))
-                            (if (typep mipmap 'integer)
-                                (if (<= mipmap max-levels)
-                                    mipmap
-                                    (error "Invalid number of mipmap levels specified (~a) for dimensions ~a"
-                                           mipmap dimensions))
-                                (if mipmap
-                                    max-levels
-                                    1)))))
+           (mipmap-levels (if (typep mipmap 'integer)
+			      (check-mipmap-level-count-valid mipmap dimensions)
+			      (if mipmap
+				  (calc-max-num-mipmap-levels dimensions)
+				  1))))
       (if texture-type
           (if (and cubes (not (apply #'= dimensions)))
               (error "Cube textures must be square")
