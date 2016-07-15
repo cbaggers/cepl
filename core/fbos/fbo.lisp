@@ -734,14 +734,18 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                  (element-type (%get-default-texture-format (first pattern)))
                  mipmap (immutable t))
          (rest pattern)
-       (assert (attachment-compatible (first pattern) element-type))
-       (cons (texref
-              (make-texture nil
-                            :dimensions dimensions
-                            :element-type element-type
-                            :mipmap mipmap
-                            :immutable immutable))
-             t)))
+       (let ((element-type
+	      (if (image-formatp element-type)
+		  element-type
+		  (lisp-type->image-format element-type))))
+	 (assert (attachment-compatible (first pattern) element-type))
+	 (cons (texref
+		(make-texture nil
+			      :dimensions dimensions
+			      :element-type element-type
+			      :mipmap mipmap
+			      :immutable immutable))
+	       t))))
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t) (cons (second pattern) t))
     ;; use the first gpu-array in texture
