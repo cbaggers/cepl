@@ -326,27 +326,74 @@
 ;;--------------------------------------------------------------
 
 (defun extract-matching-dimension-value (args)
+  ;; The matching-dimensions flag is what tells cepl whether we
+  ;; should throw an error if the dimensions of the args don't
+  ;; match
   (let* ((p (position :matching-dimensions args))
 	 (v (if p (elt args (1+ p)) t)))
     (values v (if p (append (subseq args 0 p) (subseq args (+ 2 p)))
 		  args))))
 
 (defun make-fbo (&rest fuzzy-attach-args)
-  (multiple-value-bind (check-dimensions-matchp fuzzy-attach-args)
-      (extract-matching-dimension-value fuzzy-attach-args)
-    (let* ((fbo-obj (pre-gl-init (make-uninitialized-fbo)))
-	   (arrays
-	    (if fuzzy-attach-args
-		(apply #'fbo-gen-attach fbo-obj check-dimensions-matchp
-		       fuzzy-attach-args)
-		(error "CEPL: FBOs must have at least one attachment"))))
-      (cepl.memory::if-context
-       (make-fbo-now %pre%)
-       fbo-obj
-       (append
-	(remove-if-not #'holds-gl-object-ref-p
-		       (cepl-utils:flatten fuzzy-attach-args))
-	arrays)))))
+  (let* ((fbo-obj (pre-gl-init (make-uninitialized-fbo)))
+	 (arrays (fuzzy-args->arrays fbo-obj fuzzy-attach-args)))
+    (cepl.memory::if-context
+     (make-fbo-now %pre%)
+     fbo-obj
+     (append
+      (remove-if-not #'holds-gl-object-ref-p
+		     (cepl-utils:flatten fuzzy-attach-args))
+      arrays))))
+
+(defun fuzzy-args->arrays (fbo-obj fuzzy-args)
+  (multiple-value-bind (check-dimensions-matchp fuzzy-args)
+      (extract-matching-dimension-value fuzzy-args)
+    (cond
+      ((and (texture-p (first fuzzy-args))
+	    (eq (texture-type (first fuzzy-args)) :texture-cube-map))
+       (cube->fbo-arrays fbo-obj fuzzy-args))
+      (fuzzy-args (apply #'fbo-gen-attach fbo-obj check-dimensions-matchp
+			 fuzzy-args))
+      (t (error "CEPL: FBOs must have at least one attachment")))))
+
+(defun cube->fbo-arrays (fbo-obj fuzzy-args)
+  (let ((depth (listify
+		(find-if λ(or (eq _ :d) (and (listp _) (eq (first _) :d)))
+			 fuzzy-args))))
+    (dbind (cube-tex . rest) fuzzy-args
+      (if (not (or (null rest) (and depth (= 1 (length rest)))))
+	  (error 'invalid-cube-fbo-args :args fuzzy-args)
+	  (fuzzy-args->arrays
+	   fbo-obj
+	   (append `((0 ,(texref cube-tex :cube-face 0))
+		     (1 ,(texref cube-tex :cube-face 1))
+		     (2 ,(texref cube-tex :cube-face 2))
+		     (3 ,(texref cube-tex :cube-face 3))
+		     (4 ,(texref cube-tex :cube-face 4))
+		     (5 ,(texref cube-tex :cube-face 5)))
+		   (when depth
+		     (list
+		      (if (member :dimensions depth)
+			  depth
+			  (append depth
+				  `(:dimensions
+				    ,(dimensions
+				      (texref cube-tex :cube-face 0)))))))))))))
+
+(defun gen-fbo-cube-texture (tex-info)
+  (if tex-info
+      (dbind (&key dimensions element-type) tex-info
+	(make-texture nil :dimensions ))))
+
+(defun make-fbo-cube (&optional tex-info)
+  (let ((cube (gen-fbo-cube-texture tex-info)))
+    (make-fbo (if tex-info (cons 0 tex-info) 0)
+	      (if tex-info (cons 1 tex-info) 1)
+	      (if tex-info (cons 2 tex-info) 2)
+	      (if tex-info (cons 3 tex-info) 3)
+	      (if tex-info (cons 4 tex-info) 4)
+	      (if tex-info (cons 5 tex-info) 5)
+	      :D)))
 
 (defun make-fbo-now (fbo-obj)
   (post-gl-init fbo-obj)
@@ -614,8 +661,14 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; 4        GL_TEXTURE_CUBE_MAP_POSITIVE_Z
             ;; 5        GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
             (:texture-cube-map
-             (gl:framebuffer-texture-2d target attach-enum
-                                        '&&&CUBEMAP-TARGET&&&
+	     (gl:framebuffer-texture-2d target attach-enum
+					(elt '(:texture-cube-map-positive-x
+					       :texture-cube-map-negative-x
+					       :texture-cube-map-positive-y
+					       :texture-cube-map-negative-y
+					       :texture-cube-map-positive-z
+					       :texture-cube-map-negative-z)
+					     face-num)
                                         tex-id level-num))
             ;; Buffer Textures work like 1D texture, only they have a single image,
             ;; identified by mipmap level 0.

@@ -233,6 +233,20 @@ with `:matching-dimensions nil` in the arguments e.g.
 	    '(":MATCHING-DIMENSIONS NIL"))))
 
 
+(deferror invalid-cube-fbo-args () (args)
+    "CEPL: Invalid args for cube-map bound fbo:
+
+args: ~s
+
+You have passed a cube-map texture without an attachment number, this
+means you want the fbo to have 6 color attachments which are bound the
+faces of the cube texture.
+
+Whilst using this feature the only other legal argument is depth
+attachment info.
+" args)
+
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

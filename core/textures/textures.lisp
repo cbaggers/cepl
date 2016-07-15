@@ -491,6 +491,10 @@ Max is: ~s"
 		     (texref tex-obj) initial-contents
 		     (cepl.pixel-formats::compile-pixel-format pixel-format)))
                   (when (and generate-mipmaps (> mipmap-levels 1))
+		    ;; It may look like we are just going to generate as many
+		    ;; mipmap levels as possible here. But #'allocate-texture
+		    ;; has used tex-storage, which has specified the number of
+		    ;; levels
                     (generate-mipmaps tex-obj)))
                 tex-obj))
           (error "This combination of texture features is invalid")))))

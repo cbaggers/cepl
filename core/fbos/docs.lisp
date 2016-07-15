@@ -252,6 +252,16 @@ texture created by taking the arguments after 0 and applying them to
 #'make-texture
 
 -- Any combination of the above --
+
+One last variant is allowed. You are allowed to pass a cube-map texture along
+with and optional depth option. This will result in each face of the cube being
+bound to the fbo's attachments.
+
+-- (make-fbo cube-tex)
+
+-- (make-fbo cube-tex '(:d :dimensions (32 32))
+
+-- (make-fbo cube-tex :d) ;; depth attachment dimensions will match faces
 ")
 
   (defun make-fbo-from-id

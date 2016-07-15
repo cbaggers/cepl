@@ -4,6 +4,12 @@
 ;; extract details from args and delegate to %def-gpu-function
 ;; for the main logic
 (defmacro defun-g (name args &body body)
+  (defun-g-common name args body nil))
+
+(defmacro defun-g-equiv (name args &body body)
+  (defun-g-common name args body t))
+
+(defun defun-g-common (name args body equiv)
   "Define a function that runs on the gpu."
   ;; The code here splits and validates the arguments but the meat
   ;; of gpu function definition happens in the %def-gpu-function call
@@ -16,14 +22,14 @@
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
-      ;; check the arguments are sanely formatted
-      (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
-      (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
-      (assert (null context))
-      ;; now the meat
-      (%def-gpu-function name in-args uniforms body instancing
-                         doc-string declarations))))
+		(varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+		;; check the arguments are sanely formatted
+		(mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
+		(mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
+		(assert (null context))
+		;; now the meat
+		(%def-gpu-function name in-args uniforms body instancing
+				   doc-string declarations equiv))))
 
 (defun assert-arg-format (gfunc-name x)
   (unless (listp x)
@@ -34,7 +40,7 @@
 ;;--------------------------------------------------
 
 (defun %def-gpu-function (name in-args uniforms body instancing
-                          doc-string declarations)
+                          doc-string declarations equiv)
   "This is the meat of defun-g. it is broken down as follows:
 
    [0] makes a gpu-func-spec that will be populated a stored later.
@@ -48,6 +54,8 @@
    [3] %make-gpu-func-spec is called at expand time to write a lisp function
        with the same signature as the gpu-function. This gives code hinting and
        also a decent error message if you try calling it from the cpu.
+       We don't do this when using defun-g-equiv as we want to shadow the lisp
+       function.
 
    [4] the purpose of %recompile-gpu-function-and-pipelines is to recompile and
        functions or pipelines that depend on this gpu function. It does this
@@ -70,7 +78,7 @@
     `(progn
        (varjo::add-external-function ',name ',in-args ',uniforms ',body);;[1]
        (%test-&-update-spec ,(serialize-gpu-func-spec spec));;[2]
-       ,(make-stand-in-lisp-func spec);;[3]
+       ,(unless equiv (make-stand-in-lisp-func spec));;[3]
        (%recompile-gpu-function-and-pipelines ,(inject-func-key spec));;[4]
        (update-specs-with-missing-dependencies);;[5]
        ',name)))

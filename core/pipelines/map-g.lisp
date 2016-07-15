@@ -22,4 +22,5 @@
 			 :with-viewport ,with-viewport
 			 :with-blending ,with-blending
 			 :draw-buffers t)
+     (clear)
      (map-g ,pipeline-func ,stream ,@uniforms)))

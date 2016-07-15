@@ -92,7 +92,8 @@
 	   :stage-not-found
 	   :struct-in-glsl-stage-args
 	   :multi-func-error
-	   :attachments-with-different-sizes))
+	   :attachments-with-different-sizes
+	   :invalid-cube-fbo-args))
 
 (defpackage :cepl.host
   (:use :cl)

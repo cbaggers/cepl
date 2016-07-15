@@ -5,15 +5,13 @@
 (defmethod print-object ((object texture) stream)
   (if (initialized-p object)
       (let ((m (texture-mipmap-levels object))
-	    (l (texture-layer-count object))
-	    (c (texture-cubes-p object)))
+	    (l (texture-layer-count object)))
 	(format stream
-		"#<~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]~@[ cubes:~a~]>"
+		"#<~a (~{~a~^x~})~@[ mip-levels:~a~]~@[ layers:~a~]>"
 		(texture-type object)
 		(texture-base-dimensions object)
 		(when (> m 1) m)
-		(when (> l 1) l)
-		c))
+		(when (> l 1) l)))
       (format stream "#<TEXTURE :UNINITIALIZED>")))
 
 (defmethod print-object ((object buffer-texture) stream)
