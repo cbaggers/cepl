@@ -182,6 +182,8 @@
   "[0] Add or update the spec"
   (setf (gpu-func-spec spec) spec));;[0]
 
+(defvar *print-gpu-function-subscriptions* nil)
+
 (defmethod %subscribe-to-gpu-func (func subscribe-to)
   "As the name would suggest this makes one function dependent on another
    It is used by #'%test-&-update-spec via #'%update-gpu-function-data "
@@ -191,9 +193,10 @@
     (symbol-macrolet ((func-specs (funcs-that-use-this-func subscribe-to)))
       (when (and (gpu-func-spec subscribe-to)
 		 (not (member func func-specs :test #'func-key=)))
-	(format t "; func ~s subscribed to ~s~%"
-		(name func)
-		(name subscribe-to))
+	(when *print-gpu-function-subscriptions*
+	  (format t "; func ~s subscribed to ~s~%"
+		  (name func)
+		  (name subscribe-to)))
 	(push func func-specs)))))
 
 (defun make-stand-in-lisp-func (spec)
