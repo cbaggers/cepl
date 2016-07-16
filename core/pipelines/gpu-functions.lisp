@@ -26,10 +26,9 @@
 		;; check the arguments are sanely formatted
 		(mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
 		(mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
-		(assert (null context))
 		;; now the meat
 		(%def-gpu-function name in-args uniforms body instancing
-				   doc-string declarations equiv))))
+				   doc-string declarations equiv context))))
 
 (defun assert-arg-format (gfunc-name x)
   (unless (listp x)
@@ -40,7 +39,7 @@
 ;;--------------------------------------------------
 
 (defun %def-gpu-function (name in-args uniforms body instancing
-                          doc-string declarations equiv)
+                          doc-string declarations equiv context)
   "This is the meat of defun-g. it is broken down as follows:
 
    [0] makes a gpu-func-spec that will be populated a stored later.
@@ -68,35 +67,44 @@
        one of its missing dependencies and calls %test-&-update-spec on them.
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
-  (let ((spec (%make-gpu-func-spec name in-args uniforms nil body instancing
+  (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
                                    nil nil nil nil doc-string declarations
-                                   nil)));;[0]
+                                   nil));;[0]
+	(valid-glsl-versions (get-versions-from-context context)))
     ;; this gets the functions used in the body of this function
     ;; it is *not* recursive
     (%update-gpu-function-data spec nil nil)
-    (varjo::add-external-function name in-args uniforms body);;[1]
+    (varjo::add-external-function name in-args uniforms body
+				  valid-glsl-versions);;[1]
     `(progn
-       (varjo::add-external-function ',name ',in-args ',uniforms ',body);;[1]
+       (varjo::add-external-function ',name ',in-args ',uniforms ',body
+				     ',valid-glsl-versions);;[1]
        (%test-&-update-spec ,(serialize-gpu-func-spec spec));;[2]
        ,(unless equiv (make-stand-in-lisp-func spec));;[3]
        (%recompile-gpu-function-and-pipelines ,(inject-func-key spec));;[4]
        (update-specs-with-missing-dependencies);;[5]
        ',name)))
 
-(defun get-version-from-context (context)
-  (first (remove-if-not λ(member _ varjo::*supported-versions*)
-			context)))
+(defun get-versions-from-context (context)
+  (%sort-versions
+   (remove-if-not λ(member _ varjo::*supported-versions*)
+		  context)))
+
+(defun %sort-versions (versions)
+  (mapcar #'first
+	  (sort (mapcar λ(list _ (parse-integer (symbol-name _)))
+			versions)
+		#'< :key #'second)))
 
 (defun swap-version (glsl-version context)
   (cons glsl-version (remove-if λ(find _ varjo::*supported-versions*) context)))
 
-(defun compute-glsl-version (&rest contexts)
-  (let* ((versions (mapcar #'get-version-from-context contexts))
-	 (trimmed (remove-duplicates (remove nil versions))))
-    (case= (length trimmed)
+(defun lowest-suitable-glsl-version (context)
+  (let* ((versions (or (get-versions-from-context context)
+		       (list (cepl.context::get-best-glsl-version)))))
+    (case= (length versions)
       (0 (cepl.context::get-best-glsl-version))
-      (1 (first trimmed))
-      (otherwise nil))))
+      (otherwise (first versions)))))
 
 (defvar *warn-when-cant-test-compile* t)
 
@@ -118,11 +126,7 @@
 	(varjo:with-constant-inject-hook #'try-injecting-a-constant
 	  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
 	    (let* ((context (union '(:vertex :fragment :iuniforms) context))
-		   (context (swap-version
-			     (or (compute-glsl-version context)
-				 (error 'glsl-version-conflict-in-gpu-func
-					:name name
-					:context context))
+		   (context (swap-version (lowest-suitable-glsl-version context)
 			     context))
 		   (compiled
 		    (v-translate in-args uniforms context `(progn ,@body) nil)))

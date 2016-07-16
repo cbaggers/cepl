@@ -137,9 +137,19 @@
   ;;   stage's version
   (labels ((get-context (pair)
 	     (with-gpu-func-spec (cdr pair)
-	       context)))
+	       context))
+	   (get-version-from-context (context)
+	     (first (remove-if-not λ(member _ varjo::*supported-versions*)
+				   context)))
+	   (get-glsl-version (&rest contexts)
+	     (let* ((versions (mapcar #'get-version-from-context contexts))
+		    (trimmed (remove-duplicates (remove nil versions))))
+	       (case= (length trimmed)
+		 (0 (cepl.context::get-best-glsl-version))
+		 (1 (first trimmed))
+		 (otherwise nil)))))
     (let ((contexts (mapcar #'get-context stage-pairs)))
-      (or (apply #'compute-glsl-version contexts)
+      (or (apply #'get-glsl-version contexts)
 	  (throw-version-error
 	   stage-pairs (mapcar #'get-version-from-context contexts))))))
 
