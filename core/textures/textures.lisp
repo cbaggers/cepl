@@ -598,22 +598,35 @@ Max is: ~s"
                            (texture-mipmap-levels texture)
                            (texture-image-format texture)
                            (first base-dimensions)))
-          ((:texture-2d :proxy-texture-2d :texture-1d-array :texture-rectangle
+          ((:texture-2d :proxy-texture-2d :texture-rectangle
                         :proxy-texture-rectangle :texture-cube-map
                         :proxy-texture-cube-map :proxy-texture-1d-array)
            (tex-storage-2d texture-type
                            (texture-mipmap-levels texture)
                            (texture-image-format texture)
                            (first base-dimensions)
-                           (or (second base-dimensions) 0)))
-          ((:texture-3d :proxy-texture-3d :texture-2d-array :texture-cube-array
+                           (or (second base-dimensions) 1)))
+	  (:texture-1d-array
+	   (tex-storage-2d texture-type
+                           (texture-mipmap-levels texture)
+                           (texture-image-format texture)
+                           (first base-dimensions)
+                           (texture-layer-count texture)))
+          ((:texture-3d :proxy-texture-3d :texture-cube-array
                         :proxy-texture-cube-array :proxy-texture-2d-array)
            (tex-storage-3d texture-type
                            (texture-mipmap-levels texture)
                            (texture-image-format texture)
                            (first base-dimensions)
-                           (or (second base-dimensions) 0)
-                           (or (third base-dimensions) 0))))
+                           (or (second base-dimensions) 1)
+                           (or (third base-dimensions) 1)))
+	  (:texture-2d-array
+           (tex-storage-3d texture-type
+                           (texture-mipmap-levels texture)
+                           (texture-image-format texture)
+                           (first base-dimensions)
+                           (or (second base-dimensions) 1)
+                           (texture-layer-count texture))))
         (setf (texture-allocated-p texture) t))))
 
 (defun tex-storage-1d (target levels image-format width)
