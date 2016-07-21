@@ -38,9 +38,14 @@
   (list (%viewport-resolution-x viewport)
         (%viewport-resolution-y viewport)))
 
-(defun viewport-resolution (viewport)
-  (v! (%viewport-resolution-x viewport)
-      (%viewport-resolution-y viewport)))
+(defun (setf viewport-dimensions) (value viewport)
+  (let ((value (if (typep value 'viewport)
+                   (viewport-dimensions value)
+                   value)))
+    (%set-resolution viewport (first value) (second value))))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 (defmethod resolution ((viewport viewport))
   (viewport-resolution viewport))
@@ -48,9 +53,14 @@
 (defmethod (setf resolution) (value (viewport viewport))
   (setf (viewport-resolution viewport) value))
 
-(defun viewport-origin (viewport)
-  (v! (%viewport-origin-x viewport)
-      (%viewport-origin-y viewport)))
+(defun viewport-resolution (viewport)
+  (v! (%viewport-resolution-x viewport)
+      (%viewport-resolution-y viewport)))
+
+(defun (setf viewport-resolution) (value viewport)
+  (unless (typep value 'rtg-math.types:vec2)
+    (error "The value given to (setf viewport-resolution) must be a vec2"))
+  (%set-resolution viewport (floor (v:x value)) (floor (v:y value))))
 
 (defun %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
@@ -58,17 +68,11 @@
   (when (eq (current-viewport) viewport)
     (%viewport viewport)))
 
-(defun (setf viewport-dimensions) (value viewport)
-  (let ((value (if (typep value 'viewport)
-                   (viewport-dimensions value)
-                   value)))
-    (%set-resolution viewport (first value) (second value))))
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun (setf viewport-resolution) (value viewport)
-  (let ((value (if (typep value 'rtg-math.types:vec2)
-                   (list (floor (v:x value)) (floor (v:y value)))
-                   (error "The value given to (setf viewport-resolution) must be a vec2"))))
-    (%set-resolution viewport (first value) (second value))))
+(defun viewport-origin (viewport)
+  (v! (%viewport-origin-x viewport)
+      (%viewport-origin-y viewport)))
 
 (defun (setf viewport-origin) (value viewport)
   (setf (%viewport-origin-x viewport) (floor (v:x value))
