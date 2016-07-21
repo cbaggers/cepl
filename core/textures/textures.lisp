@@ -451,6 +451,24 @@ Max is: ~s"
 (defun calc-max-num-mipmap-levels (dimensions)
   (floor (log (apply #'max dimensions) 2)))
 
+(defun slow-query-mipmap-count (texture)
+  "This is a hack, never use it in production code.
+
+GL has no function for querying the number of mipmap levels
+so what we do is get the maxiumum possible count and iterate through checking
+the width to see at what point the width reaches 0 or GL throws an error."
+  (cepl.textures::with-texture-bound texture
+    (let* ((count -1)
+	   (tex-type (texture-type texture))
+	   (max-level (gl:get-tex-parameter tex-type :texture-max-level)))
+      (handler-case
+	  (loop :for i :below max-level
+	     :for width = (gl:get-tex-level-parameter tex-type i :texture-width)
+	     :do (setf count i)
+	     :when (= width 0) :return nil)
+	(cl-opengl-bindings:opengl-error () nil))
+      count)))
+
 (defun %make-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
                       image-format pixel-format generate-mipmaps)
