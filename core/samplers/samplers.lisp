@@ -339,9 +339,11 @@
   sampler)
 
 (defun %set-minify-filter (sampler value)
-  (when (member value '(:linear-mipmap-linear :nearest-mipmap-linear
-			:linear-mipmap-nearest :nearest-mipmap-nearest))
-    (setf (%sampler-expects-mipmap sampler) t))
+  (setf (%sampler-expects-mipmap sampler)
+	(not (null (member value '(:linear-mipmap-linear
+				   :nearest-mipmap-linear
+				   :linear-mipmap-nearest
+				   :nearest-mipmap-nearest)))))
   (setf (%sampler-minify-filter sampler) value)
   (%gl::sampler-parameter-i (%sampler-id sampler) :texture-min-filter
 			    (%gl::foreign-enum-value '%gl:enum value))
