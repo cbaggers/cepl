@@ -16,7 +16,8 @@
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     ;;
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
-	   (uniform-assigners (stages->uniform-assigners stage-keys)))
+	   (aggregate-uniforms (aggregate-uniforms stage-keys nil t))
+	   (uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms)))
       (let (;; we generate the func that compiles & uploads the pipeline
 	    ;; and also populates the pipeline's local-vars
 	    (init-func (gen-pipeline-init name stage-pairs post context
@@ -33,7 +34,7 @@
 		 ;;
 		 ;; {todo} explain
 		 ,@(mapcar λ`(,(first _) -1)
-			   (mapcat #'first uniform-assigners)))
+			   (mapcat #'let-forms uniform-assigners)))
 	     ;;
 	     ;; To help the compiler we make sure it knows it's a function :)
 	     ,@(when (supports-implicit-uniformsp context)
@@ -163,14 +164,14 @@
   (let ((uniforms (mapcat #'varjo:implicit-uniforms compiled-stages)))
     (when uniforms
       (let* ((assigners (mapcar #'make-arg-assigners uniforms))
-             (u-lets (mapcat #'first assigners)))
+             (u-lets (mapcat #'let-forms assigners)))
         (%compile-closure
          `(let ((initd nil)
                 ,@(mapcar (lambda (_) `(,(first _) -1)) u-lets))
             (lambda (prog-id)
               (unless initd
                 ,@(mapcar (lambda (_) (cons 'setf _)) u-lets))
-              ,@(mapcar #'second assigners))))))))
+              ,@(mapcar #'gen-uploaders-block assigners))))))))
 
 (defun supports-implicit-uniformsp (context)
   (not (member :no-iuniforms context)))
@@ -207,7 +208,7 @@
 		`(setf implicit-uniform-upload-func
 		       (or (%create-implicit-uniform-uploader compiled-stages)
 			   #'fallback-iuniform-func))))
-       ,@(let ((u-lets (mapcat #'first uniform-assigners)))
+       ,@(let ((u-lets (mapcat #'let-forms uniform-assigners)))
 	      (loop for u in u-lets collect (cons 'setf u)))
        (%post-init ,post)
        prog-id)))
@@ -235,7 +236,7 @@
 			    :initial-value nil)))
 	   :test #'equal))
          (prim-type (varjo:get-primitive-type-from-context context))
-         (u-uploads (mapcar #'second uniform-assigners)))
+         (u-uploads (mapcar #'gen-uploaders-block uniform-assigners)))
     `(progn
        (defun ,(symb :%touch- name) (&key verbose)
 	 (let ((*verbose-compiles* verbose))
@@ -250,7 +251,9 @@
 ~%----------------------------------------"
 			     name
 			     context
-			     uniform-assigners
+			     (mapcar λ(list (let-forms _)
+					    (gen-uploaders-block _))
+				     uniform-assigners)
 			     uniform-transforms))))
 	 t)
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))

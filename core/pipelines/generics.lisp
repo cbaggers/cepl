@@ -17,3 +17,4 @@
 (defgeneric (setf funcs-that-use-this-func) (value key))
 (defgeneric delete-gpu-function (gfunc-description &optional error-if-missing))
 (defgeneric %gpu-function (name))
+(defgeneric gen-uploaders-block (assigners))
