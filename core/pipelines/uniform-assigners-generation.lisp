@@ -2,6 +2,17 @@
 (in-readtable fn:fn-reader)
 
 ;;;--------------------------------------------------------------
+
+(defclass assigner ()
+  ((let-forms :initform nil :initarg :let-forms :accessor let-forms)
+   (uploaders :initform nil :initarg :uploaders :accessor uploaders)
+   (pointer-arg :initform nil :initarg :pointer-arg :accessor pointer-arg)
+   (arg-name :initform nil :initarg :arg-name :accessor arg-name)
+   (local-arg-name  :initform nil :initarg :local-arg-name
+                    :accessor local-arg-name)
+   (cleanup :initform nil :initarg :cleanup :accessor cleanup)))
+
+;;;--------------------------------------------------------------
 ;;; ARG ASSIGNERS ;;;
 ;;;---------------;;;
 
@@ -59,7 +70,8 @@
                     (if cepl.samplers::*samplers-available*
                         (gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
                         (cepl.textures::fallback-sampler-set ,arg-name))
-                    (uniform-sampler ,id-name ,i-unit))))))
+                    (uniform-sampler ,id-name ,i-unit)))
+     :cleanup `((gl:bind-sampler ,i-unit 0)))))
 
 (defun make-ubo-assigner (arg-name varjo-type glsl-name)
   (let ((id-name (gensym))
@@ -142,21 +154,15 @@
                                  (or array-length 1)))))))
 
 
-(defclass assigner ()
-  ((let-forms :initform nil :initarg :let-forms :accessor let-forms)
-   (uploaders :initform nil :initarg :uploaders :accessor uploaders)
-   (pointer-arg :initform nil :initarg :pointer-arg :accessor pointer-arg)
-   (arg-name :initform nil :initarg :arg-name :accessor arg-name)
-   (local-arg-name  :initform nil :initarg :local-arg-name
-                    :accessor local-arg-name)))
-
 (defun make-assigner (&key let-forms uploaders pointer-arg
-                        arg-name local-arg-name)
+                        arg-name local-arg-name cleanup)
   (make-instance 'assigner :let-forms let-forms :uploaders uploaders
                  :pointer-arg pointer-arg :arg-name arg-name
-                 :local-arg-name local-arg-name))
+                 :local-arg-name local-arg-name
+                 :cleanup cleanup))
 
 (defun merge-into-assigner (pointer-arg assingers)
   (make-assigner :let-forms (mapcat #'let-forms assingers)
                  :uploaders (mapcat #'uploaders assingers)
-                 :pointer-arg pointer-arg))
+                 :pointer-arg pointer-arg
+                 :cleanup (mapcat #'cleanup assingers)))

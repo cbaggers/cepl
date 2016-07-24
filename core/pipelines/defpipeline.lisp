@@ -236,7 +236,8 @@
 			    :initial-value nil)))
 	   :test #'equal))
          (prim-type (varjo:get-primitive-type-from-context context))
-         (u-uploads (mapcar #'gen-uploaders-block uniform-assigners)))
+         (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
+	 (u-cleanup (mapcat #'cleanup (reverse uniform-assigners))))
     `(progn
        (defun ,(symb :%touch- name) (&key verbose)
 	 (let ((*verbose-compiles* verbose))
@@ -251,9 +252,8 @@
 ~%----------------------------------------"
 			     name
 			     context
-			     (mapcar λ(list (let-forms _)
-					    (gen-uploaders-block _))
-				     uniform-assigners)
+			     (mapcar λ(list (let-forms _) _1)
+				     uniform-assigners u-uploads)
 			     uniform-transforms))))
 	 t)
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
@@ -270,6 +270,7 @@
                    (funcall implicit-uniform-upload-func prog-id)))
          (when stream (draw-expander stream ,prim-type))
          (use-program 0)
+	 ,@u-cleanup
          stream)
        (define-compiler-macro ,name (&whole whole mapg-context &rest rest)
          (declare (ignore rest))
