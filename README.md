@@ -2,11 +2,11 @@
 
 CEPL is a lispy and REPL friendly library for working with OpenGL.
 
-Its goal is to feel like lisp just always had support for GPU programming in the standard.
+It's definition of success is if the user feels like GPU programming had always been part of the languages standard.
 
 The usual approach to using it is to start it at the beginning of your lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how `*standard-output*` is treated for text.
 
-CEPL is in alpha. The API is closing in on what it needs to be but there are still many bugs.
+CEPL is in beta. The API is close to what it needs to be but there are still many bugs to fix, features to add and experiences to smooth out.
 
 See the [cepl.examples repository](https://github.com/cbaggers/cepl.examples) for some examples of how CEPL can be used
 
