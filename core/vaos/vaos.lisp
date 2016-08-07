@@ -14,10 +14,10 @@
 
 ;; [TODO] would a unboxed lisp array be faster?
 (defun free-vaos (vaos)
-  (with-foreign-object (id :uint (length vaos))
+  (with-foreign-object (ids :uint (length vaos))
     (loop :for vao :in vaos :for i :from 0 :do
-       (setf (mem-aref id :uint i) vao))
-    (%gl:delete-vertex-arrays 1 id)))
+       (setf (mem-aref ids :uint i) vao))
+    (%gl:delete-vertex-arrays (length vaos) ids)))
 
 ;; [TODO] Vao changes the inhabitants of :vertex-array etc
 ;;        this should be undone

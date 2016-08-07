@@ -12,7 +12,7 @@
      (type :initarg :type :reader s-type)
      (element-type :initarg :element-type :reader s-element-type)
      (dimensions :initarg :dimensions :initform 1 :reader s-dimensions)
-     (normalised :initarg :normalised :reader s-normalisedp)
+     (normalized :initarg :normalized :reader s-normalizedp)
      (reader :initarg :reader :reader s-reader)
      (writer :initarg :writer :reader s-writer)
      (uses-method-p :initarg :uses-method-p :reader s-uses-method-p))))
@@ -105,13 +105,13 @@
 	   ',name)))))
 
 (defun normalize-slot-description (slot-description type-name readers writers)
-  (destructuring-bind (name type &key normalised accessor) slot-description
+  (destructuring-bind (name type &key normalized accessor) slot-description
     (let* ((type (listify type))
            (dimensions (listify (or (second type) 1)))
            (arrayp (> (first dimensions) 1))
            (element-type (when arrayp (first type)))
            (type (if arrayp :array (first type))))
-      (make-instance 'gl-struct-slot :name name :type type :normalised normalised
+      (make-instance 'gl-struct-slot :name name :type type :normalized normalized
                      :reader (when readers
                                (or accessor (symb type-name '- name)))
                      :writer (when writers
@@ -312,31 +312,31 @@
            (defmethod cepl.internals:gl-assign-attrib-pointers
 	       ((array-type (EQL ',type-name))
 		&optional (attrib-offset 0) (pointer-offset 0)
-		  stride-override normalised)
-             (declare (ignore array-type normalised))
+		  stride-override normalized)
+             (declare (ignore array-type normalized))
              (let ((,stride-sym (or stride-override ,stride)))
                ,@definitions
                ,(length definitions))))))))
 
-(defun expand-slot-to-layout (slot &optional type normalise)
+(defun expand-slot-to-layout (slot &optional type normalize)
   (let ((type (or type (type-spec->type (s-type slot))))
-        (normalise (or normalise (when slot (s-normalisedp slot)))))
+        (normalize (or normalize (when slot (s-normalizedp slot)))))
     (cond ((v-typep type 'v-matrix)
            (let ((v-type (type-spec->type
                           (kwd :vec (second (v-dimensions type))))))
              (setf (slot-value v-type 'varjo::element-type)
                    (type->spec (v-element-type type))) ;ugh
              (loop for i below (first (v-dimensions type))
-                :append (expand-slot-to-layout nil v-type normalise))))
+                :append (expand-slot-to-layout nil v-type normalize))))
           ((v-typep type 'v-vector)
            `((,(apply #'* (v-dimensions type))
                ,(type->spec (v-element-type type))
-               ,normalise)))
+               ,normalize)))
           ((v-typep type 'v-array)
            (loop for i below (apply #'* (v-dimensions type))
               :append (expand-slot-to-layout
-                       nil (v-element-type type) normalise)))
-          (t `((1 ,(type->spec type) ,normalise))))))
+                       nil (v-element-type type) normalize)))
+          (t `((1 ,(type->spec type) ,normalize))))))
 
 ;;------------------------------------------------------------
 

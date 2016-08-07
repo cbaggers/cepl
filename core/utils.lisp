@@ -23,6 +23,21 @@
 (defmacro dbind (lambda-list expressions &body body)
   `(destructuring-bind ,lambda-list ,expressions ,@body))
 
+(defun assocr (item alist &key (key nil keyp) (test nil testp)
+                            (test-not nil notp))
+  (cdr (apply #'assoc item alist (append (when keyp (list :key key))
+                                         (when testp (list :test test))
+                                         (when notp (list test-not))))))
+
+
+(define-compiler-macro assocr (item alist &key (key nil keyp)
+                                    (test nil testp)
+                                    (test-not nil notp))
+  `(cdr (assoc ,item ,alist
+               ,@(when keyp (list :key key))
+               ,@(when testp (list :test test))
+               ,@(when notp (list test-not)))))
+
 (defmacro assoc-bind (lambda-list alist &body body)
   (let* ((g (gensym "alist"))
          (bindings (loop :for l :in lambda-list :collect
@@ -325,7 +340,13 @@
 ;------------ERRORS-----------;
 
 ;;[TODO] need better arg test
-(defmacro deferror (name (&key (error-type 'error) prefix)
+(defmacro deferror (name (&key (error-type 'error) prefix
+			       (print-circle nil print-circle?)
+			       (print-escape nil print-escape?)
+			       (print-length nil print-length?)
+			       (print-level nil print-level?)
+			       (print-lines nil print-lines?)
+			       (print-right-margin nil print-right-margin?))
                             (&rest args) error-string &body body)
   (unless (every #'symbolp args) (error "can only take simple args"))
   `(define-condition ,name (,error-type)
@@ -333,8 +354,26 @@
      (:report (lambda (condition stream)
                 (declare (ignorable condition))
 		(with-slots ,args condition
+		  (let ((*print-circle* (if ,print-circle?
+					    ,print-circle
+					    *print-circle*))
+			(*print-escape* (if ,print-escape?
+					    ,print-escape
+					    *print-escape*))
+			(*print-length* (if ,print-length?
+					    ,print-length
+					    *print-length*))
+			(*print-level* (if ,print-level?
+					   ,print-level
+					   *print-level*))
+			(*print-lines* (if ,print-lines?
+					   ,print-lines
+					   *print-lines*))
+			(*print-right-margin* (if ,print-right-margin?
+						  ,print-right-margin
+						  *print-right-margin*)))
 		    (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
-			    ,@body))))))
+			    ,@body)))))))
 
 (defmacro asserting (form error-name &rest keys-to-error)
   `(unless ,form (error ',error-name ,@keys-to-error)))
@@ -407,6 +446,17 @@
          (tail head))
     (labels ((do-it (k v)
                (rplacd tail (setq tail (list (funcall function k v))))))
+      (maphash #'do-it hash-table))
+    (cdr head)))
+
+(defun filter-hash (function hash-table)
+  "map through a hash and actually return something"
+  (let* ((head (list nil))
+         (tail head))
+    (labels ((do-it (k v)
+	       (let ((x (funcall function k v)))
+		 (when x
+		   (rplacd tail (setq tail (list x)))))))
       (maphash #'do-it hash-table))
     (cdr head)))
 
@@ -549,3 +599,10 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 
 (defmacro defparameter* (name &body slots)
   (defx* 'defparameter name slots))
+
+(defun read-integers (&optional (stream *standard-input*) (eof-error-p t)
+			eof-value recursive-p)
+  (let* ((str (read-line stream eof-error-p eof-value recursive-p))
+	 (split (split-sequence:split-sequence #\space str))
+	 (nums (mapcar #'parse-integer split)))
+    nums))

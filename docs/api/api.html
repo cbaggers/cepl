@@ -68,7 +68,7 @@
 <p>To load CEPL and the default host (<code>sdl2</code>) do the following:</p>
 
 <ul>
-<li><code>(ql:quicload :cepl.sdl2)</code></li>
+<li><code>(ql:quickload :cepl.sdl2)</code></li>
 <li><code>(cepl:repl)</code></li>
 </ul>
 
@@ -1782,7 +1782,7 @@ argument on #'make-texture. See #'make-texture for more details.
                         <span class="qualifiers"></span>
                         <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE (MIPMAP NIL) (LAYER-COUNT 1)
  (CUBES NIL) (RECTANGLE NIL) (MULTISAMPLE NIL) (IMMUTABLE T)
- (BUFFER-STORAGE NIL) (GENERATE-MIPMAPS T))</span>
+ (BUFFER-STORAGE NIL) (GENERATE-MIPMAPS T) PIXEL-FORMAT)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -1837,6 +1837,16 @@ If you provide a GL image-format as the :element-type CEPL will use it directly
 
 If you provide a (foreign) lisp type then CEPL will try to find the appropriate
 image-format for that type.
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
+:pixel-format
+
+If this optional argument is not nil, then CEPL will use the pixel format
+provided when uploading the pixel data.
+
+Usually this is not provided as CEPL can calculate a valid pixel-format to
+use from the element-type.
 
           - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -4686,12 +4696,12 @@ possible values are:
 </pre>
                   </article>
                 </li><li>
-                  <a name="%CEPL.TYPES:PIXEL-FORMAT-NORMALISE"/>
+                  <a name="%CEPL.TYPES:PIXEL-FORMAT-NORMALIZE"/>
                   <article>
                     <header class="accessor">
                       <span class="type">accessor</span>
                       <code>
-                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-NORMALISE" class="name">PIXEL-FORMAT-NORMALISE</a></h4>
+                        <h4><a href="#%CEPL.TYPES:PIXEL-FORMAT-NORMALIZE" class="name">PIXEL-FORMAT-NORMALIZE</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(INSTANCE)</span>
                       </code>

@@ -327,6 +327,16 @@ image-format for that type.
 
           - - - - - - - - - - - - - - - - - - - - - - - -
 
+:pixel-format
+
+If this optional argument is not nil, then CEPL will use the pixel format
+provided when uploading the pixel data.
+
+Usually this is not provided as CEPL can calculate a valid pixel-format to
+use from the element-type.
+
+          - - - - - - - - - - - - - - - - - - - - - - - -
+
 :mipmap & :generate-mipmaps
 
 If this is set to t then CEPL will make mipmaps for the texture. The texture

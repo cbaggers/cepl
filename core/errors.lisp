@@ -1,14 +1,12 @@
 (in-package :cepl.errors)
 
-(deferror invalid-stages () (invalid-names)
-    "CEPL - Pipeline: The following stages don't have specifications ~s.~%This most likely means they havent been compiled yet or that the names are incorrect" invalid-names)
-
 (deferror gfun-invalid-arg-format () (gfun-name invalid-pair)
     "CEPL - defun-g: defun-g expects its parameter args to be typed in the~%format (var-name type) but instead ~s was found in the definition for ~s" invalid-pair gfun-name)
 
-(deferror gpu-func-spec-not-found () (spec-name)
-    "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s"
-  spec-name)
+(deferror gpu-func-spec-not-found () (name types)
+    "CEPL - gpu-func-spec: Could not find spec for the gpu-function named ~s
+with the in-arg types ~s"
+  name types)
 
 (deferror dispatch-called-outside-of-map-g () (name)
     "Looks like you tried to call the pipeline ~s without using map-g.~%" name)
@@ -77,11 +75,12 @@ Example valid forms:
 no initial-contents to infer the type from")
 
 (deferror make-tex-array-not-match-type ()
-    (element-type image-format array-type)
+    (element-type pixel-format supposed-type array-type)
     "CEPL - make-texture: Trying to make texture but the element-type given was
-~s which implies an image-format of ~s. This conflicts with the array
-element-type of ~s"
-  element-type image-format array-type)
+~s which implies an pixel-format of ~s.
+That pixel-format would require an array element-type of ~s.
+This conflicts with the array element-type of ~s"
+  element-type pixel-format supposed-type array-type)
 
 (deferror make-tex-array-not-match-type2 () (element-type initial-contents)
     "CEPL - make-texture: Trying to make texture with an element-type of ~s,
@@ -159,3 +158,98 @@ A call to #'make-gpu-array was made with a c-array as the initial-contents.
 The dimensions of the c-array are ~s, however the dimensions given in the
 call to #'make-gpu-array were ~s"
   c-arr-dimensions provided-dimensions)
+
+(deferror multiple-gpu-func-matches () (designator possible-choices)
+    "CEPL: def-g-> found a stage that was incorrectly specified.
+
+The problematic defintition was: ~s
+
+The problem is in this case was that CEPL found multiple GPU function
+definitions with the same name so was unable to pick the correct one.
+
+Instead of ~s please use one of the following:
+~{~s~^~%~}"
+  designator designator possible-choices)
+
+(deferror stage-not-found () (designator)
+    "CEPL - def-g->: Could not find a gpu-function called ~s.
+This most likely means it hasn't been compiled yet or that the name is incorrect"
+  designator)
+
+(deferror pixel-format-in-bb-texture () (pixel-format)
+    "CEPL: make-texture was making a buffer backed texture, however a
+pixel-format was provided. This is invalid as pixel conversion is not done when
+uploading data to a buffer backed texture.
+
+Pixel-format: ~s"
+  pixel-format)
+
+(deferror glsl-version-conflict () (pairs)
+    "CEPL: When trying to compile the pipeline we found some stages which have
+conflicting glsl version requirements
+~{~s~%~}" pairs)
+
+(deferror glsl-version-conflict-in-gpu-func () (name context)
+    "CEPL: When trying to compile ~a we found multiple glsl versions.
+Context: ~a" name context)
+
+(deferror delete-multi-func-error () (name choices)
+    "CEPL: When trying to delete the gpu function ~a we found multiple
+overloads and didnt know which to delete for you. Please try again using one of
+the following:
+~{~s~%~}" name choices)
+
+(deferror multi-func-error () (name choices)
+    "CEPL: When trying find the gpu function ~a we found multiple overloads and
+didnt know which to return for you. Please try again using one of
+the following:
+~{~s~%~}" name choices)
+
+(deferror attachments-with-different-sizes (:print-circle nil) (args sizes)
+    "CEPL: Whilst making an fbo we saw that some of the attachments will end up
+having different dimensions: ~a
+
+Whilst this is not an error according to GL it can trip people up because
+according to the spec:
+
+ > If the attachment sizes are not all identical, rendering will
+ > be limited to the largest area that can fit in all of the
+ > attachments (an intersection of rectangles having a lower left
+ > of (0 0) and an upper right of (width height) for each attachment).
+
+If you want to make an fbo with differing arguments please call make-fbo
+with `:matching-dimensions nil` in the arguments e.g.
+
+ (MAKE-FBO ~{~%     ~a~})
+
+"
+  sizes
+  (labels ((ffa (a)
+	     (typecase a
+	       ((or null keyword) (format nil "~s" a))
+	       ((or list symbol) (format nil "'~s" a))
+	       (otherwise (format nil "~s" a)))))
+    (append (mapcar #'ffa args)
+	    '(":MATCHING-DIMENSIONS NIL"))))
+
+
+(deferror invalid-cube-fbo-args () (args)
+    "CEPL: Invalid args for cube-map bound fbo:
+
+args: ~s
+
+You have passed a cube-map texture without an attachment number, this
+means you want the fbo to have 6 color attachments which are bound the
+faces of the cube texture.
+
+Whilst using this feature the only other legal argument is depth
+attachment info.
+" args)
+
+
+;; Please remember the following 2 things
+;;
+;; - add your condition's name to the package export
+;; - keep this comment at the bottom of the file.
+;;
+;; Thanks :)

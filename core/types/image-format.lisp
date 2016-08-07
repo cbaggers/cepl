@@ -7,25 +7,25 @@
     :rgba2 :rgba4 :rgba5 :rgba8 :rgba12 :rgba16))
 
 (defvar *signed-normalized-integer-formats*
-  '(:r8_snorm :r16_snorm :rg8_snorm :rg16_snorm :rgb8_snorm :rgb16_snorm
-    :rgba8_snorm :rgba16_snorm))
+  '(:r8-snorm :r16-snorm :rg8-snorm :rg16-snorm :rgb8-snorm :rgb16-snorm
+    :rgba8-snorm :rgba16-snorm))
 
 (defvar *signed-integral-formats*
-  '(;; Thus GL_RGBA8I gives a signed integer
+  '(;; Thus GL-RGBA8I gives a signed integer
     ;; format where each of the four components is an integer on the
     ;; range [-128, 127].
     :r8i :r16i :r32i :rg8i :rg16i :rg32i :rgb8i :rgb16i :rgb32i :rgba8i :rgba16i
     :rgba32i))
 
 (defvar *unsigned-integral-formats*
-  '(;; Unsigned integral format. The values go from [0, MAX_INT] for the
+  '(;; Unsigned integral format. The values go from [0, MAX-INT] for the
     ;; integer size.
     :r8ui :r16ui :r32ui :rg8ui :rg16ui :rg32ui :rgb8ui :rgb16ui :rgb32ui
     :rgba8ui :rgba16ui :rgba32ui))
 
 (defvar *floating-point-formats*
   '(;; Floating-point.
-    ;; Thus, GL_RGBA32F is a floating-point format where
+    ;; Thus, GL-RGBA32F is a floating-point format where
     ;; each component is a 32-bit IEEE floating-point value.
     :r16f :r32f :rg16f :rg32f :rgb16f :rgb32f :rgba16f :rgba32f))
 
@@ -41,12 +41,12 @@
 
 (defvar *special-color-formats*
   '(;; Normalized integer, with 3 bits for R and G, but only 2 for B.
-    :r3_g3_b2
+    :r3-g3-b2
 
     ;; 5 bits each for RGB, 1 for Alpha. This format is generally trumped
     ;; by compressed formats (see below), which give greater than 16-bit quality
     ;; in much less storage than 16-bits of color.
-    :rgb5_a1
+    :rgb5-a1
 
     ;; 10 bits each for RGB, 2 for Alpha. This can be a useful format for
     ;; framebuffers, if you don't need a high-precision destination alpha value.
@@ -54,11 +54,11 @@
     ;; They can also be used for normals, though there is no signed-normalized
     ;; version, so you have to do the conversion manually. It is also a
     ;; required format, so you can count on it being present.
-    :rgb10_a2
+    :rgb10-a2
 
     ;; 10 bits each for RGB, 2 for Alpha, as unsigned integers.
     ;; There is no signed integral version.
-    :rgb10_a2ui
+    :rgb10-a2ui
 
     ;; This uses special 11 and 10-bit floating-point values. An 11-bit float
     ;; has no sign-bit; it has 6 bits of mantissa and 5 bits of exponent.
@@ -67,18 +67,18 @@
     ;; This is very economical for floating-point values (using only 32-bits
     ;; per value), so long as your floating-point data will fit within the given
     ;; range. And so long as you can live without the destination alpha.
-    :r11f_g11f_b10f
+    :r11f-g11f-b10f
 
     ;; This one is complicated. It is an RGB format of type floating-point.
     ;; The 3 color values have 9 bits of precision, and they share a single
     ;; exponent.
     ;; The computation for these values is not as simple as for
-    ;; GL_R11F_G11F_B10F, and they aren't appropriate for everything.
+    ;; GL-R11F-G11F-B10F, and they aren't appropriate for everything.
     ;; But they can provide better results than that format if most of the
     ;; colors in the image have approximately the same exponent, or are too
     ;; small to be significant. This is a required format, but it is not
     ;; required for renderbuffers so do not expect to be able to render to these
-    :rgb9_e5))
+    :rgb9-e5))
 
 ;;----------------------------------------------------------------------
 
@@ -91,7 +91,7 @@
 
 ;; When images with this format are used as a render target, OpenGL will
 ;; automatically convert the output colors from linear to the sRGB
-;; colorspace if, and only if, :FRAMEBUFFER_SRGB is enabled.
+;; colorspace if, and only if, :FRAMEBUFFER-SRGB is enabled.
 ;; The alpha will be written as given.
 ;; When writing multiple outputs, only outputs written to sRGB image formats
 ;; will undergo such conversion.
@@ -101,52 +101,52 @@
     :srgb8
 
     ;; sRGB image with a linear Alpha.
-    :srgb8_alpha8))
+    :srgb8-alpha8))
 
 
 ;;----------------------------------------------------------------------
 
 (defvar *red/green-compressed-formats*
   '(;; Unsigned normalized 1-component only.
-    :compressed_red_rgtc1
+    :compressed-red-rgtc1
 
     ;; Signed normalized 1-component only.
-    :compressed_signed_red_rgtc1
+    :compressed-signed-red-rgtc1
 
     ;; Unsigned normalized 2-components.
-    :compressed_rg_rgtc2
+    :compressed-rg-rgtc2
 
     ;; Signed normalized 2-components.
-    :compressed_signed_rg_rgtc2))
+    :compressed-signed-rg-rgtc2))
 
 
-;; (OpenGL 4.2 or ARB_texture_compression_bptc only)
+;; (OpenGL 4.2 or ARB-texture-compression-bptc only)
 ;;
 (defvar *bptc-compressed-formats*
   '(;; Unsigned normalized 4-components.
-    :compressed_rgba_bptc_unorm
+    :compressed-rgba-bptc-unorm
 
     ;; Unsigned normalized 4-components in the sRGB colorspace.
-    :compressed_srgb_alpha_bptc_unorm
+    :compressed-srgb-alpha-bptc-unorm
 
     ;; Signed, floating-point 3-components.
-    :compressed_rgb_bptc_signed_float
+    :compressed-rgb-bptc-signed-float
 
     ;; Unsigned, floating-point 3-components.
-    :compressed_rgb_bptc_unsigned_float))
+    :compressed-rgb-bptc-unsigned-float))
 
 (defvar *s3tc/dxt-compessed-formats*
-  '(:compressed_rgb_s3tc_dxt1_ext
-    :compressed_rgba_s3tc_dxt1_ext
-    :compressed_rgba_s3tc_dxt3_ext
-    :compressed_rgba_s3tc_dxt5_ext
+  '(:compressed-rgb-s3tc-dxt1-ext
+    :compressed-rgba-s3tc-dxt1-ext
+    :compressed-rgba-s3tc-dxt3-ext
+    :compressed-rgba-s3tc-dxt5-ext
 
     ;; Texture compression can be combined with colors in the sRGB colorspace
-    ;; via the EXT_texture_sRGB extension this providing
-    :compressed_srgb_s3tc_dxt1_ext
-    :compressed_srgb_alpha_s3tc_dxt1_ext
-    :compressed_srgb_alpha_s3tc_dxt3_ext
-    :compressed_srgb_alpha_s3tc_dxt5_ext))
+    ;; via the EXT-texture-sRGB extension this providing
+    :compressed-srgb-s3tc-dxt1-ext
+    :compressed-srgb-alpha-s3tc-dxt1-ext
+    :compressed-srgb-alpha-s3tc-dxt3-ext
+    :compressed-srgb-alpha-s3tc-dxt5-ext))
 
 ;;----------------------------------------------------------------------
 
@@ -162,7 +162,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defvar *depth-stencil-formats* '(:depth24_stencil8 :depth32f_stencil8))
+(defvar *depth-stencil-formats* '(:depth24-stencil8 :depth32f-stencil8))
 
 ;;----------------------------------------------------------------------
 

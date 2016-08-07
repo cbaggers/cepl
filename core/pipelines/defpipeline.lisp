@@ -9,21 +9,21 @@
   (assert-valid-gpipe-form name gpipe-args)
   (%defpipeline-gfuncs name gpipe-args context))
 
+
 (defun %defpipeline-gfuncs (name gpipe-args context &optional suppress-compile)
   ;;
   ;; {todo} explain
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     ;;
-    (let* ((stage-names (mapcar #'cdr stage-pairs))
-	   (uniform-assigners (stages->uniform-assigners stage-names)))
-      (assert-valid-stage-specs stage-names)
+    (let* ((stage-keys (mapcar #'cdr stage-pairs))
+	   (uniform-assigners (stages->uniform-assigners stage-keys)))
       (let (;; we generate the func that compiles & uploads the pipeline
 	    ;; and also populates the pipeline's local-vars
 	    (init-func (gen-pipeline-init name stage-pairs post context
 					  uniform-assigners)))
 	;;
 	;; update the spec immediately (macro-expansion time)
-	(%update-spec name stage-names context)
+	(%update-spec name stage-keys context)
 	`(progn
 	   (let ((prog-id nil)
 		 ;; If there are no implicit-uniforms we need a no-op
@@ -40,12 +40,12 @@
 		     `((declare (type function implicit-uniform-upload-func))))
 	     ;;
 	     ;; we upload the spec at compile time
-	     ,(gen-update-spec name stage-names context)
+	     ,(gen-update-spec name stage-keys context)
 	     ;;
 	     (labels (,init-func)
 	       ;;
 	       ;; generate the code that actually renders
-	       ,(def-dispatch-func name (first init-func) stage-names
+	       ,(def-dispatch-func name (first init-func) stage-keys
 				   context uniform-assigners)))
 	   ;;
 	   ;; generate the function that recompiles this pipeline
@@ -64,18 +64,18 @@
 	 (eval (%defpipeline-gfuncs
 		',name ',gpipe-args ',context t))))))
 
-(defun %update-spec (name stage-names context)
+(defun %update-spec (name stage-keys context)
   (update-pipeline-spec
    (make-pipeline-spec
-    name stage-names (make-pipeline-change-signature stage-names)
+    name stage-keys (make-pipeline-change-signature stage-keys)
     context)))
 
-(defun gen-update-spec (name stage-names context)
+(defun gen-update-spec (name stage-keys context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (update-pipeline-spec
       (make-pipeline-spec
-       ',name ',stage-names
-       ,(make-pipeline-change-signature stage-names)
+       ',name ,(cons 'list (mapcar #'inject-func-key stage-keys))
+       ,(make-pipeline-change-signature stage-keys)
        ',context))))
 
 (defvar *all-quiet* nil)
@@ -86,25 +86,38 @@
       (when r
 	(invoke-restart r)))))
 
-(defun make-pipeline-change-signature (stage-names)
+(defun make-pipeline-change-signature (stage-keys)
   (sxhash
    (format nil "~s"
-           (mapcar #'make-change-signature stage-names))))
+           (mapcar #'make-change-signature stage-keys))))
 
-(defun make-change-signature (stage-name)
-  (with-gpu-func-spec (gpu-func-spec stage-name t)
+(defun make-change-signature (stage-key)
+  (with-gpu-func-spec (gpu-func-spec stage-key t)
     (list in-args uniforms body
           (mapcar #'make-change-signature
-                  (funcs-this-func-uses stage-name)))))
+                  (funcs-this-func-uses stage-key)))))
 
 (defun %gl-make-shader-from-varjo (compiled-stage)
   (make-shader (varjo->gl-stage-names (varjo:stage-type compiled-stage))
                (varjo:glsl-code compiled-stage)))
 
+(defun pairs-key-to-stage (stage-pairs)
+  (mapcar λ(dbind (name . key) _ (cons name (gpu-func-spec key)))
+	  stage-pairs))
+
+(defun swap-versions (stage-pairs glsl-version)
+  (mapcar λ(dbind (x . s) _
+	     (let ((new-context
+		    (swap-version glsl-version (with-gpu-func-spec s context))))
+	       (cons x (clone-stage-spec s :new-context new-context))))
+	  stage-pairs))
+
 (defun %compile-link-and-upload (name stage-pairs)
-  (let* ((compiled-stages (%varjo-compile-as-pipeline stage-pairs))
-         (stages-objects (mapcar #'%gl-make-shader-from-varjo
-                                 compiled-stages)))
+  (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
+	 (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
+	 (stage-pairs (swap-versions stage-pairs glsl-version))
+	 (compiled-stages (%varjo-compile-as-pipeline stage-pairs))
+         (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
     (format t "~&; uploading (~a ...)~&" name)
     (let ((prog-id (request-program-id-for name)))
       (link-shaders stages-objects prog-id compiled-stages)
@@ -112,6 +125,39 @@
 	(add-compile-results-to-pipeline name compiled-stages))
       (mapcar #'%gl:delete-shader stages-objects)
       (values compiled-stages prog-id))))
+
+(defun compute-glsl-version-from-stage-pairs (stage-pairs)
+  ;; - If not specified & the context is not yet available then use
+  ;;   the highest version available.
+  ;;
+  ;; - If not specified & the context is available then use the context
+  ;;   info to pick the highest glsl version supported
+  ;;
+  ;; - If one stage specifes a version and the others dont then use that
+  ;;   stage's version
+  (labels ((get-context (pair)
+	     (with-gpu-func-spec (cdr pair)
+	       context))
+	   (get-version-from-context (context)
+	     (first (remove-if-not λ(member _ varjo::*supported-versions*)
+				   context)))
+	   (get-glsl-version (&rest contexts)
+	     (let* ((versions (mapcar #'get-version-from-context contexts))
+		    (trimmed (remove-duplicates (remove nil versions))))
+	       (case= (length trimmed)
+		 (0 (cepl.context::get-best-glsl-version))
+		 (1 (first trimmed))
+		 (otherwise nil)))))
+    (let ((contexts (mapcar #'get-context stage-pairs)))
+      (or (apply #'get-glsl-version contexts)
+	  (throw-version-error
+	   stage-pairs (mapcar #'get-version-from-context contexts))))))
+
+(defun throw-version-error (pairs versions)
+  (let ((issue (remove-if-not #'second
+			      (mapcar λ(list (car _) _1)
+				      pairs versions))))
+    (error 'glsl-version-conflict :pairs issue)))
 
 (defun %create-implicit-uniform-uploader (compiled-stages)
   (let ((uniforms (mapcat #'varjo:implicit-uniforms compiled-stages)))
@@ -153,7 +199,8 @@
      (let ((image-unit -1))
        (declare (ignorable image-unit))
        (multiple-value-bind (compiled-stages new-prog-id)
-	   (%compile-link-and-upload ',name ',stage-pairs)
+	   (%compile-link-and-upload
+	    ',name ,(serialize-stage-pairs stage-pairs))
 	 (declare (ignorable compiled-stages))
 	 (setf prog-id new-prog-id)
 	 ,(when (supports-implicit-uniformsp context)
@@ -165,22 +212,26 @@
        (%post-init ,post)
        prog-id)))
 
-(defun def-dispatch-func (name init-func-name stage-names context
+(defun serialize-stage-pairs (stage-pairs)
+  (cons 'list (mapcar λ`(cons ,(car _) ,(inject-func-key (cdr _)))
+		      stage-pairs)))
+
+(defun def-dispatch-func (name init-func-name stage-keys context
 			  uniform-assigners)
   (let* ((uniform-names
-          (mapcar #'first (aggregate-uniforms stage-names)))
+          (mapcar #'first (aggregate-uniforms stage-keys)))
 	 (actual-uniform-names
-	  (mapcar #'first (aggregate-uniforms stage-names nil t)))
+	  (mapcar #'first (aggregate-uniforms stage-keys nil t)))
 	 (uniform-transforms
 	  (remove-duplicates
 	   (remove nil
 		   (mapcar λ(when (member (first _) actual-uniform-names)
 			      _)
 			   (reduce
-			    (lambda (accum name)
-			      (with-gpu-func-spec (gpu-func-spec name)
+			    (lambda (accum key)
+			      (with-gpu-func-spec (gpu-func-spec key)
 				(append accum uniform-transforms)))
-			    stage-names
+			    stage-keys
 			    :initial-value nil)))
 	   :test #'equal))
          (prim-type (varjo:get-primitive-type-from-context context))

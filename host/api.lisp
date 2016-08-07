@@ -2,16 +2,17 @@
 
 ;; This is what the backend has to implement
 
-(defgeneric init ()
+(defgeneric init (&optional init-flags)
   (:documentation
    "Implement this method and initialize your system inside it.
-    This is called as the first step of cepl initializing."))
+    This is called as the first step of cepl initializing.
+    init-flags are host specific flags that can be passed from cepl"))
 
 (defgeneric request-context
     (width height title fullscreen
      no-frame alpha-size depth-size stencil-size
      red-size green-size blue-size buffer-size
-     double-buffer hidden resizable)
+     double-buffer hidden resizable gl-version)
   (:documentation
    "Implement this method and return a list containing:
     - gl-context as the first element
@@ -44,9 +45,9 @@
     "not external"
     (setf swap-arg win-handle))
 
-  (defun host-step ()
+  (defun host-step (&optional (win swap-arg))
     "not external"
-    (funcall step-func))
+    (funcall step-func win))
 
   (defun host-swap (&optional (win swap-arg))
     "not external"

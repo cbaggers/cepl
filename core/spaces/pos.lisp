@@ -79,4 +79,6 @@
 
 
 (varjo:v-defun v! (p) "~a" (svec4-g) :vec4)
-(varjo:v-defun v! (p) "~a" (:vec4) :vec4)
+
+(varjo:v-defun get-transform (s1 s2) "#<cepl.space:get-transform(~a, ~a)>"
+	       (vec-space-g vec-space-g) :mat4)

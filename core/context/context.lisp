@@ -30,7 +30,6 @@
            (gl:major-version) (gl:minor-version))))
 
 (defun %set-default-gl-options ()
-  (print "Setting default options")
   (gl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
@@ -98,6 +97,11 @@
       (setf version (+ (major-version context)
                        (/ (minor-version context) 10))))
     (coerce version 'single-float)))
+
+(defun split-float-version (float)
+  (let* ((fix (round float .1)))
+    (multiple-value-bind (maj min) (floor fix 10)
+      (list maj min))))
 
 ;; GL_MAX_SERVER_WAIT_TIMEOUT (64-bit integer, at least 0, see glWaitSync)
 ;; The maximum glWaitSync timeout interval.
@@ -221,7 +225,7 @@
 
 ;; GL_MAX_DRAW_BUFFERS (integer, at least 8, see glDrawBuffers)
 ;;     The maximum number of simultaneous outputs that may be written in a fragment shader.
-(def-context-reader max-draw-buffers)
+(def-cached-context-reader max-draw-buffers)
 
 ;; GL_MAX_DUAL_SOURCE_DRAW_BUFFERS (integer, at least 1, see glBlendFunc and glBlendFuncSeparate)
 ;;     The maximum number of active draw buffers when using dual-source blending.

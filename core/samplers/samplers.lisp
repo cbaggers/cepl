@@ -201,7 +201,6 @@
 	(make-sampler-id-box :id (%get-id)))))
 
 (defun note-change (sampler)
-  (print :change-noted)
   ;; check if need to change box
   (when (sampler-id-box-shared-p (%sampler-id-box sampler))
     ;; change box
@@ -246,37 +245,37 @@
 (defun lod-bias (sampler) (%sampler-lod-bias sampler))
 (defun (setf lod-bias) (value sampler)
   (unless (= (lod-bias sampler) value)
-    (%set-lod-bias sampler value)
-    (note-change sampler))
+    (let ((sampler (note-change sampler)))
+      (%set-lod-bias sampler value)))
   value)
 
 (defun min-lod (sampler) (%sampler-min-lod sampler))
 (defun (setf min-lod) (value sampler)
   (unless (= (min-lod sampler) value)
-    (%set-min-lod sampler value)
-    (note-change sampler))
+    (let ((sampler (note-change sampler)))
+      (%set-min-lod sampler value)))
   value)
 
 (defun max-lod (sampler) (%sampler-max-lod sampler))
 (defun (setf max-lod) (value sampler)
   (unless (= (max-lod sampler) value)
-    (%set-max-lod sampler value)
-    (note-change sampler))
+    (let ((sampler (note-change sampler)))
+      (%set-max-lod sampler value)))
   value)
 
 (defun magnify-filter (sampler) (%sampler-magnify-filter sampler))
 (defun (setf magnify-filter) (value sampler)
   (assert (member value '(:linear :nearest)))
   (unless (eq (magnify-filter sampler) value)
-    (%set-magnify-filter sampler value)
-    (note-change sampler))
+    (let ((sampler (note-change sampler)))
+      (%set-magnify-filter sampler value)))
   value)
 
 (defun minify-filter (sampler) (%sampler-minify-filter sampler))
 (defun (setf minify-filter) (value sampler)
   (unless (eq (minify-filter sampler) value)
-    (%set-minify-filter sampler value)
-    (note-change sampler))
+    (let ((sampler (note-change sampler)))
+      (%set-minify-filter sampler value)))
   value)
 
 ;; remembering the gl names for the interpolation is a bit annoying so
@@ -305,15 +304,15 @@
 		   (vector value value value)
 		   value)))
     (unless (wrap-eq (wrap sampler) value)
-      (%set-wrap sampler value)
-      (note-change sampler)))
+      (let ((sampler (note-change sampler)))
+	(%set-wrap sampler value))))
   value)
 
 (defun compare (sampler) (%sampler-compare sampler))
 (defun (setf compare) (value sampler)
   (unless (eq (compare sampler) value)
-    (%set-compare sampler value)
-    (note-change sampler))
+    (let ((sampler (note-change sampler)))
+      (%set-compare sampler value)))
   value)
 
 ;;----------------------------------------------------------------------
@@ -340,9 +339,11 @@
   sampler)
 
 (defun %set-minify-filter (sampler value)
-  (when (member value '(:linear-mipmap-linear :nearest-mipmap-linear
-			:linear-mipmap-nearest :nearest-mipmap-nearest))
-    (setf (%sampler-expects-mipmap sampler) t))
+  (setf (%sampler-expects-mipmap sampler)
+	(not (null (member value '(:linear-mipmap-linear
+				   :nearest-mipmap-linear
+				   :linear-mipmap-nearest
+				   :nearest-mipmap-nearest)))))
   (setf (%sampler-minify-filter sampler) value)
   (%gl::sampler-parameter-i (%sampler-id sampler) :texture-min-filter
 			    (%gl::foreign-enum-value '%gl:enum value))

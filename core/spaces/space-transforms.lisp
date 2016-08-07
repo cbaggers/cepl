@@ -17,6 +17,7 @@
     (setf (sr-to relationship)
 	  transform)))
 
+(declaim (inline %mspace-to-hspace-transform))
 (defun %mspace-to-hspace-transform (from-space to-space)
   (if (eq (%space-root to-space) from-space)
       (collect-inverse-to to-space from-space)
@@ -24,6 +25,7 @@
 	(m4:* (collect-inverse-to to-space dest-root)
 	      (%rspace-to-rspace-transform from-space dest-root)))))
 
+(declaim (inline %mspace-to-hspace-transform))
 (defun %mspace-to-rspace-transform (mspace rspace)
   (let* ((only-sr (%mspace-only-sr mspace))
 	 (neighbour-id (sr-target-id only-sr))
@@ -34,6 +36,7 @@
 	(m4:* (%rspace-to-rspace-ids-transform neighbour-id rspace-id)
 	      to-neighbour))))
 
+(declaim (inline %mspace-to-mspace-transform))
 (defun %mspace-to-mspace-transform (mspace-a mspace-b)
   (let* ((a-only-sr (%mspace-only-sr mspace-a))
 	 (a-neighbour-id (sr-target-id a-only-sr))
@@ -110,12 +113,14 @@
 	    (cepl.space.routes:reduce-route space-a-id space-b-id
 					     #'transform initial-m4)))))
 
+  (declaim (inline %rspace-to-rspace-transform))
   (defun %rspace-to-rspace-transform (space-a space-b
 				      &optional (initial-m4 (m4:identity)))
     (%rspace-to-rspace-ids-transform (%space-nht-id space-a)
 				     (%space-nht-id space-b)
 				     initial-m4)))
 
+(declaim (inline %rspace-to-hspace-transform))
 (defun %rspace-to-hspace-transform (from-space to-space)
   (if (eq (%space-root to-space) from-space)
       (collect-inverse-to to-space from-space)
@@ -123,6 +128,7 @@
 	(m4:* (collect-inverse-to to-space dest-root)
 	      (%rspace-to-rspace-transform from-space dest-root)))))
 
+(declaim (inline %rspace-to-mspace-transform))
 (defun %rspace-to-mspace-transform (rspace mspace)
   (let* ((only-sr (%mspace-only-sr mspace))
 	 (neighbour-id (sr-target-id only-sr))
@@ -163,11 +169,13 @@
   (setf (sr-to (aref (%space-neighbours hspace) 0))
 	transform))
 
+(declaim (inline %hspace-to-mspace-transform))
 (defun %hspace-to-mspace-transform (from-space to-space)
   (if (eq (%space-root to-space) from-space)
       (collect-inverse-to to-space from-space)
       (error "cannot transform from a hierarchical space to a model space if the space is not a child of the model space")))
 
+(declaim (inline %hspace-to-rspace-transform))
 (defun %hspace-to-rspace-transform (from-space to-space)
   (if (eq (%space-root from-space) to-space)
       (collect-transform-to from-space to-space)
@@ -175,6 +183,7 @@
 	(m4:* (%rspace-to-rspace-transform from-space dest-root)
 	      (collect-inverse-to to-space dest-root)))))
 
+(declaim (inline %hspace-to-hspace-transform))
 (defun %hspace-to-hspace-transform (from-space to-space)
   (if (eq (%space-root from-space) (%space-root to-space))
       (%get-hierarchical-transform from-space to-space)

@@ -37,6 +37,8 @@
            :split-seq-by-seq
            :print-mem
            :map-hash
+	   :filter-hash
+	   :assocr
            :with-hash
            :with-hash*
            :last1
@@ -48,40 +50,50 @@
            :n-of*
            :just-ignore
 	   :defvar*
-	   :defparameter*))
+	   :defparameter*
+	   :read-integers))
 
 (defpackage :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
-  (:export :invalid-stages
-	   :gfun-invalid-arg-format
-	   :gpu-func-spec-not-found
+  (:export :buffer-backed-texture-establish-image-format
+	   :buffer-backed-texture-invalid-args
+	   :buffer-backed-texture-invalid-image-format
+	   :buffer-backed-texture-invalid-samplers
+	   :delete-multi-func-error
 	   :dispatch-called-outside-of-map-g
-	   :invalid-keywords-for-shader-gpipe-args
+	   :dont-define-space-to-self
+	   :failed-to-test-compile-gpu-func
+	   :gfun-invalid-arg-format
+	   :glsl-version-conflict
+	   :glsl-version-conflict-in-gpu-func
+	   :gpu-func-spec-not-found
+	   :image-format->lisp-type-failed
+	   :image-format->pixel-format-failed
+	   :invalid-compose-gpipe-form
 	   :invalid-context-for-assert-gpipe
 	   :invalid-context-for-assert-options
-	   :invalid-shader-gpipe-form
-	   :not-enough-args-for-implicit-gpipe-stages
-	   :invalid-shader-gpipe-stage-keys
-	   :invalid-compose-gpipe-form
+	   :invalid-context-for-def-glsl-stage
+	   :invalid-contnext-for-assert-gpipe
 	   :invalid-defpipeline-options
-	   :shader-pipeline-non-null-args
-	   :make-tex-no-content-no-type
+	   :invalid-keywords-for-shader-gpipe-args
+	   :invalid-shader-gpipe-form
+	   :invalid-shader-gpipe-stage-keys
+	   :lisp-type->image-format-failed
+	   :make-buffer-stream-with-no-gpu-arrays
+	   :make-gpu-array-from-c-array-mismatched-dimensions
 	   :make-tex-array-not-match-type
 	   :make-tex-array-not-match-type2
-	   :image-format->lisp-type-failed
-	   :lisp-type->image-format-failed
+	   :make-tex-no-content-no-type
+	   :multiple-gpu-func-matches
+	   :not-enough-args-for-implicit-gpipe-stages
 	   :pixel-format->image-format-failed
-	   :image-format->pixel-format-failed
-	   :buffer-backed-texture-invalid-args
-	   :buffer-backed-texture-invalid-samplers
-	   :buffer-backed-texture-invalid-image-format
-	   :buffer-backed-texture-establish-image-format
-	   :failed-to-test-compile-gpu-func
-	   :dont-define-space-to-self
-	   :make-buffer-stream-with-no-gpu-arrays
-	   :invalid-context-for-def-glsl-stage
+	   :pixel-format-in-bb-texture
+	   :shader-pipeline-non-null-args
+	   :stage-not-found
 	   :struct-in-glsl-stage-args
-	   :make-gpu-array-from-c-array-mismatched-dimensions))
+	   :multi-func-error
+	   :attachments-with-different-sizes
+	   :invalid-cube-fbo-args))
 
 (defpackage :cepl.host
   (:use :cl)
@@ -240,7 +252,7 @@
 	   :pixel-format-p
 	   :pixel-format-components
 	   :pixel-format-type
-	   :pixel-format-normalise
+	   :pixel-format-normalize
 	   :pixel-format-sizes
 	   :pixel-format-reversed
 	   :pixel-format-comp-length
@@ -437,6 +449,7 @@
            :major-version
            :minor-version
            :version-float
+           :split-float-version
            :max-server-wait-timeout
            :min-map-buffer-alignment
            :extension-count
@@ -526,7 +539,7 @@
 	   :pixel-format-p
 	   :pixel-format-components
 	   :pixel-format-type
-	   :pixel-format-normalise
+	   :pixel-format-normalize
 	   :pixel-format-sizes
 	   :pixel-format-reversed
 	   :pixel-format-comp-length))
@@ -786,6 +799,9 @@
 	   :g->
 	   :map-g
 	   :map-g-into
+	   :gpu-function
+	   :gpu-functions
+	   :delete-gpu-function
 	   ;; :*verbose-compiles*
 	   ;; :*warn-when-cant-test-compile*
 	   ))

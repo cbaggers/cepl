@@ -147,6 +147,9 @@ dimensionsmatch those of the gpu-array connected to the attachment.
 This function asks OpenGL to check the given FBO and ensure that it is
 'complete'.
 
+This function will either return the particular 'framebuffer complete' flag or
+will throw a condition with an explanation of the problem.
+
 For a full rundown on what it means for a fbo to be complete see:
 https://www.opengl.org/wiki/Framebuffer_Object#Framebuffer_Completeness
 
@@ -249,6 +252,16 @@ texture created by taking the arguments after 0 and applying them to
 #'make-texture
 
 -- Any combination of the above --
+
+One last variant is allowed. You are allowed to pass a cube-map texture along
+with and optional depth option. This will result in each face of the cube being
+bound to the fbo's attachments.
+
+-- (make-fbo cube-tex)
+
+-- (make-fbo cube-tex '(:d :dimensions (32 32))
+
+-- (make-fbo cube-tex :d) ;; depth attachment dimensions will match faces
 ")
 
   (defun make-fbo-from-id
