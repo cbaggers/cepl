@@ -1,6 +1,10 @@
 (in-package :cepl.fbos)
 (in-readtable fn:fn-reader)
 
+(defvar %possible-texture-keys
+  '(:dimensions :element-type :mipmap :layer-count :cubes-p :rectangle
+    :multisample :immutable :buffer-storage))
+
 ;; {TODO} A fragment shader can output different data to any of these by
 ;;        linking out variables to attachments with the glBindFragDataLocation
 ;;        function, sounds kind like a multiple-value-bind.
@@ -380,20 +384,6 @@
 				    ,(dimensions
 				      (texref cube-tex :cube-face 0)))))))))))))
 
-(defun gen-fbo-cube-texture (tex-info)
-  (if tex-info
-      (dbind (&key dimensions element-type) tex-info
-	(make-texture nil :dimensions ))))
-
-(defun make-fbo-cube (&optional tex-info)
-  (let ((cube (gen-fbo-cube-texture tex-info)))
-    (make-fbo (if tex-info (cons 0 tex-info) 0)
-	      (if tex-info (cons 1 tex-info) 1)
-	      (if tex-info (cons 2 tex-info) 2)
-	      (if tex-info (cons 3 tex-info) 3)
-	      (if tex-info (cons 4 tex-info) 4)
-	      (if tex-info (cons 5 tex-info) 5)
-	      :D)))
 
 (defun make-fbo-now (fbo-obj)
   (post-gl-init fbo-obj)
@@ -703,10 +693,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (if (member x '(:draw-framebuffer :read-framebuffer :framebuffer))
       x
       :draw-framebuffer))
-
-(defvar %possible-texture-keys
-  '(:dimensions :element-type :mipmap :layer-count :cubes-p :rectangle
-    :multisample :immutable :buffer-storage))
 
 (defvar %valid-texture-subset '(:dimensions :element-type :mipmap :immutable))
 

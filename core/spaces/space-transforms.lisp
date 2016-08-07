@@ -17,6 +17,13 @@
     (setf (sr-to relationship)
 	  transform)))
 
+(declaim (inline %rspace-to-rspace-transform))
+(defun %rspace-to-rspace-transform (space-a space-b
+				    &optional (initial-m4 (m4:identity)))
+  (%rspace-to-rspace-ids-transform (%space-nht-id space-a)
+				   (%space-nht-id space-b)
+				   initial-m4))
+
 (declaim (inline %mspace-to-hspace-transform))
 (defun %mspace-to-hspace-transform (from-space to-space)
   (if (eq (%space-root to-space) from-space)
@@ -25,7 +32,7 @@
 	(m4:* (collect-inverse-to to-space dest-root)
 	      (%rspace-to-rspace-transform from-space dest-root)))))
 
-(declaim (inline %mspace-to-hspace-transform))
+(declaim (inline %mspace-to-rspace-transform))
 (defun %mspace-to-rspace-transform (mspace rspace)
   (let* ((only-sr (%mspace-only-sr mspace))
 	 (neighbour-id (sr-target-id only-sr))
@@ -111,14 +118,7 @@
 	      route-restriction space-b-id #'transform initial-m4))
 	    ;;
 	    (cepl.space.routes:reduce-route space-a-id space-b-id
-					     #'transform initial-m4)))))
-
-  (declaim (inline %rspace-to-rspace-transform))
-  (defun %rspace-to-rspace-transform (space-a space-b
-				      &optional (initial-m4 (m4:identity)))
-    (%rspace-to-rspace-ids-transform (%space-nht-id space-a)
-				     (%space-nht-id space-b)
-				     initial-m4)))
+					     #'transform initial-m4))))))
 
 (declaim (inline %rspace-to-hspace-transform))
 (defun %rspace-to-hspace-transform (from-space to-space)
