@@ -6,6 +6,8 @@ Luckily `slime` can be run with different communication `styles`, including a si
 By default this is a little fiddly from emacs so if you add the following to your `.emacs` file:
 
 ```
+(require 'cl)
+
 (defun slime-style-init-command (port-filename _coding-system extra-args)
   "Return a string to initialize Lisp."
   (let ((loader (if (file-name-absolute-p slime-backend)
@@ -58,3 +60,7 @@ You can then `slime-connect` to it as usual.
 The choices are then to frequently dispatch jobs to the 'UI thread' (and accept that overhead) or start `slime`/`sly` in a way that guarentees the thread. In cepl we choose the latter as, although it does add one step to starting your project, it means you can ignore the detail whilst you are working.
 
 To get a full breakdown of the above issue run `(cepl:make-project :why)` in your repl.
+
+## Q: I got a `symbol's function definition is void: lexical-let` error, what happened?
+
+Looks like the `cl` package wasn't required, please add `(require 'cl)` to your `.emacs` file
