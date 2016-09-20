@@ -17,11 +17,11 @@
 
 <p>CEPL is a lispy and REPL friendly library for working with OpenGL.</p>
 
-<p>Its goal is to feel like lisp just always had support for GPU programming in the standard.</p>
+<p>It's definition of success is if the user feels like GPU programming had always been part of the languages standard.</p>
 
 <p>The usual approach to using it is to start it at the beginning of your lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code> is treated for text.</p>
 
-<p>CEPL is in alpha. The API is closing in on what it needs to be but there are still many bugs.</p>
+<p>CEPL is in beta. The API is close to what it needs to be but there are still many bugs to fix, features to add and experiences to smooth out.</p>
 
 <p>See the <a href="https://github.com/cbaggers/cepl.examples">cepl.examples repository</a> for some examples of how CEPL can be used</p>
 
@@ -3101,6 +3101,9 @@ dimensionsmatch those of the gpu-array connected to the attachment.
 This function asks OpenGL to check the given FBO and ensure that it is
 'complete'.
 
+This function will either return the particular 'framebuffer complete' flag or
+will throw a condition with an explanation of the problem.
+
 For a full rundown on what it means for a fbo to be complete see:
 https://www.opengl.org/wiki/Framebuffer_Object#Framebuffer_Completeness
 
@@ -3253,6 +3256,16 @@ texture created by taking the arguments after 0 and applying them to
 #'make-texture
 
 -- Any combination of the above --
+
+One last variant is allowed. You are allowed to pass a cube-map texture along
+with and optional depth option. This will result in each face of the cube being
+bound to the fbo's attachments.
+
+-- (make-fbo cube-tex)
+
+-- (make-fbo cube-tex '(:d :dimensions (32 32))
+
+-- (make-fbo cube-tex :d) ;; depth attachment dimensions will match faces
 </pre>
                   </article>
                 </li><li>
@@ -3785,11 +3798,10 @@ blending-params object with the same settings as the one passed.
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB MODE-RGB) :FUNC-ADD) ((:MODE-ALPHA MODE-ALPHA) :FUNC-ADD)
- ((:SOURCE-RGB SOURCE-RGB) :SRC-ALPHA)
- ((:SOURCE-ALPHA SOURCE-ALPHA) :SRC-ALPHA)
- ((:DESTINATION-RGB DESTINATION-RGB) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DESTINATION-ALPHA) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM2265) :FUNC-ADD) ((:MODE-ALPHA DUM2266) :FUNC-ADD)
+ ((:SOURCE-RGB DUM2267) :SRC-ALPHA) ((:SOURCE-ALPHA DUM2268) :SRC-ALPHA)
+ ((:DESTINATION-RGB DUM2269) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DUM2270) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3855,6 +3867,32 @@ CEPL ensures the blending settings are undone at the end of the scope.
                 <span class="nicknames"/>
               </h3>
               <ul><li>
+                  <a name="CEPL.PIPELINES:GPU-FUNCTIONS"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.PIPELINES:GPU-FUNCTIONS" class="name">GPU-FUNCTIONS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.PIPELINES:DELETE-GPU-FUNCTION"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#CEPL.PIPELINES:DELETE-GPU-FUNCTION" class="name">DELETE-GPU-FUNCTION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(GFUNC-DESCRIPTION &amp;OPTIONAL ERROR-IF-MISSING)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="CEPL.PIPELINES:DEF-G-&gt;"/>
                   <article>
                     <header class="macro">
@@ -4127,6 +4165,19 @@ Making anonymous pipelines is not yet supported in CEPL. But it will be!
 
 g-&gt; is used to compose gpu-functions together into anonymous pipelines
 </pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.PIPELINES:GPU-FUNCTION"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.PIPELINES:GPU-FUNCTION" class="name">GPU-FUNCTION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:MAP-G"/>
