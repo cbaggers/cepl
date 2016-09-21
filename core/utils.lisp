@@ -63,7 +63,7 @@
   (loop for i being the hash-keys of hash-table collect i))
 
 (defun intersperse (symb sequence)
-  (rest (mapcan #'(lambda (x) (list symb x)) sequence)))
+  (rest (mapcat #'(lambda (x) (list symb x)) sequence)))
 
 ;; This will be pretty inefficient, but shoudl be fine for code trees
 ;; {TODO} how is this not subst?
@@ -302,12 +302,8 @@
 
 
 
-
-(define-compiler-macro mapcat (function &rest lists)
-  `(apply #'concatenate 'list (mapcar ,function ,@lists)))
-
 (defun mapcat (function &rest lists)
-  (apply #'concatenate 'list (apply #'mapcar function lists)))
+  (reduce #'append (apply #'mapcar function lists) :initial-value nil))
 
 (defun split-seq-by-seq (delim sequence)
   (let* ((delim-len (length delim))
@@ -592,7 +588,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 	   ,@(mapcar #'extract-slot-def slots))
 	 (,defname ,name
 	   (let* ,(mapcar #'extract-let slots)
-	     (,cname ,@(mapcan #'extract-init slots))))))))
+	     (,cname ,@(mapcat #'extract-init slots))))))))
 
 (defmacro defvar* (name &body slots)
   (defx* 'defvar name slots))
