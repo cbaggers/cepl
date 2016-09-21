@@ -240,6 +240,10 @@
 	      (%sampler-texture object))
       (format stream "#<SAMPLER :UNINITIALIZED>")))
 
+(defun free-sampler (sampler)
+  (warn "CEPL: free-sampler not yet implemented~%leaking ~s"
+        sampler))
+
 ;;----------------------------------------------------------------------
 
 (defun lod-bias (sampler) (%sampler-lod-bias sampler))

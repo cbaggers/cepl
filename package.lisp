@@ -740,7 +740,8 @@
 	   :minify-filter
 	   :set-minify-filter
 	   :wrap
-	   :compare))
+	   :compare
+           :free-sampler))
 
 (defpackage :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
