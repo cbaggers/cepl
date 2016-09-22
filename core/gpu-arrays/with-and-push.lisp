@@ -1,16 +1,18 @@
 (in-package :cepl.gpu-arrays)
 
 (defmacro with-gpu-array-as-pointer
-    ((temp-name gpu-array &key (access-type :read-write)) &body body)
+    ((temp-name gpu-array &key (access-type :read-write) (target :array-buffer))
+     &body body)
   "This macro is really handy if you need to have random access
    to the data on the gpu. It takes a gpu-array and maps it
    giving you the pointer"
+  (assert (keywordp target))
   (unless (find access-type '(:read-write :read-only :write-only))
     (error "The access argument must be set to :read-write :read-only or :write-only"))
   (let ((glarray-pointer (gensym "POINTER"))
 	(array-sym (gensym "BUFFER"))
         (buffer-sym (gensym "BUFFER"))
-        (target (gensym "target")))
+        (gtarget (gensym "target")))
     `(progn
        (let ((,array-sym ,gpu-array))
 	 (unless (typep ,array-sym 'gpu-array)
@@ -19,10 +21,10 @@
 	       (error "with-gpu-array-* does not support the type ~s"
 		      (type-of ,array-sym))))
 	 (let ((,buffer-sym (gpu-array-buffer ,array-sym))
-	       (,target :array-buffer))
-	   (cepl.gpu-buffers::force-bind-buffer ,buffer-sym ,target)
+	       (,gtarget ,target))
+	   (cepl.gpu-buffers::force-bind-buffer ,buffer-sym ,gtarget)
 	   (gl:with-mapped-buffer (,glarray-pointer
-				   ,target
+				   ,gtarget
 				   ,access-type)
 	     (if (pointer-eq ,glarray-pointer (null-pointer))
 		 (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
