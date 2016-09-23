@@ -67,16 +67,13 @@
 
 (defun %update-spec (name stage-keys context)
   (update-pipeline-spec
-   (make-pipeline-spec
-    name stage-keys (make-pipeline-change-signature stage-keys)
-    context)))
+   (make-pipeline-spec name stage-keys context)))
 
 (defun gen-update-spec (name stage-keys context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (update-pipeline-spec
       (make-pipeline-spec
        ',name ,(cons 'list (mapcar #'inject-func-key stage-keys))
-       ,(make-pipeline-change-signature stage-keys)
        ',context))))
 
 (defvar *all-quiet* nil)
@@ -86,17 +83,6 @@
     (let ((r (find-restart 'muffle-warning c)))
       (when r
 	(invoke-restart r)))))
-
-(defun make-pipeline-change-signature (stage-keys)
-  (sxhash
-   (format nil "~s"
-           (mapcar #'make-change-signature stage-keys))))
-
-(defun make-change-signature (stage-key)
-  (with-gpu-func-spec (gpu-func-spec stage-key t)
-    (list in-args uniforms body
-          (mapcar #'make-change-signature
-                  (funcs-this-func-uses stage-key)))))
 
 (defun %gl-make-shader-from-varjo (compiled-stage)
   (make-shader (varjo->gl-stage-names (varjo:stage-type compiled-stage))

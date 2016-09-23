@@ -340,13 +340,12 @@ names are depended on by the functions named later in the list"
 (defclass pipeline-spec ()
   ((name :initarg :name)
    (stages :initarg :stages)
-   (change-spec :initarg :change-spec)
    (context :initarg :context)
    (cached-compile-results :initform nil)))
 
-(defun make-pipeline-spec (name stages change-spec context)
+(defun make-pipeline-spec (name stages context)
   (make-instance 'pipeline-spec :name name :stages stages
-                 :change-spec change-spec :context context))
+                 :context context))
 
 (defun pipeline-spec (name)
   (gethash name *gpu-pipeline-specs*))
