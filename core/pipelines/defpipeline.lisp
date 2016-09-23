@@ -292,7 +292,7 @@
 	       (%gl:draw-elements draw-type
 				  (buffer-stream-length stream)
 				  (cffi-type->gl-type index-type)
-				  (make-pointer 0)))
+				  (%cepl.types:buffer-stream-start-byte stream)))
 	     (locally (declare (optimize (speed 3) (safety 0)))
 	       (%gl:draw-arrays draw-type
 				(buffer-stream-start stream)
@@ -302,7 +302,7 @@
               draw-type
               (buffer-stream-length stream)
               (cffi-type->gl-type index-type)
-              (make-pointer 0)
+              (%cepl.types:buffer-stream-start-byte stream)
               |*instance-count*|)
              (%gl:draw-arrays-instanced
               draw-type

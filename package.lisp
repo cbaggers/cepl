@@ -263,6 +263,7 @@
 	   :buffer-stream-p
 	   :buffer-stream-vao
 	   :buffer-stream-start
+           :buffer-stream-start-byte
 	   :buffer-stream-length
 	   :buffer-stream-index-type
 	   :buffer-stream-gpu-arrays
