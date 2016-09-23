@@ -1,5 +1,12 @@
 (in-package :cepl.types)
 
+(defvar *cpu->gpu-vec-mappings*
+  '((:uint8-vec2 . :vec2)
+    (:uint8-vec3 . :vec3)
+    (:uint8-vec4 . :vec4)))
+
+;;------------------------------------------------------------
+
 (defgeneric s-arrayp (object))
 (defgeneric s-prim-p (object))
 (defgeneric s-extra-prim-p (object))
@@ -148,7 +155,9 @@
            ,@(when accessor `(:accessor ,accessor))))))
 
 (defun validate-varjo-type-spec (spec)
-  (type->spec (type-spec->type spec)))
+  (let ((spec (or (cdr (assoc spec *cpu->gpu-vec-mappings*))
+                  spec)))
+    (type->spec (type-spec->type spec))))
 
 ;;------------------------------------------------------------
 
@@ -288,8 +297,9 @@
 ;;------------------------------------------------------------
 
 (defun buffer-stream-comptible-typep (slot)
-  (let ((type (type-spec->type (s-type slot))))
-    (core-typep type)))
+  (let* ((type-spec (s-type slot)))
+    (or (not (null (cdr (assoc type-spec *cpu->gpu-vec-mappings*))))
+        (core-typep (type-spec->type type-spec)))))
 
 (defun make-struct-attrib-assigner (type-name slots)
   (when (every #'buffer-stream-comptible-typep slots)
@@ -298,15 +308,18 @@
                        0))
            (stride-sym (gensym "stride"))
            (definitions
-            (loop :for attr :in (mapcat #'expand-slot-to-layout slots)
+            (loop :for (len cffi-type normalized gl-type)
+               :in (mapcat #'expand-slot-to-layout slots)
                :for i :from 0 :with offset = 0 :append
                `((gl:enable-vertex-attrib-array (+ attrib-offset ,i))
                  (%gl:vertex-attrib-pointer
-                  (+ attrib-offset ,i) ,@attr ,stride-sym
+                  (+ attrib-offset ,i)
+                  ,len
+                  ,(or gl-type cffi-type)
+                  ,normalized
+                  ,stride-sym
                   (cffi:make-pointer (+ ,offset pointer-offset))))
-               :do (setf offset (+ offset
-                                   (* (first attr)
-                                      (cepl.internals:gl-type-size (second attr))))))))
+               :do (incf offset (* len (cepl.internals:gl-type-size cffi-type))))))
       (when definitions
         `(progn
            (defmethod cepl.internals:gl-assign-attrib-pointers
@@ -319,23 +332,42 @@
                ,(length definitions))))))))
 
 (defun expand-slot-to-layout (slot &optional type normalize)
+  ;; if it one of the types in *cpu->gpu-vec-mappings* then it is one
+  ;; where the gpu side type will be different from the cpu-side one
+  ;; this means we cant rely on the varjo type introspection
+  (if (and (not type) (assoc (s-type slot) *cpu->gpu-vec-mappings*))
+      (expand-unmappable-slot-to-layout slot type normalize)
+      (expand-mappable-slot-to-layout slot type normalize)))
+
+(defun expand-unmappable-slot-to-layout (slot type normalize)
+  (assert (not type))
+  (ecase (s-type slot)
+    (:uint8-vec2 (list (list 2 :uint8 normalize :unsigned-byte)))
+    (:uint8-vec3 (list (list 3 :uint8 normalize :unsigned-byte)))
+    (:uint8-vec4 (list (list 4 :uint8 normalize :unsigned-byte)))))
+
+(defun expand-mappable-slot-to-layout (slot type normalize)
   (let ((type (or type (type-spec->type (s-type slot))))
         (normalize (or normalize (when slot (s-normalizedp slot)))))
+    ;;
     (cond ((v-typep type 'v-matrix)
            (let ((v-type (type-spec->type
                           (kwd :vec (second (v-dimensions type))))))
              (setf (slot-value v-type 'varjo::element-type)
                    (type->spec (v-element-type type))) ;ugh
              (loop for i below (first (v-dimensions type))
-                :append (expand-slot-to-layout nil v-type normalize))))
+                :append (expand-mappable-slot-to-layout nil v-type normalize))))
+          ;;
           ((v-typep type 'v-vector)
-           `((,(apply #'* (v-dimensions type))
-               ,(type->spec (v-element-type type))
-               ,normalize)))
+           (list (list (apply #'* (v-dimensions type))
+                       (type->spec (v-element-type type))
+                       normalize)))
+          ;;
           ((v-typep type 'v-array)
            (loop for i below (apply #'* (v-dimensions type))
-              :append (expand-slot-to-layout
+              :append (expand-mappable-slot-to-layout
                        nil (v-element-type type) normalize)))
+          ;;
           (t `((1 ,(type->spec type) ,normalize))))))
 
 ;;------------------------------------------------------------

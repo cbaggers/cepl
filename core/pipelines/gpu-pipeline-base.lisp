@@ -322,7 +322,7 @@ names are depended on by the functions named later in the list"
     (when choices
       (format t "~%~a~{~%~a: ~a~}~%Choice: "
 	      intro-text
-	      (mapcan #'list (alexandria:iota (length choices)) choices))
+	      (mapcat #'list (alexandria:iota (length choices)) choices))
       (let ((choice (read-integers)))
 	(if (= 1 (length choice))
 	    (elt choices (first choice))

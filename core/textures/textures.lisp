@@ -439,6 +439,8 @@
 	       :supposed-type supposed-type
 	       :array-type (element-type initial-contents)))))
 
+(defgeneric check-mipmap-level-count-valid (level-count dimensions))
+
 (defmethod check-mipmap-level-count-valid ((level-count integer)
 					   (dimensions list))
   (let ((max-levels (calc-max-num-mipmap-levels dimensions)))

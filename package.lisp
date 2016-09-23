@@ -263,6 +263,7 @@
 	   :buffer-stream-p
 	   :buffer-stream-vao
 	   :buffer-stream-start
+           :buffer-stream-start-byte
 	   :buffer-stream-length
 	   :buffer-stream-index-type
 	   :buffer-stream-gpu-arrays
@@ -740,7 +741,8 @@
 	   :minify-filter
 	   :set-minify-filter
 	   :wrap
-	   :compare))
+	   :compare
+           :free-sampler))
 
 (defpackage :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

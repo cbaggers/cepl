@@ -176,16 +176,59 @@
 
 ;;------------------------------------------------------------
 
-(defstruct (buffer-stream (:constructor make-raw-buffer-stream
-                                        (&key vao start length
-                                              index-type managed
-                                              gpu-arrays)))
+(defstruct (buffer-stream (:constructor %make-buffer-stream))
   vao
-  (start 0 :type unsigned-byte)
+  (%start 0 :type unsigned-byte) ;; unsigned-byte ≡ (integer 0 *)
+  (%start-byte (null-pointer) :type foreign-pointer)
   (length 1 :type unsigned-byte)
-  (index-type nil :type symbol)
+  (%index-type nil :type symbol)
   (gpu-arrays nil :type list)
   (managed nil :type boolean))
+
+(defun %valid-index-type-p (x)
+  (and x (not (eq x :uninitialized))))
+
+(defun make-raw-buffer-stream (&key vao start length
+                                 index-type managed
+                                 gpu-arrays)
+  (%make-buffer-stream
+   :vao vao
+   :%start (or start 0)
+   :%start-byte (if (%valid-index-type-p index-type)
+                    (make-pointer (* start (foreign-type-size index-type)))
+                    (null-pointer))
+   :length (or length 1)
+   :%index-type index-type
+   :managed managed
+   :gpu-arrays gpu-arrays))
+
+(defun buffer-stream-index-type (stream)
+  (buffer-stream-%index-type stream))
+
+(defun (setf buffer-stream-index-type) (value stream)
+  (setf (buffer-stream-%index-type stream) value)
+  ;; doing this vv forces recalculation of start-byte
+  (when (%valid-index-type-p value)
+    (setf (buffer-stream-start stream) (buffer-stream-start stream)))
+  value)
+
+(defun buffer-stream-start (stream)
+  (buffer-stream-%start stream))
+
+(defun (setf buffer-stream-start) (value stream)
+  (setf (buffer-stream-%start stream) value)
+  (let ((index-type (buffer-stream-index-type stream)))
+    (when (%valid-index-type-p index-type)
+      (setf (buffer-stream-%start-byte stream)
+            (make-pointer (* value (foreign-type-size index-type))))))
+  value)
+
+(defun buffer-stream-start-byte (stream)
+  (buffer-stream-%start-byte stream))
+
+(defun buffer-stream-%start-byte (stream)
+  (error "CEPL Internal Error: Do not set stream %start-byte directly~%~s"
+         stream))
 
 ;;------------------------------------------------------------
 

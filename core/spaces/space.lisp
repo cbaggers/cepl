@@ -255,6 +255,7 @@
   (declare (ignore model-space))
   (error "implement upgrade-from-model-space"))
 
+(declaim (inline %mspace-only-sr))
 (defun %mspace-only-sr (mspace)
   (declare ;;(optimize (speed 3) (debug 0))
    (inline %space-neighbours))
