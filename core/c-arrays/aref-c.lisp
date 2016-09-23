@@ -1,6 +1,9 @@
 (in-package :cepl.c-arrays)
 
 ;;----------------------------------------------------------------------
+;; Q: Why not use mem-aptr?
+;; A: That requires looking up the size of the type on every call. Instead
+;;    we cache that in the c-array and do the math ourselves.
 
 (declaim (inline ptr-index-1d)
 	 (ftype (function (c-array fixnum) cffi-sys:foreign-pointer)
