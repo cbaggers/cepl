@@ -3322,19 +3322,6 @@ associated value and T as multiple values, or returns DEFAULT and NIL
 if there is no such entry. Entries can be added using SETF.</pre>
                   </article>
                 </li><li>
-                  <a name="CEPL.HOST:LDB"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.HOST:LDB" class="name">LDB</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(BYTESPEC INTEGER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">Extract the specified byte from integer, and right justify result.</pre>
-                  </article>
-                </li><li>
                   <a name="CEPL.HOST:LOGICAL-PATHNAME-TRANSLATIONS"/>
                   <article>
                     <header class="accessor">
@@ -3361,19 +3348,6 @@ if there is no such entry. Entries can be added using SETF.</pre>
                     <pre class="docstring">If SYMBOL names a macro in ENV, returns the expansion function,
 else returns NIL. If ENV is unspecified or NIL, use the global environment
 only.</pre>
-                  </article>
-                </li><li>
-                  <a name="CEPL.HOST:MASK-FIELD"/>
-                  <article>
-                    <header class="accessor">
-                      <span class="type">accessor</span>
-                      <code>
-                        <h4><a href="#CEPL.HOST:MASK-FIELD" class="name">MASK-FIELD</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(BYTESPEC INTEGER)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring">Extract the specified byte from integer,  but do not right justify result.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:NINTH"/>
@@ -3506,6 +3480,19 @@ only.</pre>
                       </code>
                     </header>
                     <pre class="docstring">Return the 6th object in a list or NIL if there is no 6th object.</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:SLOT-VALUE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:SLOT-VALUE" class="name">SLOT-VALUE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT SLOT-NAME)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:SVREF"/>
@@ -3849,8 +3836,8 @@ only.</pre>
                         <span class="arguments">(ARRAY)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return T if (ADJUST-ARRAY ARRAY...) would return an array identical
-   to the argument, this happens for complex arrays.</pre>
+                    <pre class="docstring">Return T if and only if calling ADJUST-ARRAY on ARRAY will return
+   the identical object.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:ALPHA-CHAR-P"/>
@@ -3950,7 +3937,7 @@ is either numeric or alphabetic.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:ARITHMETIC-ERROR-OPERATION"/>
@@ -3963,7 +3950,7 @@ is either numeric or alphabetic.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:ARRAY-DIMENSION"/>
@@ -4601,7 +4588,7 @@ the thrown values will be returned.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:CERROR"/>
@@ -5130,12 +5117,12 @@ restarts associated with CONDITION (or with no condition) will be returned.</pre
                       <code>
                         <h4><a href="#CEPL.HOST:CONCATENATE" class="name">CONCATENATE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(OUTPUT-TYPE-SPEC &amp;REST SEQUENCES)</span>
+                        <span class="arguments">(RESULT-TYPE &amp;REST SEQUENCES)</span>
                       </code>
                     </header>
                     <pre class="docstring">Return a new sequence of all the argument sequences concatenated together
   which shares no structure with the original argument sequences of the
-  specified OUTPUT-TYPE-SPEC.</pre>
+  specified RESULT-TYPE.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:CONJUGATE"/>
@@ -5305,7 +5292,7 @@ ENVIRONMENT is provided the FORM is first macroexpanded in it.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:COPY-SYMBOL" class="name">COPY-SYMBOL</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(SYMBOL &amp;OPTIONAL (COPY-PROPS NIL) &amp;AUX NEW-SYMBOL)</span>
+                        <span class="arguments">(SYMBOL &amp;OPTIONAL (COPY-PROPS NIL))</span>
                       </code>
                     </header>
                     <pre class="docstring">Make and return a new uninterned symbol with the same print name
@@ -6010,7 +5997,7 @@ is a wild pathname.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:FILE-LENGTH"/>
@@ -6956,7 +6943,7 @@ the importation, then a correctable error is signalled.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:INTERSECTION" class="name">INTERSECTION</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST (FUNCTION EQL) TESTP) (TEST-NOT NIL NOTP))</span>
+                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST NIL TESTP) (TEST-NOT NIL NOTP))</span>
                       </code>
                     </header>
                     <pre class="docstring">Return the intersection of LIST1 and LIST2.</pre>
@@ -7086,6 +7073,19 @@ other.</pre>
                     </header>
                     <pre class="docstring">Return the least common multiple of one or more integers. LCM of no
   arguments is defined to be 1.</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:LDB"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:LDB" class="name">LDB</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BYTESPEC INTEGER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Extract the specified byte from integer, and right justify result.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:LDB-TEST"/>
@@ -7478,7 +7478,7 @@ and the number of 0 bits if INTEGER is negative.</pre>
                         <span class="arguments">(INTEGER1 INTEGER2)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Complement the logical AND of INTEGER1 and INTEGER2.</pre>
+                    <pre class="docstring">Complement the logical OR of INTEGER1 and INTEGER2.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:LOGNOT"/>
@@ -7907,11 +7907,11 @@ See SB-EXT:SEED-RANDOM-STATE for a SBCL extension to this functionality.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:MAKE-SEQUENCE" class="name">MAKE-SEQUENCE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(TYPE LENGTH &amp;KEY (INITIAL-ELEMENT NIL IEP))</span>
+                        <span class="arguments">(RESULT-TYPE LENGTH &amp;KEY (INITIAL-ELEMENT NIL IEP))</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return a sequence of the given TYPE and LENGTH, with elements initialized
-  to INITIAL-ELEMENT.</pre>
+                    <pre class="docstring">Return a sequence of the given RESULT-TYPE and LENGTH, with
+  elements initialized to INITIAL-ELEMENT.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:MAKE-STRING"/>
@@ -8134,6 +8134,19 @@ to protect the MAPHASH call.</pre>
                       </code>
                     </header>
                     <pre class="docstring">Apply FUNCTION to successive CDRs of list. Return list of results.</pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.HOST:MASK-FIELD"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.HOST:MASK-FIELD" class="name">MASK-FIELD</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(BYTESPEC INTEGER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Extract the specified byte from integer,  but do not right justify result.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:MAX"/>
@@ -8399,7 +8412,7 @@ name is that string, if one exists. Otherwise, NIL is returned.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:NINTERSECTION" class="name">NINTERSECTION</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST (FUNCTION EQL) TESTP) (TEST-NOT NIL NOTP))</span>
+                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST NIL TESTP) (TEST-NOT NIL NOTP))</span>
                       </code>
                     </header>
                     <pre class="docstring">Destructively return the intersection of LIST1 and LIST2.</pre>
@@ -8484,7 +8497,7 @@ name is that string, if one exists. Otherwise, NIL is returned.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:NSET-DIFFERENCE" class="name">NSET-DIFFERENCE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST (FUNCTION EQL) TESTP) (TEST-NOT NIL NOTP))</span>
+                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST NIL TESTP) (TEST-NOT NIL NOTP))</span>
                       </code>
                     </header>
                     <pre class="docstring">Destructively return the elements of LIST1 which are not in LIST2.</pre>
@@ -8704,7 +8717,7 @@ name is that string, if one exists. Otherwise, NIL is returned.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:NUNION" class="name">NUNION</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST (FUNCTION EQL) TESTP) (TEST-NOT NIL NOTP))</span>
+                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST NIL TESTP) (TEST-NOT NIL NOTP))</span>
                       </code>
                     </header>
                     <pre class="docstring">Destructively return the union of LIST1 and LIST2.</pre>
@@ -8733,8 +8746,7 @@ name is that string, if one exists. Otherwise, NIL is returned.</pre>
                         <span class="arguments">(FILENAME &amp;KEY (DIRECTION :INPUT) (ELEMENT-TYPE 'BASE-CHAR)
  (IF-EXISTS NIL IF-EXISTS-GIVEN)
  (IF-DOES-NOT-EXIST NIL IF-DOES-NOT-EXIST-GIVEN) (EXTERNAL-FORMAT :DEFAULT)
- (CLASS 'FD-STREAM) &amp;AUX (DIRECTION DIRECTION)
- (IF-DOES-NOT-EXIST IF-DOES-NOT-EXIST) (IF-EXISTS IF-EXISTS))</span>
+ (CLASS 'FD-STREAM))</span>
                       </code>
                     </header>
                     <pre class="docstring">Return a stream which reads from or writes to FILENAME.
@@ -8757,7 +8769,7 @@ name is that string, if one exists. Otherwise, NIL is returned.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:PACKAGE-NAME"/>
@@ -9314,7 +9326,7 @@ line break.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:PROBE-FILE"/>
@@ -10032,7 +10044,7 @@ extent of the block.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:SET-DIFFERENCE" class="name">SET-DIFFERENCE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST (FUNCTION EQL) TESTP) (TEST-NOT NIL NOTP))</span>
+                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST NIL TESTP) (TEST-NOT NIL NOTP))</span>
                       </code>
                     </header>
                     <pre class="docstring">Return the elements of LIST1 which are not in LIST2.</pre>
@@ -10059,8 +10071,7 @@ extent of the block.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:SET-EXCLUSIVE-OR" class="name">SET-EXCLUSIVE-OR</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST (FUNCTION EQL) TESTP)
- (TEST-NOT (FUNCTION EQL) NOTP))</span>
+                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST NIL TESTP) (TEST-NOT NIL NOTP))</span>
                       </code>
                     </header>
                     <pre class="docstring">Return new list of elements appearing exactly once in LIST1 and LIST2.</pre>
@@ -10245,7 +10256,7 @@ it is not already present.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:SIMPLE-CONDITION-FORMAT-CONTROL"/>
@@ -10258,7 +10269,7 @@ it is not already present.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:SIMPLE-STRING-P"/>
@@ -10366,19 +10377,6 @@ any non-negative real number.</pre>
                     <pre class="docstring"/>
                   </article>
                 </li><li>
-                  <a name="CEPL.HOST:SLOT-VALUE"/>
-                  <article>
-                    <header class="function">
-                      <span class="type">function</span>
-                      <code>
-                        <h4><a href="#CEPL.HOST:SLOT-VALUE" class="name">SLOT-VALUE</a></h4>
-                        <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT SLOT-NAME)</span>
-                      </code>
-                    </header>
-                    <pre class="docstring"/>
-                  </article>
-                </li><li>
                   <a name="CEPL.HOST:SOFTWARE-TYPE"/>
                   <article>
                     <header class="function">
@@ -10403,7 +10401,7 @@ any non-negative real number.</pre>
                       </code>
                     </header>
                     <pre class="docstring">Return a string describing version of the supporting software, or NIL
-   if not available.</pre>
+  if not available.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:SOME"/>
@@ -10514,7 +10512,7 @@ return NIL if none exists.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:STREAM-EXTERNAL-FORMAT"/>
@@ -11196,7 +11194,7 @@ unspecified elements into a completed to-pathname based on the to-wildname.</pre
                       <code>
                         <h4><a href="#CEPL.HOST:TREE-EQUAL" class="name">TREE-EQUAL</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(X Y &amp;KEY (TEST (FUNCTION EQL) TESTP) (TEST-NOT NIL NOTP))</span>
+                        <span class="arguments">(X Y &amp;KEY (TEST NIL TESTP) (TEST-NOT NIL NOTP))</span>
                       </code>
                     </header>
                     <pre class="docstring">Return T if X and Y are isomorphic trees with identical leaves.</pre>
@@ -11277,7 +11275,7 @@ broken symlink itself.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:TYPE-ERROR-EXPECTED-TYPE"/>
@@ -11290,7 +11288,7 @@ broken symlink itself.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:TYPE-OF"/>
@@ -11329,7 +11327,7 @@ broken symlink itself.</pre>
                         <span class="arguments">(CONDITION)</span>
                       </code>
                     </header>
-                    <pre class="docstring">Return the offending thread that the THREAD-ERROR pertains to.</pre>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:UNEXPORT"/>
@@ -11367,7 +11365,7 @@ uninterned.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:UNION" class="name">UNION</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST (FUNCTION EQL) TESTP) (TEST-NOT NIL NOTP))</span>
+                        <span class="arguments">(LIST1 LIST2 &amp;KEY KEY (TEST NIL TESTP) (TEST-NOT NIL NOTP))</span>
                       </code>
                     </header>
                     <pre class="docstring">Return the union of LIST1 and LIST2.</pre>
@@ -11633,8 +11631,7 @@ system. HOST argument is ignored by SBCL.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:WRITE" class="name">WRITE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(OBJECT &amp;KEY ((:STREAM STREAM) *STANDARD-OUTPUT*)
- ((:ESCAPE *PRINT-ESCAPE*) *PRINT-ESCAPE*)
+                        <span class="arguments">(OBJECT &amp;KEY STREAM ((:ESCAPE *PRINT-ESCAPE*) *PRINT-ESCAPE*)
  ((:RADIX *PRINT-RADIX*) *PRINT-RADIX*) ((:BASE *PRINT-BASE*) *PRINT-BASE*)
  ((:CIRCLE *PRINT-CIRCLE*) *PRINT-CIRCLE*)
  ((:PRETTY *PRINT-PRETTY*) *PRINT-PRETTY*)
@@ -11821,7 +11818,7 @@ system. HOST argument is ignored by SBCL.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:CHANGE-CLASS" class="name">CHANGE-CLASS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE NEW-CLASS-NAME &amp;REST INITARGS &amp;ALLOW-OTHER-KEYS)</span>
+                        <span class="arguments">(INSTANCE NEW-CLASS-NAME &amp;REST INITARGS &amp;KEY &amp;ALLOW-OTHER-KEYS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -11901,11 +11898,12 @@ system. HOST argument is ignored by SBCL.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:INIT" class="name">INIT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">()</span>
+                        <span class="arguments">(&amp;OPTIONAL INIT-FLAGS)</span>
                       </code>
                     </header>
                     <pre class="docstring">Implement this method and initialize your system inside it.
-    This is called as the first step of cepl initializing.</pre>
+    This is called as the first step of cepl initializing.
+    init-flags are host specific flags that can be passed from cepl</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:INITIALIZE-INSTANCE"/>
@@ -11915,9 +11913,10 @@ system. HOST argument is ignored by SBCL.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:INITIALIZE-INSTANCE" class="name">INITIALIZE-INSTANCE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE &amp;REST INITARGS &amp;KEY ARGUMENT-PRECEDENCE-ORDER VERBOSE SYSTEM
- FORCE-NOT FORCE OTHER-SYSTEMS LITERAL-CHAR-CODE-LIMIT SEARCH-PATH FORCE
- FORCE-NOT SYSTEM &amp;ALLOW-OTHER-KEYS)</span>
+                        <span class="arguments">(INSTANCE &amp;REST INITARGS &amp;KEY SEARCH-PATH CCONV CALLING-CONVENTION CONVENTION
+ LITERAL-CHAR-CODE-LIMIT NAME-SUFFIX FORCE FORCE-NOT OTHER-SYSTEMS SYSTEM
+ VERBOSE NAME INITFORM INITFUNCTION TYPE ALLOCATION INITARGS DOCUMENTATION
+ READERS WRITERS LAMBDA-LIST ARGUMENT-PRECEDENCE-ORDER &amp;ALLOW-OTHER-KEYS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -11956,7 +11955,7 @@ system. HOST argument is ignored by SBCL.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:MAKE-INSTANCE" class="name">MAKE-INSTANCE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(CLASS &amp;REST INITARGS &amp;ALLOW-OTHER-KEYS)</span>
+                        <span class="arguments">(CLASS &amp;REST INITARGS &amp;KEY &amp;ALLOW-OTHER-KEYS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -12075,7 +12074,8 @@ system. HOST argument is ignored by SBCL.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:REINITIALIZE-INSTANCE" class="name">REINITIALIZE-INSTANCE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE &amp;REST INITARGS &amp;KEY DIRECT-SUPERCLASSES &amp;ALLOW-OTHER-KEYS)</span>
+                        <span class="arguments">(INSTANCE &amp;REST INITARGS &amp;KEY DIRECT-SUPERCLASSES LAMBDA-LIST
+ ARGUMENT-PRECEDENCE-ORDER &amp;ALLOW-OTHER-KEYS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -12102,7 +12102,8 @@ system. HOST argument is ignored by SBCL.</pre>
                         <h4><a href="#CEPL.HOST:REQUEST-CONTEXT" class="name">REQUEST-CONTEXT</a></h4>
                         <span class="qualifiers"></span>
                         <span class="arguments">(WIDTH HEIGHT TITLE FULLSCREEN NO-FRAME ALPHA-SIZE DEPTH-SIZE STENCIL-SIZE
- RED-SIZE GREEN-SIZE BLUE-SIZE BUFFER-SIZE DOUBLE-BUFFER HIDDEN RESIZABLE)</span>
+ RED-SIZE GREEN-SIZE BLUE-SIZE BUFFER-SIZE DOUBLE-BUFFER HIDDEN RESIZABLE
+ GL-VERSION)</span>
                       </code>
                     </header>
                     <pre class="docstring">Implement this method and return a list containing:
@@ -12131,10 +12132,11 @@ system. HOST argument is ignored by SBCL.</pre>
                       <code>
                         <h4><a href="#CEPL.HOST:SHARED-INITIALIZE" class="name">SHARED-INITIALIZE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE SLOT-NAMES &amp;REST INITARGS &amp;KEY DOCUMENTATION DECLARATIONS
- ARGUMENT-PRECEDENCE-ORDER SLOT-DEFINITION SLOT-NAME DEFINITION-SOURCE
- DIRECT-DEFAULT-INITARGS PROTOCOL TYPE ALLOCATION-CLASS QUALIFIERS SPECIALIZERS
- FUNCTION &amp;ALLOW-OTHER-KEYS)</span>
+                        <span class="arguments">(INSTANCE SLOT-NAMES &amp;REST INITARGS &amp;KEY PROTOCOL TYPE DIRECT-SUPERCLASSES
+ DIRECT-SLOTS DIRECT-DEFAULT-INITARGS NAME ALLOCATION ALLOCATION-CLASS
+ QUALIFIERS LAMBDA-LIST SPECIALIZERS FUNCTION DOCUMENTATION SLOT-NAME
+ SLOT-DEFINITION ARGUMENT-PRECEDENCE-ORDER DECLARATIONS METHOD-CLASS
+ METHOD-COMBINATION &amp;ALLOW-OTHER-KEYS)</span>
                       </code>
                     </header>
                     <pre class="docstring"/>
@@ -13223,8 +13225,7 @@ collected result will be returned as the value of the LOOP.</pre>
                     </header>
                     <pre class="docstring">Takes an object and a location holding a list. If the object is
   already in the list, does nothing; otherwise, conses the object onto
-  the list. Returns the modified list. If there is a :TEST keyword, this
-  is used for the comparison.</pre>
+  the list. Keyword arguments are accepted as per the ADJOIN function.</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.HOST:REMF"/>

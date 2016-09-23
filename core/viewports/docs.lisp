@@ -101,4 +101,9 @@ It will remain as the current viewport until the end of the scope.
     of consing up a new viewport. This means that the viewport inside the scope
     may be eq to the viewport outside, but with different values in its slots
     for the duration of the body.
-"))
+")
+
+  (defun viewport (obj)
+    "This is a placeholder generic function for future apis.
+Feel free to implement this in your own programs when yo want to get a viewport
+from some container"))

@@ -145,6 +145,12 @@ Binds the c-array to the variable named by the var-name argument.
 Frees the c-array at the end of the scope.
 ")
 
+  (defun with-c-arrays
+      "
+Binds a list of c-arrays to the variable named by the var-name argument.
+Frees all of the c-arrays at the end of the scope.
+")
+
   (defun element-byte-size
       "
 Returns the size in bytes taken up by a single element of the c-array.

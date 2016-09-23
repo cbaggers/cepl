@@ -517,7 +517,10 @@ Frees the c-array at the end of the scope.
                         <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+Binds a list of c-arrays to the variable named by the var-name argument.
+Frees all of the c-arrays at the end of the scope.
+</pre>
                   </article>
                 </li></ul></li><li class="package">
               <h3>
@@ -848,7 +851,7 @@ The generic function #'free will call #'free-gpu-array when passed a gpu-array.
                       <code>
                         <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:MAKE-GPU-ARRAY" class="name">MAKE-GPU-ARRAY</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE)</span>
+                        <span class="arguments">(INITIAL-CONTENTS &amp;KEY DIMENSIONS ELEMENT-TYPE ACCESS-STYLE)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -1039,7 +1042,7 @@ This function when given a buffer-stream will return those stored gpu-arrays
                       <code>
                         <h4><a href="#%CEPL.TYPES:BUFFER-STREAM-INDEX-TYPE" class="name">BUFFER-STREAM-INDEX-TYPE</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(INSTANCE)</span>
+                        <span class="arguments">(STREAM)</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -1192,10 +1195,12 @@ the window size changes.
                       <code>
                         <h4><a href="#%CEPL.TYPES:VIEWPORT" class="name">VIEWPORT</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(CAMERA)</span>
+                        <span class="arguments">(OBJ)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">This is a placeholder generic function for future apis.
+Feel free to implement this in your own programs when yo want to get a viewport
+from some container</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:VIEWPORT-DIMENSIONS"/>
@@ -2631,6 +2636,19 @@ example:
 </pre>
                   </article>
                 </li><li>
+                  <a name="CEPL.SAMPLERS:FREE-SAMPLER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.SAMPLERS:FREE-SAMPLER" class="name">FREE-SAMPLER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(SAMPLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
                   <a name="CEPL.SAMPLERS:SAMPLE"/>
                   <article>
                     <header class="function">
@@ -3798,10 +3816,11 @@ blending-params object with the same settings as the one passed.
                       <code>
                         <h4><a href="#%CEPL.TYPES:MAKE-BLENDING-PARAMS" class="name">MAKE-BLENDING-PARAMS</a></h4>
                         <span class="qualifiers"></span>
-                        <span class="arguments">(&amp;KEY ((:MODE-RGB DUM2265) :FUNC-ADD) ((:MODE-ALPHA DUM2266) :FUNC-ADD)
- ((:SOURCE-RGB DUM2267) :SRC-ALPHA) ((:SOURCE-ALPHA DUM2268) :SRC-ALPHA)
- ((:DESTINATION-RGB DUM2269) :ONE-MINUS-SRC-ALPHA)
- ((:DESTINATION-ALPHA DUM2270) :ONE-MINUS-SRC-ALPHA))</span>
+                        <span class="arguments">(&amp;KEY ((:MODE-RGB MODE-RGB) :FUNC-ADD) ((:MODE-ALPHA MODE-ALPHA) :FUNC-ADD)
+ ((:SOURCE-RGB SOURCE-RGB) :SRC-ALPHA)
+ ((:SOURCE-ALPHA SOURCE-ALPHA) :SRC-ALPHA)
+ ((:DESTINATION-RGB DESTINATION-RGB) :ONE-MINUS-SRC-ALPHA)
+ ((:DESTINATION-ALPHA DESTINATION-ALPHA) :ONE-MINUS-SRC-ALPHA))</span>
                       </code>
                     </header>
                     <pre class="docstring">
@@ -3877,7 +3896,13 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(NAME)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function returns all the signatures of the gpu-functions named 'name'.
+
+The reason there may be many is that functions can be 'overloaded' so you
+can have multiple gpu-functions with the same name as long as they can be
+uniquely identified by the combination of their name and argument types.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:DELETE-GPU-FUNCTION"/>
@@ -3890,7 +3915,17 @@ CEPL ensures the blending settings are undone at the end of the scope.
                         <span class="arguments">(GFUNC-DESCRIPTION &amp;OPTIONAL ERROR-IF-MISSING)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This function will delete a gpu-function this will mean it can no longer be used
+in new pipelines.
+
+This function will only delete one function at a time, so if your gpu-function
+is overloaded then you will want to specify the function signature exactly.
+
+See the documentation for #'gpu-functions which will lists all the signatures
+for the gpu-functions with a given name.
+
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:DEF-G-&gt;"/>
@@ -4177,7 +4212,15 @@ g-&gt; is used to compose gpu-functions together into anonymous pipelines
                         <span class="arguments">(&amp;REST ARGS)</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This is CEPL's equivalent of Common Lisp's #'function function.
+
+It returns the object that represents the gpu-function with the specified
+signature.
+
+Currently there is no reason to use this function. It is only available for the
+sake of completeness and future features.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.PIPELINES:MAP-G"/>
@@ -5027,7 +5070,9 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This is the vec-space that describes clip-space in CEPL.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:*NDC-SPACE*"/>
@@ -5040,7 +5085,9 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This is the vec-space that describes ndc-space in CEPL.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:*SCREEN-SPACE*"/>
@@ -5053,7 +5100,12 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This is the vec-space that describes screen-space in CEPL.
+
+It could also be thought of as FBO space when you are not rendering into the
+default framebuffer object.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:*WORLD-SPACE*"/>
@@ -5066,7 +5118,13 @@ This function returns the type of the data that is contained in the UBO
                         <span class="arguments">()</span>
                       </code>
                     </header>
-                    <pre class="docstring"/>
+                    <pre class="docstring">
+This is the vec-space that describes world-space in CEPL.
+
+Whilst it is perfectly possible to use CEPL's vec-space feature to define your
+own world-space, we strongly suggest you do not as CEPL has some specific
+optimizations it can do you you use *world-space* instead of your own.
+</pre>
                   </article>
                 </li><li>
                   <a name="CEPL.SPACE:SVEC4"/>
@@ -5111,8 +5169,9 @@ object, the vec-space. We uses these vec-spaces in our GPU code and CEPL
 statically analyses our code to work out what matrices are needed and uploads
 them as uniforms.
 
-By doing this, our GPU ends up running code that only has the 'normal' types
-(matrices and vectors) which means we pay no performace cost for the features
+By doing this, our GPU ends up running code that only has the 'normal'
+types (matrices and vectors) which means we pay no performace cost for the
+features
 
 Working with vec-spaces directly means our code more closely reflects how we
 talk about the problems we are trying to solve. As we will see below it also

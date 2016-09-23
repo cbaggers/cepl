@@ -384,4 +384,37 @@ contain the index of which of the 1000 instances is currently being drawn.
 Making anonymous pipelines is not yet supported in CEPL. But it will be!
 
 g-> is used to compose gpu-functions together into anonymous pipelines
+")
+
+  (defun gpu-functions (name)
+    "
+This function returns all the signatures of the gpu-functions named 'name'.
+
+The reason there may be many is that functions can be 'overloaded' so you
+can have multiple gpu-functions with the same name as long as they can be
+uniquely identified by the combination of their name and argument types.
+")
+
+  (defun delete-gpu-function (signature)
+    "
+This function will delete a gpu-function this will mean it can no longer be used
+in new pipelines.
+
+This function will only delete one function at a time, so if your gpu-function
+is overloaded then you will want to specify the function signature exactly.
+
+See the documentation for #'gpu-functions which will lists all the signatures
+for the gpu-functions with a given name.
+
+")
+
+  (defun gpu-function (signature)
+    "
+This is CEPL's equivalent of Common Lisp's #'function function.
+
+It returns the object that represents the gpu-function with the specified
+signature.
+
+Currently there is no reason to use this function. It is only available for the
+sake of completeness and future features.
 "))

@@ -18,8 +18,9 @@ object, the vec-space. We uses these vec-spaces in our GPU code and CEPL
 statically analyses our code to work out what matrices are needed and uploads
 them as uniforms.
 
-By doing this, our GPU ends up running code that only has the 'normal' types
-(matrices and vectors) which means we pay no performace cost for the features
+By doing this, our GPU ends up running code that only has the 'normal'
+types (matrices and vectors) which means we pay no performace cost for the
+features
 
 Working with vec-spaces directly means our code more closely reflects how we
 talk about the problems we are trying to solve. As we will see below it also
@@ -261,7 +262,7 @@ This means that the final glsl will only contain standard glsl vectors and
 matrices and will perform as well as any other handwritten glsl code.
 ")
 
-  (defun *screen-space*
+  (defvar *screen-space*
       "
 This is the vec-space that describes screen-space in CEPL.
 
@@ -269,17 +270,17 @@ It could also be thought of as FBO space when you are not rendering into the
 default framebuffer object.
 ")
 
-  (defun *ndc-space*
+  (defvar *ndc-space*
       "
 This is the vec-space that describes ndc-space in CEPL.
 ")
 
-  (defun *clip-space*
+  (defvar *clip-space*
       "
 This is the vec-space that describes clip-space in CEPL.
 ")
 
-  (defun *world-space*
+  (defvar *world-space*
       "
 This is the vec-space that describes world-space in CEPL.
 

@@ -240,8 +240,8 @@
   (origin-x 0 :type fixnum)
   (origin-y 0 :type fixnum))
 
-(defgeneric viewport (camera))
-(defgeneric (setf viewport) (value camera))
+(defgeneric viewport (obj))
+(defgeneric (setf viewport) (value obj))
 
 ;;------------------------------------------------------------
 
