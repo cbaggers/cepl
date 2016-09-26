@@ -523,7 +523,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 
 (defun split-string (delimiter string)
   (let* ((string (string-trim (list delimiter) string))
-	 (result '(nil)))
+	 (result (list ())))
     (loop :for c :across string
        :if (char= c delimiter) :do (push nil result)
        :else :do (push c (first result)))
