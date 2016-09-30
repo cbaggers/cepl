@@ -45,9 +45,9 @@
     "not external"
     (setf swap-arg win-handle))
 
-  (defun host-step (&optional (win swap-arg))
+  (defun host-step (&optional (win swap-arg) tpref)
     "not external"
-    (funcall step-func win))
+    (funcall step-func win tpref))
 
   (defun host-swap (&optional (win swap-arg))
     "not external"
