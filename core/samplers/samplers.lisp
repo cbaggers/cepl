@@ -241,8 +241,15 @@
       (format stream "#<SAMPLER :UNINITIALIZED>")))
 
 (defun free-sampler (sampler)
-  (warn "CEPL: free-sampler not yet implemented~%leaking ~s"
-        sampler))
+  (unless (sampler-shared-p sampler)
+    (warn "CEPL: free-sampler not yet implemented~%leaking ~s"
+          sampler)))
+
+(defmacro with-sampling ((var tex) &body body)
+  (assert (and (symbolp var) (not (keywordp var))))
+  `(let ((,var (sample ,tex)))
+     (unwind-protect (progn ,@body)
+       (free-sampler ,var))))
 
 ;;----------------------------------------------------------------------
 

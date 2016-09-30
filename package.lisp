@@ -208,6 +208,7 @@
 	   :%sampler-compare
 
 	   :sampler-id-box
+           :sampler-shared-p
 	   :make-sampler-id-box
 	   :sampler-id-box-id
 	   :sampler-id-box-shared-p
@@ -742,7 +743,8 @@
 	   :set-minify-filter
 	   :wrap
 	   :compare
-           :free-sampler))
+           :free-sampler
+           :with-sampling))
 
 (defpackage :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

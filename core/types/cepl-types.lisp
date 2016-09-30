@@ -113,6 +113,9 @@
 (defun (setf %sampler-id) (value sampler)
   (setf (%sampler-id-box sampler) value))
 
+(defun sampler-shared-p (sampler)
+  (sampler-id-box-shared-p (%sampler-id-box sampler)))
+
 ;;------------------------------------------------------------
 
 (defstruct (ubo (:constructor %make-ubo))
