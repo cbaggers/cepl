@@ -55,11 +55,11 @@
 (defvar *gl-window* nil)
 (defvar *on-context* nil)
 
-(defun window-size (&optional (window *gl-window*))
+(defun window-dimensions (&optional (window *gl-window*))
   (cepl.host:window-size window))
 
-(defun window-size-v2 (&optional (window *gl-window*))
-  (dbind (x y) (cepl.host:window-size window)
+(defun window-resolution (&optional (window *gl-window*))
+  (dbind (x y) (window-dimensions window)
     (v! x y)))
 
 (defun gl-type-size (type)

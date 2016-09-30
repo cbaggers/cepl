@@ -414,8 +414,8 @@
 	   :%default-framebuffer
 	   :%current-fbo
 	   :*gl-window*
-           :window-size
-           :window-size-v2
+           :window-dimensions
+           :window-resolution
 	   :*on-context*))
 
 (defpackage :cepl.render-state
