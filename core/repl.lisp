@@ -55,7 +55,8 @@
   (cepl.host::host-step cepl.internals:*gl-window* tpref))
 
 (defun swap ()
-  (cepl.host::host-swap))
+  (cepl.host::host-swap)
+  nil)
 
 (defun cls ()
   (with-fbo-bound (%default-framebuffer :with-viewport nil :with-blending nil)

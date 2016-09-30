@@ -30,7 +30,8 @@
 
 (let (step-func
       swap-func
-      swap-arg)
+      swap-arg
+      win-size-func)
   (defun set-step-func (func)
     "Call this and pass the function that will be called every time
      #'cepl:step-host is called"
@@ -40,6 +41,11 @@
     "Call this and pass the function that will be called every time #'cepl:swap
      is called"
     (setf swap-func func))
+
+  (defun set-window-size-func (func)
+    "Call this and pass the function that will be called when the cepl needs to
+     query the window size"
+    (setf win-size-func func))
 
   (defun set-default-swap-arg (win-handle)
     "not external"
@@ -51,4 +57,8 @@
 
   (defun host-swap (&optional (win swap-arg))
     "not external"
-    (funcall swap-func win)))
+    (funcall swap-func win))
+
+  (defun window-size (win)
+    "When given the host-specific window handle will return the size of the window"
+    (funcall win-size-func win)))

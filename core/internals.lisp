@@ -55,6 +55,13 @@
 (defvar *gl-window* nil)
 (defvar *on-context* nil)
 
+(defun window-size (&optional (window *gl-window*))
+  (cepl.host:window-size window))
+
+(defun window-size-v2 (&optional (window *gl-window*))
+  (dbind (x y) (cepl.host:window-size window)
+    (v! x y)))
+
 (defun gl-type-size (type)
   (if (keywordp type)
       (cffi:foreign-type-size type)

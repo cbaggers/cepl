@@ -100,10 +100,12 @@
   (:export :init
            :request-context
            :shutdown
+           :window-size
            :set-primary-thread-and-run
            ;;---
            :set-step-func
-           :set-swap-func))
+           :set-swap-func
+           :set-window-size-func))
 
 (defpackage :cepl.lifecycle
   (:use :cl)
@@ -412,6 +414,8 @@
 	   :%default-framebuffer
 	   :%current-fbo
 	   :*gl-window*
+           :window-size
+           :window-size-v2
 	   :*on-context*))
 
 (defpackage :cepl.render-state
@@ -827,7 +831,6 @@
 	   :*screen-space* :*ndc-space* :*clip-space* :*world-space*
 	   :sv! :svec4))
 
-
 (macrolet
     ((def-re-exporting-package (name &key use shadow export re-export
 				     import-from export-from)
@@ -908,8 +911,6 @@
 		(:cepl.lifecycle :shutting-down-p)
 		(:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
 			   :radians :degrees))))
-
-
 
 
 ;; {TODO} read up on this:
