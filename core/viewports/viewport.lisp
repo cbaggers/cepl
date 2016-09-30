@@ -68,6 +68,12 @@
   (when (eq (current-viewport) viewport)
     (%viewport viewport)))
 
+(defun viewport-resolution-x (viewport)
+  (%viewport-resolution-x viewport))
+
+(defun viewport-resolution-y (viewport)
+  (%viewport-resolution-y viewport))
+
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun viewport-origin (viewport)
