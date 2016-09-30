@@ -229,7 +229,7 @@
 (defun buffer-stream-start-byte (stream)
   (buffer-stream-%start-byte stream))
 
-(defun buffer-stream-%start-byte (stream)
+(defun (setf buffer-stream-start-byte) (value stream)
   (error "CEPL Internal Error: Do not set stream %start-byte directly~%~s"
          stream))
 
