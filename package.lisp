@@ -919,3 +919,8 @@
 ;; advice I got from pjb was to implement the ugliness above with
 ;; 'export directly. I need to understand this approach but could
 ;; be nice.
+
+
+(defpackage :cepl.misc
+  (:use :cl :cepl :rtg-math.base-maths :cl-fad :named-readtables)
+  (:export :draw-texture :draw-colored-quad))

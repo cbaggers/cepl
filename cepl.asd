@@ -110,4 +110,5 @@
                (:file "core/ubos/docs")
                (:file "core/vaos/docs")
                (:file "core/spaces/docs")
-	       (:file "core/pipelines/docs")))
+	       (:file "core/pipelines/docs")
+               (:file "core/misc/misc")))
