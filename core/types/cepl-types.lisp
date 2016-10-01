@@ -185,6 +185,7 @@
   (%start-byte (null-pointer) :type foreign-pointer)
   (length 1 :type unsigned-byte)
   (%index-type nil :type symbol)
+  (%index-type-size 0 :type (unsigned-byte 8))
   (gpu-arrays nil :type list)
   (managed nil :type boolean))
 
@@ -202,6 +203,9 @@
                     (null-pointer))
    :length (or length 1)
    :%index-type index-type
+   :%index-type-size (if (%valid-index-type-p index-type)
+                         (foreign-type-size index-type)
+                         0)
    :managed managed
    :gpu-arrays gpu-arrays))
 
@@ -212,7 +216,8 @@
   (setf (buffer-stream-%index-type stream) value)
   ;; doing this vv forces recalculation of start-byte
   (when (%valid-index-type-p value)
-    (setf (buffer-stream-start stream) (buffer-stream-start stream)))
+    (setf (buffer-stream-%index-type-size stream) (foreign-type-size value)
+          (buffer-stream-start stream) (buffer-stream-start stream)))
   value)
 
 (defun buffer-stream-start (stream)
@@ -220,10 +225,11 @@
 
 (defun (setf buffer-stream-start) (value stream)
   (setf (buffer-stream-%start stream) value)
-  (let ((index-type (buffer-stream-index-type stream)))
+  (let ((index-type (buffer-stream-index-type stream))
+        (type-size (buffer-stream-%index-type-size stream)))
     (when (%valid-index-type-p index-type)
       (setf (buffer-stream-%start-byte stream)
-            (make-pointer (* value (foreign-type-size index-type))))))
+            (make-pointer (* value type-size)))))
   value)
 
 (defun buffer-stream-start-byte (stream)
