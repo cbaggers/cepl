@@ -17,37 +17,27 @@
   (cepl.lifecycle::change-state :interactive)
   t)
 
-(defun init-repl-link (&key (port 4005))
-  ;; handle some osx package managers
-  #+darwin
-  (let ((extra-package-dirs '("/opt/local/lib/" "/usr/local/")))
-    (mapcar
-     (lambda (raw-path)
-       (let ((port-dir (cl-fad:directory-exists-p raw-path)))
-         (when (and port-dir
-                    (not (member port-dir cffi:*foreign-library-directories*)))
-           (push port-dir cffi:*foreign-library-directories*))))
-     extra-package-dirs))
 
+(defun init-repl-link (&key (port 4005))
   ;; start swank or slynk in a way that allows repl usage with windows&osx
   ;; window-manager thread crap
   (cond
     ((find-package :swank)
      (cepl.host:set-primary-thread-and-run
       (lambda ()
-	(let (#+linux
-	      (style (cepl-utils:ni-val :swank :*COMMUNICATION-STYLE*))
-	      #-linux
-	      (style nil))
-	  (cepl-utils:ni-call :swank :create-server :style style :dont-close t :port port)))))
+        (let (#+linux
+              (style (cepl-utils:ni-val :swank :*COMMUNICATION-STYLE*))
+              #-linux
+              (style nil))
+          (cepl-utils:ni-call :swank :create-server :style style :dont-close t :port port)))))
     ((find-package :slynk)
      (cepl.host:set-primary-thread-and-run
       (lambda ()
-	(let (#+linux
-	      (style (cepl-utils:ni-val :slynk :*COMMUNICATION-STYLE*))
-	      #-linux
-	      (style nil))
-	  (cepl-utils:ni-call :slynk :create-server :style style :dont-close t :port port)))))))
+        (let (#+linux
+              (style (cepl-utils:ni-val :slynk :*COMMUNICATION-STYLE*))
+              #-linux
+              (style nil))
+          (cepl-utils:ni-call :slynk :create-server :style style :dont-close t :port port)))))))
 
 (defun quit () (cepl.lifecycle::change-state :shutting-down))
 

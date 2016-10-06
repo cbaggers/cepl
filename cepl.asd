@@ -1,4 +1,4 @@
-;;;; cepl.asd
+;;; cepl.asd
 
 #+sbcl
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -11,29 +11,30 @@
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :serial t
   :depends-on (#:cffi
-	       #:cl-autowrap
+               #:cl-autowrap
                #:cl-fad
                #:cl-opengl
                #:cl-plus-c
                #:cl-ppcre
                #:documentation-utils
                #:fn
-	       #:ieee-floats
+               #:ieee-floats
                #:named-readtables
                #:rtg-math
                #:varjo)
   :components ((:file "package")
                (:file "host/api")
+               (:file "core/ffi")
                (:file "core/utils")
                (:file "project")
-	       (:file "core/context/vars")
+               (:file "core/context/vars")
                (:file "core/lifecycle")
                (:file "core/continuable")
                (:file "core/measurements/measurements")
-	       (:file "core/memory/memory")
+               (:file "core/memory/memory")
                (:file "core/types/cepl-types")
                (:file "core/memory/post-context-init")
-	       (:file "core/types/initalized-p")
+               (:file "core/types/initalized-p")
                (:file "core/internals")
                (:file "core/types/types")
                (:file "core/spaces/constants")
@@ -46,23 +47,23 @@
                (:file "core/viewports/viewport")
                (:file "core/context/context-classes")
                (:file "core/context/context")
-	       (:file "core/context/version")
+               (:file "core/context/version")
                (:file "core/types/image-format")
                (:file "core/types/pixel-format")
                (:file "core/types/cffi-extra-primitive-types")
-	       (:file "core/types/cffi-helpers")
+               (:file "core/types/cffi-helpers")
                (:file "core/c-arrays/def")
-	       (:file "core/c-arrays/aref-c")
-	       (:file "core/c-arrays/populate")
-	       (:file "core/c-arrays/make")
-	       (:file "core/c-arrays/map")
-	       (:file "core/c-arrays/rest")
+               (:file "core/c-arrays/aref-c")
+               (:file "core/c-arrays/populate")
+               (:file "core/c-arrays/make")
+               (:file "core/c-arrays/map")
+               (:file "core/c-arrays/rest")
                (:file "core/types/structs")
                (:file "core/gpu-buffers/gpu-buffers")
                (:file "core/gpu-arrays/buffer-backed")
                (:file "core/vaos/vaos")
                (:file "core/streams/buffer-streams")
-	       (:file "core/pipelines/generics")
+               (:file "core/pipelines/generics")
                (:file "core/pipelines/uniforms")
                (:file "core/pipelines/map-g-constant")
                (:file "core/pipelines/compile-passes")
@@ -72,7 +73,7 @@
                (:file "core/pipelines/gpu-functions")
                (:file "core/pipelines/glsl-stages")
                (:file "core/pipelines/uniform-assigners-generation")
-	       (:file "core/pipelines/defpipeline")
+               (:file "core/pipelines/defpipeline")
                (:file "core/textures/def")
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")
@@ -110,5 +111,5 @@
                (:file "core/ubos/docs")
                (:file "core/vaos/docs")
                (:file "core/spaces/docs")
-	       (:file "core/pipelines/docs")
+               (:file "core/pipelines/docs")
                (:file "core/misc/misc")))
