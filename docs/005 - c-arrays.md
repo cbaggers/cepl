@@ -1,12 +1,12 @@
 # C Arrays
 
-Let me take a second before getting into our scheduled programming to praise the cffi.  Common Lisp's cffi is amazing! To be able to get so much done as a newbie really solidified my love for CL.  cffi and libraries using it have been the cornerstone of this entire project. To all the developers involved, You Rock.
+Let me take a second before getting into our scheduled programming to praise the CFFI.  Common Lisp's CFFI is amazing! To be able to get so much done as a newbie really solidified my love for CL.  CFFI and libraries using it have been the cornerstone of this entire project. To all the developers involved, You Rock.
 
 ### Right, back to the snooker:
 
-When dealing with graphics we are very often working with large arrays of information, information like the vertices of our meshes or positions of lights. cffi allows us to allocate arrays of different types, but in CEPL we also want to attach extra metadata that will be used behind the scenes.  To this end CEPL has its own c-array type that uses cffi behind the scenes.
+When dealing with graphics we are very often working with large arrays of information, information like the vertices of our meshes or positions of lights. CFFI allows us to allocate arrays of different types, but in CEPL we also want to attach extra metadata that will be used behind the scenes.  To this end CEPL has its own c-array type that uses CFFI behind the scenes.
 
-In this document, the terms "C arrays" and "c-array" refer to the special cffi arrays that are managed by CEPL.
+In this document, the terms "C arrays" and "c-array" refer to the special CFFI arrays that are managed by CEPL.
 
 That was all a bit technical so lets get into how to use CEPL arrays.
 ```lisp
