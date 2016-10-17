@@ -6,9 +6,10 @@ Let me take a second before getting into our scheduled programming to praise the
 
 When dealing with graphics we are very often working with large arrays of information, information like the vertices of our meshes or positions of lights. cffi allows us to allocate arrays of different types, but in CEPL we also want to attach extra metadata that will be used behind the scenes.  To this end CEPL has its own c-array type that uses cffi behind the scenes.
 
-That was all a bit technical so lets get into how to use CEPL arrays.
+In this document, the terms "C arrays" and "c-array" refer to the special cffi arrays that are managed by CEPL.
 
-```
+That was all a bit technical so lets get into how to use CEPL arrays.
+```lisp
 	 ;; 0.
 	 (make-c-array nil :dimensions 100 :element-type :float)
 
@@ -31,19 +32,18 @@ That was all a bit technical so lets get into how to use CEPL arrays.
 
 We will go through these one by one and talk about what is going on:
 
-*0:*
-In example `0` we make a c-array of 100 floats with *no initial-contents*.
+**0:** In example `0` we make a c-array of 100 floats with *no initial-contents*.
 
 As you probably guessed, that first `nil` argument is where you can provide data to be used as the initial contents. By not providing it we, are leaving those values uninitialized, so the normal rules apply (it may be full of garbage)
 
-*1:*
+**1:**
 This is simply to show that we can use our structs from the previous chapter in c-arrays.
 
-*2:*
+**2:**
 This little example shows that when we provide the `initial-contents`, we can leave out the dimensions. The dimensions will be made the same as those of the data provided.
 
-*3:*
-Number 3 shows that you can even provide Lisp data when the `element-type` is a CEPL struct. In this case, CEPL will take each element of the list in order to fill in the slots of the struct.  Here is the definition of that struct again:
+**3:**
+You can even provide Lisp data when the `element-type` is a CEPL struct. In this case, CEPL will take each element of the list in order to fill in the slots of the struct.  Here is the definition of that struct again:
 
 ```
 	 (defstruct-g our-data ()
@@ -51,10 +51,10 @@ Number 3 shows that you can even provide Lisp data when the `element-type` is a 
 	   (val :int :accessor val))
 ```
 
-So in this case we end up with a c-array with two elements of type `our-data`. The first struct has the `position` `(v! 1 2 3)` and the `val` `10`; the second struct has the `position` `(v! 4 5 6)` and the `val` 20.
+In this case we end up with a c-array with two elements of type `our-data`. The first struct has the `position` `(v! 1 2 3)` and the `val` `10`; the second struct has the `position` `(v! 4 5 6)` and the `val` 20.
 
-*4:*
-Hey now, this is odd, we only provide the lisp data. How does CEPL know what to do?  Here `#'make-c-array` scans each element of the Lisp data and tries to find the *smallest cepl compatible type* that will hold all the values. In this case, because of the number `3.0`, the array has to have `element-type` `:float`.
+**4:**
+Hey now, this is odd; we only provide the lisp data. How does CEPL know what to do?  Here `#'make-c-array` scans each element of the Lisp data and tries to find the *smallest cepl compatible type* that will hold all the values. In this case, because of the number `3.0`, the array has to have `element-type` `:float`.
 
 Now this feature is very handy (especially in the repl) but there are some caveats.
 
@@ -62,27 +62,24 @@ Now this feature is very handy (especially in the repl) but there are some cavea
   `:uint8` `:int8` `:int` `:float` & `:double`
 
 - Scanning for types is not fast:
-  This is a great feature to use at the REPL, because odds are CEPL can work out the type fast enough that you won't notice a delay. **However** this is not good in performance-critical code, so if you need the speed, always specify your `element-type`
+  This is a great feature to use at the REPL, because odds are CEPL can work out the type fast enough that you won't notice a delay. **However** -- this is not good in performance-critical code, so if you need the speed, always specify your `element-type`.
 
-*5:*
-This shows two things:
+**5:**
+This demonstrates two points:
 
- - c-arrays can take arrays (of multiple dimensions also)
- - The `element-type` that cepl will give this array is `:uint8`. The reason is that all the elements are between 0 & 255.
+ - c-arrays can be initialized with Lisp arrays (of multiple dimensions)
+ - The `element-type` that CEPL will give this array is `:uint8`. The reason is that all the elements are between 0 & 255.
 
 If we were to write:
-
 ```
 	 (make-c-array #2A((1 -2) (3 4)))
 ```
-
-The the `element-type` would be `:int8`.
+the resulting `element-type` would be `:int8`.
 
 
 ### More `#'make-c-array` args
 
-The signature for `#'make-c-array` is as follows
-
+The signature for `#'make-c-array` is as follows:
 ```
  (initial-contents
   &key dimensions
@@ -91,33 +88,29 @@ The signature for `#'make-c-array` is as follows
 	   (alignment 1))
 ```
 
-we have already seen `initial-contents`, `dimensions` & `element-type` but what of the other two?
+We have already seen `initial-contents`, `dimensions`, and `element-type`; what of the other two?
 
 **displaced-by:**
-This behave similarly to the same argument in CL's `#'make-array`. It lets you make an array sharing data with another array and potentially changing the dimensions at the same time.
-
-Be super careful with this. Both c-arrays share the same memory but there is no GC. So if you free the data behind one, you free the data for the other too.
+Just like in CL's `#'make-array` you can share data with another array and potentially change the dimensions at the same time. Be super careful with this. Both c-arrays share the same memory but there is no GC. So if you free the data behind one, you free the data for the other as well.
 
 **alignment:**
-Alignment is mean to byte align the data in your array but it is currently buggy. Don't use this yet :)
+Alignment is meant to byte-align the data in your array but it is currently buggy. Don't use this yet :)
 
 
 ### Getting and Setting
 
-There's not point having an array we can access so let's do that now.
+There's not point having an array we can access so let's do that now.  In CL we normally use `(aref some-array subscripts ..)` to get an element from the array and `(setf (aref some-array subscripts ..) val)` to set an element.
 
-In CL we normally use `(aref some-array subscripts ..)` to get an element from the array and `(setf (aref some-array subscripts ..) val)` to set an element.
-
-In cepl we use `(aref-c some-array subscripts ..)` to get an element and `(setf (aref-c some-array subscripts ..) val)` to set an element.
+In CEPL we use `(aref-c some-array subscripts ..)` to get an element and `(setf (aref-c some-array subscripts ..) val)` to set an element.
 
 Mind bending stuff! :p
 
 ### subseq-c
 
-`#'subseq-c` is a cool function. It gives you a c-array whos contents are the subset of another c-arrays. This is very like CL's regular `subseq` function **except** for one **very** important detail.
+`#'subseq-c` is a cool function. It gives you a c-array, the contents of which are a subset of another c-array. This is very like CL's regular `subseq` function **except for one very important detail**.
 
-`#'subseq-c` does not COPY the data, which means changes in the first array affect the second (and vice versa).
+`#'subseq-c` **does not** copy the data, which means changes in the first array affect the second (and vice versa)!
 
 ### Freeing
 
-To free a c-array we can call `#'free` or `#'free-c-array` the later of course being the more optimized code path.
+To free a c-array we can call `#'free` or `#'free-c-array`. The latter, of course, is the more optimized code path.
