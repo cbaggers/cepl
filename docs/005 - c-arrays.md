@@ -1,16 +1,12 @@
 # C Arrays
 
-Let me take a second before getting into our scheduled programming to praise the cffi:
-
-Common Lisp's cffi is amazing, to be able to get some much done as a newbie really solidified my love for CL and cffi (and libraries using it) have been the corner stone of this entire project. To all the developers involved, You Rock.
+Let me take a second before getting into our scheduled programming to praise the cffi.  Common Lisp's cffi is amazing! To be able to get so much done as a newbie really solidified my love for CL.  cffi and libraries using it have been the cornerstone of this entire project. To all the developers involved, You Rock.
 
 ### Right, back to the snooker:
 
-So when dealing with graphics we are very often dealing with large arrays of information, information like the vectices of our meshes or positions of lights. Cffi allows us to allocate arrays of different types, but in cepl we also want to attach extra metadata that will be used behind the scenes.
+When dealing with graphics we are very often working with large arrays of information, information like the vertices of our meshes or positions of lights. cffi allows us to allocate arrays of different types, but in CEPL we also want to attach extra metadata that will be used behind the scenes.  To this end CEPL has its own c-array type that uses cffi behind the scenes.
 
-To this end cepl has its own c-array type that uses cffi behind the scenes.
-
-That was all a bit technical so lets get into how to use them.
+That was all a bit technical so lets get into how to use CEPL arrays.
 
 ```
 	 ;; 0.
@@ -33,24 +29,21 @@ That was all a bit technical so lets get into how to use them.
 	 (make-c-array #2A((1 2) (3 4)))
 ```
 
-We will go through these 1 by 1 and talk about what is going on:
+We will go through these one by one and talk about what is going on:
 
 *0:*
 In example `0` we make a c-array of 100 floats with *no initial-contents*.
 
-As you probably guessed, that first argument is where you can provide data to be used as the initial contents. By not providing it we are leaving those values un-initialized, so the normal rules apply (it may be full of garbage)
+As you probably guessed, that first `nil` argument is where you can provide data to be used as the initial contents. By not providing it we, are leaving those values uninitialized, so the normal rules apply (it may be full of garbage)
 
 *1:*
 This is simply to show that we can use our structs from the previous chapter in c-arrays.
 
 *2:*
-This little example shows that when we provide the `initial-contents` we can leave out the dimensions. The dimensions will be made the same dimensions as that of the data provided.
+This little example shows that when we provide the `initial-contents`, we can leave out the dimensions. The dimensions will be made the same as those of the data provided.
 
 *3:*
-Number 3 shows that you can even provide lisp data when the `element-type` is a cepl struct. In this case it will take each element
-of the list in order to fill in the slots of the struct.
-
-Here is the definition of that struct again:
+Number 3 shows that you can even provide Lisp data when the `element-type` is a CEPL struct. In this case, CEPL will take each element of the list in order to fill in the slots of the struct.  Here is the definition of that struct again:
 
 ```
 	 (defstruct-g our-data ()
@@ -58,12 +51,10 @@ Here is the definition of that struct again:
 	   (val :int :accessor val))
 ```
 
-So in this case we end up with a c-array with two elements of type `our-data`, the first struct has the `position` `(v! 1 2 3)` and the `val` `10`; the second struct has the `position` `(v! 4 5 6)` and the `val` 20.
+So in this case we end up with a c-array with two elements of type `our-data`. The first struct has the `position` `(v! 1 2 3)` and the `val` `10`; the second struct has the `position` `(v! 4 5 6)` and the `val` 20.
 
 *4:*
-Hey now this is odd, we only provide the lisp data, how does cepl know what to do?
-
-What happens is that `#'make-c-array` scans each element of the lisp data and tries to find the *smallest cepl compatible type* that will hold all the values. In this case because of the number `3.0` in there the array has to have `element-type` `:float`.
+Hey now, this is odd, we only provide the lisp data. How does CEPL know what to do?  Here `#'make-c-array` scans each element of the Lisp data and tries to find the *smallest cepl compatible type* that will hold all the values. In this case, because of the number `3.0`, the array has to have `element-type` `:float`.
 
 Now this feature is very handy (especially in the repl) but there are some caveats.
 
@@ -71,13 +62,13 @@ Now this feature is very handy (especially in the repl) but there are some cavea
   `:uint8` `:int8` `:int` `:float` & `:double`
 
 - Scanning for types is not fast:
-  This is a great feature to use at the repl, because odds are cepl can work out the type fast enough that you won't notice a delay. **However** this is not a good type to use in performance critical code, so if you need the speed, always specify your `element-type`
+  This is a great feature to use at the REPL, because odds are CEPL can work out the type fast enough that you won't notice a delay. **However** this is not good in performance-critical code, so if you need the speed, always specify your `element-type`
 
 *5:*
 This shows two things:
 
-First: that c-arrays can take arrays (of multiple dimensions also)
-Second: The `element-type` that cepl will give this array is `:uint8`. The reason is that all the elements are between 0 & 255.
+ - c-arrays can take arrays (of multiple dimensions also)
+ - The `element-type` that cepl will give this array is `:uint8`. The reason is that all the elements are between 0 & 255.
 
 If we were to write:
 
