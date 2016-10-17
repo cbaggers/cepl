@@ -10,13 +10,13 @@ We use these types to work with data-structures in C or GPU memory.
 
 ### How do these map to lisp types?
 
-All the C memory is being handled through cffi, so all of the mappings are defined through that system.
+All the C memory is being handled through CFFI, so all of the mappings are defined through that system.
 
 ### What's with the naming?
 
-If you have already had a peek below, you will have seen many keywords being used as names. This is a pattern used by cffi for its in-built types, and when we added the additional core graphics types (vec3, mat4 etc), we continued using keywords for consistency.  You will quickly get used to keywords repersenting in-built types.
+If you have already had a peek below, you will have seen many keywords being used as names. This is a pattern used by CFFI for its in-built types, and when we added the additional core graphics types (vec3, mat4 etc), we continued using keywords for consistency.  You will quickly get used to keywords repersenting in-built types.
 
-The rule is that core types have optional keyword names, and all user-defined types have regular symbols names, just like cffi.
+The rule is that core types have optional keyword names, and all user-defined types have regular symbols names, just like CFFI.
 
 ### CEPL's basic types
 
@@ -45,13 +45,13 @@ So without further ado, lets look at each type, the size in bytes, and the lisp 
 
 To be 100% accurate I have to say, that for all the types with `*` at the end, the type returned is actually implementation specific. But you get the idea :)
 
-See the [cffi documentation for details](https://common-lisp.net/project/cffi/manual/cffi-manual.html#Built_002dIn-Types)
+See the [CFFI documentation for details](https://common-lisp.net/project/cffi/manual/cffi-manual.html#Built_002dIn-Types)
 
-### Supported cffi types
+### Supported CFFI types
 
-Of course we also support some of the cffi types. For completeness here is a list:
+Of course we also support some of the CFFI types. For completeness here is a list:
 
-| name |
+|      |
 |:-----|
 | :short |
 | :ushort (also called :unsigned-short ) |
