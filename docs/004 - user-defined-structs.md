@@ -4,7 +4,7 @@ Laying out GPU data in memory is one of the really tricky parts of working with 
 
 ### Defining
 
-You create these using `defstruct-g`, so lets look at an example right now:
+`defstruct-g` is used to create these special structs, so lets look at an example right now:
 
 ```
      (defstruct-g our-data
