@@ -68,12 +68,12 @@ Because of this CEPL is very flexible with its `make-fbo` syntax, we will go tho
 
 Let's make one now.
 ```lisp
-(make-fbo :c)
+CEPL>(make-fbo :c)
 #<FBO COLOR-ATTACHMENTS (0)>
 ```
 This is a way of making a fbo with one color attachment. Let's make an fbo with 2 color attachments:
 ```lisp
-(make-fbo 0 1)
+CEPL>(make-fbo 0 1)
 #<FBO COLOR-ATTACHMENTS (0 1)>
 ```
 
