@@ -5,8 +5,7 @@ Laying out GPU data in memory is one of the really tricky parts of working with 
 ### Defining
 
 `defstruct-g` is used to create these special structs, so lets look at an example right now:
-
-```
+```lisp
      (defstruct-g our-data
        (position :vec3)
        (val :int :accessor val))
@@ -15,8 +14,7 @@ Laying out GPU data in memory is one of the really tricky parts of working with 
 This should seem familiar if you have used Common Lisp's structs.  You provide a name, options (if you need them), and the definitions for the slots. The slots are mostly what we are interested in, so let's look at them.  
 
 The format for a slot is:
-
-```
+```lisp
      (slot-name slot-type)
 
      -or-
@@ -27,8 +25,7 @@ The format for a slot is:
 ### Gimme one!
 
 The first example above makes a slot of the given type (which must be a CEPL-compatible type). As with regular Lisp structs, to make an instance of `our-data` type use the `make-our-data` function, passing in values with the keyword arguments. For example:
-
-```
+```lisp
      (defvar x (make-our-data :position (v! 1 2 3) :val 5))
 ```
 
@@ -57,8 +54,7 @@ Also note that I said "on the cpu". As we shall see, our shaders are statically 
 ### Options
 
 Let's look at another example struct:
-
-```
+```lisp
      (defstruct-g (our-data :writers nil
                             ..
                             ..)
