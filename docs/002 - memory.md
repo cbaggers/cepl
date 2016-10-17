@@ -2,34 +2,30 @@
 
 ### Where's my data?
 
-With Cepl your data can exist in 3 different places:
+With CEPL data can exist in three different places:
 
 - lisp memory - The regular lisp data in your program. This get's GC'd (garbage collected)
 - c memory - Data stored in block of cffi memory. This does not get GC'd
 - gpu memory - Data stored on the GPU. This does not get GC'd
 
-A lot of work done in cepl is about making moving data between these places easy.
+CEPL makes moving data between these places easy.
 
 ### GC
 
-Garbage collection is our friend in lisp. It let's us use our repls for experimental bliss and makes possible the kinds of data structures that would be a knightmare to keep in order without a very special data ownership model.
+Garbage collection is our friend in lisp. GC facilitates the use our REPLs for experimental bliss and allows data structures that would be a nightmare to maintain otherwise.
 
-However in realtime graphics the GC *can* be a problem. One of the things we end up working very hard for is a stable frame rate which makes spikes in GC activity a problem. It clearly is possible to have a GC and make games but the core system have to be written sensibly to ensure they arent adding load.
+However, in realtime graphics the GC *can* be a problem. Stable frame rate is a major requirement, and spikes in GC activity can cause problems. It is clearly possible to have a GC and make games, but the core systems have to be written sensibly to ensure they aren't adding load.
 
-On top of this, communication with the gpu can be very expensive if done at the wrong time. Deciding to free a bunch of gpu memory without being very aware of the current render state is a recipe for disaster.
+Communication with the GPU at the wrong time can be very expensive. Freeing GPU memory used by the current render state is a recipe for disaster.  To this end, by default, none of the data in c-memory or gpu-memory is GC'd. This obviously means you need to free this data yourself, or you will end up with memory leaks.
 
-To this end, by default, none of the data in c-memory or gpu-memory is GC'd. This obviously means you need to free this data yourself or you end up with memory leaks.
-
-We say by default as there are certain times you don't mind paying the cost. For example when you are playing with ideas in the repl. To this end we are looking into ways of providing this without compromising any performance in the rest of cepl. This is WIP so this doco will be updated when that is in place.
+We say "by default" as there are certain times you may not mind paying the cost. For example, when you are playing with ideas in the REPL. To this end we are exploring ways of providing this capability without compromising any performance in the rest of CEPL. This is WIP so this doc will be updated when that is in place.
 
 ### #'free and #'free-*
 
 To release memory we have two options, firstly we can use the generic function #'free as in
-
 ```
 (free some-cepl-data)
 ```
-
 However you may not want to pay the dispatch cost in performance critical code, so there are a number of `free-*` functions (e.g. #'free-c-array #'free-gpu-array etc). These specific functions will be covered in their respective chapters.
 
 ### #'pull-g & #'push-g
