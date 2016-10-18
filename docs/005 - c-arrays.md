@@ -99,7 +99,7 @@ Alignment is meant to byte-align the data in your array but it is currently bugg
 
 ### Getting and Setting
 
-There's not point having an array we can access so let's do that now.  In CL we normally use `(aref some-array subscripts ..)` to get an element from the array and `(setf (aref some-array subscripts ..) val)` to set an element.
+There's not point having an array we can't access so let's do that now.  In CL we normally use `(aref some-array subscripts ..)` to get an element from the array and `(setf (aref some-array subscripts ..) val)` to set an element.
 
 In CEPL we use `(aref-c some-array subscripts ..)` to get an element and `(setf (aref-c some-array subscripts ..) val)` to set an element.
 
