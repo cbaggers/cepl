@@ -6,7 +6,7 @@ CEPL, like OpenGL, doesn't manage windows or window events.  CEPL simply works w
 
 A host only needs to satisfy a very basic API, so it's easy for you to make your own project a host. Or you can use the pre-made hosts like `cepl.sdl2`
 
-# Cepl Systen Architecture Questions
+# CEPL System Architecture Questions
 
 #### Q: Why are no hosts included by default? You could have them as part of this repo
 
@@ -15,4 +15,4 @@ True, but I wanted to make it clear that hosts are totally seperate from CEPL an
 
 #### Q: Why are 'hosts' called 'hosts' and not something like 'backends'?
 
-To me this implies that cepl is a frontend.  This feels wrong as CEPL is just a tool; the frontend to you application is yours to define.
+To me this implies that CEPL is a frontend.  This feels wrong as CEPL is just a tool; the frontend to you application is yours to define.
