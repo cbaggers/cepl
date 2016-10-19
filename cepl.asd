@@ -21,7 +21,8 @@
                #:ieee-floats
                #:named-readtables
                #:rtg-math
-               #:varjo)
+               #:varjo
+               #:closer-mop)
   :components ((:file "package")
                (:file "host/api")
                (:file "core/ffi")
