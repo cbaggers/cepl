@@ -64,7 +64,7 @@ You should see an empty window appear, OpenGL is now initialized, and you can us
 The best way to get started is to make a new project that uses CEPL. Do the following in your REPL to get set up:
 
 - First, run `(ql:quickload :cepl)`
-- Then run `(ql:quickload :quickproject)`. Cepl uses this to create a lisp project using its own templates
+- Then run `(ql:quickload :quickproject)`. CEPL uses this to create a lisp project using its own templates
 - Then run `(cepl:make-project "my-proj")`. This will use quickproject to make a new project with all the correct dependencies. Remember that cepl does not handle window managers or input so by default your new project will use the following
  - cepl for the graphics
  - [cepl.sdl2](https://github.com/cbaggers/cepl.sdl2) for the host
