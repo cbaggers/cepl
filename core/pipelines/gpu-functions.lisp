@@ -22,13 +22,13 @@
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-		(varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
-		;; check the arguments are sanely formatted
-		(mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
-		(mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
-		;; now the meat
-		(%def-gpu-function name in-args uniforms body instancing
-				   doc-string declarations equiv context))))
+        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+      ;; check the arguments are sanely formatted
+      (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
+      (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
+      ;; now the meat
+      (%def-gpu-function name in-args uniforms body instancing
+                         doc-string declarations equiv context))))
 
 (defun assert-arg-format (gfunc-name x)
   (unless (listp x)
@@ -127,7 +127,7 @@
 	  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
 	    (let* ((context (union '(:vertex :fragment :iuniforms) context))
 		   (context (swap-version (lowest-suitable-glsl-version context)
-			     context))
+                                          context))
 		   (compiled
 		    (v-translate in-args uniforms context `(progn ,@body) nil)))
 	      (setf actual-uniforms (uniforms compiled) ;;[2]

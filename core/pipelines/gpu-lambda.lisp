@@ -9,7 +9,7 @@
    (instancing :initarg :instancing)
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
-   (context :initarg context))
+   (context :initarg :context))
   (:metaclass closer-mop:funcallable-standard-class))
 
 (defmethod initialize-instance :after ((glambda gpu-lambda) &key)
@@ -40,7 +40,7 @@
       (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
       ;; now the meat
-      (make-instance '%def-gpu-lambda
+      (make-instance 'gpu-lambda
                      :in-args in-args
                      :uniforms uniforms
                      :body body
@@ -49,10 +49,74 @@
                      :declarations declarations
                      :context context))))
 
-(defmacro glambda (args ))
+;;------------------------------------------------------------
+
+(defun test-the-cunt (gpipe-args context)
+  (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
+    (let* ((stage-keys (mapcar #'cdr stage-pairs))
+	   (aggregate-uniforms (aggregate-uniforms stage-keys nil t))
+	   (uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
+           ;; we generate the func that compiles & uploads the pipeline
+           ;; and also populates the pipeline's local-vars
+           (uniform-names
+            (mapcar #'first (aggregate-uniforms stage-keys)))
+           (actual-uniform-names
+            (mapcar #'first (aggregate-uniforms stage-keys nil t)))
+           (uniform-transforms
+            (remove-duplicates
+             (remove nil
+                     (mapcar λ(when (member (first _) actual-uniform-names)
+                                _)
+                             (reduce
+                              (lambda (accum key)
+                                (with-gpu-func-spec (gpu-func-spec key)
+                                  (append accum uniform-transforms)))
+                              stage-keys
+                              :initial-value nil)))
+             :test #'equal))
+           (prim-type (varjo:get-primitive-type-from-context context))
+           (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
+           (u-cleanup (mapcat #'cleanup (reverse uniform-assigners)))
+           (u-lets (mapcat #'let-forms uniform-assigners)))
+      `(multiple-value-bind (compiled-stages prog-id)
+           (%compile-link-and-upload nil ,(serialize-stage-pairs stage-pairs))
+         ,@(unless (supports-implicit-uniformsp context)
+                   `((declare (ignore compiled-stages))))
+         (let* ((image-unit -1)
+                ;; If there are no implicit-uniforms we need a no-op
+                ;; function to call
+                ,@(when (supports-implicit-uniformsp context)
+                        `((implicit-uniform-upload-func
+                           (or (%create-implicit-uniform-uploader compiled-stages)
+                               #'fallback-iuniform-func))))
+                ;;
+                ;; {todo} explain
+                ,@u-lets)
+           ;;
+           ;; generate the code that actually renders
+           (%post-init ,post)
+           (lambda (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
+             (declare (ignore mapg-context) (ignorable ,@uniform-names))
+             (use-program prog-id)
+             (let ,uniform-transforms
+               ,@u-uploads)
+             ,(when (supports-implicit-uniformsp context)
+                    `(locally
+                         (declare (optimize (speed 3) (safety 1)))
+                       (funcall implicit-uniform-upload-func prog-id)))
+             (when stream (draw-expander stream ,prim-type))
+             (use-program 0)
+             ,@u-cleanup
+             stream))))))
+
+;; (defmacro glambda (args ))
 
 ;;------------------------------------------------------------
 
-(defmacro g-> )
+(defmacro g-> (context &body gpipe-args)
+  (test-the-cunt gpipe-args context ))
 
-(def-g-> )
+(defun poop-science ()
+  (g-> nil
+    cepl.misc::draw-texture-vert
+    cepl.misc::draw-texture-frag))

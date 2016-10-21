@@ -1,10 +1,6 @@
 (in-package :cepl.pipelines)
 (in-readtable fn:fn-reader)
 
-(defmacro g-> (context &rest forms)
-  (declare (ignore context forms))
-  (error "Sorry, making anonomous pipelines is not currently supported"))
-
 (defmacro def-g-> (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
   (%defpipeline-gfuncs name gpipe-args context))
@@ -110,7 +106,7 @@
     (format t "~&; uploading (~a ...)~&" name)
     (let ((prog-id (request-program-id-for name)))
       (link-shaders stages-objects prog-id compiled-stages)
-      (when +cache-last-compile-result+
+      (when (and name +cache-last-compile-result+)
 	(add-compile-results-to-pipeline name compiled-stages))
       (mapcar #'%gl:delete-shader stages-objects)
       (values compiled-stages prog-id))))

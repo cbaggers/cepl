@@ -418,9 +418,11 @@ has not been cached yet")
 ;;--------------------------------------------------
 
 (defun request-program-id-for (name)
-  (or (gethash name *gpu-program-cache*)
-      (setf (gethash name *gpu-program-cache*)
-            (gl:create-program))))
+  (if name
+      (or (gethash name *gpu-program-cache*)
+          (setf (gethash name *gpu-program-cache*)
+                (gl:create-program)))
+      (gl:create-program)))
 
 ;;--------------------------------------------------
 
