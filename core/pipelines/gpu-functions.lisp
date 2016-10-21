@@ -329,12 +329,12 @@
 	 (0 (error 'stage-not-found :designator name))
 	 (1 (func-key (first funcs)))
 	 (otherwise
-	  (error 'multiple-gpu-func-matches
-		 :designator stage-designator
-		 :possible-choices (mapcar λ(with-gpu-func-spec _
+	  (let ((choices (mapcar λ(with-gpu-func-spec _
 					      (cons stage-designator
 						    (mapcar #'second in-args)))
-					   funcs))))))
+				 funcs) ))
+	    (format t "CEPL: def-g-> found overloaded GPU functions: ~A.~%  CEPL is selecting the most-recently-defined function, ~s.~%  To eliminate this warning, specify the GPU function along with exact parameter types" choices (first choices)))
+  	  (func-key (first funcs))))))
     ((listp stage-designator)
      (let ((key (new-func-key (first stage-designator) (rest stage-designator))))
        (if (gpu-func-spec key)
