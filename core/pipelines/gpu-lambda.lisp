@@ -1,4 +1,5 @@
 (in-package :cepl.pipelines)
+(in-readtable :fn.reader)
 
 ;;------------------------------------------------------------
 
@@ -9,12 +10,25 @@
    (instancing :initarg :instancing)
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
-   (context :initarg :context))
+   (context :initarg :context)
+   (func-spec :initform nil))
   (:metaclass closer-mop:funcallable-standard-class))
 
+(defmethod glambda->func-spec ((glambda gpu-lambda))
+  (slot-value glambda 'func-spec))
+
 (defmethod initialize-instance :after ((glambda gpu-lambda) &key)
+  ;; need to emit warning if called
   (closer-mop:set-funcallable-instance-function
-   glambda #'fallback-g-lambda-body))
+   glambda #'fallback-g-lambda-body)
+  ;; need to make the func-spec so can be used in pipelines
+  (with-slots (in-args uniforms body instancing doc-string
+                       declarations context func-spec) glambda
+    (setf func-spec
+          (%test-&-update-spec
+           (%make-gpu-func-spec
+            nil in-args uniforms context body instancing nil nil
+            nil nil doc-string declarations nil)))))
 
 (defun fallback-g-lambda-body (&rest args)
   (declare (ignore args))
@@ -33,15 +47,15 @@
         (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
                         (pop body))))
     ;; split the argument list into the categoried we care aboutn
-    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
-                 (instancing :&instancing))
-        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
-      ;; check the arguments are sanely formatted
-      (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
-      (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
-      ;; now the meat
-      (make-instance 'gpu-lambda
-                     :in-args in-args
+    (make-instance 'gpu-lambda
+                   :in-args in-args
+                   (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
+                                (instancing :&instancing))
+                       (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+                     ;; check the arguments are sanely formatted
+                     (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
+                     (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
+                     ;; now the meat
                      :uniforms uniforms
                      :body body
                      :instancing instancing
@@ -49,9 +63,12 @@
                      :declarations declarations
                      :context context))))
 
+(defmacro glambda (args &body body)
+  (make-gpu-lambda args body))
+
 ;;------------------------------------------------------------
 
-(defun test-the-cunt (gpipe-args context)
+(defun make-lambda-pipeline (gpipe-args context)
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
 	   (aggregate-uniforms (aggregate-uniforms stage-keys nil t))
@@ -92,6 +109,7 @@
                 ;;
                 ;; {todo} explain
                 ,@u-lets)
+           (declare (ignorable image-unit))
            ;;
            ;; generate the code that actually renders
            (%post-init ,post)
@@ -109,14 +127,24 @@
              ,@u-cleanup
              stream))))))
 
-;; (defmacro glambda (args ))
+(defun make-n-compile-lambda-pipeline (gpipe-args context)
+  (let ((code (make-lambda-pipeline gpipe-args context)))
+    (funcall (compile nil `(lambda () ,code)))))
 
 ;;------------------------------------------------------------
 
 (defmacro g-> (context &body gpipe-args)
-  (test-the-cunt gpipe-args context ))
+  (labels ((unfunc (x)
+             (if (and (listp x) (eq (first x) 'function))
+                 `(quote ,(second x))
+                 x)))
+    (let ((args (mapcar #'unfunc gpipe-args)))
+      (if (every #'constantp args)
+          (make-lambda-pipeline gpipe-args context)
+          `(make-n-compile-lambda-pipeline (list ,@args) ',context))
+      foo)))
 
-(defun poop-science ()
-  (g-> nil
-    cepl.misc::draw-texture-vert
-    cepl.misc::draw-texture-frag))
+;; (defun poop-science (p)
+;;   (g-> nil
+;;     #'cepl.misc::draw-texture-vert
+;;     #'cepl.misc::draw-texture-frag))

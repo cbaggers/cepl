@@ -804,6 +804,7 @@
 	   :defmacro-g
 	   :define-compiler-macro-g
 	   :with-instances
+           :glambda
 	   :def-g->
 	   :g->
 	   :map-g

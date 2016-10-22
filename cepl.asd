@@ -75,6 +75,7 @@
                (:file "core/pipelines/glsl-stages")
                (:file "core/pipelines/uniform-assigners-generation")
                (:file "core/pipelines/defpipeline")
+               (:file "core/pipelines/gpu-lambda")
                (:file "core/textures/def")
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")
