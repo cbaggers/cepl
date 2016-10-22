@@ -109,12 +109,15 @@
                 ;;
                 ;; {todo} explain
                 ,@u-lets)
-           (declare (ignorable image-unit))
+           (declare (ignorable image-unit)
+                    ,@(when (supports-implicit-uniformsp context)
+                            `((type function implicit-uniform-upload-func))))
            ;;
            ;; generate the code that actually renders
            (%post-init ,post)
            (lambda (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
-             (declare (ignore mapg-context) (ignorable ,@uniform-names))
+             (declare (optimize (speed 3) (safety 1))
+                      (ignore mapg-context) (ignorable ,@uniform-names))
              (use-program prog-id)
              (let ,uniform-transforms
                ,@u-uploads)

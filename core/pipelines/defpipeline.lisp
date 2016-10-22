@@ -274,7 +274,7 @@
          (draw-type ,draw-type)
          (index-type (buffer-stream-index-type stream)))
      (bind-vao (buffer-stream-vao stream))
-     (if (= |*instance-count*| 0)
+     (if (= (the fixnum |*instance-count*|) 0)
          (if index-type
 	     (locally (declare (optimize (speed 3) (safety 0)))
 	       (%gl:draw-elements draw-type

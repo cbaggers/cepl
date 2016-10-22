@@ -59,7 +59,8 @@
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
     (make-assigner
-     :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path))
+     :let-forms `((,id-name (the (signed-byte 32)
+                                 (gl:get-uniform-location prog-id ,glsl-name-path)))
                   (,i-unit (incf image-unit)))
      :uploaders `((when (>= ,id-name 0)
                     (unless (eq (%sampler-type ,arg-name)
@@ -98,7 +99,7 @@
                              &optional (byte-offset 0))
   (let ((id-name (gensym)))
     (make-assigner
-     :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path)))
+     :let-forms `((,id-name (the (signed-byte 32) (gl:get-uniform-location prog-id ,glsl-name-path))))
      :uploaders
      `((when (>= ,id-name 0)
          ;; If we have a byte offset then we need index into that block of
