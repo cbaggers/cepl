@@ -83,20 +83,21 @@ quickproject and then run this again.")
 	   ;; good to have :use'd by default so we add them
 	   (skitter-sdl-p (member :skitter.sdl2 depends-on))
 	   (swank-p (or (eq repl :swank) (eq repl :slime)))
-	   (slynk-p (or (eq repl :sly) (eq repl :slynk))))
+	   (slynk-p (or (eq repl :sly) (eq repl :slynk)))
+           (livesupport-p (or swank-p slynk-p)))
       (cepl-utils:ni-call
        :quickproject :make-project
        pathname
        :depends-on `(:cepl
-		     :temporal-functions
 		     ,host
 		     ,@(when swank-p `(:swank))
 		     ,@(when slynk-p `(:slynk))
-		     ,@(when (or swank-p slynk-p) `(:livesupport))
+		     ,@(when livesupport-p `(:livesupport))
 		     ,@depends-on)
        :name name
        :template-directory *template-dir*
-       :template-parameters (list :skitter-sdl-p skitter-sdl-p))
+       :template-parameters (list :skitter-sdl-p skitter-sdl-p
+                                  :livesupport-p livesupport-p))
       name)))
 
 (docs:define-docs
