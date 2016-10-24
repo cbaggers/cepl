@@ -27,7 +27,8 @@
 ;;------------------------------------------------------------
 
 (defun-g draw-texture-vert ((vert g-pt) &uniform (depth :float))
-  (values (v! (s~ (pos vert) :xy) depth 1s0) (tex vert)))
+  (values (v! (s~ (pos vert) :xy) depth 1s0)
+          (tex vert)))
 
 (defun-g draw-texture-frag ((tc :vec2) &uniform (tex :sampler-2d))
   (texture tex tc))
@@ -41,7 +42,7 @@
 (def-g-> draw-colored-quad-pipeline ()
   #'draw-texture-vert #'draw-colored-quad-frag)
 
-(defun draw-texture (texture &key (swap t) clear (depth 1s0))
+(defun draw-texture (texture &key (swap t) clear (depth 0.9))
   (when clear (clear))
   (etypecase texture
     (texture
