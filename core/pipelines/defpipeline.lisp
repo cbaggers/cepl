@@ -7,7 +7,8 @@
 
 (defmacro def-g-> (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
-  (%defpipeline-gfuncs name gpipe-args context))
+  (let ((*get-stage-within-macro* t))
+    (%defpipeline-gfuncs name gpipe-args context)))
 
 
 (defun %defpipeline-gfuncs (name gpipe-args context &optional suppress-compile)
@@ -50,20 +51,22 @@
 				   context uniform-assigners)))
 	   ;;
 	   ;; generate the function that recompiles this pipeline
-	   ,(gen-recompile-func name gpipe-args context)
+	   ,(gen-recompile-func name stage-pairs post context)
 	   ,(unless suppress-compile `(,(recompile-name name))))))))
 
 (defun fallback-iuniform-func (prog-id)
   (declare (ignore prog-id) (optimize (speed 3) (safety 1))))
 
-(defun gen-recompile-func (name gpipe-args context)
-  `(defun ,(recompile-name name) ()
-     (format t "~&; recompile cpu side of (~a ...)~&" ',name)
-     (force-output)
-     (let ((*standard-output* (make-string-output-stream)))
-       (handler-bind ((warning #'muffle-warning))
-	 (eval (%defpipeline-gfuncs
-		',name ',gpipe-args ',context t))))))
+(defun gen-recompile-func (name stage-pairs post context)
+  (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
+         (gpipe-args (append stages (list :post post))))
+    `(defun ,(recompile-name name) ()
+       (format t "~&; recompile cpu side of (~a ...)~&" ',name)
+       (force-output)
+       (let ((*standard-output* (make-string-output-stream)))
+         (handler-bind ((warning #'muffle-warning))
+           (eval (%defpipeline-gfuncs
+                  ',name ',gpipe-args ',context t)))))))
 
 (defun %update-spec (name stage-keys context)
   (update-pipeline-spec
