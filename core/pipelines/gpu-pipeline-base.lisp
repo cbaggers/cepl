@@ -121,6 +121,9 @@
   ((name :initarg :name :reader name)
    (in-arg-types :initarg :types :reader in-args)))
 
+(defmethod func-key->name ((key func-key))
+  (cons (name key) (in-args key)))
+
 (defmethod make-load-form ((key func-key) &optional environment)
    (declare (ignore environment))
    `(new-func-key ',(name key) ',(in-args key)))
