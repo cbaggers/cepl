@@ -285,6 +285,8 @@ names are depended on by the functions named later in the list"
    gpu function that depends on the named gpu function. It does this by
    triggering a recompile on all pipelines that depend on this glsl-stage"
   (mapcar λ(let ((recompile-pipeline-name (recompile-name _)))
+             (print (list recompile-pipeline-name
+                          *recompiling*))
 	     (when (fboundp recompile-pipeline-name)
 	       (funcall (symbol-function recompile-pipeline-name))))
           (pipelines-that-use-this-as-a-stage key)))
@@ -440,7 +442,7 @@ has not been cached yet")
 
 ;;--------------------------------------------------
 
-(defun recompile-name (name) (symb-package :cepl '~~- name))
+(defun recompile-name (name) (symb-package (symbol-package name) '~~- name))
 
 ;;--------------------------------------------------
 

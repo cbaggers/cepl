@@ -318,11 +318,14 @@
 
 ;;--------------------------------------------------
 
+(defvar *recompiling* nil)
+
 (defun get-stage-key (stage-designator)
   (cond
     ((and (listp stage-designator) (eq (first stage-designator) 'function))
      (get-stage-key (second stage-designator)))
     ((symbolp stage-designator)
+     (print (list "wwee" *recompiling*))
      (let* ((name stage-designator)
 	    (funcs (gpu-func-specs name)))
        (case= (length funcs)
@@ -333,7 +336,11 @@
 					      (cons stage-designator
 						    (mapcar #'second in-args)))
 				 funcs) ))
-	    (format t "CEPL: def-g-> found overloaded GPU functions: ~A.~%  CEPL is selecting the most-recently-defined function, ~s.~%  To eliminate this warning, specify the GPU function along with exact parameter types" choices (first choices)))
+            (if *recompiling*
+                (format t "CEPL: def-g-> found overloaded GPU functions: ~A.~%  CEPL is selecting the most-recently-defined function, ~s.~%  To eliminate this warning, specify the GPU function along with exact parameter types" choices (first choices))
+
+                (error "CEPL: def-g-> found abmiguity in specified stage: ~A~%Please change the def-g-> form to use one of ~{~%~s~}"
+                       stage-designator choices)))
   	  (func-key (first funcs))))))
     ((listp stage-designator)
      (let ((key (new-func-key (first stage-designator) (rest stage-designator))))

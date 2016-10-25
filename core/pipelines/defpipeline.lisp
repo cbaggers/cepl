@@ -7,6 +7,7 @@
 
 (defmacro def-g-> (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
+  (let (()))
   (%defpipeline-gfuncs name gpipe-args context))
 
 
@@ -60,10 +61,11 @@
   `(defun ,(recompile-name name) ()
      (format t "~&; recompile cpu side of (~a ...)~&" ',name)
      (force-output)
-     (let ((*standard-output* (make-string-output-stream)))
-       (handler-bind ((warning #'muffle-warning))
-	 (eval (%defpipeline-gfuncs
-		',name ',gpipe-args ',context t))))))
+     ;;(let ((*standard-output* (make-string-output-stream))))
+     (handler-bind ((warning #'muffle-warning))
+       (let ((*recompiling* t))
+         (eval (%defpipeline-gfuncs
+                ',name ',gpipe-args ',context t))))))
 
 (defun %update-spec (name stage-keys context)
   (update-pipeline-spec
