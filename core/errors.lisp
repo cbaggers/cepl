@@ -159,17 +159,37 @@ The dimensions of the c-array are ~s, however the dimensions given in the
 call to #'make-gpu-array were ~s"
   c-arr-dimensions provided-dimensions)
 
-(deferror multiple-gpu-func-matches () (designator possible-choices)
+(deferror symbol-stage-designator () (designator possible-choices)
     "CEPL: def-g-> found a stage that was incorrectly specified.
 
 The problematic defintition was: ~s
 
-The problem is in this case was that CEPL found multiple GPU function
-definitions with the same name so was unable to pick the correct one.
+The problem is in this case is that, because of potential overloading, CEPL
+stages must be fully qualified.
 
-Instead of ~s please use one of the following:
-~{~s~^~%~}"
-  designator designator possible-choices)
+~a"
+  designator
+  (if (= (length possible-choices) 1)
+      (format nil "Instead of ~s please use: ~s"
+              designator (first possible-choices))
+      (format nil "Instead of ~s please use one of the following:~%~{~s~^~%~}"
+              designator possible-choices)))
+
+(deferror symbol-stage-designators () (designator-choice-pairs)
+    "CEPL: def-g-> found a stage that was incorrectly specified.
+
+The problematic stage designators were:
+~{~s ~}
+
+The problem is in this case is that, because of potential overloading, CEPL
+stages must be fully qualified. ~{~%~%~a~}"
+  (mapcar #'first designator-choice-pairs)
+  (loop :for (designator choices) :in designator-choice-pairs :collect
+     (if (= (length choices) 1)
+         (format nil "Instead of ~s please use: ~s"
+                 designator (first choices))
+         (format nil "Instead of ~s please use one of the following:~%~{~s~^~%~}"
+                 designator choices))))
 
 (deferror stage-not-found () (designator)
     "CEPL - def-g->: Could not find a gpu-function called ~s.

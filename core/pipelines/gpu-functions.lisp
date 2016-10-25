@@ -318,40 +318,26 @@
 
 ;;--------------------------------------------------
 
-(defvar *get-stage-within-macro* nil)
+(defun get-possible-designators-for-name (name)
+  (mapcar λ(with-gpu-func-spec _
+             (cons name (mapcar #'second in-args)))
+          (gpu-func-specs name)))
 
-(defun get-stage-multi-error (stage-designator funcs)
-  (error 'multiple-gpu-func-matches
-             :designator stage-designator
-             :possible-choices (mapcar λ(with-gpu-func-spec _
-                                          (cons stage-designator
-                                                (mapcar #'second in-args)))
-                                       funcs)))
-
-(defun get-stage-key (stage-designator)
+(defun get-stage-key (stage-designator &optional (error-on-symbol t))
   (cond
     ((and (listp stage-designator) (eq (first stage-designator) 'function))
      (get-stage-key (second stage-designator)))
-    ((symbolp stage-designator)
-     (let* ((name stage-designator)
-	    (funcs (gpu-func-specs name)))
-       (case= (length funcs)
-	 (0 (error 'stage-not-found :designator name))
-	 (1 (func-key (first funcs)))
-	 (otherwise
-          (restart-case
-              (if *get-stage-within-macro*
-                  (handler-case (get-stage-multi-error stage-designator funcs)
-                    (multiple-gpu-func-matches (e)
-                      (invoke-debugger e)))
-                  (get-stage-multi-error stage-designator funcs))
-            (use-value ()
-              (get-stage-key (interactive-pick-gpu-function name))))))))
     ((listp stage-designator)
      (let ((key (new-func-key (first stage-designator) (rest stage-designator))))
        (if (gpu-func-spec key)
 	   key
 	   (error 'stage-not-found :designator stage-designator))))
+    ((symbolp stage-designator)
+     (when error-on-symbol
+       (error 'symbol-stage-designator
+              :designator stage-designator
+              :possible-choices (get-possible-designators-for-name
+                                 stage-designator))))
     (t (error "CEPL: Bug in get-stage-key - ~s" stage-designator))))
 
 (defun parse-gpipe-args (args)
@@ -369,25 +355,55 @@
       (let ((args (subseq args 0 cut-pos)))
 	(list
 	 (if (and (= (length args) 2) (not (some #'keywordp args)))
-	     (list (cons :vertex (get-stage-key (first args)))
-		   (cons :fragment (get-stage-key (second args))))
-	     (dbind (&key vertex tesselation-control
-			  tesselation-evaluation geometry
-			  fragment) args
-	       (remove nil
-		       (list (when vertex
-			       (cons :vertex (get-stage-key vertex)))
-			     (when tesselation-control
-			       (cons :tesselation-control
-				     (get-stage-key tesselation-control)))
-			     (when tesselation-evaluation
-			       (cons :tesselation-evaluation
-				     (get-stage-key tesselation-evaluation)))
-			     (when geometry
-			       (cons :geometry (get-stage-key geometry)))
-			     (when fragment
-			       (cons :fragment (get-stage-key fragment)))))))
+             (parse-gpipe-args-implicit args)
+	     (parse-gpipe-args-explicit args))
 	 post)))))
+
+(defun parse-gpipe-args-implicit (args)
+  (destructuring-bind (v-key f-key) (validate-stage-names args)
+    (list (cons :vertex v-key)
+          (cons :fragment f-key))))
+
+(defun parse-gpipe-args-explicit (args)
+  (dbind (&key vertex tesselation-control tesselation-evaluation
+               geometry fragment) args
+    (dbind (v-key tc-key te-key g-key f-key)
+        (validate-stage-names (list vertex tesselation-control
+                                    tesselation-evaluation
+                                    geometry fragment))
+      (remove nil
+              (list (when vertex
+                      (cons :vertex v-key))
+                    (when tesselation-control
+                      (cons :tesselation-control tc-key))
+                    (when tesselation-evaluation
+                      (cons :tesselation-evaluation te-key))
+                    (when geometry
+                      (cons :geometry g-key))
+                    (when fragment
+                      (cons :fragment f-key)))))))
+
+(defun validate-stage-names (names)
+  (let* (invalid
+         (valid
+          (loop :for name :in names :collect
+             (when name
+               (let ((sn (get-stage-key name nil)))
+                 (if sn
+                     sn
+                     (progn
+                       (push (list name
+                                   (get-possible-designators-for-name name))
+                             invalid)
+                       nil)))))))
+    (case= (length invalid)
+      (0 valid)
+      (1 (let ((fail (first invalid)))
+           (error 'symbol-stage-designator
+                  :designator (first fail)
+                  :possible-choices (second fail))))
+      (otherwise (error 'symbol-stage-designators
+                        :designator-choice-pairs (reverse invalid))))))
 
 ;;--------------------------------------------------
 
