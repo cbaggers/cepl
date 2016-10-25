@@ -37,10 +37,10 @@
   color)
 
 (def-g-> draw-texture-pipeline ()
-  #'draw-texture-vert #'draw-texture-frag)
+  #'(draw-texture-vert g-pt) #'(draw-texture-frag :vec2))
 
 (def-g-> draw-colored-quad-pipeline ()
-  #'draw-texture-vert #'draw-colored-quad-frag)
+  #'(draw-texture-vert g-pt) #'(draw-colored-quad-frag :vec2))
 
 (defun draw-texture (texture &key (swap t) clear (depth 0.9))
   (when clear (clear))
