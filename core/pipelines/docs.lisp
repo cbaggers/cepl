@@ -91,20 +91,28 @@ Here is an example pipeline:
       (v! s c 0.4 1.0))
 
     (def-g-> prog-1 ()
-      #'vert #'frag)
+      (vert :vec4)
+      (frag :float :float))
 
-Here we define a pipeline #'prog-1 which uses the gfunc #'vert as its vertex
-shader and used the gfunc #'frag as the fragment shader.
+Here we define a pipeline #'prog-1 which uses the gfunc vert as its vertex
+shader and used the gfunc frag as the fragment shader.
 
 It is also possible to specify the name of the stages
 
     (def-g-> prog-1 ()
-      :vertex #'vert
-      :fragment #'frag)
+      :vertex (vert :vec4)
+      :fragment (frag :float :float))
 
 But this is not neccesary unless you need to distinguish between tessellation
 or geometry stages.
 
+-- Stage Names --
+
+Notice that we have to specify the typed signature of the stage. This is because
+CEPL allows you to 'overload' gpu functions. The signature for the a
+gpu-function is a list which starts with the function name and whose other
+elements are the types of the non-uniforms arguments. As an example we can see
+above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
 
 -- Passing values from Stage to Stage --
 
@@ -141,7 +149,8 @@ our prog-1 pipeline again:
       (v! s c 0.4 1.0))
 
     (def-g-> prog-1 ()
-      #'vert #'frag)
+      (vert :vec4)
+      (frag :float :float))
 
 We can call this as follows:
 

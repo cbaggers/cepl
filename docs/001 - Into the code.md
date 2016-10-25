@@ -17,7 +17,7 @@ Below is the standard OpenGL version of 'hello world', a colored triangle.
          (list (v! -0.5 -0.36 0) (v! 0 0 1 1))))
 
 ;; A struct that works on gpu and cpu
-(defstruct-g pos-col 
+(defstruct-g pos-col
   (position :vec3 :accessor pos)
   (color :vec4 :accessor col))
 
@@ -26,21 +26,22 @@ Below is the standard OpenGL version of 'hello world', a colored triangle.
   (values (v! (pos vert) 1.0)
           (col vert)))
 
-;; A GPU fragment shader 
+;; A GPU fragment shader
 (defun-g frag ((color :vec4))
   color)
 
 ;; Composing those gpu functions into a pipeline
 (def-g-> prog-1 ()
-    vert frag)
+  (vert pos-col)
+  (frag :vec4))
 
 ;; Here is what we do each frame:
 (defun step-demo ()
   (step-host)        ;; Advance the host environment frame
   (update-repl-link) ;; Keep the REPL responsive while running
-  (clear)            ;; Clear the drawing buffer 
+  (clear)            ;; Clear the drawing buffer
   (map-g #'prog-1 *stream*) ;; Render data from GPU datastream
-  (swap))            ;; Display newly rendered buffer 
+  (swap))            ;; Display newly rendered buffer
 
 
 (defun run-loop ()

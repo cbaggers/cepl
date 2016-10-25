@@ -7,8 +7,7 @@
 
 (defmacro def-g-> (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
-  (let ((*get-stage-within-macro* t))
-    (%defpipeline-gfuncs name gpipe-args context)))
+  (%defpipeline-gfuncs name gpipe-args context))
 
 
 (defun %defpipeline-gfuncs (name gpipe-args context &optional suppress-compile)

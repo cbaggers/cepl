@@ -1,6 +1,6 @@
 ;;;; package.lisp
 
-(defpackage :cepl-utils
+(uiop:define-package :cepl-utils
   (:use :cl)
   (:export :gdefun
            :dbind
@@ -53,7 +53,7 @@
 	   :defparameter*
 	   :read-integers))
 
-(defpackage :cepl.errors
+(uiop:define-package :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
   (:export :buffer-backed-texture-establish-image-format
 	   :buffer-backed-texture-invalid-args
@@ -84,7 +84,8 @@
 	   :make-tex-array-not-match-type
 	   :make-tex-array-not-match-type2
 	   :make-tex-no-content-no-type
-	   :multiple-gpu-func-matches
+	   :symbol-stage-designator
+           :symbol-stage-designators
 	   :not-enough-args-for-implicit-gpipe-stages
 	   :pixel-format->image-format-failed
 	   :pixel-format-in-bb-texture
@@ -95,7 +96,7 @@
 	   :attachments-with-different-sizes
 	   :invalid-cube-fbo-args))
 
-(defpackage :cepl.host
+(uiop:define-package :cepl.host
   (:use :cl)
   (:export :init
            :request-context
@@ -107,18 +108,18 @@
            :set-swap-func
            :set-window-size-func))
 
-(defpackage :cepl.lifecycle
+(uiop:define-package :cepl.lifecycle
   (:use :cl)
   (:export :shutting-down-p
            :listen-to-lifecycle-changes
            :stop-listening-to-lifecycle-changes))
 
-(defpackage :cepl.measurements
+(uiop:define-package :cepl.measurements
   (:use :cl)
   (:export :dimensions
 	   :resolution))
 
-(defpackage :%cepl.types
+(uiop:define-package :%cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :split-sequence :named-readtables
 	:cepl.errors)
@@ -298,7 +299,7 @@
 	   ;;---
 	   :holds-gl-object-ref-p))
 
-(defpackage :cepl.memory
+(uiop:define-package :cepl.memory
   (:use :cl :cffi :%cepl.types)
   (:export :free
 	   :initialized-p
@@ -307,12 +308,12 @@
            :pull1-g
            :push-g))
 
-(defpackage :cepl.types.foreign
+(uiop:define-package :cepl.types.foreign
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :split-sequence :named-readtables
 	:cepl.errors :%cepl.types :cepl.memory))
 
-(defpackage :cepl.types
+(uiop:define-package :cepl.types
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :split-sequence :named-readtables
 	:cepl.errors :%cepl.types :cepl.memory)
@@ -330,7 +331,7 @@
 	   :get-typed-from-foreign
 	   :get-typed-to-foreign))
 
-(defpackage :cepl.types.predefined
+(uiop:define-package :cepl.types.predefined
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :split-sequence :named-readtables :cepl.types
 	:cepl.errors :%cepl.types :cepl.memory)
@@ -385,7 +386,7 @@
 	   :g-pntcb-texture
 	   :g-pntcb-color))
 
-(defpackage :cepl.internals
+(uiop:define-package :cepl.internals
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors :cepl.measurements)
@@ -418,13 +419,13 @@
            :window-resolution
 	   :*on-context*))
 
-(defpackage :cepl.render-state
+(uiop:define-package :cepl.render-state
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors)
   (:export))
 
-(defpackage :cepl.viewports
+(uiop:define-package :cepl.viewports
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence :cepl.measurements
 	:named-readtables :cepl.errors :cepl.internals)
@@ -444,7 +445,7 @@
 	   :copy-viewport
 	   :viewport-params-to-vec4))
 
-(defpackage :cepl.context
+(uiop:define-package :cepl.context
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors :cepl.internals)
@@ -512,7 +513,7 @@
            ;; :%vertex-array-binding
            ))
 
-(defpackage :cepl.image-formats
+(uiop:define-package :cepl.image-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types :cepl.errors)
   (:export :image-formatp
 	   :valid-image-format-for-buffer-backed-texturep
@@ -538,7 +539,7 @@
 	   :*valid-image-formats-for-buffer-backed-texture*
 	   :*image-formats*))
 
-(defpackage :cepl.pixel-formats
+(uiop:define-package :cepl.pixel-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types
 	:cepl.types :cepl.errors :cepl.internals)
   (:export :pixel-format
@@ -550,7 +551,7 @@
 	   :pixel-format-reversed
 	   :pixel-format-comp-length))
 
-(defpackage :cepl.c-arrays
+(uiop:define-package :cepl.c-arrays
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors :cepl.internals :cepl.image-formats
@@ -577,7 +578,7 @@
 	   :map-c
 	   :ptr-index))
 
-(defpackage :cepl.gpu-buffers
+(uiop:define-package :cepl.gpu-buffers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
@@ -598,7 +599,7 @@
            :multi-buffer-data
            :unbind-buffer))
 
-(defpackage :cepl.gpu-arrays.buffer-backed
+(uiop:define-package :cepl.gpu-arrays.buffer-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables
 	:cepl.errors :%cepl.types :cepl.internals :cepl.image-formats
@@ -612,7 +613,7 @@
 	   :subseq-g
 	   :subseq-g-raw))
 
-(defpackage :cepl.vaos
+(uiop:define-package :cepl.vaos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
@@ -625,7 +626,7 @@
 	   :make-vao
 	   :make-vao-from-id))
 
-(defpackage :cepl.streams
+(uiop:define-package :cepl.streams
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
@@ -640,7 +641,7 @@
 	   :free-buffer-stream
 	   :make-buffer-stream))
 
-(defpackage :cepl.ubos
+(uiop:define-package :cepl.ubos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence
 	:named-readtables :cepl.errors :cepl.c-arrays :cepl.memory
@@ -654,7 +655,7 @@
 	   :ubo-index
 	   :ubo-owns-gpu-array))
 
-(defpackage :cepl.textures
+(uiop:define-package :cepl.textures
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
@@ -683,7 +684,7 @@
 	   :texref
 	   :*immutable-available*))
 
-(defpackage :cepl.gpu-arrays.texture-backed
+(uiop:define-package :cepl.gpu-arrays.texture-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables :cepl.errors
 	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
@@ -694,7 +695,7 @@
 	   :gpu-array-layer-num
 	   :gpu-array-face-num))
 
-(defpackage :cepl.gpu-arrays
+(uiop:define-package :cepl.gpu-arrays
   ;; a place to put things that cross both kinds of gpu-array
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables :cepl.errors
@@ -720,7 +721,7 @@
 	   :with-gpu-array-as-pointer
 	   :with-gpu-array-as-c-array))
 
-(defpackage :cepl.samplers
+(uiop:define-package :cepl.samplers
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays
@@ -750,7 +751,7 @@
            :free-sampler
            :with-sampling))
 
-(defpackage :cepl.fbos
+(uiop:define-package :cepl.fbos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
@@ -772,7 +773,7 @@
 	   :clear-fbo
 	   :clear-attachment))
 
-(defpackage :cepl.blending
+(uiop:define-package :cepl.blending
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
@@ -790,7 +791,7 @@
 	   :destination-rgb
 	   :destination-alpha))
 
-(defpackage :cepl.pipelines
+(uiop:define-package :cepl.pipelines
   (:use :cl :cffi :varjo :varjo-lang :rtg-math :split-sequence :named-readtables
         :cepl-utils :cepl.errors :%cepl.types :cepl.types
 	:cepl.internals :cepl.render-state :cepl.viewports :cepl.context
@@ -814,12 +815,12 @@
 	   ;; :*warn-when-cant-test-compile*
 	   ))
 
-(defpackage :cepl.space.routes
+(uiop:define-package :cepl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils
 	:cepl.errors)
   (:export :id! :free-id :reset :get-route :map-route :reduce-route :add-id))
 
-(defpackage :cepl.space
+(uiop:define-package :cepl.space
   (:use :cl :cepl-utils :rtg-math.types :rtg-math :named-readtables
 	:varjo :varjo-lang :cepl.types :cepl.errors
 	:cepl.internals :cepl.pipelines :cepl.memory)
