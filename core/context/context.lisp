@@ -213,15 +213,15 @@
 
 ;; GL_MAX_COLOR_ATTACHMENTS (integer, at least 8)
 ;;     Maximum number of framebuffer attachment points for color buffers.
-(def-context-reader max-color-attachments)
+(def-cached-context-reader max-color-attachments)
 
 ;; GL_MAX_COLOR_TEXTURE_SAMPLES (integer, at least 1)
 ;;     The maximum number of samples for all color formats in a multisample texture.
-(def-context-reader max-color-texture-samples)
+(def-cached-context-reader max-color-texture-samples)
 
 ;; GL_MAX_DEPTH_TEXTURE_SAMPLES (integer, at least 1)
 ;;     The maximum number of samples in a multisample depth or depth-stencil texture.
-(def-context-reader max-depth-texture-samples)
+(def-cached-context-reader max-depth-texture-samples)
 
 ;; GL_MAX_DRAW_BUFFERS (integer, at least 8, see glDrawBuffers)
 ;;     The maximum number of simultaneous outputs that may be written in a fragment shader.
@@ -229,31 +229,31 @@
 
 ;; GL_MAX_DUAL_SOURCE_DRAW_BUFFERS (integer, at least 1, see glBlendFunc and glBlendFuncSeparate)
 ;;     The maximum number of active draw buffers when using dual-source blending.
-(def-context-reader max-dual-source-draw-buffers)
+(def-cached-context-reader max-dual-source-draw-buffers)
 
 ;; GL_MAX_FRAMEBUFFER_HEIGHT (integer, at least 16384, see glFramebufferParameter)
 ;;     The maximum height for a framebuffer that has no attachments.
-(def-context-reader max-framebuffer-height)
+(def-cached-context-reader max-framebuffer-height)
 
 ;; GL_MAX_FRAMEBUFFER_LAYERS (integer, at least 2048, see glFramebufferParameter)
 ;;     The maximum number of layers for a framebuffer that has no attachments.
-(def-context-reader max-framebuffer-layers)
+(def-cached-context-reader max-framebuffer-layers)
 
 ;; GL_MAX_FRAMEBUFFER_SAMPLES (integer, at least 4, see glFramebufferParameter)
 ;;     The maximum samples in a framebuffer that has no attachments.
-(def-context-reader max-framebuffer-samples)
+(def-cached-context-reader max-framebuffer-samples)
 
 ;; GL_MAX_FRAMEBUFFER_WIDTH (integer, at least 16384, see glFramebufferParameter)
 ;;     The maximum width for a framebuffer that has no attachments.
-(def-context-reader max-framebuffer-width)
+(def-cached-context-reader max-framebuffer-width)
 
 ;; GL_MAX_INTEGER_SAMPLES (integer, at least 1)
 ;;     The maximum number of samples supported in integer format multisample buffers.
-(def-context-reader max-integer-samples)
+(def-cached-context-reader max-integer-samples)
 
 ;; GL_MAX_SAMPLES (integer, at least 4)
 ;; The maximum number of samples supported for all non-integer formats.
-(def-context-reader max-samples)
+(def-cached-context-reader max-samples)
 
 ;; GL_READ_BUFFER (symbolic constant, initial value below, see glReadPixels
 ;;     {Which color buffer is selected for reading. The initial value is GL_BACK if there is a back buffer, otherwise it is GL_FRONT. This is selected from the currently bound GL_READ_FRAMEBUFFER.
