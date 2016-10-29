@@ -72,11 +72,24 @@
    (or %current-blend-params
        (attachment-viewport %default-framebuffer 0))))
 
-(defmacro with-blending (blending-params &body body)
-  (let ((b-params (gensym "blending-params")))
-    `(let* ((,b-params ,blending-params))
-       (%with-blending nil nil ,b-params
-         ,@body))))
+(defmacro with-blending ((fbo &optional attachment) blending-params &body body)
+  (let ((param `(blending-params ,fbo ,@(list attachment))))
+    (with-gensyms (orig)
+      `(let* ((,orig ,param))
+         (setf ,param ,blending-params)
+         (unwind-protect (progn ,@body)
+           (setf ,param ,orig))))))
+
+(defmacro with-blending* (fbo-param-pairs &body body)
+  (if fbo-param-pairs
+      (dbind (f p . rest) fbo-param-pairs
+        `(with-blending ,f ,p
+           (with-blending* ,rest ,@body)))
+      `(progn ,@body)))
+
+;; (with-blending* ((f 0) p
+;;                  (x) p)
+;;   xxx)
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

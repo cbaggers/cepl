@@ -778,6 +778,7 @@
         :cepl.types :split-sequence :named-readtables
         :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
 	:cepl.internals :cepl.fbos)
+  (:import-from :alexandria :with-gensyms)
   (:export :blending-params
 	   :blending-params-p
 	   :copy-blending-params
