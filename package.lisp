@@ -858,7 +858,7 @@
 			       (if (listp x) (first x) x)))
 	 (let ((use (append use (mapcar #'calc-re-using re-export)))
 	       (exports (calc-exports)))
-	   `(define-package ,name
+	   `(uiop:define-package ,name
 	      ,@(when use `((:use ,@use)))
 	      ,@(when shadow `((:shadow ,@shadow)))
 	      ,@(loop :for i :in import-from :collect (cons :import-from i))
