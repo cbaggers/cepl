@@ -5,11 +5,9 @@
 ;;;------------;;;
 
 (defmethod print-object ((object buffer-stream) stream)
-  (format stream "#<CEPL:BUFFER-STREAM (~s) :LENGTH ~s~@[ :ARRAYS ~s~]~@[ :INDEXED ~s~]>"
+  (format stream "#<CEPL:BUFFER-STREAM (~s) :LENGTH ~s~@[ :INDEXED ~s~]>"
 	  (buffer-stream-vao object)
 	  (buffer-stream-length object)
-	  (when (buffer-stream-gpu-arrays object)
-	    (length (first (buffer-stream-gpu-arrays object))))
 	  (not (null (buffer-stream-index-type object)))))
 
 (defmethod free ((object buffer-stream))
