@@ -15,13 +15,13 @@
       
         <article><h2>CEPL (Code Evaluate Play Loop) - [Beta]</h2>
 
-<p>CEPL is a lispy and REPL friendly library for working with OpenGL.</p>
+<p>CEPL is a lispy and REPL-friendly Common Lisp library for working with OpenGL.</p>
 
-<p>It's definition of success is if the user feels like GPU programming had always been part of the languages standard.</p>
+<p>Its definition of success is making the user feel that GPU programming has always been part of the languages standard.</p>
 
-<p>The usual approach to using it is to start it at the beginning of your lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code> is treated for text.</p>
+<p>The usual approach to using CEPL is to start it at the beginning of your Lisp session and leave it open for the duration of your work. You can then treat the window it creates as just another output for your graphics, analogous to how <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code> is treated for text.</p>
 
-<p>CEPL is in beta. The API is close to what it needs to be but there are still many bugs to fix, features to add and experiences to smooth out.</p>
+<p>CEPL is in beta. The API is close to what it needs to be but there are still many bugs to fix, features to add, and experiences to smooth out.</p>
 
 <p>See the <a href="https://github.com/cbaggers/cepl.examples">cepl.examples repository</a> for some examples of how CEPL can be used</p>
 
@@ -33,7 +33,7 @@
 
 <p>Guides will be provided in future, however these take much longer to write.</p>
 
-<p>I can also be reached by my email (techsnuffle [at] gmail · com) and sometimes on #lispgames IRC. Come to #lispgames anyway though, theres some lovely folks, all lispy dialects welcome!</p>
+<p>I can also be reached by my email (techsnuffle [at] gmail · com) and sometimes on #lispgames IRC. Come to #lispgames anyway though, there are some lovely folks, all lispy dialects welcome!</p>
 
 <h3>Requirements</h3>
 
@@ -55,15 +55,15 @@
 
 <h4>C Library dependency</h4>
 
-<p>CEPL uses OpenGL so you need to make sure this is available on your machine. Installing your GPU drivers will usually handle this.</p>
+<p>CEPL uses OpenGL so you need to make sure it is available on your machine. Installing your GPU drivers will usually handle this.</p>
 
 <h4>CEPL's Host</h4>
 
-<p>CEPL abstracts working with OpenGL but is not responsible for creating a window or GL context, this is handled by a <code>Host</code>. Right now the only supported host is <code>SDL2</code>, the system to load is called <code>cepl.sdl2</code>, you can find it here: <a href="https://github.com/cbaggers/cepl.sdl2">cepl.sdl2</a></p>
+<p>CEPL abstracts working with OpenGL but is not responsible for creating a window or GL context; this is handled by a <code>Host</code>. Right now the only supported host is <code>SDL2</code>; the system to load is called <code>cepl.sdl2</code>, you can find it here: <a href="https://github.com/cbaggers/cepl.sdl2">cepl.sdl2</a></p>
 
 <h3>Getting Started</h3>
 
-<p><em>Note:</em> On <code>Windows</code> and <code>OSX</code> and are using <code>slime</code> you may want to add the code specifed in <code>docs/single-thread-swank.md</code> to your emacs config file, and use the command <code>slime-style</code> which will start <code>slime</code> in a more OpenGL friendly mode. Then follow the rest of this as usual.</p>
+<p><em>Note:</em> On <code>Windows</code> and <code>OSX</code>, <code>slime</code> users may want to add the code specifed in <code>docs/single-thread-swank.md</code> to their Emacs config file, and use the command <code>slime-style</code> which will start <code>slime</code> in a more OpenGL friendly mode. Then follow the rest of this as usual.</p>
 
 <p>To load CEPL and the default host (<code>sdl2</code>) do the following:</p>
 
@@ -72,15 +72,15 @@
 <li><code>(cepl:repl)</code></li>
 </ul>
 
-<p>You should see an empty window appear, OpenGL is now initialized and you can use CEPL as you like.</p>
+<p>You should see an empty window appear, OpenGL is now initialized, and you can use CEPL as you like.</p>
 
 <h3>Making a CEPL Project</h3>
 
-<p>The best way to get started is to make a new project that uses CEPL. Do the following in your repl to get set up:</p>
+<p>The best way to get started is to make a new project that uses CEPL. Do the following in your REPL to get set up:</p>
 
 <ul>
 <li>First, run <code>(ql:quickload :cepl)</code></li>
-<li>Then run <code>(ql:quickload :quickproject)</code>. Cepl uses this to create a lisp project using its own templates</li>
+<li>Then run <code>(ql:quickload :quickproject)</code>. CEPL uses this to create a lisp project using its own templates</li>
 <li>Then run <code>(cepl:make-project &quot;my-proj&quot;)</code>. This will use quickproject to make a new project with all the correct dependencies. Remember that cepl does not handle window managers or input so by default your new project will use the following</li>
 <li>cepl for the graphics</li>
 <li><a href="https://github.com/cbaggers/cepl.sdl2">cepl.sdl2</a> for the host</li>
@@ -88,14 +88,14 @@
 <li><a href="https://github.com/cbaggers/cepl.devil">cepl.devil</a> for loading images</li>
 </ul>
 
-<p>You are now ready to get started, simply run:
+<p>You are now ready to get started. Simply run:
 - <code>(ql:quickload &quot;my-proj&quot;)</code>
 - <code>(<a href="http://l1sp.org/cl/in-package">in-package</a> :my-proj)</code>
 - and finally (if you havent already) <code>(cepl:repl)</code></p>
 
 <h4>Windows C Library Hack</h4>
 
-<p>If you are having issues getting the c libraries to load and just need to rule out whether lisp can find them, try putting them in the same folder as the lisp exe. For example <code>C:\Program Files\sbcl\</code>.</p>
+<p>If you are having issues getting the C libraries to load and just need to rule out whether Lisp can find them, try putting them in the same folder as the lisp exe. For example <code>C:\Program Files\sbcl\</code>.</p>
 </article>
       
       <article>
@@ -1346,6 +1346,32 @@ follows:
 
 If now viewport is provided the the current viewport is used.
 </pre>
+                  </article>
+                </li><li>
+                  <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-X"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-X" class="name">VIEWPORT-RESOLUTION-X</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIEWPORT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-Y"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-Y" class="name">VIEWPORT-RESOLUTION-Y</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(VIEWPORT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
                   </article>
                 </li><li>
                   <a name="CEPL.VIEWPORTS:WITH-FBO-VIEWPORT"/>
@@ -2745,6 +2771,19 @@ based on the following:
                  This argument is optional.
 </pre>
                   </article>
+                </li><li>
+                  <a name="CEPL.SAMPLERS:WITH-SAMPLING"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#CEPL.SAMPLERS:WITH-SAMPLING" class="name">WITH-SAMPLING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;REST ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
                 </li></ul></li><li class="package">
               <h3>
                 <a name="CEPL.MEMORY" href="#CEPL.MEMORY">CEPL.MEMORY</a>
@@ -3973,20 +4012,28 @@ Here is an example pipeline:
       (v! s c 0.4 1.0))
 
     (def-g-&gt; prog-1 ()
-      #'vert #'frag)
+      (vert :vec4)
+      (frag :float :float))
 
-Here we define a pipeline #'prog-1 which uses the gfunc #'vert as its vertex
-shader and used the gfunc #'frag as the fragment shader.
+Here we define a pipeline #'prog-1 which uses the gfunc vert as its vertex
+shader and used the gfunc frag as the fragment shader.
 
 It is also possible to specify the name of the stages
 
     (def-g-&gt; prog-1 ()
-      :vertex #'vert
-      :fragment #'frag)
+      :vertex (vert :vec4)
+      :fragment (frag :float :float))
 
 But this is not neccesary unless you need to distinguish between tessellation
 or geometry stages.
 
+-- Stage Names --
+
+Notice that we have to specify the typed signature of the stage. This is because
+CEPL allows you to 'overload' gpu functions. The signature for the a
+gpu-function is a list which starts with the function name and whose other
+elements are the types of the non-uniforms arguments. As an example we can see
+above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
 
 -- Passing values from Stage to Stage --
 
@@ -4023,7 +4070,8 @@ our prog-1 pipeline again:
       (v! s c 0.4 1.0))
 
     (def-g-&gt; prog-1 ()
-      #'vert #'frag)
+      (vert :vec4)
+      (frag :float :float))
 
 We can call this as follows:
 
