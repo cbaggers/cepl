@@ -858,7 +858,7 @@
 			       (if (listp x) (first x) x)))
 	 (let ((use (append use (mapcar #'calc-re-using re-export)))
 	       (exports (calc-exports)))
-	   `(defpackage ,name
+	   `(define-package ,name
 	      ,@(when use `((:use ,@use)))
 	      ,@(when shadow `((:shadow ,@shadow)))
 	      ,@(loop :for i :in import-from :collect (cons :import-from i))
@@ -913,16 +913,6 @@
 		(:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
 			   :radians :degrees))))
 
-
-;; {TODO} read up on this:
-;; com.informatimago.common-lisp.lisp-reader.package:defpackage
-;;
-;; re-evaluating defpackage has implementation specific effects,
-;; advice I got from pjb was to implement the ugliness above with
-;; 'export directly. I need to understand this approach but could
-;; be nice.
-
-
-(defpackage :cepl.misc
+(uiop:define-package :cepl.misc
   (:use :cl :cepl :rtg-math.base-maths :cl-fad :named-readtables)
   (:export :draw-texture :draw-colored-quad))

@@ -559,7 +559,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
   (declare (ignore args))
   nil)
 
-(defpackage :defxstar-hidden)
+(uiop:define-package :defxstar-hidden)
 
 (defstruct (defxstar-hidden::boop6
 	     (:constructor defxstar-hidden::make-boop6)

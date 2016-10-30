@@ -1,4 +1,4 @@
 ;;;; package.lisp
 
-(defpackage :cepl.docs
+(uiop:define-package :cepl.docs
   (:use :cl :cepl :documentation-utils))
