@@ -181,8 +181,8 @@
 
 (defstruct (buffer-stream (:constructor %make-buffer-stream))
   vao
-  (%start 0 :type unsigned-byte) ;; unsigned-byte ≡ (integer 0 *)
-  (%start-byte (null-pointer) :type foreign-pointer)
+  (%start 0 :type (unsigned-byte 64))
+  (%start-byte 0 :type (unsigned-byte 64))
   (length 1 :type unsigned-byte)
   (%index-type nil :type symbol)
   (%index-type-size 0 :type (unsigned-byte 8))
@@ -199,8 +199,8 @@
    :vao vao
    :%start (or start 0)
    :%start-byte (if (%valid-index-type-p index-type)
-                    (make-pointer (* start (foreign-type-size index-type)))
-                    (null-pointer))
+                    (* start (foreign-type-size index-type))
+                    0)
    :length (or length 1)
    :%index-type index-type
    :%index-type-size (if (%valid-index-type-p index-type)
@@ -220,6 +220,8 @@
           (buffer-stream-start stream) (buffer-stream-start stream)))
   value)
 
+(declaim (ftype (function (buffer-stream) (unsigned-byte 64))
+                buffer-stream-start))
 (defun buffer-stream-start (stream)
   (buffer-stream-%start stream))
 
@@ -229,13 +231,16 @@
         (type-size (buffer-stream-%index-type-size stream)))
     (when (%valid-index-type-p index-type)
       (setf (buffer-stream-%start-byte stream)
-            (make-pointer (* value type-size)))))
+            (* value type-size))))
   value)
 
+(declaim (ftype (function (buffer-stream) (unsigned-byte 64))
+                buffer-stream-start-byte))
 (defun buffer-stream-start-byte (stream)
   (buffer-stream-%start-byte stream))
 
 (defun (setf buffer-stream-start-byte) (value stream)
+  (declare (ignore value))
   (error "CEPL Internal Error: Do not set stream %start-byte directly~%~s"
          stream))
 
