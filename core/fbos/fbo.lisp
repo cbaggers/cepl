@@ -104,6 +104,18 @@
             %current-fbo result)
       result)))
 
+(defun %update-default-framebuffer-dimensions (x y)
+  (let ((dimensions (list x y))
+        (fbo %default-framebuffer))
+    (map nil
+         (lambda (x)
+           (setf (gpu-array-dimensions (att-array x)) dimensions))
+         (%fbo-color-arrays fbo))
+    (when (%fbo-depth-array fbo)
+      (setf (gpu-array-dimensions (att-array (%fbo-depth-array fbo)))
+            dimensions))
+    fbo))
+
 
 (defun %set-default-fbo-viewport (new-dimensions)
   (let ((fbo %default-framebuffer))

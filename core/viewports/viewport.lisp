@@ -1,17 +1,20 @@
 (in-package :cepl.viewports)
 
 (defvar %current-viewport nil)
+(defvar %default-viewport nil)
 
 (defun current-viewport ()
   (or %current-viewport
-      (cepl.fbos:attachment-viewport
-       (or %default-framebuffer
-	   (error "No default framebuffer found ~a"
-		  (if (and (boundp '*gl-context*)
-			   (symbol-value '*gl-context*))
-		      "but we do have a gl context. This is a bug"
-		      "because the GL context is not yet available")))
-       0)))
+      %default-viewport
+      (setf %default-viewport
+            (cepl.fbos:attachment-viewport
+             (or %default-framebuffer
+                 (error "No default framebuffer found ~a"
+                        (if (and (boundp '*gl-context*)
+                                 (symbol-value '*gl-context*))
+                            "but we do have a gl context. This is a bug"
+                            "because the GL context is not yet available")))
+             0))))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -39,10 +42,11 @@
         (%viewport-resolution-y viewport)))
 
 (defun (setf viewport-dimensions) (value viewport)
-  (let ((value (if (typep value 'viewport)
-                   (viewport-dimensions value)
-                   value)))
-    (%set-resolution viewport (first value) (second value))))
+  (let ((dim (if (typep value 'viewport)
+                 (viewport-dimensions value)
+                 value)))
+    (%set-resolution viewport (first dim) (second dim))
+    value))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -65,6 +69,8 @@
 (defun %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
+  (when (eq viewport %default-viewport)
+    (cepl.fbos::%update-default-framebuffer-dimensions x y))
   (when (eq (current-viewport) viewport)
     (%viewport viewport)))
 
@@ -90,7 +96,8 @@
 (defun %viewport (viewport)
   (gl:viewport
    (%viewport-origin-x viewport) (%viewport-origin-y viewport)
-   (%viewport-resolution-x viewport) (%viewport-resolution-y viewport)))
+   (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
+  viewport)
 
 (defmacro %with-viewport (viewport &body body)
   `(progn
