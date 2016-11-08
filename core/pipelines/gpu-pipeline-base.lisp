@@ -10,6 +10,12 @@
 
 ;;--------------------------------------------------
 
+(defclass pipeline-spec ()
+  ((name :initarg :name)
+   (stages :initarg :stages)
+   (context :initarg :context)
+   (cached-compile-results :initform nil)))
+
 (defclass gpu-func-spec ()
   ((name :initarg :name)
    (in-args :initarg :in-args)
@@ -25,6 +31,8 @@
    (declarations :initarg :declarations)
    (missing-dependencies :initarg :missing-dependencies :initform nil)
    (cached-compile-results :initarg :compiled :initform nil)))
+
+;;--------------------------------------------------
 
 (defclass glsl-stage-spec (gpu-func-spec) ())
 
@@ -339,12 +347,6 @@ names are depended on by the functions named later in the list"
 ;;--------------------------------------------------
 
 (defvar +cache-last-compile-result+ t)
-
-(defclass pipeline-spec ()
-  ((name :initarg :name)
-   (stages :initarg :stages)
-   (context :initarg :context)
-   (cached-compile-results :initform nil)))
 
 (defun make-pipeline-spec (name stages context)
   (make-instance 'pipeline-spec :name name :stages stages
