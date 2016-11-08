@@ -24,7 +24,7 @@
 			 (:half-float 0 nil nil))
 		       cffi::*extra-primitive-types*)))
     `(progn
-       ,@(loop :for (type len comp-type comp-lisp-type) :in types
+       ,@(loop :for (type len nil comp-lisp-type) :in types
 	    :for from = (cepl-utils:symb-package
 			 :cepl.types.foreign type '-from-foreign)
 	    :for to = (cepl-utils:symb-package

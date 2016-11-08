@@ -155,8 +155,7 @@
       (setf (gpu-buffer-arrays buffer)
 	    (make-array
 	     (length c-arrays) :element-type 'gpu-array-bb :initial-contents
-	     (loop :for c-array :in c-arrays
-		:for byte-size :in c-array-byte-sizes
+	     (loop :for byte-size :in c-array-byte-sizes
 		:collect (%make-gpu-array-bb
 			  :dimensions (list byte-size)
 			  :buffer buffer
