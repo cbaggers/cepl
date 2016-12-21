@@ -47,15 +47,14 @@
         (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
                         (pop body))))
     ;; split the argument list into the categoried we care aboutn
-    (make-instance 'gpu-lambda
-                   :in-args in-args
-                   (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
-                                (instancing :&instancing))
-                       (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
-                     ;; check the arguments are sanely formatted
-                     (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
-                     (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
-                     ;; now the meat
+    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
+                 (instancing :&instancing))
+        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+      ;; check the arguments are sanely formatted
+      (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
+      (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
+      (make-instance 'gpu-lambda
+                     :in-args in-args
                      :uniforms uniforms
                      :body body
                      :instancing instancing
@@ -144,8 +143,7 @@
     (let ((args (mapcar #'unfunc gpipe-args)))
       (if (every #'constantp args)
           (make-lambda-pipeline gpipe-args context)
-          `(make-n-compile-lambda-pipeline (list ,@args) ',context))
-      foo)))
+          `(make-n-compile-lambda-pipeline (list ,@args) ',context)))))
 
 ;; (defun poop-science (p)
 ;;   (g-> nil
