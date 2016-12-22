@@ -35,7 +35,6 @@
     (error 'gfun-invalid-arg-format :gfun-name gfunc-name :invalid-pair x))
   x)
 
-
 ;;--------------------------------------------------
 
 (defun %def-gpu-function (name in-args uniforms body instancing
@@ -125,20 +124,26 @@
     (handler-case
 	(varjo:with-constant-inject-hook #'try-injecting-a-constant
 	  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-	    (let* ((context (union '(:vertex :fragment :iuniforms) context))
-		   (context (swap-version (lowest-suitable-glsl-version context)
-                                          context))
-		   (compiled
-		    (v-translate in-args uniforms context `(progn ,@body) nil)))
-	      (setf actual-uniforms (uniforms compiled) ;;[2]
-		    uniform-transforms (with-hash (uv 'uniform-vals)
-					   (third-party-metadata compiled)
-					 (map-hash #'list uv)))
-	      (%update-gpu-function-data
-	       spec
-	       (remove-if-not #'gpu-func-spec
-			      (varjo::used-external-functions compiled)) ;;[1]
-	       compiled))))
+            (handler-bind
+                ((varjo-conditions:cannot-establish-exact-function
+                  (lambda (c)
+                    (declare (ignore c))
+                    (invoke-restart
+                     'varjo-conditions:allow-call-function-signature))))
+              (let* ((context (union '(:vertex :fragment :iuniforms) context))
+                     (context (swap-version (lowest-suitable-glsl-version context)
+                                            context))
+                     (compiled
+                      (v-translate in-args uniforms context `(progn ,@body) nil)))
+                (setf actual-uniforms (uniforms compiled) ;;[2]
+                      uniform-transforms (with-hash (uv 'uniform-vals)
+                                             (third-party-metadata compiled)
+                                           (map-hash #'list uv)))
+                (%update-gpu-function-data
+                 spec
+                 (remove-if-not #'gpu-func-spec
+                                (varjo::used-external-functions compiled)) ;;[1]
+                 compiled)))))
       ;; vv- called if failed
       (varjo-conditions:could-not-find-function (e) ;;[0]
         (setf missing-dependencies (list (slot-value e 'varjo::name)))
@@ -147,6 +152,9 @@
                   (first missing-dependencies) name))
         (%update-gpu-function-data spec nil nil)))
     spec))
+
+
+
 
 (defmethod %recompile-gpu-function-and-pipelines (key)
   (%recompile-gpu-function-and-pipelines (func-key key)))
