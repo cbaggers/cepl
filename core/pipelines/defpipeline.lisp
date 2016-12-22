@@ -1,10 +1,18 @@
 (in-package :cepl.pipelines)
-(in-readtable fn:fn-reader)
+(in-readtable :fn.reader)
+
+(defun stages-require-partial-pipeline (stage-keys)
+  (some λ(with-gpu-func-spec (gpu-func-spec _)
+           (labels ((issue-arg-p (arg)
+                      (typep (varjo:type-spec->type (second arg))
+                             'varjo:v-function-type)))
+             (or (some #'issue-arg-p in-args)
+                 (some #'issue-arg-p uniforms))))
+        stage-keys))
 
 (defmacro def-g-> (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
   (%defpipeline-gfuncs name gpipe-args context))
-
 
 (defun %defpipeline-gfuncs (name gpipe-args context &optional suppress-compile)
   ;;
@@ -12,42 +20,54 @@
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     ;;
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
-	   (aggregate-uniforms (aggregate-uniforms stage-keys nil t))
-	   (uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms)))
-      (let (;; we generate the func that compiles & uploads the pipeline
-	    ;; and also populates the pipeline's local-vars
-	    (init-func (gen-pipeline-init name stage-pairs post context
-					  uniform-assigners)))
-	;;
-	;; update the spec immediately (macro-expansion time)
-	(%update-spec name stage-keys context)
-	`(progn
-	   (let ((prog-id nil)
-		 ;; If there are no implicit-uniforms we need a no-op
-		 ;; function to call
-		 ,@(when (supports-implicit-uniformsp context)
-			 `((implicit-uniform-upload-func #'fallback-iuniform-func)))
-		 ;;
-		 ;; {todo} explain
-		 ,@(mapcar λ`(,(first _) -1)
-			   (mapcat #'let-forms uniform-assigners)))
-	     ;;
-	     ;; To help the compiler we make sure it knows it's a function :)
-	     ,@(when (supports-implicit-uniformsp context)
-		     `((declare (type function implicit-uniform-upload-func))))
-	     ;;
-	     ;; we upload the spec at compile time
-	     ,(gen-update-spec name stage-keys context)
-	     ;;
-	     (labels (,init-func)
-	       ;;
-	       ;; generate the code that actually renders
-	       ,(def-dispatch-func name (first init-func) stage-keys
-				   context uniform-assigners)))
-	   ;;
-	   ;; generate the function that recompiles this pipeline
-	   ,(gen-recompile-func name stage-pairs post context)
-	   ,(unless suppress-compile `(,(recompile-name name))))))))
+           (aggregate-uniforms (aggregate-uniforms stage-keys nil t)))
+      (if (stages-require-partial-pipeline stage-keys)
+          (format t "~%>~%> CEPL: Cannot yet emit partial-pipeline: ~s~%>"
+                  name)
+          (%def-complete-pipeline name stage-keys stage-pairs aggregate-uniforms
+                                  post context suppress-compile)))))
+
+(defun %def-partial-pipeline ()
+  )
+
+(defun %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
+                               post context
+                               &optional suppress-compile)
+  (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
+         ;; we generate the func that compiles & uploads the pipeline
+         ;; and also populates the pipeline's local-vars
+         (init-func (gen-pipeline-init name stage-pairs post context
+                                      uniform-assigners)))
+    ;;
+    ;; update the spec immediately (macro-expansion time)
+    (%update-spec name stage-keys context)
+    `(progn
+       (let ((prog-id nil)
+             ;; If there are no implicit-uniforms we need a no-op
+             ;; function to call
+             ,@(when (supports-implicit-uniformsp context)
+                     `((implicit-uniform-upload-func #'fallback-iuniform-func)))
+             ;;
+             ;; {todo} explain
+             ,@(mapcar λ`(,(first _) -1)
+                       (mapcat #'let-forms uniform-assigners)))
+         ;;
+         ;; To help the compiler we make sure it knows it's a function :)
+         ,@(when (supports-implicit-uniformsp context)
+                 `((declare (type function implicit-uniform-upload-func))))
+         ;;
+         ;; we upload the spec at compile time (using eval-when)
+         ,(gen-update-spec name stage-keys context)
+         ;;
+         (labels (,init-func)
+           ;;
+           ;; generate the code that actually renders
+           ,(def-dispatch-func name (first init-func) stage-keys
+                               context uniform-assigners)))
+       ;;
+       ;; generate the function that recompiles this pipeline
+       ,(gen-recompile-func name stage-pairs post context)
+       ,(unless suppress-compile `(,(recompile-name name))))))
 
 (defun fallback-iuniform-func (prog-id)
   (declare (ignore prog-id) (optimize (speed 3) (safety 1))))
