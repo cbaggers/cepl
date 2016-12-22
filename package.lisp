@@ -94,7 +94,9 @@
 	   :struct-in-glsl-stage-args
 	   :multi-func-error
 	   :attachments-with-different-sizes
-	   :invalid-cube-fbo-args))
+	   :invalid-cube-fbo-args
+           :functions-in-non-uniform-args
+           :mapping-over-partial-pipeline))
 
 (uiop:define-package :cepl.host
   (:use :cl)

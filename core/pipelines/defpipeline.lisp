@@ -1,13 +1,19 @@
 (in-package :cepl.pipelines)
 (in-readtable :fn.reader)
 
+(defun function-arg-p (arg)
+  (typep (varjo:type-spec->type (second arg))
+         'varjo:v-function-type))
+
 (defun stages-require-partial-pipeline (stage-keys)
   (some λ(with-gpu-func-spec (gpu-func-spec _)
-           (labels ((issue-arg-p (arg)
-                      (typep (varjo:type-spec->type (second arg))
-                             'varjo:v-function-type)))
-             (or (some #'issue-arg-p in-args)
-                 (some #'issue-arg-p uniforms))))
+           (or (some #'function-arg-p in-args)
+               (some #'function-arg-p uniforms)))
+        stage-keys))
+
+(defun has-func-type-in-args (stage-keys)
+  (some λ(with-gpu-func-spec (gpu-func-spec _)
+           (some #'function-arg-p in-args))
         stage-keys))
 
 (defmacro def-g-> (name context &body gpipe-args)
@@ -22,13 +28,19 @@
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
            (aggregate-uniforms (aggregate-uniforms stage-keys nil t)))
       (if (stages-require-partial-pipeline stage-keys)
-          (format t "~%>~%> CEPL: Cannot yet emit partial-pipeline: ~s~%>"
-                  name)
+          (%def-partial-pipeline name stage-keys stage-pairs aggregate-uniforms)
           (%def-complete-pipeline name stage-keys stage-pairs aggregate-uniforms
                                   post context suppress-compile)))))
 
-(defun %def-partial-pipeline ()
-  )
+(defun %def-partial-pipeline (name stage-keys stage-pairs aggregate-uniforms)
+  (declare (ignore stage-pairs))
+  (when (has-func-type-in-args stage-keys)
+    (error 'functions-in-non-uniform-args :name name))
+  (format t "~%>~%> CEPL: Cannot yet emit partial-pipeline: ~s~%>" name)
+  `(defun ,name ()
+     (error 'mapping-over-partial-pipeline
+            :name ',name
+            :args ',(remove-if-not #'function-arg-p aggregate-uniforms))))
 
 (defun %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
                                post context

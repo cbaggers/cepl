@@ -180,7 +180,7 @@ The problem: because of potential overloading, CEPL stages must be fully qualifi
 The problematic stage designators were:
 ~{~s ~}
 
-The problem: because of potential overloading, CEPL stages must be fully 
+The problem: because of potential overloading, CEPL stages must be fully
 qualified. ~{~%~%~a~}"
   (mapcar #'first designator-choice-pairs)
   (loop :for (designator choices) :in designator-choice-pairs :collect
@@ -264,6 +264,26 @@ faces of the cube texture.
 Whilst using this feature, the only other legal argument is depth
 attachment info.
 " args)
+
+
+(deferror functions-in-non-uniform-args () (name)
+    "
+CEPL: We currently only support functions as uniform arguments.
+
+Pipeline: ~s"
+  name)
+
+(deferror mapping-over-partial-pipeline () (name args)
+    "CEPL: This pipeline named ~s is a partial pipeline.
+
+This is because the following uniform arguments take functions:
+
+~{~(~s~)~}
+
+As OpenGL does not itself support passing functions as values you must use
+the 'bake-uniforms' function to create set the uniforms above. This will
+generate a 'complete' pipeline which you can then map-g over.
+" name args)
 
 
 ;; Please remember the following 2 things
