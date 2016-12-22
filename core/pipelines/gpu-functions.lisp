@@ -412,7 +412,9 @@
          (valid
           (loop :for name :in names :collect
              (when name
-               (let ((sn (get-stage-key name nil)))
+               (let ((sn (if (typep name 'func-key)
+                             name
+                             (get-stage-key name nil))))
                  (if sn
                      sn
                      (progn
