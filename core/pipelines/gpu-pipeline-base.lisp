@@ -143,7 +143,7 @@
    :types in-args-types))
 
 (defmethod print-object ((obj func-key) stream)
-  (format stream "#<GPU-FUNCTION (~s ~{~s~})>"
+  (format stream "#<GPU-FUNCTION (~s~{ ~s~})>"
 	  (name obj) (in-args obj)))
 
 (defmethod func-key ((spec gpu-func-spec))

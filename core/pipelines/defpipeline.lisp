@@ -28,19 +28,36 @@
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
            (aggregate-uniforms (aggregate-uniforms stage-keys nil t)))
       (if (stages-require-partial-pipeline stage-keys)
-          (%def-partial-pipeline name stage-keys stage-pairs aggregate-uniforms)
+          (%def-partial-pipeline name stage-keys stage-pairs aggregate-uniforms
+                                 context)
           (%def-complete-pipeline name stage-keys stage-pairs aggregate-uniforms
                                   post context suppress-compile)))))
 
-(defun %def-partial-pipeline (name stage-keys stage-pairs aggregate-uniforms)
+(defun %def-partial-pipeline (name stage-keys stage-pairs aggregate-uniforms
+                              context)
   (declare (ignore stage-pairs))
+  ;;
+  ;; freak out if try and use funcs in stage args
   (when (has-func-type-in-args stage-keys)
     (error 'functions-in-non-uniform-args :name name))
-  (format t "~%>~%> CEPL: Cannot yet emit partial-pipeline: ~s~%>" name)
-  `(defun ,name ()
-     (error 'mapping-over-partial-pipeline
-            :name ',name
-            :args ',(remove-if-not #'function-arg-p aggregate-uniforms))))
+  ;;
+  ;; update the spec immediately (macro-expansion time)
+  (%update-spec name stage-keys context)
+  ;;
+  (let ((uniform-names (mapcar #'first aggregate-uniforms)))
+    `(progn
+       ;;
+       ;; we upload the spec at compile time (using eval-when)
+       ,(gen-update-spec name stage-keys context)
+       ;;
+       ;; generate the dummy dispatch func
+       (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
+        (declare (ignore mapg-context) (ignorable ,@uniform-names))
+        (use-program 0)
+        (error 'mapping-over-partial-pipeline
+               :name ',name
+               :args ',(remove-if-not #'function-arg-p aggregate-uniforms))
+        stream))))
 
 (defun %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
                                post context
