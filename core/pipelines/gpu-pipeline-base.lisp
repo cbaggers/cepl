@@ -12,7 +12,11 @@
 
 (defclass pipeline-spec ()
   ((name :initarg :name)
-   (stages :initarg :stages)
+   (vertex-stage :initarg :vertex-stage)
+   (tesselation-control-stage :initarg :tesselation-control-stage)
+   (tesselation-evaluation-stage :initarg :tesselation-evaluation-stage)
+   (geometry-stage :initarg :geometry-stage)
+   (fragment-stage :initarg :fragment-stage)
    (context :initarg :context)
    (cached-compile-results :initform nil)))
 
@@ -278,8 +282,16 @@ names are depended on by the functions named later in the list"
           (map-hash
            (lambda (k v)
              (when (and (typep v 'pipeline-spec)
-                        (member func-key (slot-value v 'stages)
-				:test #'func-key=))
+                        (with-slots (vertex-stage
+                                     tesselation-control-stage
+                                     tesselation-evaluation-stage
+                                     geometry-stage
+                                     fragment-stage) v
+                          (or (func-key= func-key vertex-stage)
+                              (func-key= func-key tesselation-control-stage)
+                              (func-key= func-key tesselation-evaluation-stage)
+                              (func-key= func-key geometry-stage)
+                              (func-key= func-key fragment-stage))))
                k))
            *gpu-pipeline-specs*)))
 
@@ -349,8 +361,16 @@ names are depended on by the functions named later in the list"
 (defvar +cache-last-compile-result+ t)
 
 (defun make-pipeline-spec (name stages context)
-  (make-instance 'pipeline-spec :name name :stages stages
-                 :context context))
+  (dbind (&key vertex tesselation-control tesselation-evaluation
+               geometry fragment) (flatten stages)
+    (make-instance 'pipeline-spec
+                   :name name
+                   :vertex-stage vertex
+                   :tesselation-control-stage tesselation-control
+                   :tesselation-evaluation-stage tesselation-evaluation
+                   :geometry-stage geometry
+                   :fragment-stage fragment
+                   :context context)))
 
 (defun pipeline-spec (name)
   (gethash name *gpu-pipeline-specs*))

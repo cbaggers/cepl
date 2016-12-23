@@ -35,20 +35,19 @@
 
 (defun %def-partial-pipeline (name stage-keys stage-pairs aggregate-uniforms
                               context)
-  (declare (ignore stage-pairs))
   ;;
   ;; freak out if try and use funcs in stage args
   (when (has-func-type-in-args stage-keys)
     (error 'functions-in-non-uniform-args :name name))
   ;;
   ;; update the spec immediately (macro-expansion time)
-  (%update-spec name stage-keys context)
+  (%update-spec name stage-pairs context)
   ;;
   (let ((uniform-names (mapcar #'first aggregate-uniforms)))
     `(progn
        ;;
        ;; we upload the spec at compile time (using eval-when)
-       ,(gen-update-spec name stage-keys context)
+       ,(gen-update-spec name stage-pairs context)
        ;;
        ;; generate the dummy dispatch func
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
@@ -69,7 +68,7 @@
                                       uniform-assigners)))
     ;;
     ;; update the spec immediately (macro-expansion time)
-    (%update-spec name stage-keys context)
+    (%update-spec name stage-pairs context)
     `(progn
        (let ((prog-id nil)
              ;; If there are no implicit-uniforms we need a no-op
@@ -86,7 +85,7 @@
                  `((declare (type function implicit-uniform-upload-func))))
          ;;
          ;; we upload the spec at compile time (using eval-when)
-         ,(gen-update-spec name stage-keys context)
+         ,(gen-update-spec name stage-pairs context)
          ;;
          (labels (,init-func)
            ;;
@@ -112,15 +111,18 @@
            (eval (%defpipeline-gfuncs
                   ',name ',gpipe-args ',context t)))))))
 
-(defun %update-spec (name stage-keys context)
+(defun %update-spec (name stage-pairs context)
   (update-pipeline-spec
-   (make-pipeline-spec name stage-keys context)))
+   (make-pipeline-spec name stage-pairs context)))
 
-(defun gen-update-spec (name stage-keys context)
+(defun gen-update-spec (name stage-pairs context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (update-pipeline-spec
       (make-pipeline-spec
-       ',name ,(cons 'list (mapcar #'inject-func-key stage-keys))
+       ',name ,(cons 'list (mapcar (lambda (x)
+                                     (dbind (k . v) x
+                                       `(cons ,k ,(inject-func-key v))))
+                                   stage-pairs))
        ',context))))
 
 (defvar *all-quiet* nil)
