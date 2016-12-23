@@ -12,13 +12,17 @@
 
 (defclass pipeline-spec ()
   ((name :initarg :name)
-   (vertex-stage :initarg :vertex-stage)
-   (tesselation-control-stage :initarg :tesselation-control-stage)
-   (tesselation-evaluation-stage :initarg :tesselation-evaluation-stage)
-   (geometry-stage :initarg :geometry-stage)
-   (fragment-stage :initarg :fragment-stage)
    (context :initarg :context)
-   (cached-compile-results :initform nil)))
+   (cached-compile-results :initform nil)
+   (vertex-stage :initarg :vertex-stage)
+   (tesselation-control-stage
+    :initarg :tesselation-control-stage :initform nil)
+   (tesselation-evaluation-stage
+    :initarg :tesselation-evaluation-stage :initform nil)
+   (geometry-stage
+    :initarg :geometry-stage :initform nil)
+   (fragment-stage
+    :initarg :fragment-stage :initform nil)))
 
 (defclass gpu-func-spec ()
   ((name :initarg :name)
@@ -35,6 +39,30 @@
    (declarations :initarg :declarations)
    (missing-dependencies :initarg :missing-dependencies :initform nil)
    (cached-compile-results :initarg :compiled :initform nil)))
+
+(defmethod pipeline-stages ((spec pipeline-spec))
+  (with-slots (vertex-stage
+               tesselation-control-stage
+               tesselation-evaluation-stage
+               geometry-stage
+               fragment-stage) spec
+    (list vertex-stage
+          tesselation-control-stage
+          tesselation-evaluation-stage
+          geometry-stage
+          fragment-stage)))
+
+(defmethod pipeline-stage-pairs ((spec pipeline-spec))
+  (with-slots (vertex-stage
+               tesselation-control-stage
+               tesselation-evaluation-stage
+               geometry-stage
+               fragment-stage) spec
+    (list (cons :vertex vertex-stage)
+          (cons :tesselation-control tesselation-control-stage)
+          (cons :tesselation-evaluation tesselation-evaluation-stage)
+          (cons :geometry geometry-stage)
+          (cons :fragment fragment-stage))))
 
 ;;--------------------------------------------------
 
@@ -282,16 +310,7 @@ names are depended on by the functions named later in the list"
           (map-hash
            (lambda (k v)
              (when (and (typep v 'pipeline-spec)
-                        (with-slots (vertex-stage
-                                     tesselation-control-stage
-                                     tesselation-evaluation-stage
-                                     geometry-stage
-                                     fragment-stage) v
-                          (or (func-key= func-key vertex-stage)
-                              (func-key= func-key tesselation-control-stage)
-                              (func-key= func-key tesselation-evaluation-stage)
-                              (func-key= func-key geometry-stage)
-                              (func-key= func-key fragment-stage))))
+                        (member func-key (pipeline-stages v) :test #'func-key=))
                k))
            *gpu-pipeline-specs*)))
 
