@@ -295,7 +295,8 @@
        (mapcar #'parsed-gpipe-args->v-translate-args
 	       parsed-gpipe-args)))))
 
-(defun parsed-gpipe-args->v-translate-args (stage-pair)
+;; {TODO} make the replacements related code more robust
+(defun parsed-gpipe-args->v-translate-args (stage-pair &optional replacements)
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
    %compile-link-and-upload needs to call v-rolling-translate. To do this
    we need to look up the gpu function spec and turn them into valid arguments
@@ -308,6 +309,7 @@
    [2] validate that either the gpu-function's context didnt specify a stage
        explicitly or that, if it did, that it matches the stage it is being used
        for now"
+  (assert (every #'listp replacements))
   (dbind (stage-type . stage) stage-pair
     (if (typep (gpu-func-spec stage) 'glsl-stage-spec)
 	(with-glsl-stage-spec (gpu-func-spec stage)
@@ -317,13 +319,31 @@
 	  (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
 			     context)))
 	    (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-	  (let ((context (cons :iuniforms ;;[1]
-			       (cons stage-type
-				     (remove stage-type context)))))
+	  (let* ((final-uniforms (remove-if (lambda (u)
+                                              (member (first u) replacements
+                                                      :key #'first
+                                                      :test #'string=))
+                                            uniforms))
+                 (context (cons :iuniforms ;;[1]
+                                (cons stage-type
+                                      (remove stage-type context))))
+                 (replacements
+                  (loop :for (k v) :in replacements
+                     :for r = (let* ((u (find k uniforms :key #'first
+                                              :test #'string=)))
+                                (when (and u (typep (varjo:type-spec->type
+                                                     (second u))
+                                                    'varjo:v-function-type))
+                                  (list (first u) `(function ,v))))
+                     :when r :collect r))
+                 (body (if replacements
+                           `(let ,replacements
+                              ,@code)
+                           `(progn ,@code))))
 	    (list in-args
-		  uniforms
+		  final-uniforms
 		  context
-		  `(progn ,@code)))))))
+                  body))))))
 
 ;;--------------------------------------------------
 
