@@ -76,6 +76,7 @@
                (:file "core/pipelines/uniform-assigners-generation")
                (:file "core/pipelines/defpipeline")
                (:file "core/pipelines/gpu-lambda")
+               (:file "core/pipelines/bake")
                (:file "core/textures/def")
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")

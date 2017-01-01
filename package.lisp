@@ -814,6 +814,7 @@
 	   :gpu-function
 	   :gpu-functions
 	   :delete-gpu-function
+           :bake
 	   ;; :*verbose-compiles*
 	   ;; :*warn-when-cant-test-compile*
 	   ))
