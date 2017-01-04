@@ -56,54 +56,33 @@
     (setf buffer-id-cache 0)
     (setf buffer-target-cache :array-buffer)))
 
-(defvar *valid-buffer-targets*
-  '(:array-buffer
-    :atomic-counter-buffer
-    :copy-read-buffer
-    :copy-write-buffer
-    :draw-indirect-buffer
-    :dispatch-indirect-buffer
-    :element-array-buffer
-    :pixel-pack-buffer
-    :pixel-unpack-buffer
-    :shader-storage-buffer
-    :transform-feedback-buffer
-    :uniform-buffer
-    :texture-buffer
-    :query-buffer))
-
 (defmacro with-buffer ((var-name buffer &optional (buffer-target :array-buffer))
 		       &body body)
-  (case buffer-target
-    (:array-buffer (gen-with-array-buffer var-name buffer body))
-    (otherwise (gen-with-buffer-dyn var-name buffer buffer-target body))))
-
-(defun gen-with-buffer-dyn (var-name buffer buffer-target body)
-  (alexandria:with-gensyms (fn target old-buffer arr?)
-    `(let* ((,var-name ,buffer)
-            (,target ,buffer-target)
-            (,arr? (eq ,target :array-buffer))
-            (,old-buffer (when ,arr?
-                           (array-buffer-bound *cepl-context*))))
-       (declare (ignorable ,var-name))
-       (unwind-protect
-            (labels ((,fn () ,@body))
-              (if ,arr?
-                  (setf (array-buffer-bound *cepl-context*) ,var-name)
-                  (bind-buffer ,var-name ,target))
-              (,fn))
-         (if ,arr?
-             (setf (array-buffer-bound *cepl-context*) ,old-buffer)
-             (unbind-buffer))))))
-
-(defun gen-with-array-buffer (var-name buffer body)
-  (alexandria:with-gensyms (old-buffer)
-    `(let* ((,var-name ,buffer)
-            (,old-buffer (array-buffer-bound *cepl-context*)))
-       (declare (ignorable ,var-name))
-       (unwind-protect (progn (setf (array-buffer-bound *cepl-context*) ,var-name)
-                              ,@body)
-         (setf (array-buffer-bound *cepl-context*) ,old-buffer)))))
+  (labels (;; for when the target isnt known at compile time
+           (gen-with-buffer-dyn ()
+             (alexandria:with-gensyms (old-buffer target)
+               `(let* ((,var-name ,buffer)
+                       (,target ,buffer-target)
+                       (,old-buffer (buffer-bound *cepl-context* ,target)))
+                  (declare (ignorable ,var-name))
+                  (unwind-protect (progn
+                                    (setf (buffer-bound *cepl-context* ,target) ,var-name)
+                                    ,@body)
+                    (setf (buffer-bound *cepl-context* ,target) ,old-buffer)))))
+           ;; for when the buffer-target is a keyword
+           (gen-with-buffer-static ()
+             (alexandria:with-gensyms (old-buffer)
+               `(let* ((,var-name ,buffer)
+                       (,old-buffer (buffer-bound *cepl-context* ,buffer-target)))
+                  (declare (ignorable ,var-name))
+                  (unwind-protect (progn
+                                    (setf (buffer-bound *cepl-context* ,buffer-target) ,var-name)
+                                    ,@body)
+                    (setf (buffer-bound *cepl-context* ,buffer-target) ,old-buffer))))))
+    ;;
+    (if (keywordp buffer-target)
+        (gen-with-buffer-static)
+        (gen-with-buffer-dyn))))
 
 (defun gen-buffer ()
   (first (gl:gen-buffers 1)))
@@ -117,7 +96,7 @@
 	(make-array 0 :element-type 'gpu-array-bb
 		    :initial-element +null-buffer-backed-gpu-array+
 		    :adjustable t :fill-pointer 0))
-  (cepl.context::register-gpu-buffer *cepl-context* new-buffer )
+  (cepl.context::register-gpu-buffer *cepl-context* new-buffer)
   (if initial-contents
       (if (list-of-c-arrays-p initial-contents)
 	  (multi-buffer-data new-buffer initial-contents buffer-target usage)

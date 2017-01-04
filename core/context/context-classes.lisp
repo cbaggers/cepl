@@ -6,9 +6,6 @@
    (window :initarg :window :reader window)
    (fbo :initarg :window :reader context-fbo)))
 
-(defvar *cepl-context*
-  (make-instance 'cepl-context))
-
 (defconstant +unknown-id+ -1)
 
 ;; Caching details
@@ -17,11 +14,48 @@
 (defclass cepl-context ()
   ((uninitialized-resources :initform nil)
    (gl-context :initform nil)
-   (array-buffer-binding-id :initform +unknown-id+ :type (signed-byte 32))
+   (array-buffer-binding-id :initform +unknown-id+
+                            :type (signed-byte 32))
+   (element-array-buffer-binding-id :initform +unknown-id+
+                                    :type (signed-byte 32))
    (gpu-buffers :initform (make-array 0 :element-type 'gpu-buffer
                                       :initial-element +null-gpu-buffer+
                                       :adjustable t
                                       :fill-pointer 0))))
+
+(defvar *cepl-context*
+  (make-instance 'cepl-context))
+
+;;----------------------------------------------------------------------
+
+(defun register-gpu-buffer (cepl-context gpu-buffer)
+  (with-slots (gpu-buffers) cepl-context
+    (let ((id (gpu-buffer-id gpu-buffer)))
+      (when (<= (array-dimension gpu-buffers 0) id)
+        (adjust-array gpu-buffers (1+ id) :initial-element +null-gpu-buffer+))
+      (when (<= (fill-pointer gpu-buffers) id)
+        (setf (fill-pointer gpu-buffers) (1+ id)))
+      (setf (aref gpu-buffers id) gpu-buffer))))
+
+;;----------------------------------------------------------------------
+
+(defun buffer-bound (cepl-context target)
+  (ecase target
+    (:array-buffer (array-buffer-bound cepl-context))
+    (:element-array-buffer (element-array-buffer-bound cepl-context))))
+
+(defun (setf buffer-bound) (value cepl-context target)
+  (ecase target
+    (:array-buffer (setf (array-buffer-bound cepl-context) value))
+    (:element-array-buffer (setf (element-array-buffer-bound cepl-context) value))))
+
+(define-compiler-macro buffer-bound (&whole whole cepl-context target)
+  (case target
+    (:array-buffer `(array-buffer-bound ,cepl-context))
+    (:element-array-buffer `(element-array-buffer-bound ,cepl-context))
+    (otherwise whole)))
+
+;;----------------------------------------------------------------------
 
 (defun array-buffer-bound (cepl-context)
   (with-slots (gl-context gpu-buffers array-buffer-binding-id) cepl-context
@@ -43,14 +77,29 @@
               array-buffer-binding-id id))
       gpu-buffer)))
 
-(defun register-gpu-buffer (cepl-context gpu-buffer)
-  (with-slots (gpu-buffers) cepl-context
-    (let ((id (gpu-buffer-id gpu-buffer)))
-      (when (<= (array-dimension gpu-buffers 0) id)
-        (adjust-array gpu-buffers (1+ id) :initial-element +null-gpu-buffer+))
-      (when (<= (fill-pointer gpu-buffers) id)
-        (setf (fill-pointer gpu-buffers) (1+ id)))
-      (setf (aref gpu-buffers id) gpu-buffer))))
+;;----------------------------------------------------------------------
+
+(defun element-array-buffer-bound (cepl-context)
+  (with-slots (gl-context gpu-buffers element-array-buffer-binding-id)
+      cepl-context
+    (let* ((id (if (= element-array-buffer-binding-id +unknown-id+)
+                   (setf element-array-buffer-binding-id
+                         (element-array-buffer-binding gl-context))
+                   element-array-buffer-binding-id))
+           (buffer (when (> id 0) (aref gpu-buffers id))))
+      (assert (not (eq buffer +null-gpu-buffer+)))
+      buffer)))
+
+(defun (setf element-array-buffer-bound) (gpu-buffer cepl-context)
+  (with-slots (gl-context gpu-buffers element-array-buffer-binding-id)
+      cepl-context
+    (let ((id (if gpu-buffer
+                  (gpu-buffer-id gpu-buffer)
+                  0)))
+      (when (/= id element-array-buffer-binding-id)
+        (setf (element-array-buffer-binding gl-context) id
+              element-array-buffer-binding-id id))
+      gpu-buffer)))
 
 ;;----------------------------------------------------------------------
 

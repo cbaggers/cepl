@@ -72,7 +72,8 @@
            (incf attr (gl-assign-attrib-pointers
                        (if (listp elem-type) (second elem-type) elem-type)
                        attr offset)))))
-    (when element-buffer
-      (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))
-    (bind-vao 0)
+    (if element-buffer
+        (with-buffer (foo element-buffer :element-array-buffer)
+          (bind-vao 0))
+        (bind-vao 0))
     vao))

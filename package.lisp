@@ -518,6 +518,8 @@
            ;; CEPL.Context
            :*cepl-context*
            :array-buffer-bound
+           :element-array-buffer-bound
+           :buffer-bound
            ))
 
 (uiop:define-package :cepl.image-formats
