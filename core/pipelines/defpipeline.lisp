@@ -224,7 +224,6 @@
   (funcall (compile nil `(lambda () ,code))))
 
 (defun %post-init (func)
-  (unbind-buffer)
   (cepl.streams::bind-vao 0)
   (force-use-program 0)
   (when func (funcall func)))

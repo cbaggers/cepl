@@ -448,9 +448,9 @@
 	   :viewport-params-to-vec4))
 
 (uiop:define-package :cepl.context
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.types :%cepl.types :split-sequence
-	:named-readtables :cepl.errors :cepl.internals)
+    (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+          :cepl.memory :cepl.types :%cepl.types :split-sequence
+          :named-readtables :cepl.errors :cepl.internals)
   (:export :gl-context
            :*gl-context*
            :make-context
@@ -513,6 +513,11 @@
            ;; :%query-buffer-binding
            ;; :%texture-buffer-binding
            ;; :%vertex-array-binding
+
+           ;;----------------------------
+           ;; CEPL.Context
+           :*cepl-context*
+           :array-buffer-bound
            ))
 
 (uiop:define-package :cepl.image-formats

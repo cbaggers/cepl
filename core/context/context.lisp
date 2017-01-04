@@ -61,11 +61,7 @@
        (defgeneric ,name (context))
        (defmethod ,name ((context gl-context))
          (declare (ignore context))
-         (gl:get* ,kwd-name ,@(when index (list index))))
-       ;; (define-compiler-macro ,name (&rest args)
-       ;;   (declare (ignore args))
-       ;;   '(gl:get* ,kwd-name ,@(when index (list index))))
-       )))
+         (gl:get* ,kwd-name ,@(when index (list index)))))))
 
 ;;------------------------------------------------------------
 
@@ -131,7 +127,16 @@
 ;; GL_ARRAY_BUFFER_BINDING (GLint, initially 0, see glBindBuffer)
 ;; The name of the buffer object currently bound to the target GL_ARRAY_BUFFER.
 ;; If no buffer object is bound to this target, 0 is returned.
-(def-context-reader %array-buffer-binding :enum-name :array-buffer-binding)
+(defun array-buffer-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :array-buffer-binding))
+
+(defun (setf array-buffer-binding) (id context)
+  (declare (ignore context))
+  (cl-opengl-bindings:bind-buffer :array-buffer id)
+  id)
+
+;;------------------------------------------------------------
 
 ;; GL_COPY_READ_BUFFER_BINDING (name, initially 0, see glBufferBinding)
 ;; The buffer that is currently bound to the copy read bind point, or 0 for none

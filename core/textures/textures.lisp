@@ -38,7 +38,8 @@
 		  :image-format (texture-image-format texture))))
 
 	    (when (not cepl.context:*gl-context*)
-	      (cepl.memory::delay-initialization
+	      (cepl.context::delay-initialization
+               *cepl-context*
 	       (lambda () (reinit-on-context result))
 	       (list texture)))
 	    result)
@@ -269,7 +270,7 @@
                        (multisample nil) (immutable t) (buffer-storage nil)
                        (generate-mipmaps t) pixel-format)
   (let ((dimensions (listify dimensions)))
-    (cepl.memory::if-context
+    (cepl.context::if-gl-context
      (make-texture-now %pre% initial-contents dimensions element-type mipmap
 		       layer-count cubes rectangle multisample immutable
 		       buffer-storage generate-mipmaps pixel-format)

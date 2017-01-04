@@ -56,12 +56,54 @@
     (setf buffer-id-cache 0)
     (setf buffer-target-cache :array-buffer)))
 
+(defvar *valid-buffer-targets*
+  '(:array-buffer
+    :atomic-counter-buffer
+    :copy-read-buffer
+    :copy-write-buffer
+    :draw-indirect-buffer
+    :dispatch-indirect-buffer
+    :element-array-buffer
+    :pixel-pack-buffer
+    :pixel-unpack-buffer
+    :shader-storage-buffer
+    :transform-feedback-buffer
+    :uniform-buffer
+    :texture-buffer
+    :query-buffer))
+
 (defmacro with-buffer ((var-name buffer &optional (buffer-target :array-buffer))
 		       &body body)
-  `(let* ((,var-name ,buffer))
-     (unwind-protect (progn (bind-buffer ,var-name ,buffer-target)
-			    ,@body)
-       (unbind-buffer ,var-name))))
+  (case buffer-target
+    (:array-buffer (gen-with-array-buffer var-name buffer body))
+    (otherwise (gen-with-buffer-dyn var-name buffer buffer-target body))))
+
+(defun gen-with-buffer-dyn (var-name buffer buffer-target body)
+  (alexandria:with-gensyms (fn target old-buffer arr?)
+    `(let* ((,var-name ,buffer)
+            (,target ,buffer-target)
+            (,arr? (eq ,target :array-buffer))
+            (,old-buffer (when ,arr?
+                           (array-buffer-bound *cepl-context*))))
+       (declare (ignorable ,var-name))
+       (unwind-protect
+            (labels ((,fn () ,@body))
+              (if ,arr?
+                  (setf (array-buffer-bound *cepl-context*) ,var-name)
+                  (bind-buffer ,var-name ,target))
+              (,fn))
+         (if ,arr?
+             (setf (array-buffer-bound *cepl-context*) ,old-buffer)
+             (unbind-buffer))))))
+
+(defun gen-with-array-buffer (var-name buffer body)
+  (alexandria:with-gensyms (old-buffer)
+    `(let* ((,var-name ,buffer)
+            (,old-buffer (array-buffer-bound *cepl-context*)))
+       (declare (ignorable ,var-name))
+       (unwind-protect (progn (setf (array-buffer-bound *cepl-context*) ,var-name)
+                              ,@body)
+         (setf (array-buffer-bound *cepl-context*) ,old-buffer)))))
 
 (defun gen-buffer ()
   (first (gl:gen-buffers 1)))
@@ -75,6 +117,7 @@
 	(make-array 0 :element-type 'gpu-array-bb
 		    :initial-element +null-buffer-backed-gpu-array+
 		    :adjustable t :fill-pointer 0))
+  (cepl.context::register-gpu-buffer *cepl-context* new-buffer )
   (if initial-contents
       (if (list-of-c-arrays-p initial-contents)
 	  (multi-buffer-data new-buffer initial-contents buffer-target usage)
@@ -102,7 +145,7 @@
   (assert (or (null initial-contents)
 	      (typep initial-contents 'c-array)
 	      (list-of-c-arrays-p initial-contents)))
-  (cepl.memory::if-context
+  (cepl.context::if-gl-context
    (init-gpu-buffer-now
     %pre% (gen-buffer) initial-contents buffer-target usage managed)
    (make-uninitialized-gpu-buffer)))
@@ -111,7 +154,7 @@
 (defun make-managed-gpu-buffer (&key initial-contents
 				  (buffer-target :array-buffer)
 				  (usage :static-draw))
-  (cepl.memory::if-context
+  (cepl.context::if-gl-context
    (init-gpu-buffer-now %pre% (gen-buffer) initial-contents
 			buffer-target usage t)
    (make-uninitialized-gpu-buffer)))
@@ -119,20 +162,20 @@
 (defun buffer-data-raw (data-pointer byte-size buffer
 			&optional (target :array-buffer) (usage :static-draw)
 			  (byte-offset 0))
-  (bind-buffer buffer target)
-  (%gl:buffer-data target byte-size
-		   (cffi:inc-pointer data-pointer byte-offset)
-		   usage)
-  (setf (gpu-buffer-arrays buffer)
-	(make-array 1 :element-type 'gpu-array-bb :initial-element
-		    (%make-gpu-array-bb
-		     :dimensions (list byte-size)
-		     :buffer buffer
-		     :access-style usage
-		     :element-type :uint8
-		     :byte-size byte-size
-		     :offset-in-bytes-into-buffer 0)))
-  buffer)
+  (with-buffer (foo buffer target)
+    (%gl:buffer-data target byte-size
+                     (cffi:inc-pointer data-pointer byte-offset)
+                     usage)
+    (setf (gpu-buffer-arrays buffer)
+          (make-array 1 :element-type 'gpu-array-bb :initial-element
+                      (%make-gpu-array-bb
+                       :dimensions (list byte-size)
+                       :buffer buffer
+                       :access-style usage
+                       :element-type :uint8
+                       :byte-size byte-size
+                       :offset-in-bytes-into-buffer 0)))
+    buffer))
 
 (defun buffer-data (buffer c-array &key (target :array-buffer)
 				     (usage :static-draw) (offset 0) byte-size)
@@ -145,28 +188,28 @@
 				(cepl.c-arrays::c-array-byte-size c-array)))
 	 (total-size (reduce #'+ c-array-byte-sizes)))
     (map nil #'free (gpu-buffer-arrays buffer))
-    (bind-buffer buffer target)
-    (buffer-reserve-block-raw buffer total-size target usage)
-    (buffer-data buffer (first c-arrays)
-		 :target target
-		 :usage usage
-		 :byte-size total-size)
-    (let ((offset 0))
-      (setf (gpu-buffer-arrays buffer)
-	    (make-array
-	     (length c-arrays) :element-type 'gpu-array-bb :initial-contents
-	     (loop :for byte-size :in c-array-byte-sizes
-		:collect (%make-gpu-array-bb
-			  :dimensions (list byte-size)
-			  :buffer buffer
-			  :access-style usage
-			  :element-type :uint8
-			  :byte-size byte-size
-			  :offset-in-bytes-into-buffer offset)
-		:do (incf offset byte-size)))))
-    (loop :for c :in c-arrays :for g :across (gpu-buffer-arrays buffer) :do
-       (gpu-array-sub-data g c :types-must-match nil)))
-  buffer)
+    (with-buffer (foo buffer target)
+      (buffer-reserve-block-raw buffer total-size target usage)
+      (buffer-data buffer (first c-arrays)
+                   :target target
+                   :usage usage
+                   :byte-size total-size)
+      (let ((offset 0))
+        (setf (gpu-buffer-arrays buffer)
+              (make-array
+               (length c-arrays) :element-type 'gpu-array-bb :initial-contents
+               (loop :for byte-size :in c-array-byte-sizes
+                  :collect (%make-gpu-array-bb
+                            :dimensions (list byte-size)
+                            :buffer buffer
+                            :access-style usage
+                            :element-type :uint8
+                            :byte-size byte-size
+                            :offset-in-bytes-into-buffer offset)
+                  :do (incf offset byte-size)))))
+      (loop :for c :in c-arrays :for g :across (gpu-buffer-arrays buffer) :do
+         (gpu-array-sub-data g c :types-must-match nil)))
+    buffer))
 
 (defun gpu-array-sub-data (gpu-array c-array &key (types-must-match t))
   (when types-must-match
@@ -181,30 +224,30 @@ c-array: ~s (byte-size: ~s)
 gpu-array: ~s (byte-size: ~s)"
 	     c-array byte-size
 	     gpu-array (gpu-array-bb-byte-size gpu-array)))
-    (bind-buffer (gpu-array-bb-buffer gpu-array) :array-buffer)
-    (%gl:buffer-sub-data :array-buffer byte-offset byte-size (pointer c-array)))
-  gpu-array)
+    (with-buffer (foo (gpu-array-bb-buffer gpu-array) :array-buffer)
+      (%gl:buffer-sub-data :array-buffer byte-offset byte-size (pointer c-array))
+      gpu-array)))
 
 (defun buffer-reserve-block-raw (buffer byte-size target usage)
-  (bind-buffer buffer target)
-  (%gl:buffer-data target byte-size (cffi:null-pointer) usage)
-  buffer)
+  (with-buffer (foo buffer target)
+    (%gl:buffer-data target byte-size (cffi:null-pointer) usage)
+    buffer))
 
 (defun buffer-reserve-block (buffer type dimensions target usage)
-  (bind-buffer buffer target)
-  (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
-  (let* ((dimensions (listify dimensions))
-	 (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions)))
-    (buffer-reserve-block-raw buffer byte-size target usage)
-    (setf (gpu-buffer-arrays buffer)
-	  (make-array 1 :element-type 'gpu-array-bb :initial-element
-		      (%make-gpu-array-bb
-		       :dimensions (list byte-size)
-		       :buffer buffer
-		       :access-style usage
-		       :element-type :uint8
-		       :byte-size byte-size
-		       :offset-in-bytes-into-buffer 0))))
-  buffer)
+  (with-buffer (foo buffer target)
+    (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
+    (let* ((dimensions (listify dimensions))
+           (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions)))
+      (buffer-reserve-block-raw buffer byte-size target usage)
+      (setf (gpu-buffer-arrays buffer)
+            (make-array 1 :element-type 'gpu-array-bb :initial-element
+                        (%make-gpu-array-bb
+                         :dimensions (list byte-size)
+                         :buffer buffer
+                         :access-style usage
+                         :element-type :uint8
+                         :byte-size byte-size
+                         :offset-in-bytes-into-buffer 0))))
+    buffer))
 
 ;;---------------------------------------------------------------

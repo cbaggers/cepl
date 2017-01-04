@@ -145,7 +145,7 @@
     (error
      "CEPL: Attempted to sample ~s but it is only legal to sample textures."
      texture))
-  (cepl.memory::if-context
+  (cepl.context::if-gl-context
    (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
 		     magnify-filter wrap compare)
    (make-uninitialized-sampler texture)

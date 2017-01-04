@@ -68,10 +68,10 @@
        (let* ((buffer (gpu-array-buffer gpu-array))
 	      (elem-type (gpu-array-bb-element-type gpu-array))
 	      (offset (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
-         (cepl.gpu-buffers::force-bind-buffer buffer :array-buffer)
-         (incf attr (gl-assign-attrib-pointers
-		     (if (listp elem-type) (second elem-type) elem-type)
-		     attr offset))))
+         (with-buffer (foo buffer :array-buffer)
+           (incf attr (gl-assign-attrib-pointers
+                       (if (listp elem-type) (second elem-type) elem-type)
+                       attr offset)))))
     (when element-buffer
       (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))
     (bind-vao 0)

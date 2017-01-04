@@ -353,7 +353,7 @@
 (defun make-fbo (&rest fuzzy-attach-args)
   (let* ((fbo-obj (pre-gl-init (make-uninitialized-fbo)))
 	 (arrays (fuzzy-args->arrays fbo-obj fuzzy-attach-args)))
-    (cepl.memory::if-context
+    (cepl.context::if-gl-context
      (make-fbo-now %pre%)
      fbo-obj
      (append

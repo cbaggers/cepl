@@ -22,15 +22,16 @@
 		      (type-of ,array-sym))))
 	 (let ((,buffer-sym (gpu-array-buffer ,array-sym))
 	       (,gtarget ,target))
-	   (cepl.gpu-buffers::force-bind-buffer ,buffer-sym ,gtarget)
-	   (gl:with-mapped-buffer (,glarray-pointer
-				   ,gtarget
-				   ,access-type)
-	     (if (pointer-eq ,glarray-pointer (null-pointer))
-		 (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
-			,glarray-pointer)
-		 (let ((,temp-name ,glarray-pointer))
-		   ,@body))))))))
+	   (cepl.gpu-buffers::with-buffer
+            (foo ,buffer-sym ,gtarget)
+            (gl:with-mapped-buffer (,glarray-pointer
+                                    ,gtarget
+                                    ,access-type)
+              (if (pointer-eq ,glarray-pointer (null-pointer))
+                  (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
+                         ,glarray-pointer)
+                  (let ((,temp-name ,glarray-pointer))
+                    ,@body)))))))))
 
 ;; [TODO] Dont require a temporary name, just use the one it has
 ;;        this makes it feel more magical to me and also it is

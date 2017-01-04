@@ -102,7 +102,7 @@
 		    (base-arr (aref (gpu-buffer-arrays buffer) 0)))
 	       (make-gpu-array-share-data
 		arr base-arr 0 element-type dimensions))))
-    (cepl.memory::if-context
+    (cepl.context::if-gl-context
      (init %pre%)
      (make-uninitialized-gpu-array-bb))))
 
@@ -128,7 +128,7 @@
 (defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw) dimensions)
   (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
-    (cepl.memory::if-context
+    (cepl.context::if-gl-context
      (init-gpu-array-from-c-array %pre% initial-contents access-style dimensions)
      (make-uninitialized-gpu-array-bb buffer)
      (list buffer))))
@@ -139,7 +139,7 @@
 (defmethod make-gpu-array ((initial-contents t)
                            &key dimensions element-type (access-style :static-draw))
   (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
-    (cepl.memory::if-context
+    (cepl.context::if-gl-context
      (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
 					  :element-type element-type))
        (init-gpu-array-from-c-array %pre% c-array access-style
@@ -167,7 +167,7 @@
 			      :dimensions (dimensions c-array)
 			      :access-style access-style))
 			   c-arrays)))
-    (cepl.memory::if-context
+    (cepl.context::if-gl-context
      (init-gpu-arrays-from-c-arrays %pre% c-arrays access-style)
      g-arrays
      (list buffer))))

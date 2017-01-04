@@ -33,7 +33,7 @@
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
   (let ((gpu-arrays (listify gpu-arrays)))
-    (cepl.memory::if-context
+    (cepl.context::if-gl-context
      (init-buffer-stream-from-id %pre% (make-vao gpu-arrays index-array)
 				 gpu-arrays index-array start length
 				 retain-arrays)
