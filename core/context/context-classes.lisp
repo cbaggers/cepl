@@ -19,6 +19,8 @@
                             :type (signed-byte 32))
    (element-array-buffer-binding-id :initform +unknown-id+
                                     :type (signed-byte 32))
+   (vao-binding-id :initform +null-vao+
+                   :type vao-id)
 
    (gpu-buffers :initform (make-array 0 :element-type 'gpu-buffer
                                       :initial-element +null-gpu-buffer+
@@ -120,6 +122,21 @@
         (setf (element-array-buffer-binding gl-context) id
               element-array-buffer-binding-id id))
       gpu-buffer)))
+
+;;----------------------------------------------------------------------
+
+(defun vao-bound (cepl-context)
+  (with-slots (gl-context vao-binding-id) cepl-context
+    (if (= vao-binding-id +unknown-id+)
+        (setf vao-binding-id (vertex-array-binding gl-context))
+        vao-binding-id)))
+
+(defun (setf vao-bound) (vao cepl-context)
+  (with-slots (gl-context vao-binding-id) cepl-context
+    (when (/= vao-binding-id vao)
+      (setf (vertex-array-binding gl-context) vao)
+      (setf vao-binding-id vao)))
+  vao)
 
 ;;----------------------------------------------------------------------
 ;; we don't cache this as we would also need to cache the ranges, in that

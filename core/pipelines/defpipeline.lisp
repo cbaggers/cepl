@@ -224,7 +224,7 @@
   (funcall (compile nil `(lambda () ,code))))
 
 (defun %post-init (func)
-  (cepl.streams::bind-vao 0)
+  (setf (vao-bound *cepl-context*) 0)
   (force-use-program 0)
   (when func (funcall func)))
 
@@ -323,7 +323,7 @@
   `(let ((stream ,stream)
          (draw-type ,draw-type)
          (index-type (buffer-stream-index-type stream)))
-     (bind-vao (buffer-stream-vao stream))
+     (setf (vao-bound *cepl-context*) (buffer-stream-vao stream))
      (if (= (the fixnum |*instance-count*|) 0)
          (if index-type
 	     (locally (declare (optimize (speed 3) (safety 0)))

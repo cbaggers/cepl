@@ -180,6 +180,14 @@
 
 ;;------------------------------------------------------------
 
+(deftype vao-id ()
+  '(unsigned-byte 32))
+
+(declaim (type vao-id +null-vao+))
+(defvar +null-vao+ 0)
+
+;;------------------------------------------------------------
+
 (defstruct (buffer-stream (:constructor %make-buffer-stream))
   vao
   (%start 0 :type (unsigned-byte 64))

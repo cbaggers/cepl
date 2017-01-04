@@ -183,6 +183,9 @@
 	   :buffer-texture-owns-array
 	   :+null-texture+
 
+           :vao-id
+           :+null-vao+
+
 	   :make-blending-params
 	   :blending-params
 	   :blending-params-p
@@ -505,14 +508,16 @@
            :stencil-value-mask
            :stencil-writemask
            :stereo
+           :array-buffer-binding
+           :element-array-buffer-binding
+           :uniform-buffer-binding
+           :vertex-array-binding
            ;; :%array-buffer-binding
            ;; :%read-buffer-binding
            ;; :%copy-write-buffer-binding
            ;; :%draw-indirect-buffer-binding
-           ;; :%element-array-buffer-binding
            ;; :%query-buffer-binding
            ;; :%texture-buffer-binding
-           ;; :%vertex-array-binding
 
            ;;----------------------------
            ;; CEPL.Context
@@ -521,6 +526,7 @@
            :element-array-buffer-bound
            :uniform-buffer-bound
            :buffer-bound
+           :vao-bound
            ))
 
 (uiop:define-package :cepl.image-formats
@@ -623,13 +629,11 @@
 
 (uiop:define-package :cepl.vaos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.types :%cepl.types :split-sequence
+        :cepl.types :%cepl.types :split-sequence :cepl.context
 	:named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
 	:cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed)
   (:export :free-vao
 	   :free-vaos
-	   :bind-vao
-	   :unbind-vao
 	   :with-vao-bound
 	   :make-vao
 	   :make-vao-from-id))

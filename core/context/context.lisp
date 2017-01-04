@@ -230,10 +230,20 @@
 ;; for none.
 (def-context-reader %texture-buffer-binding :enum-name :texture-buffer-binding)
 
+;;------------------------------------------------------------
+
 ;; GL_VERTEX_ARRAY_BINDING (GLint, initially 0, see glBindVertexArray)
 ;; The name of the vertex array object currently bound to the context, or 0 if
 ;; none is bound.
-(def-context-reader %vertex-array-binding :enum-name :vertex-array-binding)
+
+(defun vertex-array-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :vertex-array-binding))
+
+(defun (setf vertex-array-binding) (id context)
+  (declare (ignore context))
+  (gl:bind-vertex-array id)
+  id)
 
 ;;------------------------------------------------------------
 

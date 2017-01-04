@@ -11,6 +11,8 @@
 
 - change gl-context methods to funcs
 
+- add vao-id type to structs in cepl-types.lisp
+
 ||#
 
 
