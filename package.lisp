@@ -598,7 +598,6 @@
 	   :gpu-buffer-p
            :gpu-buffer-id
            :gpu-buffer-arrays
-           :bind-buffer
            :buffer-data
            :buffer-data-raw
            :buffer-reserve-block
@@ -606,8 +605,7 @@
            :free-buffers
            :make-gpu-buffer
            :make-gpu-buffer-from-id
-           :multi-buffer-data
-           :unbind-buffer))
+           :multi-buffer-data))
 
 (uiop:define-package :cepl.gpu-arrays.buffer-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

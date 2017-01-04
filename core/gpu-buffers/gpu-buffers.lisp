@@ -33,29 +33,6 @@
        (blank-buffer-object buffer))
     (%gl:delete-buffers 1 id)))
 
-;; [TODO] This needs a rework given how gl targets operate
-(let ((buffer-id-cache nil)
-      (buffer-target-cache nil))
-  (defun bind-buffer (buffer buffer-target)
-    (let ((id (gpu-buffer-id buffer)))
-      (unless (and (eq id buffer-id-cache)
-                   (eq buffer-target buffer-target-cache))
-        (cl-opengl-bindings:bind-buffer buffer-target id)
-        (setf buffer-target-cache id)
-        (setf buffer-target-cache buffer-target)))
-    buffer)
-  (defun force-bind-buffer (buffer buffer-target)
-    "Binds the specified opengl buffer to the target"
-    (let ((id (gpu-buffer-id buffer)))
-      (cl-opengl-bindings:bind-buffer buffer-target id)
-      (setf buffer-id-cache id)
-      (setf buffer-target-cache buffer-target))
-    buffer)
-  (defun unbind-buffer ()
-    (cl-opengl-bindings:bind-buffer :array-buffer 0)
-    (setf buffer-id-cache 0)
-    (setf buffer-target-cache :array-buffer)))
-
 (defmacro with-buffer ((var-name buffer &optional (buffer-target :array-buffer))
 		       &body body)
   (labels (;; for when the target isnt known at compile time
