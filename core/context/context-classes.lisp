@@ -14,10 +14,12 @@
 (defclass cepl-context ()
   ((uninitialized-resources :initform nil)
    (gl-context :initform nil)
+
    (array-buffer-binding-id :initform +unknown-id+
                             :type (signed-byte 32))
    (element-array-buffer-binding-id :initform +unknown-id+
                                     :type (signed-byte 32))
+
    (gpu-buffers :initform (make-array 0 :element-type 'gpu-buffer
                                       :initial-element +null-gpu-buffer+
                                       :adjustable t
@@ -26,15 +28,19 @@
 (defvar *cepl-context*
   (make-instance 'cepl-context))
 
+(defun ensure-vec-index (vec index null-element)
+  (when (<= (array-dimension vec 0) index)
+    (adjust-array vec (1+ index) :initial-element null-element))
+  (when (<= (fill-pointer vec) index)
+    (setf (fill-pointer vec) (1+ index)))
+  index)
+
 ;;----------------------------------------------------------------------
 
 (defun register-gpu-buffer (cepl-context gpu-buffer)
   (with-slots (gpu-buffers) cepl-context
     (let ((id (gpu-buffer-id gpu-buffer)))
-      (when (<= (array-dimension gpu-buffers 0) id)
-        (adjust-array gpu-buffers (1+ id) :initial-element +null-gpu-buffer+))
-      (when (<= (fill-pointer gpu-buffers) id)
-        (setf (fill-pointer gpu-buffers) (1+ id)))
+      (ensure-vec-index gpu-buffers id +null-gpu-buffer+)
       (setf (aref gpu-buffers id) gpu-buffer))))
 
 ;;----------------------------------------------------------------------
@@ -42,17 +48,31 @@
 (defun buffer-bound (cepl-context target)
   (ecase target
     (:array-buffer (array-buffer-bound cepl-context))
+    (:uniform-buffer (element-array-buffer-bound cepl-context))
     (:element-array-buffer (element-array-buffer-bound cepl-context))))
 
 (defun (setf buffer-bound) (value cepl-context target)
   (ecase target
     (:array-buffer (setf (array-buffer-bound cepl-context) value))
+    (:uniform-buffer (setf (element-array-buffer-bound cepl-context) value))
     (:element-array-buffer (setf (element-array-buffer-bound cepl-context) value))))
 
 (define-compiler-macro buffer-bound (&whole whole cepl-context target)
   (case target
     (:array-buffer `(array-buffer-bound ,cepl-context))
+    (:uniform-buffer `(element-array-buffer-bound ,cepl-context))
     (:element-array-buffer `(element-array-buffer-bound ,cepl-context))
+    (otherwise whole)))
+
+(define-compiler-macro (setf buffer-bound)
+    (&whole whole value cepl-context target)
+  (case target
+    (:array-buffer
+     `(setf (array-buffer-bound ,cepl-context) ,value))
+    (:uniform-buffer
+     `(setf (element-array-buffer-bound ,cepl-context) ,value))
+    (:element-array-buffer
+     `(setf (element-array-buffer-bound ,cepl-context) ,value))
     (otherwise whole)))
 
 ;;----------------------------------------------------------------------
@@ -100,6 +120,37 @@
         (setf (element-array-buffer-binding gl-context) id
               element-array-buffer-binding-id id))
       gpu-buffer)))
+
+;;----------------------------------------------------------------------
+;; we don't cache this as we would also need to cache the ranges, in that
+;; case we end up doing so many checks we are kind of defeating the point.
+;; Instead we just make sure the transform to cepl objects works
+
+(defun uniform-buffer-bound (cepl-context index &optional offset size)
+  (assert (and (null offset) (null size)))
+  (with-slots (gl-context gpu-buffers)
+      cepl-context
+    (let* ((id (uniform-buffer-binding gl-context index))
+           (buffer (when (> id 0) (aref gpu-buffers id))))
+      (assert (not (eq buffer +null-gpu-buffer+)))
+      buffer)))
+
+(defun (setf uniform-buffer-bound)
+    (gpu-buffer cepl-context index &optional offset size)
+  (with-slots (gl-context gpu-buffers)
+      cepl-context
+    (if gpu-buffer
+        (let ((id (gpu-buffer-id gpu-buffer)))
+          (cond
+            ((and offset size)
+             (setf (uniform-buffer-binding gl-context index offset size) id))
+            ((or offset size)
+             (error "If you specify one offset or size, you must specify the other"))
+            (t (setf (uniform-buffer-binding gl-context index) id))))
+        (progn
+          (assert (and (null offset) (null size)))
+          (setf (uniform-buffer-binding gl-context index) 0)))
+    gpu-buffer))
 
 ;;----------------------------------------------------------------------
 

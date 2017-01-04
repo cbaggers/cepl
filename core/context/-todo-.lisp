@@ -1,5 +1,7 @@
 #||
 
+- add a deftype for a buffer-id type. Use it for +unknown-id+ and structs
+
 - CEPL context exist BEFORE gl-contexts. Very important!
 
 - cepl.context becomes cepl.gl-context & make cepl.cepl-c..really?!

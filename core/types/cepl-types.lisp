@@ -121,7 +121,8 @@
 (defstruct (ubo (:constructor %make-ubo))
   (id 0 :type fixnum)
   (data (error "gpu-array must be provided when making ubo")
-	:type gpu-array)
+	:type gpu-array
+        :read-only t)
   (index 0 :type fixnum)
   (owns-gpu-array nil :type boolean))
 

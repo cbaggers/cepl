@@ -77,13 +77,14 @@ should be ~s" data element-type)
 (defun %bind-ubo (ubo)
   (let* ((data (ubo-data ubo))
 	 (type (ubo-data-type ubo))
-         (buffer-id (gpu-buffer-id (gpu-array-buffer data)))
          (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer data)
 		    (cepl.c-arrays::gl-calc-byte-size
 		     type (list (ubo-index ubo)))))
          (size (gl-type-size type)))
-    (%gl:bind-buffer-range :uniform-buffer (ubo-id ubo)
-                           buffer-id offset size))
+    (setf (cepl.context:uniform-buffer-bound cepl.context:*cepl-context*
+                                             (ubo-id ubo)
+                                             offset size)
+          (gpu-array-buffer data)))
   ubo)
 
 ;;---------------------------------------------------

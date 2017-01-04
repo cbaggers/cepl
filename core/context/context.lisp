@@ -154,6 +154,56 @@
 
 ;;------------------------------------------------------------
 
+;; GL_UNIFORM-BUFFER-BINDING (GLint, initially 0, see glBindBuffer)
+;; The name of the buffer object currently bound to the target
+;; GL_UNIFORM-BUFFER. If no buffer object is bound to this target, 0 is
+;; returned.
+
+(defun uniform-buffer-binding (context index &optional offset size)
+  (declare (ignore context))
+  (assert (and (null offset) (null size)))
+  (cl-opengl:get* :uniform-buffer-binding index))
+
+(defun (setf uniform-buffer-binding) (id context index &optional offset size)
+  (cond
+    ((and offset size)
+     (%set-uniform-buffer-binding-range id context index offset size))
+    ((or offset size)
+     (error "If you specify one offset or size, you must specify the other"))
+    (t (%set-uniform-buffer-binding id context index)))
+  id)
+
+(declaim (inline %set-uniform-buffer-binding))
+(defun %set-uniform-buffer-binding (id context index)
+  (declare (ignore context))
+  (cl-opengl-bindings:bind-buffer-base :uniform-buffer index id)
+  id)
+
+(declaim (inline %set-uniform-buffer-binding-range))
+(defun %set-uniform-buffer-binding-range (id context index offset size)
+  (declare (ignore context))
+  (assert (and offset size) (offset size)
+          "If you specify one offset or size, you must specify the other")
+  (%gl:bind-buffer-range :uniform-buffer index id offset size)
+  id)
+
+(define-compiler-macro uniform-buffer-binding
+    (context index &optional offset size)
+  (declare (ignore context))
+  (assert (and (null offset) (null size)))
+  `(cl-opengl:get* :uniform-buffer-binding ,index))
+
+(define-compiler-macro (setf uniform-buffer-binding)
+    (id context index &optional offset size)
+  (cond
+    ((and offset size)
+     `(%set-uniform-buffer-binding-range ,id ,context ,index ,offset ,size))
+    ((or offset size)
+     (error "If you specify one offset or size, you must specify the other"))
+    (t `(%set-uniform-buffer-binding ,id ,context ,index))))
+
+;;------------------------------------------------------------
+
 ;; GL_COPY_READ_BUFFER_BINDING (name, initially 0, see glBufferBinding)
 ;; The buffer that is currently bound to the copy read bind point, or 0 for none
 (def-context-reader %read-buffer-binding :enum-name :read-buffer-binding)
@@ -224,6 +274,10 @@
 ;; GL_DRAW_FRAMEBUFFER_BINDING (name, initially 0, see glBindFramebuffer)
 ;;     The framebuffer object currently bound to the GL_DRAW_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
 (def-context-reader draw-framebuffer-binding)
+
+;; GL_MAX_UNIFORM_BUFFER_BINDINGS (integer, at least 8)
+;;   returns the maximum number of uniform buffer binding points on the context, which must be at least 36.
+(def-cached-context-reader max-uniform-buffer-bindings)
 
 ;; GL_MAX_COLOR_ATTACHMENTS (integer, at least 8)
 ;;     Maximum number of framebuffer attachment points for color buffers.

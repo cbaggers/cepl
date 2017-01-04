@@ -519,6 +519,7 @@
            :*cepl-context*
            :array-buffer-bound
            :element-array-buffer-bound
+           :uniform-buffer-bound
            :buffer-bound
            ))
 
