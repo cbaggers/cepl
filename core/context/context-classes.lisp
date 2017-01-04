@@ -19,13 +19,21 @@
                             :type (signed-byte 32))
    (element-array-buffer-binding-id :initform +unknown-id+
                                     :type (signed-byte 32))
-   (vao-binding-id :initform +null-vao+
+   (vao-binding-id :initform +unknown-id+
                    :type vao-id)
+   (read-fbo-binding-id :initform +unknown-id+
+                        :type (signed-byte 32))
+   (draw-fbo-binding-id :initform +unknown-id+
+                        :type (signed-byte 32))
 
    (gpu-buffers :initform (make-array 0 :element-type 'gpu-buffer
                                       :initial-element +null-gpu-buffer+
                                       :adjustable t
-                                      :fill-pointer 0))))
+                                      :fill-pointer 0))
+   (fbos :initform (make-array 0 :element-type 'fbo
+                               :initial-element +null-fbo+
+                               :adjustable t
+                               :fill-pointer 0))))
 
 (defvar *cepl-context*
   (make-instance 'cepl-context))
@@ -44,6 +52,75 @@
     (let ((id (gpu-buffer-id gpu-buffer)))
       (ensure-vec-index gpu-buffers id +null-gpu-buffer+)
       (setf (aref gpu-buffers id) gpu-buffer))))
+
+(defun register-fbo (cepl-context fbo)
+  (with-slots (fbos) cepl-context
+    (let ((id (%fbo-id fbo)))
+      (ensure-vec-index fbos id +null-fbo+)
+      (setf (aref fbos id) fbo))))
+
+;;----------------------------------------------------------------------
+
+(defun read-fbo-bound (cepl-context)
+  (with-slots (gl-context fbos read-fbo-binding-id) cepl-context
+    (let* ((id (if (= read-fbo-binding-id +unknown-id+)
+                   (setf read-fbo-binding-id
+                         (read-framebuffer-binding gl-context))
+                   read-fbo-binding-id))
+           (fbo (when (>= id 0) (aref fbos id))))
+      (assert (not (eq fbo +null-fbo+)))
+      fbo)))
+
+(defun (setf read-fbo-bound) (fbo cepl-context)
+  (with-slots (gl-context fbos read-fbo-binding-id) cepl-context
+    (let ((id (if fbo
+                  (%fbo-id fbo)
+                  0)))
+      (when (/= id read-fbo-binding-id)
+        (setf (read-framebuffer-binding gl-context) id
+              read-fbo-binding-id id))
+      fbo)))
+
+(defun draw-fbo-bound (cepl-context)
+  (with-slots (gl-context fbos draw-fbo-binding-id) cepl-context
+    (let* ((id (if (= draw-fbo-binding-id +unknown-id+)
+                   (setf draw-fbo-binding-id
+                         (draw-framebuffer-binding gl-context))
+                   draw-fbo-binding-id))
+           (fbo (when (>= id 0) (aref fbos id))))
+      (assert (not (eq fbo +null-fbo+)))
+      fbo)))
+
+(defun (setf draw-fbo-bound) (fbo cepl-context)
+  (with-slots (gl-context fbos draw-fbo-binding-id) cepl-context
+    (let ((id (if fbo
+                  (%fbo-id fbo)
+                  0)))
+      (when (/= id draw-fbo-binding-id)
+        (setf (draw-framebuffer-binding gl-context) id
+              draw-fbo-binding-id id))
+      fbo)))
+
+(defun fbo-bound (cepl-context)
+  (cons (read-fbo-bound cepl-context)
+        (draw-fbo-bound cepl-context)))
+
+(defun (setf fbo-bound) (fbo cepl-context)
+  (assert (typep fbo 'fbo))
+  (with-slots (gl-context fbos read-fbo-binding-id draw-fbo-binding-id)
+      cepl-context
+    (let* ((id (if fbo
+                   (%fbo-id fbo)
+                   0))
+           (r-dif (/= id read-fbo-binding-id))
+           (d-dif (/= id draw-fbo-binding-id)))
+      (cond
+        ((and r-dif d-dif) (setf (framebuffer-binding gl-context) id))
+        (r-dif (setf (read-framebuffer-binding gl-context) id))
+        (d-dif (setf (draw-framebuffer-binding gl-context) id)))
+      (setf draw-fbo-binding-id id
+            read-fbo-binding-id id)
+      fbo)))
 
 ;;----------------------------------------------------------------------
 

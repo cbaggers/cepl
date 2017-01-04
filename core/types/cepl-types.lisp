@@ -168,6 +168,9 @@
 					 :destination-alpha :zero)
 		   :type blending-params))
 
+(defvar +null-fbo+
+  (%%make-fbo :draw-buffer-map (cffi:null-pointer)))
+
 ;;------------------------------------------------------------
 
 (defstruct pixel-format

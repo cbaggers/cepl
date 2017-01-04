@@ -51,7 +51,6 @@
   (+ buffer-num #.(cffi:foreign-enum-value '%gl:enum :draw-buffer0)))
 
 (defvar %default-framebuffer nil)
-(defvar %current-fbo nil)
 (defvar *gl-window* nil)
 (defvar *on-context* nil)
 

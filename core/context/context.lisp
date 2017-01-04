@@ -204,6 +204,40 @@
 
 ;;------------------------------------------------------------
 
+;; GL_READ_FRAMEBUFFER_BINDING (name, intially 0, see glBindFramebuffer)
+;;     The framebuffer object currently bound to the GL_READ_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
+(defun read-framebuffer-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :read-framebuffer-binding))
+
+(defun (setf read-framebuffer-binding) (id context)
+  (declare (ignore context))
+  (gl:bind-framebuffer :read-framebuffer id)
+  id)
+
+;; GL_DRAW_FRAMEBUFFER_BINDING (name, initially 0, see glBindFramebuffer)
+;;     The framebuffer object currently bound to the GL_DRAW_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
+(defun draw-framebuffer-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :draw-framebuffer-binding))
+
+(defun (setf draw-framebuffer-binding) (id context)
+  (declare (ignore context))
+  (gl:bind-framebuffer :draw-framebuffer id)
+  id)
+
+;; The GL_FRAMEBUFFER target sets both the read and the write to the same FBO.
+(defun framebuffer-binding (context)
+  (cons (read-framebuffer-binding context)
+        (draw-framebuffer-binding context)))
+
+(defun (setf framebuffer-binding) (id context)
+  (declare (ignore context))
+  (gl:bind-framebuffer :framebuffer id)
+  id)
+
+;;------------------------------------------------------------
+
 ;; GL_COPY_READ_BUFFER_BINDING (name, initially 0, see glBufferBinding)
 ;; The buffer that is currently bound to the copy read bind point, or 0 for none
 (def-context-reader %read-buffer-binding :enum-name :read-buffer-binding)
@@ -281,10 +315,6 @@
 ;;     Which buffers are being drawn to. This is selected from the currently bound GL_DRAW_FRAMEBUFFER. See glDrawBuffer. The initial value is GL_BACK if there are back buffers, otherwise it is GL_FRONT.
 (def-context-reader draw-buffer)
 
-;; GL_DRAW_FRAMEBUFFER_BINDING (name, initially 0, see glBindFramebuffer)
-;;     The framebuffer object currently bound to the GL_DRAW_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
-(def-context-reader draw-framebuffer-binding)
-
 ;; GL_MAX_UNIFORM_BUFFER_BINDINGS (integer, at least 8)
 ;;   returns the maximum number of uniform buffer binding points on the context, which must be at least 36.
 (def-cached-context-reader max-uniform-buffer-bindings)
@@ -336,10 +366,6 @@
 ;; GL_READ_BUFFER (symbolic constant, initial value below, see glReadPixels
 ;;     {Which color buffer is selected for reading. The initial value is GL_BACK if there is a back buffer, otherwise it is GL_FRONT. This is selected from the currently bound GL_READ_FRAMEBUFFER.
 (def-context-reader read-buffer)
-
-;; GL_READ_FRAMEBUFFER_BINDING (name, intially 0, see glBindFramebuffer)
-;;     The framebuffer object currently bound to the GL_READ_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
-(def-context-reader read-framebuffer-binding)
 
 ;; GL_RENDERBUFFER_BINDING (name, initially 0, see glBindRenderbuffer)
 ;;     The name of the renderbuffer object currently bound to the target GL_RENDERBUFFER. If no renderbuffer object is bound to this target, 0 is returned.

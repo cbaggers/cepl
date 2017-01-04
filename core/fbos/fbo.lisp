@@ -64,6 +64,7 @@
         (or draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
                                            (max-draw-buffers *gl-context*)
                                            :initial-element :none)))
+  (cepl.context::register-fbo *cepl-context* fbo-obj)
   fbo-obj)
 
 ;;----------------------------------------------------------------------
@@ -100,8 +101,7 @@
 	      :depth-array (when depth (gen-array dimensions)))
 	     :id 0))))
       (update-clear-mask result)
-      (setf %default-framebuffer result
-            %current-fbo result)
+      (setf %default-framebuffer result)
       result)))
 
 (defun %update-default-framebuffer-dimensions (x y)
@@ -453,7 +453,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;;----------------------------------------------------------------------
 
-(defun %bind-fbo (fbo target)
   ;; The target parameter for this object can take one of 3 values:
   ;; GL_FRAMEBUFFER, GL_READ_FRAMEBUFFER, or GL_DRAW_FRAMEBUFFER.
   ;; The last two allow you to bind an FBO so that reading commands
@@ -466,9 +465,13 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   ;; GL_ACCUM, and so forth. FBOs do not have these.
   ;; Instead, FBOs have a different set of images. Each FBO image represents an
   ;; attachment point, a location in the FBO where an image can be attached.
-  (if (eq fbo %default-framebuffer)
-      (gl:bind-framebuffer :framebuffer 0)
-      (gl:bind-framebuffer target (%fbo-id fbo))))
+
+;;
+(defun %bind-fbo (fbo target)
+  (ecase target
+    (:framebuffer (setf (fbo-bound *cepl-context*) fbo))
+    (:read-framebuffer (setf (read-fbo-bound *cepl-context*) fbo))
+    (:draw-framebuffer (setf (draw-fbo-bound *cepl-context*) fbo))))
 
 (defun %unbind-fbo ()
   (%bind-fbo %default-framebuffer :framebuffer))
@@ -476,18 +479,30 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defmacro with-fbo-bound ((fbo &key (target :framebuffer) (unbind t)
                               (with-viewport t) (attachment-for-size 0)
                               (with-blending t) (draw-buffers t))
-                         &body body)
-  `(let* ((last-fbo %current-fbo)
-	  (%current-fbo ,fbo))
-     (%bind-fbo %current-fbo ,target)
-     ,(%write-draw-buffer-pattern-call
-       draw-buffers '%current-fbo with-blending
-       `(,@(if with-viewport
-               `(with-fbo-viewport (%current-fbo ,attachment-for-size))
-               '(progn))
-           (prog1 (progn ,@body)
-	     ;; {TODO} this use of target is wrong-v
-	     (when ,unbind (%bind-fbo last-fbo ,target)))))))
+                          &body body)
+  (alexandria:with-gensyms (ctx old-fbo new-fbo tgt)
+    `(let* ((,ctx *cepl-context*)
+            (,tgt ,target)
+            (,new-fbo ,fbo)
+            (,old-fbo (ecase ,tgt
+                        (:framebuffer (car (fbo-bound ,ctx)))
+                        (:read-framebuffer (read-fbo-bound ,ctx))
+                        (:draw-framebuffer (draw-fbo-bound ,ctx)))))
+       (ecase ,tgt
+         (:framebuffer (setf (fbo-bound ,ctx) ,new-fbo))
+         (:read-framebuffer (setf (read-fbo-bound ,ctx) ,new-fbo))
+         (:draw-framebuffer (setf (draw-fbo-bound ,ctx) ,new-fbo)))
+       ,(%write-draw-buffer-pattern-call
+         draw-buffers new-fbo with-blending
+         `(,@(if with-viewport
+                 `(with-fbo-viewport (,new-fbo ,attachment-for-size))
+                 '(progn))
+             (prog1 (progn ,@body)
+               (when ,unbind
+                 (ecase ,tgt
+                   (:framebuffer (setf (fbo-bound ,ctx) ,old-fbo))
+                   (:read-framebuffer (setf (read-fbo-bound ,ctx) ,old-fbo))
+                   (:draw-framebuffer (setf (draw-fbo-bound ,ctx) ,old-fbo))))))))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)
@@ -767,12 +782,19 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
     (otherwise (color-renderable-formatp image-format))))
 
-(defun clear (&optional (target %current-fbo))
-  (clear-fbo target))
+(defun clear (&optional target)
+  (if target
+      (clear-fbo target)
+      (dbind (read . draw) (fbo-bound *cepl-context*)
+        (if (eq read draw)
+            (clear-fbo read)
+            (cons (clear-fbo read)
+                  (clear-fbo draw))))))
 
 (defun clear-fbo (fbo)
   (with-fbo-bound (fbo :with-blending nil :with-viewport nil)
-    (%gl:clear (%fbo-clear-mask fbo))))
+    (%gl:clear (%fbo-clear-mask fbo)))
+  fbo)
 
 (defun clear-attachment (attachment)
   (declare (ignore attachment))

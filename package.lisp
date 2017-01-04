@@ -241,6 +241,7 @@
 	   :%fbo-clear-mask
 	   :%fbo-is-default
 	   :%fbo-blending-params
+           :+null-fbo+
 	   :make-att
 	   :att
 	   :att-array
@@ -418,7 +419,6 @@
 	   ;;---
 	   :populate
 	   :%default-framebuffer
-	   :%current-fbo
 	   :*gl-window*
            :window-dimensions
            :window-resolution
@@ -512,6 +512,9 @@
            :element-array-buffer-binding
            :uniform-buffer-binding
            :vertex-array-binding
+           :read-framebuffer-binding
+           :draw-framebuffer-binding
+           :framebuffer-binding
            ;; :%array-buffer-binding
            ;; :%read-buffer-binding
            ;; :%copy-write-buffer-binding
@@ -527,6 +530,9 @@
            :uniform-buffer-bound
            :buffer-bound
            :vao-bound
+           :read-fbo-bound
+           :draw-fbo-bound
+           :fbo-bound
            ))
 
 (uiop:define-package :cepl.image-formats

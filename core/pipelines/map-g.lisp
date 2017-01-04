@@ -5,9 +5,10 @@
      (%map-g ,pipeline-func ,stream ,@uniforms)))
 
 (defmacro %map-g (pipeline-func stream &rest uniforms)
-  `(progn
-     (funcall ,pipeline-func ,+mapg-constant+ ,stream ,@uniforms)
-     %current-fbo))
+  (alexandria:with-gensyms (ctx)
+    `(let ((,ctx *cepl-context*))
+       (funcall ,pipeline-func ,+mapg-constant+ ,stream ,@uniforms)
+       (draw-fbo-bound ,ctx))))
 
 (defmacro map-g-into (fbo pipeline-func stream &rest uniforms)
   `(with-fbo-bound (,fbo)

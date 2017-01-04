@@ -1,5 +1,7 @@
 #||
 
+- make sure all with-* things have unwind protect..hmm do they need em?
+
 - add a deftype for a buffer-id type. Use it for +unknown-id+ and structs
 
 - CEPL context exist BEFORE gl-contexts. Very important!
