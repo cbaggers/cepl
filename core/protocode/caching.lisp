@@ -1,32 +1,10 @@
 
-(defconstant +id-bit-size+ 16)
-
-(deftype thing-id ()
-  '(unsigned-byte #.+id-bit-size+))
-
-(declaim (type thing-id +unknown-thing-id+))
-(defconstant +unknown-thing-id+ #.(1- (expt 2 +id-bit-size+)))
-(defconstant +null-thing-id+ 0)
-
-(declaim (inline unknown-thing-id-p)
-         (ftype (function (thing-id) boolean) unknown-thing-id-p))
-(defun unknown-thing-id-p (id)
-  (declare (thing-id id))
-  (= id +unknown-thing-id+))
-
 ;;------------------------------------------------------------
 
 (defstruct jam
-  (id +null-thing-id+ :type thing-id))
+  (id +null-gl-id+ :type gl-id))
 
 (defvar +null-jam+ (make-jam))
-
-(defvar bound-jam-id +unknown-thing-id+)
-(defvar array-of-jams
-  (make-array 0 :element-type 'jam
-              :initial-element +null-jam+
-              :adjustable t
-              :fill-pointer 0))
 
 (defun foreign-query-jam (id)
   (declare (ignore id))
@@ -34,48 +12,12 @@
 (defun foreign-bind-jam (id)
   id)
 
-(defun jam-bound-id (ctx)
-  (declare (ignore ctx))
-  bound-jam-id)
-
-(defun set-jam-bound-id (ctx id) ;; Create id caches at max size at GL init
-  (let ((current (jam-bound-id ctx))
-        (bind-id (if (unknown-thing-id-p id) 0 id)))
-    (unless (= id current)
-      (foreign-bind-jam bind-id)
-      (setf bound-jam-id id))
-    id))
-
-(defun jam-bound (ctx)
-  (let* ((id (jam-bound-id ctx))
-         (id (if (unknown-thing-id-p id)
-                 (set-jam-bound-id ctx (foreign-query-jam id))
-                 id)))
-    ;; in this case we don't check for unknown as foreign-query-jam can't
-    ;; return that
-    (when (and (>= id 0) (< (length array-of-jams)))
-      (aref array-of-jams id))))
-
-(defun (setf jam-bound) (val ctx)
-  (set-jam-bound-id ctx (jam-id val)))
-
-
-;;------------------------------------------------------------
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defstruct ham
-  (id +null-thing-id+ :type thing-id))
+  (id +null-gl-id+ :type gl-id))
 
 (defvar +null-ham+ (make-ham))
-
-(defvar array-of-bound-ham-ids
-  (make-array 11 :element-type 'thing-id
-              :initial-element +unknown-thing-id+))
-
-(defvar array-of-hams
-  (make-array 0 :element-type 'ham
-              :initial-element +null-ham+
-              :adjustable t
-              :fill-pointer 0))
 
 (defun foreign-query-ham (index id)
   (declare (ignore index id))
@@ -84,27 +26,77 @@
   (declare (ignore index))
   id)
 
+;;------------------------------------------------------------
+
+(defclass thing-context ()
+  ((bound-jam-id
+    :initform +unknown-gl-id+)
+   (array-of-jams
+    :initform (make-array 0 :element-type 'jam
+                          :initial-element +null-jam+
+                          :adjustable t
+                          :fill-pointer 0))
+   (array-of-bound-ham-ids
+    :initform (make-array 11 :element-type 'gl-id
+                          :initial-element +unknown-gl-id+))
+   (array-of-hams
+    :initform (make-array 0 :element-type 'ham
+                          :initial-element +null-ham+
+                          :adjustable t
+                          :fill-pointer 0))))
+
+;;------------------------------------------------------------
+
+(defun set-jam-bound-id (ctx id) ;; Create id caches at max size at GL init
+  (with-slots (bound-jam-id) ctx
+    (let ((current bound-jam-id)
+          (bind-id (if (unknown-gl-id-p id) 0 id)))
+      (unless (= id current)
+        (foreign-bind-jam bind-id)
+        (setf bound-jam-id id))
+      id)))
+
+(defun jam-bound (ctx)
+  (with-slots (bound-jam-id array-of-jams) ctx
+    (let* ((id bound-jam-id)
+           (id (if (unknown-gl-id-p id)
+                   (set-jam-bound-id ctx (foreign-query-jam id))
+                   id)))
+      ;; in this case we don't check for unknown as foreign-query-jam can't
+      ;; return that
+      (when (and (>= id 0) (< (length array-of-jams)))
+        (aref array-of-jams id)))))
+
+(defun (setf jam-bound) (val ctx)
+  (set-jam-bound-id ctx (jam-id val)))
+
+
+;;------------------------------------------------------------
+
+(declaim (inline ham-bound-id))
 (defun ham-bound-id (ctx index) ;; Create id caches at max size at GL init
-  (declare (ignore ctx))
-  (aref array-of-bound-ham-ids index))
+  (with-slots (array-of-bound-ham-ids) ctx
+    (aref array-of-bound-ham-ids index)))
 
 (defun set-ham-bound-id (ctx index id) ;; Create id caches at max size at GL init
-  (let ((current (ham-bound-id ctx index))
-        (bind-id (if (unknown-thing-id-p id) 0 id)))
-    (unless (= id current)
-      (foreign-bind-ham bind-id index)
-      (setf (aref array-of-bound-ham-ids index) id))
-    id))
+  (with-slots (array-of-bound-ham-ids) ctx
+    (let ((current (ham-bound-id ctx index))
+          (bind-id (if (unknown-gl-id-p id) 0 id)))
+      (unless (= id current)
+        (foreign-bind-ham bind-id index)
+        (setf (aref array-of-bound-ham-ids index) id))
+      id)))
 
 (defun ham-bound (ctx index)
   (let* ((id (ham-bound-id ctx index))
-         (id (if (unknown-thing-id-p id)
+         (id (if (unknown-gl-id-p id)
                  (set-ham-bound-id ctx index (foreign-query-ham index id))
                  id)))
     ;; in this case we don't check for unknown as foreign-query-ham can't
     ;; return that
-    (when (and (>= id 0) (< (length array-of-hams)))
-      (aref array-of-hams id))))
+    (with-slots (array-of-hams) ctx
+      (when (and (>= id 0) (< (length array-of-hams)))
+        (aref array-of-hams id)))))
 
 (defun (setf ham-bound) (val ctx index)
   (set-ham-bound-id ctx index (ham-id val)))

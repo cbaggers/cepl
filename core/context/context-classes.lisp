@@ -38,13 +38,6 @@
 (defvar *cepl-context*
   (make-instance 'cepl-context))
 
-(defun ensure-vec-index (vec index null-element)
-  (when (<= (array-dimension vec 0) index)
-    (adjust-array vec (1+ index) :initial-element null-element))
-  (when (<= (fill-pointer vec) index)
-    (setf (fill-pointer vec) (1+ index)))
-  index)
-
 ;;----------------------------------------------------------------------
 
 (defun register-gpu-buffer (cepl-context gpu-buffer)

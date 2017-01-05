@@ -2,6 +2,23 @@
 
 ;;------------------------------------------------------------
 
+(defconstant +gl-id-bit-size+ 16)
+
+(deftype gl-id ()
+  '(unsigned-byte #.+gl-id-bit-size+))
+
+(declaim (type gl-id +unknown-gl-id+))
+(defconstant +unknown-gl-id+ #.(1- (expt 2 +gl-id-bit-size+)))
+(defconstant +null-gl-id+ 0)
+
+(declaim (inline unknown-gl-id-p)
+         (ftype (function (gl-id) boolean) unknown-gl-id-p))
+(defun unknown-gl-id-p (id)
+  (declare (gl-id id))
+  (= id +unknown-gl-id+))
+
+;;------------------------------------------------------------
+
 (defstruct (c-array (:constructor %make-c-array))
   (pointer
    (error "cepl: c-array must be created with a pointer")

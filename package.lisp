@@ -125,7 +125,13 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :split-sequence :named-readtables
 	:cepl.errors)
-  (:export :%make-gpu-array
+  (:export :+gl-id-bit-size+
+           :gl-id
+           :+unknown-gl-id+
+           :+null-gl-id+
+           :unknown-gl-id-p
+
+           :%make-gpu-array
 	   :gpu-array
 	   :gpu-array-p
 	   :gpu-array-dimensions
