@@ -281,6 +281,16 @@
 
 ;;------------------------------------------------------------
 
+(defun texture-binding (gl-ctx index)
+  (declare (ignore gl-ctx index))
+  0)
+
+(defun (setf texture-binding) (id gl-ctx index)
+  (declare (ignore gl-ctx index))
+  id)
+
+;;------------------------------------------------------------
+
 
 ;; GL_COLOR_CLEAR_VALUE (GLfloat[4], initially (0.0, 0.0, 0.0, 0.0), see glClearColor)
 ;;     The red, green, blue, and alpha values used to clear the color buffers. Integer values, if requested, are linearly mapped from the internal floating-point representation such that 1.0 returns the most positive representable integer value, and -1.0 returns the most negative representable integer value.

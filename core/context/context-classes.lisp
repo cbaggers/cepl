@@ -8,32 +8,36 @@
 
 (defconstant +unknown-id+ -1)
 
-;; Caching details
-;; ---------------
-;; IDs: Unknown = -1
-(defclass cepl-context ()
-  ((uninitialized-resources :initform nil)
-   (gl-context :initform nil)
+;;
+(def-cepl-context
+  (uninitialized-resources :initform nil)
+  (array-buffer-binding-id :initform +unknown-id+
+                           :type (signed-byte 32))
+  (element-array-buffer-binding-id :initform +unknown-id+
+                                   :type (signed-byte 32))
+  (vao-binding-id :initform +unknown-id+
+                  :type vao-id)
+  (read-fbo-binding-id :initform +unknown-id+
+                       :type (signed-byte 32))
+  (draw-fbo-binding-id :initform +unknown-id+
+                       :type (signed-byte 32))
 
-   (array-buffer-binding-id :initform +unknown-id+
-                            :type (signed-byte 32))
-   (element-array-buffer-binding-id :initform +unknown-id+
-                                    :type (signed-byte 32))
-   (vao-binding-id :initform +unknown-id+
-                   :type vao-id)
-   (read-fbo-binding-id :initform +unknown-id+
-                        :type (signed-byte 32))
-   (draw-fbo-binding-id :initform +unknown-id+
-                        :type (signed-byte 32))
-
-   (gpu-buffers :initform (make-array 0 :element-type 'gpu-buffer
-                                      :initial-element +null-gpu-buffer+
-                                      :adjustable t
-                                      :fill-pointer 0))
-   (fbos :initform (make-array 0 :element-type 'fbo
-                               :initial-element +null-fbo+
-                               :adjustable t
-                               :fill-pointer 0))))
+  (gpu-buffers :initform (make-array 0 :element-type 'gpu-buffer
+                                     :initial-element +null-gpu-buffer+
+                                     :adjustable t
+                                     :fill-pointer 0))
+  (fbos :initform (make-array 0 :element-type 'fbo
+                              :initial-element +null-fbo+
+                              :adjustable t
+                              :fill-pointer 0))
+  ;; caching examples
+  ;;
+  ;; (:cached jam :index-size nil :null-obj +null-jam+
+  ;;          :gl-context-accessor foreign-jam-binding)
+  ;; (:cached ham :index-size 11 :null-obj +null-ham+
+  ;;          :gl-context-accessor foreign-ham-binding)
+  (:cached texture :index-size 11 :null-obj +null-texture+
+           :gl-context-accessor texture-binding))
 
 (defvar *cepl-context*
   (make-instance 'cepl-context))

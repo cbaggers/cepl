@@ -51,7 +51,8 @@
            :just-ignore
 	   :defvar*
 	   :defparameter*
-	   :read-integers))
+	   :read-integers
+           :ensure-vec-index))
 
 (uiop:define-package :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
