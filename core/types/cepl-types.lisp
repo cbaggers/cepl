@@ -48,6 +48,7 @@
 
 (defstruct (texture (:constructor %%make-texture))
   (id 0 :type real)
+  (cache-id 0 :type (integer 0 11))
   (base-dimensions nil :type list)
   (type (error "") :type symbol)
   (image-format (error "") :type symbol)

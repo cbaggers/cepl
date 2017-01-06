@@ -6,21 +6,19 @@
    (window :initarg :window :reader window)
    (fbo :initarg :window :reader context-fbo)))
 
-(defconstant +unknown-id+ -1)
-
 ;;
 (def-cepl-context
   (uninitialized-resources :initform nil)
-  (array-buffer-binding-id :initform +unknown-id+
-                           :type (signed-byte 32))
-  (element-array-buffer-binding-id :initform +unknown-id+
-                                   :type (signed-byte 32))
-  (vao-binding-id :initform +unknown-id+
+  (array-buffer-binding-id :initform +unknown-gl-id+
+                           :type gl-id)
+  (element-array-buffer-binding-id :initform +unknown-gl-id+
+                                   :type gl-id)
+  (vao-binding-id :initform +unknown-gl-id+
                   :type vao-id)
-  (read-fbo-binding-id :initform +unknown-id+
-                       :type (signed-byte 32))
-  (draw-fbo-binding-id :initform +unknown-id+
-                       :type (signed-byte 32))
+  (read-fbo-binding-id :initform +unknown-gl-id+
+                       :type gl-id)
+  (draw-fbo-binding-id :initform +unknown-gl-id+
+                       :type gl-id)
 
   (gpu-buffers :initform (make-array 0 :element-type 'gpu-buffer
                                      :initial-element +null-gpu-buffer+
@@ -37,10 +35,28 @@
   ;; (:cached ham :index-size 11 :null-obj +null-ham+
   ;;          :gl-context-accessor foreign-ham-binding)
   (:cached texture :index-size 11 :null-obj +null-texture+
-           :gl-context-accessor texture-binding))
+           :id-func texture-id
+           :target->index-func tex-kind->cache-index
+           :gl-context-accessor %texture-binding))
 
 (defvar *cepl-context*
   (make-instance 'cepl-context))
+
+;;----------------------------------------------------------------------
+
+(defun tex-kind->cache-index (kind)
+  (ecase kind
+    (:texture-1d 0)
+    (:texture-2d 1)
+    (:texture-3d 2)
+    (:texture-1d-array 3)
+    (:texture-2d-array 4)
+    (:texture-rectangle 5)
+    (:texture-cube-map 6)
+    (:texture-cube-map-array 7)
+    (:texture-buffer 8)
+    (:texture-2d-multisample 9)
+    (:texture-2d-multisample-array 10)))
 
 ;;----------------------------------------------------------------------
 
@@ -60,7 +76,7 @@
 
 (defun read-fbo-bound (cepl-context)
   (with-slots (gl-context fbos read-fbo-binding-id) cepl-context
-    (let* ((id (if (= read-fbo-binding-id +unknown-id+)
+    (let* ((id (if (= read-fbo-binding-id +unknown-gl-id+)
                    (setf read-fbo-binding-id
                          (read-framebuffer-binding gl-context))
                    read-fbo-binding-id))
@@ -80,7 +96,7 @@
 
 (defun draw-fbo-bound (cepl-context)
   (with-slots (gl-context fbos draw-fbo-binding-id) cepl-context
-    (let* ((id (if (= draw-fbo-binding-id +unknown-id+)
+    (let* ((id (if (= draw-fbo-binding-id +unknown-gl-id+)
                    (setf draw-fbo-binding-id
                          (draw-framebuffer-binding gl-context))
                    draw-fbo-binding-id))
@@ -155,7 +171,7 @@
 
 (defun array-buffer-bound (cepl-context)
   (with-slots (gl-context gpu-buffers array-buffer-binding-id) cepl-context
-    (let* ((id (if (= array-buffer-binding-id +unknown-id+)
+    (let* ((id (if (= array-buffer-binding-id +unknown-gl-id+)
                    (setf array-buffer-binding-id
                          (array-buffer-binding gl-context))
                    array-buffer-binding-id))
@@ -178,7 +194,7 @@
 (defun element-array-buffer-bound (cepl-context)
   (with-slots (gl-context gpu-buffers element-array-buffer-binding-id)
       cepl-context
-    (let* ((id (if (= element-array-buffer-binding-id +unknown-id+)
+    (let* ((id (if (= element-array-buffer-binding-id +unknown-gl-id+)
                    (setf element-array-buffer-binding-id
                          (element-array-buffer-binding gl-context))
                    element-array-buffer-binding-id))
@@ -201,7 +217,7 @@
 
 (defun vao-bound (cepl-context)
   (with-slots (gl-context vao-binding-id) cepl-context
-    (if (= vao-binding-id +unknown-id+)
+    (if (= vao-binding-id +unknown-gl-id+)
         (setf vao-binding-id (vertex-array-binding gl-context))
         vao-binding-id)))
 

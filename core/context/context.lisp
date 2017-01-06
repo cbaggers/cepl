@@ -281,13 +281,37 @@
 
 ;;------------------------------------------------------------
 
-(defun texture-binding (gl-ctx index)
-  (declare (ignore gl-ctx index))
-  0)
+;; (mapcar (lambda (x) (cffi:foreign-enum-value '%gl::enum x))
+;;         '(:texture-binding-1d :texture-binding-2d :texture-binding-3d
+;;           :texture-binding-1d-array :texture-binding-2d-array
+;;           :texture-binding-rectangle :texture-binding-cube-map
+;;           :texture-binding-cube-map-array :texture-binding-buffer
+;;           :texture-binding-2d-multisample
+;;           :texture-binding-2d-multisample-array))
 
-(defun (setf texture-binding) (id gl-ctx index)
-  (declare (ignore gl-ctx index))
-  id)
+(let ((cache-id->enum-id
+       #(32872 32873 32874 35868 35869 34038 34068 36874 35884 37124 37125)))
+  (defun %texture-binding (gl-ctx index)
+    (declare (ignore gl-ctx))
+    (let ((enum-val (aref cache-id->enum-id index)))
+      (cl-opengl:get-integer enum-val 1))))
+
+;; (mapcar (lambda (x) (cffi:foreign-enum-value '%gl::enum x))
+;;         '(:texture-1d :texture-2d :texture-3d :texture-1d-array
+;;           :texture-2d-array :texture-rectangle :texture-cube-map
+;;           :texture-cube-map-array :texture-buffer :texture-2d-multisample
+;;           :texture-2d-multisample-array))
+(let ((cache-id->enum-id
+       #(3552 3553 32879 35864 35866 34037 34067 36873 35882 37120 37122)))
+  (defun (setf %texture-binding) (id gl-ctx index)
+    (declare (ignore gl-ctx))
+    (let ((target-val (aref cache-id->enum-id index)))
+      (prog1 (cffi-sys:%foreign-funcall
+              "glbindtexture"
+              (:unsigned-int target-val :unsigned-int id :void)
+              :convention :cdecl :library opengl)
+        (%gl::check-error '%gl::bind-texture)))
+    id))
 
 ;;------------------------------------------------------------
 

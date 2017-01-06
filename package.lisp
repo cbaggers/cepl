@@ -175,6 +175,7 @@
 	   :texture
 	   :texture-p
 	   :texture-id
+           :texture-cache-id
 	   :texture-base-dimensions
 	   :texture-type
 	   :texture-last-sampler-id
@@ -540,7 +541,7 @@
            :read-fbo-bound
            :draw-fbo-bound
            :fbo-bound
-           ))
+           :texture-bound))
 
 (uiop:define-package :cepl.image-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types :cepl.errors)

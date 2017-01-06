@@ -251,16 +251,18 @@
 (defun make-texture-from-id (gl-object &key base-dimensions texture-type
                                          element-type mipmap-levels
 					 layer-count cubes allocated mutable-p)
-  (%%make-texture
-   :id gl-object
-   :base-dimensions base-dimensions
-   :type texture-type
-   :image-format element-type
-   :mipmap-levels mipmap-levels
-   :layer-count layer-count
-   :cubes-p cubes
-   :allocated-p allocated
-   :mutable-p mutable-p))
+  (cepl.context::register-texture
+   cepl.context:*cepl-context*
+   (%%make-texture
+    :id gl-object
+    :base-dimensions base-dimensions
+    :type texture-type
+    :image-format element-type
+    :mipmap-levels mipmap-levels
+    :layer-count layer-count
+    :cubes-p cubes
+    :allocated-p allocated
+    :mutable-p mutable-p)))
 
 
 
@@ -505,6 +507,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
 		      (texture-cubes-p tex-obj) cubes
 		      (texture-image-format tex-obj) image-format
 		      (texture-mutable-p tex-obj) (not (and immutable *immutable-available*)))
+                (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
                 (with-texture-bound tex-obj
                   (allocate-texture tex-obj)
                   (when initial-contents
@@ -567,6 +570,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
 	  (texture-image-format tex-obj) image-format
 	  (buffer-texture-backing-array tex-obj) array
 	  (buffer-texture-owns-array tex-obj) t)
+    (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
     ;; upload
     (with-texture-bound tex-obj
       (%gl::tex-buffer :texture-buffer image-format

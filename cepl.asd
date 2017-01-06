@@ -34,7 +34,7 @@
                (:file "core/measurements/measurements")
                (:file "core/memory/memory")
                (:file "core/types/cepl-types")
-               (:file "def-context-macro")
+               (:file "core/context/def-context-macro")
                (:file "core/context/context-classes")
                (:file "core/context/context")
                (:file "core/context/version")
