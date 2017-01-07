@@ -35,31 +35,22 @@
 
 (defmacro with-buffer ((var-name buffer &optional (buffer-target :array-buffer))
 		       &body body)
-  (labels (;; for when the target isnt known at compile time
-           (gen-with-buffer-dyn ()
-             (alexandria:with-gensyms (old-buffer target)
-               `(let* ((,var-name ,buffer)
-                       (,target ,buffer-target)
-                       (,old-buffer (buffer-bound *cepl-context* ,target)))
-                  (declare (ignorable ,var-name))
-                  (unwind-protect (progn
-                                    (setf (buffer-bound *cepl-context* ,target) ,var-name)
-                                    ,@body)
-                    (setf (buffer-bound *cepl-context* ,target) ,old-buffer)))))
-           ;; for when the buffer-target is a keyword
-           (gen-with-buffer-static ()
-             (alexandria:with-gensyms (old-buffer)
-               `(let* ((,var-name ,buffer)
-                       (,old-buffer (buffer-bound *cepl-context* ,buffer-target)))
-                  (declare (ignorable ,var-name))
-                  (unwind-protect (progn
-                                    (setf (buffer-bound *cepl-context* ,buffer-target) ,var-name)
-                                    ,@body)
-                    (setf (buffer-bound *cepl-context* ,buffer-target) ,old-buffer))))))
-    ;;
-    (if (keywordp buffer-target)
-        (gen-with-buffer-static)
-        (gen-with-buffer-dyn))))
+  (alexandria:with-gensyms (old-id cache-id target)
+    `(let* ((,var-name ,buffer)
+            (,target ,buffer-target)
+            (,cache-id
+             ,(if (keywordp buffer-target)
+                  (cepl.context::buffer-kind->cache-index buffer-target)
+                  `(cepl.context::buffer-kind->cache-index ,target)))
+            (,old-id
+             (cepl.context::gpu-buffer-bound-id *cepl-context* ,cache-id)))
+       (unwind-protect
+            (progn
+              (cepl.context::set-gpu-buffer-bound-id
+               *cepl-context* ,cache-id (gpu-buffer-id ,var-name))
+              ,@body)
+         (cepl.context::set-gpu-buffer-bound-id
+          *cepl-context* ,cache-id ,old-id))))))
 
 (defun gen-buffer ()
   (first (gl:gen-buffers 1)))

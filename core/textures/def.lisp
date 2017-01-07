@@ -119,13 +119,3 @@
        (unwind-protect (progn ,@body)
          (cepl.context::set-texture-bound-id
           *cepl-context* ,cache-id ,old-id)))))
-
-;; (defun bind-texture (texture &optional type)
-;;   (let ((texture-type (texture-type texture)))
-;;     (if (or (null type) (eq type texture-type))
-;;         (gl:bind-texture texture-type (texture-id texture))
-;;         (if (eq :none texture-type)
-;;             (progn (gl:bind-texture type (texture-id texture))
-;;                    (setf (texture-type texture) type))
-;;             (error "Texture has already been bound"))))
-;;   texture)

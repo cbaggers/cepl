@@ -74,17 +74,23 @@ should be ~s" data element-type)
 
 ;;---------------------------------------------------
 
+;; {TODO} using the id as the binding point is crazy town as it doesnt
+;;        take #'max-uniform-buffer-bindings into account.
+;;        (For example it's only 84 on my desktop)
 (defun %bind-ubo (ubo)
   (let* ((data (ubo-data ubo))
 	 (type (ubo-data-type ubo))
          (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer data)
 		    (cepl.c-arrays::gl-calc-byte-size
 		     type (list (ubo-index ubo)))))
-         (size (gl-type-size type)))
-    (setf (cepl.context:uniform-buffer-bound cepl.context:*cepl-context*
-                                             (ubo-id ubo)
-                                             offset size)
-          (gpu-array-buffer data)))
+         (size (gl-type-size type))
+         (gpu-buffer (gpu-array-buffer data)))
+    (cepl.context::ubo-bind-buffer-id-range
+     *cepl-context*
+     (ubo-id ubo)
+     (gpu-buffer-id gpu-buffer)
+     offset
+     size))
   ubo)
 
 ;;---------------------------------------------------
@@ -115,6 +121,7 @@ should be ~s" data element-type)
 
 (defmethod free ((object ubo))
   (let ((data (ubo-data object)))
+    (setf (ubo-data object) nil)
     (when (and data (ubo-owns-gpu-array object))
       (cepl.gpu-arrays.buffer-backed::free-gpu-array-bb data)))
   t)

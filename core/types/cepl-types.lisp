@@ -69,8 +69,12 @@
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
   (id 0 :type fixnum)
+  (cache-id 0 :type (integer 0 13))
   (arrays (error "") :type (array gpu-array-bb (*)))
   (managed nil :type boolean))
+
+(defvar +null-gpu-buffer+
+  (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
 
 ;;------------------------------------------------------------
 
@@ -112,6 +116,7 @@
 ;; {TODO} border-color
 (defstruct (sampler (:constructor %make-sampler)
                     (:conc-name %sampler-))
+  (context-id 0 :type gl-id)
   (id-box (make-sampler-id-box) :type sampler-id-box)
   (type (error "") :type symbol)
   (texture (error "") :type texture)
@@ -139,8 +144,7 @@
 (defstruct (ubo (:constructor %make-ubo))
   (id 0 :type fixnum)
   (data (error "gpu-array must be provided when making ubo")
-	:type gpu-array
-        :read-only t)
+	:type gpu-array)
   (index 0 :type fixnum)
   (owns-gpu-array nil :type boolean))
 
@@ -324,8 +328,11 @@
    :texture +null-texture+
    :texture-type :uninitialized))
 
-(defun make-uninitialized-sampler (texture)
-  (%make-sampler :texture texture :type :uninitialized))
+(defun make-uninitialized-sampler (texture context-id)
+  (%make-sampler
+   :context-id context-id
+   :texture texture
+   :type :uninitialized))
 
 (defun make-uninitialized-fbo ()
   (%%make-fbo

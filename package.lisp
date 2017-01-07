@@ -52,7 +52,8 @@
 	   :defvar*
 	   :defparameter*
 	   :read-integers
-           :ensure-vec-index))
+           :ensure-vec-index
+           :def-artificial-id))
 
 (uiop:define-package :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
@@ -165,6 +166,7 @@
 	   :gpu-buffer
 	   :gpu-buffer-p
 	   :gpu-buffer-id
+           :gpu-buffer-cache-id
 	   :gpu-buffer-arrays
 	   :gpu-buffer-managed
 	   :+null-gpu-buffer+
@@ -211,6 +213,7 @@
 	   :sampler-p
 	   :%sampler-id
 	   :%sampler-id-box
+           :%sampler-context-id
 	   :%sampler-type
 	   :%sampler-texture
 	   :%sampler-lod-bias
@@ -533,15 +536,12 @@
            ;;----------------------------
            ;; CEPL.Context
            :*cepl-context*
-           :array-buffer-bound
-           :element-array-buffer-bound
-           :uniform-buffer-bound
-           :buffer-bound
+           :gpu-buffer-bound
+           :texture-bound
            :vao-bound
            :read-fbo-bound
            :draw-fbo-bound
-           :fbo-bound
-           :texture-bound))
+           :fbo-bound))
 
 (uiop:define-package :cepl.image-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types :cepl.errors)
@@ -669,7 +669,7 @@
 
 (uiop:define-package :cepl.ubos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.types :%cepl.types :split-sequence
+        :cepl.types :%cepl.types :split-sequence :cepl.context
 	:named-readtables :cepl.errors :cepl.c-arrays :cepl.memory
 	:cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers)
   (:export :ubo

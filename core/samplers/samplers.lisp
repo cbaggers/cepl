@@ -2,6 +2,10 @@
 
 ;;----------------------------------------------------------------------
 
+(def-artificial-id fake-sampler)
+
+;;----------------------------------------------------------------------
+
 (defun sampler-texture (sampler)
   (%sampler-texture sampler))
 
@@ -148,7 +152,7 @@
   (cepl.context::if-gl-context
    (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
 		     magnify-filter wrap compare)
-   (make-uninitialized-sampler texture)
+   (make-uninitialized-sampler texture (get-free-fake-sampler-id))
    (list texture)))
 
 ;;----------------------------------------------------------------------
@@ -242,6 +246,9 @@
 
 (defun free-sampler (sampler)
   (unless (sampler-shared-p sampler)
+    ;; Be sure to add this back in when you implement freeing
+    ;; samplers.
+    ;; (release-fake-sampler-id (%sampler-context-id sampler))
     (warn "CEPL: free-sampler not yet implemented~%leaking ~s"
           sampler)))
 

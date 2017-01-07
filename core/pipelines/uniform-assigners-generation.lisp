@@ -67,12 +67,19 @@
                                 ,(cepl.types::type->spec type))
                       (error "incorrect type of sampler passed to shader"))
                     (cepl.textures::active-texture-num ,i-unit)
-                    (cepl.textures::bind-texture (%sampler-texture ,arg-name))
+                    (let ((tex (%sampler-texture ,arg-name)))
+                      (cepl.context::set-texture-bound-id *cepl-context*
+                                                          (texture-cache-id tex)
+                                                          (texture-id tex)))
                     (if cepl.samplers::*samplers-available*
                         (gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
                         (cepl.textures::fallback-sampler-set ,arg-name))
                     (uniform-sampler ,id-name ,i-unit)))
-     :cleanup `((gl:bind-sampler ,i-unit 0)))))
+     :cleanup `((gl:bind-sampler ,i-unit 0)
+                (cepl.context::set-texture-bound-id
+                 *cepl-context*
+                 (texture-cache-id (%sampler-texture ,arg-name))
+                 0)))))
 
 (defun make-ubo-assigner (arg-name varjo-type glsl-name)
   (let ((id-name (gensym))
