@@ -285,6 +285,18 @@ the 'bake-uniforms' function to create set the uniforms above. This will
 generate a 'complete' pipeline which you can then map-g over.
 " name args)
 
+(deferror fbo-target-not-valid-constant () (target)
+    "CEPL: with-fbo-bound form found with invalid target
+
+The target must be constant and must be one of the following:
+
+- :framebuffer
+- :read-framebuffer
+- :draw-framebuffer
+
+In this case the compile-time value of 'target' was: ~a
+" target)
+
 
 ;; Please remember the following 2 things
 ;;

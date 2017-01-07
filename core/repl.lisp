@@ -49,7 +49,9 @@
   nil)
 
 (defun cls ()
-  (with-fbo-bound (%default-framebuffer :with-viewport nil :with-blending nil)
+  (with-fbo-bound (%default-framebuffer :target :framebuffer
+                                        :with-viewport nil
+                                        :with-blending nil)
     (clear) (cepl.host::host-swap)
     (clear) (cepl.host::host-swap)))
 

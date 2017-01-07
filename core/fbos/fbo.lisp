@@ -476,33 +476,63 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defun %unbind-fbo ()
   (%bind-fbo %default-framebuffer :framebuffer))
 
-(defmacro with-fbo-bound ((fbo &key (target :framebuffer) (unbind t)
-                              (with-viewport t) (attachment-for-size 0)
-                              (with-blending t) (draw-buffers t))
+(defvar *valid-fbo-targets*
+  '(:read-framebuffer :draw-framebuffer :framebuffer))
+
+(defmacro with-fbo-bound ((fbo &key (target :draw-framebuffer)
+                               (with-viewport t) (attachment-for-size 0)
+                               (with-blending t) (draw-buffers t))
                           &body body)
-  (alexandria:with-gensyms (ctx old-fbo new-fbo tgt)
+  (assert (member target *valid-fbo-targets*) (target)
+          'fbo-target-not-valid-constant
+          :target target)
+  (if (eq target :framebuffer)
+      (gen-dual-with-fbo-bound fbo with-viewport attachment-for-size
+                               with-blending draw-buffers)
+      (gen-singular-with-fbo-bound fbo target with-viewport attachment-for-size
+                                   with-blending draw-buffers body)))
+
+(defun gen-dual-with-fbo-bound (fbo with-viewport attachment-for-size
+                                with-blending draw-buffers body)
+  (alexandria:with-gensyms (ctx old-read-fbo old-draw-fbo new-fbo)
     `(let* ((,ctx *cepl-context*)
-            (,tgt ,target)
             (,new-fbo ,fbo)
-            (,old-fbo (ecase ,tgt
-                        (:framebuffer (car (fbo-bound ,ctx)))
-                        (:read-framebuffer (read-fbo-bound ,ctx))
-                        (:draw-framebuffer (draw-fbo-bound ,ctx)))))
-       (ecase ,tgt
-         (:framebuffer (setf (fbo-bound ,ctx) ,new-fbo))
-         (:read-framebuffer (setf (read-fbo-bound ,ctx) ,new-fbo))
-         (:draw-framebuffer (setf (draw-fbo-bound ,ctx) ,new-fbo)))
+            (,old-read-fbo `(read-fbo-bound ,ctx))
+            (,old-draw-fbo `(draw-fbo-bound ,ctx)))
+       (setf (fbo-bound ,ctx) ,new-fbo)
        ,(%write-draw-buffer-pattern-call
          draw-buffers new-fbo with-blending
          `(,@(if with-viewport
                  `(with-fbo-viewport (,new-fbo ,attachment-for-size))
                  '(progn))
              (prog1 (progn ,@body)
-               (when ,unbind
-                 (ecase ,tgt
-                   (:framebuffer (setf (fbo-bound ,ctx) ,old-fbo))
-                   (:read-framebuffer (setf (read-fbo-bound ,ctx) ,old-fbo))
-                   (:draw-framebuffer (setf (draw-fbo-bound ,ctx) ,old-fbo))))))))))
+               (if (eq ,old-read-fbo ,old-draw-fbo)
+                   (setf (fbo-bound ,ctx) ,old-read-fbo)
+                   (progn
+                     (setf (read-fbo-bound ,ctx) ,old-read-fbo)
+                     (setf (draw-fbo-bound ,ctx) ,old-draw-fbo)))))))))
+
+(defun gen-singular-with-fbo-bound (fbo target with-viewport attachment-for-size
+                                    with-blending draw-buffers body)
+  (alexandria:with-gensyms (ctx old-fbo new-fbo tgt)
+    `(let* ((,ctx *cepl-context*)
+            (,tgt ,target)
+            (,new-fbo ,fbo)
+            (,old-fbo ,(if (eq tgt :read-framebuffer)
+                           `(read-fbo-bound ,ctx)
+                           `(draw-fbo-bound ,ctx))))
+       ,(if (eq tgt :read-framebuffer)
+            `(setf (read-fbo-bound ,ctx) ,new-fbo)
+            `(setf (draw-fbo-bound ,ctx) ,new-fbo))
+       ,(%write-draw-buffer-pattern-call
+         draw-buffers new-fbo with-blending
+         `(,@(if with-viewport
+                 `(with-fbo-viewport (,new-fbo ,attachment-for-size))
+                 '(progn))
+             (prog1 (progn ,@body)
+               ,(if (eq tgt :read-framebuffer)
+                    `(setf (read-fbo-bound ,ctx) ,old-fbo)
+                    `(setf (draw-fbo-bound ,ctx) ,old-fbo))))))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)
@@ -581,11 +611,13 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;; {TODO} Ensure image formats are color-renderable for color attachments
 ;;
-(defun fbo-attach (fbo tex-array attachment-name &optional (target :framebuffer))
+(defun fbo-attach (fbo tex-array attachment-name)
   ;; To attach images to an FBO, we must first bind the FBO to the context.
-  ;; target can be '(:framebuffer :read-framebuffer :draw-framebuffer)
+  ;; target could be any of '(:framebuffer :read-framebuffer :draw-framebuffer)
+  ;; but we just pick :read-framebuffer as in this case it makes no difference
+  ;; to us
   (let ((attach-enum (get-gl-attachment-keyword attachment-name)))
-    (with-fbo-bound (fbo :target target :with-viewport nil :draw-buffers nil)
+    (with-fbo-bound (fbo :target :read-framebuffer :with-viewport nil :draw-buffers nil)
       ;; FBOs have the following attachment points:
       ;; GL_COLOR_ATTACHMENTi: These are an implementation-dependent number of
       ;; attachment points. You can query GL_MAX_COLOR_ATTACHMENTS to determine the
@@ -619,12 +651,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; A 1D texture contains 2D images that have the vertical height of 1.
             ;; Each individual image can be uniquely identified by a mipmap level.
             (:texture-1d
-             (gl:framebuffer-texture-1d target attach-enum :texture-1d
+             (gl:framebuffer-texture-1d :read-framebuffer attach-enum :texture-1d
                                         tex-id level-num))
             ;; A 2D texture contains 2D images. Each individual image can be
             ;; uniquely identified by a mipmap level.
             (:texture-2d
-             (gl:framebuffer-texture-2d target attach-enum :texture-2d
+             (gl:framebuffer-texture-2d :read-framebuffer attach-enum :texture-2d
                                         tex-id level-num))
             ;; Each mipmap level of a 3D texture is considered a set of 2D images,
             ;; with the number of these being the extent of the Z coordinate.
@@ -634,7 +666,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; A single mipmap level of a 3D texture is a layered image, where the
             ;; number of layers is the depth of that particular mipmap level.
             (:texture-3d
-             (%gl:framebuffer-texture-layer target attach-enum tex-id
+             (%gl:framebuffer-texture-layer :read-framebuffer attach-enum tex-id
                                             level-num layer-num))
             ;; Each mipmap level of a 1D Array Textures contains a number of images,
             ;; equal to the count images in the array. While these images are
@@ -645,7 +677,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; A single mipmap level of a 1D Array Texture is a layered image, where
             ;; the number of layers is the array size.
             (:texture-1d-array
-             (%gl:framebuffer-texture-layer target attach-enum tex-id
+             (%gl:framebuffer-texture-layer :read-framebuffer attach-enum tex-id
                                             level-num layer-num))
             ;; 2D Array textures are much like 3D textures, except instead of the
             ;; number of Z slices, it is the array count. Each 2D image in an array
@@ -655,12 +687,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; A single mipmap level of a 2D Array Texture is a layered image, where
             ;; the number of layers is the array size.
             (:texture-2d-array
-             (%gl:framebuffer-texture-layer target attach-enum tex-id
+             (%gl:framebuffer-texture-layer :read-framebuffer attach-enum tex-id
                                             level-num layer-num))
             ;; A Rectangle Texture has a single 2D image, and thus is identified by
             ;; mipmap level 0.
             (:texture-rectangle
-             (gl:framebuffer-texture-2d target attach-enum :texture-2d
+             (gl:framebuffer-texture-2d :read-framebuffer attach-enum :texture-2d
                                         tex-id 0))
             ;; When attaching a cubemap, you must use the Texture2D function, and
             ;; the textarget must be one of the 6 targets for cubemap binding.
@@ -678,7 +710,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; 4        GL_TEXTURE_CUBE_MAP_POSITIVE_Z
             ;; 5        GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
             (:texture-cube-map
-	     (gl:framebuffer-texture-2d target attach-enum
+	     (gl:framebuffer-texture-2d :read-framebuffer attach-enum
 					(elt '(:texture-cube-map-positive-x
 					       :texture-cube-map-negative-x
 					       :texture-cube-map-positive-y
@@ -708,18 +740,16 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   ;;
   ;; {TODO} when using GL v4.5 use %gl:named-framebuffer-texture-layer,
   ;;        avoids binding
-  (with-fbo-bound (fbo :with-viewport nil :with-blending nil :draw-buffers nil)
+  (with-fbo-bound (fbo :target :read-framebuffer
+                       :with-viewport nil
+                       :with-blending nil
+                       :draw-buffers nil)
     (let ((enum
            (case attachment-name
              (:d :depth-attachment)
              ;;(:s (... :stencil-attachment))
              (otherwise (color-attachment-enum attachment-name)))))
-      (%gl:framebuffer-texture-layer :framebuffer enum 0 0 0))))
-
-(defun %extract-target (x)
-  (if (member x '(:draw-framebuffer :read-framebuffer :framebuffer))
-      x
-      :draw-framebuffer))
+      (%gl:framebuffer-texture-layer :read-framebuffer enum 0 0 0))))
 
 (defvar %valid-texture-subset '(:dimensions :element-type :mipmap :immutable))
 
@@ -792,7 +822,9 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                   (clear-fbo draw))))))
 
 (defun clear-fbo (fbo)
-  (with-fbo-bound (fbo :with-blending nil :with-viewport nil)
+  (with-fbo-bound (fbo :target :draw-framebuffer
+                       :with-blending nil
+                       :with-viewport nil)
     (%gl:clear (%fbo-clear-mask fbo)))
   fbo)
 

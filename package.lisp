@@ -98,7 +98,8 @@
 	   :attachments-with-different-sizes
 	   :invalid-cube-fbo-args
            :functions-in-non-uniform-args
-           :mapping-over-partial-pipeline))
+           :mapping-over-partial-pipeline
+           :fbo-target-not-valid-constant))
 
 (uiop:define-package :cepl.host
   (:use :cl)
