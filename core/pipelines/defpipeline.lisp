@@ -271,7 +271,7 @@
 	   :test #'equal))
          (prim-type (varjo:get-primitive-type-from-context context))
          (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
-	 (u-cleanup (mapcat #'cleanup (reverse uniform-assigners))))
+	 (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners))))
     `(progn
        (defun ,(symb :%touch- name) (&key verbose)
 	 (let ((*verbose-compiles* verbose))

@@ -507,6 +507,8 @@ the width to see at what point the width reaches 0 or GL throws an error."
 		      (texture-cubes-p tex-obj) cubes
 		      (texture-image-format tex-obj) image-format
 		      (texture-mutable-p tex-obj) (not (and immutable *immutable-available*)))
+                (setf (texture-cache-id tex-obj)
+                      (cepl.context::tex-kind->cache-index texture-type))
                 (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
                 (with-texture-bound tex-obj
                   (allocate-texture tex-obj)
@@ -570,6 +572,8 @@ the width to see at what point the width reaches 0 or GL throws an error."
 	  (texture-image-format tex-obj) image-format
 	  (buffer-texture-backing-array tex-obj) array
 	  (buffer-texture-owns-array tex-obj) t)
+    (setf (texture-cache-id tex-obj)
+          (cepl.context::tex-kind->cache-index :texture-buffer))
     (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
     ;; upload
     (with-texture-bound tex-obj

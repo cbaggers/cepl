@@ -87,8 +87,8 @@ should be ~s" data element-type)
          (gpu-buffer (gpu-array-buffer data)))
     (cepl.context::ubo-bind-buffer-id-range
      *cepl-context*
-     (ubo-id ubo)
      (gpu-buffer-id gpu-buffer)
+     (ubo-id ubo)
      offset
      size))
   ubo)

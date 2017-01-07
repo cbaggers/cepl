@@ -18,3 +18,4 @@
 (defgeneric delete-gpu-function (gfunc-description &optional error-if-missing))
 (defgeneric %gpu-function (name))
 (defgeneric gen-uploaders-block (assigners))
+(defgeneric gen-cleanup-block (assigners))

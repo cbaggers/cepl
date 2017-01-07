@@ -214,11 +214,9 @@
   (defun (setf %texture-binding) (id gl-ctx index)
     (declare (ignore gl-ctx))
     (let ((target-val (aref cache-id->enum-id index)))
-      (prog1 (cffi-sys:%foreign-funcall
-              "glbindtexture"
-              (:unsigned-int target-val :unsigned-int id :void)
-              :convention :cdecl :library opengl)
-        (%gl::check-error '%gl::bind-texture)))
+      ;; {TODO} we have already calculated the enum, try and remove the
+      ;;        condition checking if keyword
+      (gl:bind-texture target-val id))
     id))
 
 ;; Raw cached index part

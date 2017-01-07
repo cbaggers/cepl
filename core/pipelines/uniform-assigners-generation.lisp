@@ -31,6 +31,16 @@
                                    arg-name)))
          ,@(uploaders assigner)))))
 
+(defmethod gen-cleanup-block ((assigner assigner))
+  (with-slots (arg-name local-arg-name) assigner
+    (when (cleanup assigner)
+      `(when ,arg-name
+         (let ((,local-arg-name ,(if (pointer-arg assigner)
+                                     `(pointer ,arg-name)
+                                     arg-name)))
+           (declare (ignorable ,local-arg-name))
+           ,@(cleanup assigner))))))
+
 (defun dispatch-make-assigner (local-arg-name arg-name type glsl-name qualifiers)
   (assert (not (null glsl-name)))
   (let* ((varjo-type (varjo:type-spec->type type))

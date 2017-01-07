@@ -73,9 +73,6 @@
   (arrays (error "") :type (array gpu-array-bb (*)))
   (managed nil :type boolean))
 
-(defvar +null-gpu-buffer+
-  (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
-
 ;;------------------------------------------------------------
 
 (defstruct (gpu-array (:constructor %make-gpu-array))
@@ -98,6 +95,11 @@
   (layer-num 0 :type fixnum)
   (face-num 0 :type fixnum)
   (image-format nil :type symbol))
+
+;;------------------------------------------------------------
+
+(defvar +null-gpu-buffer+
+  (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
 
 ;;------------------------------------------------------------
 

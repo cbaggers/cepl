@@ -50,13 +50,13 @@
                *cepl-context* ,cache-id (gpu-buffer-id ,var-name))
               ,@body)
          (cepl.context::set-gpu-buffer-bound-id
-          *cepl-context* ,cache-id ,old-id))))))
+          *cepl-context* ,cache-id ,old-id)))))
 
 (defun gen-buffer ()
   (first (gl:gen-buffers 1)))
 
 (defun init-gpu-buffer-now (new-buffer gl-object initial-contents
-				    buffer-target usage managed)
+                            buffer-target usage managed)
   (declare (symbol buffer-target usage))
   (setf (gpu-buffer-id new-buffer) gl-object
 	(gpu-buffer-managed new-buffer) managed)
