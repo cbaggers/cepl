@@ -281,6 +281,26 @@
 
 ;;------------------------------------------------------------
 
+(defun texture-binding (context target)
+  (declare (ignore context))
+  (ecase target
+    (:texture-1d (gl:get* :texture-binding-1d))
+    (:texture-2d (gl:get* :texture-binding-2d))
+    (:texture-3d (gl:get* :texture-binding-3d))
+    (:texture-1d-array (gl:get* :texture-binding-1d-array))
+    (:texture-2d-array (gl:get* :texture-binding-2d-array))
+    (:texture-rectangle (gl:get* :texture-binding-rectangle))
+    (:texture-cube-map (gl:get* :texture-binding-cube-map))
+    (:texture-cube-map-array (gl:get* :texture-binding-cube-map-array))
+    (:texture-buffer (gl:get* :texture-binding-buffer))
+    (:texture-2d-multisample (gl:get* :texture-binding-2d-multisample))
+    (:texture-2d-multisample-array (gl:get* :texture-binding-2d-multisample-array))))
+
+(defun (setf texture-binding) (id context target)
+  (declare (ignore context))
+  (gl:bind-texture target id)
+  id)
+
 ;; (mapcar (lambda (x) (cffi:foreign-enum-value '%gl::enum x))
 ;;         '(:texture-binding-1d :texture-binding-2d :texture-binding-3d
 ;;           :texture-binding-1d-array :texture-binding-2d-array
