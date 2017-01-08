@@ -3,7 +3,7 @@
 ;;--------------------------------------------------
 
 (defgeneric %recompile-gpu-function-and-pipelines (key))
-(defgeneric inject-func-key (spec))
+(defgeneric spec->func-key (spec))
 (defgeneric func-key= (x y))
 (defgeneric gpu-func-spec (key &optional error-if-missing))
 (defgeneric (setf gpu-func-spec) (value func-key &optional error-if-missing))

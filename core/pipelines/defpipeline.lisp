@@ -121,7 +121,7 @@
       (make-pipeline-spec
        ',name ,(cons 'list (mapcar (lambda (x)
                                      (dbind (k . v) x
-                                       `(cons ,k ,(inject-func-key v))))
+                                       `(cons ,k ,(spec->func-key v))))
                                    stage-pairs))
        ',context))))
 
@@ -248,7 +248,7 @@
        prog-id)))
 
 (defun serialize-stage-pairs (stage-pairs)
-  (cons 'list (mapcar λ`(cons ,(car _) ,(inject-func-key (cdr _)))
+  (cons 'list (mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
 		      stage-pairs)))
 
 (defun def-dispatch-func (name init-func-name stage-keys context

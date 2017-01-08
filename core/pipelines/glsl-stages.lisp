@@ -46,7 +46,7 @@
       (%update-glsl-stage-data spec)
       `(progn
 	 ,(%make-stand-in-lisp-func-for-glsl-stage spec);;[2]
-	 (recompile-pipelines-that-use-this-as-a-stage ,(inject-func-key spec))
+	 (recompile-pipelines-that-use-this-as-a-stage ,(spec->func-key spec))
 	 ',name))))
 
 (defun assert-context (name context)

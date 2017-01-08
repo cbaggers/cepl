@@ -190,12 +190,12 @@
 (defmethod func-key ((key func-key))
   key)
 
-(defmethod inject-func-key ((spec gpu-func-spec))
-  `(new-func-key ',(slot-value spec 'name)
-		 ',(mapcar #'second (slot-value spec 'in-args))))
+(defmethod spec->func-key ((spec gpu-func-spec))
+  (new-func-key (slot-value spec 'name)
+                (mapcar #'second (slot-value spec 'in-args))))
 
-(defmethod inject-func-key ((spec func-key))
-  `(new-func-key ',(name spec) ',(in-args spec)))
+(defmethod spec->func-key ((spec func-key))
+  spec)
 
 (defmethod func-key= ((x func-key) (y func-key))
   (unless (or (null x) (null y))
