@@ -37,11 +37,12 @@
 		       &body body)
   (alexandria:with-gensyms (old-id cache-id target)
     `(let* ((,var-name ,buffer)
-            (,target ,buffer-target)
-            (,cache-id
-             ,(if (keywordp buffer-target)
-                  (cepl.context::buffer-kind->cache-index buffer-target)
-                  `(cepl.context::buffer-kind->cache-index ,target)))
+            ,@(if (keywordp buffer-target)
+                  `((,cache-id ,(cepl.context::buffer-kind->cache-index
+                                 buffer-target)))
+                  `((,target ,buffer-target)
+                    (,cache-id (cepl.context::buffer-kind->cache-index
+                                ,target))))
             (,old-id
              (cepl.context::gpu-buffer-bound-id *cepl-context* ,cache-id)))
        (unwind-protect

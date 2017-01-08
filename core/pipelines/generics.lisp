@@ -19,3 +19,7 @@
 (defgeneric %gpu-function (name))
 (defgeneric gen-uploaders-block (assigners))
 (defgeneric gen-cleanup-block (assigners))
+(defgeneric pipeline-stages (spec))
+(defgeneric pipeline-stage-pairs (spec))
+(defgeneric func-key->name (key))
+(defgeneric glambda->func-spec (glambda))

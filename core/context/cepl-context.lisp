@@ -10,6 +10,8 @@
    (current-viewport :initform nil :type (or null viewport))
    (default-viewport :initform nil :type (or null viewport))
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
+   (default-framebuffer :initform nil :type (or null fbo))
+   ;;- - - - - - - - - - - - - - - - - - - - - - - -
    (read-fbo-binding-id :initform +unknown-gl-id+ :type gl-id)
    (draw-fbo-binding-id :initform +unknown-gl-id+ :type gl-id)
    (fbos :initform (make-array 0 :element-type 'fbo :initial-element +null-fbo+
@@ -354,10 +356,10 @@
 
 (defun on-gl-context (cepl-context new-gl-context)
   (with-slots (gl-context uninitialized-resources current-viewport
-                          default-viewport)
+                          default-viewport default-framebuffer)
       cepl-context
     (setf gl-context new-gl-context)
-    (let ((vp (cepl.fbos:attachment-viewport %default-framebuffer 0)))
+    (let ((vp (cepl.fbos:attachment-viewport default-framebuffer 0)))
       (setf current-viewport vp
             default-viewport vp))
     (initialize-all-delayed uninitialized-resources)
@@ -410,3 +412,5 @@
             (lambda () ,init-func-call)
             ,depends-on))
        ,pre)))
+
+;;----------------------------------------------------------------------

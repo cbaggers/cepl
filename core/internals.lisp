@@ -50,7 +50,6 @@
 (defun draw-buffer-enum (buffer-num)
   (+ buffer-num #.(cffi:foreign-enum-value '%gl:enum :draw-buffer0)))
 
-(defvar %default-framebuffer nil)
 (defvar *gl-window* nil)
 (defvar *on-context* nil)
 

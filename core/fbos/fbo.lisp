@@ -101,32 +101,35 @@
 	      :depth-array (when depth (gen-array dimensions)))
 	     :id 0))))
       (update-clear-mask result)
-      (setf %default-framebuffer result)
+      (with-slots (default-framebuffer) *cepl-context*
+        (setf default-framebuffer result))
       result)))
 
 (defun %update-default-framebuffer-dimensions (x y)
-  (let ((dimensions (list x y))
-        (fbo %default-framebuffer))
-    (map nil
-         (lambda (x)
-           (setf (gpu-array-dimensions (att-array x)) dimensions))
-         (%fbo-color-arrays fbo))
-    (when (%fbo-depth-array fbo)
-      (setf (gpu-array-dimensions (att-array (%fbo-depth-array fbo)))
-            dimensions))
-    fbo))
+  (with-slots (default-framebuffer) *cepl-context*
+    (let ((dimensions (list x y))
+          (fbo default-framebuffer))
+      (map nil
+           (lambda (x)
+             (setf (gpu-array-dimensions (att-array x)) dimensions))
+           (%fbo-color-arrays fbo))
+      (when (%fbo-depth-array fbo)
+        (setf (gpu-array-dimensions (att-array (%fbo-depth-array fbo)))
+              dimensions))
+      fbo)))
 
 
 (defun %set-default-fbo-viewport (new-dimensions)
-  (let ((fbo %default-framebuffer))
-    ;; - - -
-    (loop :for a :across (%fbo-color-arrays fbo) :when a :do
-       (cepl.textures::with-gpu-array-t (att-array a)
-	 (setf dimensions new-dimensions)))
-    ;; - - -
-    (cepl.textures::with-gpu-array-t
-        (attachment fbo :d)
-      (setf dimensions new-dimensions))))
+  (with-slots (default-framebuffer) *cepl-context*
+    (let ((fbo default-framebuffer))
+      ;; - - -
+      (loop :for a :across (%fbo-color-arrays fbo) :when a :do
+         (cepl.textures::with-gpu-array-t (att-array a)
+           (setf dimensions new-dimensions)))
+      ;; - - -
+      (cepl.textures::with-gpu-array-t
+          (attachment fbo :d)
+        (setf dimensions new-dimensions)))))
 
 
 ;; {TODO} this is pretty wasteful but will do for now
@@ -474,10 +477,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     (:draw-framebuffer (setf (draw-fbo-bound *cepl-context*) fbo))))
 
 (defun %unbind-fbo ()
-  (%bind-fbo %default-framebuffer :framebuffer))
+  (with-slots (default-framebuffer) *cepl-context*
+    (%bind-fbo default-framebuffer :framebuffer)))
 
-(defvar *valid-fbo-targets*
-  '(:read-framebuffer :draw-framebuffer :framebuffer))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *valid-fbo-targets*
+    '(:read-framebuffer :draw-framebuffer :framebuffer)))
 
 (defmacro with-fbo-bound ((fbo &key (target :draw-framebuffer)
                                (with-viewport t) (attachment-for-size 0)
@@ -486,53 +491,53 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (assert (member target *valid-fbo-targets*) (target)
           'fbo-target-not-valid-constant
           :target target)
-  (if (eq target :framebuffer)
-      (gen-dual-with-fbo-bound fbo with-viewport attachment-for-size
-                               with-blending draw-buffers)
-      (gen-singular-with-fbo-bound fbo target with-viewport attachment-for-size
-                                   with-blending draw-buffers body)))
+  (labels ((gen-dual-with-fbo-bound (fbo with-viewport attachment-for-size
+                                         with-blending draw-buffers body)
+             (alexandria:with-gensyms (ctx old-read-fbo old-draw-fbo new-fbo)
+               `(let* ((,ctx *cepl-context*)
+                       (,new-fbo ,fbo)
+                       (,old-read-fbo (read-fbo-bound ,ctx))
+                       (,old-draw-fbo (draw-fbo-bound ,ctx)))
+                  (setf (fbo-bound ,ctx) ,new-fbo)
+                  ,(%write-draw-buffer-pattern-call
+                    draw-buffers new-fbo with-blending
+                    `(,@(if with-viewport
+                            `(with-fbo-viewport (,new-fbo ,attachment-for-size))
+                            '(progn))
+                        (prog1 (progn ,@body)
+                          (if (eq ,old-read-fbo ,old-draw-fbo)
+                              (setf (fbo-bound ,ctx) ,old-read-fbo)
+                              (progn
+                                (setf (read-fbo-bound ,ctx) ,old-read-fbo)
+                                (setf (draw-fbo-bound ,ctx) ,old-draw-fbo)))))))))
 
-(defun gen-dual-with-fbo-bound (fbo with-viewport attachment-for-size
-                                with-blending draw-buffers body)
-  (alexandria:with-gensyms (ctx old-read-fbo old-draw-fbo new-fbo)
-    `(let* ((,ctx *cepl-context*)
-            (,new-fbo ,fbo)
-            (,old-read-fbo `(read-fbo-bound ,ctx))
-            (,old-draw-fbo `(draw-fbo-bound ,ctx)))
-       (setf (fbo-bound ,ctx) ,new-fbo)
-       ,(%write-draw-buffer-pattern-call
-         draw-buffers new-fbo with-blending
-         `(,@(if with-viewport
-                 `(with-fbo-viewport (,new-fbo ,attachment-for-size))
-                 '(progn))
-             (prog1 (progn ,@body)
-               (if (eq ,old-read-fbo ,old-draw-fbo)
-                   (setf (fbo-bound ,ctx) ,old-read-fbo)
-                   (progn
-                     (setf (read-fbo-bound ,ctx) ,old-read-fbo)
-                     (setf (draw-fbo-bound ,ctx) ,old-draw-fbo)))))))))
-
-(defun gen-singular-with-fbo-bound (fbo target with-viewport attachment-for-size
-                                    with-blending draw-buffers body)
-  (alexandria:with-gensyms (ctx old-fbo new-fbo tgt)
-    `(let* ((,ctx *cepl-context*)
-            (,tgt ,target)
-            (,new-fbo ,fbo)
-            (,old-fbo ,(if (eq tgt :read-framebuffer)
-                           `(read-fbo-bound ,ctx)
-                           `(draw-fbo-bound ,ctx))))
-       ,(if (eq tgt :read-framebuffer)
-            `(setf (read-fbo-bound ,ctx) ,new-fbo)
-            `(setf (draw-fbo-bound ,ctx) ,new-fbo))
-       ,(%write-draw-buffer-pattern-call
-         draw-buffers new-fbo with-blending
-         `(,@(if with-viewport
-                 `(with-fbo-viewport (,new-fbo ,attachment-for-size))
-                 '(progn))
-             (prog1 (progn ,@body)
-               ,(if (eq tgt :read-framebuffer)
-                    `(setf (read-fbo-bound ,ctx) ,old-fbo)
-                    `(setf (draw-fbo-bound ,ctx) ,old-fbo))))))))
+           (gen-singular-with-fbo-bound (fbo target with-viewport
+                                             attachment-for-size with-blending
+                                             draw-buffers body)
+             (alexandria:with-gensyms (ctx old-fbo new-fbo)
+               `(let* ((,ctx *cepl-context*)
+                       (,new-fbo ,fbo)
+                       (,old-fbo ,(if (eq target :read-framebuffer)
+                                      `(read-fbo-bound ,ctx)
+                                      `(draw-fbo-bound ,ctx))))
+                  ,(if (eq target :read-framebuffer)
+                       `(setf (read-fbo-bound ,ctx) ,new-fbo)
+                       `(setf (draw-fbo-bound ,ctx) ,new-fbo))
+                  ,(%write-draw-buffer-pattern-call
+                    draw-buffers new-fbo with-blending
+                    `(,@(if with-viewport
+                            `(with-fbo-viewport (,new-fbo ,attachment-for-size))
+                            '(progn))
+                        (prog1 (progn ,@body)
+                          ,(if (eq target :read-framebuffer)
+                               `(setf (read-fbo-bound ,ctx) ,old-fbo)
+                               `(setf (draw-fbo-bound ,ctx) ,old-fbo)))))))))
+    (if (eq target :framebuffer)
+        (gen-dual-with-fbo-bound fbo with-viewport attachment-for-size
+                                 with-blending draw-buffers body)
+        (gen-singular-with-fbo-bound fbo target with-viewport
+                                     attachment-for-size with-blending
+                                     draw-buffers body))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)

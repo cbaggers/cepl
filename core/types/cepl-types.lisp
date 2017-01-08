@@ -350,9 +350,11 @@
    :texture-type nil))
 
 (defvar +null-buffer-backed-gpu-array+
-  (%make-gpu-array-bb
-   :buffer +null-gpu-buffer+
-   :access-style :invalid))
+    (%make-gpu-array-bb :buffer +null-gpu-buffer+
+                      :access-style :invalid
+                      :element-type nil
+                      :byte-size 0
+                      :offset-in-bytes-into-buffer 0))
 
 (defvar +uninitialized-buffer-array+
   (make-array 0 :element-type 'gpu-array-bb

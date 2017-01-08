@@ -1,7 +1,62 @@
 (in-package :cepl.context)
 
+;;------------------------------------------------------------
+
 (defclass gl-context ()
-  ((cache :initform (make-hash-table))
-   (handle :initarg :handle :reader handle)
+  ((handle :initarg :handle :reader handle)
    (window :initarg :window :reader window)
-   (fbo :initarg :window :reader context-fbo)))
+   (version-major :initarg :version-major :reader major-version)
+   (version-minor :initarg :version-minor :reader minor-version)
+   (version-float :initarg :version-float :reader version-float)))
+
+;;------------------------------------------------------------
+
+(let ((available-extensions nil))
+  (defun has-feature (x)
+    (unless available-extensions
+      (let* ((exts (if (>= (gl:major-version) 3)
+                       (loop :for i :below (gl:get-integer :num-extensions)
+                          :collect (%gl:get-string-i :extensions i))
+                       ;; OpenGL version < 3
+                       (cepl-utils:split-string
+			#\space (gl:get-string :extensions))))
+             (exts (append exts
+                           (mapcar (lambda (x)
+                                     (cepl-utils:kwd (string-upcase (subseq x 3))))
+                                   exts))))
+        (setf available-extensions exts)))
+    (not (null (find x available-extensions :test #'equal)))))
+
+;;------------------------------------------------------------
+
+(defun ensure-cepl-compatible-setup ()
+  (unless (or (> (gl:major-version) 3)
+	      (and (= (gl:major-version) 3)
+		   (>= (gl:minor-version) 1)))
+    (error "Cepl requires OpenGL 3.1 or higher. Found: ~a.~a"
+           (gl:major-version) (gl:minor-version))))
+
+;;------------------------------------------------------------
+
+(defun %set-default-gl-options ()
+  (gl:clear-color 0.0 0.0 0.0 0.0)
+  (gl:enable :cull-face)
+  (gl:cull-face :back)
+  (gl:front-face :ccw)
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (gl:depth-func :less)
+  (gl:depth-range 0.0 1.0)
+  (gl:enable :depth-clamp))
+
+;;------------------------------------------------------------
+;; Homeless stuff
+
+(defgeneric max-draw-buffers (context))
+
+(defmethod max-draw-buffers ((context gl-context))
+  (with-slots (cache)
+      context
+    (or (gethash :max-draw-buffers cache)
+        (setf (gethash :max-draw-buffers cache)
+              (cl-opengl:get* :max-draw-buffers)))))

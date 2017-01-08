@@ -442,6 +442,31 @@
 	:named-readtables :cepl.errors)
   (:export))
 
+(uiop:define-package :cepl.context
+    (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+          :cepl.memory :cepl.types :%cepl.types :split-sequence
+          :named-readtables :cepl.errors :cepl.internals)
+  (:export :gl-context
+           :*gl-context*
+           :make-context
+           :has-feature
+           :major-version
+           :minor-version
+           :version-float
+           :split-float-version
+           :max-draw-buffers
+
+           ;;----------------------------
+           ;; CEPL.Context
+           :*cepl-context*
+           :gpu-buffer-bound
+           :texture-bound
+           :vao-bound
+           :read-fbo-bound
+           :draw-fbo-bound
+           :fbo-bound
+           :default-framebuffer))
+
 (uiop:define-package :cepl.viewports
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence :cepl.measurements
@@ -461,88 +486,6 @@
 	   :with-fbo-viewport
 	   :copy-viewport
 	   :viewport-params-to-vec4))
-
-(uiop:define-package :cepl.context
-    (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-          :cepl.memory :cepl.types :%cepl.types :split-sequence
-          :named-readtables :cepl.errors :cepl.internals)
-  (:export :gl-context
-           :*gl-context*
-           :make-context
-           :has-feature
-           :major-version
-           :minor-version
-           :version-float
-           :split-float-version
-           :max-server-wait-timeout
-           :min-map-buffer-alignment
-           :extension-count
-           :supported-shading-versions-count
-           :timestamp
-           :color-clear-value
-           :color-writemask
-           :depth-clear-value
-           :depth-func~1
-           :depth-test
-           :depth-writemask
-           :doublebuffer
-           :draw-buffer
-           :draw-buffer-i
-           :draw-framebuffer-binding
-           :max-color-attachments
-           :max-color-texture-samples
-           :max-depth-texture-samples
-           :max-draw-buffers
-           :max-dual-source-draw-buffers
-           :max-framebuffer-height
-           :max-framebuffer-layers
-           :max-framebuffer-samples
-           :max-framebuffer-width
-           :max-integer-samples
-           :max-samples
-           :read-buffer
-           :read-framebuffer-binding
-           :renderbuffer-binding
-           :stencil-back-fail
-           :stencil-back-func
-           :stencil-back-pass-depth-fail
-           :stencil-back-pass-depth-pass
-           :stencil-back-ref
-           :stencil-back-value-mask
-           :stencil-back-writemask
-           :stencil-clear-value
-           :stencil-fail
-           :stencil-func
-           :stencil-pass-depth-fail
-           :stencil-pass-depth-pass
-           :stencil-ref
-           :stencil-test
-           :stencil-value-mask
-           :stencil-writemask
-           :stereo
-           :array-buffer-binding
-           :element-array-buffer-binding
-           :uniform-buffer-binding
-           :vertex-array-binding
-           :read-framebuffer-binding
-           :draw-framebuffer-binding
-           :framebuffer-binding
-           ;; :%array-buffer-binding
-           ;; :%read-buffer-binding
-           ;; :%copy-write-buffer-binding
-           ;; :%draw-indirect-buffer-binding
-           ;; :%query-buffer-binding
-           ;; :%texture-buffer-binding
-
-           ;;----------------------------
-           ;; CEPL.Context
-           :*cepl-context*
-           :gpu-buffer-bound
-           :texture-bound
-           :vao-bound
-           :read-fbo-bound
-           :draw-fbo-bound
-           :fbo-bound))
 
 (uiop:define-package :cepl.image-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types :cepl.errors)

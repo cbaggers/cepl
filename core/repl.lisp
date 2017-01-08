@@ -49,11 +49,12 @@
   nil)
 
 (defun cls ()
-  (with-fbo-bound (%default-framebuffer :target :framebuffer
-                                        :with-viewport nil
-                                        :with-blending nil)
-    (clear) (cepl.host::host-swap)
-    (clear) (cepl.host::host-swap)))
+  (with-slots (default-framebuffer) cepl.context:*cepl-context*
+    (with-fbo-bound (default-framebuffer :target :framebuffer
+                      :with-viewport nil
+                      :with-blending nil)
+      (clear) (cepl.host::host-swap)
+      (clear) (cepl.host::host-swap))))
 
 
 (in-package :cepl)
