@@ -3,9 +3,10 @@
 
 ;;{TODO} Almost everything in here could really benefit from being optimized
 
+;;--------------------------------------------------
+
 (defparameter *gpu-func-specs* nil)
 (defparameter *dependent-gpu-functions* nil)
-(defparameter *gpu-program-cache* (make-hash-table :test #'eq))
 (defparameter *gpu-pipeline-specs* (make-hash-table :test #'eq))
 
 ;;--------------------------------------------------
@@ -457,11 +458,12 @@ has not been cached yet")
 ;;--------------------------------------------------
 
 (defun request-program-id-for (name)
-  (if name
-      (or (gethash name *gpu-program-cache*)
-          (setf (gethash name *gpu-program-cache*)
-                (gl:create-program)))
-      (gl:create-program)))
+  (with-slots (map-of-pipeline-names-to-gl-ids) *cepl-context*
+    (if name
+        (or (gethash name map-of-pipeline-names-to-gl-ids)
+            (setf (gethash name map-of-pipeline-names-to-gl-ids)
+                  (gl:create-program)))
+        (gl:create-program))))
 
 ;;--------------------------------------------------
 

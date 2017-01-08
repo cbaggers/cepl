@@ -43,7 +43,8 @@
     :initform (make-array 0 :element-type 'texture :initial-element
                           +null-texture+ :adjustable t :fill-pointer 0))
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
-   ))
+   (map-of-pipeline-names-to-gl-ids
+    :initform (make-hash-table :test #'eq))))
 
 (defvar *cepl-context*
   (make-instance 'cepl-context))
