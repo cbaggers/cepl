@@ -1,20 +1,17 @@
 (in-package :cepl.viewports)
 
-(defvar %current-viewport nil)
-(defvar %default-viewport nil)
+(defun %set-current-viewport (cepl-context viewport)
+  (with-slots (cepl.context::current-viewport) cepl-context
+    (setf cepl.context::current-viewport viewport)))
 
 (defun current-viewport ()
-  (or %current-viewport
-      %default-viewport
-      (setf %default-viewport
-            (cepl.fbos:attachment-viewport
-             (or %default-framebuffer
-                 (error "No default framebuffer found ~a"
-                        (if (and (boundp '*gl-context*)
-                                 (symbol-value '*gl-context*))
-                            "but we do have a gl context. This is a bug"
-                            "because the GL context is not yet available")))
-             0))))
+  (with-slots (cepl.context::current-viewport) cepl.context:*cepl-context*
+    (or cepl.context::current-viewport
+        (error "No default framebuffer found ~a"
+               (if (and (boundp '*gl-context*)
+                        (symbol-value '*gl-context*))
+                   "but we do have a gl context. This is a bug"
+                   "because the GL context is not yet available")))))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -69,8 +66,9 @@
 (defun %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
-  (when (eq viewport %default-viewport)
-    (cepl.fbos::%update-default-framebuffer-dimensions x y))
+  (with-slots (default-viewport) *cepl-context*
+    (when (eq viewport default-viewport)
+      (cepl.fbos::%update-default-framebuffer-dimensions x y)))
   (when (eq (current-viewport) viewport)
     (%viewport viewport)))
 
@@ -99,17 +97,13 @@
    (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
   viewport)
 
-(defmacro %with-viewport (viewport &body body)
-  `(progn
-     (%viewport ,viewport)
-     ,@body))
-
 (defmacro with-viewport (viewport &body body)
-  (let ((once (gensym "viewport")))
+  (let ((vp (gensym "viewport")))
     `(prog1
-         (let* ((,once ,viewport)
-                (%current-viewport ,once))
-           (%with-viewport ,once ,@body))
+         (let* ((,vp ,viewport))
+           (%set-current-viewport *cepl-context* ,vp)
+           (%viewport ,viewport)
+           ,@body)
        (%viewport (current-viewport)))))
 
 ;;{TODO} how are we meant to set origin?

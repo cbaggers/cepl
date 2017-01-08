@@ -7,6 +7,9 @@
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
    (vao-binding-id :initform +unknown-gl-id+ :type vao-id)
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
+   (current-viewport :initform nil :type (or null viewport))
+   (default-viewport :initform nil :type (or null viewport))
+   ;;- - - - - - - - - - - - - - - - - - - - - - - -
    (read-fbo-binding-id :initform +unknown-gl-id+ :type gl-id)
    (draw-fbo-binding-id :initform +unknown-gl-id+ :type gl-id)
    (fbos :initform (make-array 0 :element-type 'fbo :initial-element +null-fbo+
@@ -36,7 +39,9 @@
                           +null-gl-id+))
    (array-of-textures
     :initform (make-array 0 :element-type 'texture :initial-element
-                          +null-texture+ :adjustable t :fill-pointer 0))))
+                          +null-texture+ :adjustable t :fill-pointer 0))
+   ;;- - - - - - - - - - - - - - - - - - - - - - - -
+   ))
 
 (defvar *cepl-context*
   (make-instance 'cepl-context))
@@ -348,8 +353,13 @@
 ;;----------------------------------------------------------------------
 
 (defun on-gl-context (cepl-context new-gl-context)
-  (with-slots (gl-context uninitialized-resources) cepl-context
+  (with-slots (gl-context uninitialized-resources current-viewport
+                          default-viewport)
+      cepl-context
     (setf gl-context new-gl-context)
+    (let ((vp (cepl.fbos:attachment-viewport %default-framebuffer 0)))
+      (setf current-viewport vp
+            default-viewport vp))
     (initialize-all-delayed uninitialized-resources)
     (setf uninitialized-resources nil)))
 

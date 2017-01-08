@@ -445,7 +445,7 @@
 (uiop:define-package :cepl.viewports
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence :cepl.measurements
-	:named-readtables :cepl.errors :cepl.internals)
+	:named-readtables :cepl.errors :cepl.internals :cepl.context)
   (:export :current-viewport
 	   :viewport
 	   :viewport-p
