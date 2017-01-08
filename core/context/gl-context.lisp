@@ -52,14 +52,12 @@
 ;;------------------------------------------------------------
 ;; Homeless stuff
 
-(defgeneric max-draw-buffers (context))
-
-(defmethod max-draw-buffers ((context gl-context))
-  (with-slots (cache)
-      context
-    (or (gethash :max-draw-buffers cache)
-        (setf (gethash :max-draw-buffers cache)
-              (cl-opengl:get* :max-draw-buffers)))))
+(let ((cache 0))
+  (defun max-draw-buffers (context)
+    (declare (ignore context))
+    (if (= cache 0)
+        (setf cache (cl-opengl:get* :max-draw-buffers))
+        cache)))
 
 (defvar *context-defaults* nil)
 

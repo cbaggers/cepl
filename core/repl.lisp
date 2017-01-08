@@ -49,7 +49,7 @@
   nil)
 
 (defun cls ()
-  (with-slots (default-framebuffer) cepl.context:*cepl-context*
+  (with-slots (default-framebuffer) *cepl-context*
     (with-fbo-bound (default-framebuffer :target :framebuffer
                       :with-viewport nil
                       :with-blending nil)

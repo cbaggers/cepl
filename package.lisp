@@ -430,7 +430,6 @@
 	   :set-arg-val
 	   ;;---
 	   :populate
-	   :%default-framebuffer
 	   :*gl-window*
            :window-dimensions
            :window-resolution
@@ -843,7 +842,8 @@
 	  :cl-fad
 	  :named-readtables
 	  :cepl.errors
-	  :cepl.internals)
+	  :cepl.internals
+          :cepl.context)
     :shadow (:quit)
     :import-from ((:cepl-utils :deferror
 			       :print-mem

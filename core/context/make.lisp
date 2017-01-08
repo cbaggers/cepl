@@ -15,7 +15,7 @@
                            :handle context-handle
                            :window window
                            :version-major (gl:major-version)
-                           :version-major (gl:minor-version)
+                           :version-minor (gl:minor-version)
                            :version-float (coerce
                                            (+ (gl:major-version)
                                               (/ (gl:minor-version)
@@ -23,15 +23,15 @@
                                            'single-float)))
           (dimensions (list width height)))
       (ensure-cepl-compatible-setup)
-      (format t "New context v~s.~s"
-	      (major-version new-gl-context)
-	      (minor-version new-gl-context))
       (%set-default-gl-options)
       (setf *gl-context* new-gl-context
             *gl-window* (window new-gl-context))
       (let ((default-fbo (cepl.fbos::%make-default-framebuffer dimensions t t)))
-        (setf (slot-value *cepl-context* 'default-fbo) default-fbo))
+        (setf (slot-value *cepl-context* 'default-framebuffer) default-fbo))
       (map nil #'funcall *on-context*)
       (on-gl-context *cepl-context* new-gl-context)
       (cepl.host::set-default-swap-arg *gl-window*)
+      (format t "New context v~s.~s"
+	      (major-version new-gl-context)
+	      (minor-version new-gl-context))
       (cepl:cls))))

@@ -67,8 +67,8 @@
 (defun %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
-  (with-slots (default-viewport) *cepl-context*
-    (when (eq viewport default-viewport)
+  (with-slots (cepl.context::default-viewport) *cepl-context*
+    (when (eq viewport cepl.context::default-viewport)
       (cepl.fbos::%update-default-framebuffer-dimensions x y)))
   (when (eq (current-viewport) viewport)
     (%viewport viewport)))

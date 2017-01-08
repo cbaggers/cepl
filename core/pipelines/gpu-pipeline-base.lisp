@@ -458,10 +458,10 @@ has not been cached yet")
 ;;--------------------------------------------------
 
 (defun request-program-id-for (name)
-  (with-slots (map-of-pipeline-names-to-gl-ids) *cepl-context*
+  (with-slots (cepl.context::map-of-pipeline-names-to-gl-ids) *cepl-context*
     (if name
-        (or (gethash name map-of-pipeline-names-to-gl-ids)
-            (setf (gethash name map-of-pipeline-names-to-gl-ids)
+        (or (gethash name cepl.context::map-of-pipeline-names-to-gl-ids)
+            (setf (gethash name cepl.context::map-of-pipeline-names-to-gl-ids)
                   (gl:create-program)))
         (gl:create-program))))
 
