@@ -78,7 +78,7 @@
     `(progn
        (varjo::add-external-function ',name ',in-args ',uniforms ',body
 				     ',valid-glsl-versions);;[1]
-       (%test-&-update-spec ,(serialize-gpu-func-spec spec));;[2]
+       (%test-&-update-spec ,spec);;[2]
        ,(unless equiv (make-stand-in-lisp-func spec));;[3]
        (%recompile-gpu-function-and-pipelines ,(spec->func-key spec));;[4]
        (update-specs-with-missing-dependencies);;[5]

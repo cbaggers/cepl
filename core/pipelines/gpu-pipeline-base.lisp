@@ -124,12 +124,14 @@
      (declare (ignorable name in-args uniforms outputs context compiled))
      ,@body))
 
-(defun serialize-gpu-func-spec (spec)
+(defmethod make-load-form ((spec gpu-func-spec) &optional environment)
+  (declare (ignore environment))
   (with-gpu-func-spec spec
-    `(%make-gpu-func-spec ',name ',in-args ',uniforms ',context ',body
-                          ',instancing ',equivalent-inargs ',equivalent-uniforms
-			  ',actual-uniforms ',uniform-transforms
-                          ,doc-string ',declarations ',missing-dependencies)))
+    `(%make-gpu-func-spec
+      ',name ',in-args ',uniforms ',context ',body
+      ',instancing ',equivalent-inargs ',equivalent-uniforms
+      ',actual-uniforms ',uniform-transforms
+      ,doc-string ',declarations ',missing-dependencies)))
 
 (defun clone-stage-spec (spec &key new-name new-in-args new-uniforms new-context
 				new-body new-instancing new-equivalent-inargs
@@ -166,8 +168,8 @@
   (cons (name key) (in-args key)))
 
 (defmethod make-load-form ((key func-key) &optional environment)
-   (declare (ignore environment))
-   `(new-func-key ',(name key) ',(in-args key)))
+  (declare (ignore environment))
+  `(new-func-key ',(name key) ',(in-args key)))
 
 (defun new-func-key (name in-args-types)
   (make-instance
