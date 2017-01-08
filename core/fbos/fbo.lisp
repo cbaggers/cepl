@@ -504,7 +504,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                     `(,@(if with-viewport
                             `(with-fbo-viewport (,new-fbo ,attachment-for-size))
                             '(progn))
-                        (prog1 (progn ,@body)
+                        (unwind-protect (progn ,@body)
                           (if (eq ,old-read-fbo ,old-draw-fbo)
                               (setf (fbo-bound ,ctx) ,old-read-fbo)
                               (progn
@@ -528,7 +528,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                     `(,@(if with-viewport
                             `(with-fbo-viewport (,new-fbo ,attachment-for-size))
                             '(progn))
-                        (prog1 (progn ,@body)
+                        (unwind-protect (progn ,@body)
                           ,(if (eq target :read-framebuffer)
                                `(setf (read-fbo-bound ,ctx) ,old-fbo)
                                `(setf (draw-fbo-bound ,ctx) ,old-fbo)))))))))

@@ -276,6 +276,38 @@
 
 ;;----------------------------------------------------------------------
 
+;; GL_READ_FRAMEBUFFER_BINDING (name, intially 0, see glBindFramebuffer)
+;;     The framebuffer object currently bound to the GL_READ_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
+(defun read-framebuffer-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :read-framebuffer-binding))
+
+(defun (setf read-framebuffer-binding) (id context)
+  (declare (ignore context))
+  (gl:bind-framebuffer :read-framebuffer id)
+  id)
+
+;; GL_DRAW_FRAMEBUFFER_BINDING (name, initially 0, see glBindFramebuffer)
+;;     The framebuffer object currently bound to the GL_DRAW_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
+(defun draw-framebuffer-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :draw-framebuffer-binding))
+
+(defun (setf draw-framebuffer-binding) (id context)
+  (declare (ignore context))
+  (gl:bind-framebuffer :draw-framebuffer id)
+  id)
+
+;; The GL_FRAMEBUFFER target sets both the read and the write to the same FBO.
+(defun framebuffer-binding (context)
+  (cons (read-framebuffer-binding context)
+        (draw-framebuffer-binding context)))
+
+(defun (setf framebuffer-binding) (id context)
+  (declare (ignore context))
+  (gl:bind-framebuffer :framebuffer id)
+  id)
+
 (defun read-fbo-bound (cepl-context)
   (with-slots (gl-context fbos read-fbo-binding-id) cepl-context
     (let* ((id (if (= read-fbo-binding-id +unknown-gl-id+)
@@ -338,6 +370,19 @@
       fbo)))
 
 ;;----------------------------------------------------------------------
+
+;; GL_VERTEX_ARRAY_BINDING (GLint, initially 0, see glBindVertexArray)
+;; The name of the vertex array object currently bound to the context, or 0 if
+;; none is bound.
+
+(defun vertex-array-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :vertex-array-binding))
+
+(defun (setf vertex-array-binding) (id context)
+  (declare (ignore context))
+  (gl:bind-vertex-array id)
+  id)
 
 (defun vao-bound (cepl-context)
   (with-slots (gl-context vao-binding-id) cepl-context

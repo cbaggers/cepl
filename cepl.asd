@@ -36,7 +36,6 @@
                (:file "core/types/cepl-types")
                (:file "core/context/gl-context")
                (:file "core/context/cepl-context")
-               (:file "core/context/context")
                (:file "core/context/version")
                (:file "core/types/initalized-p")
                (:file "core/internals")

@@ -2,6 +2,7 @@
 
 (defun %set-current-viewport (cepl-context viewport)
   (with-slots (cepl.context::current-viewport) cepl-context
+    (%viewport viewport)
     (setf cepl.context::current-viewport viewport)))
 
 (defun current-viewport ()
@@ -98,13 +99,13 @@
   viewport)
 
 (defmacro with-viewport (viewport &body body)
-  (let ((vp (gensym "viewport")))
-    `(prog1
-         (let* ((,vp ,viewport))
-           (%set-current-viewport *cepl-context* ,vp)
-           (%viewport ,viewport)
-           ,@body)
-       (%viewport (current-viewport)))))
+  (alexandria:with-gensyms (old-viewport vp ctx)
+    `(let* ((,ctx *cepl-context*)
+            (,old-viewport (current-viewport))
+            (,vp ,viewport))
+       (%set-current-viewport ,ctx ,vp)
+       (unwind-protect (progn ,@body)
+         (%set-current-viewport ,ctx ,old-viewport)))))
 
 ;;{TODO} how are we meant to set origin?
 ;;       Well attachments dont have position so it wouldnt make sense

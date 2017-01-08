@@ -1,6 +1,8 @@
 (in-package :cepl.context)
 (in-readtable fn:fn-reader)
 
+;;------------------------------------------------------------
+
 (defun get-best-glsl-version ()
   (if *gl-context*
       (assocr (cons (major-version *gl-context*)
@@ -19,3 +21,12 @@
 		((4 . 5) . :450))
 	      :test #'equal)
       (last1 varjo::*supported-versions*)))
+
+;;------------------------------------------------------------
+
+(defun split-float-version (float)
+  (let* ((fix (round float .1)))
+    (multiple-value-bind (maj min) (floor fix 10)
+      (list maj min))))
+
+;;------------------------------------------------------------
