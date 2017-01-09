@@ -210,9 +210,8 @@
 (defun dimensions-at-mipmap-level (texture level)
   (if (= level 0)
       (texture-base-dimensions texture)
-      (let ((div (* 2 (1+ level))))
-        (loop for i in (texture-base-dimensions texture) collecting
-             (floor (/ i div))))))
+      (loop :for i :in (texture-base-dimensions texture) :collect
+         (/ i (expt 2 level)))))
 
 ;;------------------------------------------------------------
 
