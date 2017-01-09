@@ -71,8 +71,8 @@ Example valid forms:
 
 
 (deferror make-tex-no-content-no-type () ()
-    "CEPL - make-texture: Trying to make texture, but have element-type and also
-no initial-contents to infer the type from")
+    "CEPL - make-texture: Trying to make texture, but have no element-type or
+initial-contents to infer the type from")
 
 (deferror make-tex-array-not-match-type ()
     (element-type pixel-format supposed-type array-type)
