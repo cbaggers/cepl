@@ -153,7 +153,7 @@
                          (until-no-change new-result new-uniforms)))))
           (let* ((stage (varjo:make-stage in-args uniforms context body tp-meta
                                           t))
-                 (translate-result (varjo:translate stage)))
+                 (translate-result (de-externalize-functions stage)))
             (push (list in-args uniforms context body) pass-inputs)
             (push (list in-args uniforms context (ast->code translate-result))
                   pass-inputs)
@@ -166,6 +166,23 @@
                 (print-compile-report (reverse pass-inputs)))
               compile-result)))))))
 
+(defun de-externalize-functions (stage)
+  (let* ((translate-result (varjo:translate stage))
+         (ext-funcs (used-external-functions translate-result))
+         (new-code
+          `(labels ,(mapcar #'external-func-to-labels-decl
+                            ext-funcs)
+             ,(ast->code (ast translate-result)))))
+    (with-stage () stage
+      (varjo:translate (make-stage in-args uniforms context new-code tp-meta
+                                   stemcells-allowed)))))
+
+(defun external-func-to-labels-decl (ext-func)
+  `(,(varjo::name ext-func)
+     (,@(varjo::in-args ext-func)
+        ,@(when (varjo::uniforms ext-func)
+                `(&uniform ,@(varjo::uniforms ext-func))))
+     ,@(varjo::code ext-func)))
 
 (defun v-rolling-translate (stages)
   (varjo:rolling-translate stages #'v-translate))
