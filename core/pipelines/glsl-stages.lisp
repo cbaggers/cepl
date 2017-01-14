@@ -95,7 +95,11 @@
    This will mean we have less duplication, even if things seem a little
    ugly here"
   (let ((in-args (mapcar #'process-glsl-arg in-args))
-	(uniforms (mapcar #'process-glsl-arg uniforms)))
+	(uniforms (mapcar #'process-glsl-arg uniforms))
+        (none-type (varjo:type-spec->type :none))
+        (arg-types (mapcar #'type-spec->type
+                           (append (mapcar #'second in-args)
+                                   (mapcar #'second uniforms)))))
     (first
      (multiple-value-list
       (varjo::flow-id-scope
@@ -112,13 +116,16 @@
                          'varjo::compiled-function-result
                          :function-obj nil
                          :signatures nil
-                         :ast (varjo:ast-node! :error nil :none 0 nil nil)
+                         :ast (varjo:ast-node! :error nil none-type 0 nil nil)
                          :used-types nil
                          :glsl-code body-string
                          :stemcells nil
-                         :out-vars (make-varjo-outvars outputs env))
+                         :out-vars (make-varjo-outvars outputs env)
+                         :used-types arg-types)
                         env))
 	    #'varjo::make-post-process-obj
+            #'varjo::check-stemcells
+            #'varjo::filter-used-items
 	    ;;#'(lambda (_) (fill-in-post-proc _ body-string outputs))
 	    #'varjo::gen-in-arg-strings
 	    #'varjo::gen-out-var-strings
