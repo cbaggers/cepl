@@ -138,7 +138,7 @@
                                (push (append new-pass-args (list (name pass)))
                                      pass-inputs)
                                (on-pass
-                                (list (apply #'varjo:translate new-pass-args)
+                                (list (varjo:translate new-pass-args)
                                       (second new-pass-args))
                                 pass-pair))
                              (list c-result uniforms))))))
@@ -195,8 +195,10 @@
                                 :initial-value original-uniforms)
                         (gethash 'set-uniforms env))
                 :key #'car)))
-          (values (list original-in-args new-uniforms original-context new-body)
-                  there-were-changes))))))
+          (values
+           (varjo:make-stage original-in-args new-uniforms original-context
+                             new-body nil t)
+           there-were-changes))))))
 
 ;;--------------------------------------------------
 
@@ -216,7 +218,8 @@
                                 :initial-value original-uniforms)
                         (gethash 'set-uniforms env))
                 :key #'car)))
-          (values (list original-in-args new-uniforms original-context new-body)
+          (values (varjo:make-stage original-in-args new-uniforms
+                                    original-context new-body nil t)
                   there-were-changes))))))
 
 ;;--------------------------------------------------
@@ -230,9 +233,12 @@
           (when changed (remove-unused-uniforms v-compile-result))))
     (values
      (with-slots (uniform-transform) pass
-       (list original-in-args (if changed new-uniforms original-uniforms)
-             original-context
-             (varjo:ast->code v-compile-result)))
+       (varjo:make-stage original-in-args
+                         (if changed new-uniforms original-uniforms)
+                         original-context
+                         (varjo:ast->code v-compile-result)
+                         nil
+                         t))
      changed)))
 
 (defun find-unused-uniforms (compiled)
