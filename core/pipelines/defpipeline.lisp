@@ -64,8 +64,7 @@
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
-         (init-func (gen-pipeline-init name stage-pairs post context
-                                      uniform-assigners)))
+         (init-func (gen-pipeline-init name stage-pairs post uniform-assigners)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (%update-spec name stage-pairs context)
@@ -73,16 +72,14 @@
        (let ((prog-id nil)
              ;; If there are no implicit-uniforms we need a no-op
              ;; function to call
-             ,@(when (supports-implicit-uniformsp context)
-                     `((implicit-uniform-upload-func #'fallback-iuniform-func)))
+             (implicit-uniform-upload-func #'fallback-iuniform-func)
              ;;
              ;; {todo} explain
              ,@(mapcar λ`(,(first _) -1)
                        (mapcat #'let-forms uniform-assigners)))
          ;;
          ;; To help the compiler we make sure it knows it's a function :)
-         ,@(when (supports-implicit-uniformsp context)
-                 `((declare (type function implicit-uniform-upload-func))))
+         (declare (type function implicit-uniform-upload-func))
          ;;
          ;; we upload the spec at compile time (using eval-when)
          ,(gen-update-spec name stage-pairs context)
@@ -208,9 +205,6 @@
                 ,@(mapcar (lambda (_) (cons 'setf _)) u-lets))
               ,@(mapcar #'gen-uploaders-block assigners))))))))
 
-(defun supports-implicit-uniformsp (context)
-  (not (member :no-iuniforms context)))
-
 (defun %implicit-uniforms-dont-have-type-mismatches (uniforms)
   (loop :for (name type . i) :in uniforms
      :do (just-ignore i)
@@ -228,7 +222,7 @@
   (force-use-program 0)
   (when func (funcall func)))
 
-(defun gen-pipeline-init (name stage-pairs post context uniform-assigners)
+(defun gen-pipeline-init (name stage-pairs post uniform-assigners)
   `(,(gensym "init")
      ()
      (let ((image-unit -1))
@@ -238,10 +232,9 @@
 	    ',name ,(serialize-stage-pairs stage-pairs))
 	 (declare (ignorable compiled-stages))
 	 (setf prog-id new-prog-id)
-	 ,(when (supports-implicit-uniformsp context)
-		`(setf implicit-uniform-upload-func
-		       (or (%create-implicit-uniform-uploader compiled-stages)
-			   #'fallback-iuniform-func))))
+	 (setf implicit-uniform-upload-func
+               (or (%create-implicit-uniform-uploader compiled-stages)
+                   #'fallback-iuniform-func)))
        ,@(let ((u-lets (mapcat #'let-forms uniform-assigners)))
 	      (loop for u in u-lets collect (cons 'setf u)))
        (%post-init ,post)
@@ -298,10 +291,9 @@
          (use-program prog-id)
 	 (let ,uniform-transforms
 	   ,@u-uploads)
-         ,(when (supports-implicit-uniformsp context)
-                `(locally
-                     (declare (optimize (speed 3) (safety 1)))
-                   (funcall implicit-uniform-upload-func prog-id)))
+         (locally
+             (declare (optimize (speed 3) (safety 1)))
+           (funcall implicit-uniform-upload-func prog-id))
          (when stream (draw-expander stream ,prim-type))
          (use-program 0)
 	 ,@u-cleanup

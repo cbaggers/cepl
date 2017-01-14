@@ -130,11 +130,13 @@
                     (declare (ignore c))
                     (invoke-restart
                      'varjo-conditions:allow-call-function-signature))))
-              (let* ((context (union '(:vertex :fragment :iuniforms) context))
+              (let* ((context (union '(:vertex :fragment) context))
                      (context (swap-version (lowest-suitable-glsl-version context)
                                             context))
                      (compiled
-                      (v-translate in-args uniforms context `(progn ,@body) nil)))
+                      (v-translate
+                       (varjo:make-stage in-args uniforms context
+                                         `(progn ,@body) nil t))))
                 (setf actual-uniforms (uniforms compiled) ;;[2]
                       uniform-transforms (with-hash (uv 'uniform-vals)
                                              (third-party-metadata compiled)
@@ -305,8 +307,7 @@
    It also:
    [0] if it's a glsl-stage then it is already compiled. Pass the compile result
        and let varjo handle it
-   [1] enables implicit uniforms
-   [2] validate that either the gpu-function's context didnt specify a stage
+   [1] validate that either the gpu-function's context didnt specify a stage
        explicitly or that, if it did, that it matches the stage it is being used
        for now"
   (assert (every #'listp replacements))
@@ -315,7 +316,7 @@
 	(with-glsl-stage-spec (gpu-func-spec stage)
 	  compiled);;[0]
 	(dbind (in-args uniforms context code) (get-func-as-stage-code stage)
-	  ;;[2]
+	  ;;[1]
 	  (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
 			     context)))
 	    (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
@@ -324,9 +325,7 @@
                                                       :key #'first
                                                       :test #'string=))
                                             uniforms))
-                 (context (cons :iuniforms ;;[1]
-                                (cons stage-type
-                                      (remove stage-type context))))
+                 (context (cons stage-type (remove stage-type context)))
                  (replacements
                   (loop :for (k v) :in replacements
                      :for r = (let* ((u (find k uniforms :key #'first

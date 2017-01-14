@@ -99,19 +99,32 @@
     (first
      (multiple-value-list
       (varjo::flow-id-scope
-	(let ((env (varjo::%make-base-environment (make-hash-table))))
+	(let ((env (varjo::%make-base-environment
+                    :third-party-metadata (make-hash-table))))
 	  (pipe-> (in-args uniforms context nil env)
 	    #'varjo::split-input-into-env
 	    #'varjo::process-context
 	    #'varjo::process-in-args
 	    #'varjo::process-uniforms
+            #'(lambda (code env)
+                (declare (ignore code))
+                (values (make-instance
+                         'varjo::compiled-function-result
+                         :function-obj nil
+                         :signatures nil
+                         :ast (varjo:ast-node! :error nil :none 0 nil nil)
+                         :used-types nil
+                         :glsl-code body-string
+                         :stemcells nil
+                         :out-vars (make-varjo-outvars outputs env))
+                        env))
 	    #'varjo::make-post-process-obj
-	    #'(lambda (_) (fill-in-post-proc _ body-string outputs))
+	    ;;#'(lambda (_) (fill-in-post-proc _ body-string outputs))
 	    #'varjo::gen-in-arg-strings
 	    #'varjo::gen-out-var-strings
 	    #'varjo::final-uniform-strings
 	    #'varjo::final-string-compose
-	    #'varjo::code-obj->result-object
+	    #'varjo::package-as-final-result-object
 	    #'tweak-result-object)))))))
 
 (defun tweak-result-object (result-obj)
@@ -128,27 +141,6 @@
     (let ((name (symb (string-upcase glsl-name)))
 	  (prefixed-glsl-name (format nil "@~a" glsl-name)))
       `(,name ,type ,@qualifiers ,prefixed-glsl-name))))
-
-(defun fill-in-post-proc (x body-string outputs)
-  (with-slots ((used-types varjo::used-types)
-	       (stemcells varjo::stemcells)
-	       (out-vars varjo::out-vars)
-	       (ast varjo::ast)
-	       (code varjo::code)) x
-    (setf used-types nil
-	  stemcells nil
-	  ast nil
-	  code (fill-in-code x outputs body-string)))
-  x)
-
-(defun fill-in-code (x outputs body-string)
-  (let ((user-out-vars (make-varjo-outvars outputs (varjo::env x))))
-    (varjo::code!
-     :type :none
-     :out-vars user-out-vars
-     :node-tree (varjo:ast-node!
-		 :error nil :none 0 nil nil)
-     :to-top (list body-string))))
 
 (defun make-varjo-outvars (outputs env)
   (loop :for (glsl-name type . qualifiers) :in outputs :collect

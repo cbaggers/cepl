@@ -101,67 +101,70 @@
           (gethash 'uniform-vals e) arg-val-map)
     e))
 
-(defun v-translate (in-args uniforms context body
-                    &optional tp-meta)
+(defun v-translate (stage)
   "Cepl allows you to use varjo in a multi pass fashion by providing a list of
    transform-passes to be run on the varjo-compile-result of each pass.
 
    This function runs all the passes until there are no more changes to make.
    It knows this when none of the passes' ast-filter methods return any nodes to
    be transformed."
-  (let* ((tp-meta (or tp-meta (make-hash-table)))
-         (arg-val-map (or (gethash 'uniform-vals tp-meta)
-                          (let ((h (make-hash-table)))
-                            (loop :for (n . r) :in uniforms
-			       :do (just-ignore r)
-                               :do (setf (gethash n h) n))
-                            h)))
-         (passes (mapcar λ(cons _ (make-pass-env arg-val-map))
-                         (append (%get-passes) (%get-internal-passes))))
-	 (pass-inputs nil))
-    (handler-bind ((varjo-conditions:setq-type-match
-		    (lambda (c)
-		      (when (typep (varjo::code-type (varjo::new-value c))
-				   'cepl.space::svec4-g)
-			(invoke-restart
-			 'varjo-conditions:setq-supply-alternate-type
-			 :vec4)))))
-      (labels ((on-pass (accum pass-pair)
-		 (dbind (c-result uniforms) accum
-		   (dbind (pass . transform-env) pass-pair
-		     (multiple-value-bind (new-pass-args there-were-changes)
-			 (run-pass c-result pass transform-env
-				   in-args uniforms context)
-		       (if there-were-changes
-			   (progn
-			     (push (append new-pass-args (list (name pass)))
-				   pass-inputs)
-			     (on-pass
-			      (list (apply #'varjo:translate new-pass-args)
-				    (second new-pass-args))
-			      pass-pair))
-			   (list c-result uniforms))))))
-	       (once-through (initial uniforms)
-		 (reduce #'on-pass passes
-			 :initial-value (list initial uniforms)))
-	       (until-no-change (initial uniforms)
-		 (dbind (new-result new-uniforms)
-		     (once-through initial uniforms)
-		   (if (eq new-result initial)
-		       initial
-		       (until-no-change new-result new-uniforms)))))
-	(let ((translate-result
-	       (varjo:translate in-args uniforms context body tp-meta)))
-	  (push (list in-args uniforms context body) pass-inputs)
-	  (push (list in-args uniforms context (ast->code translate-result))
-		pass-inputs)
-	  (let ((compile-result
-		 (until-no-change translate-result uniforms)))
-	    (with-hash (av 'uniform-vals) (third-party-metadata compile-result)
-	      (setf av arg-val-map))
-	    (when *verbose-compiles*
-	      (print-compile-report (reverse pass-inputs)))
-	    compile-result))))))
+  (varjo::with-stage (in-args uniforms context body tp-meta stemcells-allowed)
+      stage
+    (let* ((tp-meta (or tp-meta (make-hash-table)))
+           (arg-val-map (or (gethash 'uniform-vals tp-meta)
+                            (let ((h (make-hash-table)))
+                              (loop :for (n . r) :in uniforms
+                                 :do (just-ignore r)
+                                 :do (setf (gethash n h) n))
+                              h)))
+           (passes (mapcar λ(cons _ (make-pass-env arg-val-map))
+                           (append (%get-passes) (%get-internal-passes))))
+           (pass-inputs nil))
+      (handler-bind ((varjo-conditions:setq-type-match
+                      (lambda (c)
+                        (when (typep (varjo::code-type (varjo::new-value c))
+                                     'cepl.space::svec4-g)
+                          (invoke-restart
+                           'varjo-conditions:setq-supply-alternate-type
+                           :vec4)))))
+        (labels ((on-pass (accum pass-pair)
+                   (dbind (c-result uniforms) accum
+                     (dbind (pass . transform-env) pass-pair
+                       (multiple-value-bind (new-pass-args there-were-changes)
+                           (run-pass c-result pass transform-env
+                                     in-args uniforms context)
+                         (if there-were-changes
+                             (progn
+                               (push (append new-pass-args (list (name pass)))
+                                     pass-inputs)
+                               (on-pass
+                                (list (apply #'varjo:translate new-pass-args)
+                                      (second new-pass-args))
+                                pass-pair))
+                             (list c-result uniforms))))))
+                 (once-through (initial uniforms)
+                   (reduce #'on-pass passes
+                           :initial-value (list initial uniforms)))
+                 (until-no-change (initial uniforms)
+                   (dbind (new-result new-uniforms)
+                       (once-through initial uniforms)
+                     (if (eq new-result initial)
+                         initial
+                         (until-no-change new-result new-uniforms)))))
+          (let* ((stage (varjo:make-stage in-args uniforms context body tp-meta
+                                          t))
+                 (translate-result (varjo:translate stage)))
+            (push (list in-args uniforms context body) pass-inputs)
+            (push (list in-args uniforms context (ast->code translate-result))
+                  pass-inputs)
+            (let ((compile-result
+                   (until-no-change translate-result uniforms)))
+              (with-hash (av 'uniform-vals)
+                  (third-party-metadata compile-result)
+                (setf av arg-val-map))
+              (when *verbose-compiles*
+                (print-compile-report (reverse pass-inputs)))
+              compile-result)))))))
 
 
 (defun v-rolling-translate (stages)

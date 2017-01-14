@@ -96,21 +96,18 @@
            (u-lets (mapcat #'let-forms uniform-assigners)))
       `(multiple-value-bind (compiled-stages prog-id)
            (%compile-link-and-upload nil ,(serialize-stage-pairs stage-pairs))
-         ,@(unless (supports-implicit-uniformsp context)
-                   `((declare (ignore compiled-stages))))
+         (declare (ignore compiled-stages))
          (let* ((image-unit -1)
                 ;; If there are no implicit-uniforms we need a no-op
                 ;; function to call
-                ,@(when (supports-implicit-uniformsp context)
-                        `((implicit-uniform-upload-func
-                           (or (%create-implicit-uniform-uploader compiled-stages)
-                               #'fallback-iuniform-func))))
+                (implicit-uniform-upload-func
+                 (or (%create-implicit-uniform-uploader compiled-stages)
+                     #'fallback-iuniform-func))
                 ;;
                 ;; {todo} explain
                 ,@u-lets)
            (declare (ignorable image-unit)
-                    ,@(when (supports-implicit-uniformsp context)
-                            `((type function implicit-uniform-upload-func))))
+                    (type function implicit-uniform-upload-func))
            ;;
            ;; generate the code that actually renders
            (%post-init ,post)
@@ -120,10 +117,8 @@
              (use-program prog-id)
              (let ,uniform-transforms
                ,@u-uploads)
-             ,(when (supports-implicit-uniformsp context)
-                    `(locally
-                         (declare (optimize (speed 3) (safety 1)))
-                       (funcall implicit-uniform-upload-func prog-id)))
+             (locally (declare (optimize (speed 3) (safety 1)))
+               (funcall implicit-uniform-upload-func prog-id))
              (when stream (draw-expander stream ,prim-type))
              (use-program 0)
              ,@u-cleanup
