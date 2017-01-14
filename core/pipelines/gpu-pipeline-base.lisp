@@ -445,7 +445,7 @@ has not been cached yet")
 	(null (%pull-g-soft-message asset-name))
 	(string compiled)
 	(list (mapcar #'varjo:glsl-code compiled))
-	(varjo::varjo-compile-result (ast->code compiled))))))
+	(varjo::varjo-compile-result (glsl-code compiled))))))
 
 (defun pull-g-soft-multi-func-message (asset-name)
   (let ((choices (gpu-functions asset-name)))
