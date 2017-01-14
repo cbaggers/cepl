@@ -474,6 +474,7 @@
     (array (guess-a-varjo-array-type x))
     (boolean (guess-a-varjo-bool-type x))
     (cepl.space:vec-space 'cepl.space::vec-space-g)
+    (sampler (%sampler-type x))
     (t (error "Cant guess a suitable type for ~s" x))))
 
 (defun guess-a-varjo-bool-type (x)
