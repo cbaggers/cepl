@@ -269,14 +269,9 @@
 ;;----------------------------------------------------------------------
 ;; GPU
 
-(varjo::def-v-type-class vec-space-g (varjo:v-type)
-  ((varjo::core :initform nil :reader varjo:core-typep)
-   (varjo::glsl-string :initform "#<vec-space>" :reader varjo:v-glsl-string)))
+(varjo::v-deftype vec-space-g () ())
 
-(add-type-shadow 'vec-space 'vec-space-g)
-
-;; a name for the space
-(defvar *current-space* (gensym "current-space"))
+(add-alternate-type-name 'vec-space 'vec-space-g)
 
 ;;----------------------------------------------------------------------
 ;; Helpers

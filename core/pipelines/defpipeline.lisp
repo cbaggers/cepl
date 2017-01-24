@@ -64,7 +64,8 @@
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
-         (init-func (gen-pipeline-init name stage-pairs post uniform-assigners)))
+         (init-func (gen-pipeline-init name stage-pairs post uniform-assigners
+                                       stage-keys)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (%update-spec name stage-pairs context)
@@ -94,8 +95,8 @@
        ,(gen-recompile-func name stage-pairs post context)
        ,(unless suppress-compile `(,(recompile-name name))))))
 
-(defun fallback-iuniform-func (prog-id)
-  (declare (ignore prog-id) (optimize (speed 3) (safety 1))))
+(defun fallback-iuniform-func (prog-id &rest uniforms)
+  (declare (ignore prog-id uniforms) (optimize (speed 3) (safety 1))))
 
 (defun gen-recompile-func (name stage-pairs post context)
   (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
@@ -192,18 +193,29 @@
 				      pairs versions))))
     (error 'glsl-version-conflict :pairs issue)))
 
-(defun %create-implicit-uniform-uploader (compiled-stages)
-  (let ((uniforms (mapcat #'varjo:implicit-uniforms compiled-stages)))
-    (when uniforms
-      (let* ((assigners (mapcar #'make-arg-assigners uniforms))
-             (u-lets (mapcat #'let-forms assigners)))
+(defun %create-implicit-uniform-uploader (compiled-stages uniform-names)
+  (let* ((varjo-implicit (remove-if #'varjo::ephemeral-p
+                                    (mapcat #'varjo:implicit-uniforms
+                                            compiled-stages)))
+         (uniform-arg-forms (mapcar #'varjo::to-arg-form varjo-implicit)))
+    ;;
+    (when uniform-arg-forms
+      (let* ((assigners (mapcar #'make-arg-assigners uniform-arg-forms))
+             (u-lets (mapcat #'let-forms assigners))
+             (uniform-transforms
+              (remove-duplicates (mapcar λ(list (varjo::name _)
+                                                (varjo::cpu-side-transform _))
+                                         varjo-implicit)
+                                 :test #'equal)))
         (%compile-closure
          `(let ((initd nil)
                 ,@(mapcar (lambda (_) `(,(first _) -1)) u-lets))
-            (lambda (prog-id)
+            (lambda (prog-id ,@uniform-names)
+              (declare (ignorable ,@uniform-names))
               (unless initd
                 ,@(mapcar (lambda (_) (cons 'setf _)) u-lets))
-              ,@(mapcar #'gen-uploaders-block assigners))))))))
+              (let ,uniform-transforms
+                ,@(mapcar #'gen-uploaders-block assigners)))))))))
 
 (defun %implicit-uniforms-dont-have-type-mismatches (uniforms)
   (loop :for (name type . i) :in uniforms
@@ -222,66 +234,55 @@
   (force-use-program 0)
   (when func (funcall func)))
 
-(defun gen-pipeline-init (name stage-pairs post uniform-assigners)
-  `(,(gensym "init")
-     ()
-     (let ((image-unit -1))
-       (declare (ignorable image-unit))
-       (multiple-value-bind (compiled-stages new-prog-id)
-	   (%compile-link-and-upload
-	    ',name ,(serialize-stage-pairs stage-pairs))
-	 (declare (ignorable compiled-stages))
-	 (setf prog-id new-prog-id)
-	 (setf implicit-uniform-upload-func
-               (or (%create-implicit-uniform-uploader compiled-stages)
-                   #'fallback-iuniform-func)))
-       ,@(let ((u-lets (mapcat #'let-forms uniform-assigners)))
-	      (loop for u in u-lets collect (cons 'setf u)))
-       (%post-init ,post)
-       prog-id)))
+(defun gen-pipeline-init (name stage-pairs post uniform-assigners
+                          stage-keys)
+  (let ((uniform-names
+         (mapcar #'first (aggregate-uniforms stage-keys))))
+    `(,(gensym "init")
+       ()
+       (let ((image-unit -1))
+         (declare (ignorable image-unit))
+         (multiple-value-bind (compiled-stages new-prog-id)
+             (%compile-link-and-upload
+              ',name ,(serialize-stage-pairs stage-pairs))
+           (declare (ignorable compiled-stages))
+           (setf prog-id new-prog-id)
+           (setf implicit-uniform-upload-func
+                 (or (%create-implicit-uniform-uploader compiled-stages
+                                                        ',uniform-names)
+                     #'fallback-iuniform-func)))
+         ,@(let ((u-lets (mapcat #'let-forms uniform-assigners)))
+                (loop for u in u-lets collect (cons 'setf u)))
+         (%post-init ,post)
+         prog-id))))
 
 (defun serialize-stage-pairs (stage-pairs)
   (cons 'list (mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
 		      stage-pairs)))
 
+
+
 (defun def-dispatch-func (name init-func-name stage-keys context
 			  uniform-assigners)
-  (let* ((uniform-names
-          (mapcar #'first (aggregate-uniforms stage-keys)))
-	 (actual-uniform-names
-	  (mapcar #'first (aggregate-uniforms stage-keys nil t)))
-	 (uniform-transforms
-	  (remove-duplicates
-	   (remove nil
-		   (mapcar λ(when (member (first _) actual-uniform-names)
-			      _)
-			   (reduce
-			    (lambda (accum key)
-			      (with-gpu-func-spec (gpu-func-spec key)
-				(append accum uniform-transforms)))
-			    stage-keys
-			    :initial-value nil)))
-	   :test #'equal))
+  (let* ((uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
          (prim-type (varjo:get-primitive-type-from-context context))
          (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
 	 (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners))))
     `(progn
        (defun ,(symb :%touch- name) (&key verbose)
-	 (let ((*verbose-compiles* verbose))
-	   (unless prog-id
-	     (setf prog-id (,init-func-name))))
+	 (unless prog-id
+           (setf prog-id (,init-func-name)))
 	 (when verbose
 	   (format t
 		   ,(escape-tildes
 		     (format nil
 			     "~%----------------------------------------
-~%name: ~s~%~%pipeline compile context: ~s~%~%uniform assigners:~%~s~%~%uniform transforms:~%~s
+~%name: ~s~%~%pipeline compile context: ~s~%~%uniform assigners:~%~s~%~%
 ~%----------------------------------------"
 			     name
 			     context
 			     (mapcar λ(list (let-forms _) _1)
-				     uniform-assigners u-uploads)
-			     uniform-transforms))))
+				     uniform-assigners u-uploads)))))
 	 t)
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignore mapg-context) (ignorable ,@uniform-names))
@@ -289,11 +290,10 @@
            (setf prog-id (,init-func-name))
            (unless prog-id (return-from ,name)))
          (use-program prog-id)
-	 (let ,uniform-transforms
-	   ,@u-uploads)
+         ,@u-uploads
          (locally
              (declare (optimize (speed 3) (safety 1)))
-           (funcall implicit-uniform-upload-func prog-id))
+           (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
          (when stream (draw-expander stream ,prim-type))
          (use-program 0)
 	 ,@u-cleanup

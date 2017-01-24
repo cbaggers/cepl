@@ -1,167 +1,123 @@
 (in-package :cepl.space)
 (in-readtable fn:fn-reader)
 
-;; and let's make the 'in macro that uses it
+;;
+;; Spaces
+;;
 
-(varjo:v-defmacro in (space &body body)
-  `(let ((,*current-space* ,space))
-     ,@body))
+;;-------------------------------------------------------------------------
+;; Spatial Vectors
 
-;; and a cpu version for formatting
+;; {TODO} Need to add metadata to svecs on construction.
+
+(varjo::def-metadata-infer svec4 spatial-meta env
+  (values :in-space (get-current-space env)))
+
+(defmethod combine-metadata ((meta-a spatial-meta)
+                             (meta-b spatial-meta))
+  (let ((space-a (in-space meta-a))
+        (space-b (in-space meta-b)))
+    (if (eq space-a space-b)
+        space-a
+        (error "Space Analysis Failed: Could not establish at compile time which
+space the resulting svec was in between:
+~a
+and
+~a" space-a space-b))))
+
+
+;;-------------------------------------------------------------------------
+;; Vector Space
+
+(defun get-current-space (env)
+  (varjo::variable-uniform-name '*current-space* env))
+
+(v-defmacro in (&environment env space &body body)
+  (assert body () "CEPL.SPACES: 'In' form found without body.")
+  (let* ((vars (varjo::variables-in-scope env))
+         (svecs (remove-if-not λ(typep (varjo::variable-type _ env) 'svec4-g) vars))
+         (gvecs (mapcar λ(gensym (symbol-name _)) svecs))
+         (spaces (mapcar λ(in-space (varjo::metadata-for-variable _ 'spatial-meta env))
+                         svecs))
+         (forms (mapcar λ`(space-boundary-convert
+                           (let* ((*current-space* ,_1))
+                             ,_))
+                        gvecs
+                        spaces))
+         (pairs (mapcar #'list svecs forms)))
+    `(let ,(mapcar #'list gvecs svecs)
+       (space-boundary-convert
+        (symbol-macrolet ,pairs
+          (let ((*current-space*  ,space))
+            ,@body))))))
 
 (defmacro in (space &body body)
-  (declare (ignore space))
-  (error "cepl.space: The 'in' macro can only be used inside gpu functions.")
-  `(progn ,@body))
+  (declare (ignore space body))
+  (error "the 'in' macro can only be used inside shaders"))
 
-;;----------------------------------------------------------------------
-;; now lets define the real compiler pass
+(v-defun get-transform (x y) "#-GETTRANSFORM(~a)" (vec-space vec-space) 0)
 
-(defun ast-space (node)
-  (get-var *current-space* node))
-
-(defun has-space (node)
-  (not (null (get-var *current-space* node))))
-
-(defun sv!-form-p (node)
-  (ast-kindp node '%sv!))
-
-(defun get-transform-form-p (node)
-  (ast-kindp node 'get-transform))
-
-(defun in-form-p (node)
-  (and (ast-kindp node 'let)
-       (dbind (args . body) (ast-args node)
-	 (declare (ignore body))
-	 (eq (caar args) *current-space*))))
-
-(defun cross-space-form-p (node)
-  "Predicate for cases where a position is crossing
-   between two valid spaces"
-  (or (and (ast-typep node 'svec4-g)
-	   (let ((origin (first (val-origins node))))
-	     (and (ast-kindp origin '%sv!)
-		  (has-space node)
-		  (has-space origin)
-		  (not (id= (flow-ids (ast-space node))
-			    (flow-ids (ast-space origin)))))))
-      (get-transform-form-p node)))
-
-(defun transform-cross-space-form (node env)
-  (if (get-transform-form-p node)
-      (get-transform-transform node env)
-      (cross-space->matrix-multiply node env)))
-
-(defun get-transform-transform (node env)
-  (dbind (space-a space-b) (ast-args node)
-    (get-space->space-transform space-a space-b env)))
-
-(defun get-space->space-transform (from-space to-space env)
-  ;;[0] get or create the transforms table. Note that env is the
-  ;;    'transform environment' we add a transforms hash-table to
-  ;;    to this for reasons best known to past me :|
-  (let* ((transforms
-	  (or (gethash 'transforms env)
-	      (setf (gethash 'transforms env)
-		    (make-hash-table :test #'equal))))
-	 ;; Query the origin of the node's flow id and get the ast-node/s it
-	 ;; was from
-	 (to-name (origin-name (first (flow-id-origins (flow-ids to-space)
-						       t to-space))))
-	 (from-name (origin-name (first (flow-id-origins (flow-ids from-space)
-							 t from-space)))))
-    ;;
-    ;; when we have to transform from *screen-space* or *ndc-space* we are in
-    ;; a more tricky situation as the transform is a function of the vector,
-    ;; a matrix alone cannot capture the transform.
-    ;; To handle this situation (in a way that won't kill performace) we
-    ;; require that the source space (screen or ndc) is explicit, in code, at
-    ;; compile time.
-    ;;
+(varjo::v-define-compiler-macro get-transform (&environment env
+                                                (from-space vec-space)
+                                                (to-space vec-space))
+  (declare (ignore from-space to-space))
+  ;;
+  ;; when we have to transform from *screen-space* or *ndc-space* we are in
+  ;; a more tricky situation as the transform is a function of the vector,
+  ;; a matrix alone cannot capture the transform.
+  ;; To handle this situation (in a way that won't kill performace) we
+  ;; require that the source space (screen or ndc) is explicit, in code, at
+  ;; compile time.
+  ;;
+  (let* ((from-name (or (varjo::argument-uniform-name 'from-space env)
+                        (error "get-transform: The first argument doesnt appear to be from a uniform")))
+         (to-name (or (varjo::argument-uniform-name 'to-space env)
+                      (error "get-transform: The second argument doesnt appear to be from a uniform"))))
     (if (or (eq from-name '*screen-space*) (eq from-name '*ndc-space*))
-	(error "CEPL: get-transform is not currently supported for transform from *screen-space* or *ndc-space*")
-	(get-regular-space-transform from-name to-name transforms env))))
+        (error "CEPL: get-transform is not currently supported for transform from *screen-space* or *ndc-space*")
+        (compile-implicit-mat4 from-name to-name env))))
 
-(defun cross-space->matrix-multiply (node env)
-  ;;[0] get or create the transforms table. Note that env is the
-  ;;    'transform environment' we add a transforms hash-table to
-  ;;    to this for reasons best known to past me :|
-  (let* ((transforms
-	  (or (gethash 'transforms env)
-	      (setf (gethash 'transforms env)
-		    (make-hash-table :test #'equal))))
-	 ;; right so there are to spaces of interest:
-	 ;; 1. The one the current node is in (to-space)
-	 ;; 2. The one where the value (which is crossing between these
-	 ;;    two spaces) is from
-	 ;;
-	 ;; Let's start with 1.
-	 ;; get the space-scope the ast-node is inside
-	 (to-space (ast-space node))
-	 ;; We then can query the origin of the node's flow id and
-	 ;; get the ast-node/s it was from
-	 (to-name (origin-name (first (flow-id-origins (flow-ids to-space)
-						       t node))))
-	 ;; A bit more work to get 2.
-	 ;; the ast-node has some value, that value originated
-	 ;; somewhere else in the program. Find the ast-node where
-	 ;; it originated and then the space scope that it was in when
-	 ;; created
-	 (from-space (ast-space (first (val-origins node))))
-	 ;; with that we can get back further. A flow-id could have
-	 ;; originated from a function call. This traces it back to
-	 ;; the ast-node inside the function where it was created
-	 (from-origins (flow-id-origins (flow-ids from-space)
-					t node))
-	 (from-name (origin-name (first from-origins))))
-    ;;
-    ;; when we have to transform from *screen-space* or *ndc-space* we are in
-    ;; a more tricky situation as the transform is a function of the vector,
-    ;; a matrix alone cannot capture the transform.
-    ;; To handle this situation (in a way that won't kill performace) we
-    ;; require that the source space (screen or ndc) is explicit, in code, at
-    ;; compile time.
-    ;;
-    (let ((val (if (eq (ast-kind node) 'let)
-		   `(let ,@(butlast (ast-args node))
-		      (v! ,(last1 (ast-args node))))
-		   `(v! ,node))))
-      (if (or (eq from-name '*screen-space*) (eq from-name '*ndc-space*))
-	  (inject-clip-or-ndc-space-reverse-transform from-name to-name val env)
-	  (inject-regular-space-transform
-	   from-name to-name transforms val env)))))
+(v-defun space-boundary-convert (x) "#-SPACEBOUNDARYCONVERT(~a)" (v-type) 0)
 
-(defun get-regular-space-transform (from-name to-name transforms env)
-  (let* (;; Now we are done with the searching, time to use the results
-	 ;;
-	 ;; we could have multiple of the same transform so we should
-	 ;; deduplicate. This is a hacky way to get a key
-	 (key (concatenate 'string (symbol-name to-name)
-			   (symbol-name from-name)))
-	 ;; and let's make a name for the lisp variable containing the
-	 ;; space->space transform
-	 (var-name (or (gethash key transforms)
-		       (setf (gethash key transforms)
-			     (%gen-space->space-name from-name to-name)))))
-    ;; we now have everything we need:
-    ;; let's add a uniform with our new name
-    (set-uniform var-name :mat4 env)
-    ;; here we set how we get the transform we are uploading
-    (set-arg-val var-name `(get-transform ,from-name ,to-name) env)
-    ;; and here is the name of transform we needed
-    var-name))
+(varjo:v-define-compiler-macro space-boundary-convert (&environment env (form v-type))
+  (let ((form-type (varjo::argument-type 'form env))
+        (in-a-space-p (varjo::variable-in-scope-p '*current-space* env)))
+    (cond
+      ((and (v-typep form-type 'svec4-g) in-a-space-p)
+       (let* ((inner-name (in-space
+                           (varjo::metadata-for-argument 'form 'spatial-meta
+                                                         env)))
+              (outer-name (get-current-space env)))
+         (convert-between-spaces form inner-name outer-name env)))
+      ((v-typep form-type 'svec4-g) `(v! ,form))
+      (t form))))
 
-(defun inject-regular-space-transform (from-name to-name transforms val env)
+(defun convert-between-spaces (form from-name to-name env)
+  (let ((new-code
+         (if (or (eq from-name '*screen-space*) (eq from-name '*ndc-space*))
+             (inject-clip-or-ndc-reverse-transform form from-name to-name env)
+             (inject-regular-space-transform form from-name to-name env))))
+    (alexandria:with-gensyms (gvar)
+      `(let ((,gvar ,new-code))
+         (declare (spatial-meta (:in-space ,to-name) ,gvar))
+         ,gvar))))
+
+(defun inject-regular-space-transform (form from-name to-name  env)
   ;; we need to add the transform uniform and get it's name
-  (let* ((var-name (get-regular-space-transform
-		    from-name to-name transforms env)))
+  (let* ((injected (compile-implicit-mat4 from-name to-name env )))
     ;; and here is the replacement code for our crossing the spaces
-    `(sv! (* ,var-name ,val))))
+    `(svec-* ,form ,injected)))
 
-(defun inject-clip-or-ndc-space-reverse-transform (from-name to-name val env)
+(defun compile-implicit-mat4 (from-name to-name env)
+  ;; Inject a conversion uniform
+  (let ((implicit-uniform-name (symb from-name :-to- to-name :-mat4)))
+    (varjo::add-lisp-form-as-uniform
+     `(get-transform ,from-name ,to-name) :mat4 env implicit-uniform-name)))
+
+(defun inject-clip-or-ndc-reverse-transform (form from-name to-name env)
   (cond
     ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    ;; Case we dont yet handle
+    ;; The cases we dont yet handle
     ((eq from-name '*ndc-space*)
      (error 'from-ndc))
     ((eq to-name '*screen-space*)
@@ -169,22 +125,30 @@
     ((eq to-name '*ndc-space*)
      (error 'to-ndc-or-screen))
     ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    ;; the case we do handle
+    ;; The case we do handle
     ((eq from-name '*screen-space*)
-     ;; we now have everything we need:
-     ;; let's add a uniform for the viewport params
-     (set-uniform 'viewport-params :vec4 env)
-     ;; here we set how we get the transform we are uploading
-     (set-arg-val 'viewport-params `(viewport-params-to-vec4) env)
-     ;; lets make the code to transform to clip-space
-     (let ((code `(screen-space-to-clip-space ,val viewport-params)))
-       ;; now we have a transform to clip-space, but it is likely we need to go
-       ;; further, if that might be the case then tell the next pass that we are
-       ;; in clip-space and let the compiler take care of the rest
-       (if (eq to-name '*clip-space*)
-	   `(sv! ,code)
-	   `(in *clip-space* (sv! ,code)))))))
+     (let* ((vpp-name 'viewport-params)
+            (injected (varjo::add-lisp-form-as-uniform
+                       `(viewport-params-to-vec4) :vec4 env vpp-name)))
+       ;; lets make the code to transform to clip-space
+       (let ((code `(screen-space-to-clip-space ,form ,injected)))
+         ;; now we have a transform to clip-space, but it is likely we need to
+         ;; go further, if that might be the case then tell the next pass that
+         ;; we are in clip-space and let the compiler take care of the rest
+         (if (eq to-name '*clip-space*)
+             `(sv! ,code)
+             `(in *clip-space* (sv! ,code))))))
+    (t (error "compile bug"))))
 
+
+;; this func isn't in the ast, which means the build won't
+;; stabilize. Add a copy-code and replace the svec-* ast-node
+(v-defun svec-* (a b) "(~a * ~a)" (v-mat4 svec4-g) 1)
+(v-defun svec-* (a b) "(~a * ~a)" (svec4-g v-mat4) 0)
+(v-defun svec-* (a b) "(~a * ~a)" (v-mat4 :vec4) 1)
+(v-defun svec-* (a b) "(~a * ~a)" (:vec4 v-mat4) 0)
+
+;;-------------------------------------------------------------------------
 
 ;; (defun-g screen-space-to-clip-space ((ss-pos :vec4) (viewport :vec4))
 ;;   (/ (v! (- (* (v:s~ ss-pos :xy) 2.0)
@@ -197,69 +161,3 @@
 ;; 	    (- (near gl-depth-range) (far gl-depth-range)))
 ;; 	 1.0)
 ;;      (v:w gl-frag-coord)))
-
-(defun %gen-space->space-name (from-name to-name)
-  "generate a name for the uniform that will contain the
-   space->space transform."
-  (symb from-name '-to- to-name '-transform))
-
-
-(defun cross-to-null-space-form-p (node)
-  "Predicate for cases where position is crossing
-   from a valid space to a null one."
-  (and (ast-typep node 'svec4-g)
-       (let ((origin (first (val-origins node))))
-	 (and (ast-kindp origin '%sv!)
-	      (not (has-space node))
-	      (has-space origin)))))
-
-(defun cross-to-null-space (node env)
-  (declare (ignore env))
-  `(values-safe (v! ,node)))
-
-(defun sv!->v! (node env)
-  (declare (ignore env))
-  (let ((args (ast-args node)))
-    `(v! ,@(butlast args))))
-
-(defun in-form->progn (node env)
-  (declare (ignore env))
-  (dbind (% . body) (ast-args node)
-    (declare (ignore %))
-    `(progn ,@body)))
-
-(defun redundent-in-form-p (node)
-  "Check if the *current-space* outside the scope is the
-   same *current-space* as inside the scope."
-  (declare (optimize (debug 3) (speed 0)))
-  (when (in-form-p node)
-    (dbind (((% space-form)) . body) (ast-args node)
-      (declare (ignore % body))
-      (let ((outer-space (get-var *current-space* (ast-starting-env node)))
-            (inner-space space-form))
-	(when outer-space
-	  (id~= (flow-ids outer-space) (flow-ids inner-space)))))))
-
-(defun redundent-v!-form-p (node)
-  (and (eq (ast-kind node) 'v!)
-       (= (length (ast-args node)) 1)))
-
-(defun splice-v!-form (node env)
-  (declare (ignore env))
-  (first (ast-args node)))
-
-(def-compile-pass remove-redundent-in-forms
-  (#'redundent-in-form-p  #'in-form->progn))
-
-;;(#'get-transform-form-p #'get-transform-transform)
-(def-deep-pass (cross-space-pass :depends-on remove-redundent-in-forms)
-    :filter #'cross-space-form-p
-    :transform #'transform-cross-space-form)
-
-(def-compile-pass (space-pass :depends-on cross-space-pass)
-  (#'cross-to-null-space-form-p #'cross-to-null-space)
-  (#'sv!-form-p  #'sv!->v!)
-  (#'in-form-p  #'in-form->progn))
-
-(def-compile-pass (remove-redundent-v!-forms :depends-on space-pass)
-  (#'redundent-v!-form-p  #'splice-v!-form))

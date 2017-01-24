@@ -28,7 +28,7 @@
           (%test-&-update-spec
            (%make-gpu-func-spec
             nil in-args uniforms context body instancing nil nil
-            nil nil doc-string declarations nil)))))
+            nil doc-string declarations nil)))))
 
 (defun fallback-g-lambda-body (&rest args)
   (declare (ignore args))
@@ -68,6 +68,7 @@
 ;;------------------------------------------------------------
 
 (defun make-lambda-pipeline (gpipe-args context)
+  (break "make-lambda-pipeline: is broken. FIX ME!")
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
 	   (aggregate-uniforms (aggregate-uniforms stage-keys nil t))
@@ -79,17 +80,18 @@
            (actual-uniform-names
             (mapcar #'first (aggregate-uniforms stage-keys nil t)))
            (uniform-transforms
-            (remove-duplicates
-             (remove nil
-                     (mapcar λ(when (member (first _) actual-uniform-names)
-                                _)
-                             (reduce
-                              (lambda (accum key)
-                                (with-gpu-func-spec (gpu-func-spec key)
-                                  (append accum uniform-transforms)))
-                              stage-keys
-                              :initial-value nil)))
-             :test #'equal))
+            ;; (remove-duplicates
+            ;;  (remove nil
+            ;;          (mapcar λ(when (member (first _) actual-uniform-names)
+            ;;                     _)
+            ;;                  (reduce
+            ;;                   (lambda (accum key)
+            ;;                     (with-gpu-func-spec (gpu-func-spec key)
+            ;;                       (append accum uniform-transforms)))
+            ;;                   stage-keys
+            ;;                   :initial-value nil)))
+            ;;  :test #'equal)
+             )
            (prim-type (varjo:get-primitive-type-from-context context))
            (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
            (u-cleanup (mapcat #'cleanup (reverse uniform-assigners)))

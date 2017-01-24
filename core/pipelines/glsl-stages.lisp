@@ -94,34 +94,34 @@
   "Here our goal is to simple reuse as much from varjo as possible.
    This will mean we have less duplication, even if things seem a little
    ugly here"
-  (let ((in-args (mapcar #'process-glsl-arg in-args))
-	(uniforms (mapcar #'process-glsl-arg uniforms))
-        (none-type (varjo:type-spec->type :none))
-        (arg-types (mapcar #'type-spec->type
-                           (append (mapcar #'second in-args)
-                                   (mapcar #'second uniforms)))))
+  (let* ((in-args (mapcar #'process-glsl-arg in-args))
+         (uniforms (mapcar #'process-glsl-arg uniforms))
+         (none-type (varjo:type-spec->type :none))
+         (arg-types (mapcar #'type-spec->type
+                            (append (mapcar #'second in-args)
+                                    (mapcar #'second uniforms))))
+         (stage (varjo:make-stage in-args uniforms context
+                                  nil nil)))
     (first
      (multiple-value-list
       (varjo::flow-id-scope
-	(let ((env (varjo::%make-base-environment
-                    :third-party-metadata (make-hash-table))))
-	  (pipe-> (in-args uniforms context nil env)
-	    #'varjo::split-input-into-env
-	    #'varjo::process-context
+	(let ((env (varjo::%make-base-environment)))
+	  (pipe-> (stage env)
+            #'varjo::set-env-context
 	    #'varjo::process-in-args
 	    #'varjo::process-uniforms
-            #'(lambda (code env)
-                (declare (ignore code))
+            #'(lambda (stage env)
                 (values (make-instance
                          'varjo::compiled-function-result
                          :function-obj nil
                          :signatures nil
-                         :ast (varjo:ast-node! :error nil none-type 0 nil nil)
+                         :ast (varjo:ast-node! :error nil none-type nil nil)
                          :used-types nil
                          :glsl-code body-string
                          :stemcells nil
                          :out-vars (make-varjo-outvars outputs env)
                          :used-types arg-types)
+                        stage
                         env))
 	    #'varjo::make-post-process-obj
             #'varjo::check-stemcells
@@ -131,17 +131,7 @@
 	    #'varjo::gen-out-var-strings
 	    #'varjo::final-uniform-strings
 	    #'varjo::final-string-compose
-	    #'varjo::package-as-final-result-object
-	    #'tweak-result-object)))))))
-
-(defun tweak-result-object (result-obj)
-  (setf (in-args result-obj)
-	(mapcar (lambda (x)
-		  (cons (first x)
-			(cons (type->type-spec (second x))
-			      (subseq x 2))))
-		(in-args result-obj)))
-  result-obj)
+	    #'varjo::package-as-final-result-object)))))))
 
 (defun process-glsl-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
@@ -154,5 +144,6 @@
      (let ((name (symb (string-upcase glsl-name))))
        `(,name
 	 ,qualifiers
-	 ,(varjo::v-make-value (varjo:type-spec->type type) env
-			       :glsl-name glsl-name)))))
+	 ,(varjo::v-make-value
+           (varjo:type-spec->type type (varjo:flow-id!))
+           env :glsl-name glsl-name)))))

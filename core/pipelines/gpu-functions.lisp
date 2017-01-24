@@ -67,7 +67,7 @@
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
-                                   nil nil nil nil doc-string declarations
+                                   nil nil nil doc-string declarations
                                    nil));;[0]
 	(valid-glsl-versions (get-versions-from-context context)))
     ;; this gets the functions used in the body of this function
@@ -134,13 +134,14 @@
                      (context (swap-version (lowest-suitable-glsl-version context)
                                             context))
                      (compiled
-                      (v-translate
-                       (varjo:make-stage in-args uniforms context
-                                         `(progn ,@body) nil t))))
-                (setf actual-uniforms (uniforms compiled) ;;[2]
-                      uniform-transforms (with-hash (uv 'uniform-vals)
-                                             (third-party-metadata compiled)
-                                           (map-hash #'list uv)))
+                      (varjo:translate
+                       (varjo:make-stage in-args uniforms context body t))))
+
+                (setf actual-uniforms ;;[2]
+                      (mapcar #'varjo::to-arg-form
+                              (remove-if #'varjo::ephemeral-p
+                                         (varjo::uniform-variables compiled))))
+
                 (%update-gpu-function-data
                  spec
                  (remove-if-not #'gpu-func-spec
@@ -293,7 +294,7 @@
    - the name of the gpu function to use for this stage"
   (varjo:with-constant-inject-hook #'try-injecting-a-constant
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-      (v-rolling-translate
+      (varjo:rolling-translate
        (mapcar #'parsed-gpipe-args->v-translate-args
 	       parsed-gpipe-args)))))
 
@@ -302,7 +303,7 @@
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
    %compile-link-and-upload needs to call v-rolling-translate. To do this
    we need to look up the gpu function spec and turn them into valid arguments
-   for the v-rolling-translate function.
+   for the rolling-translate function.
    That is what this function does.
    It also:
    [0] if it's a glsl-stage then it is already compiled. Pass the compile result
@@ -336,13 +337,14 @@
                                   (list (first u) `(function ,v))))
                      :when r :collect r))
                  (body (if replacements
-                           `(let ,replacements
-                              ,@code)
-                           `(progn ,@code))))
-	    (list in-args
-		  final-uniforms
-		  context
-                  body))))))
+                           `((let ,replacements
+                               ,@code))
+                           code)))
+            (varjo::make-stage in-args
+                               final-uniforms
+                               context
+                               body
+                               t))))))
 
 ;;--------------------------------------------------
 

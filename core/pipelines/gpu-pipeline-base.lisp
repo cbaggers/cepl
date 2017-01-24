@@ -30,7 +30,6 @@
    (in-args :initarg :in-args)
    (uniforms :initarg :uniforms)
    (actual-uniforms :initarg :actual-uniforms)
-   (uniform-transforms :initarg :uniform-transforms)
    (context :initarg :context)
    (body :initarg :body)
    (instancing :initarg :instancing)
@@ -71,7 +70,7 @@
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
-			    actual-uniforms uniform-transforms
+			    actual-uniforms
                             doc-string declarations missing-dependencies)
   (make-instance 'gpu-func-spec
                  :name name
@@ -83,7 +82,6 @@
                  :equivalent-inargs equivalent-inargs
                  :equivalent-uniforms equivalent-uniforms
 		 :actual-uniforms actual-uniforms
-		 :uniform-transforms uniform-transforms
                  :doc-string doc-string
                  :declarations declarations
 		 :missing-dependencies missing-dependencies))
@@ -102,19 +100,17 @@
 		   :equivalent-inargs nil
 		   :equivalent-uniforms nil
 		   :actual-uniforms uniforms
-		   :uniform-transforms nil
 		   :doc-string nil
 		   :declarations nil
 		   :missing-dependencies nil)))
 
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms actual-uniforms context body instancing
-                     equivalent-inargs equivalent-uniforms uniform-transforms
-                     doc-string declarations missing-dependencies) ,func-spec
+                     equivalent-inargs equivalent-uniforms doc-string
+                     declarations missing-dependencies) ,func-spec
      (declare (ignorable name in-args uniforms actual-uniforms context body
 			 instancing equivalent-inargs equivalent-uniforms
-                         doc-string declarations missing-dependencies
-			 uniform-transforms))
+                         doc-string declarations missing-dependencies))
      ,@body))
 
 (defmacro with-glsl-stage-spec (glsl-stage-spec &body body)
@@ -130,14 +126,14 @@
     `(%make-gpu-func-spec
       ',name ',in-args ',uniforms ',context ',body
       ',instancing ',equivalent-inargs ',equivalent-uniforms
-      ',actual-uniforms ',uniform-transforms
+      ',actual-uniforms
       ,doc-string ',declarations ',missing-dependencies)))
 
 (defun clone-stage-spec (spec &key new-name new-in-args new-uniforms new-context
 				new-body new-instancing new-equivalent-inargs
 				new-equivalent-uniforms	new-actual-uniforms
-				new-uniform-transforms new-doc-string
-				new-declarations new-missing-dependencies)
+				new-doc-string new-declarations
+                                new-missing-dependencies)
   (with-gpu-func-spec spec
     (make-instance
      (etypecase spec
@@ -152,7 +148,6 @@
      :equivalent-inargs (or equivalent-inargs new-equivalent-inargs)
      :equivalent-uniforms (or equivalent-uniforms new-equivalent-uniforms)
      :actual-uniforms (or actual-uniforms new-actual-uniforms)
-     :uniform-transforms (or uniform-transforms new-uniform-transforms)
      :doc-string (or doc-string new-doc-string)
      :declarations (or declarations new-declarations)
      :missing-dependencies (or missing-dependencies

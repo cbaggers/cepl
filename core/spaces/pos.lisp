@@ -51,34 +51,37 @@
 ;;----------------------------------------------------------------------
 ;; gpu
 
-(varjo::def-v-type-class svec4-g (varjo:v-vec4)
-  ((varjo::core :initform nil :reader varjo:core-typep)
-   (varjo::glsl-string :initform "#<svec4-g>" :reader varjo:v-glsl-string)))
+(varjo::v-deftype svec4-g () :vec4
+  :valid-metadata-kinds spatial-meta)
 
-(add-type-shadow 'svec4 'svec4-g)
+(varjo::add-alternate-type-name 'svec4 'svec4-g)
 
-(varjo:v-defmacro sv! (v &rest r)
-  (if r
-      `(%sv! ,v ,@r ,*current-space*)
-      `(%sv! ,v ,*current-space*)))
+(varjo::def-shadow-type-constructor svec4 #'(v! :vec4))
+(varjo::def-shadow-type-constructor svec4 #'(v! :vec3 :float))
+(varjo::def-shadow-type-constructor svec4 #'(v! :float :float :float :float))
 
-(varjo:v-defun %sv! (v s) "#<svec4-g(~a, ~a)>"
-	       (:vec4 vec-space-g) svec4-g)
+(varjo::v-define-compiler-macro svec4 (&whole whole &environment env (vec :vec4))
+  (if (varjo::variable-in-scope-p '*current-space* env)
+      whole
+      `(v! ,vec)))
 
-(varjo:v-defun %sv! (v w s) "#<svec4-g(~a, ~a, ~a)>"
-	       (:vec3 :float vec-space-g) svec4-g)
+(varjo::v-define-compiler-macro svec4 (&whole whole &environment env
+                                              (v3 :vec3) (f :float))
+  (if (varjo::variable-in-scope-p '*current-space* env)
+      whole
+      `(v! ,v3 ,f)))
 
-(varjo:v-defun %sv! (v1 v2 s) "#<svec4-g(~a, ~a, ~a)>"
-	       (:vec2 :vec2 vec-space-g) svec4-g)
+(varjo::v-define-compiler-macro svec4 (&whole whole &environment env
+                                              (f0 :float) (f1 :float)
+                                              (f2 :float) (f3 :float))
+  (if (varjo::variable-in-scope-p '*current-space* env)
+      whole
+      `(v! ,f0 ,f1 ,f2 ,f3)))
 
-(varjo:v-defun %sv! (v1 z w s) "#<svec4-g(~a, ~a, ~a, ~a)>"
-	       (:vec2 :float :float vec-space-g) svec4-g)
+(varjo::def-metadata-kind spatial-meta ()
+  in-space)
 
-(varjo:v-defun %sv! (x y z w s) "#<svec4-g(~a, ~a, ~a, ~a, ~a)>"
-	       (:float :float :float :float vec-space-g) svec4-g)
-
+(v-defmacro sv! (&rest components)
+  `(svec4 ,@components))
 
 (varjo:v-defun v! (p) "~a" (svec4-g) :vec4)
-
-(varjo:v-defun get-transform (s1 s2) "#<cepl.space:get-transform(~a, ~a)>"
-	       (vec-space-g vec-space-g) :mat4)
