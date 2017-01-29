@@ -113,5 +113,4 @@
                (:file "core/vaos/docs")
                (:file "core/spaces/docs")
                (:file "core/pipelines/docs")
-               ;;(:file "core/misc/misc")
-               ))
+               (:file "core/misc/misc")))

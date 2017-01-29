@@ -68,42 +68,25 @@
 ;;------------------------------------------------------------
 
 (defun make-lambda-pipeline (gpipe-args context)
-  (break "make-lambda-pipeline: is broken. FIX ME!")
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
 	   (aggregate-uniforms (aggregate-uniforms stage-keys nil t))
 	   (uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
            ;; we generate the func that compiles & uploads the pipeline
            ;; and also populates the pipeline's local-vars
-           (uniform-names
-            (mapcar #'first (aggregate-uniforms stage-keys)))
-           (actual-uniform-names
-            (mapcar #'first (aggregate-uniforms stage-keys nil t)))
-           (uniform-transforms
-            ;; (remove-duplicates
-            ;;  (remove nil
-            ;;          (mapcar λ(when (member (first _) actual-uniform-names)
-            ;;                     _)
-            ;;                  (reduce
-            ;;                   (lambda (accum key)
-            ;;                     (with-gpu-func-spec (gpu-func-spec key)
-            ;;                       (append accum uniform-transforms)))
-            ;;                   stage-keys
-            ;;                   :initial-value nil)))
-            ;;  :test #'equal)
-             )
+           (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
            (prim-type (varjo:get-primitive-type-from-context context))
            (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
-           (u-cleanup (mapcat #'cleanup (reverse uniform-assigners)))
+           (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
            (u-lets (mapcat #'let-forms uniform-assigners)))
       `(multiple-value-bind (compiled-stages prog-id)
            (%compile-link-and-upload nil ,(serialize-stage-pairs stage-pairs))
-         (declare (ignore compiled-stages))
          (let* ((image-unit -1)
                 ;; If there are no implicit-uniforms we need a no-op
                 ;; function to call
                 (implicit-uniform-upload-func
-                 (or (%create-implicit-uniform-uploader compiled-stages)
+                 (or (%create-implicit-uniform-uploader compiled-stages
+                                                        ',uniform-names)
                      #'fallback-iuniform-func))
                 ;;
                 ;; {todo} explain
@@ -117,10 +100,10 @@
              (declare (optimize (speed 3) (safety 1))
                       (ignore mapg-context) (ignorable ,@uniform-names))
              (use-program prog-id)
-             (let ,uniform-transforms
-               ,@u-uploads)
+             ,@u-uploads
              (locally (declare (optimize (speed 3) (safety 1)))
-               (funcall implicit-uniform-upload-func prog-id))
+               (funcall implicit-uniform-upload-func prog-id
+                        ,@uniform-names))
              (when stream (draw-expander stream ,prim-type))
              (use-program 0)
              ,@u-cleanup
@@ -142,7 +125,8 @@
           (make-lambda-pipeline gpipe-args context)
           `(make-n-compile-lambda-pipeline (list ,@args) ',context)))))
 
-;; (defun poop-science (p)
-;;   (g-> nil
-;;     #'cepl.misc::draw-texture-vert
-;;     #'cepl.misc::draw-texture-frag))
+#+nil
+(defun example ()
+  (g-> nil
+    #'cepl.misc::draw-texture-vert
+    #'cepl.misc::draw-texture-frag))
