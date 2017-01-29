@@ -68,7 +68,6 @@ and
 
 (v-defun v! (p) "~a" (svec4-g) :vec4)
 (v-defun svec-* (a b) "(~a * ~a)" (v-mat4 svec4-g) 1)
-(v-defun svec-* (a b) "(~a * ~a)" (svec4-g v-mat4) 0)
 (v-defun svec-* (a b) "(~a * ~a)" (v-mat4 :vec4) 1)
 (v-defun svec-* (a b) "(~a * ~a)" (:vec4 v-mat4) 0)
 
@@ -155,7 +154,7 @@ and
   ;; we need to add the transform uniform and get it's name
   (let* ((injected (compile-implicit-mat4 from-name to-name env )))
     ;; and here is the replacement code for our crossing the spaces
-    `(svec-* ,form ,injected)))
+    `(svec-* ,injected ,form)))
 
 (defun compile-implicit-mat4 (from-name to-name env)
   ;; Inject a conversion uniform
