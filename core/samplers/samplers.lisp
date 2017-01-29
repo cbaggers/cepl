@@ -143,7 +143,8 @@
 
 
 (defun sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
-			 (minify-filter :linear) (magnify-filter :linear)
+			 (minify-filter :linear-mipmap-linear)
+                         (magnify-filter :linear)
 			 (wrap #(:repeat :repeat :repeat)) (compare :none))
   (unless (and texture (typep texture 'texture))
     (error
