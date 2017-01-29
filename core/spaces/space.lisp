@@ -267,13 +267,6 @@
   (error "implement %update-mspace-transform"))
 
 ;;----------------------------------------------------------------------
-;; GPU
-
-(varjo::v-deftype vec-space-g () ())
-
-(add-alternate-type-name 'vec-space 'vec-space-g)
-
-;;----------------------------------------------------------------------
 ;; Helpers
 
 (defmacro kind-case ((space &key error) &key m r h)

@@ -49,39 +49,3 @@
 	      new-space))))
 
 ;;----------------------------------------------------------------------
-;; gpu
-
-(varjo::v-deftype svec4-g () :vec4
-  :valid-metadata-kinds spatial-meta)
-
-(varjo::add-alternate-type-name 'svec4 'svec4-g)
-
-(varjo::def-shadow-type-constructor svec4 #'(v! :vec4))
-(varjo::def-shadow-type-constructor svec4 #'(v! :vec3 :float))
-(varjo::def-shadow-type-constructor svec4 #'(v! :float :float :float :float))
-
-(varjo::v-define-compiler-macro svec4 (&whole whole &environment env (vec :vec4))
-  (if (varjo::variable-in-scope-p '*current-space* env)
-      whole
-      `(v! ,vec)))
-
-(varjo::v-define-compiler-macro svec4 (&whole whole &environment env
-                                              (v3 :vec3) (f :float))
-  (if (varjo::variable-in-scope-p '*current-space* env)
-      whole
-      `(v! ,v3 ,f)))
-
-(varjo::v-define-compiler-macro svec4 (&whole whole &environment env
-                                              (f0 :float) (f1 :float)
-                                              (f2 :float) (f3 :float))
-  (if (varjo::variable-in-scope-p '*current-space* env)
-      whole
-      `(v! ,f0 ,f1 ,f2 ,f3)))
-
-(varjo::def-metadata-kind spatial-meta ()
-  in-space)
-
-(v-defmacro sv! (&rest components)
-  `(svec4 ,@components))
-
-(varjo:v-defun v! (p) "~a" (svec4-g) :vec4)
