@@ -101,7 +101,10 @@
 	   :invalid-cube-fbo-args
            :functions-in-non-uniform-args
            :mapping-over-partial-pipeline
-           :fbo-target-not-valid-constant))
+           :fbo-target-not-valid-constant
+           :pull*-g-not-enabled
+           :pull-g-not-cached
+           :func-keyed-pipeline-not-found))
 
 (uiop:define-package :cepl.host
   (:use :cl)

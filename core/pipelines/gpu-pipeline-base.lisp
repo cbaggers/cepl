@@ -1,15 +1,16 @@
 (in-package :cepl.pipelines)
 (in-readtable fn:fn-reader)
 
-;;{TODO} Almost everything in here could really benefit from being optimized
+;;--------------------------------------------------
+
+(defvar *gpu-func-specs* nil)
+(defvar *dependent-gpu-functions* nil)
+(defvar *gpu-pipeline-specs* (make-hash-table :test #'eq))
 
 ;;--------------------------------------------------
 
-(defparameter *gpu-func-specs* nil)
-(defparameter *dependent-gpu-functions* nil)
-(defparameter *gpu-pipeline-specs* (make-hash-table :test #'eq))
-
-;;--------------------------------------------------
+(defclass lambda-pipeline-spec ()
+  ((cached-compile-results :initarg :cached-compile-results :initform nil)))
 
 (defclass pipeline-spec ()
   ((name :initarg :name)
@@ -304,13 +305,16 @@ names are depended on by the functions named later in the list"
                            this-func-calls)))))
 
 (defmethod pipelines-that-use-this-as-a-stage ((func-key func-key))
-  (remove nil
-          (map-hash
-           (lambda (k v)
-             (when (and (typep v 'pipeline-spec)
-                        (member func-key (pipeline-stages v) :test #'func-key=))
-               k))
-           *gpu-pipeline-specs*)))
+  (remove-duplicates
+   (remove nil
+           (map-hash
+            (lambda (k v)
+              (when (and (symbolp k)
+                         (typep v 'pipeline-spec)
+                         (member func-key (pipeline-stages v) :test #'func-key=))
+                k))
+            *gpu-pipeline-specs*))
+   :test #'eq))
 
 (defun update-specs-with-missing-dependencies ()
   (map 'nil λ(dbind (k . v) _
@@ -377,6 +381,10 @@ names are depended on by the functions named later in the list"
 
 (defvar +cache-last-compile-result+ t)
 
+(defun make-lambda-pipeline-spec (compiled-stages)
+  (make-instance 'lambda-pipeline-spec
+                 :cached-compile-results compiled-stages))
+
 (defun make-pipeline-spec (name stages context)
   (dbind (&key vertex tesselation-control tesselation-evaluation
                geometry fragment) (flatten stages)
@@ -402,13 +410,14 @@ names are depended on by the functions named later in the list"
   (setf (slot-value (pipeline-spec name) 'cached-compile-results)
         compiled-results))
 
-(defvar +pull*-g-not-enabled-message+
-  "CEPL has been set to not cache the results of pipeline compilation.
-See the +cache-last-compile-result+ constant for more details")
+(defun function-keyed-pipeline (func)
+  (assert (typep func 'function))
+  (gethash func *gpu-pipeline-specs*))
 
-(defvar +pull-g-not-cached-template+
-  "Either ~s is not a pipeline/gpu-function or the code for this asset
-has not been cached yet")
+(defun (setf function-keyed-pipeline) (spec func)
+  (assert (typep func 'function))
+  (setf (gethash func *gpu-pipeline-specs*)
+        spec))
 
 (defun %pull-spec-common (asset-name)
   (labels ((gfunc-spec (x)
@@ -420,27 +429,28 @@ has not been cached yet")
     (if +cache-last-compile-result+
 	(let ((spec (or (pipeline-spec asset-name) (gfunc-spec asset-name))))
 	  (typecase spec
-	    (null (%pull-g-soft-message asset-name))
+	    (null (warn 'pull-g-not-cached :asset-name asset-name))
 	    (keyword (let ((alt (pull-g-soft-multi-func-message asset-name)))
 		       (when alt
 			 (slot-value (gpu-func-spec alt) 'cached-compile-results))))
 	    (otherwise (slot-value spec 'cached-compile-results))))
-	 +pull*-g-not-enabled-message+)))
+        (error 'pull*-g-not-enabled))))
 
 (defmethod pull1-g ((asset-name symbol))
-  (%pull-spec-common asset-name))
+  (or (%pull-spec-common asset-name)
+      (warn 'pull-g-not-cached :asset-name asset-name)))
 
 (defmethod pull1-g ((asset-name list))
-  (%pull-spec-common asset-name))
+  (or (%pull-spec-common asset-name)
+      (warn 'pull-g-not-cached :asset-name asset-name)))
 
 (defmethod pull-g ((asset-name symbol))
   (let ((compiled (%pull-spec-common asset-name)))
-    (when compiled
-      (etypecase compiled
-	(null (%pull-g-soft-message asset-name))
-	(string compiled)
-	(list (mapcar #'varjo:glsl-code compiled))
-	(varjo:varjo-compile-result (glsl-code compiled))))))
+    (etypecase compiled
+      (null (warn 'pull-g-not-cached :asset-name asset-name))
+      (string compiled)
+      (list (mapcar #'varjo:glsl-code compiled))
+      (varjo:varjo-compile-result (glsl-code compiled)))))
 
 (defun pull-g-soft-multi-func-message (asset-name)
   (let ((choices (gpu-functions asset-name)))
@@ -449,8 +459,23 @@ has not been cached yet")
       (use-value ()
 	(%gpu-function (interactive-pick-gpu-function asset-name))))))
 
-(defun %pull-g-soft-message (asset-name)
-  (format nil +pull-g-not-cached-template+ asset-name))
+(defmethod pull-g ((pipeline-func function))
+  (let ((pipeline (function-keyed-pipeline pipeline-func)))
+    (etypecase pipeline
+      (null (warn 'func-keyed-pipeline-not-found
+                  :callee 'pull-g :func pipeline-func))
+      (symbol (pull-g pipeline))
+      (lambda-pipeline-spec
+       (let ((compiled (slot-value pipeline 'cached-compile-results)))
+         (mapcar #'varjo:glsl-code compiled))))))
+
+(defmethod pull1-g ((pipeline-func function))
+  (let ((pipeline (function-keyed-pipeline pipeline-func)))
+    (etypecase pipeline
+      (null (warn 'func-keyed-pipeline-not-found
+                  :callee 'pull1-g :func pipeline-func))
+      (symbol (pull-g pipeline))
+      (lambda-pipeline-spec (slot-value pipeline 'cached-compile-results)))))
 
 ;;--------------------------------------------------
 

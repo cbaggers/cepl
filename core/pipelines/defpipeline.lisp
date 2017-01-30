@@ -123,6 +123,10 @@
                                    stage-pairs))
        ',context))))
 
+(defun register-named-pipeline (name func)
+  (setf (function-keyed-pipeline func)
+        name))
+
 (defvar *all-quiet* nil)
 
 (defun quiet-warning-handler (c)
@@ -298,6 +302,7 @@
          (use-program 0)
 	 ,@u-cleanup
          stream)
+       (register-named-pipeline ',name #',name)
        (define-compiler-macro ,name (&whole whole mapg-context &rest rest)
          (declare (ignore rest))
          (unless (mapg-constantp mapg-context)

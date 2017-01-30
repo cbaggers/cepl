@@ -224,6 +224,25 @@ didn't know which to return for you. Please try again using one of
 the following:
 ~{~s~%~}" name choices)
 
+(defwarning pull-g-not-cached () (asset-name)
+    "Either ~s is not a pipeline/gpu-function or the code for this asset
+has not been cached yet"
+  asset-name)
+
+(deferror pull*-g-not-enabled () ()
+    "CEPL has been set to not cache the results of pipeline compilation.
+See the +cache-last-compile-result+ constant for more details")
+
+(defwarning func-keyed-pipeline-not-found () (callee func)
+    "CEPL: ~a was called with ~a.
+
+When functions are passed to ~a we assume this is a pipeline function and looked
+for the details for that pipeline. However we didn't find anything.
+
+Please note that you cannot lookup gpu-functions in this way as, due to
+overloading, many gpu-functions map to a single function object."
+  callee func callee)
+
 (deferror attachments-with-different-sizes (:print-circle nil) (args sizes)
     "CEPL: Whilst making an fbo we saw that some of the attachments will end up
 having different dimensions: ~a

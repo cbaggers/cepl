@@ -81,33 +81,35 @@
            (u-lets (mapcat #'let-forms uniform-assigners)))
       `(multiple-value-bind (compiled-stages prog-id)
            (%compile-link-and-upload nil ,(serialize-stage-pairs stage-pairs))
-         (let* ((image-unit -1)
-                ;; If there are no implicit-uniforms we need a no-op
-                ;; function to call
-                (implicit-uniform-upload-func
-                 (or (%create-implicit-uniform-uploader compiled-stages
-                                                        ',uniform-names)
-                     #'fallback-iuniform-func))
-                ;;
-                ;; {todo} explain
-                ,@u-lets)
-           (declare (ignorable image-unit)
-                    (type function implicit-uniform-upload-func))
-           ;;
-           ;; generate the code that actually renders
-           (%post-init ,post)
-           (lambda (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
-             (declare (optimize (speed 3) (safety 1))
-                      (ignore mapg-context) (ignorable ,@uniform-names))
-             (use-program prog-id)
-             ,@u-uploads
-             (locally (declare (optimize (speed 3) (safety 1)))
-               (funcall implicit-uniform-upload-func prog-id
-                        ,@uniform-names))
-             (when stream (draw-expander stream ,prim-type))
-             (use-program 0)
-             ,@u-cleanup
-             stream))))))
+         (register-lambda-pipeline
+          compiled-stages
+          (let* ((image-unit -1)
+                 ;; If there are no implicit-uniforms we need a no-op
+                 ;; function to call
+                 (implicit-uniform-upload-func
+                  (or (%create-implicit-uniform-uploader compiled-stages
+                                                         ',uniform-names)
+                      #'fallback-iuniform-func))
+                 ;;
+                 ;; {todo} explain
+                 ,@u-lets)
+            (declare (ignorable image-unit)
+                     (type function implicit-uniform-upload-func))
+            ;;
+            ;; generate the code that actually renders
+            (%post-init ,post)
+            (lambda (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
+              (declare (optimize (speed 3) (safety 1))
+                       (ignore mapg-context) (ignorable ,@uniform-names))
+              (use-program prog-id)
+              ,@u-uploads
+              (locally (declare (optimize (speed 3) (safety 1)))
+                (funcall implicit-uniform-upload-func prog-id
+                         ,@uniform-names))
+              (when stream (draw-expander stream ,prim-type))
+              (use-program 0)
+              ,@u-cleanup
+              stream)))))))
 
 (defun make-n-compile-lambda-pipeline (gpipe-args context)
   (let ((code (make-lambda-pipeline gpipe-args context)))
@@ -130,3 +132,12 @@
   (g-> nil
     #'cepl.misc::draw-texture-vert
     #'cepl.misc::draw-texture-frag))
+
+;;------------------------------------------------------------
+
+(defun register-lambda-pipeline (compiled-stages closure)
+  (setf (function-keyed-pipeline closure)
+        (make-lambda-pipeline-spec compiled-stages))
+  closure)
+
+;;------------------------------------------------------------
