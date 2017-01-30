@@ -73,10 +73,10 @@
     ;; this gets the functions used in the body of this function
     ;; it is *not* recursive
     (%update-gpu-function-data spec nil nil)
-    (varjo::add-external-function name in-args uniforms body
+    (varjo:add-external-function name in-args uniforms body
 				  valid-glsl-versions);;[1]
     `(progn
-       (varjo::add-external-function ',name ',in-args ',uniforms ',body
+       (varjo:add-external-function ',name ',in-args ',uniforms ',body
 				     ',valid-glsl-versions);;[1]
        (%test-&-update-spec ,spec);;[2]
        ,(unless equiv (make-stand-in-lisp-func spec));;[3]
@@ -86,7 +86,7 @@
 
 (defun get-versions-from-context (context)
   (%sort-versions
-   (remove-if-not λ(member _ varjo::*supported-versions*)
+   (remove-if-not λ(member _ varjo:*supported-versions*)
 		  context)))
 
 (defun %sort-versions (versions)
@@ -96,7 +96,7 @@
 		#'< :key #'second)))
 
 (defun swap-version (glsl-version context)
-  (cons glsl-version (remove-if λ(find _ varjo::*supported-versions*) context)))
+  (cons glsl-version (remove-if λ(find _ varjo:*supported-versions*) context)))
 
 (defun lowest-suitable-glsl-version (context)
   (let* ((versions (or (get-versions-from-context context)
@@ -138,18 +138,18 @@
                        (varjo:make-stage in-args uniforms context body t))))
 
                 (setf actual-uniforms ;;[2]
-                      (mapcar #'varjo::to-arg-form
-                              (remove-if #'varjo::ephemeral-p
-                                         (varjo::uniform-variables compiled))))
+                      (mapcar #'varjo:to-arg-form
+                              (remove-if #'varjo:ephemeral-p
+                                         (varjo:uniform-variables compiled))))
 
                 (%update-gpu-function-data
                  spec
                  (remove-if-not #'gpu-func-spec
-                                (varjo::used-external-functions compiled)) ;;[1]
+                                (varjo:used-external-functions compiled)) ;;[1]
                  compiled)))))
       ;; vv- called if failed
       (varjo-conditions:could-not-find-function (e) ;;[0]
-        (setf missing-dependencies (list (slot-value e 'varjo::name)))
+        (setf missing-dependencies (list (slot-value e 'varjo:name)))
         (when *warn-when-cant-test-compile*
           (format t "~% cepl: the function ~s was not found when compiling ~s"
                   (first missing-dependencies) name))
@@ -340,7 +340,7 @@
                            `((let ,replacements
                                ,@code))
                            code)))
-            (varjo::make-stage in-args
+            (varjo:make-stage in-args
                                final-uniforms
                                context
                                body
@@ -542,7 +542,7 @@
 	  (progn
 	    (setf *gpu-func-specs* (remove func-key *gpu-func-specs*
 					   :test #'func-key= :key #'car))
-	    (varjo::delete-external-function name in-arg-types))
+	    (varjo:delete-external-function name in-arg-types))
 	  (when error-if-missing
 	    (error 'gpu-func-spec-not-found
 		   :name (name func-key)

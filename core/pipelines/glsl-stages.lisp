@@ -51,9 +51,9 @@
 
 (defun assert-context (name context)
   (let ((allowed (and (some (lambda (s) (member s context))
-			    varjo::*supported-stages*)
+			    varjo:*supported-stages*)
 		      (some (lambda (s) (member s context))
-			    varjo::*supported-versions*))))
+			    varjo:*supported-versions*))))
     (unless allowed
       (error 'invalid-context-for-def-glsl-stage :name name :context context))))
 
@@ -104,7 +104,7 @@
                                   nil nil)))
     (first
      (multiple-value-list
-      (varjo::flow-id-scope
+      (varjo:flow-id-scope
 	(let ((env (varjo::%make-base-environment)))
 	  (pipe-> (stage env)
             #'varjo::set-env-context

@@ -20,7 +20,7 @@
 		((4 . 4) . :440)
 		((4 . 5) . :450))
 	      :test #'equal)
-      (last1 varjo::*supported-versions*)))
+      (last1 varjo:*supported-versions*)))
 
 ;;------------------------------------------------------------
 

@@ -180,9 +180,9 @@
   (new-func-key (slot-value spec 'name)
 		(mapcar #'second (slot-value spec 'in-args))))
 
-(defmethod func-key ((spec varjo::external-function))
-  (new-func-key (varjo::name spec)
-		(mapcar #'second (varjo::in-args spec))))
+(defmethod func-key ((spec varjo:external-function))
+  (new-func-key (varjo:name spec)
+		(mapcar #'second (varjo:in-args spec))))
 
 (defmethod func-key ((key func-key))
   key)
@@ -440,7 +440,7 @@ has not been cached yet")
 	(null (%pull-g-soft-message asset-name))
 	(string compiled)
 	(list (mapcar #'varjo:glsl-code compiled))
-	(varjo::varjo-compile-result (glsl-code compiled))))))
+	(varjo:varjo-compile-result (glsl-code compiled))))))
 
 (defun pull-g-soft-multi-func-message (asset-name)
   (let ((choices (gpu-functions asset-name)))

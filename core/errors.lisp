@@ -142,7 +142,7 @@ The context must, at least, contain:
 - One of the following stage names: ~a
 
 Instead recieved: ~a"
-  name varjo::*supported-versions* varjo::*supported-stages* context)
+  name varjo:*supported-versions* varjo:*supported-stages* context)
 
 (deferror struct-in-glsl-stage-args () (arg-names)
     "Found arguments to def-glsl-stage which have struct types.

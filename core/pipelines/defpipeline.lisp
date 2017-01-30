@@ -173,7 +173,7 @@
 	     (with-gpu-func-spec (cdr pair)
 	       context))
 	   (get-version-from-context (context)
-	     (first (remove-if-not λ(member _ varjo::*supported-versions*)
+	     (first (remove-if-not λ(member _ varjo:*supported-versions*)
 				   context)))
 	   (get-glsl-version (&rest contexts)
 	     (let* ((versions (mapcar #'get-version-from-context contexts))
@@ -194,17 +194,17 @@
     (error 'glsl-version-conflict :pairs issue)))
 
 (defun %create-implicit-uniform-uploader (compiled-stages uniform-names)
-  (let* ((varjo-implicit (remove-if #'varjo::ephemeral-p
+  (let* ((varjo-implicit (remove-if #'varjo:ephemeral-p
                                     (mapcat #'varjo:implicit-uniforms
                                             compiled-stages)))
-         (uniform-arg-forms (mapcar #'varjo::to-arg-form varjo-implicit)))
+         (uniform-arg-forms (mapcar #'varjo:to-arg-form varjo-implicit)))
     ;;
     (when uniform-arg-forms
       (let* ((assigners (mapcar #'make-arg-assigners uniform-arg-forms))
              (u-lets (mapcat #'let-forms assigners))
              (uniform-transforms
-              (remove-duplicates (mapcar λ(list (varjo::name _)
-                                                (varjo::cpu-side-transform _))
+              (remove-duplicates (mapcar λ(list (varjo:name _)
+                                                (varjo:cpu-side-transform _))
                                          varjo-implicit)
                                  :test #'equal)))
         (%compile-closure
