@@ -36,17 +36,17 @@
 	  (etypecase data
 	    (gpu-array
 	     (when element-type
-	       (asserting (equal element-type (element-type data))
-			  make-ubo-from-array-bad-type
-			  :data data :element-type element-type))
+	       (assert (equal element-type (element-type data)) ()
+                       'make-ubo-from-array-bad-type
+                       :data data :element-type element-type))
 	     (%make-ubo :id id
 			:data data
 			:index index
 			:owns-gpu-array nil))
 	    (c-array
-	     (asserting (equal element-type (element-type data))
-			make-ubo-from-array-bad-type
-			:data data :element-type element-type)
+	     (assert (equal element-type (element-type data)) ()
+                     'make-ubo-from-array-bad-type
+                     :data data :element-type element-type)
 	     (%make-ubo :id id
 			:data (make-gpu-array
 			       (vector (aref-c data index))

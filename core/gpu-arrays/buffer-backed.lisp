@@ -114,11 +114,12 @@
   (let ((dimensions (listify dimensions))
 	(c-dimensions (dimensions c-array)))
     (when dimensions
-      (asserting (and (every #'= c-dimensions dimensions)
-		      (= (length c-dimensions) (length dimensions)))
-		 make-gpu-array-from-c-array-mismatched-dimensions
-		 :c-arr-dimensions c-dimensions
-		 :provided-dimensions dimensions))
+      (assert (and (every #'= c-dimensions dimensions)
+                   (= (length c-dimensions) (length dimensions)))
+              ()
+              'make-gpu-array-from-c-array-mismatched-dimensions
+              :c-arr-dimensions c-dimensions
+              :provided-dimensions dimensions))
     (let* ((source (buffer-data (gpu-array-bb-buffer arr)
 				c-array :usage access-style))
 	   (base-arr (aref (gpu-buffer-arrays source) 0)))

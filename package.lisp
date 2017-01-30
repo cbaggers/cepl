@@ -32,7 +32,9 @@
            :arange
            :arangei
            :mapcat
+           :defcondition
            :deferror
+           :defwarning
            :asserting
            :split-seq-by-seq
            :print-mem
