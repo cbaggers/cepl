@@ -32,7 +32,7 @@
   (let ((space-a (in-space meta-a))
         (space-b (in-space meta-b)))
     (if (eq space-a space-b)
-        space-a
+        meta-a
         (error "Space Analysis Failed: Could not establish at compile time which
 space the resulting svec was in between:
 ~a
