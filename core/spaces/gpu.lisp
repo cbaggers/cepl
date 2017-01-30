@@ -27,7 +27,7 @@
 (varjo::def-metadata-infer svec4 spatial-meta env
   (values :in-space (get-current-space env)))
 
-(defmethod combine-metadata ((meta-a spatial-meta)
+(defmethod varjo::combine-metadata ((meta-a spatial-meta)
                              (meta-b spatial-meta))
   (let ((space-a (in-space meta-a))
         (space-b (in-space meta-b)))
