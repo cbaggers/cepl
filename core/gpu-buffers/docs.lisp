@@ -187,15 +187,6 @@ The function returns a buffer object with its format slot populated with the
 details of the data stored within the buffer")
 
 
-  (defun bind-buffer
-    "
-Binds the given gpu-buffer to the target on the GL Context
-")
-
-  (defun unbind-buffer
-      "
-Unbinds any gpu-buffer currently bound to the GL Context
-")
 
   (defmacro with-buffer
       "

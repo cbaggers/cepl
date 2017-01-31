@@ -109,24 +109,13 @@
 
 ;; [TODO] use with safe-exit thingy?
 (defmacro with-texture-bound (texture &body body)
-  (let ((tex (gensym "texture"))
-        (res (gensym "result")))
-    `(let ((,tex ,texture))
-       (bind-texture ,tex)
-       (let ((,res (progn ,@body)))
-         (unbind-texture (texture-type ,tex))
-         ,res))))
-
-
-(defun bind-texture (texture &optional type)
-  (let ((texture-type (texture-type texture)))
-    (if (or (null type) (eq type texture-type))
-        (gl:bind-texture texture-type (texture-id texture))
-        (if (eq :none texture-type)
-            (progn (gl:bind-texture type (texture-id texture))
-                   (setf (texture-type texture) type))
-            (error "Texture has already been bound"))))
-  texture)
-
-(defun unbind-texture (type)
-  (gl:bind-texture type 0))
+  (alexandria:with-gensyms (tex old-id cache-id)
+    `(let* ((,tex ,texture)
+            (,cache-id (texture-cache-id ,tex))
+            (,old-id (cepl.context::texture-bound-id
+                      *cepl-context* ,cache-id)))
+       (cepl.context::set-texture-bound-id
+        *cepl-context* ,cache-id (texture-id ,tex))
+       (unwind-protect (progn ,@body)
+         (cepl.context::set-texture-bound-id
+          *cepl-context* ,cache-id ,old-id)))))

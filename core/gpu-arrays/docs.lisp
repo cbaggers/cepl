@@ -263,7 +263,7 @@ for example dimensions will be nil, the texture will be null etc.
 The generic function #'free will call #'free-gpu-array when passed a gpu-array.
 ")
 
-  (defun with-gpu-array-as-c-array
+  (defmacro with-gpu-array-as-c-array
       "
 This macro takes a gpu-array and asks OpenGL to temporarily 'map' it to
 a c-array. Within the scope of the body you can run any of the c-array commands

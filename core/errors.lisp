@@ -71,8 +71,8 @@ Example valid forms:
 
 
 (deferror make-tex-no-content-no-type () ()
-    "CEPL - make-texture: Trying to make texture, but have element-type and also
-no initial-contents to infer the type from")
+    "CEPL - make-texture: Trying to make texture, but have no element-type or
+initial-contents to infer the type from")
 
 (deferror make-tex-array-not-match-type ()
     (element-type pixel-format supposed-type array-type)
@@ -142,7 +142,7 @@ The context must, at least, contain:
 - One of the following stage names: ~a
 
 Instead recieved: ~a"
-  name varjo::*supported-versions* varjo::*supported-stages* context)
+  name varjo:*supported-versions* varjo:*supported-stages* context)
 
 (deferror struct-in-glsl-stage-args () (arg-names)
     "Found arguments to def-glsl-stage which have struct types.
@@ -180,7 +180,7 @@ The problem: because of potential overloading, CEPL stages must be fully qualifi
 The problematic stage designators were:
 ~{~s ~}
 
-The problem: because of potential overloading, CEPL stages must be fully 
+The problem: because of potential overloading, CEPL stages must be fully
 qualified. ~{~%~%~a~}"
   (mapcar #'first designator-choice-pairs)
   (loop :for (designator choices) :in designator-choice-pairs :collect
@@ -224,6 +224,25 @@ didn't know which to return for you. Please try again using one of
 the following:
 ~{~s~%~}" name choices)
 
+(defwarning pull-g-not-cached () (asset-name)
+    "Either ~s is not a pipeline/gpu-function or the code for this asset
+has not been cached yet"
+  asset-name)
+
+(deferror pull*-g-not-enabled () ()
+    "CEPL has been set to not cache the results of pipeline compilation.
+See the +cache-last-compile-result+ constant for more details")
+
+(defwarning func-keyed-pipeline-not-found () (callee func)
+    "CEPL: ~a was called with ~a.
+
+When functions are passed to ~a we assume this is a pipeline function and looked
+for the details for that pipeline. However we didn't find anything.
+
+Please note that you cannot lookup gpu-functions in this way as, due to
+overloading, many gpu-functions map to a single function object."
+  callee func callee)
+
 (deferror attachments-with-different-sizes (:print-circle nil) (args sizes)
     "CEPL: Whilst making an fbo we saw that some of the attachments will end up
 having different dimensions: ~a
@@ -264,6 +283,85 @@ faces of the cube texture.
 Whilst using this feature, the only other legal argument is depth
 attachment info.
 " args)
+
+
+(deferror functions-in-non-uniform-args () (name)
+    "
+CEPL: We currently only support functions as uniform arguments.
+
+Pipeline: ~s"
+  name)
+
+(deferror mapping-over-partial-pipeline () (name args)
+    "CEPL: This pipeline named ~s is a partial pipeline.
+
+This is because the following uniform arguments take functions:
+~{~%~s~}
+
+As OpenGL does not itself support passing functions as values you must use
+bake-uniforms to create set the uniforms above. This will generate
+a 'complete' pipeline which you can then map-g over.
+" name args)
+
+(deferror fbo-target-not-valid-constant () (target)
+    "CEPL: with-fbo-bound form found with invalid target
+
+The target must be constant and must be one of the following:
+
+- :framebuffer
+- :read-framebuffer
+- :draw-framebuffer
+
+In this case the compile-time value of 'target' was: ~a
+" target)
+
+(deferror bake-invalid-pipeling-arg () (invalid-arg)
+    "CEPL: The pipeline argument to #'bake was expected to be a pipeline name or
+pipeline function object.
+
+Instead we found: ~s"
+  invalid-arg)
+
+(deferror bake-invalid-uniform-name () (proposed invalid)
+    "CEPL: An attempt to bake some uniforms in a pipeline has failed.
+
+The arguments to be baked were:
+~{~s ~s~^~%~}
+
+However the following uniforms were not found in the pipeline:
+~{~s~^ ~}"
+  proposed invalid)
+
+(deferror bake-uniform-invalid-values (:print-circle nil) (proposed invalid)
+    "CEPL: An attempt to bake some uniforms in a pipeline has failed.
+
+The arguments to be baked were:
+~{~s ~s~^~%~}
+
+However the following values are ~a, they are not representable in shaders.
+~{~s~^ ~}
+
+Might you have meant to specify a gpu function?"
+  proposed
+  (cond
+    ((every #'symbolp invalid) "symbols")
+    ((every #'listp invalid) "lists")
+    (t "invalid"))
+  invalid)
+
+(deferror partial-lambda-pipeline (:print-circle nil) (partial-stages)
+    "CEPL: G-> was called with at least one stage taking functions as uniform
+arguments.
+
+If this were def-g-> we would make a partial pipeline however we don't
+currently support partial lambda pipelines.
+
+Sorry for the inconvenience. It is a feature we are interested in adding so if
+this is causing you issues please reach out to us on Github.
+
+The problem stages were:
+~{~%~s~}"
+  partial-stages)
 
 
 ;; Please remember the following 2 things

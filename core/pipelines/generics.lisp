@@ -3,7 +3,7 @@
 ;;--------------------------------------------------
 
 (defgeneric %recompile-gpu-function-and-pipelines (key))
-(defgeneric inject-func-key (spec))
+(defgeneric spec->func-key (spec))
 (defgeneric func-key= (x y))
 (defgeneric gpu-func-spec (key &optional error-if-missing))
 (defgeneric (setf gpu-func-spec) (value func-key &optional error-if-missing))
@@ -18,3 +18,8 @@
 (defgeneric delete-gpu-function (gfunc-description &optional error-if-missing))
 (defgeneric %gpu-function (name))
 (defgeneric gen-uploaders-block (assigners))
+(defgeneric gen-cleanup-block (assigners))
+(defgeneric pipeline-stages (spec))
+(defgeneric pipeline-stage-pairs (spec))
+(defgeneric func-key->name (key))
+(defgeneric glambda->func-spec (glambda))

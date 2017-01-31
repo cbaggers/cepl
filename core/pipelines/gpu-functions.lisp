@@ -22,19 +22,18 @@
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-		(varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
-		;; check the arguments are sanely formatted
-		(mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
-		(mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
-		;; now the meat
-		(%def-gpu-function name in-args uniforms body instancing
-				   doc-string declarations equiv context))))
+        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+      ;; check the arguments are sanely formatted
+      (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
+      (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
+      ;; now the meat
+      (%def-gpu-function name in-args uniforms body instancing
+                         doc-string declarations equiv context))))
 
 (defun assert-arg-format (gfunc-name x)
   (unless (listp x)
     (error 'gfun-invalid-arg-format :gfun-name gfunc-name :invalid-pair x))
   x)
-
 
 ;;--------------------------------------------------
 
@@ -68,26 +67,26 @@
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
-                                   nil nil nil nil doc-string declarations
+                                   nil nil nil doc-string declarations
                                    nil));;[0]
 	(valid-glsl-versions (get-versions-from-context context)))
     ;; this gets the functions used in the body of this function
     ;; it is *not* recursive
     (%update-gpu-function-data spec nil nil)
-    (varjo::add-external-function name in-args uniforms body
+    (varjo:add-external-function name in-args uniforms body
 				  valid-glsl-versions);;[1]
     `(progn
-       (varjo::add-external-function ',name ',in-args ',uniforms ',body
+       (varjo:add-external-function ',name ',in-args ',uniforms ',body
 				     ',valid-glsl-versions);;[1]
-       (%test-&-update-spec ,(serialize-gpu-func-spec spec));;[2]
+       (%test-&-update-spec ,spec);;[2]
        ,(unless equiv (make-stand-in-lisp-func spec));;[3]
-       (%recompile-gpu-function-and-pipelines ,(inject-func-key spec));;[4]
+       (%recompile-gpu-function-and-pipelines ,(spec->func-key spec));;[4]
        (update-specs-with-missing-dependencies);;[5]
        ',name)))
 
 (defun get-versions-from-context (context)
   (%sort-versions
-   (remove-if-not λ(member _ varjo::*supported-versions*)
+   (remove-if-not λ(member _ varjo:*supported-versions*)
 		  context)))
 
 (defun %sort-versions (versions)
@@ -97,7 +96,7 @@
 		#'< :key #'second)))
 
 (defun swap-version (glsl-version context)
-  (cons glsl-version (remove-if λ(find _ varjo::*supported-versions*) context)))
+  (cons glsl-version (remove-if λ(find _ varjo:*supported-versions*) context)))
 
 (defun lowest-suitable-glsl-version (context)
   (let* ((versions (or (get-versions-from-context context)
@@ -125,27 +124,40 @@
     (handler-case
 	(varjo:with-constant-inject-hook #'try-injecting-a-constant
 	  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-	    (let* ((context (union '(:vertex :fragment :iuniforms) context))
-		   (context (swap-version (lowest-suitable-glsl-version context)
-			     context))
-		   (compiled
-		    (v-translate in-args uniforms context `(progn ,@body) nil)))
-	      (setf actual-uniforms (uniforms compiled) ;;[2]
-		    uniform-transforms (with-hash (uv 'uniform-vals)
-					   (third-party-metadata compiled)
-					 (map-hash #'list uv)))
-	      (%update-gpu-function-data
-	       spec
-	       (remove-if-not #'gpu-func-spec
-			      (varjo::used-external-functions compiled)) ;;[1]
-	       compiled))))
+            (handler-bind
+                ((varjo-conditions:cannot-establish-exact-function
+                  (lambda (c)
+                    (declare (ignore c))
+                    (invoke-restart
+                     'varjo-conditions:allow-call-function-signature))))
+              (let* ((context (union '(:vertex :fragment) context))
+                     (context (swap-version (lowest-suitable-glsl-version context)
+                                            context))
+                     (compiled
+                      (varjo:translate
+                       (varjo:make-stage in-args uniforms context body t))))
+
+                (setf actual-uniforms ;;[2]
+                      (mapcar #'varjo:to-arg-form
+                              (remove-if #'varjo:ephemeral-p
+                                         (varjo:uniform-variables compiled))))
+
+                (%update-gpu-function-data
+                 spec
+                 (remove-if-not #'gpu-func-spec
+                                (varjo:used-external-functions compiled)) ;;[1]
+                 compiled)))))
       ;; vv- called if failed
       (varjo-conditions:could-not-find-function (e) ;;[0]
-        (setf missing-dependencies (list (slot-value e 'varjo::name)))
+        (setf missing-dependencies (list (slot-value e 'varjo:name)))
         (when *warn-when-cant-test-compile*
           (format t "~% cepl: the function ~s was not found when compiling ~s"
                   (first missing-dependencies) name))
-        (%update-gpu-function-data spec nil nil)))))
+        (%update-gpu-function-data spec nil nil)))
+    spec))
+
+
+
 
 (defmethod %recompile-gpu-function-and-pipelines (key)
   (%recompile-gpu-function-and-pipelines (func-key key)))
@@ -282,39 +294,57 @@
    - the name of the gpu function to use for this stage"
   (varjo:with-constant-inject-hook #'try-injecting-a-constant
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-      (v-rolling-translate
+      (varjo:rolling-translate
        (mapcar #'parsed-gpipe-args->v-translate-args
 	       parsed-gpipe-args)))))
 
-(defun parsed-gpipe-args->v-translate-args (stage-pair)
+;; {TODO} make the replacements related code more robust
+(defun parsed-gpipe-args->v-translate-args (stage-pair &optional replacements)
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
    %compile-link-and-upload needs to call v-rolling-translate. To do this
    we need to look up the gpu function spec and turn them into valid arguments
-   for the v-rolling-translate function.
+   for the rolling-translate function.
    That is what this function does.
    It also:
    [0] if it's a glsl-stage then it is already compiled. Pass the compile result
        and let varjo handle it
-   [1] enables implicit uniforms
-   [2] validate that either the gpu-function's context didnt specify a stage
+   [1] validate that either the gpu-function's context didnt specify a stage
        explicitly or that, if it did, that it matches the stage it is being used
        for now"
+  (assert (every #'listp replacements))
   (dbind (stage-type . stage) stage-pair
     (if (typep (gpu-func-spec stage) 'glsl-stage-spec)
 	(with-glsl-stage-spec (gpu-func-spec stage)
 	  compiled);;[0]
 	(dbind (in-args uniforms context code) (get-func-as-stage-code stage)
-	  ;;[2]
+	  ;;[1]
 	  (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
 			     context)))
 	    (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-	  (let ((context (cons :iuniforms ;;[1]
-			       (cons stage-type
-				     (remove stage-type context)))))
-	    (list in-args
-		  uniforms
-		  context
-		  `(progn ,@code)))))))
+	  (let* ((final-uniforms (remove-if (lambda (u)
+                                              (member (first u) replacements
+                                                      :key #'first
+                                                      :test #'string=))
+                                            uniforms))
+                 (context (cons stage-type (remove stage-type context)))
+                 (replacements
+                  (loop :for (k v) :in replacements
+                     :for r = (let* ((u (find k uniforms :key #'first
+                                              :test #'string=)))
+                                (when (and u (typep (varjo:type-spec->type
+                                                     (second u))
+                                                    'varjo:v-function-type))
+                                  (list (first u) `(function ,v))))
+                     :when r :collect r))
+                 (body (if replacements
+                           `((let ,replacements
+                               ,@code))
+                           code)))
+            (varjo:make-stage in-args
+                              final-uniforms
+                              context
+                              body
+                              t))))))
 
 ;;--------------------------------------------------
 
@@ -327,6 +357,21 @@
   (cond
     ((and (listp stage-designator) (eq (first stage-designator) 'function))
      (get-stage-key (second stage-designator)))
+    ((typep stage-designator 'gpu-lambda)
+     (glambda->func-spec stage-designator))
+    ((symbolp stage-designator)
+     (let* ((name stage-designator)
+	    (funcs (gpu-func-specs name)))
+       (case= (length funcs)
+	 (0 (error 'stage-not-found :designator name))
+	 (1 (func-key (first funcs)))
+	 (otherwise
+	  (error 'multiple-gpu-func-matches
+		 :designator stage-designator
+		 :possible-choices (mapcar λ(with-gpu-func-spec _
+					      (cons stage-designator
+						    (mapcar #'second in-args)))
+					   funcs))))))
     ((listp stage-designator)
      (let ((key (new-func-key (first stage-designator) (rest stage-designator))))
        (if (gpu-func-spec key)
@@ -388,7 +433,9 @@
          (valid
           (loop :for name :in names :collect
              (when name
-               (let ((sn (get-stage-key name nil)))
+               (let ((sn (if (typep name 'func-key)
+                             name
+                             (get-stage-key name nil))))
                  (if sn
                      sn
                      (progn
@@ -495,7 +542,7 @@
 	  (progn
 	    (setf *gpu-func-specs* (remove func-key *gpu-func-specs*
 					   :test #'func-key= :key #'car))
-	    (varjo::delete-external-function name in-arg-types))
+	    (varjo:delete-external-function name in-arg-types))
 	  (when error-if-missing
 	    (error 'gpu-func-spec-not-found
 		   :name (name func-key)

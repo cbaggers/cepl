@@ -1,6 +1,7 @@
 (in-package :cepl.memory)
 
 (defgeneric free (object))
+(defgeneric initialized-p (object))
 
 (defgeneric push-g (object destination))
 (defgeneric pull-g (object))

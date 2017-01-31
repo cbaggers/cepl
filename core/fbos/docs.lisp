@@ -337,12 +337,6 @@ You normally dont need to worry about the target as the last two are only used
 when you need certain GL read and write operations to happen to different
 buffers. It remains for those who know they need this but otherwise you can
 let CEPL handle it.
-
-
--- unbind --
-If unbind is set to nil then the fob is not unbound at the end of the scope.
-Only use this if you know you need it. Most often it is best to let CEPL control
-that.
 ")
 
   (defun attachment-tex

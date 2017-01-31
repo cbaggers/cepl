@@ -257,13 +257,6 @@ follows.
 
 - fbo: This is where the results of the pipeline will be written.
 
-- target: For target the choices are :framebuffer, :read_framebuffer and
-          :draw_framebuffer.
-	  You normally dont need to worry about the target as the last two are
-          only used when you need certain GL read and write operations to
-          happen to different buffers. It remains for those who know they need
-          this but otherwise you can let CEPL handle it.
-
 - with-viewport: If with-viewport is t then with-fbo-bound adds a
                  with-fbo-viewport that uses this fbo to this scope. This means
                  that the current-viewport within this scope will be set to the

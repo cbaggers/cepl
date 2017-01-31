@@ -21,7 +21,8 @@
                #:ieee-floats
                #:named-readtables
                #:rtg-math
-               #:varjo)
+               #:varjo
+               #:closer-mop)
   :components ((:file "package")
                (:file "host/api")
                (:file "core/ffi")
@@ -33,7 +34,9 @@
                (:file "core/measurements/measurements")
                (:file "core/memory/memory")
                (:file "core/types/cepl-types")
-               (:file "core/memory/post-context-init")
+               (:file "core/context/gl-context")
+               (:file "core/context/cepl-context")
+               (:file "core/context/version")
                (:file "core/types/initalized-p")
                (:file "core/internals")
                (:file "core/types/types")
@@ -45,9 +48,6 @@
                (:file "core/context/render-state")
                (:file "core/errors")
                (:file "core/viewports/viewport")
-               (:file "core/context/context-classes")
-               (:file "core/context/context")
-               (:file "core/context/version")
                (:file "core/types/image-format")
                (:file "core/types/pixel-format")
                (:file "core/types/cffi-extra-primitive-types")
@@ -66,7 +66,6 @@
                (:file "core/pipelines/generics")
                (:file "core/pipelines/uniforms")
                (:file "core/pipelines/map-g-constant")
-               (:file "core/pipelines/compile-passes")
                (:file "core/pipelines/gpu-macros")
                (:file "core/pipelines/gpu-pipeline-base")
                (:file "core/pipelines/pipeline-validation")
@@ -74,6 +73,8 @@
                (:file "core/pipelines/glsl-stages")
                (:file "core/pipelines/uniform-assigners-generation")
                (:file "core/pipelines/defpipeline")
+               (:file "core/pipelines/gpu-lambda")
+               (:file "core/pipelines/bake")
                (:file "core/textures/def")
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")

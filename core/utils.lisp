@@ -336,16 +336,17 @@
 ;------------ERRORS-----------;
 
 ;;[TODO] need better arg test
-(defmacro deferror (name (&key (error-type 'error) prefix
-			       (print-circle nil print-circle?)
-			       (print-escape nil print-escape?)
-			       (print-length nil print-length?)
-			       (print-level nil print-level?)
-			       (print-lines nil print-lines?)
-			       (print-right-margin nil print-right-margin?))
-                            (&rest args) error-string &body body)
+(defmacro defcondition (name (&key (condition-type 'error) prefix
+                                   (print-circle nil print-circle?)
+                                   (print-escape nil print-escape?)
+                                   (print-length nil print-length?)
+                                   (print-level nil print-level?)
+                                   (print-lines nil print-lines?)
+                                   (print-right-margin nil print-right-margin?))
+                                (&rest args) error-string &body body)
+  (assert condition-type () "DEFCONDITION: condition-type is a mandatory argument")
   (unless (every #'symbolp args) (error "can only take simple args"))
-  `(define-condition ,name (,error-type)
+  `(define-condition ,name (,condition-type)
      (,@(loop :for arg :in args :collect `(,arg :initarg ,(kwd arg))))
      (:report (lambda (condition stream)
                 (declare (ignorable condition))
@@ -371,9 +372,45 @@
 		    (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
 			    ,@body)))))))
 
-(defmacro asserting (form error-name &rest keys-to-error)
-  `(unless ,form (error ',error-name ,@keys-to-error)))
+(defmacro deferror (name (&key (error-type 'error) prefix
+			       (print-circle nil print-circle?)
+			       (print-escape nil print-escape?)
+			       (print-length nil print-length?)
+			       (print-level nil print-level?)
+			       (print-lines nil print-lines?)
+			       (print-right-margin nil print-right-margin?))
+                            (&rest args) error-string &body body)
+  `(defcondition ,name
+       (:condition-type ,error-type :prefix ,prefix
+                        ,@(when print-circle? `(:print-circle ,print-circle))
+                        ,@(when print-escape? `(:print-escape ,print-escape))
+                        ,@(when print-length? `(:print-length ,print-length))
+                        ,@(when print-level? `(:print-level ,print-level))
+                        ,@(when print-lines? `(:print-lines ,print-lines))
+                        ,@(when print-right-margin?
+                                `(:print-right-margin ,print-right-margin)))
+       ,args
+       ,error-string ,@body))
 
+(defmacro defwarning (name (&key (warning-type 'warning) prefix
+                                 (print-circle nil print-circle?)
+                                 (print-escape nil print-escape?)
+                                 (print-length nil print-length?)
+                                 (print-level nil print-level?)
+                                 (print-lines nil print-lines?)
+                                 (print-right-margin nil print-right-margin?))
+                              (&rest args) warning-string &body body)
+  `(defcondition ,name
+       (:condition-type ,warning-type :prefix ,prefix
+                        ,@(when print-circle? `(:print-circle ,print-circle))
+                        ,@(when print-escape? `(:print-escape ,print-escape))
+                        ,@(when print-length? `(:print-length ,print-length))
+                        ,@(when print-level? `(:print-level ,print-level))
+                        ,@(when print-lines? `(:print-lines ,print-lines))
+                        ,@(when print-right-margin?
+                                `(:print-right-margin ,print-right-margin)))
+       ,args
+       ,warning-string ,@body))
 
 ;; ------------------------------------------------------------
 ;; dumb little func to pretty print a memory table
@@ -602,3 +639,24 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 	 (split (split-sequence:split-sequence #\space str))
 	 (nums (mapcar #'parse-integer split)))
     nums))
+
+(defun ensure-vec-index (vec index null-element)
+  (when (<= (array-dimension vec 0) index)
+    (adjust-array vec (1+ index) :initial-element null-element))
+  (when (<= (fill-pointer vec) index)
+    (setf (fill-pointer vec) (1+ index)))
+  index)
+
+(defmacro def-artificial-id (name)
+  (let ((lowest (symb :*lowest-unused- name :-id*))
+        (freed (symb :*freed- name :-ids*))
+        (get (symb :get-free- name :-id))
+        (release (symb :release- name :-id)))
+    `(progn
+       (defvar ,lowest 0)
+       (defvar ,freed nil)
+       (defun ,get ()
+         (or (pop ,freed)
+             (incf ,lowest)))
+       (defun ,release (id)
+         (push id ,freed)))))

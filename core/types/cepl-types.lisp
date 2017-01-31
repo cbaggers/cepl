@@ -2,6 +2,23 @@
 
 ;;------------------------------------------------------------
 
+(defconstant +gl-id-bit-size+ 16)
+
+(deftype gl-id ()
+  '(unsigned-byte #.+gl-id-bit-size+))
+
+(declaim (type gl-id +unknown-gl-id+))
+(defconstant +unknown-gl-id+ #.(1- (expt 2 +gl-id-bit-size+)))
+(defconstant +null-gl-id+ 0)
+
+(declaim (inline unknown-gl-id-p)
+         (ftype (function (gl-id) boolean) unknown-gl-id-p))
+(defun unknown-gl-id-p (id)
+  (declare (gl-id id))
+  (= id +unknown-gl-id+))
+
+;;------------------------------------------------------------
+
 (defstruct (c-array (:constructor %make-c-array))
   (pointer
    (error "cepl: c-array must be created with a pointer")
@@ -31,6 +48,7 @@
 
 (defstruct (texture (:constructor %%make-texture))
   (id 0 :type real)
+  (cache-id 0 :type (integer 0 11))
   (base-dimensions nil :type list)
   (type (error "") :type symbol)
   (image-format (error "") :type symbol)
@@ -51,6 +69,7 @@
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
   (id 0 :type fixnum)
+  (cache-id 0 :type (integer 0 13))
   (arrays (error "") :type (array gpu-array-bb (*)))
   (managed nil :type boolean))
 
@@ -79,6 +98,11 @@
 
 ;;------------------------------------------------------------
 
+(defvar +null-gpu-buffer+
+  (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
+
+;;------------------------------------------------------------
+
 (defstruct (buffer-texture
 	     (:include texture)
 	     (:constructor %%make-buffer-texture))
@@ -94,6 +118,7 @@
 ;; {TODO} border-color
 (defstruct (sampler (:constructor %make-sampler)
                     (:conc-name %sampler-))
+  (context-id 0 :type gl-id)
   (id-box (make-sampler-id-box) :type sampler-id-box)
   (type (error "") :type symbol)
   (texture (error "") :type texture)
@@ -167,6 +192,9 @@
 					 :destination-alpha :zero)
 		   :type blending-params))
 
+(defvar +null-fbo+
+  (%%make-fbo :draw-buffer-map (cffi:null-pointer)))
+
 ;;------------------------------------------------------------
 
 (defstruct pixel-format
@@ -176,6 +204,14 @@
   (sizes nil :type list)
   (reversed nil :type boolean)
   (comp-length 0 :type fixnum))
+
+;;------------------------------------------------------------
+
+(deftype vao-id ()
+  '(unsigned-byte 32))
+
+(declaim (type vao-id +null-vao+))
+(defvar +null-vao+ 0)
 
 ;;------------------------------------------------------------
 
@@ -294,8 +330,11 @@
    :texture +null-texture+
    :texture-type :uninitialized))
 
-(defun make-uninitialized-sampler (texture)
-  (%make-sampler :texture texture :type :uninitialized))
+(defun make-uninitialized-sampler (texture context-id)
+  (%make-sampler
+   :context-id context-id
+   :texture texture
+   :type :uninitialized))
 
 (defun make-uninitialized-fbo ()
   (%%make-fbo
@@ -311,9 +350,11 @@
    :texture-type nil))
 
 (defvar +null-buffer-backed-gpu-array+
-  (%make-gpu-array-bb
-   :buffer +null-gpu-buffer+
-   :access-style :invalid))
+    (%make-gpu-array-bb :buffer +null-gpu-buffer+
+                      :access-style :invalid
+                      :element-type nil
+                      :byte-size 0
+                      :offset-in-bytes-into-buffer 0))
 
 (defvar +uninitialized-buffer-array+
   (make-array 0 :element-type 'gpu-array-bb

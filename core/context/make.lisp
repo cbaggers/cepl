@@ -10,19 +10,28 @@
        no-frame alpha-size depth-size stencil-size
        red-size green-size blue-size buffer-size
        double-buffer hidden resizable gl-version)
-    (let ((context (make-instance
-                    'gl-context :handle context-handle :window window))
+    (let ((new-gl-context (make-instance
+                           'gl-context
+                           :handle context-handle
+                           :window window
+                           :version-major (gl:major-version)
+                           :version-minor (gl:minor-version)
+                           :version-float (coerce
+                                           (+ (gl:major-version)
+                                              (/ (gl:minor-version)
+                                                 10))
+                                           'single-float)))
           (dimensions (list width height)))
       (ensure-cepl-compatible-setup)
-      (format t "New context v~s.~s"
-	      (major-version context)
-	      (minor-version context))
       (%set-default-gl-options)
-      (setf *gl-context* context
-            *gl-window* (window context)
-            (slot-value context 'fbo) (cepl.fbos::%make-default-framebuffer
-                                       dimensions t t))
+      (setf *gl-context* new-gl-context
+            *gl-window* (window new-gl-context))
+      (let ((default-fbo (cepl.fbos::%make-default-framebuffer dimensions t t)))
+        (setf (slot-value *cepl-context* 'default-framebuffer) default-fbo))
       (map nil #'funcall *on-context*)
-      (cepl.memory::on-context)
+      (on-gl-context *cepl-context* new-gl-context)
       (cepl.host::set-default-swap-arg *gl-window*)
+      (format t "New context v~s.~s"
+	      (major-version new-gl-context)
+	      (minor-version new-gl-context))
       (cepl:cls))))

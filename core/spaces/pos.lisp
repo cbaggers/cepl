@@ -49,36 +49,3 @@
 	      new-space))))
 
 ;;----------------------------------------------------------------------
-;; gpu
-
-(varjo::def-v-type-class svec4-g (varjo:v-vec4)
-  ((varjo::core :initform nil :reader varjo:core-typep)
-   (varjo::glsl-string :initform "#<svec4-g>" :reader varjo:v-glsl-string)))
-
-(add-type-shadow 'svec4 'svec4-g)
-
-(varjo:v-defmacro sv! (v &rest r)
-  (if r
-      `(%sv! ,v ,@r ,*current-space*)
-      `(%sv! ,v ,*current-space*)))
-
-(varjo:v-defun %sv! (v s) "#<svec4-g(~a, ~a)>"
-	       (:vec4 vec-space-g) svec4-g)
-
-(varjo:v-defun %sv! (v w s) "#<svec4-g(~a, ~a, ~a)>"
-	       (:vec3 :float vec-space-g) svec4-g)
-
-(varjo:v-defun %sv! (v1 v2 s) "#<svec4-g(~a, ~a, ~a)>"
-	       (:vec2 :vec2 vec-space-g) svec4-g)
-
-(varjo:v-defun %sv! (v1 z w s) "#<svec4-g(~a, ~a, ~a, ~a)>"
-	       (:vec2 :float :float vec-space-g) svec4-g)
-
-(varjo:v-defun %sv! (x y z w s) "#<svec4-g(~a, ~a, ~a, ~a, ~a)>"
-	       (:float :float :float :float vec-space-g) svec4-g)
-
-
-(varjo:v-defun v! (p) "~a" (svec4-g) :vec4)
-
-(varjo:v-defun get-transform (s1 s2) "#<cepl.space:get-transform(~a, ~a)>"
-	       (vec-space-g vec-space-g) :mat4)

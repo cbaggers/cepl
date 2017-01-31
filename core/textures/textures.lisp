@@ -38,7 +38,8 @@
 		  :image-format (texture-image-format texture))))
 
 	    (when (not cepl.context:*gl-context*)
-	      (cepl.memory::delay-initialization
+	      (cepl.context::delay-initialization
+               *cepl-context*
 	       (lambda () (reinit-on-context result))
 	       (list texture)))
 	    result)
@@ -209,9 +210,8 @@
 (defun dimensions-at-mipmap-level (texture level)
   (if (= level 0)
       (texture-base-dimensions texture)
-      (let ((div (* 2 (1+ level))))
-        (loop for i in (texture-base-dimensions texture) collecting
-             (floor (/ i div))))))
+      (loop :for i :in (texture-base-dimensions texture) :collect
+         (/ i (expt 2 level)))))
 
 ;;------------------------------------------------------------
 
@@ -250,16 +250,18 @@
 (defun make-texture-from-id (gl-object &key base-dimensions texture-type
                                          element-type mipmap-levels
 					 layer-count cubes allocated mutable-p)
-  (%%make-texture
-   :id gl-object
-   :base-dimensions base-dimensions
-   :type texture-type
-   :image-format element-type
-   :mipmap-levels mipmap-levels
-   :layer-count layer-count
-   :cubes-p cubes
-   :allocated-p allocated
-   :mutable-p mutable-p))
+  (cepl.context::register-texture
+   cepl.context:*cepl-context*
+   (%%make-texture
+    :id gl-object
+    :base-dimensions base-dimensions
+    :type texture-type
+    :image-format element-type
+    :mipmap-levels mipmap-levels
+    :layer-count layer-count
+    :cubes-p cubes
+    :allocated-p allocated
+    :mutable-p mutable-p)))
 
 
 
@@ -269,7 +271,7 @@
                        (multisample nil) (immutable t) (buffer-storage nil)
                        (generate-mipmaps t) pixel-format)
   (let ((dimensions (listify dimensions)))
-    (cepl.memory::if-context
+    (cepl.context::if-gl-context
      (make-texture-now %pre% initial-contents dimensions element-type mipmap
 		       layer-count cubes rectangle multisample immutable
 		       buffer-storage generate-mipmaps pixel-format)
@@ -504,6 +506,9 @@ the width to see at what point the width reaches 0 or GL throws an error."
 		      (texture-cubes-p tex-obj) cubes
 		      (texture-image-format tex-obj) image-format
 		      (texture-mutable-p tex-obj) (not (and immutable *immutable-available*)))
+                (setf (texture-cache-id tex-obj)
+                      (cepl.context::tex-kind->cache-index texture-type))
+                (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
                 (with-texture-bound tex-obj
                   (allocate-texture tex-obj)
                   (when initial-contents
@@ -566,6 +571,9 @@ the width to see at what point the width reaches 0 or GL throws an error."
 	  (texture-image-format tex-obj) image-format
 	  (buffer-texture-backing-array tex-obj) array
 	  (buffer-texture-owns-array tex-obj) t)
+    (setf (texture-cache-id tex-obj)
+          (cepl.context::tex-kind->cache-index :texture-buffer))
+    (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
     ;; upload
     (with-texture-bound tex-obj
       (%gl::tex-buffer :texture-buffer image-format

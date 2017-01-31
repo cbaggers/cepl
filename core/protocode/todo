@@ -1,4 +1,9 @@
 
+(gpu-function x) only works for cepl defun-g funcs, this means we can't bake #'sin
+for example
+
+-----
+
 sdl has hardcoded gl version fix this
 
 -----

@@ -19,19 +19,15 @@
        (setf (mem-aref ids :uint i) vao))
     (%gl:delete-vertex-arrays (length vaos) ids)))
 
-;; [TODO] Vao changes the inhabitants of :vertex-array etc
-;;        this should be undone
-(defun bind-vao (vao)
-  (gl:bind-vertex-array vao))
-
-(defun unbind-vao ()
-  (gl:bind-vertex-array 0))
-
 (defmacro with-vao-bound (vao &body body)
-  `(unwind-protect
-	(progn (bind-vao ,vao)
-	       ,@body)
-     (unbind-vao)))
+  (alexandria:with-gensyms (ctx vao-id old-vao)
+    `(let* ((,ctx *cepl-context*)
+            (,old-vao (vao-bound ,ctx))
+            (,vao-id ,vao))
+       (unwind-protect
+            (progn (setf (vao-bound ,ctx) ,vao-id)
+                   ,@body)
+         (setf (vao-bound *cepl-context*) ,old-vao)))))
 
 (defun suitable-array-for-index-p (array)
   (and (eql (length (gpu-buffer-arrays (gpu-array-buffer array))) 1)
@@ -62,17 +58,19 @@
                                        index-array))))
   (let ((element-buffer (when index-array (gpu-array-buffer index-array)))
         (vao gl-object)
-        (attr 0))
-    (bind-vao vao)
+        (attr 0)
+        (ctx *cepl-context*))
+    (setf (vao-bound ctx) vao)
     (loop :for gpu-array :in gpu-arrays :do
        (let* ((buffer (gpu-array-buffer gpu-array))
 	      (elem-type (gpu-array-bb-element-type gpu-array))
 	      (offset (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
-         (cepl.gpu-buffers::force-bind-buffer buffer :array-buffer)
-         (incf attr (gl-assign-attrib-pointers
-		     (if (listp elem-type) (second elem-type) elem-type)
-		     attr offset))))
-    (when element-buffer
-      (cepl.gpu-buffers::force-bind-buffer element-buffer :element-array-buffer))
-    (bind-vao 0)
+         (with-buffer (foo buffer :array-buffer)
+           (incf attr (gl-assign-attrib-pointers
+                       (if (listp elem-type) (second elem-type) elem-type)
+                       attr offset)))))
+    (if element-buffer
+        (with-buffer (foo element-buffer :element-array-buffer)
+          (setf (vao-bound ctx) 0))
+        (setf (vao-bound ctx) 0))
     vao))

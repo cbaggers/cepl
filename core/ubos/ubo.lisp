@@ -36,17 +36,17 @@
 	  (etypecase data
 	    (gpu-array
 	     (when element-type
-	       (asserting (equal element-type (element-type data))
-			  make-ubo-from-array-bad-type
-			  :data data :element-type element-type))
+	       (assert (equal element-type (element-type data)) ()
+                       'make-ubo-from-array-bad-type
+                       :data data :element-type element-type))
 	     (%make-ubo :id id
 			:data data
 			:index index
 			:owns-gpu-array nil))
 	    (c-array
-	     (asserting (equal element-type (element-type data))
-			make-ubo-from-array-bad-type
-			:data data :element-type element-type)
+	     (assert (equal element-type (element-type data)) ()
+                     'make-ubo-from-array-bad-type
+                     :data data :element-type element-type)
 	     (%make-ubo :id id
 			:data (make-gpu-array
 			       (vector (aref-c data index))
@@ -74,16 +74,23 @@ should be ~s" data element-type)
 
 ;;---------------------------------------------------
 
+;; {TODO} using the id as the binding point is crazy town as it doesnt
+;;        take :max-uniform-buffer-bindings into account.
+;;        (For example it's only 84 on my desktop)
 (defun %bind-ubo (ubo)
   (let* ((data (ubo-data ubo))
 	 (type (ubo-data-type ubo))
-         (buffer-id (gpu-buffer-id (gpu-array-buffer data)))
          (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer data)
 		    (cepl.c-arrays::gl-calc-byte-size
 		     type (list (ubo-index ubo)))))
-         (size (gl-type-size type)))
-    (%gl:bind-buffer-range :uniform-buffer (ubo-id ubo)
-                           buffer-id offset size))
+         (size (gl-type-size type))
+         (gpu-buffer (gpu-array-buffer data)))
+    (cepl.context::ubo-bind-buffer-id-range
+     *cepl-context*
+     (gpu-buffer-id gpu-buffer)
+     (ubo-id ubo)
+     offset
+     size))
   ubo)
 
 ;;---------------------------------------------------
@@ -115,5 +122,7 @@ should be ~s" data element-type)
 (defmethod free ((object ubo))
   (let ((data (ubo-data object)))
     (when (and data (ubo-owns-gpu-array object))
-      (cepl.gpu-arrays.buffer-backed::free-gpu-array-bb data)))
+      (cepl.gpu-arrays.buffer-backed::free-gpu-array-bb data))
+    (setf (ubo-data object) +null-buffer-backed-gpu-array+))
+  +null-buffer-backed-gpu-array+
   t)

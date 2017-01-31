@@ -2,6 +2,10 @@
 
 ;;----------------------------------------------------------------------
 
+(def-artificial-id fake-sampler)
+
+;;----------------------------------------------------------------------
+
 (defun sampler-texture (sampler)
   (%sampler-texture sampler))
 
@@ -139,16 +143,17 @@
 
 
 (defun sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
-			 (minify-filter :linear) (magnify-filter :linear)
+			 (minify-filter :linear-mipmap-linear)
+                         (magnify-filter :linear)
 			 (wrap #(:repeat :repeat :repeat)) (compare :none))
   (unless (and texture (typep texture 'texture))
     (error
      "CEPL: Attempted to sample ~s but it is only legal to sample textures."
      texture))
-  (cepl.memory::if-context
+  (cepl.context::if-gl-context
    (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
 		     magnify-filter wrap compare)
-   (make-uninitialized-sampler texture)
+   (make-uninitialized-sampler texture (get-free-fake-sampler-id))
    (list texture)))
 
 ;;----------------------------------------------------------------------
@@ -242,6 +247,9 @@
 
 (defun free-sampler (sampler)
   (unless (sampler-shared-p sampler)
+    ;; Be sure to add this back in when you implement freeing
+    ;; samplers.
+    ;; (release-fake-sampler-id (%sampler-context-id sampler))
     (warn "CEPL: free-sampler not yet implemented~%leaking ~s"
           sampler)))
 

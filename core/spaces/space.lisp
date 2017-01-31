@@ -267,18 +267,6 @@
   (error "implement %update-mspace-transform"))
 
 ;;----------------------------------------------------------------------
-;; GPU
-
-(varjo::def-v-type-class vec-space-g (varjo:v-type)
-  ((varjo::core :initform nil :reader varjo:core-typep)
-   (varjo::glsl-string :initform "#<vec-space>" :reader varjo:v-glsl-string)))
-
-(add-type-shadow 'vec-space 'vec-space-g)
-
-;; a name for the space
-(defvar *current-space* (gensym "current-space"))
-
-;;----------------------------------------------------------------------
 ;; Helpers
 
 (defmacro kind-case ((space &key error) &key m r h)

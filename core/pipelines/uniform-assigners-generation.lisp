@@ -31,6 +31,16 @@
                                    arg-name)))
          ,@(uploaders assigner)))))
 
+(defmethod gen-cleanup-block ((assigner assigner))
+  (with-slots (arg-name local-arg-name) assigner
+    (when (cleanup assigner)
+      `(when ,arg-name
+         (let ((,local-arg-name ,(if (pointer-arg assigner)
+                                     `(pointer ,arg-name)
+                                     arg-name)))
+           (declare (ignorable ,local-arg-name))
+           ,@(cleanup assigner))))))
+
 (defun dispatch-make-assigner (local-arg-name arg-name type glsl-name qualifiers)
   (assert (not (null glsl-name)))
   (let* ((varjo-type (varjo:type-spec->type type))
@@ -59,19 +69,27 @@
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
     (make-assigner
-     :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path))
+     :let-forms `((,id-name (the (signed-byte 32)
+                                 (gl:get-uniform-location prog-id ,glsl-name-path)))
                   (,i-unit (incf image-unit)))
      :uploaders `((when (>= ,id-name 0)
                     (unless (eq (%sampler-type ,arg-name)
                                 ,(cepl.types::type->spec type))
                       (error "incorrect type of sampler passed to shader"))
                     (cepl.textures::active-texture-num ,i-unit)
-                    (cepl.textures::bind-texture (%sampler-texture ,arg-name))
+                    (let ((tex (%sampler-texture ,arg-name)))
+                      (cepl.context::set-texture-bound-id *cepl-context*
+                                                          (texture-cache-id tex)
+                                                          (texture-id tex)))
                     (if cepl.samplers::*samplers-available*
                         (gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
                         (cepl.textures::fallback-sampler-set ,arg-name))
                     (uniform-sampler ,id-name ,i-unit)))
-     :cleanup `((gl:bind-sampler ,i-unit 0)))))
+     :cleanup `((gl:bind-sampler ,i-unit 0)
+                (cepl.context::set-texture-bound-id
+                 *cepl-context*
+                 (texture-cache-id (%sampler-texture ,arg-name))
+                 0)))))
 
 (defun make-ubo-assigner (arg-name varjo-type glsl-name)
   (let ((id-name (gensym))
@@ -98,7 +116,7 @@
                              &optional (byte-offset 0))
   (let ((id-name (gensym)))
     (make-assigner
-     :let-forms `((,id-name (gl:get-uniform-location prog-id ,glsl-name-path)))
+     :let-forms `((,id-name (the (signed-byte 32) (gl:get-uniform-location prog-id ,glsl-name-path))))
      :uploaders
      `((when (>= ,id-name 0)
          ;; If we have a byte offset then we need index into that block of

@@ -32,7 +32,9 @@
            :arange
            :arangei
            :mapcat
+           :defcondition
            :deferror
+           :defwarning
            :asserting
            :split-seq-by-seq
            :print-mem
@@ -51,7 +53,9 @@
            :just-ignore
 	   :defvar*
 	   :defparameter*
-	   :read-integers))
+	   :read-integers
+           :ensure-vec-index
+           :def-artificial-id))
 
 (uiop:define-package :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
@@ -94,7 +98,17 @@
 	   :struct-in-glsl-stage-args
 	   :multi-func-error
 	   :attachments-with-different-sizes
-	   :invalid-cube-fbo-args))
+	   :invalid-cube-fbo-args
+           :functions-in-non-uniform-args
+           :mapping-over-partial-pipeline
+           :fbo-target-not-valid-constant
+           :pull*-g-not-enabled
+           :pull-g-not-cached
+           :func-keyed-pipeline-not-found
+           :bake-invalid-pipeling-arg
+           :bake-invalid-uniform-name
+           :bake-uniform-invalid-values
+           :partial-lambda-pipeline))
 
 (uiop:define-package :cepl.host
   (:use :cl)
@@ -123,7 +137,13 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :split-sequence :named-readtables
 	:cepl.errors)
-  (:export :%make-gpu-array
+  (:export :+gl-id-bit-size+
+           :gl-id
+           :+unknown-gl-id+
+           :+null-gl-id+
+           :unknown-gl-id-p
+
+           :%make-gpu-array
 	   :gpu-array
 	   :gpu-array-p
 	   :gpu-array-dimensions
@@ -156,6 +176,7 @@
 	   :gpu-buffer
 	   :gpu-buffer-p
 	   :gpu-buffer-id
+           :gpu-buffer-cache-id
 	   :gpu-buffer-arrays
 	   :gpu-buffer-managed
 	   :+null-gpu-buffer+
@@ -166,6 +187,7 @@
 	   :texture
 	   :texture-p
 	   :texture-id
+           :texture-cache-id
 	   :texture-base-dimensions
 	   :texture-type
 	   :texture-last-sampler-id
@@ -180,6 +202,9 @@
 	   :buffer-texture-backing-array
 	   :buffer-texture-owns-array
 	   :+null-texture+
+
+           :vao-id
+           :+null-vao+
 
 	   :make-blending-params
 	   :blending-params
@@ -198,6 +223,7 @@
 	   :sampler-p
 	   :%sampler-id
 	   :%sampler-id-box
+           :%sampler-context-id
 	   :%sampler-type
 	   :%sampler-texture
 	   :%sampler-lod-bias
@@ -236,6 +262,7 @@
 	   :%fbo-clear-mask
 	   :%fbo-is-default
 	   :%fbo-blending-params
+           :+null-fbo+
 	   :make-att
 	   :att
 	   :att-array
@@ -412,8 +439,6 @@
 	   :set-arg-val
 	   ;;---
 	   :populate
-	   :%default-framebuffer
-	   :%current-fbo
 	   :*gl-window*
            :window-dimensions
            :window-resolution
@@ -425,10 +450,35 @@
 	:named-readtables :cepl.errors)
   (:export))
 
+(uiop:define-package :cepl.context
+    (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
+          :cepl.memory :cepl.types :%cepl.types :split-sequence
+          :named-readtables :cepl.errors :cepl.internals)
+  (:export :gl-context
+           :*gl-context*
+           :make-context
+           :has-feature
+           :major-version
+           :minor-version
+           :version-float
+           :split-float-version
+           :max-draw-buffers
+
+           ;;----------------------------
+           ;; CEPL.Context
+           :*cepl-context*
+           :gpu-buffer-bound
+           :texture-bound
+           :vao-bound
+           :read-fbo-bound
+           :draw-fbo-bound
+           :fbo-bound
+           :default-framebuffer))
+
 (uiop:define-package :cepl.viewports
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :%cepl.types :split-sequence :cepl.measurements
-	:named-readtables :cepl.errors :cepl.internals)
+	:named-readtables :cepl.errors :cepl.internals :cepl.context)
   (:export :current-viewport
 	   :viewport
 	   :viewport-p
@@ -444,74 +494,6 @@
 	   :with-fbo-viewport
 	   :copy-viewport
 	   :viewport-params-to-vec4))
-
-(uiop:define-package :cepl.context
-  (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.types :%cepl.types :split-sequence
-	:named-readtables :cepl.errors :cepl.internals)
-  (:export :gl-context
-           :*gl-context*
-           :make-context
-           :has-feature
-           :major-version
-           :minor-version
-           :version-float
-           :split-float-version
-           :max-server-wait-timeout
-           :min-map-buffer-alignment
-           :extension-count
-           :supported-shading-versions-count
-           :timestamp
-           :color-clear-value
-           :color-writemask
-           :depth-clear-value
-           :depth-func~1
-           :depth-test
-           :depth-writemask
-           :doublebuffer
-           :draw-buffer
-           :draw-buffer-i
-           :draw-framebuffer-binding
-           :max-color-attachments
-           :max-color-texture-samples
-           :max-depth-texture-samples
-           :max-draw-buffers
-           :max-dual-source-draw-buffers
-           :max-framebuffer-height
-           :max-framebuffer-layers
-           :max-framebuffer-samples
-           :max-framebuffer-width
-           :max-integer-samples
-           :max-samples
-           :read-buffer
-           :read-framebuffer-binding
-           :renderbuffer-binding
-           :stencil-back-fail
-           :stencil-back-func
-           :stencil-back-pass-depth-fail
-           :stencil-back-pass-depth-pass
-           :stencil-back-ref
-           :stencil-back-value-mask
-           :stencil-back-writemask
-           :stencil-clear-value
-           :stencil-fail
-           :stencil-func
-           :stencil-pass-depth-fail
-           :stencil-pass-depth-pass
-           :stencil-ref
-           :stencil-test
-           :stencil-value-mask
-           :stencil-writemask
-           :stereo
-           ;; :%array-buffer-binding
-           ;; :%read-buffer-binding
-           ;; :%copy-write-buffer-binding
-           ;; :%draw-indirect-buffer-binding
-           ;; :%element-array-buffer-binding
-           ;; :%query-buffer-binding
-           ;; :%texture-buffer-binding
-           ;; :%vertex-array-binding
-           ))
 
 (uiop:define-package :cepl.image-formats
   (:use #:cl #:fn #:named-readtables #:cepl-utils :%cepl.types :cepl.errors)
@@ -588,7 +570,6 @@
 	   :gpu-buffer-p
            :gpu-buffer-id
            :gpu-buffer-arrays
-           :bind-buffer
            :buffer-data
            :buffer-data-raw
            :buffer-reserve-block
@@ -596,8 +577,7 @@
            :free-buffers
            :make-gpu-buffer
            :make-gpu-buffer-from-id
-           :multi-buffer-data
-           :unbind-buffer))
+           :multi-buffer-data))
 
 (uiop:define-package :cepl.gpu-arrays.buffer-backed
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -615,13 +595,11 @@
 
 (uiop:define-package :cepl.vaos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.types :%cepl.types :split-sequence
+        :cepl.types :%cepl.types :split-sequence :cepl.context
 	:named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
 	:cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed)
   (:export :free-vao
 	   :free-vaos
-	   :bind-vao
-	   :unbind-vao
 	   :with-vao-bound
 	   :make-vao
 	   :make-vao-from-id))
@@ -643,7 +621,7 @@
 
 (uiop:define-package :cepl.ubos
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
-        :cepl.types :%cepl.types :split-sequence
+        :cepl.types :%cepl.types :split-sequence :cepl.context
 	:named-readtables :cepl.errors :cepl.c-arrays :cepl.memory
 	:cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers)
   (:export :ubo
@@ -804,6 +782,7 @@
 	   :defmacro-g
 	   :define-compiler-macro-g
 	   :with-instances
+           :glambda
 	   :def-g->
 	   :g->
 	   :map-g
@@ -811,9 +790,7 @@
 	   :gpu-function
 	   :gpu-functions
 	   :delete-gpu-function
-	   ;; :*verbose-compiles*
-	   ;; :*warn-when-cant-test-compile*
-	   ))
+           :bake-uniforms))
 
 (uiop:define-package :cepl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils
@@ -871,7 +848,8 @@
 	  :cl-fad
 	  :named-readtables
 	  :cepl.errors
-	  :cepl.internals)
+	  :cepl.internals
+          :cepl.context)
     :shadow (:quit)
     :import-from ((:cepl-utils :deferror
 			       :print-mem
