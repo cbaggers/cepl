@@ -414,14 +414,23 @@ names are depended on by the functions named later in the list"
 
 (defun function-keyed-pipeline (func)
   (assert (typep func 'function))
-  (let ((name (gethash func *gpu-pipeline-specs*)))
-    (when name (pipeline-spec name))))
+  (let ((spec (gethash func *gpu-pipeline-specs*)))
+    (if (typep spec 'lambda-pipeline-spec)
+        spec
+        (pipeline-spec spec))))
 
-(defun (setf function-keyed-pipeline) (name func)
+(defun (setf function-keyed-pipeline) (spec func)
   (assert (typep func 'function))
-  (assert (symbolp name))
+  (assert (or (symbolp spec) (typep spec 'lambda-pipeline-spec)))
+  (labels ((scan (k v)
+             (when (eq v spec)
+               (remhash k *gpu-pipeline-specs*))))
+    ;; and this is a horribly lazy hack. We need a better
+    ;; mechanism for this.
+    (when (symbolp spec)
+      (maphash #'scan *gpu-pipeline-specs*)))
   (setf (gethash func *gpu-pipeline-specs*)
-        name))
+        spec))
 
 (defun %pull-spec-common (asset-name)
   (labels ((gfunc-spec (x)
