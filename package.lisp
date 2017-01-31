@@ -107,7 +107,8 @@
            :func-keyed-pipeline-not-found
            :bake-invalid-pipeling-arg
            :bake-invalid-uniform-name
-           :bake-uniform-invalid-values))
+           :bake-uniform-invalid-values
+           :partial-lambda-pipeline))
 
 (uiop:define-package :cepl.host
   (:use :cl)
@@ -789,10 +790,7 @@
 	   :gpu-function
 	   :gpu-functions
 	   :delete-gpu-function
-           :bake
-	   ;; :*verbose-compiles*
-	   ;; :*warn-when-cant-test-compile*
-	   ))
+           :bake-uniforms))
 
 (uiop:define-package :cepl.space.routes
   (:use #:cl #:fn #:named-readtables #:cepl-utils

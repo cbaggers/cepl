@@ -349,6 +349,20 @@ Might you have meant to specify a gpu function?"
     (t "invalid"))
   invalid)
 
+(deferror partial-lambda-pipeline (:print-circle nil) (partial-stages)
+    "CEPL: G-> was called with at least one stage taking functions as uniform
+arguments.
+
+If this were def-g-> we would make a partial pipeline however we don't
+currently support partial lambda pipelines.
+
+Sorry for the inconvenience. It is a feature we are interested in adding so if
+this is causing you issues please reach out to us on Github.
+
+The problem stages were:
+~{~%~s~}"
+  partial-stages)
+
 
 ;; Please remember the following 2 things
 ;;

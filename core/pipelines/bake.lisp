@@ -1,15 +1,14 @@
 (in-package :cepl.pipelines)
 (in-readtable :fn.reader)
 
-;; (bake 'foo :jam #'(ham :int))
+;; (bake-uniforms 'foo :jam #'(ham :int))
 
-(defmacro bake (pipeline &rest uniforms &key &allow-other-keys)
+(defmacro bake-uniforms (pipeline &rest uniforms &key &allow-other-keys)
   (labels ((expand-literal-func (x)
              (if (and (listp x) (eq (first x) 'function))
                  `(gpu-function ,(second x))
                  x)))
     `(%bake ,pipeline ,@(mapcar #'expand-literal-func uniforms))))
-
 
 (defun %bake (pipeline &rest uniforms &key &allow-other-keys)
   (let* ((pipeline (typecase pipeline
