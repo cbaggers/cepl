@@ -296,12 +296,11 @@ Pipeline: ~s"
     "CEPL: This pipeline named ~s is a partial pipeline.
 
 This is because the following uniform arguments take functions:
-
-~{~(~s~)~}
+~{~%~s~}
 
 As OpenGL does not itself support passing functions as values you must use
-the 'bake-uniforms' function to create set the uniforms above. This will
-generate a 'complete' pipeline which you can then map-g over.
+bake-uniforms to create set the uniforms above. This will generate
+a 'complete' pipeline which you can then map-g over.
 " name args)
 
 (deferror fbo-target-not-valid-constant () (target)

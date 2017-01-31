@@ -16,6 +16,11 @@
            (some #'function-arg-p in-args))
         stage-keys))
 
+(defun function-uniforms (stage-keys)
+  (mapcat λ(with-gpu-func-spec (gpu-func-spec _)
+           (remove-if-not #'function-arg-p uniforms))
+        stage-keys))
+
 (defmacro def-g-> (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
   (%defpipeline-gfuncs name gpipe-args context))
@@ -55,7 +60,7 @@
         (use-program 0)
         (error 'mapping-over-partial-pipeline
                :name ',name
-               :args ',(remove-if-not #'function-arg-p aggregate-uniforms))
+               :args ',(function-uniforms stage-keys))
         stream)
        (register-named-pipeline ',name #',name)
        ',name)))
