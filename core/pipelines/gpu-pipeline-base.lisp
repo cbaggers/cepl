@@ -59,11 +59,13 @@
                tesselation-evaluation-stage
                geometry-stage
                fragment-stage) spec
-    (list (cons :vertex vertex-stage)
-          (cons :tesselation-control tesselation-control-stage)
-          (cons :tesselation-evaluation tesselation-evaluation-stage)
-          (cons :geometry geometry-stage)
-          (cons :fragment fragment-stage))))
+    (remove-if-not
+     #'cdr
+     (list (cons :vertex vertex-stage)
+           (cons :tesselation-control tesselation-control-stage)
+           (cons :tesselation-evaluation tesselation-evaluation-stage)
+           (cons :geometry geometry-stage)
+           (cons :fragment fragment-stage)))))
 
 ;;--------------------------------------------------
 
@@ -412,12 +414,14 @@ names are depended on by the functions named later in the list"
 
 (defun function-keyed-pipeline (func)
   (assert (typep func 'function))
-  (gethash func *gpu-pipeline-specs*))
+  (let ((name (gethash func *gpu-pipeline-specs*)))
+    (when name (pipeline-spec name))))
 
-(defun (setf function-keyed-pipeline) (spec func)
+(defun (setf function-keyed-pipeline) (name func)
   (assert (typep func 'function))
+  (assert (symbolp name))
   (setf (gethash func *gpu-pipeline-specs*)
-        spec))
+        name))
 
 (defun %pull-spec-common (asset-name)
   (labels ((gfunc-spec (x)
@@ -464,18 +468,22 @@ names are depended on by the functions named later in the list"
     (etypecase pipeline
       (null (warn 'func-keyed-pipeline-not-found
                   :callee 'pull-g :func pipeline-func))
-      (symbol (pull-g pipeline))
-      (lambda-pipeline-spec
+      ((or pipeline-spec lambda-pipeline-spec)
        (let ((compiled (slot-value pipeline 'cached-compile-results)))
-         (mapcar #'varjo:glsl-code compiled))))))
+         (if compiled
+             (mapcar #'varjo:glsl-code compiled)
+             (warn 'func-keyed-pipeline-not-found
+                   :callee 'pull-g :func pipeline-func)))))))
 
 (defmethod pull1-g ((pipeline-func function))
   (let ((pipeline (function-keyed-pipeline pipeline-func)))
     (etypecase pipeline
       (null (warn 'func-keyed-pipeline-not-found
                   :callee 'pull1-g :func pipeline-func))
-      (symbol (pull-g pipeline))
-      (lambda-pipeline-spec (slot-value pipeline 'cached-compile-results)))))
+      ((or pipeline-spec lambda-pipeline-spec)
+       (or (slot-value pipeline 'cached-compile-results)
+           (warn 'func-keyed-pipeline-not-found
+                  :callee 'pull1-g :func pipeline-func))))))
 
 ;;--------------------------------------------------
 

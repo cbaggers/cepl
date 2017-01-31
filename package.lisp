@@ -104,7 +104,10 @@
            :fbo-target-not-valid-constant
            :pull*-g-not-enabled
            :pull-g-not-cached
-           :func-keyed-pipeline-not-found))
+           :func-keyed-pipeline-not-found
+           :bake-invalid-pipeling-arg
+           :bake-invalid-uniform-name
+           :bake-uniform-invalid-values))
 
 (uiop:define-package :cepl.host
   (:use :cl)

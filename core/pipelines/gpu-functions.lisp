@@ -341,10 +341,10 @@
                                ,@code))
                            code)))
             (varjo:make-stage in-args
-                               final-uniforms
-                               context
-                               body
-                               t))))))
+                              final-uniforms
+                              context
+                              body
+                              t))))))
 
 ;;--------------------------------------------------
 

@@ -316,6 +316,40 @@ The target must be constant and must be one of the following:
 In this case the compile-time value of 'target' was: ~a
 " target)
 
+(deferror bake-invalid-pipeling-arg () (invalid-arg)
+    "CEPL: The pipeline argument to #'bake was expected to be a pipeline name or
+pipeline function object.
+
+Instead we found: ~s"
+  invalid-arg)
+
+(deferror bake-invalid-uniform-name () (proposed invalid)
+    "CEPL: An attempt to bake some uniforms in a pipeline has failed.
+
+The arguments to be baked were:
+~{~s ~s~^~%~}
+
+However the following uniforms were not found in the pipeline:
+~{~s~^ ~}"
+  proposed invalid)
+
+(deferror bake-uniform-invalid-values (:print-circle nil) (proposed invalid)
+    "CEPL: An attempt to bake some uniforms in a pipeline has failed.
+
+The arguments to be baked were:
+~{~s ~s~^~%~}
+
+However the following values are ~a, they are not representable in shaders.
+~{~s~^ ~}
+
+Might you have meant to specify a gpu function?"
+  proposed
+  (cond
+    ((every #'symbolp invalid) "symbols")
+    ((every #'listp invalid) "lists")
+    (t "invalid"))
+  invalid)
+
 
 ;; Please remember the following 2 things
 ;;

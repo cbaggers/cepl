@@ -56,7 +56,9 @@
         (error 'mapping-over-partial-pipeline
                :name ',name
                :args ',(remove-if-not #'function-arg-p aggregate-uniforms))
-        stream))))
+        stream)
+       (register-named-pipeline ',name #',name)
+       ',name)))
 
 (defun %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
                                post context
