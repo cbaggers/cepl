@@ -42,12 +42,7 @@
   (gl:clear-color 0.0 0.0 0.0 0.0)
   (gl:enable :cull-face)
   (gl:cull-face :back)
-  (gl:front-face :ccw)
-  (gl:enable :depth-test)
-  (gl:depth-mask :true)
-  (gl:depth-func :less)
-  (gl:depth-range 0.0 1.0)
-  (gl:enable :depth-clamp))
+  (gl:front-face :ccw))
 
 ;;------------------------------------------------------------
 ;; Homeless stuff
@@ -58,13 +53,6 @@
     (if (= cache 0)
         (setf cache (cl-opengl:get* :max-draw-buffers))
         cache)))
-
-(defvar *context-defaults* nil)
-
-(defun set-context-defaults (context)
-  (loop :for setting :in *context-defaults* :do
-     (apply (symbol-function (first setting)) (cons context (rest setting)))))
-
 
 ;; GL_DRAW_BUFFERi (symbolic constant, see glDrawBuffers)
 ;;     params returns one value, a symbolic constant indicating which buffers are being drawn to by the corresponding output color. This is selected from the currently bound GL_DRAW_FRAMEBUFFER The initial value of GL_DRAW_BUFFER0 is GL_BACK if there are back buffers, otherwise it is GL_FRONT. The initial values of draw buffers for all other output colors is GL_NONE. i can be from 0 up to the value of MAX_DRAW_BUFFERS minus one.

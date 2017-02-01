@@ -473,7 +473,13 @@
            :read-fbo-bound
            :draw-fbo-bound
            :fbo-bound
-           :default-framebuffer))
+           :default-framebuffer
+           :depth-range-vec2
+           :depth-clamp
+           :depth-mask
+           :depth-test-function
+           :never
+           :always))
 
 (uiop:define-package :cepl.viewports
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -880,6 +886,7 @@
 		:cepl.gpu-arrays
 		:cepl.streams
 		:cepl.ubos
+                :cepl.context
 		:cepl.samplers
 		:cepl.textures
 		:cepl.fbos

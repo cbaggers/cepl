@@ -44,7 +44,14 @@
                           +null-texture+ :adjustable t :fill-pointer 0))
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
    (map-of-pipeline-names-to-gl-ids
-    :initform (make-hash-table :test #'eq))))
+    :initform (make-hash-table :test #'eq))
+   ;;- - - - - - - - - - - - - - - - - - - - - - - -
+   (depth-func :initform :invalid)
+   (depth-mask :initform :invalid)
+   ;;- - - - - - - - - - - - - - - - - - - - - - - -
+   (depth-range :initform :invalid)
+   (depth-clamp :initform :invalid)
+   ))
 
 (defvar *cepl-context*
   (make-instance 'cepl-context))
@@ -400,6 +407,23 @@
 
 ;;----------------------------------------------------------------------
 
+(defun vao-bound (cepl-context)
+  (with-slots (gl-context vao-binding-id) cepl-context
+    (if (= vao-binding-id +unknown-gl-id+)
+        (setf vao-binding-id (vertex-array-binding gl-context))
+        vao-binding-id)))
+
+(defun (setf vao-bound) (vao cepl-context)
+  (with-slots (gl-context vao-binding-id) cepl-context
+    (when (/= vao-binding-id vao)
+      (setf (vertex-array-binding gl-context) vao)
+      (setf vao-binding-id vao)))
+  vao)
+
+;;----------------------------------------------------------------------
+
+(defgeneric set-context-defaults (cepl-context))
+
 (defun on-gl-context (cepl-context new-gl-context)
   (with-slots (gl-context uninitialized-resources current-viewport
                           default-viewport default-framebuffer)
@@ -408,6 +432,10 @@
     (let ((vp (cepl.fbos:attachment-viewport default-framebuffer 0)))
       (setf current-viewport vp
             default-viewport vp))
+    ;;
+    ;; Set GL Defaults
+    (set-context-defaults cepl-context)
+    ;;
     (initialize-all-delayed uninitialized-resources)
     (setf uninitialized-resources nil)))
 

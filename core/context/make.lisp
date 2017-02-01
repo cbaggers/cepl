@@ -35,3 +35,16 @@
 	      (major-version new-gl-context)
 	      (minor-version new-gl-context))
       (cepl:cls))))
+
+(defmethod set-context-defaults (cepl-context)
+  ;; Enable depth testing and use 'less than' for testing
+  (setf (cepl.context:depth-test-function cepl-context)
+        #'<)
+  ;; Writing to depth buffer enabled by default
+  (setf (cepl.context:depth-mask cepl-context) t)
+  ;; Set the default depth range
+  (setf (cepl.context:depth-range-vec2 cepl-context)
+        (v! 0 1))
+  ;; Enable the depth clamp
+  (setf (cepl.context:depth-clamp cepl-context)
+        t))
