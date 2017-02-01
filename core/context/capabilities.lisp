@@ -1,30 +1,50 @@
 (in-package :cepl.context)
 
-;; :BLEND If enabled, blend the computed fragment color values with the
-;;     values in the color buffers. See glBlendFunc. Sets the blend
-;;     enable/disable flag for all color buffers.
+;;------------------------------------------------------------
+;; Clear Color
 
-;; :CLIP-DISTANCEi If enabled, clip geometry against user-defined half
-;;     space i.
+(defun clear-color (cepl-context)
+  (with-slots (clear-color) cepl-context
+    clear-color))
 
-;; :COLOR-LOGIC-OP If enabled, apply the currently selected logical
-;;     operation to the computed fragment color and color buffer
-;;     values. See glLogicOp.
+(defun (setf clear-color) (vec4-color cepl-context)
+  (assert (typep vec4-color 'rtg-math.types:vec4))
+  (with-slots (clear-color) cepl-context
+    (gl:clear-color (v:x vec4-color) (v:y vec4-color)
+                    (v:z vec4-color) (v:w vec4-color))
+    (setf clear-color vec4-color)))
 
-;; :CULL-FACE If enabled, cull polygons based on their winding in window
-;;     coordinates. See glCullFace.
 
-;; :DEBUG-OUTPUT If enabled, debug messages are produced by a debug
-;;     context. When disabled, the debug message log is silenced. Note
-;;     that in a non-debug context, very few, if any messages might be
-;;     produced, even when :DEBUG-OUTPUT is enabled.
+;;------------------------------------------------------------
+;; Cull Face
 
-;; :DEBUG-OUTPUT-SYNCHRONOUS If enabled, debug messages are produced
-;;     synchronously by a debug context. If disabled, debug messages may
-;;     be produced asynchronously. In particular, they may be delayed
-;;     relative to the execution of GL commands, and the debug callback
-;;     function may be called from a thread other than that in which the
-;;     commands are executed. See glDebugMessageCallback​.
+(defun cull-face (cepl-context)
+  (with-slots (cull-face) cepl-context
+    cull-face))
+
+(defun (setf cull-face) (face cepl-context)
+  (assert (member face '(nil :front :back :front-and-back)))
+  (with-slots (cull-face) cepl-context
+    (if face
+        (progn
+          (gl:enable :cull-face)
+          (gl:cull-face face))
+        (gl:disable :cull-face))
+    (setf cull-face face)))
+
+;;------------------------------------------------------------
+;; Cull Face
+
+(defun front-face (cepl-context)
+  (with-slots (front-face) cepl-context
+    front-face))
+
+(defun (setf front-face) (winding-direction cepl-context)
+  (assert (or (eq winding-direction :ccw)
+              (eq winding-direction :cw)))
+  (with-slots (front-face) cepl-context
+    (gl:front-face winding-direction)
+    (setf front-face winding-direction)))
 
 ;;------------------------------------------------------------
 ;; Depth Range
@@ -125,8 +145,30 @@
   t)
 
 ;;------------------------------------------------------------
+;; Todo
 
+;; :BLEND If enabled, blend the computed fragment color values with the
+;;     values in the color buffers. See glBlendFunc. Sets the blend
+;;     enable/disable flag for all color buffers.
 
+;; :CLIP-DISTANCEi If enabled, clip geometry against user-defined half
+;;     space i.
+
+;; :COLOR-LOGIC-OP If enabled, apply the currently selected logical
+;;     operation to the computed fragment color and color buffer
+;;     values. See glLogicOp.
+
+;; :DEBUG-OUTPUT If enabled, debug messages are produced by a debug
+;;     context. When disabled, the debug message log is silenced. Note
+;;     that in a non-debug context, very few, if any messages might be
+;;     produced, even when :DEBUG-OUTPUT is enabled.
+
+;; :DEBUG-OUTPUT-SYNCHRONOUS If enabled, debug messages are produced
+;;     synchronously by a debug context. If disabled, debug messages may
+;;     be produced asynchronously. In particular, they may be delayed
+;;     relative to the execution of GL commands, and the debug callback
+;;     function may be called from a thread other than that in which the
+;;     commands are executed. See glDebugMessageCallback​.
 
 ;; :DITHER If enabled, dither color components or indices before they are
 ;;     written to the color buffer.

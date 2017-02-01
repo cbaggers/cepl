@@ -51,7 +51,6 @@
   (+ buffer-num #.(cffi:foreign-enum-value '%gl:enum :draw-buffer0)))
 
 (defvar *gl-window* nil)
-(defvar *on-context* nil)
 
 (defun window-dimensions (&optional (window *gl-window*))
   (cepl.host:window-size window))

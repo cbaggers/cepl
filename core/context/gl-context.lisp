@@ -37,14 +37,6 @@
            (gl:major-version) (gl:minor-version))))
 
 ;;------------------------------------------------------------
-
-(defun %set-default-gl-options ()
-  (gl:clear-color 0.0 0.0 0.0 0.0)
-  (gl:enable :cull-face)
-  (gl:cull-face :back)
-  (gl:front-face :ccw))
-
-;;------------------------------------------------------------
 ;; Homeless stuff
 
 (let ((cache 0))

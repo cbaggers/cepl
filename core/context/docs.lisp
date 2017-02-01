@@ -55,7 +55,7 @@ If setf'ed to nil, depth buffer writing is disabled. Otherwise, it is enabled.
 
 Initially, it is set to T (enabled)")
 
-(defun depth-clamp
+  (defun depth-clamp
       "
 This function specifies whether depth clamping is enabled.
 
@@ -73,6 +73,36 @@ vector being the distance to the near plane and the Y component being the
 distance to the far plane.
 
 See https://www.khronos.org/opengl/wiki/GLAPI/glDepthRange for a deeper
-description.
+description.")
+
+  (defun cull-face
+      "
+This function lets you control how (and whether) faces will be culled based on
+their winding in window coordinates.
+
+- nil means no culling is taking place
+- :front means that front faces are culled
+- :back means that back faces are culled
+
+The initial value is :back")
+
+  (defun clear-color
+      "
+This lets you access the vec4 value that will be used when clearing the
+attachments of an FBO.
+
+When you call #'clear on an FBO, every element in the gpu-arrays attached to the
+FBO is set to the value in clear-color
 ")
-  )
+
+  (defun front-face
+      "
+This function controls the orientation of front-facing polygons.
+
+Valid values for this function are:
+
+- :cw meaning clock-wise
+- :ccw meaning counter clock-wise
+
+The default is :ccw
+"))

@@ -12,8 +12,10 @@
   (if host-init-flags
       (cepl.host:init host-init-flags)
       (cepl.host:init))
-  (cepl.context:make-context :width width :height height :resizable resizable
-			     :title title :gl-version requested-gl-version)
+  (cepl.context::%make-gl-context :width width :height height
+                                  :resizable resizable
+                                  :title title
+                                  :gl-version requested-gl-version)
   (cepl.lifecycle::change-state :interactive)
   t)
 

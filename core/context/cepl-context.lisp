@@ -46,12 +46,16 @@
    (map-of-pipeline-names-to-gl-ids
     :initform (make-hash-table :test #'eq))
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
-   (depth-func :initform :invalid)
-   (depth-mask :initform :invalid)
+   (depth-func :initform :unknown)
+   (depth-mask :initform :unknown)
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
-   (depth-range :initform :invalid)
-   (depth-clamp :initform :invalid)
-   ))
+   (depth-range :initform :unknown)
+   (depth-clamp :initform :unknown)
+   ;;- - - - - - - - - - - - - - - - - - - - - - - -
+   (cull-face :initform :unknown)
+   (front-face :initform :unknown)
+   ;;- - - - - - - - - - - - - - - - - - - - - - - -
+   (clear-color :initform :unknown)))
 
 (defvar *cepl-context*
   (make-instance 'cepl-context))
@@ -421,28 +425,10 @@
   vao)
 
 ;;----------------------------------------------------------------------
-
-(defgeneric set-context-defaults (cepl-context))
-
-(defun on-gl-context (cepl-context new-gl-context)
-  (with-slots (gl-context uninitialized-resources current-viewport
-                          default-viewport default-framebuffer)
-      cepl-context
-    (setf gl-context new-gl-context)
-    (let ((vp (cepl.fbos:attachment-viewport default-framebuffer 0)))
-      (setf current-viewport vp
-            default-viewport vp))
-    ;;
-    ;; Set GL Defaults
-    (set-context-defaults cepl-context)
-    ;;
-    (initialize-all-delayed uninitialized-resources)
-    (setf uninitialized-resources nil)))
-
-;;----------------------------------------------------------------------
 ;; Delayed resource initialization
 
 (defvar *post-context-init* nil)
+(defvar *on-context* nil)
 
 (defstruct delayed
   (waiting-on nil :type list)
@@ -486,5 +472,3 @@
             (lambda () ,init-func-call)
             ,depends-on))
        ,pre)))
-
-;;----------------------------------------------------------------------

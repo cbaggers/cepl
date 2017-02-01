@@ -456,7 +456,6 @@
           :named-readtables :cepl.errors :cepl.internals)
   (:export :gl-context
            :*gl-context*
-           :make-context
            :has-feature
            :major-version
            :minor-version
@@ -474,6 +473,9 @@
            :draw-fbo-bound
            :fbo-bound
            :default-framebuffer
+           :clear-color
+           :front-face
+           :cull-face
            :depth-range-vec2
            :depth-clamp
            :depth-mask
