@@ -55,7 +55,9 @@
 	   :defparameter*
 	   :read-integers
            :ensure-vec-index
-           :def-artificial-id))
+           :def-artificial-id
+           :with-setf
+           :with-setf*))
 
 (uiop:define-package :cepl.errors
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
@@ -439,7 +441,6 @@
 	   :set-arg-val
 	   ;;---
 	   :populate
-	   :*gl-window*
            :window-dimensions
            :window-resolution
 	   :*on-context*))

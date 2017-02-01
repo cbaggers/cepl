@@ -44,7 +44,7 @@
 (defun quit () (cepl.lifecycle::change-state :shutting-down))
 
 (defun step-host (&optional tpref)
-  (cepl.host::host-step cepl.internals:*gl-window* tpref))
+  (cepl.host::host-step cepl.context::*gl-window* tpref))
 
 (defun swap ()
   (cepl.host::host-swap)

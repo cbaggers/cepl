@@ -39,6 +39,8 @@
 ;;------------------------------------------------------------
 ;; Homeless stuff
 
+(defvar *gl-window* nil)
+
 (let ((cache 0))
   (defun max-draw-buffers (context)
     (declare (ignore context))

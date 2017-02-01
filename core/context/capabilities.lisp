@@ -33,7 +33,7 @@
     (setf cull-face face)))
 
 ;;------------------------------------------------------------
-;; Cull Face
+;; Front Face
 
 (defun front-face (cepl-context)
   (with-slots (front-face) cepl-context
@@ -61,10 +61,6 @@
 
 ;;------------------------------------------------------------
 ;; Depth Clamp
-
-;; :DEPTH-CLAMP If enabled, the -wc ≤ zc ≤ wc plane equation is ignored
-;;     by view volume clipping (effectively, there is no near or far
-;;     plane clipping). See glDepthRange.
 
 (defun depth-clamp (cepl-context)
   (with-slots (depth-clamp) cepl-context

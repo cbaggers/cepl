@@ -660,3 +660,30 @@ source: ~s~%list-to-match: ~s" list list-to-match)
              (incf ,lowest)))
        (defun ,release (id)
          (push id ,freed)))))
+
+(defmacro with-setf (place value &body body)
+  "Used like this:
+   (with-setf (aref x 0) 10
+     blah
+     blah)"
+  (alexandria:with-gensyms (starting-value)
+    `(let ((,starting-value ,target))
+       (setf ,target ,value)
+       (unwind-protect (progn ,@body)
+         (setf ,target ,starting-value)))))
+
+(defmacro with-setf* (place-value-pairs &body body)
+  "Used like this:
+   (with-setf* ((aref a 0) 10
+                (foo :plinge) :narf)
+     (print "blarr"))"
+  (let* ((pairs-grouped (group place-value-pairs 2))
+         (gvars (loop :for i :below (length pairs-grouped) :collect
+                   (gensym "starting-val")))
+         (starting-values (mapcar (lambda (g p) (list g (first p)))
+                                  gvars pairs-grouped))
+         (restore-values (reduce #'append (mapcar #'reverse starting-values))))
+    `(let ,starting-values
+       (setf ,@place-value-pairs)
+       (unwind-protect (progn ,@body)
+         (setf ,@restore-values)))))

@@ -36,6 +36,7 @@
                (:file "core/types/cepl-types")
                (:file "core/context/gl-context")
                (:file "core/context/cepl-context")
+               (:file "core/context/delayed-resource-init")
                (:file "core/context/capabilities")
                (:file "core/context/version")
                (:file "core/types/initalized-p")
