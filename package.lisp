@@ -675,7 +675,7 @@
   (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
         :cepl.types :split-sequence :named-readtables :cepl.errors
 	:cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
-	:cepl.textures :%cepl.types :cepl.memory)
+	:cepl.textures :%cepl.types :cepl.memory :cepl.measurements)
   (:export :gpu-array-texture
 	   :gpu-array-texture-type
 	   :gpu-array-level-num

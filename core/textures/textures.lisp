@@ -671,6 +671,14 @@ the width to see at what point the width reaches 0 or GL throws an error."
 
 ;;------------------------------------------------------------
 
+(defmethod dimensions ((texture texture))
+  (dimensions (texref texture)))
+
+(defmethod resolution ((texture texture))
+  (resolution (texref texture)))
+
+;;------------------------------------------------------------
+
 (defmethod push-g ((object c-array) (destination texture))
   (push-g object (texref destination)))
 (defmethod push-g ((object list) (destination texture))

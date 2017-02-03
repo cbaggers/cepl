@@ -14,3 +14,9 @@
 
 (defun gpu-array-face-num (gpu-array)
   (%cepl.types::gpu-array-t-face-num gpu-array))
+
+(defmethod resolution ((gpu-array gpu-array-t))
+  (let ((dim (gpu-array-dimensions gpu-array)))
+    (make-array (length dim) :element-type 'single-float
+                :initial-contents (mapcar (lambda (i) (coerce i 'single-float))
+                                          dim))))
