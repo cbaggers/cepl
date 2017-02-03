@@ -667,10 +667,10 @@ source: ~s~%list-to-match: ~s" list list-to-match)
      blah
      blah)"
   (alexandria:with-gensyms (starting-value)
-    `(let ((,starting-value ,target))
-       (setf ,target ,value)
+    `(let ((,starting-value ,place))
+       (setf ,place ,value)
        (unwind-protect (progn ,@body)
-         (setf ,target ,starting-value)))))
+         (setf ,place ,starting-value)))))
 
 (defmacro with-setf* (place-value-pairs &body body)
   "Used like this:
