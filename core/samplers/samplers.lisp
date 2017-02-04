@@ -448,6 +448,9 @@
   (or (member type *sampler-types*)
       (varjo:v-typep type 'v-sampler)))
 
+(defun sampler-type (sampler)
+  (%sampler-type sampler))
+
 ;; (defun has-default-params (sampler)
 ;;   (and (= (%sampler-lod-bias sampler) 0.0)
 ;;        (= (%sampler-min-lod sampler) -1000.0)
