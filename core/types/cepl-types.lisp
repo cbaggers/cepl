@@ -2,7 +2,8 @@
 
 ;;------------------------------------------------------------
 
-(defconstant +gl-id-bit-size+ 16)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defconstant +gl-id-bit-size+ 16))
 
 (deftype gl-id ()
   '(unsigned-byte #.+gl-id-bit-size+))
