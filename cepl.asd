@@ -90,6 +90,7 @@
                (:file "core/spaces/space-errors")
                (:file "core/spaces/space-walking")
                (:file "core/spaces/space-transforms")
+               (:file "core/spaces/pos-funcs")
                (:file "core/spaces/gpu")
                (:file "core/types/predefined/gpu-structs")
                (:file "core/context/make")

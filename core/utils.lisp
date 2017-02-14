@@ -676,7 +676,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
   "Used like this:
    (with-setf* ((aref a 0) 10
                 (foo :plinge) :narf)
-     (print "blarr"))"
+     (print \"blarr\"))"
   (let* ((pairs-grouped (group place-value-pairs 2))
          (gvars (loop :for i :below (length pairs-grouped) :collect
                    (gensym "starting-val")))

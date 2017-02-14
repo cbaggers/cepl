@@ -30,7 +30,7 @@ control whether a pixel will be written into the output attachment:
  #'>=    - Passes if the incoming depth value is greater than or equal to the
             stored depth value.
 
- #'aways - Always passes
+ #'always - Always passes
 
 Initially, it is set to #'<")
 
