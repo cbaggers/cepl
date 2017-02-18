@@ -61,11 +61,7 @@
        (defgeneric ,name (context))
        (defmethod ,name ((context gl-context))
          (declare (ignore context))
-         (gl:get* ,kwd-name ,@(when index (list index))))
-       ;; (define-compiler-macro ,name (&rest args)
-       ;;   (declare (ignore args))
-       ;;   '(gl:get* ,kwd-name ,@(when index (list index))))
-       )))
+         (gl:get* ,kwd-name ,@(when index (list index)))))))
 
 ;;------------------------------------------------------------
 

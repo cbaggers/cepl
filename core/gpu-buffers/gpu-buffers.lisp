@@ -75,6 +75,7 @@
 	(make-array 0 :element-type 'gpu-array-bb
 		    :initial-element +null-buffer-backed-gpu-array+
 		    :adjustable t :fill-pointer 0))
+  (cepl.context::register-gpu-buffer *cepl-context* new-buffer)
   (if initial-contents
       (if (list-of-c-arrays-p initial-contents)
 	  (multi-buffer-data new-buffer initial-contents buffer-target usage)
