@@ -55,9 +55,9 @@
 (defmethod (setf resolution) (value (viewport viewport))
   (setf (viewport-resolution viewport) value))
 
-(defun viewport-resolution (viewport)
-  (v! (%viewport-resolution-x viewport)
-      (%viewport-resolution-y viewport)))
+(defn viewport-resolution ((viewport viewport)) rtg-math.types:vec2
+  (v2:make (float (%viewport-resolution-x viewport))
+           (float (%viewport-resolution-y viewport))))
 
 (defun (setf viewport-resolution) (value viewport)
   (unless (typep value 'rtg-math.types:vec2)
@@ -87,7 +87,7 @@
 
 (defun (setf viewport-origin) (value viewport)
   (setf (%viewport-origin-x viewport) (floor (v:x value))
-	(%viewport-origin-y viewport) (floor (v:y value)))
+        (%viewport-origin-y viewport) (floor (v:y value)))
   value)
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -120,7 +120,7 @@
   "To be used by code than is managing the viewport state itself.
    composed dispatch would be an example"
   `(%with-viewport (cepl.fbos:attachment-viewport ,fbo ,attachment)
-     ,@body))
+                   ,@body))
 
 
 (defun viewport-params-to-vec4 (&optional (viewport (current-viewport)))

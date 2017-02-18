@@ -2,6 +2,7 @@
 
 (uiop:define-package :cepl-utils
     (:use :cl)
+  (:import-from :%rtg-math :defn :defn-inline)
   (:export :gdefun
            :dbind
            :assoc-bind
@@ -57,7 +58,9 @@
            :ensure-vec-index
            :def-artificial-id
            :with-setf
-           :with-setf*))
+           :with-setf*
+           :defn
+           :defn-inline))
 
 (uiop:define-package :cepl.errors
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math)
