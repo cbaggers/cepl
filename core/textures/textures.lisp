@@ -38,7 +38,8 @@
 		  :image-format (texture-image-format texture))))
 
 	    (when (not cepl.context:*gl-context*)
-	      (cepl.memory::delay-initialization
+	      (cepl.context::delay-initialization
+               *cepl-context*
 	       (lambda () (reinit-on-context result))
 	       (list texture)))
 	    result)
