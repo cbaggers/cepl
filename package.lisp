@@ -873,7 +873,6 @@
                :quit
                :repl
                :step-host
-               :continuable
                :cls
                :swap
                :print-mem

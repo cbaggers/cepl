@@ -80,3 +80,8 @@ You are now ready to get started. Simply run:
 #### Windows C Library Hack
 
 If you are having issues getting the C libraries to load and just need to rule out whether Lisp can find them, try putting them in the same folder as the lisp exe. For example `C:\Program Files\sbcl\`.
+
+## CHANGELOG
+
+### 2017-02-19
+- Removed the `continuable` macro. The macro can be found in the `livesupport` project. Simply `(ql:quickload :livesupport)`

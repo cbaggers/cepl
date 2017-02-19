@@ -30,7 +30,6 @@
                (:file "project")
                (:file "core/context/vars")
                (:file "core/lifecycle")
-               (:file "core/continuable")
                (:file "core/measurements/measurements")
                (:file "core/memory/memory")
                (:file "core/types/cepl-types")
