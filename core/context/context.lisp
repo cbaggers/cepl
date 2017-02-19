@@ -127,7 +127,36 @@
 ;; GL_ARRAY_BUFFER_BINDING (GLint, initially 0, see glBindBuffer)
 ;; The name of the buffer object currently bound to the target GL_ARRAY_BUFFER.
 ;; If no buffer object is bound to this target, 0 is returned.
-(def-context-reader %array-buffer-binding :enum-name :array-buffer-binding)
+(defun array-buffer-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :array-buffer-binding))
+
+(defun (setf array-buffer-binding) (id context)
+  (declare (ignore context))
+  (cl-opengl-bindings:bind-buffer :array-buffer id)
+  id)
+
+;; (def-context-reader %array-buffer-binding :enum-name :array-buffer-binding)
+
+;;------------------------------------------------------------
+
+;; GL_ELEMENT_ARRAY_BUFFER_BINDING (GLint, initially 0, see glBindBuffer)
+;; The name of the buffer object currently bound to the target
+;; GL_ELEMENT_ARRAY_BUFFER. If no buffer object is bound to this target, 0 is
+;; returned.
+
+(defun element-array-buffer-binding (context)
+  (declare (ignore context))
+  (cl-opengl:get* :element-array-buffer-binding))
+
+(defun (setf element-array-buffer-binding) (id context)
+  (declare (ignore context))
+  (cl-opengl-bindings:bind-buffer :element-array-buffer id)
+  id)
+
+;; (def-context-reader %element-array-buffer-binding :enum-name :element-array-buffer-binding)
+
+;;------------------------------------------------------------
 
 ;; GL_COPY_READ_BUFFER_BINDING (name, initially 0, see glBufferBinding)
 ;; The buffer that is currently bound to the copy read bind point, or 0 for none
@@ -145,13 +174,6 @@
 ;; returned.
 (def-context-reader %draw-indirect-buffer-binding
     :enum-name :draw-indirect-buffer-binding)
-
-;; GL_ELEMENT_ARRAY_BUFFER_BINDING (GLint, initially 0, see glBindBuffer)
-;; The name of the buffer object currently bound to the target
-;; GL_ELEMENT_ARRAY_BUFFER. If no buffer object is bound to this target, 0 is
-;; returned.
-(def-context-reader %element-array-buffer-binding
-    :enum-name :element-array-buffer-binding)
 
 ;; GL_QUERY_BUFFER_BINDING (name, initially 0, see glBufferBinding)
 ;; The buffer that is currently bound to the query bind point, or 0 for none.
