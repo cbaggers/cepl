@@ -10,28 +10,28 @@
   (unless (find access-type '(:read-write :read-only :write-only))
     (error "The access argument must be set to :read-write :read-only or :write-only"))
   (let ((glarray-pointer (gensym "POINTER"))
-	(array-sym (gensym "BUFFER"))
+        (array-sym (gensym "BUFFER"))
         (buffer-sym (gensym "BUFFER"))
         (gtarget (gensym "target")))
     `(progn
        (let ((,array-sym ,gpu-array))
-	 (unless (typep ,array-sym 'gpu-array)
-	   (if (typep ,array-sym 'gpu-array-t)
-	       (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
-	       (error "with-gpu-array-* does not support the type ~s"
-		      (type-of ,array-sym))))
-	 (let ((,buffer-sym (gpu-array-buffer ,array-sym))
-	       (,gtarget ,target))
-	   (cepl.gpu-buffers::with-buffer
-            (foo ,buffer-sym ,gtarget)
-            (gl:with-mapped-buffer (,glarray-pointer
-                                    ,gtarget
-                                    ,access-type)
-              (if (pointer-eq ,glarray-pointer (null-pointer))
-                  (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
-                         ,glarray-pointer)
-                  (let ((,temp-name ,glarray-pointer))
-                    ,@body)))))))))
+         (unless (typep ,array-sym 'gpu-array)
+           (if (typep ,array-sym 'gpu-array-t)
+               (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
+               (error "with-gpu-array-* does not support the type ~s"
+                      (type-of ,array-sym))))
+         (let ((,buffer-sym (gpu-array-buffer ,array-sym))
+               (,gtarget ,target))
+           (cepl.gpu-buffers::with-buffer
+               (foo ,buffer-sym ,gtarget)
+             (gl:with-mapped-buffer (,glarray-pointer
+                                     ,gtarget
+                                     ,access-type)
+               (if (pointer-eq ,glarray-pointer (null-pointer))
+                   (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
+                          ,glarray-pointer)
+                   (let ((,temp-name ,glarray-pointer))
+                     ,@body)))))))))
 
 ;; [TODO] Dont require a temporary name, just use the one it has
 ;;        this makes it feel more magical to me and also it is
@@ -47,8 +47,8 @@
                  (gpu-array-dimensions ,ggpu-array)
                  (element-type ,ggpu-array)
                  (cffi:inc-pointer
-		  ,temp-name
-		  (gpu-array-bb-offset-in-bytes-into-buffer ,ggpu-array)))))
+                  ,temp-name
+                  (gpu-array-bb-offset-in-bytes-into-buffer ,ggpu-array)))))
            ,@body)))))
 
 
@@ -79,7 +79,7 @@
                  (<= (first ob-dimen) (first des-dimen))
                  (equal ob-dimen des-dimen)))
         (cepl.gpu-buffers::gpu-array-sub-data
-	 destination object :types-must-match t)
+         destination object :types-must-match t)
         (error "If the arrays are 1D then the length of the source array must
 be <= length of the destination array. If the arrays have more than 1
 dimension then their sizes must match exactly"))

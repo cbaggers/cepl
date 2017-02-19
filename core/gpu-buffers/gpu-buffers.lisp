@@ -34,7 +34,7 @@
     (%gl:delete-buffers 1 id)))
 
 (defmacro with-buffer ((var-name buffer &optional (buffer-target :array-buffer))
-		       &body body)
+                       &body body)
   (alexandria:with-gensyms (old-id cache-id target)
     `(let* ((,var-name ,buffer)
             ,@(if (keywordp buffer-target)
@@ -48,7 +48,7 @@
        (unwind-protect
             (progn
               (cepl.context::set-gpu-buffer-bound-id
-               *cepl-context* ,cache-id (gpu-buffer-id ,var-name))
+               *cepl-context* ,cache-id (if ,var-name (gpu-buffer-id ,var-name) 0))
               ,@body)
          (cepl.context::set-gpu-buffer-bound-id
           *cepl-context* ,cache-id ,old-id)))))
@@ -60,39 +60,39 @@
                             buffer-target usage managed)
   (declare (symbol buffer-target usage))
   (setf (gpu-buffer-id new-buffer) gl-object
-	(gpu-buffer-managed new-buffer) managed)
+        (gpu-buffer-managed new-buffer) managed)
   (setf (gpu-buffer-arrays new-buffer)
-	(make-array 0 :element-type 'gpu-array-bb
-		    :initial-element +null-buffer-backed-gpu-array+
-		    :adjustable t :fill-pointer 0))
+        (make-array 0 :element-type 'gpu-array-bb
+                    :initial-element +null-buffer-backed-gpu-array+
+                    :adjustable t :fill-pointer 0))
   (cepl.context::register-gpu-buffer *cepl-context* new-buffer)
   (if initial-contents
       (if (list-of-c-arrays-p initial-contents)
-	  (multi-buffer-data new-buffer initial-contents buffer-target usage)
-	  (buffer-data new-buffer initial-contents
-		       :target buffer-target :usage usage))
+          (multi-buffer-data new-buffer initial-contents buffer-target usage)
+          (buffer-data new-buffer initial-contents
+                       :target buffer-target :usage usage))
       new-buffer))
 
 (defun list-of-c-arrays-p (x)
   (and (listp x) (every #'c-array-p x)))
 
 (defun make-gpu-buffer-from-id (gl-object &key initial-contents
-					    (buffer-target :array-buffer)
-					    (usage :static-draw)
-					    (managed nil))
+                                            (buffer-target :array-buffer)
+                                            (usage :static-draw)
+                                            (managed nil))
   (declare (symbol buffer-target usage))
   (init-gpu-buffer-now
    (make-uninitialized-gpu-buffer) gl-object initial-contents
    buffer-target usage managed))
 
 (defun make-gpu-buffer (&key initial-contents
-			  (buffer-target :array-buffer)
-			  (usage :static-draw)
-			  (managed nil))
+                          (buffer-target :array-buffer)
+                          (usage :static-draw)
+                          (managed nil))
   (declare (symbol buffer-target usage))
   (assert (or (null initial-contents)
-	      (typep initial-contents 'c-array)
-	      (list-of-c-arrays-p initial-contents)))
+              (typep initial-contents 'c-array)
+              (list-of-c-arrays-p initial-contents)))
   (cepl.context::if-gl-context
    (init-gpu-buffer-now
     %pre% (gen-buffer) initial-contents buffer-target usage managed)
@@ -100,16 +100,16 @@
 
 
 (defun make-managed-gpu-buffer (&key initial-contents
-				  (buffer-target :array-buffer)
-				  (usage :static-draw))
+                                  (buffer-target :array-buffer)
+                                  (usage :static-draw))
   (cepl.context::if-gl-context
    (init-gpu-buffer-now %pre% (gen-buffer) initial-contents
-			buffer-target usage t)
+                        buffer-target usage t)
    (make-uninitialized-gpu-buffer)))
 
 (defun buffer-data-raw (data-pointer byte-size buffer
-			&optional (target :array-buffer) (usage :static-draw)
-			  (byte-offset 0))
+                        &optional (target :array-buffer) (usage :static-draw)
+                          (byte-offset 0))
   (with-buffer (foo buffer target)
     (%gl:buffer-data target byte-size
                      (cffi:inc-pointer data-pointer byte-offset)
@@ -126,15 +126,15 @@
     buffer))
 
 (defun buffer-data (buffer c-array &key (target :array-buffer)
-				     (usage :static-draw) (offset 0) byte-size)
+                                     (usage :static-draw) (offset 0) byte-size)
   (buffer-data-raw (pointer c-array)
-		   (or byte-size (cepl.c-arrays::c-array-byte-size c-array))
-		   buffer target usage (* offset (element-byte-size c-array))))
+                   (or byte-size (cepl.c-arrays::c-array-byte-size c-array))
+                   buffer target usage (* offset (element-byte-size c-array))))
 
 (defun multi-buffer-data (buffer c-arrays target usage)
   (let* ((c-array-byte-sizes (loop :for c-array :in c-arrays :collect
-				(cepl.c-arrays::c-array-byte-size c-array)))
-	 (total-size (reduce #'+ c-array-byte-sizes)))
+                                (cepl.c-arrays::c-array-byte-size c-array)))
+         (total-size (reduce #'+ c-array-byte-sizes)))
     (map nil #'free (gpu-buffer-arrays buffer))
     (with-buffer (foo buffer target)
       (buffer-reserve-block-raw buffer total-size target usage)
@@ -162,16 +162,16 @@
 (defun gpu-array-sub-data (gpu-array c-array &key (types-must-match t))
   (when types-must-match
     (assert (equal (gpu-array-bb-element-type gpu-array)
-		   (c-array-element-type c-array))))
+                   (c-array-element-type c-array))))
   (let ((byte-size (cepl.c-arrays::c-array-byte-size c-array))
-	(byte-offset (gpu-array-bb-offset-in-bytes-into-buffer
-		      gpu-array)))
+        (byte-offset (gpu-array-bb-offset-in-bytes-into-buffer
+                      gpu-array)))
     (unless (>= (gpu-array-bb-byte-size gpu-array) byte-size)
       (error "The data you are trying to sub into the gpu-array does not fit
 c-array: ~s (byte-size: ~s)
 gpu-array: ~s (byte-size: ~s)"
-	     c-array byte-size
-	     gpu-array (gpu-array-bb-byte-size gpu-array)))
+             c-array byte-size
+             gpu-array (gpu-array-bb-byte-size gpu-array)))
     (with-buffer (foo (gpu-array-bb-buffer gpu-array) :array-buffer)
       (%gl:buffer-sub-data :array-buffer byte-offset byte-size (pointer c-array))
       gpu-array)))
