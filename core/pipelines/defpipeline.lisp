@@ -327,30 +327,30 @@
   `(let ((stream ,stream)
          (draw-type ,draw-type)
          (index-type (buffer-stream-index-type stream)))
-     (setf (vao-bound *cepl-context*) (buffer-stream-vao stream))
-     (if (= (the fixnum |*instance-count*|) 0)
-         (if index-type
-	     (locally (declare (optimize (speed 3) (safety 0)))
-	       (%gl:draw-elements draw-type
-				  (buffer-stream-length stream)
-				  (cffi-type->gl-type index-type)
-				  (%cepl.types:buffer-stream-start-byte stream)))
-	     (locally (declare (optimize (speed 3) (safety 0)))
-	       (%gl:draw-arrays draw-type
-				(buffer-stream-start stream)
-				(buffer-stream-length stream))))
-         (if index-type
-             (%gl:draw-elements-instanced
-              draw-type
-              (buffer-stream-length stream)
-              (cffi-type->gl-type index-type)
-              (%cepl.types:buffer-stream-start-byte stream)
-              |*instance-count*|)
-             (%gl:draw-arrays-instanced
-              draw-type
-              (buffer-stream-start stream)
-              (buffer-stream-length stream)
-              |*instance-count*|)))))
+     (with-vao-bound (buffer-stream-vao stream)
+       (if (= (the fixnum |*instance-count*|) 0)
+           (if index-type
+               (locally (declare (optimize (speed 3) (safety 0)))
+                 (%gl:draw-elements draw-type
+                                    (buffer-stream-length stream)
+                                    (cffi-type->gl-type index-type)
+                                    (%cepl.types:buffer-stream-start-byte stream)))
+               (locally (declare (optimize (speed 3) (safety 0)))
+                 (%gl:draw-arrays draw-type
+                                  (buffer-stream-start stream)
+                                  (buffer-stream-length stream))))
+           (if index-type
+               (%gl:draw-elements-instanced
+                draw-type
+                (buffer-stream-length stream)
+                (cffi-type->gl-type index-type)
+                (%cepl.types:buffer-stream-start-byte stream)
+                |*instance-count*|)
+               (%gl:draw-arrays-instanced
+                draw-type
+                (buffer-stream-start stream)
+                (buffer-stream-length stream)
+                |*instance-count*|))))))
 
 
 ;;;--------------------------------------------------------------
