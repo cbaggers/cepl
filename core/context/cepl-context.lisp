@@ -412,18 +412,3 @@
   vao)
 
 ;;----------------------------------------------------------------------
-
-(defun vao-bound (cepl-context)
-  (with-slots (gl-context vao-binding-id) cepl-context
-    (if (= vao-binding-id +unknown-gl-id+)
-        (setf vao-binding-id (vertex-array-binding gl-context))
-        vao-binding-id)))
-
-(defun (setf vao-bound) (vao cepl-context)
-  (with-slots (gl-context vao-binding-id) cepl-context
-    (when (/= vao-binding-id vao)
-      (setf (vertex-array-binding gl-context) vao)
-      (setf vao-binding-id vao)))
-  vao)
-
-;;----------------------------------------------------------------------

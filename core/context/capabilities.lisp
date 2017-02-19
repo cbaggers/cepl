@@ -132,7 +132,7 @@
              (gl:depth-func :gequal)
              (setf depth-func #'>=))
             ;;
-            ((or (eq function ':always) (eq function #'aways)) nil
+            ((or (eq function ':always) (eq function #'always)) nil
              (gl:depth-func :always)
              (setf depth-func #'always))
             (t (error "CEPL: Invalid function for depth-test-function: ~a"
