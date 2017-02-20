@@ -130,8 +130,9 @@
     (:shader-storage-buffer 10)
     (:texture-buffer 11)))
 
-:atomic-counter-buffer
-:shader-storage-buffer
+;; {TODO}
+;; :atomic-counter-buffer
+;; :shader-storage-buffer
 
 (defun gpu-buffer-bound (ctx target)
   (let ((index (buffer-kind->cache-index target)))
