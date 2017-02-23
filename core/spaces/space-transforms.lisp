@@ -73,52 +73,52 @@
               (progn ,@body)
            (un-restrict-routes)))))
 
-(let ((route-restriction nil)
-      (clip-space-id-cached (%space-nht-id *clip-space*))
-      (ndc-space-id-cached (%space-nht-id *ndc-space*))
-      (screen-space-id-cached (%space-nht-id *screen-space*)))
+(defvar %route-restriction nil)
+(defvar %clip-space-id-cached (%space-nht-id *clip-space*))
+(defvar %ndc-space-id-cached (%space-nht-id *ndc-space*))
+(defvar %screen-space-id-cached (%space-nht-id *screen-space*))
 
-  (defun route-restriction ()
-    route-restriction)
+(defun route-restriction ()
+  %route-restriction)
 
-  (defun restrict-route (via-space)
-    (setf route-restriction (%space-nht-id via-space)))
+(defun restrict-route (via-space)
+  (setf %route-restriction (%space-nht-id via-space)))
 
-  (defun un-restrict-routes ()
-    (setf route-restriction nil))
+(defun un-restrict-routes ()
+  (setf %route-restriction nil))
 
-  (defun %check-not-illegal-space (space-id from?)
-    (case= space-id
-      (screen-space-id-cached
-       (if from?
-           (error 'from-ndc-or-screen-cpu-side)
-           (error 'to-ndc-or-screen)))
-      (ndc-space-id-cached
-       (if from?
-           (error 'from-ndc-or-screen-cpu-side)
-           (error 'to-ndc-or-screen)))
-      (otherwise space-id)))
+(defun %check-not-illegal-space (space-id from?)
+  (case= space-id
+    (%screen-space-id-cached
+     (if from?
+         (error 'from-ndc-or-screen-cpu-side)
+         (error 'to-ndc-or-screen)))
+    (%ndc-space-id-cached
+     (if from?
+         (error 'from-ndc-or-screen-cpu-side)
+         (error 'to-ndc-or-screen)))
+    (otherwise space-id)))
 
-  (defun %rspace-to-rspace-ids-transform (space-a-id space-b-id
-                                          &optional (initial-m4 (m4:identity)))
-    (let ((space-a-id (%check-not-illegal-space space-a-id t))
-          (space-b-id (%check-not-illegal-space space-b-id nil)))
-      (labels ((transform (accum current-id next-id)
-                 (m4:* accum
-                       (%rspace-to-neighbour-transform current-id next-id))))
-        (if (and route-restriction
-                 (not (eq route-restriction space-a-id))
-                 (not (eq route-restriction space-b-id))
-                 (cepl.space.routes::on-route-p
-                  space-a-id space-b-id clip-space-id-cached))
-            ;;
-            (cepl.space.routes:reduce-route
-             space-a-id route-restriction #'transform
-             (cepl.space.routes:reduce-route
-              route-restriction space-b-id #'transform initial-m4))
-            ;;
-            (cepl.space.routes:reduce-route space-a-id space-b-id
-                                            #'transform initial-m4))))))
+(defun %rspace-to-rspace-ids-transform (space-a-id space-b-id
+                                        &optional (initial-m4 (m4:identity)))
+  (let ((space-a-id (%check-not-illegal-space space-a-id t))
+        (space-b-id (%check-not-illegal-space space-b-id nil)))
+    (labels ((transform (accum current-id next-id)
+               (m4:* accum
+                     (%rspace-to-neighbour-transform current-id next-id))))
+      (if (and %route-restriction
+               (not (eq %route-restriction space-a-id))
+               (not (eq %route-restriction space-b-id))
+               (cepl.space.routes::on-route-p
+                space-a-id space-b-id %clip-space-id-cached))
+          ;;
+          (cepl.space.routes:reduce-route
+           space-a-id %route-restriction #'transform
+           (cepl.space.routes:reduce-route
+            %route-restriction space-b-id #'transform initial-m4))
+          ;;
+          (cepl.space.routes:reduce-route space-a-id space-b-id
+                                          #'transform initial-m4)))))
 
 (declaim (inline %rspace-to-hspace-transform))
 (defun %rspace-to-hspace-transform (from-space to-space)
