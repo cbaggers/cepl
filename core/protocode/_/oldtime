@@ -5,25 +5,25 @@
    Temporal lambdas are quite simply 'lambdas with an expiry date!'
    They are defined in a similar way to regular lambdas except that
    you also have to provide a time source and a temporal-predicate.
-   When you call the lambda it will only evaluate it's body if the 
+   When you call the lambda it will only evaluate it's body if the
    conditions of the predicate are met. When the conditions are not
    met the lambda will return nil
    For example you could specify that the temporal lambda only work
    for 20 seconds.
    Of course in the above example, after the 20 seconds has passed
-   the temporal lambda will never evaluate again. In this state it 
-   is said to have expired, when a temporal lambda that has expired 
+   the temporal lambda will never evaluate again. In this state it
+   is said to have expired, when a temporal lambda that has expired
    is called it emits a 'temporally-expired' condition. This can be
    caught to allow you to clean up expired tlambdas.)"
   (labels ((same-sym-namep (sym compare)
              (and (symbolp sym)
                   (symbolp compare)
-                  (string= (symbol-name sym) 
+                  (string= (symbol-name sym)
                            (symbol-name compare)))))
     (let ((internalf (gensym "internalf"))
           (time-source-sym (gensym "time-source"))
           (time-sym (gensym "current-time")))
-      (cepl-utils:walk-replace 
+      (cepl-utils:walk-replace
        '!time time-sym
        `(let ((,time-source-sym ,time-source))
           (labels ((,internalf ,args ,@body))
@@ -44,24 +44,24 @@
 (defmacro with-expired ((expired-var) &body body)
   "This macro is used to capture whether and temporal lambda
    has expired. The sole argument is the name of the variable
-   you wish to contain the state of the tlambda and after the 
+   you wish to contain the state of the tlambda and after the
    tlambda has been called the specified var will contain
-   either nil meaning that it hasnt expired, or t meaning it 
+   either nil meaning that it hasnt expired, or t meaning it
    has.
    It is perfectly safe to call regular functions or lambdas
    within this form as they are seen as the equivilent of a
    tlambda with it's temporal predicate set to 'always'.
-   Here is an example usage, note that before the funcall 
+   Here is an example usage, note that before the funcall
    'expired?' will always be nil.
 
      (with-expired (expired?)
        (let ((result (funcall tlam)))
-	 (when expired?
-	   (setf result 'NOOOOOO!'))
-	 result))"
+         (when expired?
+           (setf result 'NOOOOOO!'))
+         result))"
   `(let ((,expired-var nil))
-     (handler-bind ((temporally-expired 
-                     #'(lambda (x) 
+     (handler-bind ((temporally-expired
+                     #'(lambda (x)
                          (declare (ignore x))
                          (setf ,expired-var t))))
        ,@body)))

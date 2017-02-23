@@ -69,15 +69,15 @@
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
                                    nil nil nil doc-string declarations
                                    nil));;[0]
-	(valid-glsl-versions (get-versions-from-context context)))
+        (valid-glsl-versions (get-versions-from-context context)))
     ;; this gets the functions used in the body of this function
     ;; it is *not* recursive
     (%update-gpu-function-data spec nil nil)
     (varjo:add-external-function name in-args uniforms body
-				  valid-glsl-versions);;[1]
+                                 valid-glsl-versions);;[1]
     `(progn
        (varjo:add-external-function ',name ',in-args ',uniforms ',body
-				     ',valid-glsl-versions);;[1]
+                                    ',valid-glsl-versions);;[1]
        (%test-&-update-spec ,spec);;[2]
        ,(unless equiv (make-stand-in-lisp-func spec));;[3]
        (%recompile-gpu-function-and-pipelines ,(spec->func-key spec));;[4]
@@ -87,20 +87,20 @@
 (defun get-versions-from-context (context)
   (%sort-versions
    (remove-if-not λ(member _ varjo:*supported-versions*)
-		  context)))
+                  context)))
 
 (defun %sort-versions (versions)
   (mapcar #'first
-	  (sort (mapcar λ(list _ (parse-integer (symbol-name _)))
-			versions)
-		#'< :key #'second)))
+          (sort (mapcar λ(list _ (parse-integer (symbol-name _)))
+                        versions)
+                #'< :key #'second)))
 
 (defun swap-version (glsl-version context)
   (cons glsl-version (remove-if λ(find _ varjo:*supported-versions*) context)))
 
 (defun lowest-suitable-glsl-version (context)
   (let* ((versions (or (get-versions-from-context context)
-		       (list (cepl.context::get-best-glsl-version)))))
+                       (list (cepl.context::get-best-glsl-version)))))
     (case= (length versions)
       (0 (cepl.context::get-best-glsl-version))
       (otherwise (first versions)))))
@@ -122,8 +122,8 @@
    that transform between the public uniform arguments and the internal ones."
   (with-gpu-func-spec spec
     (handler-case
-	(varjo:with-constant-inject-hook #'try-injecting-a-constant
-	  (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
+        (varjo:with-constant-inject-hook #'try-injecting-a-constant
+          (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
             (handler-bind
                 ((varjo-conditions:cannot-establish-exact-function
                   (lambda (c)
@@ -173,7 +173,7 @@
    [1] Trigger a recompile on all pipelines that depend on this gpu function"
   ;; recompile gpu-funcs that depends on name
   (mapcar #'%recompile-gpu-function-and-pipelines
-	  (funcs-that-use-this-func key));;[0]
+          (funcs-that-use-this-func key));;[0]
   ;; and recompile pipelines that depend on name
   (recompile-pipelines-that-use-this-as-a-stage key))
 
@@ -200,16 +200,16 @@
   "As the name would suggest this makes one function dependent on another
    It is used by #'%test-&-update-spec via #'%update-gpu-function-data "
   (let ((func (func-key func))
-	(subscribe-to (func-key subscribe-to)))
+        (subscribe-to (func-key subscribe-to)))
     (assert (not (func-key= func subscribe-to)))
     (symbol-macrolet ((func-specs (funcs-that-use-this-func subscribe-to)))
       (when (and (gpu-func-spec subscribe-to)
-		 (not (member func func-specs :test #'func-key=)))
-	(when *print-gpu-function-subscriptions*
-	  (format t "; func ~s subscribed to ~s~%"
-		  (name func)
-		  (name subscribe-to)))
-	(push func func-specs)))))
+                 (not (member func func-specs :test #'func-key=)))
+        (when *print-gpu-function-subscriptions*
+          (format t "; func ~s subscribed to ~s~%"
+                  (name func)
+                  (name subscribe-to)))
+        (push func func-specs)))))
 
 (defun make-stand-in-lisp-func (spec)
   "Makes a regular lisp function with the same names and arguments
@@ -224,11 +224,11 @@
     (let ((arg-names (mapcar #'first in-args))
           (uniform-names (mapcar #'first uniforms)))
       `(setf (symbol-function ',name)
-	     (lambda (,@arg-names
-		      ,@(when uniforms (cons (symb :&key) uniform-names)))
-	       ,@(when doc-string (list doc-string))
-	       (declare (ignore ,@arg-names ,@uniform-names))
-	       (warn "GPU Functions cannot currently be used from the cpu"))))))
+             (lambda (,@arg-names
+                      ,@(when uniforms (cons (symb :&key) uniform-names)))
+               ,@(when doc-string (list doc-string))
+               (declare (ignore ,@arg-names ,@uniform-names))
+               (warn "GPU Functions cannot currently be used from the cpu"))))))
 
 ;;--------------------------------------------------
 
@@ -247,7 +247,7 @@
   (if uniforms
       (let ((u (first uniforms)))
         (cond
-	  ;;[0]
+          ;;[0]
           ((not (find (first u) accum :test #'equal :key #'first))
            (%aggregate-uniforms (rest uniforms) (cons u accum)))
           ;;[1]
@@ -270,11 +270,11 @@
       (aggregate-uniforms
        (rest keys)
        (%aggregate-uniforms;;[0]
-	(with-gpu-func-spec (gpu-func-spec (first keys))
-	  (if interal-uniforms-p
-	      actual-uniforms
-	      uniforms))
-	accum)
+        (with-gpu-func-spec (gpu-func-spec (first keys))
+          (if interal-uniforms-p
+              actual-uniforms
+              uniforms))
+        accum)
        interal-uniforms-p)
       accum))
 
@@ -296,7 +296,7 @@
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
       (varjo:rolling-translate
        (mapcar #'parsed-gpipe-args->v-translate-args
-	       parsed-gpipe-args)))))
+               parsed-gpipe-args)))))
 
 ;; {TODO} make the replacements related code more robust
 (defun parsed-gpipe-args->v-translate-args (stage-pair &optional replacements)
@@ -314,14 +314,14 @@
   (assert (every #'listp replacements))
   (dbind (stage-type . stage) stage-pair
     (if (typep (gpu-func-spec stage) 'glsl-stage-spec)
-	(with-glsl-stage-spec (gpu-func-spec stage)
-	  compiled);;[0]
-	(dbind (in-args uniforms context code) (get-func-as-stage-code stage)
-	  ;;[1]
-	  (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
-			     context)))
-	    (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-	  (let* ((final-uniforms (remove-if (lambda (u)
+        (with-glsl-stage-spec (gpu-func-spec stage)
+          compiled);;[0]
+        (dbind (in-args uniforms context code) (get-func-as-stage-code stage)
+          ;;[1]
+          (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
+                             context)))
+            (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+          (let* ((final-uniforms (remove-if (lambda (u)
                                               (member (first u) replacements
                                                       :key #'first
                                                       :test #'string=))
@@ -361,22 +361,22 @@
      (glambda->func-spec stage-designator))
     ((symbolp stage-designator)
      (let* ((name stage-designator)
-	    (funcs (gpu-func-specs name)))
+            (funcs (gpu-func-specs name)))
        (case= (length funcs)
-	 (0 (error 'stage-not-found :designator name))
-	 (1 (func-key (first funcs)))
-	 (otherwise
-	  (error 'multiple-gpu-func-matches
-		 :designator stage-designator
-		 :possible-choices (mapcar λ(with-gpu-func-spec _
-					      (cons stage-designator
-						    (mapcar #'second in-args)))
-					   funcs))))))
+         (0 (error 'stage-not-found :designator name))
+         (1 (func-key (first funcs)))
+         (otherwise
+          (error 'multiple-gpu-func-matches
+                 :designator stage-designator
+                 :possible-choices (mapcar λ(with-gpu-func-spec _
+                                              (cons stage-designator
+                                                    (mapcar #'second in-args)))
+                                           funcs))))))
     ((listp stage-designator)
      (let ((key (new-func-key (first stage-designator) (rest stage-designator))))
        (if (gpu-func-spec key)
-	   key
-	   (error 'stage-not-found :designator stage-designator))))
+           key
+           (error 'stage-not-found :designator stage-designator))))
     ((symbolp stage-designator)
      (when error-on-symbol
        (error 'symbol-stage-designator
@@ -398,11 +398,11 @@
   (let ((cut-pos (or (position :post args) (length args))))
     (destructuring-bind (&key post) (subseq args cut-pos)
       (let ((args (subseq args 0 cut-pos)))
-	(list
-	 (if (and (= (length args) 2) (not (some #'keywordp args)))
+        (list
+         (if (and (= (length args) 2) (not (some #'keywordp args)))
              (parse-gpipe-args-implicit args)
-	     (parse-gpipe-args-explicit args))
-	 post)))))
+             (parse-gpipe-args-explicit args))
+         post)))))
 
 (defun parse-gpipe-args-implicit (args)
   (destructuring-bind (v-key f-key) (validate-stage-names args)
@@ -512,50 +512,50 @@
 ;;--------------------------------------------------
 
 (defmethod delete-gpu-function ((gfunc-description null)
-				&optional (error-if-missing t))
+                                &optional (error-if-missing t))
   (when error-if-missing
     (error 'gpu-func-spec-not-found :name gfunc-description :types nil)))
 
 (defmethod delete-gpu-function ((gfunc-description symbol)
-				&optional (error-if-missing t))
+                                &optional (error-if-missing t))
   (let ((choices (gpu-functions gfunc-description)))
     (if (= (length choices) 1)
-	(delete-gpu-function (first choices) error-if-missing)
-	(restart-case (error 'delete-multi-func-error
-			     :name gfunc-description
-			     :choices choices)
-	  (use-value ()
-	    (interactive-delete-gpu-function gfunc-description))))))
+        (delete-gpu-function (first choices) error-if-missing)
+        (restart-case (error 'delete-multi-func-error
+                             :name gfunc-description
+                             :choices choices)
+          (use-value ()
+            (interactive-delete-gpu-function gfunc-description))))))
 
 (defmethod delete-gpu-function ((gfunc-description func-key)
-				&optional (error-if-missing t))
+                                &optional (error-if-missing t))
   (delete-gpu-function
    (cons (name gfunc-description) (in-args gfunc-description))
    error-if-missing))
 
 (defmethod delete-gpu-function ((gfunc-description list)
-				&optional (error-if-missing t))
+                                &optional (error-if-missing t))
   (dbind (name . in-arg-types) gfunc-description
     (let* ((func-key (new-func-key name in-arg-types))
-	   (spec (gpu-func-spec func-key nil)))
+           (spec (gpu-func-spec func-key nil)))
       (if spec
-	  (progn
-	    (setf *gpu-func-specs* (remove func-key *gpu-func-specs*
-					   :test #'func-key= :key #'car))
-	    (varjo:delete-external-function name in-arg-types))
-	  (when error-if-missing
-	    (error 'gpu-func-spec-not-found
-		   :name (name func-key)
-		   :types (in-args func-key))))
+          (progn
+            (setf *gpu-func-specs* (remove func-key *gpu-func-specs*
+                                           :test #'func-key= :key #'car))
+            (varjo:delete-external-function name in-arg-types))
+          (when error-if-missing
+            (error 'gpu-func-spec-not-found
+                   :name (name func-key)
+                   :types (in-args func-key))))
       gfunc-description)))
 
 
 
 (defun interactive-delete-gpu-function (name)
   (let ((picked
-	 (read-gpu-function-choice
-	  "Please choose which of the following functions you wish to delete"
-	  name)))
+         (read-gpu-function-choice
+          "Please choose which of the following functions you wish to delete"
+          name)))
     (when picked
       (format t "~%Deleting ~s" picked)
       (delete-gpu-function picked))))

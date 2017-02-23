@@ -10,7 +10,7 @@
                                 (* world-to-cam
                                    (* model-to-world
                                       (v! (vert-data-position vert)
-                                            1.0)))))
+                                          1.0)))))
            (out (interp-color :smooth) (vert-data-color vert)))
   (:fragment (out output-color interp-color))
   (:post-compile (reshape 640 480)))
@@ -45,8 +45,8 @@
          (rot-matrix (m4:transpose
                       (m4:rotation-from-mat3
                        (m3:from-rows right-dir
-				     perp-up-dir
-				     (v3:- (v! 0 0 0) look-dir)))))
+                                     perp-up-dir
+                                     (v3:- (v! 0 0 0) look-dir)))))
          (trans-matrix (m4:translation (v3:- (v! 0 0 0) (pos camera)))))
     (m4:* rot-matrix trans-matrix)))
 
@@ -75,7 +75,7 @@
                                 :element-type 'vert-data :dimensions 8))
          (indicies (make-gpu-array '(0 1 2   1 0 3   2 3 0   3 2 1
                                      5 4 6   4 5 7   7 6 4   6 7 5)
-                    :dimensions 24 :element-type :unsigned-short))
+                                   :dimensions 24 :element-type :unsigned-short))
          (e-stream (make-buffer-stream verts :index-array indicies)))
     (setf *entities* `(,(make-entity :pos (v!  0 0 -20) :e-stream e-stream)
                         ,(make-entity :pos (v!  0 0 -25) :e-stream e-stream)
@@ -95,8 +95,8 @@
 
 (defun entity-matrix (entity)
   (reduce #'m4:* (list (m4:translation (pos entity))
-                        (m4:rotation-from-euler (rot entity))
-                        (m4:scale (scale entity)))))
+                       (m4:rotation-from-euler (rot entity))
+                       (m4:scale (scale entity)))))
 
 (defun draw ()
   (gl:clear-depth 1.0)
@@ -121,10 +121,10 @@
     (setf running t)
     (loop :while running :do
        (case-events (event)
-         (:quit () (setf running nil))
-         (:windowevent (:event e :data1 x :data2 y)
-                       (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
-                         (reshape x y))))
+                    (:quit () (setf running nil))
+                    (:windowevent (:event e :data1 x :data2 y)
+                                  (when (eql e sdl2-ffi:+sdl-windowevent-resized+)
+                                    (reshape x y))))
        (cepl-utils:update-swank)
        (continuable (draw))))
   (defun stop-demo () (setf running nil)))

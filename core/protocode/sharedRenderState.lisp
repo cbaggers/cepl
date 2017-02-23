@@ -90,7 +90,7 @@
 (defun restore-gl-state (state-cache)
   (declare (gl-state-cache state-cache))
   (format t "~%some = ~a vars = ~a~%" (gl-state-cache-some state-cache)
-	  (gl-state-cache-vars state-cache))
+          (gl-state-cache-vars state-cache))
   nil)
 
 (defmacro with-shared-gl-state ((var-name &optional state-object) &body body)

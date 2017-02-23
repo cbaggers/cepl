@@ -46,13 +46,13 @@ Below is the standard OpenGL version of 'hello world', a colored triangle.
 
 (defun run-loop ()
   (setf *running* t
-	;; Create a gpu array from our Lisp vertex data
+    ;; Create a gpu array from our Lisp vertex data
         *array* (make-gpu-array *triangle-data* :element-type 'pos-col)
-	;; Create a GPU datastream
+    ;; Create a GPU datastream
         *stream* (make-buffer-stream *array*))
   ;; continue rendering frames until *running* is set to nil
   (loop :while (and  *running*
-		     (not (shutting-down-p))) :do
+             (not (shutting-down-p))) :do
      (continuable (step-demo))))
 
 (defun stop-loop ()

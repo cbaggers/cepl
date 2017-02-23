@@ -73,7 +73,7 @@
 
 (defun %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
-			    actual-uniforms
+                            actual-uniforms
                             doc-string declarations missing-dependencies)
   (make-instance 'gpu-func-spec
                  :name name
@@ -84,41 +84,41 @@
                  :instancing instancing
                  :equivalent-inargs equivalent-inargs
                  :equivalent-uniforms equivalent-uniforms
-		 :actual-uniforms actual-uniforms
+                 :actual-uniforms actual-uniforms
                  :doc-string doc-string
                  :declarations declarations
-		 :missing-dependencies missing-dependencies))
+                 :missing-dependencies missing-dependencies))
 
 (defun %make-glsl-stage-spec (name in-args uniforms context body-string
-			      compiled)
+                              compiled)
   (let ((uniforms (mapcar #'listify uniforms)))
     (make-instance 'glsl-stage-spec
-		   :name name
-		   :in-args (mapcar #'listify in-args)
-		   :uniforms uniforms
-		   :context context
-		   :body body-string
-		   :compiled compiled
-		   :instancing nil
-		   :equivalent-inargs nil
-		   :equivalent-uniforms nil
-		   :actual-uniforms uniforms
-		   :doc-string nil
-		   :declarations nil
-		   :missing-dependencies nil)))
+                   :name name
+                   :in-args (mapcar #'listify in-args)
+                   :uniforms uniforms
+                   :context context
+                   :body body-string
+                   :compiled compiled
+                   :instancing nil
+                   :equivalent-inargs nil
+                   :equivalent-uniforms nil
+                   :actual-uniforms uniforms
+                   :doc-string nil
+                   :declarations nil
+                   :missing-dependencies nil)))
 
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms actual-uniforms context body instancing
                      equivalent-inargs equivalent-uniforms doc-string
                      declarations missing-dependencies) ,func-spec
      (declare (ignorable name in-args uniforms actual-uniforms context body
-			 instancing equivalent-inargs equivalent-uniforms
+                         instancing equivalent-inargs equivalent-uniforms
                          doc-string declarations missing-dependencies))
      ,@body))
 
 (defmacro with-glsl-stage-spec (glsl-stage-spec &body body)
   `(with-slots (name in-args uniforms outputs context body
-		     (compiled cached-compile-results))
+                     (compiled cached-compile-results))
        ,glsl-stage-spec
      (declare (ignorable name in-args uniforms outputs context compiled))
      ,@body))
@@ -133,9 +133,9 @@
       ,doc-string ',declarations ',missing-dependencies)))
 
 (defun clone-stage-spec (spec &key new-name new-in-args new-uniforms new-context
-				new-body new-instancing new-equivalent-inargs
-				new-equivalent-uniforms	new-actual-uniforms
-				new-doc-string new-declarations
+                                new-body new-instancing new-equivalent-inargs
+                                new-equivalent-uniforms new-actual-uniforms
+                                new-doc-string new-declarations
                                 new-missing-dependencies)
   (with-gpu-func-spec spec
     (make-instance
@@ -154,7 +154,7 @@
      :doc-string (or doc-string new-doc-string)
      :declarations (or declarations new-declarations)
      :missing-dependencies (or missing-dependencies
-			       new-missing-dependencies))))
+                               new-missing-dependencies))))
 
 ;;--------------------------------------------------
 
@@ -177,15 +177,15 @@
 
 (defmethod print-object ((obj func-key) stream)
   (format stream "#<GPU-FUNCTION (~s~{ ~s~})>"
-	  (name obj) (in-args obj)))
+          (name obj) (in-args obj)))
 
 (defmethod func-key ((spec gpu-func-spec))
   (new-func-key (slot-value spec 'name)
-		(mapcar #'second (slot-value spec 'in-args))))
+                (mapcar #'second (slot-value spec 'in-args))))
 
 (defmethod func-key ((spec varjo:external-function))
   (new-func-key (varjo:name spec)
-		(mapcar #'second (varjo:in-args spec))))
+                (mapcar #'second (varjo:in-args spec))))
 
 (defmethod func-key ((key func-key))
   key)
@@ -200,7 +200,7 @@
 (defmethod func-key= ((x func-key) (y func-key))
   (unless (or (null x) (null y))
     (and (eq (name x) (name y))
-	 (equal (in-args x) (in-args y)))))
+         (equal (in-args x) (in-args y)))))
 
 (defmethod func-key= (x (y func-key))
   (unless (or (null x) (null y))
@@ -223,8 +223,8 @@
   (or (assocr func-key *gpu-func-specs* :test #'func-key=)
       (when error-if-missing
         (error 'gpu-func-spec-not-found
-	       :name (name func-key)
-	       :types (in-args func-key)))))
+               :name (name func-key)
+               :types (in-args func-key)))))
 
 (defmethod (setf gpu-func-spec) (value key &optional error-if-missing)
   (setf (gpu-func-spec (func-key key) error-if-missing) value))
@@ -233,16 +233,16 @@
   (when error-if-missing
     (gpu-func-spec key t))
   (setf *gpu-func-specs*
-	(remove-duplicates (acons key value *gpu-func-specs*)
-			   :key #'car :test #'func-key=
-			   :from-end t)))
+        (remove-duplicates (acons key value *gpu-func-specs*)
+                           :key #'car :test #'func-key=
+                           :from-end t)))
 
 (defun gpu-func-specs (name &optional error-if-missing)
   (or (remove nil
-	      (mapcar λ(dbind (k . v) _
-			 (when (eq (name k) name)
-			   v))
-		      *gpu-func-specs*))
+              (mapcar λ(dbind (k . v) _
+                         (when (eq (name k) name)
+                           v))
+                      *gpu-func-specs*))
       (when error-if-missing
         (error 'gpu-func-spec-not-found :spec-name name))))
 
@@ -253,34 +253,34 @@
   "As the name would suggest this removes one function's dependency on another
    It is used by #'%test-&-update-spec via #'%update-gpu-function-data"
   (labels ((%remove-gpu-function-from-dependancy-table (pair)
-	     (dbind (key . dependencies) pair
-	       (when (member func-key dependencies :test #'func-key=)
-		 (setf (funcs-that-use-this-func key)
-		       (remove func-key dependencies :test #'func-key=))))))
+             (dbind (key . dependencies) pair
+               (when (member func-key dependencies :test #'func-key=)
+                 (setf (funcs-that-use-this-func key)
+                       (remove func-key dependencies :test #'func-key=))))))
     (map nil #'%remove-gpu-function-from-dependancy-table
-	 *dependent-gpu-functions*)))
+         *dependent-gpu-functions*)))
 
 (defmethod funcs-that-use-this-func (key)
   (funcs-that-use-this-func (func-key key)))
 
 (defmethod funcs-that-use-this-func ((key func-key))
   (assocr key *dependent-gpu-functions*
-	  :test #'func-key=))
+          :test #'func-key=))
 
 (defmethod (setf funcs-that-use-this-func) (value key)
   (setf (funcs-that-use-this-func (func-key key)) value))
 
 (defmethod (setf funcs-that-use-this-func) (value (key func-key))
-  (setf *dependent-gpu-functions*
-	(remove-duplicates (acons key value *dependent-gpu-functions*)
-			   :key #'car :test #'func-key=
-			   :from-end t)))
+    (setf *dependent-gpu-functions*
+     (remove-duplicates (acons key value *dependent-gpu-functions*)
+                        :key #'car :test #'func-key=
+                        :from-end t)))
 
 (defun funcs-these-funcs-use (names &optional (include-names t))
   (remove-duplicates
    (append (apply #'concatenate 'list
-		  (mapcar #'funcs-this-func-uses names))
-	   (when include-names names))
+                  (mapcar #'funcs-this-func-uses names))
+           (when include-names names))
    :from-end t
    :test #'eq))
 
@@ -291,15 +291,15 @@ names are depended on by the functions named later in the list"
   (mapcar #'car
           (remove-duplicates
            (sort (%funcs-this-func-uses key) #'> :key #'cdr)
-	   :from-end t
+           :from-end t
            :key #'car)))
 
 (defmethod %funcs-this-func-uses ((key func-key) &optional (depth 0))
   (let ((this-func-calls
          (remove nil (mapcar
                       λ(dbind (k . v) _
-			 (when (member key v)
-			   (cons k depth)))
+                         (when (member key v)
+                           (cons k depth)))
                       *dependent-gpu-functions*))))
     (append this-func-calls
             (apply #'append
@@ -320,10 +320,10 @@ names are depended on by the functions named later in the list"
 
 (defun update-specs-with-missing-dependencies ()
   (map 'nil λ(dbind (k . v) _
-	       (with-gpu-func-spec v
-		 (when missing-dependencies
-		   (%test-&-update-spec v)
-		   k)))
+               (with-gpu-func-spec v
+                 (when missing-dependencies
+                   (%test-&-update-spec v)
+                   k)))
        *gpu-func-specs*))
 
 (defmethod recompile-pipelines-that-use-this-as-a-stage ((key func-key))
@@ -331,8 +331,8 @@ names are depended on by the functions named later in the list"
    gpu function that depends on the named gpu function. It does this by
    triggering a recompile on all pipelines that depend on this glsl-stage"
   (mapcar λ(let ((recompile-pipeline-name (recompile-name _)))
-	     (when (fboundp recompile-pipeline-name)
-	       (funcall (symbol-function recompile-pipeline-name))))
+             (when (fboundp recompile-pipeline-name)
+               (funcall (symbol-function recompile-pipeline-name))))
           (pipelines-that-use-this-as-a-stage key)))
 
 (defmethod %gpu-function ((name symbol))
@@ -341,9 +341,9 @@ names are depended on by the functions named later in the list"
       (0 (error 'gpu-func-spec-not-found :name name :types nil))
       (1 (%gpu-function (first choices)))
       (otherwise (restart-case
-		     (error 'multi-func-error :name name :choices choices)
-		   (use-value ()
-		     (%gpu-function (interactive-pick-gpu-function name))))))))
+                     (error 'multi-func-error :name name :choices choices)
+                   (use-value ()
+                     (%gpu-function (interactive-pick-gpu-function name))))))))
 
 (defmethod %gpu-function ((name null))
   (error 'gpu-func-spec-not-found :name name :types nil))
@@ -352,27 +352,27 @@ names are depended on by the functions named later in the list"
   (dbind (name . in-arg-types) name
     (let ((key (new-func-key name in-arg-types)))
       (if (gpu-func-spec key)
-	  key
-	  (error 'gpu-func-spec-not-found :name name :types in-arg-types)))))
+          key
+          (error 'gpu-func-spec-not-found :name name :types in-arg-types)))))
 
 (defmacro gpu-function (name)
   (%gpu-function name))
 
 (defun gpu-functions (name)
   (mapcar λ(cons (slot-value _ 'name)
-		 (mapcar #'second (slot-value _ 'in-args)))
-	  (gpu-func-specs name)))
+                 (mapcar #'second (slot-value _ 'in-args)))
+          (gpu-func-specs name)))
 
 (defun read-gpu-function-choice (intro-text gfunc-name)
   (let ((choices (gpu-functions gfunc-name)))
     (when choices
       (format t "~%~a~{~%~a: ~a~}~%Choice: "
-	      intro-text
-	      (mapcat #'list (alexandria:iota (length choices)) choices))
+              intro-text
+              (mapcat #'list (alexandria:iota (length choices)) choices))
       (let ((choice (read-integers)))
-	(if (= 1 (length choice))
-	    (elt choices (first choice))
-	    nil)))))
+        (if (= 1 (length choice))
+            (elt choices (first choice))
+            nil)))))
 
 (defun interactive-pick-gpu-function (name)
   (read-gpu-function-choice
@@ -434,19 +434,19 @@ names are depended on by the functions named later in the list"
 
 (defun %pull-spec-common (asset-name)
   (labels ((gfunc-spec (x)
-	     (let ((specs (gpu-func-specs x)))
-	       (case= (length specs)
-		 (0 nil)
-		 (1 (first specs))
-		 (otherwise :too-many)))))
+             (let ((specs (gpu-func-specs x)))
+               (case= (length specs)
+                 (0 nil)
+                 (1 (first specs))
+                 (otherwise :too-many)))))
     (if +cache-last-compile-result+
-	(let ((spec (or (pipeline-spec asset-name) (gfunc-spec asset-name))))
-	  (typecase spec
-	    (null (warn 'pull-g-not-cached :asset-name asset-name))
-	    (keyword (let ((alt (pull-g-soft-multi-func-message asset-name)))
-		       (when alt
-			 (slot-value (gpu-func-spec alt) 'cached-compile-results))))
-	    (otherwise (slot-value spec 'cached-compile-results))))
+        (let ((spec (or (pipeline-spec asset-name) (gfunc-spec asset-name))))
+          (typecase spec
+            (null (warn 'pull-g-not-cached :asset-name asset-name))
+            (keyword (let ((alt (pull-g-soft-multi-func-message asset-name)))
+                       (when alt
+                         (slot-value (gpu-func-spec alt) 'cached-compile-results))))
+            (otherwise (slot-value spec 'cached-compile-results))))
         (error 'pull*-g-not-enabled))))
 
 (defmethod pull1-g ((asset-name symbol))
@@ -468,9 +468,9 @@ names are depended on by the functions named later in the list"
 (defun pull-g-soft-multi-func-message (asset-name)
   (let ((choices (gpu-functions asset-name)))
     (restart-case
-	(error 'multi-func-error :name asset-name :choices choices)
+        (error 'multi-func-error :name asset-name :choices choices)
       (use-value ()
-	(%gpu-function (interactive-pick-gpu-function asset-name))))))
+        (%gpu-function (interactive-pick-gpu-function asset-name))))))
 
 (defmethod pull-g ((pipeline-func function))
   (let ((pipeline (function-keyed-pipeline pipeline-func)))
@@ -492,7 +492,7 @@ names are depended on by the functions named later in the list"
       ((or pipeline-spec lambda-pipeline-spec)
        (or (slot-value pipeline 'cached-compile-results)
            (warn 'func-keyed-pipeline-not-found
-                  :callee 'pull1-g :func pipeline-func))))))
+                 :callee 'pull1-g :func pipeline-func))))))
 
 ;;--------------------------------------------------
 

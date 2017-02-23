@@ -43,7 +43,7 @@
 
 (defstruct (route-table (:constructor %make-route-table))
   (sparse-part (error "subtable array must be provided")
-	       :type (array maybe-subtable (*))))
+               :type (array maybe-subtable (*))))
 
 ;;----------------------------------------------------------------------
 ;; IDs
@@ -56,7 +56,7 @@
     (let ((sc subtable-count))
       (setf subtable-count (ceiling id-count +subtable-length+))
       (unless (= sc subtable-count)
-	(update-all-route-tables subtable-count)))
+        (update-all-route-tables subtable-count)))
     (extend-routes)
     (or (pop ids) (error "no nht space ids left")))
   (defun free-id (id)
@@ -81,24 +81,24 @@
 
 (defun %make-routes-array ()
   (make-array +default-subtable-count+ ;; using subtable as it's a good number
-	      :element-type 'route-table
-	      :adjustable t
-	      :fill-pointer +default-subtable-count+
-	      :initial-contents (loop :for i :below +default-subtable-count+
-				   :collect (make-route-table))))
+              :element-type 'route-table
+              :adjustable t
+              :fill-pointer +default-subtable-count+
+              :initial-contents (loop :for i :below +default-subtable-count+
+                                   :collect (make-route-table))))
 
 (defun make-route-table ()
   (let ((len (get-current-subtable-count)))
     (%make-route-table
      :sparse-part (make-array len
-			      :element-type 'maybe-subtable
-			      :initial-element nil
-			      :adjustable t
-			      :fill-pointer len))))
+                              :element-type 'maybe-subtable
+                              :initial-element nil
+                              :adjustable t
+                              :fill-pointer len))))
 
 (defun make-cache (len)
   (make-array (list len 2) :element-type 'fixnum
-	      :initial-element -1))
+              :initial-element -1))
 
 (let ((cache (make-cache +subtable-length+))
       (routes (%make-routes-array)))
@@ -107,7 +107,7 @@
       (vector-push-extend (make-route-table) routes +subtable-length+))
     (let ((cache-len (array-dimension cache 0)))
       (when (> (get-current-id-count) cache-len)
-	(setf cache (make-cache (+ cache-len +subtable-length+)))))
+        (setf cache (make-cache (+ cache-len +subtable-length+)))))
     t)
   (defun get-routes () routes)
   (defun get-route-cache () cache)
@@ -118,40 +118,40 @@
   (defun update-all-route-tables (new-subtable-count)
     (loop :for r :across routes :do
        (let ((len (length (route-table-sparse-part r))))
-	 (cond
-	   ((> new-subtable-count len)
-	    (vector-push-extend nil (route-table-sparse-part r)))
-	   ((< new-subtable-count len)
-	    (setf (fill-pointer (route-table-sparse-part r)) len)))))))
+         (cond
+           ((> new-subtable-count len)
+            (vector-push-extend nil (route-table-sparse-part r)))
+           ((< new-subtable-count len)
+            (setf (fill-pointer (route-table-sparse-part r)) len)))))))
 
 
 (defun on-route-p (from-id to-id id-that-might-be-on-route)
   (let ((current-id from-id))
     (if (or (= id-that-might-be-on-route current-id)
-	    (= id-that-might-be-on-route to-id))
-	t
-	(loop :for next-id = (%next-step current-id to-id)
-	   :if (= id-that-might-be-on-route current-id)
-	   :return t
-	   :else :do (setf current-id next-id)
-	   :until (= next-id to-id)
-	   :finally (return nil)))))
+            (= id-that-might-be-on-route to-id))
+        t
+        (loop :for next-id = (%next-step current-id to-id)
+           :if (= id-that-might-be-on-route current-id)
+           :return t
+           :else :do (setf current-id next-id)
+           :until (= next-id to-id)
+           :finally (return nil)))))
 
 (defun get-route (from-id to-id)
   (let ((current-id from-id))
     (cons current-id
-	  (loop :for next-id = (%next-step current-id to-id)
-	     :collect next-id
-	     :do (setf current-id next-id)
-	     :until (= next-id to-id)))))
+          (loop :for next-id = (%next-step current-id to-id)
+             :collect next-id
+             :do (setf current-id next-id)
+             :until (= next-id to-id)))))
 
 (let ((fart 3))
   (defun fart-route (from-id to-id)
     (let ((current-id from-id))
       (loop :for next-id = (%next-step current-id to-id)
-	 :do (setf fart (* current-id 3))
-	 :do (setf current-id next-id)
-	 :until (= next-id to-id)))))
+         :do (setf fart (* current-id 3))
+         :do (setf current-id next-id)
+         :until (= next-id to-id)))))
 
 (defun map-route (from-id to-id function)
   (let ((current-id from-id))
@@ -163,7 +163,7 @@
 (defun reduce-route (from-id to-id function &optional initial-value)
   ;; applying backwards because of matrix multiplication
   (let ((current-id to-id)
-	(accum initial-value))
+        (accum initial-value))
     (loop :for next-id = (%next-step current-id from-id)
        :do (setf accum (funcall function accum next-id current-id))
        :do (setf current-id next-id)
@@ -177,30 +177,30 @@
   (make-array '(#.+subtable-length+ 2) :element-type 'fixnum :initial-element -1))
 
 (defmacro with-sparse-elem ((&key next len create-if-missing)
-			       (route-table index) &body body)
+                               (route-table index) &body body)
   (let* ((subtable (gensym "subtable"))
-	 (sparse-table (gensym "sparse-table"))
-	 (subtable-index (gensym "subtable-index"))
-	 (elem-index (gensym "elem-index"))
-	 (next-var next)
-	 (len-var len)
-	 (there `(symbol-macrolet
-		     (,@(when next-var `((,next-var (aref ,subtable ,elem-index 0))))
-		      ,@(when len-var `((,len-var (aref ,subtable ,elem-index 1)))))
-		   ,@body))
-	 (missing `(symbol-macrolet (,@(when next-var `((,next-var -1)))
-				     ,@(when len-var `((,len-var -1))))
-		     ,@body)))
+         (sparse-table (gensym "sparse-table"))
+         (subtable-index (gensym "subtable-index"))
+         (elem-index (gensym "elem-index"))
+         (next-var next)
+         (len-var len)
+         (there `(symbol-macrolet
+                     (,@(when next-var `((,next-var (aref ,subtable ,elem-index 0))))
+                      ,@(when len-var `((,len-var (aref ,subtable ,elem-index 1)))))
+                   ,@body))
+         (missing `(symbol-macrolet (,@(when next-var `((,next-var -1)))
+                                     ,@(when len-var `((,len-var -1))))
+                     ,@body)))
     `(let ((,sparse-table (route-table-sparse-part ,route-table)))
        (multiple-value-bind (,subtable-index ,elem-index)
-	   (floor ,index +subtable-length+)
-	 (let ((,subtable (or (aref ,sparse-table ,subtable-index)
-			     ,(when create-if-missing
-				    `(setf (aref ,sparse-table ,subtable-index)
-					   (make-route-subtable))))))
-	   ,(if create-if-missing
-		there
-		`(if ,subtable ,there ,missing)))))))
+           (floor ,index +subtable-length+)
+         (let ((,subtable (or (aref ,sparse-table ,subtable-index)
+                              ,(when create-if-missing
+                                     `(setf (aref ,sparse-table ,subtable-index)
+                                            (make-route-subtable))))))
+           ,(if create-if-missing
+                there
+                `(if ,subtable ,there ,missing)))))))
 
 (defun rt-elem (route-table x)
   (with-sparse-elem (:next next :len len) (route-table x)
@@ -278,57 +278,57 @@
 ;;    cache layout is (next-step length-to-destination original-route-owner)
 (defun connect-to-many (my-id new-neighbour-ids)
   (let ((neighbour-ids new-neighbour-ids)
-	(cache (get-route-cache))
-	(clear (* 2 (get-current-id-count)))) ;; *2 so it is way out of bounds
+        (cache (get-route-cache))
+        (clear (* 2 (get-current-id-count)))) ;; *2 so it is way out of bounds
     (loop :for i :below (get-current-id-count) :do
        ;; we use the len field as an indicator of route presence
        ;; so we 'zero' it out with a large val
        (setf (aref cache i 0) clear)
        ;; for each neighbour
        (loop :for n :in neighbour-ids :do
-	  (when (and (not (= n i)) (%has-route n i))
-	    ;; if the neighbour's route to destination 'i is shorter than
-	    ;; the route in the cache
-	    (let ((len (%route-len n i)))
-	      (when (< len (aref cache i 0))
-		;; then cache this route:
-		;; we store the usual stuff (next step & length)
-		;; but also the owner of that short route
-		(setf (aref cache i 0) len
-		      (aref cache i 1) n))))))
+          (when (and (not (= n i)) (%has-route n i))
+            ;; if the neighbour's route to destination 'i is shorter than
+            ;; the route in the cache
+            (let ((len (%route-len n i)))
+              (when (< len (aref cache i 0))
+                ;; then cache this route:
+                ;; we store the usual stuff (next step & length)
+                ;; but also the owner of that short route
+                (setf (aref cache i 0) len
+                      (aref cache i 1) n))))))
     ;; then for all the cache short routes
     (loop :for i :below (get-current-id-count) :do
        (when (< (aref cache i 0) clear)
-	 ;; store the route from me to the destination
-	 (let ((dest i)
-	       (len (1+ (aref cache i 0)))
-	       (next-step (aref cache i 1)))
-	   (%set-route my-id dest next-step len)
-	   (%walk-leaving-trail my-id dest))))
+         ;; store the route from me to the destination
+         (let ((dest i)
+               (len (1+ (aref cache i 0)))
+               (next-step (aref cache i 1)))
+           (%set-route my-id dest next-step len)
+           (%walk-leaving-trail my-id dest))))
     ;; add routes between new neighbours
     (loop :for n :in neighbour-ids :do
        (%set-route my-id n n 1)
        (%set-route n my-id my-id 1))
     ;; and propagate the changes
     (propagate-routes (mapcar λ(cons _ my-id) neighbour-ids)
-		      (list my-id))
+                      (list my-id))
     my-id))
 
 (defun propagate-routes (todo seen)
   (let ((propagate-further nil)
-	(cache (get-route-cache))
-	(clear (* 2 (get-current-id-count))))
+        (cache (get-route-cache))
+        (clear (* 2 (get-current-id-count))))
     (destructuring-bind (to-id . from-id) (pop todo)
       (loop :for i :below (get-current-id-count) :do
-	 (let ((len (aref cache i 0)))
-	   (when (and (< len clear)
-		      (< (1+ len) (%route-len to-id i)))
-	     (%set-route to-id i from-id (1+ len))
-	     (setf propagate-further t))))
+         (let ((len (aref cache i 0)))
+           (when (and (< len clear)
+                      (< (1+ len) (%route-len to-id i)))
+             (%set-route to-id i from-id (1+ len))
+             (setf propagate-further t))))
 
       (when propagate-further
-	(propagate-routes
-	 ;; visit all nodes except the one we've just come from
-	 (append todo (mapcar λ(cons _ to-id)
-			      (set-difference (id-neighbours to-id) seen)))
-	 (adjoin from-id seen :test #'=))))))
+        (propagate-routes
+         ;; visit all nodes except the one we've just come from
+         (append todo (mapcar λ(cons _ to-id)
+                              (set-difference (id-neighbours to-id) seen)))
+         (adjoin from-id seen :test #'=))))))

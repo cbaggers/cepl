@@ -6,9 +6,9 @@
   (= 1 (length (dimensions object))))
 
 (defgeneric gl-assign-attrib-pointers (array-type &optional attrib-num
-                                              pointer-offset
-                                              stride-override
-						    normalized))
+                                                    pointer-offset
+                                                    stride-override
+                                                    normalized))
 
 (defmethod gl-assign-attrib-pointers ((array-type t) &optional (attrib-num 0)
                                                        (pointer-offset 0)
@@ -17,7 +17,7 @@
   (let ((type (varjo:type-spec->type array-type)))
     (if (and (varjo:core-typep type) (not (varjo:v-typep type 'v-sampler)))
         (let ((slot-layout (cepl.types::expand-slot-to-layout
-			    nil type normalized))
+                            nil type normalized))
               (stride 0))
           (loop :for attr :in slot-layout
              :for i :from 0

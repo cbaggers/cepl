@@ -44,10 +44,10 @@
 
 
 (defmethod s-slot-args ((slot gl-struct-slot) (args list))
-  (labels ((fun-arg (x) (if (listp x) (first x) x)))
-    (if (s-uses-method-p slot)
-	args
-	(mapcar #'fun-arg args))))
+    (labels ((fun-arg (x) (if (listp x) (first x) x)))
+      (if (s-uses-method-p slot)
+          args
+          (mapcar #'fun-arg args))))
 
 ;;------------------------------------------------------------
 
@@ -79,37 +79,37 @@
 ;;{TODO} Autowrap-name is name now...can clean up lots of code
 (defmacro defstruct-g (name-and-options &body slot-descriptions)
   (dbind (name &key (accesors t) (constructor (symb 'make- name))
-	       (readers t) (writers t) (pull-push t) (attribs t) (populate t))
+               (readers t) (writers t) (pull-push t) (attribs t) (populate t))
       (listify name-and-options)
     (let ((slots (mapcar (lambda (_) (normalize-slot-description
-				      _ name (and readers accesors)
-				      (and writers accesors)))
-			 slot-descriptions))
-	  (autowrap-name name))
+                                      _ name (and readers accesors)
+                                      (and writers accesors)))
+                         slot-descriptions))
+          (autowrap-name name))
       (when (validate-defstruct-g-form name slots)
-	`(progn
-	   (eval-when (:compile-toplevel :load-toplevel :execute)
-	     ,@(make-autowrap-record-def autowrap-name slots))
-	   (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
-	     :constructor ,(symb '%make- name))
-	   (eval-when (:compile-toplevel :load-toplevel :execute)
-	     ,(make-varjo-struct-def name slots))
-	   ,(make-varjo-struct-lookup name)
-	   ,@(when (and readers accesors)
-		   (remove nil (mapcar (lambda (_)
-					 (make-slot-getter _ name autowrap-name))
-				       slots)))
-	   ,@(when (and writers accesors)
-		   (remove nil (mapcar (lambda (_)
-					 (make-slot-setter _ name autowrap-name))
-				       slots)))
-	   ,(when constructor (make-make-struct constructor autowrap-name slots))
-	   ,(when attribs (make-struct-attrib-assigner name slots))
-	   ,(make-struct-pixel-format name slots)
-	   ,@(when populate (make-populate autowrap-name slots name))
-	   ,@(make-foreign-conversions name)
-	   ,@(when pull-push (make-pull-push autowrap-name slots))
-	   ',name)))))
+        `(progn
+           (eval-when (:compile-toplevel :load-toplevel :execute)
+             ,@(make-autowrap-record-def autowrap-name slots))
+           (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
+             :constructor ,(symb '%make- name))
+           (eval-when (:compile-toplevel :load-toplevel :execute)
+             ,(make-varjo-struct-def name slots))
+           ,(make-varjo-struct-lookup name)
+           ,@(when (and readers accesors)
+                   (remove nil (mapcar (lambda (_)
+                                         (make-slot-getter _ name autowrap-name))
+                                       slots)))
+           ,@(when (and writers accesors)
+                   (remove nil (mapcar (lambda (_)
+                                         (make-slot-setter _ name autowrap-name))
+                                       slots)))
+           ,(when constructor (make-make-struct constructor autowrap-name slots))
+           ,(when attribs (make-struct-attrib-assigner name slots))
+           ,(make-struct-pixel-format name slots)
+           ,@(when populate (make-populate autowrap-name slots name))
+           ,@(make-foreign-conversions name)
+           ,@(when pull-push (make-pull-push autowrap-name slots))
+           ',name)))))
 
 (defun normalize-slot-description (slot-description type-name readers writers)
   (destructuring-bind (name type &key normalized accessor) slot-description
@@ -123,7 +123,7 @@
                                (or accessor (symb type-name '- name)))
                      :writer (when writers
                                (or accessor (symb type-name '- name)))
-		     :uses-method-p (not (null accessor))
+                     :uses-method-p (not (null accessor))
                      :element-type element-type :dimensions dimensions))))
 
 ;; put all cepl's errors definitions in one place (like varjo)
@@ -256,8 +256,8 @@
   `(,(s-def slot) ,(s-reader slot)
      ,(s-slot-args slot `((wrapped-object ,awrap-type-name)))
      (cepl.c-arrays::make-c-array-from-pointer ',(s-dimensions slot) ,(s-element-type slot)
-					       (plus-c:c-ref wrapped-object ,awrap-type-name
-							     ,(kwd (s-name slot)) plus-c::&))))
+                                               (plus-c:c-ref wrapped-object ,awrap-type-name
+                                                             ,(kwd (s-name slot)) plus-c::&))))
 
 (defun make-slot-setter (slot type-name awrap-type-name)
   (when (s-writer slot)
@@ -323,9 +323,9 @@
       (when definitions
         `(progn
            (defmethod cepl.internals:gl-assign-attrib-pointers
-	       ((array-type (EQL ',type-name))
-		&optional (attrib-offset 0) (pointer-offset 0)
-		  stride-override normalized)
+               ((array-type (EQL ',type-name))
+                &optional (attrib-offset 0) (pointer-offset 0)
+                  stride-override normalized)
              (declare (ignore array-type normalized))
              (let ((,stride-sym (or stride-override ,stride)))
                ,@definitions
@@ -389,36 +389,36 @@
 (defun make-populate (autowrap-name slots struct-name)
   (let ((typed-name (symb :populate- struct-name)))
     `((defun ,typed-name (object data)
-	(declare (type ,autowrap-name object))
-	(unless (or (vectorp data) (listp data))
-	  (error "can only populate a struct of type ~a with a list or an array"
-		 ',autowrap-name))
-	,@(loop :for slot :in slots :for i :from 0 :collect
-	     `(setf (,(s-writer slot) object) (elt data ,i)))
-	object)
+        (declare (type ,autowrap-name object))
+        (unless (or (vectorp data) (listp data))
+          (error "can only populate a struct of type ~a with a list or an array"
+                 ',autowrap-name))
+        ,@(loop :for slot :in slots :for i :from 0 :collect
+             `(setf (,(s-writer slot) object) (elt data ,i)))
+        object)
       (defmethod cepl.internals:populate ((object ,autowrap-name) data)
-	(,typed-name object data)))))
+          (,typed-name object data)))))
 
 ;;------------------------------------------------------------
 
 (defun make-foreign-conversions (type)
   (let* ((from (cepl-utils:symb type '-from-foreign))
-	 (to (cepl-utils:symb type '-to-foreign))
-	 (typed-populate (symb :populate- type)))
+         (to (cepl-utils:symb type '-to-foreign))
+         (typed-populate (symb :populate- type)))
     `((declaim (inline ,from))
       (declaim (inline ,to))
       (defun ,from (ptr)
-	(declare (type cffi:foreign-pointer ptr)
-		 (optimize (speed 3) (safety 0) (debug 0)))
-	(autowrap:wrap-pointer ptr ',type))
+        (declare (type cffi:foreign-pointer ptr)
+                 (optimize (speed 3) (safety 0) (debug 0)))
+        (autowrap:wrap-pointer ptr ',type))
       (defun ,to (ptr value)
-	(declare (type cffi:foreign-pointer ptr)
-		 (optimize (speed 3) (safety 0) (debug 0)))
-	(,typed-populate (autowrap:wrap-pointer ptr ',type) value))
+        (declare (type cffi:foreign-pointer ptr)
+                 (optimize (speed 3) (safety 0) (debug 0)))
+        (,typed-populate (autowrap:wrap-pointer ptr ',type) value))
       (defmethod get-typed-from-foreign ((type-name (eql ',type)))
-	#',from)
+        #',from)
       (defmethod get-typed-to-foreign ((type-name (eql ',type)))
-	#',to))))
+        #',to))))
 
 ;;------------------------------------------------------------
 
@@ -430,7 +430,7 @@
       (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
         (when (and (loop for i in slots always (eql (s-type i) type))
                    (cepl.pixel-formats::valid-pixel-format-p
-		    components type t nil))
+                    components type t nil))
           `(defmethod lisp-type->pixel-format ((type (eql ',name)))
              (cepl.pixel-formats::pixel-format! ,components ',type)))))))
 

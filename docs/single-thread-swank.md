@@ -21,7 +21,7 @@ By default this is a little fiddly from Emacs, so if you add the following to yo
                (funcall (read-from-string "swank-loader:init"))
                (funcall (read-from-string "swank:start-server")
                         ,(slime-to-lisp-filename port-filename)
-			,@extra-args)))))
+            ,@extra-args)))))
 
 (defun slime-style (&optional style)
   (interactive
@@ -29,8 +29,8 @@ By default this is a little fiddly from Emacs, so if you add the following to yo
   (lexical-let ((style style))
     (slime-start
      :init (lambda (x y)
-	     (slime-style-init-command
-	      x y `(:style ,style :dont-close t))))))
+         (slime-style-init-command
+          x y `(:style ,style :dont-close t))))))
 ```
 
 Then you can run `slime` in single-threaded mode by:

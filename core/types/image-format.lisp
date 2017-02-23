@@ -168,8 +168,8 @@
 
 (defvar *color-renderable-formats*
   (append *regular-color-formats*
-	  *srgb-color-formats*
-	  '(:r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui)))
+          *srgb-color-formats*
+          '(:r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui)))
 
 ;;----------------------------------------------------------------------
 
@@ -183,9 +183,9 @@
 
 (defvar *image-formats*
   (append *color-renderable-formats*
-	  *depth-formats*
-	  *stencil-formats*
-	  *depth-stencil-formats*))
+          *depth-formats*
+          *stencil-formats*
+          *depth-stencil-formats*))
 
 ;;----------------------------------------------------------------------
 

@@ -7,7 +7,7 @@
 
 (defmethod resolution ((object t))
   (error "CEPL: Cannot extract a resolution from ~s object:~%~s"
-	 (type-of object) object))
+         (type-of object) object))
 
 
 
@@ -18,7 +18,7 @@
 
 (defmethod dimensions ((object t))
   (error "CEPL: Cannot extract dimensions from ~s object:~%~s"
-	 (type-of object) object))
+         (type-of object) object))
 
 (defmethod dimensions ((object array))
   (array-dimensions object))

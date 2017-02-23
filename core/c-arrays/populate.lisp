@@ -75,9 +75,9 @@
 
 (defun %gl-calc-byte-size (elem-size dimensions)
   (let* ((x-size (first dimensions)) (rest (rest dimensions))
-	 (row-byte-size (* x-size elem-size)))
+         (row-byte-size (* x-size elem-size)))
     (values (* row-byte-size (max (reduce #'* rest) 1))
-	    row-byte-size)))
+            row-byte-size)))
 
 (defun gl-calc-byte-size (type dimensions)
   (%gl-calc-byte-size (gl-type-size type) (listify dimensions)))

@@ -14,38 +14,38 @@
 
 (defmacro make-typed-from-foreign ()
   (let ((types (append `((:int8 0 nil nil)
-			 (:uint8 0 nil nil)
-			 (:short 0 nil nil)
-			 (:ushort 0 nil nil)
-			 (:int 0 nil nil)
-			 (:uint 0 nil nil)
-			 (:float 0 nil nil)
-			 (:double 0 nil nil)
-			 (:half-float 0 nil nil))
-		       cffi::*extra-primitive-types*)))
+                         (:uint8 0 nil nil)
+                         (:short 0 nil nil)
+                         (:ushort 0 nil nil)
+                         (:int 0 nil nil)
+                         (:uint 0 nil nil)
+                         (:float 0 nil nil)
+                         (:double 0 nil nil)
+                         (:half-float 0 nil nil))
+                       cffi::*extra-primitive-types*)))
     `(progn
        ,@(loop :for (type len nil comp-lisp-type) :in types
-	    :for from = (cepl-utils:symb-package
-			 :cepl.types.foreign type '-from-foreign)
-	    :for to = (cepl-utils:symb-package
-		       :cepl.types.foreign type '-to-foreign) :append
-	    `((declaim (inline ,from))
-	      (defun ,from (ptr)
-		(declare (type cffi:foreign-pointer ptr)
-			 (optimize (speed 3) (safety 0) (debug 0)))
-		(mem-aref ptr ,type))
-	      (defun ,to (ptr value)
-		(declare (type cffi:foreign-pointer ptr)
-			 (optimize (speed 3) (safety 0) (debug 0))
-			 ,@(when (> len 0) `((type (simple-array
-						    ,comp-lisp-type (,len))
-						   value))))
-		(setf (mem-aref ptr ,type) value))
-	      (export '(,to ,from) :cepl.types.foreign)
-	      (defmethod get-typed-from-foreign ((type-name (eql ',type)))
-		#',from)
-	      (defmethod get-typed-to-foreign ((type-name (eql ',type)))
-		#',to))))))
+            :for from = (cepl-utils:symb-package
+                         :cepl.types.foreign type '-from-foreign)
+            :for to = (cepl-utils:symb-package
+                       :cepl.types.foreign type '-to-foreign) :append
+            `((declaim (inline ,from))
+              (defun ,from (ptr)
+                (declare (type cffi:foreign-pointer ptr)
+                         (optimize (speed 3) (safety 0) (debug 0)))
+                (mem-aref ptr ,type))
+              (defun ,to (ptr value)
+                (declare (type cffi:foreign-pointer ptr)
+                         (optimize (speed 3) (safety 0) (debug 0))
+                         ,@(when (> len 0) `((type (simple-array
+                                                    ,comp-lisp-type (,len))
+                                                   value))))
+                (setf (mem-aref ptr ,type) value))
+              (export '(,to ,from) :cepl.types.foreign)
+              (defmethod get-typed-from-foreign ((type-name (eql ',type)))
+                #',from)
+              (defmethod get-typed-to-foreign ((type-name (eql ',type)))
+                #',to))))))
 
 (make-typed-from-foreign)
 

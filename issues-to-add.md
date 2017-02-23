@@ -6,24 +6,24 @@
 
 - in draw-arrays our (buffer-stream-start stream) is causing an optimize warning
   note:
-	unable to
-	  optimize
-	due to type uncertainty:
-	  The first argument is a REAL, not a SINGLE-FLOAT.
-	--> BLOCK MULTIPLE-VALUE-PROG1 CFFI:FOREIGN-FUNCALL LET LET TRUNCATE
-	--> TRUNCATE LET
-	==>
-	  (SB-KERNEL:%UNARY-TRUNCATE SB-C::X)
+    unable to
+      optimize
+    due to type uncertainty:
+      The first argument is a REAL, not a SINGLE-FLOAT.
+    --> BLOCK MULTIPLE-VALUE-PROG1 CFFI:FOREIGN-FUNCALL LET LET TRUNCATE
+    --> TRUNCATE LET
+    ==>
+      (SB-KERNEL:%UNARY-TRUNCATE SB-C::X)
 
   note:
-	unable to
-	  optimize
-	due to type uncertainty:
-	  The first argument is a REAL, not a DOUBLE-FLOAT.
-	--> BLOCK MULTIPLE-VALUE-PROG1 CFFI:FOREIGN-FUNCALL LET LET TRUNCATE
-	--> TRUNCATE LET
-	==>
-	  (SB-KERNEL:%UNARY-TRUNCATE SB-C::X)
+    unable to
+      optimize
+    due to type uncertainty:
+      The first argument is a REAL, not a DOUBLE-FLOAT.
+    --> BLOCK MULTIPLE-VALUE-PROG1 CFFI:FOREIGN-FUNCALL LET LET TRUNCATE
+    --> TRUNCATE LET
+    ==>
+      (SB-KERNEL:%UNARY-TRUNCATE SB-C::X)
 
 
 
@@ -33,4 +33,4 @@
    --> BLOCK MULTIPLE-VALUE-PROG1 CFFI:FOREIGN-FUNCALL LET LET LET LET LET
    --> IF CFFI-SYS:POINTER-ADDRESS BLOCK
    ==>
-	 (SB-SYS:SAP-INT CFFI-SYS::PTR)
+     (SB-SYS:SAP-INT CFFI-SYS::PTR)

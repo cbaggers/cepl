@@ -44,30 +44,30 @@ compute the final color.
 So in pseudo-code it would look this this:
 
     (defun compute-final-color (blend-params src-rgb src-alpha
-				dest-rgb dest-alpha)
+                                dest-rgb dest-alpha)
       (let ((new-src-rgb
-	     (funcall (blend-params-source-rgb)
-		      src-rgb
-		      dest-rgb))
-	    (new-dest-rgb
-	     (funcall (blend-params-destination-rgb blend-params)
-		      src-rgb
-		      dest-rgb))
-	    (new-src-alpha
-	     (funcall (blend-params-source-alpha blend-params)
-		      src-alpha
-		      dest-alpha))
-	    (new-dest-alpha
-	     (funcall (blend-params-destination-alpha blend-params)
-		      src-alpha
-		      dest-alpha)))
-	;; compute final colors
-	(values (funcall (blend-params-mode-rgb blend-params)
-			 new-src-rgb
-			 new-dest-rgb)
-		(funcall (blend-params-mode-alpha blend-params)
-			 new-src-alpha
-			 new-dest-alpha))))
+             (funcall (blend-params-source-rgb)
+                      src-rgb
+                      dest-rgb))
+            (new-dest-rgb
+             (funcall (blend-params-destination-rgb blend-params)
+                      src-rgb
+                      dest-rgb))
+            (new-src-alpha
+             (funcall (blend-params-source-alpha blend-params)
+                      src-alpha
+                      dest-alpha))
+            (new-dest-alpha
+             (funcall (blend-params-destination-alpha blend-params)
+                      src-alpha
+                      dest-alpha)))
+        ;; compute final colors
+        (values (funcall (blend-params-mode-rgb blend-params)
+                         new-src-rgb
+                         new-dest-rgb)
+                (funcall (blend-params-mode-alpha blend-params)
+                         new-src-alpha
+                         new-dest-alpha))))
 
 
 -- :source-rgb, :source-alpha, :destination-rgb & :destination-alpha --

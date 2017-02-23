@@ -9,15 +9,15 @@
 
 (defun-g nm-vert ((data g-pnt) &uniform (clip-space vec-space-g))
   (values (in clip-space
-	    (v! (pos data) 1.0))
-	  (pos data)
-	  (norm data)
-	  (v! 0.4 0 0.4 0)
-	  (tex data)))
+            (v! (pos data) 1.0))
+          (pos data)
+          (norm data)
+          (v! 0.4 0 0.4 0)
+          (tex data)))
 
 ;;----------------------------------------------------------------------
 
 (defun-g light ((x :vec4) &uniform (pos :sampler-2d) (normals :sampler-2d)
-		(clip-space vec-space-g) (lpos :vec3))
+                (clip-space vec-space-g) (lpos :vec3))
   (in clip-space
     (light lpos (texture pos gl-frag-coord) (texture buf gl-frag-coord))))

@@ -8,7 +8,7 @@
                 %reduce-ancestors))
 (defun %reduce-ancestors (function of-space initial-value)
   (declare (type vec-space of-space)
-	   (type (function (t vec-space) t) function)
+           (type (function (t vec-space) t) function)
            (optimize (speed 3) (safety 1) (debug 1)))
   (labels ((walk (accum space)
              (if space

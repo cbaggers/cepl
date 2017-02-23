@@ -12,7 +12,7 @@
       <p class="description">Fast lispy way to work with OpenGL</p>
     </header>
     <div id="content">
-      
+
         <article><h2>CEPL (Code Evaluate Play Loop) - [Beta]</h2>
 
 <p>CEPL is a lispy and REPL-friendly Common Lisp library for working with OpenGL.</p>
@@ -97,19 +97,19 @@
 
 <p>If you are having issues getting the C libraries to load and just need to rule out whether Lisp can find them, try putting them in the same folder as the lisp exe. For example <code>C:\Program Files\sbcl\</code>.</p>
 </article>
-      
+
       <article>
-        
+
           <h2>Copyright</h2>
           <span>cepl</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=BSD 2 Clause">BSD 2 Clause</a></span> license.
-          
+
             © <span>Chris Bagley (Baggers) &lt;techsnuffle@gmail.com&gt;</span>
             .
-          
-          
-        
+
+
+
       </article>
-      
+
         <article id="symbol-index">
           <h2>Package Index</h2>
           <ul><li class="package">
@@ -1149,7 +1149,7 @@ data you are using, for example the following is perfectly legal code:
 
     (make-buffer-stream
       :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
-		   ,(gpu-sub-array monster-col-data 1000 2000))
+                   ,(gpu-sub-array monster-col-data 1000 2000))
       :index-array monster-index-array
       :length 1000)
 
@@ -3057,7 +3057,7 @@ given fbo. The result is a gpu-array
 The attachment-name can be one of the following:
 
  a positive integer - In which case this function returns the
-		      nth color-attachments where (= n attachment-name)
+                      nth color-attachments where (= n attachment-name)
 
  :d - the depth-attachment is returned
 
@@ -3477,30 +3477,30 @@ compute the final color.
 So in pseudo-code it would look this this:
 
     (defun compute-final-color (blend-params src-rgb src-alpha
-				dest-rgb dest-alpha)
+                                dest-rgb dest-alpha)
       (let ((new-src-rgb
-	     (funcall (blend-params-source-rgb)
-		      src-rgb
-		      dest-rgb))
-	    (new-dest-rgb
-	     (funcall (blend-params-destination-rgb blend-params)
-		      src-rgb
-		      dest-rgb))
-	    (new-src-alpha
-	     (funcall (blend-params-source-alpha blend-params)
-		      src-alpha
-		      dest-alpha))
-	    (new-dest-alpha
-	     (funcall (blend-params-destination-alpha blend-params)
-		      src-alpha
-		      dest-alpha)))
-	;; compute final colors
-	(values (funcall (blend-params-mode-rgb blend-params)
-			 new-src-rgb
-			 new-dest-rgb)
-		(funcall (blend-params-mode-alpha blend-params)
-			 new-src-alpha
-			 new-dest-alpha))))
+             (funcall (blend-params-source-rgb)
+                      src-rgb
+                      dest-rgb))
+            (new-dest-rgb
+             (funcall (blend-params-destination-rgb blend-params)
+                      src-rgb
+                      dest-rgb))
+            (new-src-alpha
+             (funcall (blend-params-source-alpha blend-params)
+                      src-alpha
+                      dest-alpha))
+            (new-dest-alpha
+             (funcall (blend-params-destination-alpha blend-params)
+                      src-alpha
+                      dest-alpha)))
+        ;; compute final colors
+        (values (funcall (blend-params-mode-rgb blend-params)
+                         new-src-rgb
+                         new-dest-rgb)
+                (funcall (blend-params-mode-alpha blend-params)
+                         new-src-alpha
+                         new-dest-alpha))))
 
 
 -- :source-rgb, :source-alpha, :destination-rgb &amp; :destination-alpha --
@@ -4104,7 +4104,7 @@ It is used like this:
 
     (def-glsl-stage frag-glsl ((&quot;color_in&quot; :vec4) &amp;context :330 :fragment)
       &quot;void main() {
-	   color_out = color_in;
+           color_out = color_in;
        }&quot;
       ((&quot;color_out&quot; :vec4)))
 
@@ -4200,9 +4200,9 @@ Let's see a simple example of a gpu function we can then break down
     ;;       {0}          {3}          {1}         {2}
     (defun-g example ((vert my-struct) &amp;uniform (loop :float))
       (values (v! (+ (my-struct-pos vert) ;; {4}
-		     (v! (sin loop) (cos loop) 0))
-		  1.0)
-	      (my-struct-col vert)))
+                     (v! (sin loop) (cos loop) 0))
+                  1.0)
+              (my-struct-col vert)))
 
 
 {0} So like the normal defun we specify a name first, and the arguments as a
@@ -5243,10 +5243,10 @@ the 'in' macro can be nested:
 
     (in *clip-space*
       (let ((z (in *world-space*
-		 (let ((x (sv! 0 1 2 3)))
-		   ...
-		   x))))
-	z))
+                 (let ((x (sv! 0 1 2 3)))
+                   ...
+                   x))))
+        z))
 
 Here z is in *clip-space* and x is in *world-space*
 
@@ -5303,8 +5303,8 @@ model-space.
 Making a model space is very easy.
 
     (make-space neighbour-space
-		transform-to-neighbour-matrix4
-		transform-from-neighbour-matrix4)
+                transform-to-neighbour-matrix4
+                transform-from-neighbour-matrix4)
 
 the transform-from-neighbour-matrix4 transform is optional where the inverse can
 be calculated.
@@ -5534,10 +5534,10 @@ For example:
 
     (in *clip-space*
       (let ((z (in *world-space*
-		   (let ((x (sv! 0 1 2 3)))
-		     ...
-		     x))))
-	z))
+                   (let ((x (sv! 0 1 2 3)))
+                     ...
+                     x))))
+        z))
 
 In the code above the spatial-vector x is defined in *world-space*. However
 as it is used in the tail position of the innermost let, it will leave the
@@ -6549,7 +6549,7 @@ You can alternatively use the generic function #'tex to get this value.
                   </article>
                 </li></ul></li></ul>
         </article>
-      
+
     </div>
   </body>
 </html>

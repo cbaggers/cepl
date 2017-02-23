@@ -23,9 +23,9 @@ Let's see a simple example of a gpu function we can then break down
     ;;       {0}          {3}          {1}         {2}
     (defun-g example ((vert my-struct) &uniform (loop :float))
       (values (v! (+ (my-struct-pos vert) ;; {4}
-		     (v! (sin loop) (cos loop) 0))
-		  1.0)
-	      (my-struct-col vert)))
+                     (v! (sin loop) (cos loop) 0))
+                  1.0)
+              (my-struct-col vert)))
 
 
 {0} So like the normal defun we specify a name first, and the arguments as a
@@ -262,19 +262,19 @@ follows.
                  that the current-viewport within this scope will be set to the
                  equivalent of:
 
-		     (make-viewport dimensions-of-fbo '(0 0))
+                     (make-viewport dimensions-of-fbo '(0 0))
 
-		 See the docstruct with-fbo-viewport for details on this
+                 See the docstruct with-fbo-viewport for details on this
                  behavior.
 
-		 One last detail is that you may want to take the dimensions of
+                 One last detail is that you may want to take the dimensions of
                  the viewport from an attachment other than attachment-0.
                  To do this use the 'attachment-for-size argument and give the
                  index of the color-attachment to use.
 
 - with-blending: If with-blending is t then with-fbo-bound adds a with-blending
                  that uses this fbo to this scope.
-		 This means that the blending parameters from your fbo will be
+                 This means that the blending parameters from your fbo will be
                  used while rendering. For the details and version specific
                  behaviours check out the docstring for with-blending
 
@@ -316,7 +316,7 @@ It is used like this:
 
     (def-glsl-stage frag-glsl ((\"color_in\" :vec4) &context :330 :fragment)
       \"void main() {
-	   color_out = color_in;
+           color_out = color_in;
        }\"
       ((\"color_out\" :vec4)))
 

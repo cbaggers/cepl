@@ -36,11 +36,11 @@
 (defun ndc-space->screen-space (depth-range viewport point)
   (destructuring-bind (width height) (size viewport)
     (let ((vo (jungl::viewport-origin viewport))
-	  (near (v:x depth-range))
-	  (far (v:y depth-range)))
+          (near (v:x depth-range))
+          (far (v:y depth-range)))
       (v! (+ (* (/ width 2) (v:x point)) (v:x vo) (/ width 2))
-	  (+ (* (/ height 2) (v:y point)) (v:y vo) (/ height 2))
-	  (+ (* (/ (- far near) 2) (v:z point)) (/ (+ far near) 2))))))
+          (+ (* (/ height 2) (v:y point)) (v:y vo) (/ height 2))
+          (+ (* (/ (- far near) 2) (v:z point)) (/ (+ far near) 2))))))
 
 ;; ok, but in cases like this we cant compute the inverse so we need both
 
@@ -56,11 +56,11 @@
 (defun matrix-for-ndc-space->screen-space (depth-range viewport)
   (destructuring-bind (width height) (viewport-dimensions viewport)
     (dvec* ((vo-x vo-y) (jungl::viewport-origin viewport)
-	    (near far) depth-range)
+            (near far) depth-range)
       (m! (/ width 2)  0.0           0.0                 (+ vo-x (/ width 2))
-	  0.0          (/ height 2)  0.0                 (+ vo-y (/ height 2))
-	  0.0          0.0           (/ (- far near) 2)  (/ (+ far near) 2)
-	  0.0          0.0           0.0                 1.0))))
+          0.0          (/ height 2)  0.0                 (+ vo-y (/ height 2))
+          0.0          0.0           (/ (- far near) 2)  (/ (+ far near) 2)
+          0.0          0.0           0.0                 1.0))))
 
 ;; both :transform-func & :inverse-func should really return a mat4
 
@@ -82,11 +82,11 @@
 
 (defstruct (pos (:constructor %%-pos!))
   (space (error "positions can not be made without a space")
-	 :type spaces::space-event-node
-	 :read-only t)
+         :type spaces::space-event-node
+         :read-only t)
   (point (v! 0 0 0) :type (or (simple-array single-float (2))
-			      (simple-array single-float (3))
-			      (simple-array single-float (4)))))
+                              (simple-array single-float (3))
+                              (simple-array single-float (4)))))
 (defvar *ndc-space*)
 
 (defun sv! (vec &optional (space *ndc-space*))
@@ -97,7 +97,7 @@
 
 (defun to-space (destination-space pos)
   (m4:transform (get-transform (pos-space pos) destination-space)
-		(pos-point pos)))
+                (pos-point pos)))
 
 (defun get-transform (from-space to-space)
   ;; query space hierarchy for transform

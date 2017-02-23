@@ -85,7 +85,7 @@ data you are using, for example the following is perfectly legal code:
 
     (make-buffer-stream
       :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)
-		   ,(gpu-sub-array monster-col-data 1000 2000))
+                   ,(gpu-sub-array monster-col-data 1000 2000))
       :index-array monster-index-array
       :length 1000)
 

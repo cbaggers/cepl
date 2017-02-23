@@ -5,8 +5,8 @@
     #'render-vertices))
 
 (def-g-> full-gl-pipeline
-  ;; vertex-processing
-  vertex-shader                 ;; user defined
+    ;; vertex-processing
+    vertex-shader                 ;; user defined
   #'limited-primitive-assembly
   tessellation-shader           ;; user defined
   geometry-shader               ;; user defined
@@ -65,7 +65,7 @@
   equation:
 
   (let ((normalized-device-coords        ;; (v! ndc-x ndc-y ndc-z)
-	 (v! (/ x w) (/ y w) (/ z w))))
+ (v! (/ x w) (/ y w) (/ z w))))
     ...)"
   (transform-to +ndc-space+ (coord vertex)))
 
@@ -84,9 +84,9 @@
    via these equations:
 
    (let ((window-space-coords                         ;; (v! w-x w-y w-z)
-	  (v! (+ (* (/ width 2) ndc-x) x (/ width 2))
-	      (+ (* (/ height 2) ndc-y) y (/ height 2))
-	      (+ (* (/ (- far near) 2) ndc-z) (/ (+ far near) 2)))))
+  (v! (+ (* (/ width 2) ndc-x) x (/ width 2))
+      (+ (* (/ height 2) ndc-y) y (/ height 2))
+      (+ (* (/ (- far near) 2) ndc-z) (/ (+ far near) 2)))))
      ...)
 
    Where x, y, width, height, nearVal, and farVal are the viewport parameters."

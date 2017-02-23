@@ -44,10 +44,10 @@ the 'in' macro can be nested:
 
     (in *clip-space*
       (let ((z (in *world-space*
-		 (let ((x (sv! 0 1 2 3)))
-		   ...
-		   x))))
-	z))
+                 (let ((x (sv! 0 1 2 3)))
+                   ...
+                   x))))
+        z))
 
 Here z is in *clip-space* and x is in *world-space*
 
@@ -104,8 +104,8 @@ model-space.
 Making a model space is very easy.
 
     (make-space neighbour-space
-		transform-to-neighbour-matrix4
-		transform-from-neighbour-matrix4)
+                transform-to-neighbour-matrix4
+                transform-from-neighbour-matrix4)
 
 the transform-from-neighbour-matrix4 transform is optional where the inverse can
 be calculated.
@@ -242,10 +242,10 @@ For example:
 
     (in *clip-space*
       (let ((z (in *world-space*
-		   (let ((x (sv! 0 1 2 3)))
-		     ...
-		     x))))
-	z))
+                   (let ((x (sv! 0 1 2 3)))
+                     ...
+                     x))))
+        z))
 
 In the code above the spatial-vector x is defined in *world-space*. However
 as it is used in the tail position of the innermost let, it will leave the

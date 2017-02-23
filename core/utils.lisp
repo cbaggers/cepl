@@ -68,22 +68,22 @@
 ;; This will be pretty inefficient, but shoudl be fine for code trees
 ;; {TODO} how is this not subst?
 (defun walk-replace (to-replace replace-with form
-		     &key (test #'eql))
+                     &key (test #'eql))
   "This walks a list tree ('form') replacing all occurences of
    'to-replace' with 'replace-with'. This is pretty inefficent
    but will be fine for macros."
   (cond ((null form) nil)
-	((atom form) (if (funcall test form to-replace)
-			 replace-with
-			 form))
-	(t (cons (walk-replace to-replace
-			       replace-with
-			       (car form)
-			       :test test)
-		 (walk-replace to-replace
-			       replace-with
-			       (cdr form)
-			       :test test)))))
+        ((atom form) (if (funcall test form to-replace)
+                         replace-with
+                         form))
+        (t (cons (walk-replace to-replace
+                               replace-with
+                               (car form)
+                               :test test)
+                 (walk-replace to-replace
+                               replace-with
+                               (cdr form)
+                               :test test)))))
 
 (defun file-to-string (path)
   "Sucks up an entire file from PATH into a freshly-allocated
@@ -134,9 +134,9 @@
 
 (defun symb-package (package &rest args)
   (values (intern (apply #'cepl-utils:mkstr args)
-		  (if (packagep package)
-		      package
-		      (find-package package)))))
+                  (if (packagep package)
+                      package
+                      (find-package package)))))
 
 (defun make-keyword (&rest args)
   "This takes a list of symbols (or strings) and outputs one
@@ -159,14 +159,14 @@
    containing the elements of the original list"
   (if (zerop n) (error "zero length"))
   (labels ((rec (source acc)
-	     (let ((rest (nthcdr n source)))
-	       (if (consp rest)
-		   (rec rest (cons (subseq source 0 n)
-				   acc))
-		   (nreverse (cons source acc))))))
+             (let ((rest (nthcdr n source)))
+               (if (consp rest)
+                   (rec rest (cons (subseq source 0 n)
+                                   acc))
+                   (nreverse (cons source acc))))))
     (if source
-	(rec source nil)
-	nil)))
+        (rec source nil)
+        nil)))
 
 (defvar safe-read-from-string-blacklist
   '(#\# #\: #\|))
@@ -178,23 +178,23 @@
 
   (dolist (c safe-read-from-string-blacklist)
     (set-macro-character
-      c #'safe-reader-error nil rt))
+     c #'safe-reader-error nil rt))
 
   (defun safe-read-from-string (s &optional fail)
     (if (stringp s)
-      (let ((*readtable* rt) *read-eval*)
-        (handler-bind
-          ((error (lambda (condition)
-                    (declare (ignore condition))
-                    (return-from
-                      safe-read-from-string fail))))
-          (read-from-string s)))
-      fail)))
+        (let ((*readtable* rt) *read-eval*)
+          (handler-bind
+              ((error (lambda (condition)
+                        (declare (ignore condition))
+                        (return-from
+                         safe-read-from-string fail))))
+            (read-from-string s)))
+        fail)))
 
 (defun sub-at-index (seq index new-val)
   (append (subseq seq 0 index)
-	  (list new-val)
-	  (subseq seq (1+ index))))
+          (list new-val)
+          (subseq seq (1+ index))))
 
 
 (defun lispify-name (name)
@@ -333,7 +333,7 @@
 ;;          (format t "~a~%" res)
 ;;          res))))
 
-;------------ERRORS-----------;
+;;------------ERRORS-----------;
 
 ;;[TODO] need better arg test
 (defmacro defcondition (name (&key (condition-type 'error) prefix
@@ -350,35 +350,35 @@
      (,@(loop :for arg :in args :collect `(,arg :initarg ,(kwd arg))))
      (:report (lambda (condition stream)
                 (declare (ignorable condition))
-		(with-slots ,args condition
-		  (let ((*print-circle* (if ,print-circle?
-					    ,print-circle
-					    *print-circle*))
-			(*print-escape* (if ,print-escape?
-					    ,print-escape
-					    *print-escape*))
-			(*print-length* (if ,print-length?
-					    ,print-length
-					    *print-length*))
-			(*print-level* (if ,print-level?
-					   ,print-level
-					   *print-level*))
-			(*print-lines* (if ,print-lines?
-					   ,print-lines
-					   *print-lines*))
-			(*print-right-margin* (if ,print-right-margin?
-						  ,print-right-margin
-						  *print-right-margin*)))
-		    (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
-			    ,@body)))))))
+                (with-slots ,args condition
+                  (let ((*print-circle* (if ,print-circle?
+                                            ,print-circle
+                                            *print-circle*))
+                        (*print-escape* (if ,print-escape?
+                                            ,print-escape
+                                            *print-escape*))
+                        (*print-length* (if ,print-length?
+                                            ,print-length
+                                            *print-length*))
+                        (*print-level* (if ,print-level?
+                                           ,print-level
+                                           *print-level*))
+                        (*print-lines* (if ,print-lines?
+                                           ,print-lines
+                                           *print-lines*))
+                        (*print-right-margin* (if ,print-right-margin?
+                                                  ,print-right-margin
+                                                  *print-right-margin*)))
+                    (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
+                            ,@body)))))))
 
 (defmacro deferror (name (&key (error-type 'error) prefix
-			       (print-circle nil print-circle?)
-			       (print-escape nil print-escape?)
-			       (print-length nil print-length?)
-			       (print-level nil print-level?)
-			       (print-lines nil print-lines?)
-			       (print-right-margin nil print-right-margin?))
+                               (print-circle nil print-circle?)
+                               (print-escape nil print-escape?)
+                               (print-length nil print-length?)
+                               (print-level nil print-level?)
+                               (print-lines nil print-lines?)
+                               (print-right-margin nil print-right-margin?))
                             (&rest args) error-string &body body)
   `(defcondition ,name
        (:condition-type ,error-type :prefix ,prefix
@@ -456,22 +456,22 @@
 
 (defmacro with-hash ((var-name key) hash-table &body body)
   (let ((k (gensym "key"))
-	(ht (gensym "hash-table")))
+        (ht (gensym "hash-table")))
     `(let ((,k ,key)
-	   (,ht ,hash-table))
+           (,ht ,hash-table))
        (symbol-macrolet ((,var-name (gethash ,k ,ht)))
-	 ,@body))))
+         ,@body))))
 
 (defmacro with-hash* (var-key-pairs hash-table &body body)
   (let ((keys (n-of* (gensym "key") (length var-key-pairs)))
-	(ht (gensym "hash-table")))
+        (ht (gensym "hash-table")))
     `(let ((,ht ,hash-table)
-	   ,@(mapcar (lambda (_ _1) `(,_ ,(second _1)))
-		     keys var-key-pairs))
+           ,@(mapcar (lambda (_ _1) `(,_ ,(second _1)))
+                     keys var-key-pairs))
        (symbol-macrolet
-	   ,(mapcar (lambda (k p) `(,(first p) (gethash ,k ,ht)))
-		    keys var-key-pairs)
-	 ,@body))))
+           ,(mapcar (lambda (k p) `(,(first p) (gethash ,k ,ht)))
+                    keys var-key-pairs)
+         ,@body))))
 
 (defun map-hash (function hash-table)
   "map through a hash and actually return something"
@@ -487,9 +487,9 @@
   (let* ((head (list nil))
          (tail head))
     (labels ((do-it (k v)
-	       (let ((x (funcall function k v)))
-		 (when x
-		   (rplacd tail (setq tail (list x)))))))
+               (let ((x (funcall function k v)))
+                 (when x
+                   (rplacd tail (setq tail (list x)))))))
       (maphash #'do-it hash-table))
     (cdr head)))
 
@@ -535,49 +535,49 @@
     (list list-to-match &optional fill-value error-on-shorten-p))
 
 (defmethod make-length-same ((list list) (list-to-match list)
-			     &optional fill-value (error-on-shorten-p t))
+                             &optional fill-value (error-on-shorten-p t))
   (let ((l1 (length list))
-	(l2 (length list-to-match)))
+        (l2 (length list-to-match)))
     (cond ((= l1 l2) list)
-	  ((< l1 l2) (append list (loop :for i :from l1 :below l2 :collect
-				     fill-value)))
-	  (t (if error-on-shorten-p
-		 (error "make-length-same wont shrink the source list:
+          ((< l1 l2) (append list (loop :for i :from l1 :below l2 :collect
+                                     fill-value)))
+          (t (if error-on-shorten-p
+                 (error "make-length-same wont shrink the source list:
 source: ~s~%list-to-match: ~s" list list-to-match)
-		 (subseq list 0 (length list-to-match)))))))
+                 (subseq list 0 (length list-to-match)))))))
 
 (defmacro case= (form &body cases)
   (let ((g (gensym "val")))
     (labels ((wrap-case (c) `((= ,g ,(first c)) ,@(rest c))))
       (let* ((cases-but1 (mapcar #'wrap-case (butlast cases)))
-	     (last-case (car (last cases)))
-	     (last-case (if (eq (car last-case) 'otherwise)
-			    `(t ,@(rest last-case))
-			    (wrap-case last-case)))
-	     (cases (append cases-but1 (list last-case))))
-	`(let ((,g ,form))
-	   (cond ,@cases))))))
+             (last-case (car (last cases)))
+             (last-case (if (eq (car last-case) 'otherwise)
+                            `(t ,@(rest last-case))
+                            (wrap-case last-case)))
+             (cases (append cases-but1 (list last-case))))
+        `(let ((,g ,form))
+           (cond ,@cases))))))
 
 (defun split-string (delimiter string)
   (let* ((string (string-trim (list delimiter) string))
-	 (result (list ())))
+         (result (list ())))
     (loop :for c :across string
        :if (char= c delimiter) :do (push nil result)
        :else :do (push c (first result)))
     (mapcar (lambda (x)
-	      (concatenate 'string (reverse x)))
-	    (reverse result))))
+              (concatenate 'string (reverse x)))
+            (reverse result))))
 
 (defun ni-call (package-name func-name &rest args)
   "Non-interning funcall"
   (let ((p (find-package package-name)))
     (unless p (error "ni-call: package ~s not found" package-name))
     (let ((func-symb (find-symbol (if (keywordp func-name)
-				      (symbol-name func-name)
-				      func-name)
-				  p)))
+                                      (symbol-name func-name)
+                                      func-name)
+                                  p)))
       (unless func-name (error "ni-call: could not find symbol ~s in package ~s"
-			       func-name package-name))
+                               func-name package-name))
       (apply (symbol-function func-symb) args))))
 
 (defun ni-val (package-name symb-name)
@@ -585,11 +585,11 @@ source: ~s~%list-to-match: ~s" list list-to-match)
   (let ((p (find-package package-name)))
     (unless p (error "ni-call: package ~s not found" package-name))
     (let ((symb (find-symbol (if (keywordp symb-name)
-				 (symbol-name symb-name)
-				 symb-name)
-			     p)))
+                                 (symbol-name symb-name)
+                                 symb-name)
+                             p)))
       (unless symb-name (error "ni-call: could not find symbol ~s in package ~s"
-			       symb-name package-name))
+                               symb-name package-name))
       (symbol-value symb))))
 
 (defun just-ignore (&rest args)
@@ -599,33 +599,33 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 (uiop:define-package :defxstar-hidden)
 
 (defstruct (defxstar-hidden::boop6
-	     (:constructor defxstar-hidden::make-boop6)
-	     (:conc-name nil)
-	     (:predicate defxstar-hidden::boop-p))
+             (:constructor defxstar-hidden::make-boop6)
+             (:conc-name nil)
+             (:predicate defxstar-hidden::boop-p))
   defxstar-hidden::boop-x defxstar-hidden::boop-y)
 
 (defun defx* (defname name slots)
   (labels ((extract-slot-def (x)
-	     (dbind (slot-name _ &key type) x
-	       (declare (ignore _))
-	       (list (symb name :- slot-name)  nil :type (or type t))))
-	   (extract-let (x)
-	     (dbind (name val &key type) x
-	       (declare (ignore type))
-	       (list name val)))
-	   (extract-init (x)
-	     (let ((slot-name (first x)))
-	       (list (kwd name :- slot-name) slot-name))))
+             (dbind (slot-name _ &key type) x
+               (declare (ignore _))
+               (list (symb name :- slot-name)  nil :type (or type t))))
+           (extract-let (x)
+             (dbind (name val &key type) x
+               (declare (ignore type))
+               (list name val)))
+           (extract-init (x)
+             (let ((slot-name (first x)))
+               (list (kwd name :- slot-name) slot-name))))
     (let* ((data-name (symb-package :defxstar-hidden name :-data))
-	   (cname (symb-package :defxstar-hidden :%make- data-name)))
+           (cname (symb-package :defxstar-hidden :%make- data-name)))
       `(progn
-	 (defstruct (,data-name (:constructor ,cname)
-				(:predicate nil)
-				(:conc-name nil))
-	   ,@(mapcar #'extract-slot-def slots))
-	 (,defname ,name
-	   (let* ,(mapcar #'extract-let slots)
-	     (,cname ,@(mapcat #'extract-init slots))))))))
+         (defstruct (,data-name (:constructor ,cname)
+                                (:predicate nil)
+                                (:conc-name nil))
+           ,@(mapcar #'extract-slot-def slots))
+         (,defname ,name
+             (let* ,(mapcar #'extract-let slots)
+               (,cname ,@(mapcat #'extract-init slots))))))))
 
 (defmacro defvar* (name &body slots)
   (defx* 'defvar name slots))
@@ -634,10 +634,10 @@ source: ~s~%list-to-match: ~s" list list-to-match)
   (defx* 'defparameter name slots))
 
 (defun read-integers (&optional (stream *standard-input*) (eof-error-p t)
-			eof-value recursive-p)
+                        eof-value recursive-p)
   (let* ((str (read-line stream eof-error-p eof-value recursive-p))
-	 (split (split-sequence:split-sequence #\space str))
-	 (nums (mapcar #'parse-integer split)))
+         (split (split-sequence:split-sequence #\space str))
+         (nums (mapcar #'parse-integer split)))
     nums))
 
 (defun ensure-vec-index (vec index null-element)

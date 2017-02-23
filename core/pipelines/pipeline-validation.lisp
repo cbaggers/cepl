@@ -11,15 +11,15 @@
                :pipeline-name pipeline-name :keys invalid))))
   (let ((without-keys (remove :post (remove-if #'keywordp gpipe-args))))
     (if (< (length without-keys) 2)
-	(error 'not-enough-args-for-implicit-gpipe-stages
-	       :pipeline-name pipeline-name
-	       :clauses gpipe-args)
-	(assert-valid-gpipe-shader-implicit-form pipeline-name without-keys)))
+        (error 'not-enough-args-for-implicit-gpipe-stages
+               :pipeline-name pipeline-name
+               :clauses gpipe-args)
+        (assert-valid-gpipe-shader-implicit-form pipeline-name without-keys)))
   (let ((keys (remove-if-not #'keywordp gpipe-args)))
     (unless (assendingp (mapcar (lambda (x) (position x varjo:*stage-types*))
-				keys))
+                                keys))
       (error 'invalid-shader-gpipe-stage-keys
-	     :pipeline-name pipeline-name :keys keys))))
+             :pipeline-name pipeline-name :keys keys))))
 
 (defun assert-valid-gpipe-shader-implicit-form (pipeline-name gpipe-args)
   (let ((valid-forms (remove-if-not #'stage-formp gpipe-args))
@@ -49,15 +49,15 @@
        (eq (first x) 'function)
        (= (length x) 2)
        (or (symbolp (second x))
-	   (listp (second x)))))
+           (listp (second x)))))
 
 (defun typed-defp (x)
   (and (listp x)
        (symbolp (first x))
        (every (lambda (s)
-		(or (listp s)
-		    (symbolp s)))
-	      (rest x))))
+                (or (listp s)
+                    (symbolp s)))
+              (rest x))))
 
 (defun stage-formp (x)
   (or (function-formp x)

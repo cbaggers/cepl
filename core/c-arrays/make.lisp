@@ -76,10 +76,10 @@
                                                element-type)
                         :row-byte-size row-byte-size
                         :element-pixel-format pixel-format
-			:element-from-foreign (get-typed-from-foreign
-					       element-type)
-			:element-to-foreign (get-typed-to-foreign
-					     element-type))))
+                        :element-from-foreign (get-typed-from-foreign
+                                               element-type)
+                        :element-to-foreign (get-typed-to-foreign
+                                             element-type))))
         (when initial-contents
           (c-populate new-array initial-contents nil))
         new-array))))
@@ -131,7 +131,7 @@
       (typecase data
         ((or array vector)
          (let ((new-data (make-array (array-dimensions data)
-				     :element-type (array-element-type data))))
+                                     :element-type (array-element-type data))))
            (loop :for i :below (array-total-size data) :do
               (setf (row-major-aref new-data i)
                     (coerce (row-major-aref data i) type))

@@ -5,11 +5,11 @@
 ;;----------------------------------------------------------------
 
 (define-foreign-type gl-half-float () ()
-		     (:actual-type :ushort)
-		     (:simple-parser :half-float))
+                     (:actual-type :ushort)
+                     (:simple-parser :half-float))
 
 (ieee-floats:make-float-converters encode-half-float decode-half-float
-				   5 10 t)
+                                   5 10 t)
 
 (defmethod expand-to-foreign (value (type gl-half-float))
   `(encode-half-float ,value))
@@ -68,10 +68,10 @@
                (:int 'integer)
                (:uint 'integer)
                (:double 'float)
-	       (:int8 'fixnum)
-	       (:uint8 'fixnum)
-	       (:float 'single-float)
-	       (:half-float 'single-float)
+               (:int8 'fixnum)
+               (:uint8 'fixnum)
+               (:float 'single-float)
+               (:half-float 'single-float)
                (t (error "How is there a cffi type with components of ~a" f-type)))))
     (let* ((kwd-allowed +allow-extra-keyword-type-names+))
       `(progn
@@ -98,23 +98,23 @@
                    ,(when (< len 5)
                           (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
                             (when (cepl.pixel-formats::valid-pixel-format-p
-				   components comp-type t nil)
+                                   components comp-type t nil)
                               `(defmethod cepl.types:lisp-type->pixel-format ((comp-type (eql ,type)))
                                  (cepl.pixel-formats::pixel-format!
-				  ,components ',comp-type)))))
-		   (defmethod expand-into-foreign-memory
-		       (value (type ,type-name) ptr)
-		     (cons 'progn
-			   (loop :for j :below ,len :collect
-			      `(setf (mem-aref ,ptr ,,comp-type ,j)
-				     (aref ,value ,j)))))
+                                  ,components ',comp-type)))))
+                   (defmethod expand-into-foreign-memory
+                       (value (type ,type-name) ptr)
+                     (cons 'progn
+                           (loop :for j :below ,len :collect
+                              `(setf (mem-aref ,ptr ,,comp-type ,j)
+                                     (aref ,value ,j)))))
 
-		   (defmethod expand-from-foreign (ptr (type ,type-name))
-		     (list 'make-array ,len :element-type '',(get-lisp-type comp-type)
-			   :initial-contents
-			   (list 'list
-				 ,@(loop :for j :below len :collect
-				      `(list 'mem-aref ptr ',comp-type ,j)))))
+                   (defmethod expand-from-foreign (ptr (type ,type-name))
+                     (list 'make-array ,len :element-type '',(get-lisp-type comp-type)
+                           :initial-contents
+                           (list 'list
+                                 ,@(loop :for j :below len :collect
+                                      `(list 'mem-aref ptr ',comp-type ,j)))))
 
                    (autowrap:define-foreign-record
                        ',name

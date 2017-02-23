@@ -10,24 +10,24 @@ In this document, the terms "C arrays" and "c-array" refer to the special CFFI a
 
 That was all a bit technical so lets get into how to use CEPL arrays.
 ```lisp
-	 ;; 0.
-	 (make-c-array nil :dimensions 100 :element-type :float)
+     ;; 0.
+     (make-c-array nil :dimensions 100 :element-type :float)
 
-	 ;; 1.
-	 (make-c-array nil :dimensions 100 :element-type 'our-data)
+     ;; 1.
+     (make-c-array nil :dimensions 100 :element-type 'our-data)
 
-	 ;; 2.
-	 (make-c-array '(1.0 2.0 3.0 4.0) :element-type :float)
+     ;; 2.
+     (make-c-array '(1.0 2.0 3.0 4.0) :element-type :float)
 
-	 ;; 3.
-	 (make-c-array `((,(v! 1 2 3) 10) (,(v! 4 5 6) 20))
+     ;; 3.
+     (make-c-array `((,(v! 1 2 3) 10) (,(v! 4 5 6) 20))
                    :element-type 'our-data)
 
-	 ;; 4.
+     ;; 4.
      (make-c-array '(1 2 3.0 4))
 
-	 ;; 5.
-	 (make-c-array #2A((1 2) (3 4)))
+     ;; 5.
+     (make-c-array #2A((1 2) (3 4)))
 ```
 
 We will go through these one by one and talk about what is going on:
@@ -46,9 +46,9 @@ This little example shows that when we provide the `initial-contents`, we can le
 You can even provide Lisp data when the `element-type` is a CEPL struct. In this case, CEPL will take each element of the list in order to fill in the slots of the struct.  Here is the definition of that struct again:
 
 ```
-	 (defstruct-g our-data ()
-	   (position :vec3)
-	   (val :int :accessor val))
+     (defstruct-g our-data ()
+       (position :vec3)
+       (val :int :accessor val))
 ```
 
 In this case we end up with a c-array with two elements of type `our-data`. The first struct has the `position` `(v! 1 2 3)` and the `val` `10`; the second struct has the `position` `(v! 4 5 6)` and the `val` 20.
@@ -72,7 +72,7 @@ This demonstrates two points:
 
 If we were to write:
 ```
-	 (make-c-array #2A((1 -2) (3 4)))
+     (make-c-array #2A((1 -2) (3 4)))
 ```
 the resulting `element-type` would be `:int8`.
 
@@ -84,8 +84,8 @@ The signature for `#'make-c-array` is as follows:
  (initial-contents
   &key dimensions
        element-type
-	   displaced-by
-	   (alignment 1))
+       displaced-by
+       (alignment 1))
 ```
 
 We have already seen `initial-contents`, `dimensions`, and `element-type`; what of the other two?

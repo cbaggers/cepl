@@ -491,7 +491,7 @@ example:
 ")
 
     (defun wrap
-	"
+        "
 This function sets the wrap parameter of the texture or sampler given.
 
 When setf'ing this parameter you can provide either one approach to be used
@@ -551,6 +551,6 @@ example:
 ")
 
     (defun sampler-p
-	"
+        "
 This function returns t if the supplied value is a sampler and nil otherwise
 "))

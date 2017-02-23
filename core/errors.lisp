@@ -13,15 +13,15 @@ with the in-arg types ~s"
 
 (deferror invalid-keywords-for-shader-gpipe-args () (pipeline-name keys)
     "Found some invalid keys in the g-> for for the pipeline called ~a:~%~s"
-    pipeline-name keys)
+  pipeline-name keys)
 
 (deferror invalid-context-for-assert-gpipe () (context)
     "CEPL: ~a is an invalid context for asserting whether gpipe args are valid"
-    context)
+  context)
 
 (deferror invalid-context-for-assert-options () (context)
     "CEPL: ~a is an invalid context for asserting whether pipeline options are valid"
-    context)
+  context)
 
 (deferror invalid-shader-gpipe-form () (pipeline-name valid-forms invalid-forms)
     "When using defpipeline to compose GPU functions, the valid arguments to g-> are function literals~%(optionally with keyword stage names).~%~%In the defpipeline for ~a ~athese forms were not valid:~%~{~s~%~}~%"
@@ -34,7 +34,7 @@ with the in-arg types ~s"
 
 (deferror not-enough-args-for-implicit-gpipe-stages () (pipeline-name clauses)
     "Tried to compile the g-> form for the ~a pipeline; however, there are not enough functions here for a valid pipeline:~%~s"
-    pipeline-name clauses)
+  pipeline-name clauses)
 
 (deferror invalid-shader-gpipe-stage-keys () (pipeline-name keys)
     "In the defpipeline form for ~s the gpipe args are incorrect.~%~s"
@@ -48,7 +48,7 @@ with the in-arg types ~s"
                 keys varjo:*stage-types*))))
 
 (deferror invalid-compose-gpipe-form () (pipeline-name clauses)
-  "In the defpipeline for ~s there are some invalid pass clauses.~%
+    "In the defpipeline for ~s there are some invalid pass clauses.~%
 
 ~{~a~%~}
 
@@ -67,7 +67,7 @@ Example valid forms:
 
 (deferror shader-pipeline-non-null-args () (pipeline-name)
     "CEPL - defpipeline: In defpipeline for ~a. Args are not needed in pipelines composed of g-functions"
-    pipeline-name)
+  pipeline-name)
 
 
 (deferror make-tex-no-content-no-type () ()
@@ -117,7 +117,7 @@ internal texture format"
   type-name)
 
 (deferror buffer-backed-texture-establish-image-format () (type-name)
-  "CEPL - make-texture: Could not establish the correct texture type for a buffer texture: ~a"
+    "CEPL - make-texture: Could not establish the correct texture type for a buffer texture: ~a"
   type-name)
 
 (deferror failed-to-test-compile-gpu-func (:error-type warning) (gfunc-name missing-func-names)
@@ -263,12 +263,12 @@ with `:matching-dimensions nil` in the arguments e.g.
 "
   sizes
   (labels ((ffa (a)
-	     (typecase a
-	       ((or null keyword) (format nil "~s" a))
-	       ((or list symbol) (format nil "'~s" a))
-	       (otherwise (format nil "~s" a)))))
+             (typecase a
+               ((or null keyword) (format nil "~s" a))
+               ((or list symbol) (format nil "'~s" a))
+               (otherwise (format nil "~s" a)))))
     (append (mapcar #'ffa args)
-	    '(":MATCHING-DIMENSIONS NIL"))))
+            '(":MATCHING-DIMENSIONS NIL"))))
 
 
 (deferror invalid-cube-fbo-args () (args)

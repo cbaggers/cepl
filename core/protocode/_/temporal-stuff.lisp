@@ -1,7 +1,7 @@
-;; I'm trying to discover some kind of decent way of handling 
+;; I'm trying to discover some kind of decent way of handling
 ;; time that is lispy and tranparent to other code. Expressive
 ;; enough to handle all time conditions in games and simple
-;; enough that it can be combined so we can compose new 
+;; enough that it can be combined so we can compose new
 ;; time functionality..should be a doddle...<cough>..*tumbleweed*
 
 ;; ideas for terminology
@@ -13,34 +13,34 @@
 
 (defmacro within ((end-time &optional (start-time 0)) &body body)
   (let ((time-cache (gensym "time-cache")))
-   `(let ((,time-cache 0)) 
-      (lambda (time)
-	(setf ,time-cache (+ ,time-cache time))
-	(if (> ,time-cache ,start-time)
-	    (if (< ,time-cache ,end-time)
-		,@body
-		(values nil t))
-	    (values nil nil))))))
+    `(let ((,time-cache 0))
+       (lambda (time)
+         (setf ,time-cache (+ ,time-cache time))
+         (if (> ,time-cache ,start-time)
+             (if (< ,time-cache ,end-time)
+                 ,@body
+                 (values nil t))
+             (values nil nil))))))
 
 (defun within-f (func &key (start-time 0) (end-time 0) (absolute-time nil))
   (let* ((time-cache (if absolute-time
-			 (funcall absolute-time)
-			 time-cache))
-	 (start-time (if absolute-time
-			 (+ time-cache start-time)
-			 start-time))
-	 (end-time (if absolute-time
-		       (+ start-time end-time)
-		       end-time))) 
+                         (funcall absolute-time)
+                         time-cache))
+         (start-time (if absolute-time
+                         (+ time-cache start-time)
+                         start-time))
+         (end-time (if absolute-time
+                       (+ start-time end-time)
+                       end-time)))
     (lambda (&optional time)
       (if absolute-time
-	  (setf time-cache (+ time-cache (funcall absolute-time)))
-	  (setf time-cache (+ time-cache time)))
+          (setf time-cache (+ time-cache (funcall absolute-time)))
+          (setf time-cache (+ time-cache time)))
       (if (> time-cache start-time)
-	  (if (< time-cache end-time)
-	      (funcall func)
-	      (values nil t))
-	  (values nil nil)))))
+          (if (< time-cache end-time)
+              (funcall func)
+              (values nil t))
+          (values nil nil)))))
 
 ;;---------------------------------------------------------------
 
@@ -48,23 +48,23 @@
 
 ;;---------------------------------------------------------------
 
-;; temporal-lambda 
+;; temporal-lambda
 (tlambda (x) (within 0 5000) (print x))
 
 (defmacro tlambda (&whole whole args temporalp &body body)
-  '(lambda ,whole ,args 
+  '(lambda ,whole ,args
     (multiple-value-bind (satisfied expired) ())))
 
 ;; nope not like that.. temporal predicates must be like regular
 ;; predicates (listp a) says whether a is a list. (within a x y)
 ;; needs to return whether the temporal lambda 'a' is within x
 ;; and y (for whatever that means!).
-;; 
+;;
 ;; really?...is that what I mean?
 ;; temporal lambdas should work just like regular lambda
 ;; you give them arguments and they work as long as they satisfy
 ;; a temporal predicate.
-;; 
+;;
 ;; For a temporal predicate to work there must be time, or rather
 ;; a time source which the predicate uses to evaluate whether to
 ;; execute.
@@ -74,12 +74,12 @@
 ;; - t or nil saying whether the predicate has been met
 ;; - t or nil saying whether the predicate will ever be met again
 ;;
-;; these are returned using values so that you can ignore the 
-;; latter if you choose. The latter is essential for, for the 
+;; these are returned using values so that you can ignore the
+;; latter if you choose. The latter is essential for, for the
 ;; lack of a better phrase, temporal garbage collection.
 ;;
 ;; for a temporal predicate to work against a temporal lambda
-;; it is going to have to look inside the lexical scope of the 
+;; it is going to have to look inside the lexical scope of the
 ;; closure...this sounds ugly.
 
 ;; time-buffer - converts absolute time to relative time
@@ -89,8 +89,8 @@
 ;; time-cache can be made using time-buffer so may not be equal
 ;; in 'specialness'
 ;;
-;; need time sources ..we have absolute, its 
-;; #'get-internal-real-time. 
+;; need time sources ..we have absolute, its
+;; #'get-internal-real-time.
 
 ;; time buffer makes the absolute #'get-internal-real-time into
 ;; a relative time. So really they are the two time sources.
@@ -101,24 +101,24 @@
 
 (setf time (make-time-buffer))
 ;;*one second passes*
-; > (funcall time)
-; 1000
+                                        ; > (funcall time)
+                                        ; 1000
 
 (setf double-time (time-multiplier time 2.0))
 ;;*one second passes*
-; > (funcall double-time)
-; 2000
+                                        ; > (funcall double-time)
+                                        ; 2000
 
 ;; aren't time-warpy functions a bit pointless in that they are
 ;; just regular functions
 
 (setf tcache (make-time-cache double-time))
 ;;*one second passes*
-; > (funcall tcache)
-; 2000
+                                        ; > (funcall tcache)
+                                        ; 2000
 ;;*one second passes*
-; > (funcall tcache)
-; 4000
+                                        ; > (funcall tcache)
+                                        ; 4000
 
 
 
@@ -127,18 +127,18 @@
   (let ((time (gensym "time-source")))
     `(let ((,time ,time-source))
        (labels ((internal-lam ,args ,@body))
-	 (lambda (&rest args) 
-	   (case (car args)
-	     (:*expired* 
-	      (second (multiple-value-list
-		       (funcall #',temporal-predicate 
-				(funcall ,time)))))
-	     (t 
-	      (if (car (multiple-value-list
-			(funcall #',temporal-predicate
-				 (funcall ,time))))
-		  (apply #'internal-lam args)
-		  nil))))))))
+         (lambda (&rest args)
+           (case (car args)
+             (:*expired*
+              (second (multiple-value-list
+                       (funcall #',temporal-predicate
+                                (funcall ,time)))))
+             (t
+              (if (car (multiple-value-list
+                        (funcall #',temporal-predicate
+                                 (funcall ,time))))
+                  (apply #'internal-lam args)
+                  nil))))))))
 
 
 
@@ -148,18 +148,18 @@
 
 (defun make-time-buffer ()
   (let ((last-time (get-internal-real-time)))
-    (lambda () 
+    (lambda ()
       (let* ((now (get-internal-real-time))
-	     (delta (- now last-time)))
-	(setf last-time now)
-	delta))))
+             (delta (- now last-time)))
+        (setf last-time now)
+        delta))))
 
 (defun make-time-cache ()
   (let ((origin-time (get-internal-real-time)))
-    (lambda () 
+    (lambda ()
       (let* ((now (get-internal-real-time))
-	     (delta (- now origin-time)))
-	delta))))
+             (delta (- now origin-time)))
+        delta))))
 
 (defun withinp (start end time-source)
   (let ((current-time (funcall time-source)))
@@ -173,11 +173,11 @@
   (lambda (time-source) (withinp start end time-source)))
 
 (defun make-tlambda (time-source temporalp func-to-call)
-  (lambda (&rest args) 
+  (lambda (&rest args)
     (if (eq (car args) :*expired?*)
-        (second 
+        (second
          (multiple-value-list (funcall temporalp time-source)))
-        (if (first 
+        (if (first
              (multiple-value-list (funcall temporalp time-source)))
             (apply func-to-call args)
             nil))))
@@ -185,24 +185,24 @@
 (defmacro tlambda (time-source temporalp args &body body)
   (let ((internalf (gensym "internalf")))
     `(labels ((,internalf ,args ,@body))
-      (make-tlambda ,time-source ,temporalp #',internalf))))
+       (make-tlambda ,time-source ,temporalp #',internalf))))
 
 (defun expired (temporal-lambda)
   (funcall temporal-lambda :*expired?*))
 
-;; look into variable capture as is not currently portable for 
+;; look into variable capture as is not currently portable for
 ;; regular lambdas as passing :*expired?* will crash them.
 
 (defvar *expired?* nil)
 
 (defun make-tlambda (time-source temporalp func-to-call)
   (lambda (&rest args)
-    (multiple-value-bind (in-scope expired) 
-	(funcall temporalp time-source)
+    (multiple-value-bind (in-scope expired)
+        (funcall temporalp time-source)
       (setf *expired?* expired)
       (if in-scope
-	  (apply func-to-call args)
-	  nil))))
+          (apply func-to-call args)
+          nil))))
 
 (defun expiredp (temporal-lambda)
   (let ((*expired?* nil))
@@ -213,15 +213,15 @@
 ;; have side-effects. It shouldn't though...bah. Also if you call
 ;; a regular lambda without its args it will fail. damn.
 
-;; Ok so I'm tapping out now...expiredp must only be used on 
-;; temporal-lambdas. Everything else is still transparent 
-;; between regular and temporal lambdas. I'm going with the 
-;; :*expired?* method as I expect this will be safer when 
+;; Ok so I'm tapping out now...expiredp must only be used on
+;; temporal-lambdas. Everything else is still transparent
+;; between regular and temporal lambdas. I'm going with the
+;; :*expired?* method as I expect this will be safer when
 ;; multi-threading (i'm not usre how dynamic vars are handled in
 ;; multiple threads).
 
 ;; But we still have the problem of.'what if a lambda does get
-;; passed :*expired?* and DOESNT crash, we have undefined 
+;; passed :*expired?* and DOESNT crash, we have undefined
 ;; behaviour.
 
 ;; how about conditionals?...been chatting and could be good
@@ -238,13 +238,13 @@
 
 (defun make-tlambda (time-source temporalp func-to-call)
   (lambda (&rest args)
-    (multiple-value-bind (in-scope expired) 
-	(funcall temporalp time-source)
+    (multiple-value-bind (in-scope expired)
+        (funcall temporalp time-source)
       (when expired
-	(signal 'temporally-expired))
+        (signal 'temporally-expired))
       (if in-scope
-	  (apply func-to-call args)
-	  nil))))
+          (apply func-to-call args)
+          nil))))
 
 ;;--ideas--
 ;;this works fine with regular lambdas
@@ -252,8 +252,8 @@
   (let ((result (funcall tlam)))
     (print result)
     (if expired
-	(print "expired")
-	(print "not expired"))))
+        (print "expired")
+        (print "not expired"))))
 
 ;;this won't work fine with all regular lambdas
 (expiredp tlam)
@@ -261,17 +261,17 @@
 
 ;;this is how we can catch the expired condition
 (let ((expired nil))
-  (handler-bind ((temporally-expired #'(lambda () 
-					 (setf expired t))))
+  (handler-bind ((temporally-expired #'(lambda ()
+                                         (setf expired t))))
     (print (funcall tlam))))
 
 ;;-------
 
 (defmacro with-expired ((expired-var) &body body)
   `(let ((,expired-var nil))
-     (handler-bind ((temporally-expired 
-		     #'(lambda () 
-			 (setf ,expired-var t))))
+     (handler-bind ((temporally-expired
+                     #'(lambda ()
+                         (setf ,expired-var t))))
        ,@body)))
 
 
@@ -290,33 +290,33 @@
    Temporal lambdas are quite simply 'lambdas with an expiry date!'
    They are defined in a similar way to regular lambdas except that
    you also have to provide a time source and a temporal-predicate.
-   When you call the lambda it will only evaluate it's body if the 
+   When you call the lambda it will only evaluate it's body if the
    conditions of the predicate are met. When the conditions are not
    met the lambda will return nil
    For example you could specify that the temporal lambda only work
    for 20 seconds.
    Of course in the above example, after the 20 seconds has passed
-   the temporal lambda will never evaluate again. In this state it 
-   is said to have expired, when a temporal lambda that has expired 
+   the temporal lambda will never evaluate again. In this state it
+   is said to have expired, when a temporal lambda that has expired
    is called it emits a 'temporally-expired' condition. This can be
    caught to allow you to clean up expired tlambdas."
   (let ((internalf (gensym "internalf"))
         (time-source-sym (gensym "time-source"))
         (time-sym (gensym "current-time")))
     (cepl-utils:walk-replace '!time time-sym
-                  `(let ((,time-source-sym ,time-source))
-                     (labels ((,internalf ,args ,@body))
-                       (lambda (&rest args)
-                         (let ((,time-sym (funcall ,time-source-sym)))
-                           (if ,temporalp
-                               (apply #',internalf args)
-                               nil))))))))
+                             `(let ((,time-source-sym ,time-source))
+                                (labels ((,internalf ,args ,@body))
+                                  (lambda (&rest args)
+                                    (let ((,time-sym (funcall ,time-source-sym)))
+                                      (if ,temporalp
+                                          (apply #',internalf args)
+                                          nil))))))))
 
 ;;Example
 (tlambda (make-time-buffer) (within 10 20 !time) (x) (print x))
 
 (tlambda (make-time-cache) (afterp 3000 (beforep 15000 !time)) ()
-  (print "wooo"))
+         (print "wooo"))
 
 (defmacro tdefun (name (time-source temporalp args) &body body)
   `(setf (symbol-function ',name)
@@ -326,10 +326,10 @@
 ;; SHOULD TEMPORAL PREDICATES TAKE TIME SOURCE OR JUST NUMBERS
 ;; also should they return t or time?
 ;; how do tperds handle passing of expired?
-;; how about we move the 'temporally-expired signal into the temporal 
+;; how about we move the 'temporally-expired signal into the temporal
 ;; predicates. This way it works in any structure we devise
 
-;----------------------------------------------------
+                                        ;----------------------------------------------------
 
 (define-condition temporally-expired (condition) ())
 
@@ -354,7 +354,7 @@
       (if (< current-time time)
           current-time
           (progn (signal 'temporally-expired)
-                     nil))
+                 nil))
       nil))
 
 (setf (symbol-function 't<)

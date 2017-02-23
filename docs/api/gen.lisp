@@ -17,24 +17,24 @@
 (defun gen-docs ()
   (staple:generate
    :cepl :packages '(:cepl.c-arrays
-		     :cepl.gpu-arrays
-		     :cepl.streams
-		     :cepl.viewports
-		     :cepl.textures
-		     :cepl.samplers
-		     :cepl.memory
-		     :cepl.measurements
-		     :cepl.fbos
-		     :cepl.blending
-		     :cepl.pipelines
-		     :cepl.image-formats
-		     :cepl.pixel-formats
-		     :cepl.ubos
-		     :cepl.space
-		     :cepl.gpu-buffers
-		     :cepl.vaos
-		     :cepl.types
-		     :cepl.types.predefined)
+                     :cepl.gpu-arrays
+                     :cepl.streams
+                     :cepl.viewports
+                     :cepl.textures
+                     :cepl.samplers
+                     :cepl.memory
+                     :cepl.measurements
+                     :cepl.fbos
+                     :cepl.blending
+                     :cepl.pipelines
+                     :cepl.image-formats
+                     :cepl.pixel-formats
+                     :cepl.ubos
+                     :cepl.space
+                     :cepl.gpu-buffers
+                     :cepl.vaos
+                     :cepl.types
+                     :cepl.types.predefined)
    :template *template-dir*
    :out *out-dir*
    :if-exists :supersede)

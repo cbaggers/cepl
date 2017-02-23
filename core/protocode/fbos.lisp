@@ -42,12 +42,12 @@
               :type fixnum)
   (is-default nil :type boolean)
   (blending-params (make-blending-params :mode-rgb :func-add
-					 :mode-alpha :func-add
-					 :source-rgb :one
-					 :source-alpha :one
-					 :destination-rgb :zero
-					 :destination-alpha :zero)
-		   :type blending-params))
+                                         :mode-alpha :func-add
+                                         :source-rgb :one
+                                         :source-alpha :one
+                                         :destination-rgb :zero
+                                         :destination-alpha :zero)
+                   :type blending-params))
 
 
 ;; OLD ;;
@@ -59,12 +59,12 @@
   (blending-enabled nil :type boolean)
   (override-blending nil :type boolean)
   (blending-params (cepl.blending:make-blending-params
-		    :mode-rgb :func-add
-		    :mode-alpha :func-add
-		    :source-rgb :one
-		    :source-alpha :one
-		    :destination-rgb :zero
-		    :destination-alpha :zero) :type blending-params))
+                    :mode-rgb :func-add
+                    :mode-alpha :func-add
+                    :source-rgb :one
+                    :source-alpha :one
+                    :destination-rgb :zero
+                    :destination-alpha :zero) :type blending-params))
 
 ;; need to delay:
 ;;

@@ -64,7 +64,7 @@
 
 (defvar +null-texture+
   (%%make-texture :type nil
-		  :image-format nil))
+                  :image-format nil))
 
 ;;------------------------------------------------------------
 
@@ -80,7 +80,7 @@
   (dimensions nil :type list))
 
 (defstruct (gpu-array-bb (:constructor %make-gpu-array-bb)
-			 (:include gpu-array))
+                         (:include gpu-array))
   (buffer (error "") :type gpu-buffer)
   (access-style :static-draw :type symbol)
   ;; buffer-data
@@ -89,7 +89,7 @@
   (offset-in-bytes-into-buffer 0 :type (unsigned-byte 64))) ;; offset-in-bytes-into-buffer
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)
-			(:include gpu-array))
+                        (:include gpu-array))
   (texture (error "") :type texture)
   (texture-type (error "") :type symbol)
   (level-num 0 :type fixnum)
@@ -105,8 +105,8 @@
 ;;------------------------------------------------------------
 
 (defstruct (buffer-texture
-	     (:include texture)
-	     (:constructor %%make-buffer-texture))
+             (:include texture)
+             (:constructor %%make-buffer-texture))
   (backing-array (error "") :type gpu-array-bb)
   (owns-array nil :type boolean))
 
@@ -147,7 +147,7 @@
 (defstruct (ubo (:constructor %make-ubo))
   (id 0 :type fixnum)
   (data (error "gpu-array must be provided when making ubo")
-	:type gpu-array)
+        :type gpu-array)
   (index 0 :type fixnum)
   (owns-gpu-array nil :type boolean))
 
@@ -174,9 +174,9 @@
   (id -1 :type fixnum)
   ;;
   (color-arrays (make-array 0 :element-type 'att
-			    :initial-element (make-att) :adjustable t
-			    :fill-pointer 0)
-   :type (array att *))
+                            :initial-element (make-att) :adjustable t
+                            :fill-pointer 0)
+                :type (array att *))
   (depth-array (make-att) :type att)
   ;;
   (draw-buffer-map
@@ -186,12 +186,12 @@
               :type fixnum)
   (is-default nil :type boolean)
   (blending-params (make-blending-params :mode-rgb :func-add
-					 :mode-alpha :func-add
-					 :source-rgb :one
-					 :source-alpha :one
-					 :destination-rgb :zero
-					 :destination-alpha :zero)
-		   :type blending-params))
+                                         :mode-alpha :func-add
+                                         :source-rgb :one
+                                         :source-alpha :one
+                                         :destination-rgb :zero
+                                         :destination-alpha :zero)
+                   :type blending-params))
 
 (defvar +null-fbo+
   (%%make-fbo :draw-buffer-map (cffi:null-pointer)))
@@ -351,7 +351,7 @@
    :texture-type nil))
 
 (defvar +null-buffer-backed-gpu-array+
-    (%make-gpu-array-bb :buffer +null-gpu-buffer+
+  (%make-gpu-array-bb :buffer +null-gpu-buffer+
                       :access-style :invalid
                       :element-type nil
                       :byte-size 0
@@ -359,7 +359,7 @@
 
 (defvar +uninitialized-buffer-array+
   (make-array 0 :element-type 'gpu-array-bb
-	      :initial-element +null-buffer-backed-gpu-array+))
+              :initial-element +null-buffer-backed-gpu-array+))
 
 (defun make-uninitialized-gpu-buffer ()
   (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+ :managed nil))

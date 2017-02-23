@@ -31,71 +31,71 @@
   (assert (member value '(:linear :nearest)))
   (cepl.textures:with-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-mag-filter
-			  (%gl::foreign-enum-value '%gl:enum value)))
+                          (%gl::foreign-enum-value '%gl:enum value)))
   texture)
 
 
 (defun (setf tex-minify-filter) (value texture)
   (cepl.textures:with-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-min-filter
-			  (%gl::foreign-enum-value '%gl:enum value)))
+                          (%gl::foreign-enum-value '%gl:enum value)))
   texture)
 
 (defun (setf tex-wrap) (value texture)
   (let ((options '(:repeat :mirrored-repeat :clamp-to-edge :clamp-to-border
                    :mirror-clamp-to-edge))
-	(value (if (keywordp value)
-		   (vector value value value)
-		   value)))
+        (value (if (keywordp value)
+                   (vector value value value)
+                   value)))
     (assert (and (vectorp value)
-		 (= (length value) 3)
-		 (every (lambda (x) (member x options)) value)))
+                 (= (length value) 3)
+                 (every (lambda (x) (member x options)) value)))
     (cepl.textures:with-texture-bound texture
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-s
-			    (%gl::foreign-enum-value '%gl:enum (aref value 0)))
+                            (%gl::foreign-enum-value '%gl:enum (aref value 0)))
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-t
-			    (%gl::foreign-enum-value '%gl:enum (aref value 1)))
+                            (%gl::foreign-enum-value '%gl:enum (aref value 1)))
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-r
-			    (%gl::foreign-enum-value '%gl:enum (aref value 2)))))
+                            (%gl::foreign-enum-value '%gl:enum (aref value 2)))))
   texture)
 
 
 (defun (setf tex-compare) (value texture)
   (cepl.textures:with-texture-bound texture
     (if value
-	(progn
-	  (%gl:tex-parameter-i
-	   (texture-type texture) :texture-compare-mode
-	   (%gl::foreign-enum-value
-	    '%gl:enum :compare-ref-to-texture))
-	  (%gl:tex-parameter-i
-	   (texture-type texture) :texture-compare-func
-	   (%gl::foreign-enum-value
-	    '%gl:enum
-	    (case value
-	      ((:never nil) :never)
-	      ((:always t) :always)
-	      ((:equal := =) :equal)
-	      ((:not-equal :/= /=) :not-equal)
-	      ((:less :< <) :less)
-	      ((:greater :> >) :greater)
-	      ((:lequal :<= <=) :lequal)
-	      ((:gequal :>= >=) :gequal)
-	      (otherwise (error "Invalid compare func for texture ~a" value))))))
-	(%gl:tex-parameter-i
-	 (texture-type texture) :texture-compare-mode
-	 (%gl::foreign-enum-value '%gl:enum :none))))
+        (progn
+          (%gl:tex-parameter-i
+           (texture-type texture) :texture-compare-mode
+           (%gl::foreign-enum-value
+            '%gl:enum :compare-ref-to-texture))
+          (%gl:tex-parameter-i
+           (texture-type texture) :texture-compare-func
+           (%gl::foreign-enum-value
+            '%gl:enum
+            (case value
+              ((:never nil) :never)
+              ((:always t) :always)
+              ((:equal := =) :equal)
+              ((:not-equal :/= /=) :not-equal)
+              ((:less :< <) :less)
+              ((:greater :> >) :greater)
+              ((:lequal :<= <=) :lequal)
+              ((:gequal :>= >=) :gequal)
+              (otherwise (error "Invalid compare func for texture ~a" value))))))
+        (%gl:tex-parameter-i
+         (texture-type texture) :texture-compare-mode
+         (%gl::foreign-enum-value '%gl:enum :none))))
   texture)
 
 (defun fallback-sampler-set (sampler)
   (let ((texture (%sampler-texture sampler))
-	(id (%sampler-id sampler)))
+        (id (%sampler-id sampler)))
     (unless (= id (texture-last-sampler-id texture))
       (setf (tex-lod-bias texture) (%sampler-lod-bias sampler)
-	    (tex-min-lod texture) (%sampler-min-lod sampler)
-	    (tex-max-lod texture) (%sampler-max-lod sampler)
-	    (tex-minify-filter texture) (%sampler-minify-filter sampler)
-	    (tex-magnify-filter texture) (%sampler-magnify-filter sampler)
-	    (tex-wrap texture) (%sampler-wrap sampler)
-	    (tex-compare texture) (%sampler-compare sampler)))
+            (tex-min-lod texture) (%sampler-min-lod sampler)
+            (tex-max-lod texture) (%sampler-max-lod sampler)
+            (tex-minify-filter texture) (%sampler-minify-filter sampler)
+            (tex-magnify-filter texture) (%sampler-magnify-filter sampler)
+            (tex-wrap texture) (%sampler-wrap sampler)
+            (tex-compare texture) (%sampler-compare sampler)))
     sampler))

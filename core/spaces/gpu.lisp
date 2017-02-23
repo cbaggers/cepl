@@ -17,7 +17,7 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (varjo:v-deftype svec4-g () :vec4
-                    :valid-metadata-kinds spatial-meta)
+                   :valid-metadata-kinds spatial-meta)
 
   (varjo:add-alternate-type-name 'svec4 'svec4-g))
 
@@ -28,7 +28,7 @@
   (values :in-space (get-current-space env)))
 
 (defmethod varjo:combine-metadata ((meta-a spatial-meta)
-                             (meta-b spatial-meta))
+                                   (meta-b spatial-meta))
   (let ((space-a (in-space meta-a))
         (space-b (in-space meta-b)))
     (if (eq space-a space-b)
@@ -49,14 +49,14 @@ and
       `(v! ,vec)))
 
 (varjo:v-define-compiler-macro svec4 (&whole whole &environment env
-                                              (v3 :vec3) (f :float))
+                                             (v3 :vec3) (f :float))
   (if (varjo:variable-in-scope-p '*current-space* env)
       whole
       `(v! ,v3 ,f)))
 
 (varjo:v-define-compiler-macro svec4 (&whole whole &environment env
-                                              (f0 :float) (f1 :float)
-                                              (f2 :float) (f3 :float))
+                                             (f0 :float) (f1 :float)
+                                             (f2 :float) (f3 :float))
   (if (varjo:variable-in-scope-p '*current-space* env)
       whole
       `(v! ,f0 ,f1 ,f2 ,f3)))
@@ -106,8 +106,8 @@ and
 (v-defun get-transform (x y) "#-GETTRANSFORM(~a)" (vec-space vec-space) 0)
 
 (varjo:v-define-compiler-macro get-transform (&environment env
-                                                (from-space vec-space)
-                                                (to-space vec-space))
+                                                           (from-space vec-space)
+                                                           (to-space vec-space))
   (declare (ignore from-space to-space))
   ;;
   ;; when we have to transform from *screen-space* or *ndc-space* we are in
@@ -134,7 +134,7 @@ and
       ((and (v-typep form-type 'svec4-g) in-a-space-p)
        (let* ((inner-name (in-space
                            (varjo:metadata-for-argument 'form 'spatial-meta
-                                                         env)))
+                                                        env)))
               (outer-name (get-current-space env)))
          (convert-between-spaces form inner-name outer-name env)))
       ((v-typep form-type 'svec4-g) `(v! ,form))
@@ -192,12 +192,12 @@ and
 
 ;; (defun-g screen-space-to-clip-space ((ss-pos :vec4) (viewport :vec4))
 ;;   (/ (v! (- (* (v:s~ ss-pos :xy) 2.0)
-;; 	    (/ (* (v:s~ viewport :xy) 2.0)
-;; 	       (* (v:s~ viewport :zw) 2.0))
-;; 	    (v! 1 1))
-;; 	 (/ (- (* 2.0 (v:z gl-frag-coord))
-;; 	       (near gl-depth-range)
-;; 	       (far gl-depth-range))
-;; 	    (- (near gl-depth-range) (far gl-depth-range)))
-;; 	 1.0)
+;;     (/ (* (v:s~ viewport :xy) 2.0)
+;;        (* (v:s~ viewport :zw) 2.0))
+;;     (v! 1 1))
+;;  (/ (- (* 2.0 (v:z gl-frag-coord))
+;;        (near gl-depth-range)
+;;        (far gl-depth-range))
+;;     (- (near gl-depth-range) (far gl-depth-range)))
+;;  1.0)
 ;;      (v:w gl-frag-coord)))

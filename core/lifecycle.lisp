@@ -45,49 +45,49 @@
   ;;
   (defun listen-to-lifecycle-changes (func &rest states-to-subscribe-to)
     (assert (every (lambda (x) (member x *lifecycle-states*))
-		   states-to-subscribe-to))
+                   states-to-subscribe-to))
     (let ((stst (or states-to-subscribe-to *lifecycle-states*)))
       (when (and (member :suspended stst)
-		 (not (member func suspended)))
-	(push func suspended))
+                 (not (member func suspended)))
+        (push func suspended))
       (when (and (member :foregroun stst)
-		 (not (member func active)))
-	(push func active))
+                 (not (member func active)))
+        (push func active))
       (when (and (member :interactive stst)
-		 (not (member func interactive)))
-	(push func interactive))
+                 (not (member func interactive)))
+        (push func interactive))
       (when (and (member :shutting-down stst)
-		 (not (member func shutting-down)))
-	(push func shutting-down))))
+                 (not (member func shutting-down)))
+        (push func shutting-down))))
   ;;
   (defun stop-listening-to-lifecycle-changes (func)
     (setf suspended (remove func suspended)
-	  active (remove func active)
-	  interactive (remove func interactive)
-	  shutting-down (remove func shutting-down)))
+          active (remove func active)
+          interactive (remove func interactive)
+          shutting-down (remove func shutting-down)))
   ;;
   (defun call-listeners ()
     (ecase *lifecycle-state*
       (:suspended
        (loop :for l :in suspended :do
-	  (if (symbolp l)
-	      (funcall (symbol-function l) :suspended)
-	      (funcall l :suspended))))
+          (if (symbolp l)
+              (funcall (symbol-function l) :suspended)
+              (funcall l :suspended))))
       (:active
        (loop :for l :in active :do
-	  (if (symbolp l)
-	      (funcall (symbol-function l) :active)
-	      (funcall l :active))))
+          (if (symbolp l)
+              (funcall (symbol-function l) :active)
+              (funcall l :active))))
       (:interactive
        (loop :for l :in interactive :do
-	  (if (symbolp l)
-	      (funcall (symbol-function l) :interactive)
-	      (funcall l :interactive))))
+          (if (symbolp l)
+              (funcall (symbol-function l) :interactive)
+              (funcall l :interactive))))
       (:shutting-down
        (loop :for l :in shutting-down :do
-	  (if (symbolp l)
-	      (funcall (symbol-function l) :shutting-down)
-	      (funcall l :shutting-down)))))))
+          (if (symbolp l)
+              (funcall (symbol-function l) :shutting-down)
+              (funcall l :shutting-down)))))))
 
 
 ;;----------------------------------------------------------------------

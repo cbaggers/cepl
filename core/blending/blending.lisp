@@ -14,13 +14,13 @@
   (let ((g (gensym "bparams")))
     `(let ((,g ,blending-params))
        (symbol-macrolet
-	   ((mode-rgb (blending-params-mode-rgb ,g))
-	    (mode-alpha (blending-params-mode-alpha ,g))
-	    (source-rgb  (blending-params-source-rgb ,g))
-	    (source-alpha (blending-params-source-alpha ,g))
-	    (destination-rgb (blending-params-destination-rgb ,g))
-	    (destination-alpha (blending-params-destination-alpha ,g)))
-	 ,@body))))
+           ((mode-rgb (blending-params-mode-rgb ,g))
+            (mode-alpha (blending-params-mode-alpha ,g))
+            (source-rgb  (blending-params-source-rgb ,g))
+            (source-alpha (blending-params-source-alpha ,g))
+            (destination-rgb (blending-params-destination-rgb ,g))
+            (destination-alpha (blending-params-destination-alpha ,g)))
+         ,@body))))
 
 (defvar *blend-color* (v! 0 0 0 0))
 
@@ -124,15 +124,15 @@
 (defun %gen-attachment-blend (attachments fbo body)
   (let ((blendp-syms (cepl-utils:n-of* (gensym "attachment") (length attachments)))
         (override-syms (cepl-utils:n-of* (gensym "override")
-					 (length attachments)))
-	(g (gensym)))
+                                         (length attachments)))
+        (g (gensym)))
     ;; First we want to get all the lookups of attachment state done
     `(let* ,(cons
              `(%current-blend-params (%fbo-blending-params ,fbo))
              (loop :for a :in attachments :for b :in blendp-syms
                 :for o :in override-syms :append
                 `((,g (attachment-blending ,fbo ,a))
-		  (,b (not (null ,g)))
+                  (,b (not (null ,g)))
                   (,o (when (blending-params-p ,g) ,g)))))
        (let ((per-attachment-blendingp (per-attachment-blending-available-p)))
          ;; If any of the attachments are inheriting the blending from the fbo
@@ -148,8 +148,8 @@
                     `(when ,b
                        (%gl:enable-i :blend ,i)
                        (if ,o
-			   (%blend-i ,o ,i)
-			   (%blend-i (blending-params ,fbo) ,i)))))
+                           (%blend-i ,o ,i)
+                           (%blend-i (blending-params ,fbo) ,i)))))
              (progn
                ,@(loop :for b :in blendp-syms :for i :from 0 :collect
                     `(when ,b (%gl:enable-i :blend ,i))))))
@@ -171,8 +171,8 @@
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
      (when (att-blend a)
        (if (att-bparams a)
-	   (%blend-i (att-bparams a) i)
-	   (%blend-i (%fbo-blending-params fbo) i)))))
+           (%blend-i (att-bparams a) i)
+           (%blend-i (%fbo-blending-params fbo) i)))))
 
 (defun %blend-i (params i)
   (with-blending-param-slots params
@@ -229,32 +229,32 @@
     (defun (setf mode-rgb) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
-	(setf mode-rgb value)))
+        (setf mode-rgb value)))
 
     (defun (setf mode-alpha) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
-	(setf mode-alpha value)))
+        (setf mode-alpha value)))
 
     (defun (setf source-rgb) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
-	(setf source-rgb value)))
+        (setf source-rgb value)))
 
     (defun (setf source-alpha) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
-	(setf source-alpha value)))
+        (setf source-alpha value)))
 
     (defun (setf destination-rgb) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
-	(setf destination-rgb value)))
+        (setf destination-rgb value)))
 
     (defun (setf destination-alpha) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
-	(setf destination-alpha value)))))
+        (setf destination-alpha value)))))
 
 
 ;;----------------------------------------------------------------------

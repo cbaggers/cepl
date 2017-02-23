@@ -15,12 +15,12 @@
      (map-g ,pipeline-func ,stream ,@uniforms)))
 
 (defmacro map-g-into* ((fbo &key (with-viewport t)
-			    (attachment-for-size 0) (with-blending t))
-			      pipeline-func stream &rest uniforms)
+                            (attachment-for-size 0) (with-blending t))
+                              pipeline-func stream &rest uniforms)
   `(with-fbo-bound (,fbo :target :draw-framebuffer
-			 :unbind t
-			 :attachment-for-size ,attachment-for-size
-			 :with-viewport ,with-viewport
-			 :with-blending ,with-blending
-			 :draw-buffers t)
+                         :unbind t
+                         :attachment-for-size ,attachment-for-size
+                         :with-viewport ,with-viewport
+                         :with-blending ,with-blending
+                         :draw-buffers t)
      (map-g ,pipeline-func ,stream ,@uniforms)))

@@ -57,43 +57,43 @@ quickproject and then run this again.")
   (asdf:system-relative-pathname :cepl "project-template/"))
 
 (defun make-project (pathname &key name (host :cepl.sdl2) (repl :slime)
-				(depends-on '(:skitter :cepl.devil)))
+                                (depends-on '(:skitter :cepl.devil)))
   ;; this has a bunch of little hacks to make the experience of making
   ;; project's better, we can add lots of little helpers here when they
   ;; pick the only valid option. See the skitter.sdl2 example for an
   ;; example
   (let ((name (if (keywordp name) (symbol-name name) name))
-	(qp (find-package :quickproject))
-	(depends-on (cepl-utils:listify depends-on)))
+        (qp (find-package :quickproject))
+        (depends-on (cepl-utils:listify depends-on)))
     (when (eq pathname :why)
       (error 'make-project-missing-default-implementation))
     (unless qp
       (error 'make-project-needs-quickproject))
     (let* ((pathname (pathname-as-directory pathname))
-	   (name (or name (cepl-utils:ni-call
-			   :quickproject :pathname-project-name
-			   pathname)))
-	   ;; if you are using skitter and also cepl.sdl2 then
-	   ;; you actually will want skitter.sdl2
-	   (depends-on (if (and (member :skitter depends-on)
-				(eq host :cepl.sdl2))
-			   (cons :cepl.skitter.sdl2 (remove :skitter depends-on))
-			   depends-on))
-	   ;; with skitter.sdl2 there are two input packages that are
-	   ;; good to have :use'd by default so we add them
-	   (skitter-sdl-p (member :skitter.sdl2 depends-on))
-	   (swank-p (or (eq repl :swank) (eq repl :slime)))
-	   (slynk-p (or (eq repl :sly) (eq repl :slynk)))
+           (name (or name (cepl-utils:ni-call
+                           :quickproject :pathname-project-name
+                           pathname)))
+           ;; if you are using skitter and also cepl.sdl2 then
+           ;; you actually will want skitter.sdl2
+           (depends-on (if (and (member :skitter depends-on)
+                                (eq host :cepl.sdl2))
+                           (cons :cepl.skitter.sdl2 (remove :skitter depends-on))
+                           depends-on))
+           ;; with skitter.sdl2 there are two input packages that are
+           ;; good to have :use'd by default so we add them
+           (skitter-sdl-p (member :skitter.sdl2 depends-on))
+           (swank-p (or (eq repl :swank) (eq repl :slime)))
+           (slynk-p (or (eq repl :sly) (eq repl :slynk)))
            (livesupport-p (or swank-p slynk-p)))
       (cepl-utils:ni-call
        :quickproject :make-project
        pathname
        :depends-on `(:cepl
-		     ,host
-		     ,@(when swank-p `(:swank))
-		     ,@(when slynk-p `(:slynk))
-		     ,@(when livesupport-p `(:livesupport))
-		     ,@depends-on)
+                     ,host
+                     ,@(when swank-p `(:swank))
+                     ,@(when slynk-p `(:slynk))
+                     ,@(when livesupport-p `(:livesupport))
+                     ,@depends-on)
        :name name
        :template-directory *template-dir*
        :template-parameters (list :skitter-sdl-p skitter-sdl-p

@@ -81,7 +81,7 @@ given fbo. The result is a gpu-array
 The attachment-name can be one of the following:
 
  a positive integer - In which case this function returns the
-		      nth color-attachments where (= n attachment-name)
+                      nth color-attachments where (= n attachment-name)
 
  :d - the depth-attachment is returned
 

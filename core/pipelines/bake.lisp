@@ -55,8 +55,8 @@
 
 (defun bake-and-g-> (stage-pairs uniforms-to-bake)
   (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
-	 (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
-	 (stage-pairs (swap-versions stage-pairs glsl-version)))
+         (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
+         (stage-pairs (swap-versions stage-pairs glsl-version)))
     ;;
 
     ;;

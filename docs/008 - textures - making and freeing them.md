@@ -260,14 +260,14 @@ The convertable types are: `:uint8 :int8 :ushort :short :uint :int :float`
 Of course OpenGL has many more potential format that this so feel free to use any of the following formats.
 
 ```
-	:r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm :rgb8
+    :r8 :r8-snorm :r16 :r16-snorm :rg8 :rg8-snorm :rg16 :rg16-snorm :rgb8
     :rgb8-snorm :rgb16-snorm :rgba8 :rgba8-snorm :rgba16 :r32f :rg32f :rgb32f
     :rgba32f :r8i :r8ui :r16i :r16ui :r32i :r32ui :rg8i :rg8ui :rg16i :rg16ui
     :rg32i :rg32ui :rgb8i :rgb8ui :rgb16i :rgb16ui :rgb32i :rgb32ui :rgba8i
     :rgba8ui :rgba16i :rgba16ui :rgba32i :rgba32ui :srgb8 :srgb8-alpha8 :rgba2
     :rgba4 :r3-g3-b2 :rgb5-a1 :rgb10-a2 :rgb10-a2ui
-	:depth-component16 :depth-component24 :depth-component32 :depth-component32f
-	:stencil-index8))
+    :depth-component16 :depth-component24 :depth-component32 :depth-component32f
+    :stencil-index8))
 ```
 If you are missing a format, or you are having issues with pulling or pushing data, as usual, please file an (issue report on github)[https://github.com/cbaggers/cepl/issues).
 

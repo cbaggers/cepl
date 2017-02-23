@@ -108,7 +108,7 @@
               :rgba32ui :rgb10-a2ui :r8ui :r16ui :r32ui
               :depth24-stencil8 :depth32f-stencil8) :u)
      (t (error "CEPL: Unable to calculate the sampler type for ~s. Mapping missing."
-	       image-format)))
+               image-format)))
    (if shadow-sampler
        (case texture-type
          (:texture-1d :sampler-1d-shadow)
@@ -119,7 +119,7 @@
          (:texture-2d-array :sampler-2d-array-shadow)
          (:texture-cube-map-array :sampler-cube-array-shadow)
          (t (error "CEPL: Unable to calculate the sampler type for ~s with texture type ~s. Mapping missing"
-		   image-format texture-type)))
+                   image-format texture-type)))
        (case texture-type
          (:texture-1d :sampler-1d) (:texture-2d :sampler-2d)
          (:texture-3d :sampler-3d) (:texture-cube-map :sampler-cube)
@@ -131,7 +131,7 @@
          (:texture-2d-multisample :sampler-2d-ms)
          (:texture-2d-multisample-array :sampler-2d-ms-array)
          (t (error "CEPL: Unable to calculate the sampler type for ~s with texture type ~s. Mapping missing"
-		   image-format texture-type))))))
+                   image-format texture-type))))))
 
 (defun %delete-sampler (sampler)
   (gl::delete-sampler (%sampler-id sampler)))
@@ -143,16 +143,16 @@
 
 
 (defun sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
-			 (minify-filter :linear-mipmap-linear)
+                         (minify-filter :linear-mipmap-linear)
                          (magnify-filter :linear)
-			 (wrap #(:repeat :repeat :repeat)) (compare :none))
+                         (wrap #(:repeat :repeat :repeat)) (compare :none))
   (unless (and texture (typep texture 'texture))
     (error
      "CEPL: Attempted to sample ~s but it is only legal to sample textures."
      texture))
   (cepl.context::if-gl-context
    (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
-		     magnify-filter wrap compare)
+                     magnify-filter wrap compare)
    (make-uninitialized-sampler texture (get-free-fake-sampler-id))
    (list texture)))
 
@@ -170,7 +170,7 @@
 (defun make-default-sampler-id-box ()
   (when (= (sampler-id-box-id *default-sampler-id-box*) -1)
     (setf *default-sampler-id-box*
-	  (make-sampler-id-box :id (%get-id) :shared-p t))))
+          (make-sampler-id-box :id (%get-id) :shared-p t))))
 
 (defun sampler-on-context ()
   (check-sampler-feature)
@@ -193,17 +193,17 @@
      :always (eq a b)))
 
 (defun get-sampler-id-box (lod-bias min-lod max-lod minify-filter
-			   magnify-filter wrap compare)
+                           magnify-filter wrap compare)
   ;; this will have the lovely logic for deduping sampler-ids
   (let ((wrap (if (keywordp wrap)
-		  (vector wrap wrap wrap)
-		  wrap)))
+                  (vector wrap wrap wrap)
+                  wrap)))
     (if (and (= lod-bias 0.0) (= min-lod -1000.0) (= max-lod 1000.0)
-	     (eq minify-filter :linear) (eq magnify-filter :linear)
-	     (wrap-eq wrap #(:repeat :repeat :repeat))
-	     (eq compare :none))
-	*default-sampler-id-box*
-	(make-sampler-id-box :id (%get-id)))))
+             (eq minify-filter :linear) (eq magnify-filter :linear)
+             (wrap-eq wrap #(:repeat :repeat :repeat))
+             (eq compare :none))
+        *default-sampler-id-box*
+        (make-sampler-id-box :id (%get-id)))))
 
 (defun note-change (sampler)
   ;; check if need to change box
@@ -211,20 +211,20 @@
     ;; change box
     ;; (in future we can look up based on some hash)
     (setf (%sampler-id-box sampler)
-	  (make-sampler-id-box :id (%get-id))))
+          (make-sampler-id-box :id (%get-id))))
   sampler)
 
 
 (defun make-sampler-now (sampler-obj lod-bias min-lod max-lod minify-filter
-			 magnify-filter wrap compare)
+                         magnify-filter wrap compare)
   (let* ((texture (%sampler-texture sampler-obj))
-	 (sampler-type (cepl.samplers::calc-sampler-type
-			(texture-type texture)
-			(texture-image-format texture))))
+         (sampler-type (cepl.samplers::calc-sampler-type
+                        (texture-type texture)
+                        (texture-image-format texture))))
     (setf (%sampler-id sampler-obj) (get-sampler-id-box
-				     lod-bias min-lod max-lod minify-filter
-				     magnify-filter wrap compare)
-	  (%sampler-type sampler-obj) sampler-type)
+                                     lod-bias min-lod max-lod minify-filter
+                                     magnify-filter wrap compare)
+          (%sampler-type sampler-obj) sampler-type)
 
     (%set-lod-bias sampler-obj lod-bias)
     (%set-min-lod sampler-obj min-lod)
@@ -232,8 +232,8 @@
     (%set-minify-filter sampler-obj minify-filter)
     (%set-magnify-filter sampler-obj magnify-filter)
     (%set-wrap sampler-obj (if (keywordp wrap)
-    			       (vector wrap wrap wrap)
-    			       wrap))
+                               (vector wrap wrap wrap)
+                               wrap))
     (%set-compare sampler-obj compare))
   sampler-obj)
 
@@ -241,8 +241,8 @@
   (if (initialized-p object)
       ;;(call-next-method object stream)
       (format stream "#<~a ~s>"
-	      (%sampler-type object)
-	      (%sampler-texture object))
+              (%sampler-type object)
+              (%sampler-texture object))
       (format stream "#<SAMPLER :UNINITIALIZED>")))
 
 (defun free-sampler (sampler)
@@ -304,7 +304,7 @@
   (setf (minify-filter sampler) (calc-minify-filter for-level between-levels)))
 
 (defun calc-minify-filter (between-arrays-on-this-level
-			   between-arrays-on-different-levels)
+                           between-arrays-on-different-levels)
   (assert (and (member between-arrays-on-this-level '(:linear :nearest))
                (member between-arrays-on-different-levels '(:linear :nearest))))
   (if between-arrays-on-different-levels
@@ -320,11 +320,11 @@
 (defun wrap (sampler) (%sampler-wrap sampler))
 (defun (setf wrap) (value sampler)
   (let ((value (if (keywordp value)
-		   (vector value value value)
-		   value)))
+                   (vector value value value)
+                   value)))
     (unless (wrap-eq (wrap sampler) value)
       (let ((sampler (note-change sampler)))
-	(%set-wrap sampler value))))
+        (%set-wrap sampler value))))
   value)
 
 (defun compare (sampler) (%sampler-compare sampler))
@@ -354,60 +354,60 @@
 (defun %set-magnify-filter (sampler value)
   (setf (%sampler-magnify-filter sampler) value)
   (%gl::sampler-parameter-i (%sampler-id sampler) :texture-mag-filter
-			    (%gl::foreign-enum-value '%gl:enum value))
+                            (%gl::foreign-enum-value '%gl:enum value))
   sampler)
 
 (defun %set-minify-filter (sampler value)
   (setf (%sampler-expects-mipmap sampler)
-	(not (null (member value '(:linear-mipmap-linear
-				   :nearest-mipmap-linear
-				   :linear-mipmap-nearest
-				   :nearest-mipmap-nearest)))))
+        (not (null (member value '(:linear-mipmap-linear
+                                   :nearest-mipmap-linear
+                                   :linear-mipmap-nearest
+                                   :nearest-mipmap-nearest)))))
   (setf (%sampler-minify-filter sampler) value)
   (%gl::sampler-parameter-i (%sampler-id sampler) :texture-min-filter
-			    (%gl::foreign-enum-value '%gl:enum value))
+                            (%gl::foreign-enum-value '%gl:enum value))
   sampler)
 
 (defun %set-wrap (sampler value)
   (let ((options '(:repeat :mirrored-repeat :clamp-to-edge :clamp-to-border
                    :mirror-clamp-to-edge))
-	(value (if (keywordp value)
-		   (vector value value value)
-		   value)))
+        (value (if (keywordp value)
+                   (vector value value value)
+                   value)))
     (assert (and (vectorp value)
-		 (= (length value) 3)
-		 (every (lambda (x) (member x options)) value)))
+                 (= (length value) 3)
+                 (every (lambda (x) (member x options)) value)))
     (setf (%sampler-wrap sampler) value)
     (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-s
-			      (%gl::foreign-enum-value '%gl:enum (aref value 0)))
+                              (%gl::foreign-enum-value '%gl:enum (aref value 0)))
     (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-t
-			      (%gl::foreign-enum-value '%gl:enum (aref value 1)))
+                              (%gl::foreign-enum-value '%gl:enum (aref value 1)))
     (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-r
-			      (%gl::foreign-enum-value '%gl:enum (aref value 2))))
+                              (%gl::foreign-enum-value '%gl:enum (aref value 2))))
   sampler)
 
 (defun %set-compare (sampler value)
   (setf (%sampler-compare sampler)
-	(or value :none))
+        (or value :none))
   (if (and value (not (eq :none value)))
       (progn
-	(%gl:sampler-parameter-i
-	 (%sampler-id sampler) :texture-compare-mode
-	 (%gl::foreign-enum-value '%gl:enum :compare-ref-to-texture))
-	(%gl:sampler-parameter-i
-	 (%sampler-id sampler) :texture-compare-func
-	 (%gl::foreign-enum-value
-	  '%gl:enum
-	  (case value
-	    ((:never nil) :never)
-	    ((:always t) :always)
-	    ((:equal := =) :equal)
-	    ((:not-equal :/= /=) :not-equal)
-	    ((:less :< <) :less)
-	    ((:greater :> >) :greater)
-	    ((:lequal :<= <=) :lequal)
-	    ((:gequal :>= >=) :gequal)
-	    (otherwise (error "Invalid compare func for sampler ~a" value))))))
+        (%gl:sampler-parameter-i
+         (%sampler-id sampler) :texture-compare-mode
+         (%gl::foreign-enum-value '%gl:enum :compare-ref-to-texture))
+        (%gl:sampler-parameter-i
+         (%sampler-id sampler) :texture-compare-func
+         (%gl::foreign-enum-value
+          '%gl:enum
+          (case value
+            ((:never nil) :never)
+            ((:always t) :always)
+            ((:equal := =) :equal)
+            ((:not-equal :/= /=) :not-equal)
+            ((:less :< <) :less)
+            ((:greater :> >) :greater)
+            ((:lequal :<= <=) :lequal)
+            ((:gequal :>= >=) :gequal)
+            (otherwise (error "Invalid compare func for sampler ~a" value))))))
       (%gl:sampler-parameter-i
        (%sampler-id sampler) :texture-compare-mode
        (%gl::foreign-enum-value '%gl:enum :none)))
