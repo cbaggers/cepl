@@ -15,9 +15,22 @@
 
 ;;----------------------------------------------------------------------
 
+(defun get-body-string (body)
+  (cond
+    ((stringp body) body)
+    ((and (listp body)
+          (eq (first body) :file)
+          (and (or (stringp (second body))
+                   (symbolp (second body)))
+               (constantp (second body)))
+          (stringp (third body)))
+     (let ((fspec (asdf:system-relative-pathname (second body) (third body))))
+       (alexandria:read-file-into-string fspec)))
+    (t (error "def-glsl-stage: Invalid shader body ~a" body))))
+
 ;; extract details from args and delegate to %def-gpu-function
 ;; for the main logic
-(defmacro def-glsl-stage (name args body-string outputs)
+(defmacro def-glsl-stage (name args body-form outputs)
   ;; [0] makes a glsl-stage-spec that will be populated a stored later.
 
   ;; [1] use varjo to create a varjo-compile-result. We have to bodge a bit
@@ -39,10 +52,13 @@
     (assert-glsl-stage-types in-args uniforms)
     ;; now the meat
     (assert-context name context)
-    (let ((spec (%make-glsl-stage-spec;;[0]
-                 name in-args uniforms context body-string
-                 (glsl-stage-spec-to-varjo-compile-result ;;[1]
-                  in-args uniforms outputs context body-string))))
+    (let* ((in-args (mapcar #'process-glsl-in-arg in-args))
+           (uniforms (mapcar #'process-glsl-uniform-arg uniforms))
+           (body-string (get-body-string body-form))
+           (spec (%make-glsl-stage-spec ;;[0]
+                  name in-args uniforms context body-string
+                  (glsl-stage-spec-to-varjo-compile-result ;;[1]
+                   in-args uniforms outputs context body-string))))
       (%update-glsl-stage-data spec)
       `(progn
          ,(%make-stand-in-lisp-func-for-glsl-stage spec);;[2]
@@ -80,23 +96,20 @@
 
   If called the function will throw an error saying that the function
   can't currently be used from the cpu."
-  (labels ((name (x) (symb (string-upcase (first x)))))
-    (with-glsl-stage-spec spec
-      (let ((arg-names (mapcar #'name in-args))
-            (uniform-names (mapcar #'name uniforms)))
-        `(defun ,name (,@arg-names
-                       ,@(when uniforms (cons (symb :&key) uniform-names)))
-           (declare (ignore ,@arg-names ,@uniform-names))
-           (warn "GLSL stages cannot be used from the cpu"))))))
+  (with-glsl-stage-spec spec
+    (let ((arg-names (mapcar #'first in-args))
+          (uniform-names (mapcar #'first uniforms)))
+      `(defun ,name (,@arg-names
+                     ,@(when uniforms (cons (symb :&key) uniform-names)))
+         (declare (ignore ,@arg-names ,@uniform-names))
+         (warn "GLSL stages cannot be used from the cpu")))))
 
 (defun glsl-stage-spec-to-varjo-compile-result
     (in-args uniforms outputs context body-string)
   "Here our goal is to simple reuse as much from varjo as possible.
    This will mean we have less duplication, even if things seem a little
    ugly here"
-  (let* ((in-args (mapcar #'process-glsl-arg in-args))
-         (uniforms (mapcar #'process-glsl-arg uniforms))
-         (none-type (varjo:type-spec->type :none))
+  (let* ((none-type (varjo:type-spec->type :none))
          (arg-types (mapcar #'type-spec->type
                             (append (mapcar #'second in-args)
                                     (mapcar #'second uniforms))))
@@ -133,11 +146,16 @@
             #'varjo::final-string-compose
             #'varjo::package-as-final-result-object)))))))
 
-(defun process-glsl-arg (arg)
+(defun process-glsl-in-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
     (let ((name (symb (string-upcase glsl-name)))
           (prefixed-glsl-name (format nil "@~a" glsl-name)))
       `(,name ,type ,@qualifiers ,prefixed-glsl-name))))
+
+(defun process-glsl-uniform-arg (arg)
+  (destructuring-bind (glsl-name type . qualifiers) arg
+    (let ((name (symb (string-upcase glsl-name))))
+      `(,name ,type ,@qualifiers ,glsl-name))))
 
 (defun make-varjo-outvars (outputs env)
   (loop :for (glsl-name type . qualifiers) :in outputs :collect
