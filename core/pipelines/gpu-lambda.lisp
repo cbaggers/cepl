@@ -19,8 +19,7 @@
 
 (defmethod initialize-instance :after ((glambda gpu-lambda) &key)
   ;; need to emit warning if called
-  (closer-mop:set-funcallable-instance-function
-   glambda #'fallback-g-lambda-body)
+  (closer-mop:set-funcallable-instance-function glambda #'%glambda)
   ;; need to make the func-spec so can be used in pipelines
   (with-slots (in-args uniforms body instancing doc-string
                        declarations context func-spec) glambda
@@ -30,7 +29,7 @@
             nil in-args uniforms context body instancing nil nil
             nil doc-string declarations nil)))))
 
-(defun fallback-g-lambda-body (&rest args)
+(defun %glambda (&rest args)
   (declare (ignore args))
   (warn "GPU Functions cannot currently be used from the cpu"))
 

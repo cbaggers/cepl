@@ -796,6 +796,7 @@
            :define-compiler-macro-g
            :with-instances
            :glambda
+           :%glambda
            :def-g->
            :g->
            :map-g
