@@ -71,8 +71,7 @@
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
   (id 0 :type fixnum)
   (cache-id 0 :type (integer 0 13))
-  (arrays (error "") :type (array gpu-array-bb (*)))
-  (managed nil :type boolean))
+  (arrays (error "") :type (array gpu-array-bb (*))))
 
 ;;------------------------------------------------------------
 
@@ -362,4 +361,4 @@
               :initial-element +null-buffer-backed-gpu-array+))
 
 (defun make-uninitialized-gpu-buffer ()
-  (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+ :managed nil))
+  (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+))

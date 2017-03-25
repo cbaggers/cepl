@@ -118,10 +118,7 @@ Buffer Binding Target      Purpose
 
 Do note that the default of :array-buffer is perfectly fine for creating the
 gpu-buffer and uploading the data. It does not limit how the buffer can be used
-in future parts of your program.
-
-Managed is a piece of metadata used by CEPL for knowing when to release the
-gpu memory. This should be removed from the public API")
+in future parts of your program.")
 
 
   (defun free-buffer

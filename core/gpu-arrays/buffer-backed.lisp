@@ -39,13 +39,10 @@
 
 ;; we only set the buffer slot type as undefined as the size and
 ;; offset dont change
-;; If the buffer is managed and all formats are undefined then free it.
 (defun free-gpu-array-bb (gpu-array)
   (let* ((buffer (gpu-array-bb-buffer gpu-array)))
     (blank-gpu-array-b-object gpu-array)
-    (when (and (cepl.gpu-buffers::gpu-buffer-managed buffer)
-               (not (some #'initialized-p (gpu-buffer-arrays buffer))))
-      (free-buffer buffer)))
+    (free-buffer buffer))
   nil)
 
 ;;---------------------------------------------------------------
@@ -96,7 +93,7 @@
   (declare (ignore initial-contents))
   (labels ((init (arr)
              (let* ((buffer (buffer-reserve-block
-                             (cepl.gpu-buffers::make-managed-gpu-buffer)
+                             (cepl.gpu-buffers::make-gpu-buffer)
                              element-type dimensions :array-buffer
                              access-style))
                     (base-arr (aref (gpu-buffer-arrays buffer) 0)))
@@ -128,7 +125,7 @@
 
 (defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw) dimensions)
-  (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
+  (let ((buffer (cepl.gpu-buffers::make-gpu-buffer)))
     (cepl.context::if-gl-context
      (init-gpu-array-from-c-array %pre% initial-contents access-style dimensions)
      (make-uninitialized-gpu-array-bb buffer)
@@ -139,7 +136,7 @@
 
 (defmethod make-gpu-array ((initial-contents t)
                            &key dimensions element-type (access-style :static-draw))
-  (let ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer)))
+  (let ((buffer (cepl.gpu-buffers::make-gpu-buffer)))
     (cepl.context::if-gl-context
      (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
                                           :element-type element-type))
@@ -161,7 +158,7 @@
                                   (c-array-dimensions c-array)))))
 
 (defun make-gpu-arrays (c-arrays &key (access-style :static-draw))
-  (let* ((buffer (cepl.gpu-buffers::make-managed-gpu-buffer))
+  (let* ((buffer (cepl.gpu-buffers::make-gpu-buffer))
          (g-arrays (mapcar (lambda (c-array)
                              (%make-gpu-array-bb
                               :buffer buffer

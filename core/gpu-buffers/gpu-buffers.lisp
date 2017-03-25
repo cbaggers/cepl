@@ -16,8 +16,10 @@
 
 (defun blank-buffer-object (buffer)
   (setf (gpu-buffer-id buffer) 0)
-  (setf (gpu-buffer-arrays buffer) (make-uninitialized-gpu-array-bb))
-  (setf (gpu-buffer-managed buffer) nil)
+  (setf (gpu-buffer-arrays buffer)
+        (make-array 0 :element-type 'gpu-array-bb
+                    :initial-element +null-buffer-backed-gpu-array+
+                    :adjustable t :fill-pointer 0))
   buffer)
 
 (defun free-buffer (buffer)
@@ -57,10 +59,9 @@
   (first (gl:gen-buffers 1)))
 
 (defun init-gpu-buffer-now (new-buffer gl-object initial-contents
-                            buffer-target usage managed)
+                            buffer-target usage)
   (declare (symbol buffer-target usage))
-  (setf (gpu-buffer-id new-buffer) gl-object
-        (gpu-buffer-managed new-buffer) managed)
+  (setf (gpu-buffer-id new-buffer) gl-object)
   (setf (gpu-buffer-arrays new-buffer)
         (make-array 0 :element-type 'gpu-array-bb
                     :initial-element +null-buffer-backed-gpu-array+
@@ -78,33 +79,22 @@
 
 (defun make-gpu-buffer-from-id (gl-object &key initial-contents
                                             (buffer-target :array-buffer)
-                                            (usage :static-draw)
-                                            (managed nil))
+                                            (usage :static-draw))
   (declare (symbol buffer-target usage))
   (init-gpu-buffer-now
    (make-uninitialized-gpu-buffer) gl-object initial-contents
-   buffer-target usage managed))
+   buffer-target usage))
 
 (defun make-gpu-buffer (&key initial-contents
                           (buffer-target :array-buffer)
-                          (usage :static-draw)
-                          (managed nil))
+                          (usage :static-draw))
   (declare (symbol buffer-target usage))
   (assert (or (null initial-contents)
               (typep initial-contents 'c-array)
               (list-of-c-arrays-p initial-contents)))
   (cepl.context::if-gl-context
    (init-gpu-buffer-now
-    %pre% (gen-buffer) initial-contents buffer-target usage managed)
-   (make-uninitialized-gpu-buffer)))
-
-
-(defun make-managed-gpu-buffer (&key initial-contents
-                                  (buffer-target :array-buffer)
-                                  (usage :static-draw))
-  (cepl.context::if-gl-context
-   (init-gpu-buffer-now %pre% (gen-buffer) initial-contents
-                        buffer-target usage t)
+    %pre% (gen-buffer) initial-contents buffer-target usage)
    (make-uninitialized-gpu-buffer)))
 
 (defun buffer-data-raw (data-pointer byte-size buffer
