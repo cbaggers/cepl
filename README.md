@@ -83,5 +83,8 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 ## CHANGELOG
 
+### 2017-03-25
+- Removed the
+
 ### 2017-02-19
 - Removed the `continuable` macro. The macro can be found in the `livesupport` project. Simply `(ql:quickload :livesupport)`

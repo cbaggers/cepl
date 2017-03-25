@@ -44,14 +44,6 @@ Then you can run `slime` in single-threaded mode by:
 After this simple `ql:quickload` your project like normal.
 
 
-## Starting Outside of Emacs
-
-If you have used `cepl:make-project` to make your project you will also find a `run-session.lisp` file in the root of your project.
-
-If you run `sbcl --load "run-session.lisp` (or the equivalent for your lisp distribution) it will start swank at port 4005 and load your project.
-
-You can then `slime-connect` to it as usual.
-
 ## Q: Why is the Windows/OSX start procedure more complicated?
 
 *A:* Both of these platforms have restrictions over which thread is allowed to interact with the window manager (I will call this the 'UI thread'). This would be fine except that, when developing, most Common Lisp programmers use a system like `slime` or `sly` to connect their editor to their Lisp session, and those systems normally run code in a different thread.
