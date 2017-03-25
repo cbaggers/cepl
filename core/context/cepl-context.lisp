@@ -2,8 +2,35 @@
 
 ;;----------------------------------------------------------------------
 
+(defclass pending-surface ()
+  ((title :initarg :title)
+   (width :initarg :width)
+   (height :initarg :height)
+   (fullscreen :initarg :fullscreen)
+   (resizable :initarg :resizable)
+   (no-frame :initarg :no-frame)
+   (hidden :initarg :hidden)))
+
+(defclass cepl-context-shared ()
+  ((members :initform nil))
+  ;; Things that arent shared between contexts
+  ;;
+  ;; FBOs
+  ;; VAOs
+  ;; Transform Feedback Objects
+  ;; Program Pipeline Objects (from seperable stages gl>=4.5)
+  )
+
 (defclass cepl-context nil
-  ((gl-context :initform nil) (uninitialized-resources :initform nil)
+  ((gl-context :initform nil)
+   (gl-version :initarg :gl-version)
+   (initialize-p :initform nil :reader initialized-p)
+   (uninitialized-resources :initform nil)
+   (shared :initform (error "Context must be initialized via #'make-context")
+           :initarg :shared)
+   (surfaces :initform (error "Context must be initialized via #'make-context")
+             :initarg :surfaces)
+   (current-surface :initarg :current-surface)
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
    (vao-binding-id :initform +unknown-gl-id+ :type vao-id)
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
@@ -57,8 +84,43 @@
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
    (clear-color :initform :unknown)))
 
-(defvar *cepl-context*
-  (make-instance 'cepl-context))
+(defvar *contexts* nil)
+
+(defun make-context (&key gl-version (shared (first *contexts*))
+                       (title "CEPL") (width 600) (height 600)
+                       (fullscreen nil) (resizable t) (no-frame nil)
+                       (hidden nil))
+  ;;
+  (assert (or (null shared) (typep shared 'cepl-context)))
+  ;;
+  (let* ((shared (if shared
+                     (slot-value shared 'shared)
+                     (make-instance 'cepl-context-shared)))
+         (surface (make-instance 'pending-surface
+                                 :title title :width width
+                                 :height height :fullscreen fullscreen
+                                 :resizable resizable :no-frame no-frame
+                                 :hidden hidden))
+         (result (make-instance 'cepl-context
+                                :gl-version gl-version
+                                :shared shared
+                                :current-surface nil
+                                :surfaces (list surface))))
+    (push result (slot-value shared 'members))
+    (when cepl.host::*current-host*
+      (on-host-initialized result))
+    (push result *contexts*)
+    ;; done!
+    result))
+
+(defvar *cepl-context* (make-context))
+
+;;----------------------------------------------------------------------
+
+(defun add-surface (context &key)
+  (assert (cepl.host:supports-multiple-surfaces-p) ()
+          "CEPL: Sorry your current CEPL host does not currently support multiple surfaces ")
+  (cepl.host:add-surface context))
 
 ;;----------------------------------------------------------------------
 

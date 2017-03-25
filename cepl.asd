@@ -24,7 +24,10 @@
                #:varjo
                #:closer-mop)
   :components ((:file "package")
-               (:file "host/api")
+               (:file "host/api-api")
+               (:file "host/api-0")
+               (:file "host/api-1")
+               (:file "host/api-common")
                (:file "core/ffi")
                (:file "core/utils")
                (:file "project")

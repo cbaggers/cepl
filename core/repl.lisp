@@ -2,61 +2,46 @@
 
 (defun repl (&optional (width 320) (height 240) requested-gl-version)
   (init width height "CEPL REPL" t requested-gl-version)
-  (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%"))
+  (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%")
+  (cls))
 
 (defun init (&optional (width 320) (height 240) (title "CEPL") (resizable t)
                requested-gl-version host-init-flags)
-  (handler-case
-      (find-method #'cepl.host:init nil nil)
-    (error () (error "Cepl.Host: Init could not be found. Have you loaded a host?")))
-  (if host-init-flags
-      (cepl.host:init host-init-flags)
-      (cepl.host:init))
-  (cepl.context::%make-gl-context :width width :height height
-                                  :resizable resizable
-                                  :title title
-                                  :gl-version requested-gl-version)
+  (when (or width height title resizable requested-gl-version)
+    (warn "Setting the following from cepl:init is not longer supported:~{~%~a~}"
+          '(#:width #:height #:title #:resizable #:requested-gl-version)))
+  ;;
+  ;; Initialize Host
+  (unless cepl.host::*current-host*
+    (apply #'cepl.host::initialize host-init-flags))
+  ;;
+  ;; Initalized the already created CEPL contexts
+  (loop :for context :in cepl.context::*contexts* :do
+     (cepl.context::on-host-initialized context))
+  ;;
+  ;; Inform the world that CEPL is live
   (cepl.lifecycle::change-state :interactive)
   t)
 
-
-(defun init-repl-link (&key (port 4005))
-  ;; start swank or slynk in a way that allows repl usage with windows&osx
-  ;; window-manager thread crap
-  (cond
-    ((find-package :swank)
-     (cepl.host:set-primary-thread-and-run
-      (lambda ()
-        (let (#+linux
-              (style (cepl-utils:ni-val :swank :*COMMUNICATION-STYLE*))
-              #-linux
-              (style nil))
-          (cepl-utils:ni-call :swank :create-server :style style :dont-close t :port port)))))
-    ((find-package :slynk)
-     (cepl.host:set-primary-thread-and-run
-      (lambda ()
-        (let (#+linux
-              (style (cepl-utils:ni-val :slynk :*COMMUNICATION-STYLE*))
-              #-linux
-              (style nil))
-          (cepl-utils:ni-call :slynk :create-server :style style :dont-close t :port port)))))))
-
 (defun quit () (cepl.lifecycle::change-state :shutting-down))
 
-(defun step-host (&optional tpref)
-  (cepl.host::host-step cepl.context::*gl-window* tpref))
+(defun step-host (&optional (context *cepl-context*))
+  (with-slots (cepl.context::current-surface) context
+    (cepl.host::host-step cepl.context::current-surface))
+  context)
 
-(defun swap ()
-  (cepl.host::host-swap)
-  nil)
+(defun swap (&optional (context *cepl-context*))
+  (with-slots (cepl.context::current-surface) context
+    (cepl.host::host-swap cepl.context::current-surface))
+  context)
 
 (defun cls ()
   (with-slots (default-framebuffer) *cepl-context*
     (with-fbo-bound (default-framebuffer :target :framebuffer
                       :with-viewport nil
                       :with-blending nil)
-      (clear) (cepl.host::host-swap)
-      (clear) (cepl.host::host-swap))))
+      (clear) (swap)
+      (clear) (swap))))
 
 
 (in-package :cepl)

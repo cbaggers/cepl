@@ -116,16 +116,33 @@
            :partial-lambda-pipeline))
 
 (uiop:define-package :cepl.host
-    (:use :cl)
-  (:export :init
-           :request-context
-           :shutdown
-           :window-size
-           :set-primary-thread-and-run
-           ;;---
-           :set-step-func
-           :set-swap-func
-           :set-window-size-func))
+    (:use :cl :alexandria)
+  (:export
+   ;; common
+   :register-host
+   :initialize
+   :make-gl-context
+   :make-surface
+   :add-surface
+   :set-step-func
+   :set-swap-func
+   :set-window-size-func
+   :set-register-event-callback-func
+   :set-make-gl-context-current-on-surface
+   :host-step
+   :host-swap
+   :window-size
+   :make-gl-context-current-on-surface
+   :supports-multiple-surfaces-p
+   :supports-multiple-contexts-p
+   ;; api-0 (legacy)
+   :init
+   :set-default-swap-arg
+   :request-context
+   :shutdown
+   :window-size
+   ;; api-1
+   ))
 
 (uiop:define-package :cepl.lifecycle
     (:use :cl)
@@ -485,7 +502,8 @@
            :depth-mask
            :depth-test-function
            :never
-           :always))
+           :always
+           :add-surface))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

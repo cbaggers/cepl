@@ -4,7 +4,6 @@
 
 (defclass gl-context ()
   ((handle :initarg :handle :reader handle)
-   (window :initarg :window :reader window)
    (version-major :initarg :version-major :reader major-version)
    (version-minor :initarg :version-minor :reader minor-version)
    (version-float :initarg :version-float :reader version-float)))
