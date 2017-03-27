@@ -16,7 +16,9 @@
 
 (defclass api-0 (cepl-host-api) ())
 (defmethod check-host ((host api-0)) host)
-(defmethod %init ((host api-0) (args list)) args host)
+(defmethod %init ((host api-0) (args list))
+  (declare (ignore args host))
+  (init))
 
 (defvar *api-0-context-singleton*)
 (defvar *api-0-window-singleton*)
