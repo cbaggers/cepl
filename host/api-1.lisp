@@ -146,7 +146,7 @@
 (defmethod %make-gl-context ((host api-1)
                              &key surface version
                                (width 600) (height 600) (title "CEPL")
-                               (fullscreen nil) (no-frame nil) (alpha-size 0y)
+                               (fullscreen nil) (no-frame nil) (alpha-size 0)
                                (red-size 8) (green-size 8) (blue-size 8)
                                (depth-size 16) (stencil-size 8) (buffer-size 32)
                                (double-buffer t) (hidden nil) (resizable t)
