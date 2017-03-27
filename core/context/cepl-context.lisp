@@ -138,7 +138,8 @@
   (with-slots (gl-context surfaces current-surface) context
     (unless (eq surface current-surface)
       (assert (member surface surfaces))
-      (cepl.host:make-gl-context-current-on-surface gl-context surface)
+      (let ((raw-context (handle gl-context)))
+        (cepl.host:make-gl-context-current-on-surface raw-context surface))
       (setf current-surface surface))))
 
 ;;----------------------------------------------------------------------
