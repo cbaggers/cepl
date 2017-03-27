@@ -56,22 +56,38 @@
               "CEPL: Sorry your current CEPL host does not currently support multiple contexts"))
     (with-slots (surfaces current-surface gl-context gl-version) context
       ;; make the surfaces
-      (let ((host-surfaces (mapcar #'make-surface-from-pending surfaces)))
-        (assert (>= (length host-surfaces) 1))
-        (setf surfaces host-surfaces)
-        (setf current-surface (first surfaces)))
-      ;; make the gl-context
-      (let ((raw-context (cepl.host::make-gl-context :gl-version gl-version)))
-        (ensure-cepl-compatible-setup)
-        (setf gl-context
-              (make-instance
-               'gl-context
-               :handle raw-context
-               :version-major (gl:major-version)
-               :version-minor (gl:minor-version)
-               :version-float (coerce (+ (gl:major-version)
-                                         (/ (gl:minor-version) 10))
-                                      'single-float))))
+      (let* ((pending-surfaces surfaces)
+             (will-be-current (first pending-surfaces)))
+        ;;
+        (let ((host-surfaces (mapcar #'make-surface-from-pending pending-surfaces)))
+          (assert (>= (length host-surfaces) 1))
+          (setf surfaces host-surfaces))
+        ;;
+        (setf current-surface (first surfaces))
+        ;; make the gl-context
+        (let ((raw-context
+               (with-slots (title width height fullscreen
+                           resizable no-frame hidden)
+                   will-be-current
+                 (cepl.host:make-gl-context :version gl-version
+                                            :surface current-surface
+                                            :title title
+                                            :width width
+                                            :height height
+                                            :fullscreen fullscreen
+                                            :resizable resizable
+                                            :no-frame no-frame
+                                            :hidden hidden))))
+          (ensure-cepl-compatible-setup)
+          (setf gl-context
+                (make-instance
+                 'gl-context
+                 :handle raw-context
+                 :version-major (gl:major-version)
+                 :version-minor (gl:minor-version)
+                 :version-float (coerce (+ (gl:major-version)
+                                           (/ (gl:minor-version) 10))
+                                        'single-float)))))
       ;;
       ;; Setup default fbo
       (let ((default-fbo (cepl.fbos::%make-default-framebuffer

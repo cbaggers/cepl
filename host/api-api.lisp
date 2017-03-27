@@ -27,10 +27,9 @@
 
 (defgeneric initialize (&rest args &key &allow-other-keys)
   (:method (&rest args &key &allow-other-keys)
-    (if *declared-host*
-        (if *current-host*
-            (warn "CEPL: Cannot reinitialize a CEPL host")
-            (let ((host *declared-host*))
-              (%init host args)
-              (setf *current-host* host)))
-        (error "CEPL.Host: No host found. Have you loaded a host?"))))
+    (if *current-host*
+        (warn "CEPL: Cannot reinitialize a CEPL host")
+        (let ((host (or *declared-host*
+                        (make-instance 'api-0))))
+          (%init host args)
+          (setf *current-host* host)))))

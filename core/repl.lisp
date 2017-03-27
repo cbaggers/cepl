@@ -41,7 +41,8 @@
                       :with-viewport nil
                       :with-blending nil)
       (clear) (swap)
-      (clear) (swap))))
+      (clear) (swap))
+    default-framebuffer))
 
 
 (in-package :cepl)

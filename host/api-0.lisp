@@ -17,7 +17,6 @@
 (defclass api-0 (cepl-host-api) ())
 (defmethod check-host ((host api-0)) host)
 (defmethod %init ((host api-0) (args list)) args host)
-(register-host 'api-0)
 
 (defvar *api-0-context-singleton*)
 (defvar *api-0-window-singleton*)
@@ -46,9 +45,6 @@
       (progn
         (apply #'%api-0-populate-singletons args)
         *api-0-window-singleton*)))
-
-(defmethod %add-surface ((host api-0) context &key &allow-other-keys)
-  (error "Adding multiple surfaces to a single context is not supported by the current cepl host"))
 
 (defmethod %make-gl-context ((host api-0) &key &allow-other-keys)
   (if *api-0-make-context-called*

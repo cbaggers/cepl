@@ -117,10 +117,29 @@
 
 ;;----------------------------------------------------------------------
 
-(defun add-surface (context &key)
+(defun add-surface (context &key (title "CEPL") (width 600) (height 600)
+                              (fullscreen nil) (resizable t) (no-frame nil)
+                              (hidden nil))
   (assert (cepl.host:supports-multiple-surfaces-p) ()
           "CEPL: Sorry your current CEPL host does not currently support multiple surfaces ")
-  (cepl.host:add-surface context))
+  (let ((surface (cepl.host:make-surface
+                  :title title
+                  :width width
+                  :height height
+                  :fullscreen fullscreen
+                  :resizable resizable
+                  :no-frame no-frame
+                  :hidden hidden)))
+    (push surface (slot-value context 'surfaces))
+    context))
+
+(defun make-surface-current (context surface)
+  ;; {TODO} store surfaces in array, address by index like attachments
+  (with-slots (gl-context surfaces current-surface) context
+    (unless (eq surface current-surface)
+      (assert (member surface surfaces))
+      (cepl.host:make-gl-context-current-on-surface gl-context surface)
+      (setf current-surface surface))))
 
 ;;----------------------------------------------------------------------
 

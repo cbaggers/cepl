@@ -5,74 +5,91 @@
 ;;============================================================
 
 (defclass api-1 (cepl-host-api)
-  (;;
+  ( ;;
    ;; This must be a boolean indicating if the host can support
    ;; multiple contexts
-   (supports-multiple-contexts-p
-    :initarg :supports-multiple-contexts-p)
+   supports-multiple-contexts-p
    ;;
    ;; This must be a boolean indicating if the host can support
    ;; multiple surfaces
-   (supports-multiple-surfaces-p
-    :initarg :supports-multiple-surfaces-p)
+   supports-multiple-surfaces-p
    ;;
    ;; The init function can take any number of &key arguments but
    ;; must also have &allow-other-keys in the argument list. No
    ;; non-keyword arguments are allowed
-   (init-function
-    :initarg :init-function)
+   init-function
    ;;
    ;; The shutdown function takes no arguments
-   (shutdown-function
-    :initarg :shutdown-function)
+   shutdown-function
    ;;
-   ;; This make-window function must have the following signature
-   (make-window-function
-    :initarg :make-window-function)
+   ;; This make-surface function must have the following signature:
+   ;; (&key width height title fullscreen
+   ;;       no-frame alpha-size depth-size stencil-size
+   ;;       red-size green-size blue-size buffer-size
+   ;;       double-buffer hidden resizable)
    ;;
-   ;; The make-context function must have the following signature
-   (make-context-function
-    :initarg :make-context-function)
+   ;; the make-surface & make-context functiosn have overlapping
+   ;; signatures as in different apis different objects own the data
+   ;;
+   make-surface-function
+   ;;
+   ;; This destroy-surface function takes a surface as its only argument
+   destroy-surface-function
+   ;;
+   ;; The make-context function must have the following signature:
+   ;; (surface version width height title fullscreen
+   ;;  no-frame alpha-size depth-size stencil-size
+   ;;  red-size green-size blue-size buffer-size
+   ;;  double-buffer hidden resizable)
+   ;;
+   ;; the make-surface & make-context functions have overlapping
+   ;; signatures as in different apis different objects own the data
+   ;;
+   make-context-function
    ;;
    ;; The step function takes a window object as it's only argument
-   (step-function
-    :initarg :step-function)
+   step-function
    ;;
    ;; The swap function takes a window object as it's only argument
-   (swap-function
-    :initarg :swap-function)
+   swap-function
    ;;
    ;; The event-callback function takes a single function as it's argument
    ;; that function must take an event as it's only argument.
-   (register-event-callback-function
-    :initarg :register-event-callback-function)
+   register-event-callback-function
    ;;
    ;; The make-context function takes a gl-context and a surface
    ;; and makes the gl-context current on that surface.
-   (make-context-current-function
-    :initarg :make-context-current-function)))
+   make-context-current-function
+   ;;
+   ;; The surface-size function takes a window object as it's only argument
+   surface-size-function
+   ))
 
 (defmethod check-host ((host api-1))
-  (assert (and (slot-boundp host 'supports-multiple-contexts-p)
-               (slot-boundp host 'supports-multiple-surfaces-p)
-               (slot-boundp host 'init-function)
-               (slot-boundp host 'shutdown-function)
-               (slot-boundp host 'make-window-function)
-               (slot-boundp host 'make-context-function)
-               (slot-boundp host 'step-function)
-               (slot-boundp host 'swap-function)
-               (slot-boundp host 'register-event-callback-function)
-               (slot-boundp host 'make-context-current-function)))
+  (assert (slot-boundp host 'supports-multiple-contexts-p))
+  (assert (slot-boundp host 'supports-multiple-surfaces-p))
+  (assert (slot-boundp host 'init-function))
+  (assert (slot-boundp host 'shutdown-function))
+  (assert (slot-boundp host 'make-surface-function))
+  (assert (slot-boundp host 'destroy-surface-function))
+  (assert (slot-boundp host 'make-context-function))
+  (assert (slot-boundp host 'step-function))
+  (assert (slot-boundp host 'swap-function))
+  (assert (slot-boundp host 'register-event-callback-function))
+  (assert (slot-boundp host 'make-context-current-function))
+  (assert (slot-boundp host 'surface-size-function))
   (with-slots (supports-multiple-surfaces-p
                supports-multiple-contexts-p
                init-function
                shutdown-function
-               make-window-function
+               make-surface-function
+               destroy-surface-function
                make-context-function
                step-function
                swap-function
                register-event-callback-function
-               make-context-current-function)
+               make-context-current-function
+               surface-size-function)
       host
     (assert (or (eq supports-multiple-surfaces-p t)
                 (eq supports-multiple-surfaces-p nil)))
@@ -81,12 +98,14 @@
     (assert (every #'functionp
                    (list init-function
                          shutdown-function
-                         make-window-function
+                         make-surface-function
+                         destroy-surface-function
                          make-context-function
                          step-function
                          swap-function
                          register-event-callback-function
-                         make-context-current-function)))
+                         make-context-current-function
+                         surface-size-function)))
     host))
 
 (defmethod %init ((host api-1) (args list))
@@ -94,16 +113,48 @@
                step-function
                swap-function
                register-event-callback-function
-               make-context-current-function)
+               make-context-current-function
+               surface-size-function)
       host
     (set-step-func step-function)
     (set-swap-func swap-function)
     (set-register-event-callback-func register-event-callback-function)
     (set-make-gl-context-current-on-surface make-context-current-function)
+    (set-window-size-func surface-size-function)
     (apply init-function args)))
 
 (defmethod %supports-multiple-contexts-p ((host api-1) &key &allow-other-keys)
   (slot-value host 'supports-multiple-contexts-p))
+
+(defmethod %supports-multiple-surfaces-p ((host api-1) &key &allow-other-keys)
+  (slot-value host 'supports-multiple-surfaces-p))
+
+(defmethod %make-surface ((host api-1)
+                          &key (width 600) (height 600) (title "CEPL")
+                            (fullscreen nil) (no-frame nil) (alpha-size 8)
+                            (red-size 8) (green-size 8) (blue-size 8)
+                            (depth-size 24) stencil-size (buffer-size 32)
+                            (double-buffer t) (hidden nil) (resizable t)
+                            &allow-other-keys)
+  (with-slots (make-surface-function) host
+    (funcall make-surface-function
+             width height title fullscreen
+             no-frame alpha-size depth-size stencil-size
+             red-size green-size blue-size buffer-size
+             double-buffer hidden resizable)))
+
+(defmethod %make-gl-context ((host api-1)
+                             &key surface version width height title fullscreen
+                               no-frame alpha-size depth-size stencil-size
+                               red-size green-size blue-size buffer-size
+                               double-buffer hidden resizable
+                               &allow-other-keys)
+  (with-slots (make-context-function) host
+    (funcall make-context-function
+             surface version width height title fullscreen
+             no-frame alpha-size depth-size stencil-size
+             red-size green-size blue-size buffer-size
+             double-buffer hidden resizable)))
 
 (defmethod %supports-multiple-surfaces-p ((host api-1) &key &allow-other-keys)
   (slot-value host 'supports-multiple-surfaces-p))

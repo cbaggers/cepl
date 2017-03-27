@@ -56,11 +56,6 @@
   (assert *current-host* () "CEPL: make-gl-context cannot be called yet as CEPL has not been initialized")
   (apply #'%make-surface *current-host* args))
 
-(defgeneric %add-surface (context host &key &allow-other-keys))
-(defun add-surface (context &rest args &key &allow-other-keys)
-  (assert *current-host* () "CEPL: make-gl-context cannot be called yet as CEPL has not been initialized")
-  (apply #'%add-surface *current-host* context args))
-
 (defgeneric %supports-multiple-surfaces-p (host &key &allow-other-keys)
   (:method (host &key &allow-other-keys)
     (declare (ignore host))

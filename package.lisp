@@ -123,7 +123,6 @@
    :initialize
    :make-gl-context
    :make-surface
-   :add-surface
    :set-step-func
    :set-swap-func
    :set-window-size-func
@@ -142,7 +141,17 @@
    :shutdown
    :window-size
    ;; api-1
-   ))
+   :api-1
+   :init-function
+   :shutdown-function
+   :make-surface-function
+   :destroy-surface-function
+   :make-context-function
+   :surface-size-function
+   :step-function
+   :swap-function
+   :register-event-callback-function
+   :make-context-current-function))
 
 (uiop:define-package :cepl.lifecycle
     (:use :cl)
@@ -503,7 +512,8 @@
            :depth-test-function
            :never
            :always
-           :add-surface))
+           :add-surface
+           :make-surface-current))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
