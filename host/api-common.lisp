@@ -29,7 +29,7 @@
   (defun set-make-gl-context-current-on-surface (func)
     "Call this and pass the function that will be called when the cepl needs to
      query the window size"
-    (setf reg-event-callback-func func))
+    (setf make-current-func func))
 
   (defun host-step (win)
     "not external"
