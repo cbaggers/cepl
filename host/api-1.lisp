@@ -131,9 +131,9 @@
 
 (defmethod %make-surface ((host api-1)
                           &key (width 600) (height 600) (title "CEPL")
-                            (fullscreen nil) (no-frame nil) (alpha-size 8)
+                            (fullscreen nil) (no-frame nil) (alpha-size 0)
                             (red-size 8) (green-size 8) (blue-size 8)
-                            (depth-size 24) stencil-size (buffer-size 32)
+                            (depth-size 16) (stencil-size 8) (buffer-size 32)
                             (double-buffer t) (hidden nil) (resizable t)
                             &allow-other-keys)
   (with-slots (make-surface-function) host
@@ -144,11 +144,14 @@
              double-buffer hidden resizable)))
 
 (defmethod %make-gl-context ((host api-1)
-                             &key surface version width height title fullscreen
-                               no-frame alpha-size depth-size stencil-size
-                               red-size green-size blue-size buffer-size
-                               double-buffer hidden resizable
+                             &key surface version
+                               (width 600) (height 600) (title "CEPL")
+                               (fullscreen nil) (no-frame nil) (alpha-size 0y)
+                               (red-size 8) (green-size 8) (blue-size 8)
+                               (depth-size 16) (stencil-size 8) (buffer-size 32)
+                               (double-buffer t) (hidden nil) (resizable t)
                                &allow-other-keys)
+  (assert surface)
   (with-slots (make-context-function) host
     (funcall make-context-function
              surface version width height title fullscreen
