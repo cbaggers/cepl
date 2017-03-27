@@ -22,14 +22,3 @@
 (defgeneric check-host (host)
   (:method (host)
     (error "A host for cepl must be a subclass of one of the host-api classes")))
-
-(defgeneric %init (host args))
-
-(defgeneric initialize (&rest args &key &allow-other-keys)
-  (:method (&rest args &key &allow-other-keys)
-    (if *current-host*
-        (warn "CEPL: Cannot reinitialize a CEPL host")
-        (let ((host (or *declared-host*
-                        (make-instance 'api-0))))
-          (%init host args)
-          (setf *current-host* host)))))
