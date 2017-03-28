@@ -22,7 +22,8 @@
                #:named-readtables
                #:rtg-math
                #:varjo
-               #:closer-mop)
+               #:closer-mop
+               #:bordeaux-threads)
   :components ((:file "package")
                (:file "host/api-api")
                (:file "host/api-0")

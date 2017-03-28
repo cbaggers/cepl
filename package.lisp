@@ -514,6 +514,8 @@
            :never
            :always
            :add-surface
+           :surfaces
+           :current-surface
            :make-surface-current))
 
 (uiop:define-package :cepl.viewports

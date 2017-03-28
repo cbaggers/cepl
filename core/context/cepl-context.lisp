@@ -24,7 +24,7 @@
 (defclass cepl-context nil
   ((gl-context :initform nil)
    (gl-version :initarg :gl-version)
-   (initialize-p :initform nil :reader initialized-p)
+   (thread :initform nil :initarg :thread)
    (uninitialized-resources :initform nil)
    (shared :initform (error "Context must be initialized via #'make-context")
            :initarg :shared)
@@ -100,7 +100,8 @@
                                 :gl-version gl-version
                                 :shared shared
                                 :current-surface nil
-                                :surfaces nil)))
+                                :surfaces nil
+                                :thread (bt:current-thread))))
     (push result (slot-value shared 'members))
     (when cepl.host::*current-host*
       (on-host-initialized result))
