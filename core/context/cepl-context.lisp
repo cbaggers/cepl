@@ -29,8 +29,8 @@
    (shared :initform (error "Context must be initialized via #'make-context")
            :initarg :shared)
    (surfaces :initform (error "Context must be initialized via #'make-context")
-             :initarg :surfaces)
-   (current-surface :initarg :current-surface)
+             :initarg :surfaces :reader surfaces)
+   (current-surface :initarg :current-surface :reader current-surface)
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
    (vao-binding-id :initform +unknown-gl-id+ :type vao-id)
    ;;- - - - - - - - - - - - - - - - - - - - - - - -
@@ -96,16 +96,11 @@
   (let* ((shared (if shared
                      (slot-value shared 'shared)
                      (make-instance 'cepl-context-shared)))
-         (surface (make-instance 'pending-surface
-                                 :title title :width width
-                                 :height height :fullscreen fullscreen
-                                 :resizable resizable :no-frame no-frame
-                                 :hidden hidden))
          (result (make-instance 'cepl-context
                                 :gl-version gl-version
                                 :shared shared
                                 :current-surface nil
-                                :surfaces (list surface))))
+                                :surfaces nil)))
     (push result (slot-value shared 'members))
     (when cepl.host::*current-host*
       (on-host-initialized result))
@@ -117,30 +112,68 @@
 
 ;;----------------------------------------------------------------------
 
-(defun add-surface (context &key (title "CEPL") (width 600) (height 600)
-                              (fullscreen nil) (resizable t) (no-frame nil)
-                              (hidden nil))
-  (assert (cepl.host:supports-multiple-surfaces-p) ()
-          "CEPL: Sorry your current CEPL host does not currently support multiple surfaces ")
-  (let ((surface (cepl.host:make-surface
-                  :title title
-                  :width width
-                  :height height
-                  :fullscreen fullscreen
-                  :resizable resizable
-                  :no-frame no-frame
-                  :hidden hidden)))
-    (push surface (slot-value context 'surfaces))
-    context))
+(defun init-gl-context (cepl-context surface)
+  (assert cepl-context)
+  (assert surface)
+  (with-slots (gl-context gl-version current-surface) cepl-context
+    (assert (not gl-context))
+    (let ((raw-context (cepl.host:make-gl-context :version gl-version
+                                                  :surface surface)))
+      (ensure-cepl-compatible-setup)
+      (let ((wrapped-context
+             (make-instance
+              'gl-context
+              :handle raw-context
+              :version-major (gl:major-version)
+              :version-minor (gl:minor-version)
+              :version-float (coerce (+ (gl:major-version)
+                                        (/ (gl:minor-version) 10))
+                                     'single-float))))
+        ;;
+        ;; hack until we support contexts properly
+        (setf *gl-context* wrapped-context)
+        ;;
+        (setf gl-context wrapped-context)
+        ;;
+        ;; {TODO} Hmm this feels wrong
+        (map nil #'funcall *on-context*)
+        ;;
+        ;; Set the default
+        (%set-default-fbo-and-viewport surface cepl-context)
+        (setf current-surface surface)
+        ;;
+        ;; Set GL Defaults
+        (set-context-defaults cepl-context)
+        ;;
+        ;; initialize all the pending objects
+        (initialize-all-delay-items-in-context cepl-context)
+        ;;
+        ;;
+        cepl-context))))
 
-(defun make-surface-current (context surface)
-  ;; {TODO} store surfaces in array, address by index like attachments
-  (with-slots (gl-context surfaces current-surface) context
-    (unless (eq surface current-surface)
-      (assert (member surface surfaces))
-      (let ((raw-context (handle gl-context)))
-        (cepl.host:make-gl-context-current-on-surface raw-context surface))
-      (setf current-surface surface))))
+(defun ensure-cepl-compatible-setup ()
+  (unless (or (> (gl:major-version) 3)
+              (and (= (gl:major-version) 3)
+                   (>= (gl:minor-version) 1)))
+    (error "Cepl requires OpenGL 3.1 or higher. Found: ~a.~a"
+           (gl:major-version) (gl:minor-version))))
+
+(defun %set-default-fbo-and-viewport (surface cepl-context)
+  (with-slots (current-viewport
+               default-viewport
+               default-framebuffer) cepl-context
+    ;;
+    (let* ((surface-size (cepl.host:window-size surface))
+           (fbo (cepl.fbos::%make-default-framebuffer surface-size t t)))
+      ;;
+      ;; Setup default fbo
+      (setf (slot-value cepl-context 'default-framebuffer) fbo)
+      ;;
+      ;; Setup Viewports
+      (let ((vp (make-viewport surface-size)))
+        (setf current-viewport vp
+              default-viewport vp)))
+    cepl-context))
 
 ;;----------------------------------------------------------------------
 

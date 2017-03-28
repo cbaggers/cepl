@@ -18,6 +18,12 @@
           uninitialized-resources))
   t)
 
+(defun initialize-all-delay-items-in-context (cepl-context)
+  (with-slots (uninitialized-resources) cepl-context
+    (initialize-all-delayed uninitialized-resources)
+    (setf uninitialized-resources nil)
+    cepl-context))
+
 (defun initialize-all-delayed (thunks)
   (let ((delayed-further (reduce #'initialize-delayed thunks
                                  :initial-value nil)))

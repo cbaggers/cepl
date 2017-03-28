@@ -16,19 +16,6 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun make-viewport (&optional (resolution '(320 240)) (origin '(0 0)))
-  (if (listp origin)
-      (%make-viewport :resolution-x (first resolution)
-                      :resolution-y (second resolution)
-                      :origin-x (first origin)
-                      :origin-y (second origin))
-      (%make-viewport :resolution-x (first resolution)
-                      :resolution-y (second resolution)
-                      :origin-x (ceiling (v:x origin))
-                      :origin-y (ceiling (v:y origin)))))
-
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 (defmethod dimensions ((viewport viewport))
   (viewport-dimensions viewport))
 

@@ -18,6 +18,9 @@
 (defmethod check-host ((host api-0)) host)
 (defmethod %init ((host api-0) (args list))
   (declare (ignore args host))
+  (handler-case
+      (find-method #'cepl.host:init nil nil)
+    (error () (error "Cepl.Host: Init could not be found. Have you loaded a host?")))
   (init))
 
 (defvar *api-0-context-singleton*)

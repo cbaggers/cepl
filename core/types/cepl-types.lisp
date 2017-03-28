@@ -294,6 +294,12 @@
 (defgeneric viewport (obj))
 (defgeneric (setf viewport) (value obj))
 
+(defun make-viewport (&optional (resolution '(320 240)) (origin '(0 0)))
+  (%make-viewport :resolution-x (ceiling (elt resolution 0))
+                  :resolution-y (ceiling (elt resolution 1))
+                  :origin-x (ceiling (elt origin 0))
+                  :origin-y (ceiling (elt origin 1))))
+
 ;;------------------------------------------------------------
 
 (defun holds-gl-object-ref-p (object)

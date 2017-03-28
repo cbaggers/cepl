@@ -2,29 +2,6 @@
 
 ;;----------------------------------------------------------------------
 
-(defun on-gl-context (cepl-context)
-  (map nil #'funcall *on-context*)
-  (with-slots (gl-context uninitialized-resources current-viewport
-                          default-viewport default-framebuffer)
-      cepl-context
-    (let ((vp (cepl.fbos:attachment-viewport default-framebuffer 0)))
-      (setf current-viewport vp
-            default-viewport vp))
-    ;;
-    ;; Set GL Defaults
-    (set-context-defaults cepl-context)
-    ;;
-    (initialize-all-delayed uninitialized-resources)
-    (setf uninitialized-resources nil)
-    ;;
-    (cepl.host::set-default-swap-arg *gl-window*)
-    (format t "New context v~s.~s"
-            (major-version gl-context)
-            (minor-version gl-context))
-    (funcall 'cepl:cls)))
-
-;;----------------------------------------------------------------------
-
 (defun set-context-defaults (cepl-context)
   ;; Enable depth testing and use 'less than' for testing
   (setf (depth-test-function cepl-context)
@@ -54,61 +31,10 @@
     (when (remove context *contexts*)
       (assert (cepl.host:supports-multiple-contexts-p) ()
               "CEPL: Sorry your current CEPL host does not currently support multiple contexts"))
-    (with-slots (surfaces current-surface gl-context gl-version) context
-      ;; make the surfaces
-      (let* ((pending-surfaces surfaces)
-             (will-be-current (first pending-surfaces)))
-        ;;
-        (let ((host-surfaces (mapcar #'make-surface-from-pending pending-surfaces)))
-          (assert (>= (length host-surfaces) 1))
-          (setf surfaces host-surfaces))
-        ;;
-        (setf current-surface (first surfaces))
-        ;; make the gl-context
-        (let ((raw-context
-               (with-slots (title width height fullscreen
-                           resizable no-frame hidden)
-                   will-be-current
-                 (cepl.host:make-gl-context :version gl-version
-                                            :surface current-surface
-                                            :title title
-                                            :width width
-                                            :height height
-                                            :fullscreen fullscreen
-                                            :resizable resizable
-                                            :no-frame no-frame
-                                            :hidden hidden))))
-          (ensure-cepl-compatible-setup)
-          (setf gl-context
-                (make-instance
-                 'gl-context
-                 :handle raw-context
-                 :version-major (gl:major-version)
-                 :version-minor (gl:minor-version)
-                 :version-float (coerce (+ (gl:major-version)
-                                           (/ (gl:minor-version) 10))
-                                        'single-float)))))
-      ;;
-      ;; Setup default fbo
-      (let ((default-fbo (cepl.fbos::%make-default-framebuffer
-                          (cepl.host:window-size current-surface) t t)))
-        (setf (slot-value context 'default-framebuffer) default-fbo))
-      ;;
-      ;; hack until we support things properly
-      (setf *gl-context* gl-context
-            *gl-window* current-surface)
-      ;;
-      ;; initialize all the pending objects
-      (on-gl-context context)
-      ;;
-      ;;
-      context)))
-
-(defun make-surface-from-pending (pending-surface)
-  (with-slots (title width height fullscreen
-                     resizable no-frame hidden)
-      pending-surface
-    (cepl.host::make-surface
-     :title title :width width :height height
-     :fullscreen fullscreen :resizable resizable
-     :no-frame no-frame :hidden hidden)))
+    ;; make the surfaces
+    (init-pending-surfaces context)
+    ;;
+    (when (surfaces context)
+      (make-surface-current context (first (surfaces context))))
+    ;;
+    context))

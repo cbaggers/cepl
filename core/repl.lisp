@@ -1,15 +1,20 @@
 (in-package :cepl)
 
-(defun repl (&optional (width 320) (height 240) requested-gl-version)
-  (init width height "CEPL REPL" t requested-gl-version)
+(defun repl (&optional (width 320) (height 240)
+               #+darwin (gl-version 4.1)
+               #-darwin gl-version)
+  "Initialize CEPL and open a window. If the gl-version argument is nil then
+   the default for the OS will be used."
+  (init :gl-version gl-version)
+  (add-surface *cepl-context*
+               :title "CEPL" :width width :height height :fullscreen nil
+               :resizable t :no-frame nil :hidden nil
+               :make-current t)
   (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%")
   (cls))
 
-(defun init (&optional (width 320) (height 240) (title "CEPL") (resizable t)
-               requested-gl-version host-init-flags)
-  (when (or width height title resizable requested-gl-version)
-    (warn "Setting the following from cepl:init is not longer supported:~{~%~a~}"
-          '(#:width #:height #:title #:resizable #:requested-gl-version)))
+(defun init (&key gl-version host-init-flags)
+  (warn "Chris, before shipping make the gl-version arg in cepl:init work again")
   ;;
   ;; Initialize Host
   (unless cepl.host::*current-host*

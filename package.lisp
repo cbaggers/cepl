@@ -346,6 +346,7 @@
            :c-array-element-to-foreign
 
            :%make-viewport
+           :make-viewport
            :viewport
            :viewport-p
            :copy-viewport

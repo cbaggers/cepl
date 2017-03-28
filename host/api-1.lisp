@@ -145,19 +145,17 @@
 
 (defmethod %make-gl-context ((host api-1)
                              &key surface version
-                               (width 600) (height 600) (title "CEPL")
-                               (fullscreen nil) (no-frame nil) (alpha-size 0)
+                               (double-buffer t) (alpha-size 0)
                                (red-size 8) (green-size 8) (blue-size 8)
-                               (depth-size 16) (stencil-size 8) (buffer-size 32)
-                               (double-buffer t) (hidden nil) (resizable t)
+                               (depth-size 16) (stencil-size 8)
+                               (buffer-size 32)
                                &allow-other-keys)
   (assert surface)
   (with-slots (make-context-function) host
     (funcall make-context-function
-             surface version width height title fullscreen
-             no-frame alpha-size depth-size stencil-size
-             red-size green-size blue-size buffer-size
-             double-buffer hidden resizable)))
+             surface version double-buffer
+             alpha-size depth-size stencil-size buffer-size
+             red-size green-size blue-size)))
 
 (defmethod %supports-multiple-surfaces-p ((host api-1) &key &allow-other-keys)
   (slot-value host 'supports-multiple-surfaces-p))

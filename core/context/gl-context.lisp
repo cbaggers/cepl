@@ -28,17 +28,10 @@
 
 ;;------------------------------------------------------------
 
-(defun ensure-cepl-compatible-setup ()
-  (unless (or (> (gl:major-version) 3)
-              (and (= (gl:major-version) 3)
-                   (>= (gl:minor-version) 1)))
-    (error "Cepl requires OpenGL 3.1 or higher. Found: ~a.~a"
-           (gl:major-version) (gl:minor-version))))
+
 
 ;;------------------------------------------------------------
 ;; Homeless stuff
-
-(defvar *gl-window* nil)
 
 (let ((cache 0))
   (defun max-draw-buffers (context)

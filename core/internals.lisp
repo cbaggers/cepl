@@ -50,12 +50,20 @@
 (defun draw-buffer-enum (buffer-num)
   (+ buffer-num #.(cffi:foreign-enum-value '%gl:enum :draw-buffer0)))
 
-(defun window-dimensions (&optional (window cepl.context::*gl-window*))
-  (cepl.host:window-size window))
+(defun surface-dimensions (surface)
+  (cepl.host:window-size surface))
 
-(defun window-resolution (&optional (window cepl.context::*gl-window*))
-  (dbind (x y) (window-dimensions window)
+(defun surface-resolution (surface)
+  (dbind (x y) (window-dimensions surface)
     (v! x y)))
+
+(defun window-dimensions (window)
+  (warn "CEPL: window-dimensions is deprecated, please use surface-dimensions instead")
+  (surface-dimensions window))
+
+(defun window-resolution (window)
+  (warn "CEPL: window-resolution is deprecated, please use surface-resolution instead")
+  (surface-resolution window))
 
 (defun gl-type-size (type)
   (if (keywordp type)
