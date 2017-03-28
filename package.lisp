@@ -900,6 +900,7 @@
                                  :defvar*
                                  :defparameter*))
       :export (:make-project
+               :init
                :quit
                :repl
                :step-host
