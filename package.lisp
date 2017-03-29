@@ -113,7 +113,9 @@
            :bake-invalid-pipeling-arg
            :bake-invalid-uniform-name
            :bake-uniform-invalid-values
-           :partial-lambda-pipeline))
+           :partial-lambda-pipeline
+           :adjust-gpu-array-mismatched-dimensions
+           :adjust-gpu-array-shared-buffer))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria)
@@ -634,7 +636,8 @@
            :make-gpu-array
            :make-gpu-arrays
            :subseq-g
-           :subseq-g-raw))
+           :subseq-g-raw
+           :adjust-gpu-array))
 
 (uiop:define-package :cepl.vaos
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
