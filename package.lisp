@@ -133,6 +133,11 @@
    :host-step
    :host-swap
    :window-size
+   :set-surface-size
+   :surface-title
+   :set-surface-title
+   :surface-fullscreen-p
+   :set-surface-fullscreen
    :make-gl-context-current-on-surface
    :supports-multiple-surfaces-p
    :supports-multiple-contexts-p
@@ -153,7 +158,12 @@
    :step-function
    :swap-function
    :register-event-callback-function
-   :make-context-current-function))
+   :make-context-current-function
+   :set-surface-size-function
+   :surface-fullscreen-p-function
+   :set-surface-fullscreen-function
+   :surface-title-function
+   :set-surface-title-function))
 
 (uiop:define-package :cepl.lifecycle
     (:use :cl)
@@ -520,7 +530,9 @@
            :current-surface
            :make-surface-current
            :surface-dimensions
-           :surface-resolution))
+           :surface-resolution
+           :surface-title
+           :surface-fullscreen-p))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

@@ -97,3 +97,54 @@
   (apply #'%supports-multiple-contexts-p *current-host* args))
 
 ;;----------------------------------------------------------------------
+
+(defgeneric %set-surface-size (host surface width height &key &allow-other-keys)
+  (:method (host surface width height &key &allow-other-keys)
+    (declare (ignore host surface width height))
+    nil))
+
+(defun set-surface-size (surface width height &rest args &key &allow-other-keys)
+  (assert *current-host* () "CEPL: set-surface-size cannot be called yet as CEPL has not been initialized")
+  (apply #'%set-surface-size *current-host* surface width height args))
+
+;;----------------------------------------------------------------------
+
+(defgeneric %surface-fullscreen-p (host surface &key &allow-other-keys)
+  (:method (host surface &key &allow-other-keys)
+    (declare (ignore host surface))
+    nil))
+
+(defun surface-fullscreen-p (surface &rest args &key &allow-other-keys)
+  (assert *current-host* () "CEPL: surface-fullscreen-p cannot be called yet as CEPL has not been initialized")
+  (apply #'%surface-fullscreen-p *current-host* surface args))
+
+(defgeneric %set-surface-fullscreen (host surface state &key &allow-other-keys)
+  (:method (host surface state &key &allow-other-keys)
+    (declare (ignore host surface state))
+    nil))
+
+(defun set-surface-fullscreen (surface state &rest args &key &allow-other-keys)
+  (assert *current-host* () "CEPL: set-surface-fullscreen cannot be called yet as CEPL has not been initialized")
+  (apply #'%set-surface-fullscreen *current-host* surface state args))
+
+;;----------------------------------------------------------------------
+
+(defgeneric %surface-title (host surface &key &allow-other-keys)
+  (:method (host surface &key &allow-other-keys)
+    (declare (ignore host surface))
+    nil))
+
+(defun surface-title (surface &rest args &key &allow-other-keys)
+  (assert *current-host* () "CEPL: surface-title cannot be called yet as CEPL has not been initialized")
+  (apply #'%surface-title *current-host* surface args))
+
+(defgeneric %set-surface-title (host surface title &key &allow-other-keys)
+  (:method (host surface title &key &allow-other-keys)
+    (declare (ignore host surface title))
+    nil))
+
+(defun set-surface-title (surface title &rest args &key &allow-other-keys)
+  (assert *current-host* () "CEPL: surface-title cannot be called yet as CEPL has not been initialized")
+  (apply #'%set-surface-title *current-host* surface title args))
+
+;;----------------------------------------------------------------------

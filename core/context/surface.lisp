@@ -75,3 +75,24 @@
 
 (defun surface-resolution (surface)
   (v! (cepl.host:window-size surface)))
+
+(defun (setf surface-dimensions) (value surface)
+  (destructuring-bind (width height) value
+    (cepl.host:set-surface-size surface width height)))
+
+(defun (setf surface-resolution) (value surface)
+  (cepl.host:set-surface-size surface
+                              (ceiling (v:x value))
+                              (ceiling (v:y value))))
+
+(defun surface-title (surface)
+  (cepl.host:surface-title surface))
+
+(defun (setf surface-title) (value surface)
+  (cepl.host:set-surface-title surface value))
+
+(defun surface-fullscreen-p (surface)
+  (cepl.host:surface-fullscreen-p surface))
+
+(defun (setf surface-fullscreen-p) (value surface)
+  (cepl.host:set-surface-fullscreen surface value))
