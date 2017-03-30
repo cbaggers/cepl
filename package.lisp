@@ -518,7 +518,9 @@
            :add-surface
            :surfaces
            :current-surface
-           :make-surface-current))
+           :make-surface-current
+           :surface-dimensions
+           :surface-resolution))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

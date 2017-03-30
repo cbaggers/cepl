@@ -69,3 +69,9 @@
      :no-frame no-frame :hidden hidden)))
 
 ;;----------------------------------------------------------------------
+
+(defun surface-dimensions (surface)
+  (cepl.host:window-size surface))
+
+(defun surface-resolution (surface)
+  (v! (cepl.host:window-size surface)))
