@@ -131,7 +131,7 @@
                          :used-types nil
                          :glsl-code body-string
                          :stemcells nil
-                         :out-vars (make-varjo-outvars outputs env)
+                         :return-set (make-varjo-ret-set outputs)
                          :used-types arg-types)
                         stage
                         env))
@@ -156,11 +156,9 @@
     (let ((name (symb (string-upcase glsl-name))))
       `(,name ,type ,@qualifiers ,glsl-name))))
 
-(defun make-varjo-outvars (outputs env)
-  (loop :for (glsl-name type . qualifiers) :in outputs :collect
-     (let ((name (symb (string-upcase glsl-name))))
-       `(,name
-         ,qualifiers
-         ,(varjo::v-make-value
-           (varjo:type-spec->type type (varjo:flow-id!))
-           env :glsl-name glsl-name)))))
+(defun make-varjo-ret-set (outputs)
+  (apply #'vector
+         (loop :for (glsl-name type . qualifiers) :in outputs :collect
+            (varjo::make-external-return-val
+             glsl-name (varjo:type-spec->type type (varjo:flow-id!))
+             (sort (copy-list qualifiers) #'<)))))
