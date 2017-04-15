@@ -130,13 +130,13 @@
                     (declare (ignore c))
                     (invoke-restart
                      'varjo-conditions:allow-call-function-signature))))
-              (let* ((context (union '(:vertex :fragment) context))
-                     (context (swap-version (lowest-suitable-glsl-version context)
+              (let* ((context (swap-version (lowest-suitable-glsl-version context)
                                             context))
                      (compiled
-                      (varjo:translate
-                       (varjo:make-stage in-args uniforms context body t))))
-
+                      (first
+                       (varjo:test-translate-raising
+                        (varjo:make-stage nil in-args uniforms context body t)
+                        :stages '(:vertex :fragment)))))
                 (setf actual-uniforms ;;[2]
                       (mapcar #'varjo:to-arg-form
                               (remove-if #'varjo:ephemeral-p
@@ -326,7 +326,7 @@
                                                       :key #'first
                                                       :test #'string=))
                                             uniforms))
-                 (context (cons stage-type (remove stage-type context)))
+                 (context (remove stage-type context))
                  (replacements
                   (loop :for (k v) :in replacements
                      :for r = (let* ((u (find k uniforms :key #'first
@@ -340,7 +340,8 @@
                            `((let ,replacements
                                ,@code))
                            code)))
-            (varjo:make-stage in-args
+            (varjo:make-stage stage-type
+                              in-args
                               final-uniforms
                               context
                               body
