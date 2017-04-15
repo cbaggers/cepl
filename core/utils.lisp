@@ -346,11 +346,11 @@
                                 (&rest args) error-string &body body)
   (assert condition-type () "DEFCONDITION: condition-type is a mandatory argument")
   (unless (every #'symbolp args) (error "can only take simple args"))
-  `(define-condition ,name (,condition-type)
-     (,@(loop :for arg :in args :collect `(,arg :initarg ,(kwd arg))))
-     (:report (lambda (condition stream)
-                (declare (ignorable condition))
-                (with-slots ,args condition
+  (let ((control-str (format nil "~@[~a: ~]~a" prefix error-string)))
+    `(define-condition ,name (,condition-type)
+       ,(mapcar (lambda (arg) `(,arg :initarg ,(kwd arg))) args)
+       (:report (lambda (condition stream)
+                  (declare (ignorable condition))
                   (let ((*print-circle* (if ,print-circle?
                                             ,print-circle
                                             *print-circle*))
@@ -369,8 +369,8 @@
                         (*print-right-margin* (if ,print-right-margin?
                                                   ,print-right-margin
                                                   *print-right-margin*)))
-                    (format stream ,(format nil "~@[~a:~] ~a" prefix error-string)
-                            ,@body)))))))
+                    (with-slots ,args condition
+                      (format stream ,control-str ,@body))))))))
 
 (defmacro deferror (name (&key (error-type 'error) prefix
                                (print-circle nil print-circle?)
