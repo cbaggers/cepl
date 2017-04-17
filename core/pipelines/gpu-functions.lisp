@@ -16,9 +16,7 @@
   ;; at the tail
   ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
   ;; seperate any doc-string or declarations from the body
-  (let ((doc-string (when (stringp (first body)) (pop body)))
-        (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
-                        (pop body))))
+  (let ((doc-string (when (stringp (first body)) (pop body))))
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
@@ -28,7 +26,7 @@
       (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
       ;; now the meat
       (%def-gpu-function name in-args uniforms body instancing
-                         doc-string declarations equiv context))))
+                         doc-string equiv context))))
 
 (defun assert-arg-format (gfunc-name x)
   (unless (listp x)
@@ -38,7 +36,7 @@
 ;;--------------------------------------------------
 
 (defun %def-gpu-function (name in-args uniforms body instancing
-                          doc-string declarations equiv context)
+                          doc-string equiv context)
   "This is the meat of defun-g. it is broken down as follows:
 
    [0] makes a gpu-func-spec that will be populated a stored later.
@@ -67,7 +65,7 @@
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
-                                   nil nil nil doc-string declarations
+                                   nil nil nil doc-string nil
                                    nil));;[0]
         (valid-glsl-versions (get-versions-from-context context)))
     ;; this gets the functions used in the body of this function
@@ -135,8 +133,8 @@
                      (compiled
                       (first
                        (varjo:test-translate-raising
-                        (varjo:make-stage nil in-args uniforms context body t)
-                        :stages '(:vertex :fragment)))))
+                        (varjo:make-stage nil in-args uniforms context body t nil)
+                        :stages '(:vertex :geometry :fragment)))))
                 (setf actual-uniforms ;;[2]
                       (mapcar #'varjo:to-arg-form
                               (remove-if #'varjo:ephemeral-p
@@ -327,6 +325,9 @@
                                                       :test #'string=))
                                             uniforms))
                  (context (remove stage-type context))
+                 (draw-mode (varjo:get-primitive-type-from-context context))
+                 (primitive (when (eq stage-type :vertex)
+                              draw-mode))
                  (replacements
                   (loop :for (k v) :in replacements
                      :for r = (let* ((u (find k uniforms :key #'first
@@ -345,7 +346,8 @@
                               final-uniforms
                               context
                               body
-                              t))))))
+                              t
+                              primitive))))))
 
 ;;--------------------------------------------------
 
