@@ -117,7 +117,7 @@
     (first
      (multiple-value-list
       (varjo:flow-id-scope
-        (let ((env (varjo::%make-base-environment)))
+        (let ((env (varjo::%make-base-environment stage)))
           (pipe-> (stage env)
             #'varjo::set-env-context
             #'varjo::process-in-args
