@@ -55,10 +55,12 @@
     (let* ((in-args (mapcar #'process-glsl-in-arg in-args))
            (uniforms (mapcar #'process-glsl-uniform-arg uniforms))
            (body-string (get-body-string body-form))
+           (stage-kind (varjo::get-stage-kind-from-context context))
+           (context (remove stage-kind context))
            (spec (%make-glsl-stage-spec ;;[0]
                   name in-args uniforms context body-string
                   (glsl-stage-spec-to-varjo-compile-result ;;[1]
-                   in-args uniforms outputs context body-string))))
+                   stage-kind in-args uniforms outputs context body-string))))
       (%update-glsl-stage-data spec)
       `(progn
          ,(%make-stand-in-lisp-func-for-glsl-stage spec);;[2]
@@ -104,7 +106,7 @@
          (warn "GLSL stages cannot be used from the cpu")))))
 
 (defun glsl-stage-spec-to-varjo-compile-result
-    (in-args uniforms outputs context body-string)
+    (stage-kind in-args uniforms outputs context body-string)
   "Here our goal is to simple reuse as much from varjo as possible.
    This will mean we have less duplication, even if things seem a little
    ugly here"
@@ -112,7 +114,7 @@
          (arg-types (mapcar #'type-spec->type
                             (append (mapcar #'second in-args)
                                     (mapcar #'second uniforms))))
-         (stage (varjo:make-stage in-args uniforms context
+         (stage (varjo:make-stage stage-kind in-args uniforms context
                                   nil nil)))
     (first
      (multiple-value-list
@@ -141,15 +143,15 @@
             ;;#'(lambda (_) (fill-in-post-proc _ body-string outputs))
             #'varjo::gen-in-arg-strings
             #'varjo::gen-out-var-strings
+            #'varjo::gen-out-decl-strings
             #'varjo::final-uniform-strings
             #'varjo::final-string-compose
             #'varjo::package-as-final-result-object)))))))
 
 (defun process-glsl-in-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
-    (let ((name (symb (string-upcase glsl-name)))
-          (prefixed-glsl-name (format nil "@~a" glsl-name)))
-      `(,name ,type ,@qualifiers ,prefixed-glsl-name))))
+    (let ((name (symb (string-upcase glsl-name))))
+      `(,name ,type ,@qualifiers ,glsl-name))))
 
 (defun process-glsl-uniform-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
