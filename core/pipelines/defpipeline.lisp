@@ -71,8 +71,8 @@
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
-         (init-func (gen-pipeline-init name stage-pairs post uniform-assigners
-                                       stage-keys)))
+         (init-func (gen-pipeline-init name context stage-pairs post
+                                       uniform-assigners stage-keys)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (%update-spec name stage-pairs context)
@@ -160,11 +160,11 @@
                (cons x (clone-stage-spec s :new-context new-context))))
           stage-pairs))
 
-(defun %compile-link-and-upload (name stage-pairs)
+(defun %compile-link-and-upload (name draw-mode stage-pairs)
   (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
          (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version))
-         (compiled-stages (%varjo-compile-as-pipeline stage-pairs))
+         (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
     (format t "~&; uploading (~a ...)~&" name)
     (let ((prog-id (request-program-id-for name)))
@@ -248,17 +248,18 @@
   (force-use-program 0)
   (when func (funcall func)))
 
-(defun gen-pipeline-init (name stage-pairs post uniform-assigners
+(defun gen-pipeline-init (name context stage-pairs post uniform-assigners
                           stage-keys)
   (let ((uniform-names
-         (mapcar #'first (aggregate-uniforms stage-keys))))
+         (mapcar #'first (aggregate-uniforms stage-keys)))
+        (draw-mode (varjo:get-primitive-type-from-context context)))
     `(,(gensym "init")
        ()
        (let ((image-unit -1))
          (declare (ignorable image-unit))
          (multiple-value-bind (compiled-stages new-prog-id)
              (%compile-link-and-upload
-              ',name ,(serialize-stage-pairs stage-pairs))
+              ',name ',draw-mode ,(serialize-stage-pairs stage-pairs))
            (declare (ignorable compiled-stages))
            (setf prog-id new-prog-id)
            (setf implicit-uniform-upload-func

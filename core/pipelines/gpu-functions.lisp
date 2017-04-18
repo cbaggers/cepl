@@ -284,7 +284,7 @@
 
 ;;--------------------------------------------------
 
-(defun %varjo-compile-as-pipeline (parsed-gpipe-args)
+(defun %varjo-compile-as-pipeline (draw-mode parsed-gpipe-args)
   "Compile the gpu functions for a pipeline
    The argument to this function is a list of pairs.
    Each pair contains:
@@ -293,11 +293,12 @@
   (varjo:with-constant-inject-hook #'try-injecting-a-constant
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
       (varjo:rolling-translate
-       (mapcar #'parsed-gpipe-args->v-translate-args
+       (mapcar λ(parsed-gpipe-args->v-translate-args draw-mode _)
                parsed-gpipe-args)))))
 
 ;; {TODO} make the replacements related code more robust
-(defun parsed-gpipe-args->v-translate-args (stage-pair &optional replacements)
+(defun parsed-gpipe-args->v-translate-args (draw-mode stage-pair
+                                            &optional replacements)
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
    %compile-link-and-upload needs to call v-rolling-translate. To do this
    we need to look up the gpu function spec and turn them into valid arguments
@@ -325,7 +326,6 @@
                                                       :test #'string=))
                                             uniforms))
                  (context (remove stage-type context))
-                 (draw-mode (varjo:get-primitive-type-from-context context))
                  (primitive (when (eq stage-type :vertex)
                               draw-mode))
                  (replacements
