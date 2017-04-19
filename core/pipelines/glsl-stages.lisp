@@ -74,16 +74,15 @@
       (error 'invalid-context-for-def-glsl-stage :name name :context context))))
 
 (defun type-contains-structs (type)
-  (let ((type (varjo:type-spec->type type)))
-    (cond
-      ((v-typep type 'v-user-struct) t)
-      ((v-typep type 'v-array)
-       (type-contains-structs (v-element-type type)))
-      (t nil))))
+  (cond
+    ((v-typep type 'v-user-struct) t)
+    ((v-typep type 'v-array)
+     (type-contains-structs (v-element-type type)))
+    (t nil)))
 
 (defun assert-glsl-stage-types (in-args uniforms)
   (labels ((check (x)
-             (when (type-contains-structs (second x))
+             (when (type-contains-structs (varjo:type-spec->type (second x)))
                (first x))))
     (let* ((struct-args
             (remove nil (mapcar #'check (append in-args uniforms)))))
