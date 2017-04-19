@@ -4,7 +4,7 @@
 ;; Shader Pipelines
 
 (defun assert-valid-gpipe-form (pipeline-name gpipe-args)
-  (labels ((check (x) (member x (cons :post varjo:*stage-types*))))
+  (labels ((check (x) (member x (cons :post varjo:*stage-names*))))
     (let ((invalid (remove-if #'check (remove-if-not #'keywordp gpipe-args))))
       (when invalid
         (error 'invalid-keywords-for-shader-gpipe-args
@@ -16,7 +16,7 @@
                :clauses gpipe-args)
         (assert-valid-gpipe-shader-implicit-form pipeline-name without-keys)))
   (let ((keys (remove-if-not #'keywordp gpipe-args)))
-    (unless (assendingp (mapcar (lambda (x) (position x varjo:*stage-types*))
+    (unless (assendingp (mapcar (lambda (x) (position x varjo:*stage-names*))
                                 keys))
       (error 'invalid-shader-gpipe-stage-keys
              :pipeline-name pipeline-name :keys keys))))

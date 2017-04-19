@@ -39,13 +39,13 @@ with the in-arg types ~s"
 (deferror invalid-shader-gpipe-stage-keys () (pipeline-name keys)
     "In the defpipeline form for ~s the gpipe args are incorrect.~%~s"
   pipeline-name
-  (let ((unknown-keys (remove-if (lambda (x) (member x varjo:*stage-types*))
+  (let ((unknown-keys (remove-if (lambda (x) (member x varjo:*stage-names*))
                                  keys)))
     (if unknown-keys
         (format nil "The following stages are not supported, or are incorrectly named: ~a"
                 unknown-keys)
         (format nil "The order of the following stages is incorrect:~%~s~%Valid order of stages is: ~a"
-                keys varjo:*stage-types*))))
+                keys varjo:*stage-names*))))
 
 (deferror invalid-compose-gpipe-form () (pipeline-name clauses)
     "In the defpipeline for ~s there are some invalid pass clauses.~%
@@ -142,7 +142,7 @@ The context must, at least, contain:
 - One of the following stage names: ~a
 
 Instead recieved: ~a"
-  name varjo:*supported-versions* varjo:*supported-stages* context)
+  name varjo:*supported-versions* varjo:*stage-names* context)
 
 (deferror struct-in-glsl-stage-args () (arg-names)
     "Found arguments to def-glsl-stage which have struct types.

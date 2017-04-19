@@ -317,7 +317,7 @@
           compiled);;[0]
         (dbind (in-args uniforms context code) (get-func-as-stage-code stage)
           ;;[1]
-          (let ((n (count-if (lambda (_) (member _ varjo:*stage-types*))
+          (let ((n (count-if (lambda (_) (member _ varjo:*stage-names*))
                              context)))
             (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
           (let* ((final-uniforms (remove-if (lambda (u)

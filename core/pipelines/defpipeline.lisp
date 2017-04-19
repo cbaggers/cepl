@@ -146,7 +146,7 @@
         (invoke-restart r)))))
 
 (defun %gl-make-shader-from-varjo (compiled-stage)
-  (make-shader (varjo->gl-stage-names (varjo:stage-type compiled-stage))
+  (make-shader (varjo->gl-stage-names compiled-stage)
                (varjo:glsl-code compiled-stage)))
 
 (defun pairs-key-to-stage (stage-pairs)

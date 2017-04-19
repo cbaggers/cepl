@@ -33,7 +33,7 @@
 (defmacro def-glsl-stage (name args body-form outputs)
   ;; [0] makes a glsl-stage-spec that will be populated a stored later.
 
-  ;; [1] use varjo to create a varjo-compile-result from the glsl
+  ;; [1] use varjo to create a compiled-stage from the glsl
 
   ;; [2] %make-stand-in-lisp-func-for-glsl-stage is called at expand time to
   ;;     write a lisp function with the same signature as the glsl stage.
@@ -68,7 +68,7 @@
 
 (defun assert-context (name context)
   (let ((allowed (and (some (lambda (s) (member s context))
-                            varjo:*supported-stages*)
+                            varjo:*stage-names*)
                       (some (lambda (s) (member s context))
                             varjo:*supported-versions*))))
     (unless allowed
