@@ -532,3 +532,9 @@
   vao)
 
 ;;----------------------------------------------------------------------
+
+(defun patch-uninitialized-context-with-version (context gl-version)
+  (when (or (not (slot-boundp context 'cepl.context::gl-version))
+            (not (slot-value context 'cepl.context::gl-version)))
+    (setf (slot-value context 'cepl.context::gl-version)
+          gl-version)))

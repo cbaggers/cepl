@@ -14,7 +14,6 @@
   (cls))
 
 (defun initialize-cepl (&key gl-version host-init-flags)
-  (warn "Chris, before shipping make the gl-version arg in cepl:initialize-cepl work again")
   ;;
   ;; Initialize Host
   (unless cepl.host::*current-host*
@@ -22,6 +21,7 @@
   ;;
   ;; Initalized the already created CEPL contexts
   (loop :for context :in cepl.context::*contexts* :do
+     (cepl.context::patch-uninitialized-context-with-version context gl-version)
      (cepl.context::on-host-initialized context))
   ;;
   ;; Inform the world that CEPL is live
