@@ -903,7 +903,7 @@
                                  :defvar*
                                  :defparameter*))
       :export (:make-project
-               :init
+               :initialize-cepl
                :quit
                :repl
                :register-event-listener

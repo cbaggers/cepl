@@ -5,7 +5,7 @@
                #-darwin gl-version)
   "Initialize CEPL and open a window. If the gl-version argument is nil then
    the default for the OS will be used."
-  (init :gl-version gl-version)
+  (initialize-cepl :gl-version gl-version)
   (add-surface *cepl-context*
                :title "CEPL" :width width :height height :fullscreen nil
                :resizable t :no-frame nil :hidden nil
@@ -13,8 +13,8 @@
   (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%")
   (cls))
 
-(defun init (&key gl-version host-init-flags)
-  (warn "Chris, before shipping make the gl-version arg in cepl:init work again")
+(defun initialize-cepl (&key gl-version host-init-flags)
+  (warn "Chris, before shipping make the gl-version arg in cepl:initialize-cepl work again")
   ;;
   ;; Initialize Host
   (unless cepl.host::*current-host*
@@ -63,7 +63,8 @@
 This function is a legacy item at this stage, but is still here as it feels
 nice.
 
-It calls #'init to make a resizable window and prints out a message in the repl.
+It calls #'initialize-cepl to make a resizable window and prints out a message
+in the repl.
 ")
 
   (defun init
