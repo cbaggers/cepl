@@ -15,9 +15,8 @@
 
 (defun replace-host (host-obj)
   ;; check if has higher api-version
-  (if (not (eq (type-of *declared-host*) (type-of host-obj)))
-      (error "Multiple CEPL host definitions found. Cannot continue")
-      (error "IMPLEMENT ME! (replace-host ~s)" host-obj)))
+  (when (not (eq (type-of *declared-host*) (type-of host-obj)))
+    (error "Multiple CEPL host definitions found. Cannot continue")))
 
 (defgeneric check-host (host)
   (:method (host)
