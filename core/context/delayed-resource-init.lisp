@@ -4,7 +4,6 @@
 ;; Delayed resource initialization
 
 (defvar *post-context-init* nil)
-(defvar *on-context* nil)
 
 (defstruct delayed
   (waiting-on nil :type list)

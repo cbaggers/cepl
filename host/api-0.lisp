@@ -60,7 +60,8 @@
             (error "CEPL Internal Bug: Must call make-window before make-context when using legacy host api")))))
 
 ;; no longer used but legacy hosts still expect to find it
-(defun set-default-swap-arg (win-handle))
+(defun set-default-swap-arg (win-handle)
+  win-handle)
 
 ;;------------------------------------------------------------
 ;; This is what the backend has to implement

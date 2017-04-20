@@ -90,6 +90,7 @@
                        (title "CEPL") (width 600) (height 600)
                        (fullscreen nil) (resizable t) (no-frame nil)
                        (hidden nil))
+  (declare (ignore title width height fullscreen resizable no-frame hidden))
   ;;
   (assert (or (null shared) (typep shared 'cepl-context)))
   ;;
@@ -111,6 +112,9 @@
 (defvar *cepl-context* (make-context))
 
 ;;----------------------------------------------------------------------
+
+;; {TODO} move this to delayed-resource-init.lisp
+(defvar *on-context* nil)
 
 (defun init-gl-context (cepl-context surface)
   (assert cepl-context)
