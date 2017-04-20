@@ -29,7 +29,7 @@
 
 
 (defun make-buffer-stream (gpu-arrays &key index-array (start 0) length
-                                        retain-arrays)
+                                        (retain-arrays t))
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
   (let ((gpu-arrays (listify gpu-arrays)))

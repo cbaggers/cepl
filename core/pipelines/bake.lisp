@@ -22,6 +22,8 @@
          (stage-pairs (pairs-key-to-stage (pipeline-stage-pairs pipeline)))
          (stages (mapcar #'cdr stage-pairs))
          (pipeline-uniforms (cepl.pipelines::aggregate-uniforms stages))
+         (context (slot-value pipeline 'context))
+         (draw-mode (varjo:get-primitive-type-from-context context))
          ;;
          ;; get uniform details
          (uniform-pairs-to-bake (group uniforms 2))
@@ -50,10 +52,10 @@
             (mapcar #'list uniform-names-to-bake vals-with-func-identifiers)))
       ;;
       ;; Go for it
-      (bake-and-g-> stage-pairs final-uniform-pairs))))
+      (bake-and-g-> draw-mode stage-pairs final-uniform-pairs))))
 
 
-(defun bake-and-g-> (stage-pairs uniforms-to-bake)
+(defun bake-and-g-> (draw-mode stage-pairs uniforms-to-bake)
   (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
          (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version)))
@@ -64,7 +66,7 @@
      (mapcan (lambda (pair)
                (list (first pair)
                      (let* ((stage (parsed-gpipe-args->v-translate-args
-                                    pair uniforms-to-bake))
+                                    draw-mode pair uniforms-to-bake))
                             (in-args (mapcar #'varjo:to-arg-form
                                              (varjo:input-variables stage)))
                             (uniforms (mapcar #'varjo:to-arg-form

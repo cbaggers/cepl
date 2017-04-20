@@ -113,7 +113,8 @@
            :bake-invalid-pipeling-arg
            :bake-invalid-uniform-name
            :bake-uniform-invalid-values
-           :partial-lambda-pipeline))
+           :partial-lambda-pipeline
+           :glsl-geom-stage-no-out-layout))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria)

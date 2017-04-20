@@ -463,7 +463,7 @@ names are depended on by the functions named later in the list"
       (null (warn 'pull-g-not-cached :asset-name asset-name))
       (string compiled)
       (list (mapcar #'varjo:glsl-code compiled))
-      (varjo:varjo-compile-result (glsl-code compiled)))))
+      (varjo:compiled-stage (glsl-code compiled)))))
 
 (defun pull-g-soft-multi-func-message (asset-name)
   (let ((choices (gpu-functions asset-name)))
@@ -506,15 +506,15 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(let ((stage-names '((:vertex . :vertex-shader)
-                     (:fragment . :fragment-shader)
-                     (:geometry . :geometry-shader)
-                     (:compute . :compute-shader)
-                     (:tesselation-evaluation . :tess-evaluation-shader)
-                     (:tesselation-control . :tess-control-shader))))
-  (defun varjo->gl-stage-names (stage-name)
-    (or (cdr (assoc stage-name stage-names))
-        (error "CEPL: ~a is not a known type of shader stage" stage-name))))
+(defun varjo->gl-stage-names (stage)
+  (typecase stage
+    (varjo::vertex-stage :vertex-shader)
+    (varjo::tesselation-evaluation-stage :tess-evaluation-shader)
+    (varjo::tesselation-control-stage :tess-control-shader)
+    (varjo::geometry-stage :geometry-shader)
+    (varjo::fragment-stage :fragment-shader)
+    (t (error "CEPL: ~a is not a known type of shader stage"
+              (type-of stage)))))
 
 ;;--------------------------------------------------
 

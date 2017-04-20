@@ -33,13 +33,12 @@
 (defmacro def-glsl-stage (name args body-form outputs)
   ;; [0] makes a glsl-stage-spec that will be populated a stored later.
 
-  ;; [1] use varjo to create a varjo-compile-result. We have to bodge a bit
-  ;;     of the data but it's worth it to not duplicate varjo's logic
+  ;; [1] use varjo to create a compiled-stage from the glsl
 
-  ;; [2] %make-stand-in-lisp-func-for-glsl-stage is called at expand time to write
-  ;;     a lisp function with the same signature as the glsl stage. This gives
-  ;;     code hinting and also a decent error message if you try calling it
-  ;;     cpu side.
+  ;; [2] %make-stand-in-lisp-func-for-glsl-stage is called at expand time to
+  ;;     write a lisp function with the same signature as the glsl stage.
+  ;;     This gives code hinting and also a decent error message if you try
+  ;;     calling it cpu side.
   ;;
   ;; split the argument list into the categoried we care about
   (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
@@ -55,10 +54,12 @@
     (let* ((in-args (mapcar #'process-glsl-in-arg in-args))
            (uniforms (mapcar #'process-glsl-uniform-arg uniforms))
            (body-string (get-body-string body-form))
+           (stage-kind (varjo::get-stage-kind-from-context context))
+           (context (remove stage-kind context))
            (spec (%make-glsl-stage-spec ;;[0]
                   name in-args uniforms context body-string
-                  (glsl-stage-spec-to-varjo-compile-result ;;[1]
-                   in-args uniforms outputs context body-string))))
+                  (varjo::glsl-to-compile-result ;;[1]
+                   stage-kind in-args uniforms outputs context body-string))))
       (%update-glsl-stage-data spec)
       `(progn
          ,(%make-stand-in-lisp-func-for-glsl-stage spec);;[2]
@@ -67,7 +68,7 @@
 
 (defun assert-context (name context)
   (let ((allowed (and (some (lambda (s) (member s context))
-                            varjo:*supported-stages*)
+                            varjo:*stage-names*)
                       (some (lambda (s) (member s context))
                             varjo:*supported-versions*))))
     (unless allowed
@@ -103,64 +104,12 @@
          (declare (ignore ,@arg-names ,@uniform-names))
          (warn "GLSL stages cannot be used from the cpu")))))
 
-(defun glsl-stage-spec-to-varjo-compile-result
-    (in-args uniforms outputs context body-string)
-  "Here our goal is to simple reuse as much from varjo as possible.
-   This will mean we have less duplication, even if things seem a little
-   ugly here"
-  (let* ((none-type (varjo:type-spec->type :none))
-         (arg-types (mapcar #'type-spec->type
-                            (append (mapcar #'second in-args)
-                                    (mapcar #'second uniforms))))
-         (stage (varjo:make-stage in-args uniforms context
-                                  nil nil)))
-    (first
-     (multiple-value-list
-      (varjo:flow-id-scope
-        (let ((env (varjo::%make-base-environment)))
-          (pipe-> (stage env)
-            #'varjo::set-env-context
-            #'varjo::process-in-args
-            #'varjo::process-uniforms
-            #'(lambda (stage env)
-                (values (make-instance
-                         'varjo::compiled-function-result
-                         :function-obj nil
-                         :signatures nil
-                         :ast (varjo:ast-node! :error nil none-type nil nil)
-                         :used-types nil
-                         :glsl-code body-string
-                         :stemcells nil
-                         :out-vars (make-varjo-outvars outputs env)
-                         :used-types arg-types)
-                        stage
-                        env))
-            #'varjo::make-post-process-obj
-            #'varjo::check-stemcells
-            #'varjo::filter-used-items
-            ;;#'(lambda (_) (fill-in-post-proc _ body-string outputs))
-            #'varjo::gen-in-arg-strings
-            #'varjo::gen-out-var-strings
-            #'varjo::final-uniform-strings
-            #'varjo::final-string-compose
-            #'varjo::package-as-final-result-object)))))))
-
 (defun process-glsl-in-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
-    (let ((name (symb (string-upcase glsl-name)))
-          (prefixed-glsl-name (format nil "@~a" glsl-name)))
-      `(,name ,type ,@qualifiers ,prefixed-glsl-name))))
+    (let ((name (symb (string-upcase glsl-name))))
+      `(,name ,type ,@qualifiers ,glsl-name))))
 
 (defun process-glsl-uniform-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
     (let ((name (symb (string-upcase glsl-name))))
       `(,name ,type ,@qualifiers ,glsl-name))))
-
-(defun make-varjo-outvars (outputs env)
-  (loop :for (glsl-name type . qualifiers) :in outputs :collect
-     (let ((name (symb (string-upcase glsl-name))))
-       `(,name
-         ,qualifiers
-         ,(varjo::v-make-value
-           (varjo:type-spec->type type (varjo:flow-id!))
-           env :glsl-name glsl-name)))))
