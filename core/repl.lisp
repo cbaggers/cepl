@@ -30,6 +30,11 @@
 
 (defun quit () (cepl.lifecycle::change-state :shutting-down))
 
+(defun register-event-listener (function)
+  "Register a function to be called on every event.
+   The function must take 1 argument, which will be the event."
+  (cepl.host::register-event-listener function))
+
 (defun step-host (&optional (context *cepl-context*))
   (with-slots (cepl.context::current-surface) context
     (cepl.host::host-step cepl.context::current-surface))

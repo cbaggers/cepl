@@ -906,6 +906,7 @@
                :init
                :quit
                :repl
+               :register-event-listener
                :step-host
                :cls
                :swap
