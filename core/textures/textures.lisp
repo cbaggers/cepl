@@ -264,7 +264,6 @@
     :mutable-p mutable-p)))
 
 
-
 (defun make-texture (initial-contents
                      &key dimensions element-type (mipmap nil)
                        (layer-count 1) (cubes nil) (rectangle nil)
@@ -275,12 +274,7 @@
      (make-texture-now %pre% initial-contents dimensions element-type mipmap
                        layer-count cubes rectangle multisample immutable
                        buffer-storage generate-mipmaps pixel-format)
-     (make-uninitialized-texture
-      (when buffer-storage
-        (gen-buffer-tex-initial-contents
-         initial-contents dimensions
-         (calc-image-format element-type initial-contents)
-         cubes rectangle multisample mipmap layer-count pixel-format)))
+	 (make-uninitialized-texture buffer-storage)
      (when (typep initial-contents 'gpu-array-bb)
        (list initial-contents)))))
 
@@ -524,63 +518,100 @@ the width to see at what point the width reaches 0 or GL throws an error."
                 tex-obj))
           (error "This combination of texture features is invalid")))))
 
-;; (when (gpu-array-p initial-contents)
-;;     (error "Cannot currently make a buffer-backed texture with an existing buffer-backed gpu-array"))
-;;   (when (typep initial-contents 'gpu-array-t)
-;;     (error "Cannot make a buffer-backed texture with a texture-backed gpu-array"))
 
 (defun gen-buffer-tex-initial-contents (initial-contents dimensions image-format
                                         cubes rectangle multisample mipmap
                                         layer-count pixel-format)
   (when pixel-format
     (error 'pixel-format-in-bb-texture :pixel-format pixel-format))
-  (let* ((dimensions (listify dimensions))
-         (element-type (if initial-contents
-                           (element-type initial-contents)
-                           (image-format->lisp-type image-format)))
-         (texture-type (establish-texture-type
-                        (length dimensions)
-                        nil nil nil (every #'po2p dimensions) nil t nil)))
-    ;; validation
-    (assert-valid-args-for-buffer-backend-texture
-     image-format cubes rectangle multisample mipmap layer-count
-     texture-type)
-    ;; creation
-    (let* ((array (etypecase initial-contents
-                    (c-array (make-gpu-array initial-contents))
-                    (gpu-array-bb initial-contents)
-                    (null (make-gpu-array nil :dimensions dimensions
-                                          :element-type element-type)))))
-      (values array texture-type))))
+  (let* ((element-type (when image-format
+						 (image-format->lisp-type image-format))))
+	(etypecase initial-contents
+	  (null
+	   (assert element-type)
+	   (let* ((dimensions (listify dimensions))
+			  (po2p (every #'po2p dimensions))
+			  (texture-type (or (establish-texture-type (length dimensions) nil nil nil po2p nil t nil)
+								(error "Could not extablish a buffer-texture-type with dimensions ~a"
+									   dimensions))))
+		 (assert-valid-args-for-buffer-backend-texture
+		  image-format cubes rectangle multisample mipmap layer-count
+		  texture-type)
+		 (values (make-gpu-array nil :dimensions dimensions :element-type element-type)
+				 texture-type)))
+	  (c-array
+	   (when element-type
+		 (assert (eq element-type (element-type initial-contents))))
+	   (let* ((dimensions (or (listify dimensions) (dimensions initial-contents)))
+			  (po2p (every #'po2p dimensions))
+			  (texture-type (or (establish-texture-type (length dimensions) nil nil nil po2p nil t nil)
+								(error "Could not extablish a buffer-texture-type with dimensions ~a"
+									   dimensions))))
+		 (assert (every #'= dimensions (dimensions initial-contents)))
+		 (assert-valid-args-for-buffer-backend-texture
+		  image-format cubes rectangle multisample mipmap layer-count
+		  texture-type)
+		 (values (make-gpu-array initial-contents) texture-type)))
+	  (gpu-array-bb
+	   (when element-type
+		 (assert (eq element-type (element-type initial-contents))))
+	   (let* ((dimensions (or (listify dimensions) (dimensions initial-contents)))
+			  (po2p (every #'po2p dimensions))
+			  (texture-type (or (establish-texture-type (length dimensions) nil nil nil po2p nil t nil)
+								(error "Could not extablish a buffer-texture-type with dimensions ~a"
+									   dimensions))))
+		 (assert (every #'= dimensions (dimensions initial-contents)))
+		 (assert-valid-args-for-buffer-backend-texture
+		  image-format cubes rectangle multisample mipmap layer-count
+		  texture-type)
+		 (values initial-contents texture-type)))
+	  (t (with-c-array (carr (make-c-array initial-contents
+										   :element-type element-type
+										   :dimensions dimensions))
+		   (when element-type
+			 (assert (eq element-type (element-type carr))))
+		   (let* ((dimensions (or (listify dimensions) (dimensions carr)))
+				  (po2p (every #'po2p dimensions))
+				  (texture-type (or (establish-texture-type (length dimensions) nil nil nil po2p nil t nil)
+									(error "Could not extablish a buffer-texture-type with dimensions ~a"
+										   dimensions))))
+			 (assert (every #'= dimensions (dimensions carr)))
+			 (assert-valid-args-for-buffer-backend-texture
+			  image-format cubes rectangle multisample mipmap layer-count
+			  texture-type)
+			 (values (make-gpu-array carr) texture-type)))))))
 
 (defun %make-buffer-texture (tex-obj dimensions image-format mipmap layer-count
                              cubes rectangle multisample immutable
                              initial-contents pixel-format)
   (declare (ignore immutable))
-  ;; creation
-  (multiple-value-bind (array texture-type)
-      (gen-buffer-tex-initial-contents
-       initial-contents dimensions image-format cubes rectangle multisample
-       mipmap layer-count pixel-format)
-    (setf (texture-id tex-obj) (gen-texture)
-          (texture-base-dimensions tex-obj) dimensions
-          (texture-type tex-obj) texture-type
-          (texture-mipmap-levels tex-obj) 1
-          (texture-layer-count tex-obj) 1
-          (texture-cubes-p tex-obj) nil
-          (texture-image-format tex-obj) image-format
-          (buffer-texture-backing-array tex-obj) array
-          (buffer-texture-owns-array tex-obj) t)
-    (setf (texture-cache-id tex-obj)
-          (cepl.context::tex-kind->cache-index :texture-buffer))
-    (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
-    ;; upload
-    (with-texture-bound tex-obj
-      (%gl::tex-buffer :texture-buffer image-format
-                       (gpu-buffer-id
-                        (cepl.gpu-arrays::gpu-array-buffer array)))
-      (setf (texture-allocated-p tex-obj) t)
-      tex-obj)))
+
+  (multiple-value-bind (array type)
+	(gen-buffer-tex-initial-contents
+	 initial-contents dimensions
+	 image-format cubes rectangle multisample mipmap layer-count pixel-format)
+	;; creation
+	(assert (typep tex-obj 'buffer-texture))
+	(setf (texture-id tex-obj) (gen-texture)
+		  (buffer-texture-backing-array tex-obj) array
+		  (texture-type tex-obj) type
+		  (texture-base-dimensions tex-obj) dimensions
+		  (texture-mipmap-levels tex-obj) 1
+		  (texture-layer-count tex-obj) 1
+		  (texture-cubes-p tex-obj) nil
+		  (texture-image-format tex-obj) image-format
+		  (buffer-texture-owns-array tex-obj) t)
+	(setf (texture-cache-id tex-obj)
+		  (cepl.context::tex-kind->cache-index :texture-buffer))
+	(cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
+	;; upload
+	(with-texture-bound tex-obj
+	  (%gl::tex-buffer :texture-buffer image-format
+					   (gpu-buffer-id
+						(cepl.gpu-arrays::gpu-array-buffer
+						 (buffer-texture-backing-array tex-obj))))
+	  (setf (texture-allocated-p tex-obj) t)
+	  tex-obj)))
 
 (defun assert-valid-args-for-buffer-backend-texture
     (image-format cubes rectangle multisample mipmap layer-count
