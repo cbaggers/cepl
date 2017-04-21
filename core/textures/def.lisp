@@ -107,7 +107,6 @@
 
 ;;------------------------------------------------------------
 
-;; [TODO] use with safe-exit thingy?
 (defmacro with-texture-bound (texture &body body)
   (alexandria:with-gensyms (tex old-id cache-id)
     `(let* ((,tex ,texture)

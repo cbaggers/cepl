@@ -198,6 +198,7 @@
       (pixel-format-type pixel-format)
       (let ((len (pixel-format-comp-length pixel-format))
             (type (pixel-format-type pixel-format)))
+		;; {TODO} this approach is terrible, replace it
         (values (if (> len 1)
                     (intern
                      (format nil "~@[~a-~]VEC~a"
