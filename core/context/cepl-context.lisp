@@ -9,7 +9,8 @@
    (fullscreen :initarg :fullscreen)
    (resizable :initarg :resizable)
    (no-frame :initarg :no-frame)
-   (hidden :initarg :hidden)))
+   (hidden :initarg :hidden)
+   (legacy-gl-version :initarg :legacy-gl-version)))
 
 (defclass cepl-context-shared ()
   ((members :initform nil))

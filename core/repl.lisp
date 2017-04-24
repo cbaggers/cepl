@@ -6,10 +6,8 @@
   "Initialize CEPL and open a window. If the gl-version argument is nil then
    the default for the OS will be used."
   (initialize-cepl :gl-version gl-version)
-  (add-surface *cepl-context*
-               :title "CEPL" :width width :height height :fullscreen nil
-               :resizable t :no-frame nil :hidden nil
-               :make-current t)
+  (cepl.context::legacy-add-surface *cepl-context* "CEPL" width height nil t
+                                    nil nil t gl-version)
   (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%")
   (cls))
 
