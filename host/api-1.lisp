@@ -156,6 +156,3 @@
              surface version double-buffer
              alpha-size depth-size stencil-size buffer-size
              red-size green-size blue-size)))
-
-(defmethod %supports-multiple-surfaces-p ((host api-1) &key &allow-other-keys)
-  (slot-value host 'supports-multiple-surfaces-p))

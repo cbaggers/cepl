@@ -20,4 +20,5 @@
 
 (defgeneric check-host (host)
   (:method (host)
+    (declare (ignore host))
     (error "A host for cepl must be a subclass of one of the host-api classes")))
