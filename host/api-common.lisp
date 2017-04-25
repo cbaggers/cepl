@@ -3,7 +3,8 @@
 (let (step-func
       swap-func
       win-size-func
-      (reg-event-callback-func (lambda (x) x))
+      (reg-event-callback-func nil)
+	  (event-callbacks-cache nil)
       (make-current-func (lambda (c s) c s)))
 
   (defun set-step-func (func)
@@ -24,7 +25,9 @@
   (defun set-register-event-callback-func (func)
     "Call this and pass the function that will be called when the cepl needs to
      query the window size"
-    (setf reg-event-callback-func func))
+    (setf reg-event-callback-func func)
+	(map nil #'register-event-listener event-callbacks-cache)
+	func)
 
   (defun set-make-gl-context-current-on-surface (func)
     "Call this and pass the function that will be called when the cepl needs to
@@ -48,7 +51,9 @@
 
   (defun register-event-listener (function)
     "not external"
-    (funcall reg-event-callback-func function)))
+	(if reg-event-callback-func
+		(funcall reg-event-callback-func function)
+		(push function event-callbacks-cache))))
 
 ;;----------------------------------------------------------------------
 
