@@ -57,8 +57,6 @@
 
 ;;----------------------------------------------------------------------
 
-(defgeneric %init (host args))
-
 (defun initialize (&rest args &key &allow-other-keys)
   (if *current-host*
       (warn "CEPL: Cannot reinitialize a CEPL host")
@@ -69,15 +67,11 @@
 
 ;;----------------------------------------------------------------------
 
-(defgeneric %make-gl-context (host &key &allow-other-keys))
-
 (defun make-gl-context (&rest args &key &allow-other-keys)
   (assert *current-host* () "CEPL: make-gl-context cannot be called yet as CEPL has not been initialized")
   (apply #'%make-gl-context *current-host* args))
 
 ;;----------------------------------------------------------------------
-
-(defgeneric %make-surface (host &rest args &key &allow-other-keys))
 
 (defun make-surface (&rest args &key &allow-other-keys)
   (assert *current-host* () "CEPL: make-gl-context cannot be called yet as CEPL has not been initialized")
@@ -85,10 +79,9 @@
 
 ;;----------------------------------------------------------------------
 
-(defgeneric %supports-multiple-surfaces-p (host &key &allow-other-keys)
-  (:method (host &key &allow-other-keys)
-    (declare (ignore host))
-    nil))
+(defmethod %supports-multiple-surfaces-p (host &key &allow-other-keys)
+  (declare (ignore host))
+  nil)
 
 (defun supports-multiple-surfaces-p (&rest args &key &allow-other-keys)
   (assert *current-host* () "CEPL: supports-multiple-surfaces-p cannot be called yet as CEPL has not been initialized")
@@ -96,10 +89,9 @@
 
 ;;----------------------------------------------------------------------
 
-(defgeneric %supports-multiple-contexts-p (host &key &allow-other-keys)
-  (:method (host &key &allow-other-keys)
-    (declare (ignore host))
-    nil))
+(defmethod %supports-multiple-contexts-p (host &key &allow-other-keys)
+  (declare (ignore host))
+  nil)
 
 (defun supports-multiple-contexts-p (&rest args &key &allow-other-keys)
   (assert *current-host* () "CEPL: supports-multiple-contexts-p cannot be called yet as CEPL has not been initialized")

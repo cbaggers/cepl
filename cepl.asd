@@ -26,6 +26,7 @@
                #:bordeaux-threads)
   :components ((:file "package")
                (:file "host/api-api")
+               (:file "host/api-generics")
                (:file "host/api-0")
                (:file "host/api-1")
                (:file "host/api-common")
