@@ -413,19 +413,19 @@
           (cons :fragment f-key))))
 
 (defun parse-gpipe-args-explicit (args)
-  (dbind (&key vertex tesselation-control tesselation-evaluation
+  (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment) args
     (dbind (v-key tc-key te-key g-key f-key)
-        (validate-stage-names (list vertex tesselation-control
-                                    tesselation-evaluation
+        (validate-stage-names (list vertex tessellation-control
+                                    tessellation-evaluation
                                     geometry fragment))
       (remove nil
               (list (when vertex
                       (cons :vertex v-key))
-                    (when tesselation-control
-                      (cons :tesselation-control tc-key))
-                    (when tesselation-evaluation
-                      (cons :tesselation-evaluation te-key))
+                    (when tessellation-control
+                      (cons :tessellation-control tc-key))
+                    (when tessellation-evaluation
+                      (cons :tessellation-evaluation te-key))
                     (when geometry
                       (cons :geometry g-key))
                     (when fragment

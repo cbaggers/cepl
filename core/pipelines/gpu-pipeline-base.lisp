@@ -17,10 +17,10 @@
    (context :initarg :context)
    (cached-compile-results :initform nil)
    (vertex-stage :initarg :vertex-stage)
-   (tesselation-control-stage
-    :initarg :tesselation-control-stage :initform nil)
-   (tesselation-evaluation-stage
-    :initarg :tesselation-evaluation-stage :initform nil)
+   (tessellation-control-stage
+    :initarg :tessellation-control-stage :initform nil)
+   (tessellation-evaluation-stage
+    :initarg :tessellation-evaluation-stage :initform nil)
    (geometry-stage
     :initarg :geometry-stage :initform nil)
    (fragment-stage
@@ -43,27 +43,27 @@
 
 (defmethod pipeline-stages ((spec pipeline-spec))
   (with-slots (vertex-stage
-               tesselation-control-stage
-               tesselation-evaluation-stage
+               tessellation-control-stage
+               tessellation-evaluation-stage
                geometry-stage
                fragment-stage) spec
     (list vertex-stage
-          tesselation-control-stage
-          tesselation-evaluation-stage
+          tessellation-control-stage
+          tessellation-evaluation-stage
           geometry-stage
           fragment-stage)))
 
 (defmethod pipeline-stage-pairs ((spec pipeline-spec))
   (with-slots (vertex-stage
-               tesselation-control-stage
-               tesselation-evaluation-stage
+               tessellation-control-stage
+               tessellation-evaluation-stage
                geometry-stage
                fragment-stage) spec
     (remove-if-not
      #'cdr
      (list (cons :vertex vertex-stage)
-           (cons :tesselation-control tesselation-control-stage)
-           (cons :tesselation-evaluation tesselation-evaluation-stage)
+           (cons :tessellation-control tessellation-control-stage)
+           (cons :tessellation-evaluation tessellation-evaluation-stage)
            (cons :geometry geometry-stage)
            (cons :fragment fragment-stage)))))
 
@@ -388,13 +388,13 @@ names are depended on by the functions named later in the list"
                  :cached-compile-results compiled-stages))
 
 (defun make-pipeline-spec (name stages context)
-  (dbind (&key vertex tesselation-control tesselation-evaluation
+  (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment) (flatten stages)
     (make-instance 'pipeline-spec
                    :name name
                    :vertex-stage vertex
-                   :tesselation-control-stage tesselation-control
-                   :tesselation-evaluation-stage tesselation-evaluation
+                   :tessellation-control-stage tessellation-control
+                   :tessellation-evaluation-stage tessellation-evaluation
                    :geometry-stage geometry
                    :fragment-stage fragment
                    :context context)))
@@ -509,8 +509,8 @@ names are depended on by the functions named later in the list"
 (defun varjo->gl-stage-names (stage)
   (typecase stage
     (varjo::vertex-stage :vertex-shader)
-    (varjo::tesselation-evaluation-stage :tess-evaluation-shader)
-    (varjo::tesselation-control-stage :tess-control-shader)
+    (varjo::tessellation-evaluation-stage :tess-evaluation-shader)
+    (varjo::tessellation-control-stage :tess-control-shader)
     (varjo::geometry-stage :geometry-shader)
     (varjo::fragment-stage :fragment-shader)
     (t (error "CEPL: ~a is not a known type of shader stage"
