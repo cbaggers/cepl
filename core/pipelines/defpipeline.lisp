@@ -71,14 +71,16 @@
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
-         (init-func (gen-pipeline-init name context stage-pairs post
+		 (primitive (varjo::primitive-name-to-instance
+					 (varjo:get-primitive-type-from-context context)))
+         (init-func (gen-pipeline-init name primitive stage-pairs post
                                        uniform-assigners stage-keys)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (%update-spec name stage-pairs context)
     (multiple-value-bind (cpr-macro dispatch)
         (def-dispatch-func name (first init-func) stage-keys
-                           context uniform-assigners)
+                           context primitive uniform-assigners)
       `(progn
          ,cpr-macro
          (let ((prog-id nil)
@@ -248,18 +250,17 @@
   (force-use-program 0)
   (when func (funcall func)))
 
-(defun gen-pipeline-init (name context stage-pairs post uniform-assigners
+(defun gen-pipeline-init (name primitive stage-pairs post uniform-assigners
                           stage-keys)
   (let ((uniform-names
-         (mapcar #'first (aggregate-uniforms stage-keys)))
-        (draw-mode (varjo:get-primitive-type-from-context context)))
+         (mapcar #'first (aggregate-uniforms stage-keys))))
     `(,(gensym "init")
        ()
        (let ((image-unit -1))
          (declare (ignorable image-unit))
          (multiple-value-bind (compiled-stages new-prog-id)
              (%compile-link-and-upload
-              ',name ',draw-mode ,(serialize-stage-pairs stage-pairs))
+              ',name ',primitive ,(serialize-stage-pairs stage-pairs))
            (declare (ignorable compiled-stages))
            (setf prog-id new-prog-id)
            (setf implicit-uniform-upload-func
@@ -278,9 +279,8 @@
 
 
 (defun def-dispatch-func (name init-func-name stage-keys context
-                          uniform-assigners)
+                          primitive uniform-assigners)
   (let* ((uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
-         (prim-type (varjo:get-primitive-type-from-context context))
          (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
          (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners))))
     (values
@@ -316,7 +316,7 @@
           (locally
               (declare (optimize (speed 3) (safety 1)))
             (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
-          (when stream (draw-expander stream ,prim-type))
+          (when stream (draw-expander stream ,primitive))
           (use-program 0)
           ,@u-cleanup
           stream)
@@ -326,14 +326,17 @@
 (defun escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
 
-(defmacro draw-expander (stream draw-type)
+(defmacro draw-expander (stream primitive)
   "This draws the single stream provided using the currently
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which
    is handling the binding."
-  `(let ((stream ,stream)
-         (draw-type ,draw-type)
-         (index-type (buffer-stream-index-type stream)))
+  `(let* ((stream ,stream)
+		  (draw-type ,(varjo::lisp-name primitive))
+		  (index-type (buffer-stream-index-type stream)))
+	 ,@(when (typep primitive 'varjo::patches)
+			 `((%gl:patch-parameter-i
+				:patch-vertices (varjo::vertex-count primitive))))
      (with-vao-bound (buffer-stream-vao stream)
        (if (= (the fixnum |*instance-count*|) 0)
            (if index-type

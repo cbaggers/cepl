@@ -134,7 +134,7 @@
                       (first
                        (varjo:test-translate-raising
                         (varjo:make-stage nil in-args uniforms context body t nil)
-                        :stages '(:vertex :geometry :fragment)))))
+                        :stages varjo:*stage-names*))))
                 (setf actual-uniforms ;;[2]
                       (mapcar #'varjo:to-arg-form
                               (remove-if #'varjo:ephemeral-p
