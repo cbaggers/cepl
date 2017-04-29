@@ -71,8 +71,8 @@
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
-		 (primitive (varjo::primitive-name-to-instance
-					 (varjo:get-primitive-type-from-context context)))
+         (primitive (varjo::primitive-name-to-instance
+                     (varjo:get-primitive-type-from-context context)))
          (init-func (gen-pipeline-init name primitive stage-pairs post
                                        uniform-assigners stage-keys)))
     ;;

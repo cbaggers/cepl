@@ -321,9 +321,9 @@
 (defun make-uninitialized-texture (&optional buffer-backed-p)
   (if buffer-backed-p
       (%%make-buffer-texture
-	   :type :uninitialized
-	   :image-format :uninitialized
-	   :backing-array (make-uninitialized-gpu-array-bb))
+       :type :uninitialized
+       :image-format :uninitialized
+       :backing-array (make-uninitialized-gpu-array-bb))
       (%%make-texture
        :type :uninitialized :image-format :uninitialized)))
 
