@@ -332,11 +332,11 @@
    this function should only be used from another function which
    is handling the binding."
   `(let* ((stream ,stream)
-		  (draw-type ,(varjo::lisp-name primitive))
-		  (index-type (buffer-stream-index-type stream)))
-	 ,@(when (typep primitive 'varjo::patches)
-			 `((%gl:patch-parameter-i
-				:patch-vertices (varjo::vertex-count primitive))))
+          (draw-type ,(varjo::lisp-name primitive))
+          (index-type (buffer-stream-index-type stream)))
+     ,@(when (typep primitive 'varjo::patches)
+             `((%gl:patch-parameter-i
+                :patch-vertices ,(varjo::vertex-count primitive))))
      (with-vao-bound (buffer-stream-vao stream)
        (if (= (the fixnum |*instance-count*|) 0)
            (if index-type
