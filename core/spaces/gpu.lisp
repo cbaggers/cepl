@@ -66,10 +66,10 @@ and
 (v-defmacro sv! (&rest components)
   `(svec4 ,@components))
 
-(v-defun v! (p) "~a" (svec4-g) :vec4)
-(v-defun svec-* (a b) "(~a * ~a)" (v-mat4 svec4-g) 1)
-(v-defun svec-* (a b) "(~a * ~a)" (v-mat4 :vec4) 1)
-(v-defun svec-* (a b) "(~a * ~a)" (:vec4 v-mat4) 0)
+(v-def-glsl-template-fun v! (p) "~a" (svec4-g) :vec4)
+(v-def-glsl-template-fun svec-* (a b) "(~a * ~a)" (v-mat4 svec4-g) 1)
+(v-def-glsl-template-fun svec-* (a b) "(~a * ~a)" (v-mat4 :vec4) 1)
+(v-def-glsl-template-fun svec-* (a b) "(~a * ~a)" (:vec4 v-mat4) 0)
 
 ;;-------------------------------------------------------------------------
 ;; Working with the current space
@@ -103,7 +103,7 @@ and
 ;;-------------------------------------------------------------------------
 ;; Get Transform
 
-(v-defun get-transform (x y) "#-GETTRANSFORM(~a)" (vec-space vec-space) 0)
+(v-def-glsl-template-fun get-transform (x y) "#-GETTRANSFORM(~a)" (vec-space vec-space) 0)
 
 (varjo:v-define-compiler-macro get-transform (&environment env
                                                            (from-space vec-space)
@@ -125,7 +125,7 @@ and
         (error "CEPL: get-transform is not currently supported for transform from *screen-space* or *ndc-space*")
         (compile-implicit-mat4 from-name to-name env))))
 
-(v-defun space-boundary-convert (x) "#-SPACEBOUNDARYCONVERT(~a)" (v-type) 0)
+(v-def-glsl-template-fun space-boundary-convert (x) "#-SPACEBOUNDARYCONVERT(~a)" (v-type) 0)
 
 (varjo:v-define-compiler-macro space-boundary-convert (&environment env (form v-type))
   (let ((form-type (varjo:argument-type 'form env))
