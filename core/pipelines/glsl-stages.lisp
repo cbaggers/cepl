@@ -45,19 +45,19 @@
                (instancing :&instancing))
       (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
     ;; check the arguments are sanely formatted
-    (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
-    (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
+    (mapcar #'(lambda (x) (assert-glsl-arg-format name x)) in-args)
+    (mapcar #'(lambda (x) (assert-glsl-arg-format name x)) uniforms)
     ;; check we can use the type from glsl cleanly
     (assert-glsl-stage-types in-args uniforms)
     ;; now the meat
     (assert-context name context)
-    (let* ((in-args (mapcar #'process-glsl-in-arg in-args))
-           (uniforms (mapcar #'process-glsl-uniform-arg uniforms))
+    (let* ((cepl-in-args (mapcar #'process-glsl-arg in-args))
+           (cepl-uniforms (mapcar #'process-glsl-arg uniforms))
            (body-string (get-body-string body-form))
            (stage-kind (varjo::get-stage-kind-from-context context))
            (context (remove stage-kind context))
            (spec (%make-glsl-stage-spec ;;[0]
-                  name in-args uniforms context body-string
+                  name cepl-in-args cepl-uniforms context body-string
                   (varjo::glsl-to-compile-result ;;[1]
                    stage-kind in-args uniforms outputs context body-string))))
       (%update-glsl-stage-data spec)
@@ -104,12 +104,15 @@
          (declare (ignore ,@arg-names ,@uniform-names))
          (warn "GLSL stages cannot be used from the cpu")))))
 
-(defun process-glsl-in-arg (arg)
+(defun process-glsl-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
     (let ((name (symb (string-upcase glsl-name))))
       `(,name ,type ,@qualifiers ,glsl-name))))
 
-(defun process-glsl-uniform-arg (arg)
+(defun assert-glsl-arg-format (name arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
-    (let ((name (symb (string-upcase glsl-name))))
-      `(,name ,type ,@qualifiers ,glsl-name))))
+    (assert (and (stringp glsl-name)
+                 (varjo:type-specp type)
+                 (every #'keywordp qualifiers))
+            () 'invalid-inline-glsl-stage-arg-layout
+            :name name :arg arg)))

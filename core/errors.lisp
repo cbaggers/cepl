@@ -377,6 +377,14 @@ Here is the block of glsl we search in:
 
 ~a" glsl-body)
 
+(deferror invalid-inline-glsl-stage-arg-layout (:print-circle nil) (name arg)
+    "CEPL: Invalid arg layout found in ~a. The correct layout for a argument to
+a glsl-stage is (\"string-name-of-arg\" arg-type ,@keyword-qualifiers)
+
+Problematic arg was: ~a"
+  name arg)
+
+
 
 ;; Please remember the following 2 things
 ;;
