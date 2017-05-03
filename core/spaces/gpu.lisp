@@ -136,6 +136,10 @@ and
                            (varjo:metadata-for-argument 'form 'spatial-meta
                                                         env)))
               (outer-name (get-current-space env)))
+         (assert (and inner-name outer-name) (inner-name outer-name)
+                 "CEPL: Could not find establish the names of the uniforms which
+hold the spaces we are trying to convert between.
+Found ~a & ~a" inner-name outer-name)
          (convert-between-spaces form inner-name outer-name env)))
       ((v-typep form-type 'svec4-g) `(v! ,form))
       (t form))))
