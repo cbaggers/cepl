@@ -457,6 +457,9 @@ names are depended on by the functions named later in the list"
   (or (%pull-spec-common asset-name)
       (warn 'pull-g-not-cached :asset-name asset-name)))
 
+(defmethod pull-g ((asset-name list))
+  (pull1-g asset-name))
+
 (defmethod pull-g ((asset-name symbol))
   (let ((compiled (%pull-spec-common asset-name)))
     (etypecase compiled
