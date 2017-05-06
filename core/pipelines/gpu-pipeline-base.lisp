@@ -434,18 +434,13 @@ names are depended on by the functions named later in the list"
 
 (defun %pull-spec-common (asset-name)
   (labels ((gfunc-spec (x)
-             (let ((specs (gpu-func-specs x)))
-               (case= (length specs)
-                 (0 nil)
-                 (1 (first specs))
-                 (otherwise :too-many)))))
+             (handler-case (gpu-func-spec (%gpu-function x))
+               (cepl.errors:gpu-func-spec-not-found ()
+                 nil))))
     (if +cache-last-compile-result+
         (let ((spec (or (pipeline-spec asset-name) (gfunc-spec asset-name))))
           (typecase spec
             (null (warn 'pull-g-not-cached :asset-name asset-name))
-            (keyword (let ((alt (pull-g-soft-multi-func-message asset-name)))
-                       (when alt
-                         (slot-value (gpu-func-spec alt) 'cached-compile-results))))
             (otherwise (slot-value spec 'cached-compile-results))))
         (error 'pull*-g-not-enabled))))
 
@@ -458,7 +453,9 @@ names are depended on by the functions named later in the list"
       (warn 'pull-g-not-cached :asset-name asset-name)))
 
 (defmethod pull-g ((asset-name list))
-  (pull1-g asset-name))
+  (let ((x (pull1-g asset-name)))
+    (when x
+      (varjo:glsl-code x))))
 
 (defmethod pull-g ((asset-name symbol))
   (let ((compiled (%pull-spec-common asset-name)))
