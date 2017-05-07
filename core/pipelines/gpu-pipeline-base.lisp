@@ -453,14 +453,15 @@ names are depended on by the functions named later in the list"
       (warn 'pull-g-not-cached :asset-name asset-name)))
 
 (defmethod pull-g ((asset-name list))
-  (let ((x (pull1-g asset-name)))
-    (when x
-      (varjo:glsl-code x))))
+  (let ((compiled (%pull-spec-common asset-name)))
+    (etypecase compiled
+      (string compiled)
+      (list (mapcar #'varjo:glsl-code compiled))
+      (varjo:compiled-stage (glsl-code compiled)))))
 
 (defmethod pull-g ((asset-name symbol))
   (let ((compiled (%pull-spec-common asset-name)))
     (etypecase compiled
-      (null (warn 'pull-g-not-cached :asset-name asset-name))
       (string compiled)
       (list (mapcar #'varjo:glsl-code compiled))
       (varjo:compiled-stage (glsl-code compiled)))))
