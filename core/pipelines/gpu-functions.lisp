@@ -132,9 +132,8 @@
                                             context))
                      (compiled
                       (first
-                       (varjo:test-translate-raising
-                        (varjo:make-stage nil in-args uniforms context body t nil)
-                        :stages varjo:*stage-names*))))
+                       (varjo:test-translate-function-split-details
+                        name in-args uniforms context body varjo:*stage-names* t))))
                 (setf actual-uniforms ;;[2]
                       (mapcar #'varjo:to-arg-form
                               (remove-if #'varjo:ephemeral-p
