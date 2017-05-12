@@ -88,12 +88,13 @@
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
-         (prim-type (varjo:get-primitive-type-from-context context))
          (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
          (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
-         (u-lets (mapcat #'let-forms uniform-assigners)))
+         (u-lets (mapcat #'let-forms uniform-assigners))
+         (primitive (varjo::primitive-name-to-instance
+                     (varjo:get-primitive-type-from-context context))))
     `(multiple-value-bind (compiled-stages prog-id)
-         (%compile-link-and-upload nil ,(serialize-stage-pairs stage-pairs))
+         (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
        (register-lambda-pipeline
         compiled-stages
         (let* ((image-unit -1)
@@ -119,7 +120,7 @@
             (locally (declare (optimize (speed 3) (safety 1)))
               (funcall implicit-uniform-upload-func prog-id
                        ,@uniform-names))
-            (when stream (draw-expander stream ,prim-type))
+            (when stream (draw-expander stream ,primitive))
             (use-program 0)
             ,@u-cleanup
             stream))))))
