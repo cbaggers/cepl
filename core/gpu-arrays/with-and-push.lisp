@@ -33,10 +33,6 @@
                    (let ((,temp-name ,glarray-pointer))
                      ,@body)))))))))
 
-;; [TODO] Dont require a temporary name, just use the one it has
-;;        this makes it feel more magical to me and also it is
-;;        in-line with things like with-slots
-;; [TODO] Need to unmap if something goes wrong
 (defmacro with-gpu-array-as-c-array
     ((temp-name gpu-array &key (access-type :read-write)) &body body)
   (let ((ggpu-array (gensym "gpu-array")))
