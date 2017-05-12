@@ -115,6 +115,7 @@
           (lambda (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
             (declare (optimize (speed 3) (safety 1))
                      (ignore mapg-context) (ignorable ,@uniform-names))
+            #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
             (use-program prog-id)
             ,@u-uploads
             (locally (declare (optimize (speed 3) (safety 1)))
