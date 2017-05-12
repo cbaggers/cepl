@@ -27,8 +27,8 @@ in other documentation.
 
 -- The Parameters --
 
-There are 3 pairs of parameters that work together to tell GL how to compute the
-final color.
+There are 3 pairs of parameters that work together to tell GL how to compute
+the final color.
 
 In all cases below 'source' means the color coming from the pipeline that needs
 to be written into the FBO, and 'destination' means the color already in the FBO
@@ -46,7 +46,7 @@ So in pseudo-code it would look this this:
     (defun compute-final-color (blend-params src-rgb src-alpha
                                 dest-rgb dest-alpha)
       (let ((new-src-rgb
-             (funcall (blend-params-source-rgb)
+             (funcall (blend-params-source-rgb blend-params)
                       src-rgb
                       dest-rgb))
             (new-dest-rgb
