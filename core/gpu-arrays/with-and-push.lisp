@@ -190,3 +190,10 @@ dimension then their sizes must match exactly"))
            ,@body)))))
 
 ;;------------------------------------------------------------------------
+
+(defun reallocate-gpu-array (gpu-array)
+  (assert (typep gpu-array 'gpu-array-bb) ()
+          "CEPL: reallocate-gpu-array is not yet implemented for texture backed arrays")
+  (reallocate-buffer (gpu-array-bb-buffer gpu-array)))
+
+;;------------------------------------------------------------------------

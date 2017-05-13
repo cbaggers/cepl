@@ -73,7 +73,7 @@
          (child gpu-array-to-modify)
          (offset byte-offset-into-source-data)
          (dimensions (listify dimensions))
-         (byte-size (if byte-size byte-size
+         (byte-size (or byte-size
                         (cepl.c-arrays::gl-calc-byte-size
                          element-type dimensions))))
     (setf (gpu-array-dimensions child) dimensions
@@ -194,3 +194,5 @@
 
 ;; {TODO} copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData
+
+;;---------------------------------------------------------------

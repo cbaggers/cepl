@@ -188,4 +188,12 @@ gpu-array: ~s (byte-size: ~s)"
                          :offset-in-bytes-into-buffer 0))))
     buffer))
 
+(defun reallocate-buffer (buffer)
+  (assert (= (length (gpu-buffer-arrays buffer)) 1))
+  (let ((curr (aref (gpu-buffer-arrays buffer) 0)))
+    (buffer-reserve-block-raw buffer
+                              (gpu-array-bb-byte-size curr)
+                              :array-buffer
+                              (gpu-array-bb-access-style curr))))
+
 ;;---------------------------------------------------------------

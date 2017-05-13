@@ -622,7 +622,8 @@
            :free-buffers
            :make-gpu-buffer
            :make-gpu-buffer-from-id
-           :multi-buffer-data))
+           :multi-buffer-data
+           :reallocate-buffer))
 
 (uiop:define-package :cepl.gpu-arrays.buffer-backed
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -744,7 +745,8 @@
            :with-gpu-array-as-pointer
            :with-gpu-array-as-c-array
            :with-gpu-array-range-as-pointer
-           :with-gpu-array-range-as-c-array))
+           :with-gpu-array-range-as-c-array
+           :reallocate-gpu-array))
 
 (uiop:define-package :cepl.samplers
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
