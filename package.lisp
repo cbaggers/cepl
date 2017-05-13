@@ -742,7 +742,9 @@
            :make-gpu-arrays
            :subseq-g
            :with-gpu-array-as-pointer
-           :with-gpu-array-as-c-array))
+           :with-gpu-array-as-c-array
+           :with-gpu-array-range-as-pointer
+           :with-gpu-array-range-as-c-array))
 
 (uiop:define-package :cepl.samplers
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

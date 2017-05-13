@@ -99,3 +99,94 @@ dimension then their sizes must match exactly"))
   (etypecase gpu-array
     (gpu-array-t :texture)
     (gpu-array-bb :buffer)))
+
+;;------------------------------------------------------------------------
+
+(%gl::defglextfun ("glMapBufferRange" %map-buffer-range) (:pointer :void)
+  (target %gl::enum)
+  (offset %gl::intptr)
+  (length %gl::sizeiptr)
+  (access %gl::MapBufferUsageMask))
+
+;; {TODO} make a PR to add this to cl-opengl
+(defmacro with-buffer-range-mapped ((p target offset length access) &body body)
+  (alexandria:once-only (target offset length)
+    `(let ((,p (%map-buffer-range ,target ,offset ,length ,access)))
+       (unwind-protect (progn ,@body)
+         (%gl:unmap-buffer ,target)))))
+
+(defun %process-with-gpu-array-range-macro-args (target access-set)
+  (assert (keywordp target))
+  (let* ((valid-set-elems (cffi:foreign-bitfield-symbol-list
+                           '%gl::mapbufferusagemask))
+         (access-set (if (and (listp access-set)
+                              (eq (first access-set) 'quote))
+                         (second access-set)
+                         access-set))
+         (access-set (uiop:ensure-list access-set)))
+    (assert (loop :for access-elem :in access-set :always
+                 (find access-elem valid-set-elems))
+              () "The access argument must be one or more of:~{~%~s~}"
+              valid-set-elems)
+    access-set))
+
+(defun %process-with-gpu-array-range-runtime (gpu-array start length)
+  (unless (typep gpu-array 'gpu-array)
+    (if (typep gpu-array 'gpu-array-t)
+        (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
+        (error "with-gpu-array-* does not support the type ~s"
+               (type-of gpu-array))))
+  (assert (= (length (gpu-array-dimensions gpu-array)) 1) ()
+          "with-gpu-array-range-* macros current only support single dimensional arrays.~%Array provided: ~s" gpu-array)
+  (let ((arr-len (first (gpu-array-dimensions gpu-array)))
+        (byte-start (+ (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)
+                       (cepl.c-arrays::gl-calc-byte-size
+                        (gpu-array-element-type gpu-array) start)))
+        (byte-len (cepl.c-arrays::gl-calc-byte-size
+                   (gpu-array-element-type gpu-array) length)))
+    (assert (<= (- length start) arr-len))
+    (list gpu-array byte-start byte-len)))
+
+(defmacro with-gpu-array-range-as-pointer
+    ((temp-name gpu-array start-index length
+                &key (access-set :map-read) (target :array-buffer))
+     &body body)
+  "This macro is really handy if you need to have random access
+   to the data on the gpu. It takes a gpu-array and maps it
+   giving you the pointer"
+  (alexandria:with-gensyms (glarray-pointer
+                            array-sym buffer gtarget
+                            byte-start byte-len)
+    (let ((access-set
+           (%process-with-gpu-array-range-macro-args
+            target access-set)))
+      `(dbind (,array-sym ,byte-start ,byte-len)
+           (%process-with-gpu-array-range-runtime
+            ,gpu-array ,start-index ,length)
+         (let* ((,gtarget ,target))
+           (cepl.gpu-buffers::with-buffer (,buffer
+                                           (gpu-array-buffer ,array-sym)
+                                           ,gtarget)
+             (with-buffer-range-mapped
+                 (,glarray-pointer ,gtarget ,byte-start ,byte-len ',access-set)
+               (if (pointer-eq ,glarray-pointer (null-pointer))
+                   (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an OpenGL context?~%~s"
+                          ,glarray-pointer)
+                   (let ((,temp-name ,glarray-pointer))
+                     ,@body)))))))))
+
+(defmacro with-gpu-array-range-as-c-array
+    ((temp-name gpu-array start-index length &key (access-set :map-read))
+     &body body)
+  (alexandria:with-gensyms (ggpu-array ptr start len)
+    `(let ((,ggpu-array ,gpu-array)
+           (,start ,start-index)
+           (,len ,length))
+       (with-gpu-array-range-as-pointer
+           (,ptr ,ggpu-array ,start ,len :access-set ,access-set)
+         (let ((,temp-name
+                (make-c-array-from-pointer ,len (element-type ,ggpu-array)
+                                           ,ptr)))
+           ,@body)))))
+
+;;------------------------------------------------------------------------
