@@ -93,9 +93,9 @@ Parameter                 | RGB Factor                      | Alpha Factor
 :one-minus-constant-alpha | (- (v! 1 1 1) (v! ac ac ac))    | 1 - ac
 :src-alpha-saturate       | (v! i i i)                      | 1
 :src1-color               | (v! rs1 gs1 bs1)                | as1
-:one-minus-src-color      | (- (v! 1 1 1) (v! rs1 gs1 bs1)) | 1 - as1
+:one-minus-src1-color     | (- (v! 1 1 1) (v! rs1 gs1 bs1)) | 1 - as1
 :src1-alpha               | (v! as1 as1 as1)                | as1
-:one-minus-src-alpha      | (- (v! 1 1 1) (v! As1 As1 As1)) | 1 - As1
+:one-minus-src1-alpha     | (- (v! 1 1 1) (v! as1 as1 as1)) | 1 - as1
 
 
 -- :mode-rgb & :mode-alpha --
