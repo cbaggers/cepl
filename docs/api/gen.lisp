@@ -30,7 +30,6 @@
                      :cepl.image-formats
                      :cepl.pixel-formats
                      :cepl.ubos
-                     :cepl.space
                      :cepl.gpu-buffers
                      :cepl.vaos
                      :cepl.types

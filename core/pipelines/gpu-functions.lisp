@@ -472,14 +472,17 @@
   (when (boundp s)
     (guess-a-varjo-type (symbol-value s))))
 
+(defgeneric infer-implicit-uniform-type (thing)
+  (:method (thing) nil))
+
 (defun guess-a-varjo-type (x)
   (typecase x
     (number (guess-a-varjo-number-type x))
     (array (guess-a-varjo-array-type x))
     (boolean (guess-a-varjo-bool-type x))
-    (cepl.space:vec-space 'cepl.space::vec-space-g)
     (sampler (%sampler-type x))
-    (t (error "Cant guess a suitable type for ~s" x))))
+    (t (or (infer-implicit-uniform-type x)
+           (error "Cant guess a suitable type for ~s" x)))))
 
 (defun guess-a-varjo-bool-type (x)
   (if (eql x t)
