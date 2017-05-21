@@ -115,7 +115,9 @@
            :bake-uniform-invalid-values
            :partial-lambda-pipeline
            :glsl-geom-stage-no-out-layout
-           :invalid-inline-glsl-stage-arg-layout))
+           :invalid-inline-glsl-stage-arg-layout
+           :adjust-gpu-array-mismatched-dimensions
+           :adjust-gpu-array-shared-buffer))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria)
@@ -133,6 +135,11 @@
    :host-step
    :host-swap
    :window-size
+   :set-surface-size
+   :surface-title
+   :set-surface-title
+   :surface-fullscreen-p
+   :set-surface-fullscreen
    :make-gl-context-current-on-surface
    :supports-multiple-surfaces-p
    :supports-multiple-contexts-p
@@ -153,7 +160,12 @@
    :step-function
    :swap-function
    :register-event-callback-function
-   :make-context-current-function))
+   :make-context-current-function
+   :set-surface-size-function
+   :surface-fullscreen-p-function
+   :set-surface-fullscreen-function
+   :surface-title-function
+   :set-surface-title-function))
 
 (uiop:define-package :cepl.lifecycle
     (:use :cl)
@@ -518,7 +530,11 @@
            :add-surface
            :surfaces
            :current-surface
-           :make-surface-current))
+           :make-surface-current
+           :surface-dimensions
+           :surface-resolution
+           :surface-title
+           :surface-fullscreen-p))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math
@@ -637,7 +653,8 @@
            :make-gpu-array
            :make-gpu-arrays
            :subseq-g
-           :subseq-g-raw))
+           :subseq-g-raw
+           :adjust-gpu-array))
 
 (uiop:define-package :cepl.vaos
     (:use :cl :cffi :cepl-utils :varjo :varjo-lang :rtg-math

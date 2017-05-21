@@ -87,21 +87,23 @@
 
 ;;---------------------------------------------------------------
 ;; no initial-contents
+
+(defun init-gpu-array-no-data (array dimensions element-type access-style)
+  (let* ((buffer (buffer-reserve-block
+                  (cepl.gpu-buffers::make-managed-gpu-buffer)
+                  element-type dimensions :array-buffer
+                  access-style))
+         (base-arr (aref (gpu-buffer-arrays buffer) 0)))
+    (make-gpu-array-share-data
+     array base-arr 0 element-type dimensions)))
+
 (defmethod make-gpu-array ((initial-contents null)
                            &key element-type dimensions
                              (access-style :static-draw))
   (declare (ignore initial-contents))
-  (labels ((init (arr)
-             (let* ((buffer (buffer-reserve-block
-                             (cepl.gpu-buffers::make-gpu-buffer)
-                             element-type dimensions :array-buffer
-                             access-style))
-                    (base-arr (aref (gpu-buffer-arrays buffer) 0)))
-               (make-gpu-array-share-data
-                arr base-arr 0 element-type dimensions))))
-    (cepl.context::if-gl-context
-     (init %pre%)
-     (make-uninitialized-gpu-array-bb))))
+  (cepl.context::if-gl-context
+   (init-gpu-array-no-data %pre% dimensions element-type access-style)
+   (make-uninitialized-gpu-array-bb)))
 
 ;;---------------------------------------------------------------
 ;; from c-array
@@ -194,5 +196,37 @@
 
 ;; {TODO} copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData
+
+;;---------------------------------------------------------------
+
+(defun adjust-gpu-array (buffer-backed-gpu-array new-dimensions
+                         &key initial-contents (access-style :static-draw))
+  (let* ((new-dimensions (listify new-dimensions))
+         (arr buffer-backed-gpu-array)
+         (old-dim (gpu-array-dimensions arr))
+         (buffer-arrays (gpu-buffer-arrays (gpu-array-bb-buffer arr)))
+         (element-type (gpu-array-bb-element-type arr)))
+    (assert (= (length (gpu-array-dimensions arr)) (length new-dimensions))
+            (new-dimensions) 'adjust-gpu-array-mismatched-dimensions
+            :current-dim old-dim :new-dim new-dimensions)
+    (assert (= (length buffer-arrays) 1) () 'adjust-gpu-array-shared-buffer
+            :array arr :shared-count (length buffer-arrays))
+    ;;
+    (if initial-contents
+        (with-c-array (c-array (if (typep initial-contents 'c-array)
+                                   initial-contents
+                                   (make-c-array initial-contents
+                                                 :dimensions new-dimensions
+                                                 :element-type element-type)))
+          (init-gpu-array-from-c-array arr c-array access-style
+                                       (c-array-dimensions c-array)))
+        ;;
+        (let* ((buffer (buffer-reserve-block
+                        (gpu-array-bb-buffer arr)
+                        element-type new-dimensions :array-buffer
+                        access-style))
+               (base-arr (aref (gpu-buffer-arrays buffer) 0)))
+          (make-gpu-array-share-data
+           arr base-arr 0 element-type new-dimensions)))))
 
 ;;---------------------------------------------------------------

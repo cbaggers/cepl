@@ -385,6 +385,23 @@ Problematic arg was: ~a"
   name arg)
 
 
+(deferror adjust-gpu-array-mismatched-dimensions () (current-dim new-dim)
+    "CEPL: adjust-gpu-array cannot currently change the number of dimensions in
+a gpu-array.
+
+current dimensions: ~a
+proposed new dimensions: ~a
+
+If working around this limitation proves to be too difficult please report it
+on github so we can re-evaluate this limitation."
+  current-dim new-dim)
+
+(deferror adjust-gpu-array-shared-buffer () (array shared-count)
+    "CEPL: adjust-gpu-array cannot currently adjust the size of gpu-array
+which is sharing a gpu-buffer with other gpu-arrays.
+
+Array: ~a is sharing a gpu buffer with ~a other gpu-arrays"
+  array shared-count)
 
 ;; Please remember the following 2 things
 ;;

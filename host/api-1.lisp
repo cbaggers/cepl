@@ -61,9 +61,23 @@
    ;; and makes the gl-context current on that surface.
    make-context-current-function
    ;;
-   ;; The surface-size function takes a window object as it's only argument
+   ;; The surface-size function takes a surface object as it's only argument
    surface-size-function
-   ))
+   ;;
+   ;; The set-surface-size function takes a surface, a width & a height
+   set-surface-size-function
+   ;;
+   ;; The surface-fullscreen-p-function takes a surface
+   surface-fullscreen-p-function
+   ;;
+   ;; The set-surface-fullscreen-function takes a surface and a boolean
+   set-surface-fullscreen-function
+   ;;
+   ;; The surface-title-function takes a surface
+   surface-title-function
+   ;;
+   ;; The set-surface-title-function takes a surface and a string
+   set-surface-title-function))
 
 (defmethod check-host ((host api-1))
   (assert (slot-boundp host 'supports-multiple-contexts-p))
@@ -78,6 +92,11 @@
   (assert (slot-boundp host 'register-event-callback-function))
   (assert (slot-boundp host 'make-context-current-function))
   (assert (slot-boundp host 'surface-size-function))
+  (assert (slot-boundp host 'set-surface-size-function))
+  (assert (slot-boundp host 'surface-fullscreen-p-function))
+  (assert (slot-boundp host 'set-surface-fullscreen-function))
+  (assert (slot-boundp host 'surface-title-function))
+  (assert (slot-boundp host 'set-surface-title-function))
   (with-slots (supports-multiple-surfaces-p
                supports-multiple-contexts-p
                init-function
@@ -89,7 +108,12 @@
                swap-function
                register-event-callback-function
                make-context-current-function
-               surface-size-function)
+               surface-size-function
+               set-surface-size-function
+               surface-fullscreen-p-function
+               set-surface-fullscreen-function
+               surface-title-function
+               set-surface-title-function)
       host
     (assert (or (eq supports-multiple-surfaces-p t)
                 (eq supports-multiple-surfaces-p nil)))
@@ -105,7 +129,12 @@
                          swap-function
                          register-event-callback-function
                          make-context-current-function
-                         surface-size-function)))
+                         surface-size-function
+                         set-surface-size-function
+                         surface-fullscreen-p-function
+                         set-surface-fullscreen-function
+                         surface-title-function
+                         set-surface-title-function)))
     host))
 
 (defmethod %init ((host api-1) (args list))
@@ -156,3 +185,26 @@
              surface version double-buffer
              alpha-size depth-size stencil-size buffer-size
              red-size green-size blue-size)))
+
+(defmethod %set-surface-size ((host api-1) surface width height
+                              &key &allow-other-keys)
+  (assert surface)
+  (assert (and width height))
+  (with-slots (set-surface-size-function) host
+    (funcall set-surface-size-function surface width height)))
+
+(defmethod %surface-fullscreen-p (host surface &key &allow-other-keys)
+  (with-slots (surface-fullscreen-p-function) host
+    (funcall surface-fullscreen-p-function surface)))
+
+(defmethod %set-surface-fullscreen (host surface state &key &allow-other-keys)
+  (with-slots (set-surface-fullscreen-function) host
+    (funcall set-surface-fullscreen-function surface state)))
+
+(defmethod %surface-title (host surface &key &allow-other-keys)
+  (with-slots (surface-title-function) host
+    (funcall surface-title-function surface)))
+
+(defmethod %set-surface-title (host surface title &key &allow-other-keys)
+  (with-slots (set-surface-title-function) host
+    (funcall set-surface-title-function surface title)))
