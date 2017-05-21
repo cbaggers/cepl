@@ -90,7 +90,7 @@
 
 (defun init-gpu-array-no-data (array dimensions element-type access-style)
   (let* ((buffer (buffer-reserve-block
-                  (cepl.gpu-buffers::make-managed-gpu-buffer)
+                  (cepl.gpu-buffers::make-gpu-buffer)
                   element-type dimensions :array-buffer
                   access-style))
          (base-arr (aref (gpu-buffer-arrays buffer) 0)))

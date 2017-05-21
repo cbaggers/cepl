@@ -59,23 +59,23 @@
         (or *api-0-context-singleton*
             (error "CEPL Internal Bug: Must call make-window before make-context when using legacy host api")))))
 
-(defmethod %set-surface-size (host surface width height &key &allow-other-keys)
+(defmethod %set-surface-size ((host api-0) surface width height &key &allow-other-keys)
   (declare (ignore host surface width height))
   (warn "Setting the size of a surface is not supported when using the legacy host api"))
 
-(defmethod %surface-fullscreen-p (host surface &key &allow-other-keys)
+(defmethod %surface-fullscreen-p ((host api-0) surface &key &allow-other-keys)
   (declare (ignore host surface))
   (warn "Querying whether a surface is fullscreen is not supported when using the legacy host api"))
 
-(defmethod %set-surface-fullscreen (host surface state &key &allow-other-keys)
+(defmethod %set-surface-fullscreen ((host api-0) surface state &key &allow-other-keys)
   (declare (ignore host surface state))
   (warn "Setting whether a surface is fullscreen is not supported when using the legacy host api"))
 
-(defmethod %surface-title (host surface &key &allow-other-keys)
+(defmethod %surface-title ((host api-0) surface &key &allow-other-keys)
   (declare (ignore host surface))
   (warn "Getting a surface's title is not supported when using the legacy host api"))
 
-(defmethod %set-surface-title (host surface title &key &allow-other-keys)
+(defmethod %set-surface-title ((host api-0) surface title &key &allow-other-keys)
   (declare (ignore host surface title))
   (warn "Setting the title of a surface is not supported when using the legacy host api"))
 

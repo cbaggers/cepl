@@ -5,3 +5,8 @@
 (defgeneric %make-surface (host &rest args &key &allow-other-keys))
 (defgeneric %supports-multiple-surfaces-p (host &key &allow-other-keys))
 (defgeneric %supports-multiple-contexts-p (host &key &allow-other-keys))
+(defgeneric %set-surface-size (host surface width height &key &allow-other-keys))
+(defgeneric %surface-fullscreen-p (host surface &key &allow-other-keys))
+(defgeneric %set-surface-fullscreen (host surface state &key &allow-other-keys))
+(defgeneric %surface-title (host surface &key &allow-other-keys))
+(defgeneric %set-surface-title (host surface title &key &allow-other-keys))

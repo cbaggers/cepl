@@ -193,18 +193,18 @@
   (with-slots (set-surface-size-function) host
     (funcall set-surface-size-function surface width height)))
 
-(defmethod %surface-fullscreen-p (host surface &key &allow-other-keys)
+(defmethod %surface-fullscreen-p ((host api-1) surface &key &allow-other-keys)
   (with-slots (surface-fullscreen-p-function) host
     (funcall surface-fullscreen-p-function surface)))
 
-(defmethod %set-surface-fullscreen (host surface state &key &allow-other-keys)
+(defmethod %set-surface-fullscreen ((host api-1) surface state &key &allow-other-keys)
   (with-slots (set-surface-fullscreen-function) host
     (funcall set-surface-fullscreen-function surface state)))
 
-(defmethod %surface-title (host surface &key &allow-other-keys)
+(defmethod %surface-title ((host api-1) surface &key &allow-other-keys)
   (with-slots (surface-title-function) host
     (funcall surface-title-function surface)))
 
-(defmethod %set-surface-title (host surface title &key &allow-other-keys)
+(defmethod %set-surface-title ((host api-1) surface title &key &allow-other-keys)
   (with-slots (set-surface-title-function) host
     (funcall set-surface-title-function surface title)))
