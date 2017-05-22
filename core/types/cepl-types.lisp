@@ -85,6 +85,7 @@
   ;; buffer-data
   (element-type nil :type symbol) ;; data-type
   (byte-size 0 :type (unsigned-byte 64)) ;; data-index-length
+  (element-byte-size 0 :type (unsigned-byte 32))
   (offset-in-bytes-into-buffer 0 :type (unsigned-byte 64))) ;; offset-in-bytes-into-buffer
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)

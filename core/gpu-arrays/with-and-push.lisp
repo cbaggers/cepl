@@ -102,18 +102,16 @@ dimension then their sizes must match exactly"))
 
 ;;------------------------------------------------------------------------
 
-(%gl::defglextfun ("glMapBufferRange" %map-buffer-range) (:pointer :void)
-  (target %gl::enum)
-  (offset %gl::intptr)
-  (length %gl::sizeiptr)
-  (access %gl::MapBufferUsageMask))
-
 ;; {TODO} make a PR to add this to cl-opengl
 (defmacro with-buffer-range-mapped ((p target offset length access) &body body)
+  (assert (or (numberp access) (and (listp access) (every #'keywordp access))))
   (alexandria:once-only (target offset length)
-    `(let ((,p (%map-buffer-range ,target ,offset ,length ,access)))
-       (unwind-protect (progn ,@body)
-         (%gl:unmap-buffer ,target)))))
+    (let ((access (cffi:foreign-bitfield-value
+                   '%gl::mapbufferusagemask
+                   access)))
+      `(let ((,p (%gl:map-buffer-range ,target ,offset ,length ,access)))
+         (unwind-protect (progn ,@body)
+           (%gl:unmap-buffer ,target))))))
 
 (defun %process-with-gpu-array-range-macro-args (target access-set)
   (assert (keywordp target))
@@ -142,8 +140,8 @@ dimension then their sizes must match exactly"))
         (byte-start (+ (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)
                        (cepl.c-arrays::gl-calc-byte-size
                         (gpu-array-element-type gpu-array) start)))
-        (byte-len (cepl.c-arrays::gl-calc-byte-size
-                   (gpu-array-element-type gpu-array) length)))
+        (byte-len (* (gl-type-size (gpu-array-element-type gpu-array))
+                     length)))
     (assert (<= (- length start) arr-len))
     (list gpu-array byte-start byte-len)))
 
@@ -168,7 +166,7 @@ dimension then their sizes must match exactly"))
                                            (gpu-array-buffer ,array-sym)
                                            ,gtarget)
              (with-buffer-range-mapped
-                 (,glarray-pointer ,gtarget ,byte-start ,byte-len ',access-set)
+                 (,glarray-pointer ,gtarget ,byte-start ,byte-len ,access-set)
                (if (pointer-eq ,glarray-pointer (null-pointer))
                    (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an OpenGL context?~%~s"
                           ,glarray-pointer)

@@ -80,6 +80,7 @@
           (gpu-array-bb-buffer child) (gpu-array-bb-buffer parent)
           (gpu-array-bb-access-style child) (gpu-array-bb-access-style parent)
           (gpu-array-bb-element-type child) element-type
+          (gpu-array-bb-element-byte-size child) (gl-type-size element-type)
           (gpu-array-bb-byte-size child) byte-size)
     (setf (gpu-array-bb-offset-in-bytes-into-buffer child)
           (+ (gpu-array-bb-offset-in-bytes-into-buffer parent) offset))
