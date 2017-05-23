@@ -28,7 +28,9 @@
                     :cepl.fbos
                     :cepl.blending
                     :cepl.pipelines
-                    :cepl.misc)))
+                    :cepl.misc
+                    :cffi
+                    :%gl)))
     `(sb-profile:profile
       ,@(loop :for p :in packages :append
            (let ((pkg (find-package p)))
@@ -66,10 +68,14 @@
                     :cepl.fbos
                     :cepl.blending
                     :cepl.pipelines
-                    :cepl.misc)))
-    `(sb-profile:unprofile
-      ,@(loop :for p :in packages :append
-           (let ((pkg (find-package p)))
-             (loop :for s :being :the symbol :in p
-                :when (and (eq pkg (symbol-package s)) (fboundp s))
-                :collect s))))))
+                    :cepl.misc
+                    :cffi
+                    :%gl)))
+    `(progn
+       (sb-profile:unprofile
+        ,@(loop :for p :in packages :append
+             (let ((pkg (find-package p)))
+               (loop :for s :being :the symbol :in p
+                  :when (and (eq pkg (symbol-package s)) (fboundp s))
+                  :collect s))))
+       (sb-profile:reset))))
