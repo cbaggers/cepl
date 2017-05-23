@@ -78,7 +78,9 @@
           (setf (buffer-stream-vao stream-obj) (make-vao-from-id vao-gl-object gpu-arrays index-array)
                 (buffer-stream-start stream-obj) start
                 (buffer-stream-length stream-obj) length
-                (buffer-stream-index-type stream-obj) (when index-array (element-type index-array))
+                (buffer-stream-index-type stream-obj) (when index-array
+                                                        (gpu-array-bb-element-type
+                                                         index-array))
                 (buffer-stream-managed stream-obj) t
                 (buffer-stream-gpu-arrays stream-obj) (when retain-arrays
                                                         (list gpu-arrays index-array))
