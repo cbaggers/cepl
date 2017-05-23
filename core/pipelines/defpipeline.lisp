@@ -306,8 +306,12 @@
                               (mapcar λ(list (let-forms _) _1)
                                       uniform-assigners u-uploads)))))
           t)
-        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
+        (defun ,name (mapg-context stream
+                      ,@(when uniform-names `(&key ,@uniform-names)))
           (declare (ignore mapg-context) (ignorable ,@uniform-names))
+          ,@(unless (typep primitive 'varjo::dynamic)
+                    `((assert (eq ,(varjo::lisp-name primitive)
+                                  (buffer-stream-draw-mode stream)))))
           (unless prog-id
             (setf prog-id (,init-func-name))
             (unless prog-id (return-from ,name)))
@@ -317,7 +321,7 @@
               (declare (optimize (speed 3) (safety 1)))
             (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
           (when stream (draw-expander stream ,primitive))
-          (use-program 0)
+          ;;(use-program 0)
           ,@u-cleanup
           stream)
         (register-named-pipeline ',name #',name)
@@ -332,7 +336,9 @@
    this function should only be used from another function which
    is handling the binding."
   `(let* ((stream ,stream)
-          (draw-type ,(varjo::lisp-name primitive))
+          (draw-type ,(if (typep primitive 'varjo::dynamic)
+                          `(buffer-stream-draw-mode ,stream)
+                          (varjo::lisp-name primitive)))
           (index-type (buffer-stream-index-type stream)))
      ,@(when (typep primitive 'varjo::patches)
              `((%gl:patch-parameter-i
@@ -392,14 +398,15 @@
                  (gl:get-active-uniform program-id i)
                (list name type size))))
 
-(let ((program-cache nil))
+(let ((program-cache -1))
   (defun use-program (program-id)
-    (unless (eq program-id program-cache)
+    (unless (= program-id program-cache)
       (gl:use-program program-id)
       (setf program-cache program-id)))
   (defun force-use-program (program-id)
     (gl:use-program program-id)
     (setf program-cache program-id)))
+
 (setf (documentation 'use-program 'function)
       "Installs a program object as part of current rendering state")
 

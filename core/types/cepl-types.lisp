@@ -224,6 +224,7 @@
   (%index-type nil :type symbol)
   (%index-type-size 0 :type (unsigned-byte 8))
   (gpu-arrays nil :type list)
+  (draw-mode :triangles :type symbol)
   (managed nil :type boolean))
 
 (defun %valid-index-type-p (x)
@@ -243,6 +244,7 @@
    :%index-type-size (if (%valid-index-type-p index-type)
                          (foreign-type-size index-type)
                          0)
+   :draw-mode :triangles
    :managed managed
    :gpu-arrays gpu-arrays))
 

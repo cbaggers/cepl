@@ -28,32 +28,43 @@
   (blank-buffer-stream buffer-stream))
 
 
-(defun make-buffer-stream (gpu-arrays &key index-array (start 0) length
-                                        (retain-arrays t))
+(defun make-buffer-stream (gpu-arrays
+                           &key index-array (start 0) length
+                             (retain-arrays t) (draw-mode :triangles))
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
-  (let ((gpu-arrays (listify gpu-arrays)))
+  (assert (valid-draw-mode-p draw-mode) (draw-mode))
+  (let ((gpu-arrays (listify gpu-arrays))
+        (draw-mode (varjo::lisp-name
+                    (varjo::primitive-name-to-instance
+                     draw-mode))))
     (cepl.context::if-gl-context
      (init-buffer-stream-from-id %pre% (make-vao gpu-arrays index-array)
                                  gpu-arrays index-array start length
-                                 retain-arrays)
+                                 retain-arrays draw-mode)
      (make-uninitialized-buffer-stream)
      gpu-arrays)))
 
 (defun make-buffer-stream-from-id (vao-gl-object gpu-arrays
                                    &key index-array (start 0) length
-                                     retain-arrays)
+                                     retain-arrays (draw-mode :triangles))
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
-  (let ((gpu-arrays (listify gpu-arrays)))
+  (assert (valid-draw-mode-p draw-mode) (draw-mode))
+  (let ((gpu-arrays (listify gpu-arrays))
+        (draw-mode (varjo::lisp-name
+                    (varjo::primitive-name-to-instance
+                     draw-mode))))
     (init-buffer-stream-from-id
      (make-raw-buffer-stream) vao-gl-object gpu-arrays
-     index-array start length retain-arrays)))
+     index-array start length retain-arrays draw-mode)))
 
 (defun init-buffer-stream-from-id (stream-obj vao-gl-object gpu-arrays
-                                   index-array start length retain-arrays)
+                                   index-array start length retain-arrays
+                                   draw-mode)
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
+  (assert (valid-draw-mode-p draw-mode) (draw-mode))
   (let* ((gpu-arrays (listify gpu-arrays))
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
@@ -70,6 +81,10 @@
                 (buffer-stream-index-type stream-obj) (when index-array (element-type index-array))
                 (buffer-stream-managed stream-obj) t
                 (buffer-stream-gpu-arrays stream-obj) (when retain-arrays
-                                                        (list gpu-arrays index-array)))
+                                                        (list gpu-arrays index-array))
+                (buffer-stream-draw-mode stream-obj) draw-mode)
           stream-obj)
         (error "You can only make buffer-streams from 1D arrays"))))
+
+(defun valid-draw-mode-p (mode)
+  (find mode varjo::*draw-modes*))

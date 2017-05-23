@@ -339,6 +339,7 @@
            :buffer-stream
            :buffer-stream-p
            :buffer-stream-vao
+           :buffer-stream-draw-mode
            :buffer-stream-start
            :buffer-stream-start-byte
            :buffer-stream-length
