@@ -310,8 +310,9 @@
                       ,@(when uniform-names `(&key ,@uniform-names)))
           (declare (ignore mapg-context) (ignorable ,@uniform-names))
           ,@(unless (typep primitive 'varjo::dynamic)
-                    `((assert (eq ,(varjo::lisp-name primitive)
-                                  (buffer-stream-draw-mode stream)))))
+                    `((when stream
+                        (assert (eq ,(varjo::lisp-name primitive)
+                                    (buffer-stream-draw-mode stream))))))
           (unless prog-id
             (setf prog-id (,init-func-name))
             (unless prog-id (return-from ,name)))
