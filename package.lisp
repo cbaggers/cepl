@@ -946,7 +946,3 @@
                   (:cepl.lifecycle :shutting-down-p)
                   (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
                              :radians :degrees))))
-
-(uiop:define-package :cepl.misc
-    (:use :cl :cepl :rtg-math.base-maths :cl-fad :named-readtables)
-  (:export :draw-texture :draw-colored-quad))
