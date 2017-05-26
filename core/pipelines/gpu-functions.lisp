@@ -473,7 +473,9 @@
     (guess-a-varjo-type (symbol-value s))))
 
 (defgeneric infer-implicit-uniform-type (thing)
-  (:method (thing) nil))
+  (:method (thing)
+    (declare (ignore thing))
+    nil))
 
 (defun guess-a-varjo-type (x)
   (typecase x
