@@ -12,6 +12,14 @@ See the [cepl.examples repository](https://github.com/cbaggers/cepl.examples) fo
 
 Videos: http://www.youtube.com/playlist?list=PL2VAYZE_4wRKKr5pJzfYD1w4tKCXARs5y
 
+### Installing
+
+Run `(ql:quickload :cepl)` at your REPL.
+
+### Cloning
+
+Whist it is recommended to get CEPL from quicklisp, if you clone please note that `master` is not the stable branch. Please use `quicklisp-release` for the stable code that will be in the next CEPL release.
+
 ### Documentation
 
 Currently we have full documentation of every exported symbol in the CEPL package. You can find this [here: CEPL API Docs](http://techsnuffle.com/cepl/api.html)
