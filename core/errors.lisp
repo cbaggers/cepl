@@ -403,6 +403,23 @@ which is sharing a gpu-buffer with other gpu-arrays.
 Array: ~a is sharing a gpu buffer with ~a other gpu-arrays"
   array shared-count)
 
+(deferror buffer-stream-has-invalid-primtive-for-stream ()
+    (name pline-prim stream-prim)
+    "CEPL: The buffer-stream passed to ~a contains ~a, however ~a
+was expecting ~a.
+
+You can either change the type of primtives the pipeline was expecting e.g:
+
+ (def-g-> ~s (~s)
+   ..)
+
+Or you can create a stream with containing ~a e.g:
+
+  (make-buffer-stream gpu-array :draw-mode ~s)"
+  name stream-prim name pline-prim
+  name stream-prim
+  pline-prim pline-prim)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

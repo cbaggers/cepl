@@ -117,7 +117,8 @@
            :glsl-geom-stage-no-out-layout
            :invalid-inline-glsl-stage-arg-layout
            :adjust-gpu-array-mismatched-dimensions
-           :adjust-gpu-array-shared-buffer))
+           :adjust-gpu-array-shared-buffer
+           :buffer-stream-has-invalid-primtive-for-stream))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria)

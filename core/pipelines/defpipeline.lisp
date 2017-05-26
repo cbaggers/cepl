@@ -311,8 +311,14 @@
           (declare (ignore mapg-context) (ignorable ,@uniform-names))
           ,@(unless (typep primitive 'varjo::dynamic)
                     `((when stream
-                        (assert (eq ,(varjo::lisp-name primitive)
-                                    (buffer-stream-draw-mode stream))))))
+                        (assert
+                         (eq ,(varjo::lisp-name primitive)
+                             (buffer-stream-draw-mode stream))
+                         ()
+                         'buffer-stream-has-invalid-primtive-for-stream
+                         :name ',name
+                         :pline-prim ',(varjo::lisp-name primitive)
+                         :stream-prim (buffer-stream-draw-mode stream)))))
           (unless prog-id
             (setf prog-id (,init-func-name))
             (unless prog-id (return-from ,name)))
