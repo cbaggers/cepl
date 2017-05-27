@@ -256,6 +256,14 @@
   (patch-length 0 :type (unsigned-byte 8))
   (managed nil :type boolean))
 
+(defun primitive-vert-length (prim)
+  (typecase prim
+    (varjo::patches (varjo::vertex-count prim))
+    (varjo::triangles 3)
+    (varjo::lines 2)
+    (varjo::points 1)
+    (otherwise 0)))
+
 (defun %valid-index-type-p (x)
   (and x (not (eq x :uninitialized))))
 
@@ -266,9 +274,7 @@
          (prim-group-id (draw-mode-group-id prim))
          (enum-kwd (varjo::lisp-name prim))
          (enum-val (cffi:foreign-enum-value '%gl:enum enum-kwd :errorp t))
-         (patch-length (if (typep prim 'varjo::patches)
-                           (varjo::vertex-count prim)
-                           0)))
+         (patch-length (primitive-vert-length prim)))
     (%make-buffer-stream
      :vao vao
      :%start (or start 0)
