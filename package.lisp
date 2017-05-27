@@ -335,12 +335,17 @@
            :pixel-format-reversed
            :pixel-format-comp-length
 
+           :draw-mode-group-id
+
            :make-raw-buffer-stream
            :make-uninitialized-buffer-stream
            :buffer-stream
            :buffer-stream-p
            :buffer-stream-vao
-           :buffer-stream-draw-mode
+           :buffer-stream-primitive
+           :buffer-stream-primitive-group-id
+           :buffer-stream-draw-mode-val
+           :buffer-stream-patch-length
            :buffer-stream-start
            :buffer-stream-start-byte
            :buffer-stream-length

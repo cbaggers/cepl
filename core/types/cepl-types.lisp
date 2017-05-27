@@ -216,6 +216,32 @@
 
 ;;------------------------------------------------------------
 
+(defun draw-mode-group-id (x)
+  (or (typecase x
+        (varjo::points 0)
+        (varjo::line-strip 1)
+        (varjo::line-strip-adjacency 2)
+        (varjo::line-loop 3)
+        (varjo::lines 4)
+        (varjo::lines-adjacency 5)
+        (varjo::triangle-strip 6)
+        (varjo::triangle-strip-adjacency 7)
+        (varjo::triangle-fan 8)
+        (varjo::triangles 9)
+        (varjo::triangles-adjacency 10)
+        (varjo::quads 11)
+        (varjo::patches
+         (let ((count (varjo::vertex-count x)))
+           (case= count
+             (1 0)
+             (2 4)
+             (3 9)
+             (4 11)
+             (otherwise (+ count 12))))))
+      (error "draw-mode-group-id: ~a is not a draw-mode" x)))
+
+;;------------------------------------------------------------
+
 (defstruct (buffer-stream (:constructor %make-buffer-stream))
   vao
   (%start 0 :type (unsigned-byte 64))
@@ -224,7 +250,10 @@
   (%index-type nil :type symbol)
   (%index-type-size 0 :type (unsigned-byte 8))
   (gpu-arrays nil :type list)
-  (draw-mode :triangles :type symbol)
+  (primitive nil :type symbol)
+  (primitive-group-id 0 :type (unsigned-byte 8))
+  (draw-mode-val 0 :type (unsigned-byte 32))
+  (patch-length 0 :type (unsigned-byte 8))
   (managed nil :type boolean))
 
 (defun %valid-index-type-p (x)
@@ -232,21 +261,31 @@
 
 (defun make-raw-buffer-stream (&key vao start length
                                  index-type managed
-                                 gpu-arrays)
-  (%make-buffer-stream
-   :vao vao
-   :%start (or start 0)
-   :%start-byte (if (%valid-index-type-p index-type)
-                    (* start (foreign-type-size index-type))
-                    0)
-   :length (or length 1)
-   :%index-type index-type
-   :%index-type-size (if (%valid-index-type-p index-type)
-                         (foreign-type-size index-type)
-                         0)
-   :draw-mode :triangles
-   :managed managed
-   :gpu-arrays gpu-arrays))
+                                 gpu-arrays (primitive :triangles))
+  (let* ((prim (varjo::primitive-name-to-instance primitive))
+         (prim-group-id (draw-mode-group-id prim))
+         (enum-kwd (varjo::lisp-name prim))
+         (enum-val (cffi:foreign-enum-value '%gl:enum enum-kwd :errorp t))
+         (patch-length (if (typep prim 'varjo::patches)
+                           (varjo::vertex-count prim)
+                           0)))
+    (%make-buffer-stream
+     :vao vao
+     :%start (or start 0)
+     :%start-byte (if (%valid-index-type-p index-type)
+                      (* start (foreign-type-size index-type))
+                      0)
+     :length (or length 1)
+     :%index-type index-type
+     :%index-type-size (if (%valid-index-type-p index-type)
+                           (foreign-type-size index-type)
+                           0)
+     :managed managed
+     :primitive primitive
+     :primitive-group-id prim-group-id
+     :draw-mode-val enum-val
+     :patch-length patch-length
+     :gpu-arrays gpu-arrays)))
 
 (defun buffer-stream-index-type (stream)
   (buffer-stream-%index-type stream))
@@ -351,8 +390,9 @@
    :draw-buffer-map nil
    :clear-mask -13))
 
-(defun make-uninitialized-buffer-stream ()
-  (make-raw-buffer-stream :index-type :uninitialized))
+(defun make-uninitialized-buffer-stream (primitive)
+  (make-raw-buffer-stream :index-type :uninitialized
+                          :primitive primitive))
 
 (defvar +null-texture-backed-gpu-array+
   (%make-gpu-array-t

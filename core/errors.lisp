@@ -415,7 +415,11 @@ You can either change the type of primtives the pipeline was expecting e.g:
 
 Or you can create a stream with containing ~a e.g:
 
-  (make-buffer-stream gpu-array :draw-mode ~s)"
+  (make-buffer-stream gpu-array :draw-mode ~s)
+
+It is also worth noting that it is possible to pass triangles to a
+pipeline declared to take (:patch 3), to pass lines to pipelines declared
+to take (:patch 2) and points to pipelines taking (:patch 1)"
   name stream-prim name pline-prim
   name stream-prim
   pline-prim pline-prim)

@@ -312,13 +312,13 @@
           ,@(unless (typep primitive 'varjo::dynamic)
                     `((when stream
                         (assert
-                         (eq ,(varjo::lisp-name primitive)
-                             (buffer-stream-draw-mode stream))
+                         (= ,(draw-mode-group-id primitive)
+                            (buffer-stream-primitive-group-id stream))
                          ()
                          'buffer-stream-has-invalid-primtive-for-stream
                          :name ',name
                          :pline-prim ',(varjo::lisp-name primitive)
-                         :stream-prim (buffer-stream-draw-mode stream)))))
+                         :stream-prim (buffer-stream-primitive stream)))))
           (unless prog-id
             (setf prog-id (,init-func-name))
             (unless prog-id (return-from ,name)))
@@ -344,11 +344,13 @@
    is handling the binding."
   `(let* ((stream ,stream)
           (draw-type ,(if (typep primitive 'varjo::dynamic)
-                          `(buffer-stream-draw-mode ,stream)
+                          `(buffer-stream-draw-mode-val ,stream)
                           (varjo::lisp-name primitive)))
           (index-type (buffer-stream-index-type stream)))
      ,@(when (typep primitive 'varjo::patches)
-             `((%gl:patch-parameter-i
+             `((assert (= (buffer-stream-patch-length stream)
+                          ,(varjo::vertex-count primitive)))
+               (%gl:patch-parameter-i
                 :patch-vertices ,(varjo::vertex-count primitive))))
      (with-vao-bound (buffer-stream-vao stream)
        (if (= (the fixnum |*instance-count*|) 0)
