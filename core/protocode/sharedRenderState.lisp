@@ -54,7 +54,7 @@
 ;; To speed this up we can also provide details of what to save
 
 (with-saved-gl-state (:textures :programs)
-  (devil:load-image-to-texture ...))
+  (dirt:load-image-to-texture ...))
 
 ;; here it wont try save and restore all the state it could.
 

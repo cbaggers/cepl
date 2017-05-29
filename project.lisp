@@ -57,7 +57,7 @@ quickproject and then run this again.")
   (asdf:system-relative-pathname :cepl "project-template/"))
 
 (defun make-project (pathname &key name (host :cepl.sdl2) (repl :slime)
-                                (depends-on '(:skitter :cepl.devil)))
+                                (depends-on '(:skitter :dirt)))
   ;; this has a bunch of little hacks to make the experience of making
   ;; project's better, we can add lots of little helpers here when they
   ;; pick the only valid option. See the skitter.sdl2 example for an
@@ -111,7 +111,7 @@ to run the following in your repl:
 
     (ql:quickload :quickproject)
 
-By default it assumes you want to use sdl2, skitter and devil, and that
+By default it assumes you want to use sdl2, skitter and dirt, and that
 you will be using slime as the communication layer between lisp and your editor.
 
 Valid values for the :repl argument are currently :slime or :slynk.
