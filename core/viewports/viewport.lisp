@@ -49,7 +49,8 @@
 (defun (setf viewport-resolution) (value viewport)
   (unless (typep value 'rtg-math.types:vec2)
     (error "The value given to (setf viewport-resolution) must be a vec2"))
-  (%set-resolution viewport (floor (v:x value)) (floor (v:y value))))
+  (%set-resolution viewport (floor (v:x value)) (floor (v:y value)))
+  value)
 
 (defun %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
@@ -57,8 +58,7 @@
   (with-slots (cepl.context::default-viewport) *cepl-context*
     (when (eq viewport cepl.context::default-viewport)
       (cepl.fbos::%update-default-framebuffer-dimensions x y)))
-  (when (eq (current-viewport) viewport)
-    (%viewport viewport)))
+  (values))
 
 (defun viewport-resolution-x (viewport)
   (%viewport-resolution-x viewport))
