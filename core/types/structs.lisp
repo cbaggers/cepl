@@ -351,10 +351,11 @@
         (normalize (or normalize (when slot (s-normalizedp slot)))))
     ;;
     (cond ((v-typep type 'v-matrix)
-           (let ((v-type (type-spec->type
-                          (kwd :vec (second (v-dimensions type))))))
-             (setf (slot-value v-type 'varjo::element-type)
-                   (type->spec (v-element-type type))) ;ugh
+           (let* ((base (etypecase type
+                          (v-dmatrix :dvec)
+                          (v-matrix :vec)))
+                  (v-type (type-spec->type
+                           (kwd base (second (v-dimensions type))))))
              (loop for i below (first (v-dimensions type))
                 :append (expand-mappable-slot-to-layout nil v-type normalize))))
           ;;
