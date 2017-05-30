@@ -14,7 +14,6 @@
                #:cl-autowrap
                #:cl-fad
                #:cl-opengl
-               #:cl-plus-c
                #:cl-ppcre
                #:documentation-utils
                #:fn

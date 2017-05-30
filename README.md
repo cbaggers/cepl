@@ -36,7 +36,6 @@ All of the following will be downloaded automatically by quicklisp
 * cl-autowrap
 * cl-fad
 * cl-opengl
-* cl-plus-c
 * cl-ppcre
 * documentation-utils
 * fn
