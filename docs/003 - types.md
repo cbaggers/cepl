@@ -51,16 +51,18 @@ See the [CFFI documentation for details](https://common-lisp.net/project/cffi/ma
 
 Of course we also support some of the CFFI types. For completeness here is a list:
 
-|      |
-|:-----|
-| :short |
+|                                        |
+|:---------------------------------------|
+| :short                                 |
 | :ushort (also called :unsigned-short ) |
-| :int |
-| :uint  (also called :unsigned-int) |
-| :float |
-| :double |
+| :int                                   |
+| :uint  (also called :unsigned-int)     |
+| :float                                 |
+| :double                                |
+| :double                                |
+| :int8                                  |
+| :uint8                                 |
 
-Soon we will also support `:int8` & `:uint8`
 
 ### No limits
 

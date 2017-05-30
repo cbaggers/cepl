@@ -63,15 +63,21 @@
     (inner (reverse dimensions) (reverse index-vars) body loop-op)))
 
 (defun type->spec (type)
+  ;; Well this is janky, I guess this'll break at some point if we don't sort
+  ;; it before then.. what is odd is that it seems this is really just for
+  ;; getting a spec using the keyword names where it makes sense.
   (let ((spec (type->type-spec type)))
     (if (listp spec)
         `(,(if (core-typep (type-spec->type (first spec)))
-               (symb-package "KEYWORD" (subseq (symbol-name (first spec)) 2))
+               (kwd (subseq (symbol-name (first spec)) 2))
                (first spec))
-           ,(if (and (listp (second spec)) (= (length (second spec)) 1))
-                (first (second spec)) (second spec)))
+           ;; When would this ↓↓↓↓-----↓↓↓↓ happen?
+           ,(if (and (listp (second spec))
+                     (= (length (second spec)) 1))
+                (first (second spec))
+                (second spec)))
         (if (core-typep type)
-            (symb-package "KEYWORD" (subseq (symbol-name spec) 2))
+            (kwd (subseq (symbol-name spec) 2))
             spec))))
 
 ;;------------------------------------------------------------
@@ -84,31 +90,30 @@
     (let ((slots (mapcar (lambda (_) (normalize-slot-description
                                       _ name (and readers accesors)
                                       (and writers accesors)))
-                         slot-descriptions))
-          (autowrap-name name))
+                         slot-descriptions)))
       (when (validate-defstruct-g-form name slots)
         `(progn
            (eval-when (:compile-toplevel :load-toplevel :execute)
-             ,@(make-autowrap-record-def autowrap-name slots))
-           (autowrap:define-wrapper* (:struct (,autowrap-name)) ,name
+             ,@(make-autowrap-record-def name slots))
+           (autowrap:define-wrapper* (:struct (,name)) ,name
              :constructor ,(symb '%make- name))
            (eval-when (:compile-toplevel :load-toplevel :execute)
              ,(make-varjo-struct-def name slots))
            ,(make-varjo-struct-lookup name)
            ,@(when (and readers accesors)
                    (remove nil (mapcar (lambda (_)
-                                         (make-slot-getter _ name autowrap-name))
+                                         (make-slot-getter _ name))
                                        slots)))
            ,@(when (and writers accesors)
                    (remove nil (mapcar (lambda (_)
-                                         (make-slot-setter _ name autowrap-name))
+                                         (make-slot-setter _ name name))
                                        slots)))
-           ,(when constructor (make-make-struct constructor autowrap-name slots))
+           ,(when constructor (make-make-struct constructor name slots))
            ,(when attribs (make-struct-attrib-assigner name slots))
            ,(make-struct-pixel-format name slots)
-           ,@(when populate (make-populate autowrap-name slots name))
+           ,@(when populate (make-populate name slots name))
            ,@(make-foreign-conversions name)
-           ,@(when pull-push (make-pull-push autowrap-name slots))
+           ,@(when pull-push (make-pull-push name slots))
            ',name)))))
 
 (defun normalize-slot-description (slot-description type-name readers writers)
@@ -222,16 +227,15 @@
 
 ;;------------------------------------------------------------
 
-(defun make-slot-getter (slot type-name awrap-type-name)
-  (declare (ignore type-name))
+(defun make-slot-getter (slot type-name)
   (when (s-reader slot)
     (cond
       ((member (s-type slot) cffi:*built-in-foreign-types*)
-       (make-prim-slot-getter slot awrap-type-name))
+       (make-prim-slot-getter slot type-name))
       ((assoc (s-type slot) cffi::*extra-primitive-types*)
-       (make-eprim-slot-getter slot awrap-type-name))
-      ((not (s-arrayp slot)) (make-t-slot-getter slot awrap-type-name))
-      ((s-arrayp slot) (make-array-slot-getter slot awrap-type-name))
+       (make-eprim-slot-getter slot type-name))
+      ((not (s-arrayp slot)) (make-t-slot-getter slot type-name))
+      ((s-arrayp slot) (make-array-slot-getter slot type-name))
       (t (error "Dont know what to do with slot ~a" slot)))))
 
 (defun make-prim-slot-getter (slot awrap-type-name)

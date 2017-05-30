@@ -1,6 +1,6 @@
 # C Arrays
 
-Let me take a second before getting into our scheduled programming to praise the CFFI.  Common Lisp's CFFI is amazing! To be able to get so much done as a newbie really solidified my love for CL.  CFFI and libraries using it have been the cornerstone of this entire project. To all the developers involved, You Rock.
+Let me take a second before getting into our scheduled programming to praise the CFFI.  Common Lisp's FFI is amazing! To be able to get so much done as a newbie really solidified my love for CL.  CFFI and libraries using it have been the cornerstone of this entire project. To all the developers involved, You Rock.
 
 ### Right, back to the snooker:
 
@@ -75,26 +75,6 @@ If we were to write:
      (make-c-array #2A((1 -2) (3 4)))
 ```
 the resulting `element-type` would be `:int8`.
-
-
-### More `#'make-c-array` args
-
-The signature for `#'make-c-array` is as follows:
-```
- (initial-contents
-  &key dimensions
-       element-type
-       displaced-by
-       (alignment 1))
-```
-
-We have already seen `initial-contents`, `dimensions`, and `element-type`; what of the other two?
-
-**displaced-by:**
-Just like in CL's `#'make-array` you can share data with another array and potentially change the dimensions at the same time. Be super careful with this. Both c-arrays share the same memory but there is no GC. So if you free the data behind one, you free the data for the other as well.
-
-**alignment:**
-Alignment is meant to byte-align the data in your array but it is currently buggy. Don't use this yet :)
 
 
 ### Getting and Setting

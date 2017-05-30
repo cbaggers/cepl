@@ -33,10 +33,7 @@ Let's do some comparisons of the usage of `#'make-c-array` and `#'make-gpu-array
 
 Pretty cool!
 
-Just like with `c-array` there are two extra arguments:
-
-- `alignment`, which works the same way as in `c-array` (which means right now it doesnt :p);
-- `access-style` is discussed in the next section.
+There is one extra argument we didnt see in `c-array`, `access-style` and we will discus it in the next section.
 
 But wait, `#'make-gpu-array` also has another trick. It can take a `c-array` as the first argument, and upload that data to the gpu-array. This is really fast as the is no type conversion to be done before the upload. Also it's cool as you dont need to provide any extra information -- `c-array`s contain all the metadata that `make-gpu-array` needs.
 
