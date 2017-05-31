@@ -47,7 +47,7 @@ All of the following will be downloaded automatically by quicklisp
 
 #### C Library dependency
 
-CEPL uses OpenGL so you need to make sure it is available on your machine. Installing your GPU drivers will usually handle this.
+CEPL uses OpenGL ( version >= 3.1 ) so you need to make sure it is available on your machine. Installing your GPU drivers will usually handle this.
 
 
 #### CEPL's Host
