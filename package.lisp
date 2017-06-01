@@ -853,6 +853,7 @@
           :cepl.textures :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays
           :cepl.samplers :cepl.fbos :cepl.blending :cepl.memory)
   (:export :defun-g
+           :defun-g-equiv
            :def-glsl-stage
            :defmacro-g
            :define-compiler-macro-g
