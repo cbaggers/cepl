@@ -48,7 +48,7 @@
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+        (varjo.utils:lambda-list-split '(:&uniform :&context :&instancing) args)
       ;; check the arguments are sanely formatted
       (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
@@ -91,8 +91,8 @@
          (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
          (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
          (u-lets (mapcat #'let-forms uniform-assigners))
-         (primitive (varjo::primitive-name-to-instance
-                     (varjo:get-primitive-type-from-context context))))
+         (primitive (varjo.internals:primitive-name-to-instance
+                     (varjo.internals:get-primitive-type-from-context context))))
     `(multiple-value-bind (compiled-stages prog-id)
          (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
        (register-lambda-pipeline

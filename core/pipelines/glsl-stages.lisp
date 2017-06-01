@@ -43,7 +43,7 @@
   ;; split the argument list into the categoried we care about
   (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                (instancing :&instancing))
-      (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+      (varjo.utils:lambda-list-split '(:&uniform :&context :&instancing) args)
     ;; check the arguments are sanely formatted
     (mapcar #'(lambda (x) (assert-glsl-arg-format name x)) in-args)
     (mapcar #'(lambda (x) (assert-glsl-arg-format name x)) uniforms)
@@ -54,11 +54,11 @@
     (let* ((cepl-in-args (mapcar #'process-glsl-arg in-args))
            (cepl-uniforms (mapcar #'process-glsl-arg uniforms))
            (body-string (get-body-string body-form))
-           (stage-kind (varjo::get-stage-kind-from-context context))
+           (stage-kind (varjo.internals:get-stage-kind-from-context context))
            (context (remove stage-kind context))
            (spec (%make-glsl-stage-spec ;;[0]
                   name cepl-in-args cepl-uniforms context body-string
-                  (varjo::glsl-to-compile-result ;;[1]
+                  (varjo.internals:glsl-to-compile-result ;;[1]
                    stage-kind in-args uniforms outputs context body-string))))
       (%update-glsl-stage-data spec)
       `(progn

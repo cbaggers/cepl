@@ -71,8 +71,8 @@
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
-         (primitive (varjo::primitive-name-to-instance
-                     (varjo:get-primitive-type-from-context context)))
+         (primitive (varjo.internals:primitive-name-to-instance
+                     (varjo.internals:get-primitive-type-from-context context)))
          (init-func (gen-pipeline-init name primitive stage-pairs post
                                        uniform-assigners stage-keys)))
     ;;
@@ -213,14 +213,14 @@
   (let* ((varjo-implicit (remove-if #'varjo:ephemeral-p
                                     (mapcat #'varjo:implicit-uniforms
                                             compiled-stages)))
-         (uniform-arg-forms (mapcar #'varjo:to-arg-form varjo-implicit)))
+         (uniform-arg-forms (mapcar #'varjo.internals:to-arg-form varjo-implicit)))
     ;;
     (when uniform-arg-forms
       (let* ((assigners (mapcar #'make-arg-assigners uniform-arg-forms))
              (u-lets (mapcat #'let-forms assigners))
              (uniform-transforms
               (remove-duplicates (mapcar λ(list (varjo:name _)
-                                                (varjo:cpu-side-transform _))
+                                                (varjo.internals:cpu-side-transform _))
                                          varjo-implicit)
                                  :test #'equal)))
         (%compile-closure

@@ -20,8 +20,9 @@
                #:fn
                #:ieee-floats
                #:named-readtables
-               #:rtg-math
                #:varjo
+               #:rtg-math
+               #:rtg-math.vari
                #:closer-mop
                #:bordeaux-threads)
   :components ((:file "package")

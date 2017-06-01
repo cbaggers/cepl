@@ -183,9 +183,9 @@
   (new-func-key (slot-value spec 'name)
                 (mapcar #'second (slot-value spec 'in-args))))
 
-(defmethod func-key ((spec varjo:external-function))
-  (new-func-key (varjo:name spec)
-                (mapcar #'second (varjo:in-args spec))))
+(defmethod func-key ((spec varjo.internals:external-function))
+  (new-func-key (varjo.internals:name spec)
+                (mapcar #'second (varjo.internals:in-args spec))))
 
 (defmethod func-key ((key func-key))
   key)

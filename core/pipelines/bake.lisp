@@ -23,7 +23,7 @@
          (stages (mapcar #'cdr stage-pairs))
          (pipeline-uniforms (cepl.pipelines::aggregate-uniforms stages))
          (context (slot-value pipeline 'context))
-         (draw-mode (varjo:get-primitive-type-from-context context))
+         (draw-mode (varjo.internals:get-primitive-type-from-context context))
          ;;
          ;; get uniform details
          (uniform-pairs-to-bake (group uniforms 2))
@@ -67,11 +67,11 @@
                (list (first pair)
                      (let* ((stage (parsed-gpipe-args->v-translate-args
                                     draw-mode pair uniforms-to-bake))
-                            (in-args (mapcar #'varjo:to-arg-form
+                            (in-args (mapcar #'varjo.internals:to-arg-form
                                              (varjo:input-variables stage)))
-                            (uniforms (mapcar #'varjo:to-arg-form
+                            (uniforms (mapcar #'varjo.internals:to-arg-form
                                               (varjo:uniform-variables stage)))
-                            (body (varjo:lisp-code stage))
+                            (body (varjo.internals:lisp-code stage))
                             (args (append in-args
                                           (when uniforms
                                             (cons '&uniforms uniforms)))))
