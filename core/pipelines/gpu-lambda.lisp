@@ -116,13 +116,22 @@
             (declare (optimize (speed 3) (safety 1))
                      (ignore mapg-context) (ignorable ,@uniform-names))
             #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+            ,@(unless (typep primitive 'varjo::dynamic)
+                      `((when stream
+                          (assert
+                           (= ,(draw-mode-group-id primitive)
+                              (buffer-stream-primitive-group-id stream))
+                           ()
+                           'buffer-stream-has-invalid-primtive-for-stream
+                           :name "<lambda>"
+                           :pline-prim ',(varjo::lisp-name primitive)
+                           :stream-prim (buffer-stream-primitive stream)))))
             (use-program prog-id)
             ,@u-uploads
             (locally (declare (optimize (speed 3) (safety 1)))
               (funcall implicit-uniform-upload-func prog-id
                        ,@uniform-names))
             (when stream (draw-expander stream ,primitive))
-            (use-program 0)
             ,@u-cleanup
             stream))))))
 
