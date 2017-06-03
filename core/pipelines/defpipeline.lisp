@@ -168,7 +168,7 @@
          (stage-pairs (swap-versions stage-pairs glsl-version))
          (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
-    (format t "~&; uploading (~a ...)~&" name)
+    (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA"))
     (let ((prog-id (request-program-id-for name)))
       (link-shaders stages-objects prog-id compiled-stages)
       (when (and name +cache-last-compile-result+)
