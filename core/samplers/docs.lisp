@@ -269,6 +269,14 @@ This function takes a sampler as its only argument and returns the texture
 being sampled by the sampler.
 ")
 
+  (defun sampler-type
+      "
+This function takes a sampler as its only argument and returns the kind
+of sampler it is.
+
+The result will be one of the kinds listed in cepl.samplers::*sampler-types*
+")
+
   (defun compare
       "
 This function sets the comparison mode of the texture or sampler given
@@ -553,4 +561,19 @@ example:
     (defun sampler-p
         "
 This function returns t if the supplied value is a sampler and nil otherwise
+")
+
+    (defun free-sampler
+        "
+Calling this with a sampler will free the gl sampler and blank the lisp object representing it.
+
+Calling the generic function #'free with a sampler will call this function
+")
+    (defmacro with-sampling
+        "
+This macro takes a texture and creates a temporary sampler that is valid within
+the scope.
+
+As the sampler will be freed at the end of the scope, do not return it or
+assign it to any variable that outlasts the scope.
 "))

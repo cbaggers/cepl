@@ -149,9 +149,6 @@ dimension then their sizes must match exactly"))
     ((temp-name gpu-array start-index length
                 &key (access-set :map-read) (target :array-buffer))
      &body body)
-  "This macro is really handy if you need to have random access
-   to the data on the gpu. It takes a gpu-array and maps it
-   giving you the pointer"
   (alexandria:with-gensyms (glarray-pointer
                             array-sym buffer gtarget
                             byte-start byte-len)

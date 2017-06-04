@@ -859,7 +859,6 @@
            :define-compiler-macro-g
            :with-instances
            :glambda
-           :%glambda
            :def-g->
            :g->
            :map-g
@@ -867,8 +866,7 @@
            :gpu-function
            :gpu-functions
            :delete-gpu-function
-           :bake-uniforms
-           :infer-implicit-uniform-type))
+           :bake-uniforms))
 
 (macrolet
     ((def-re-exporting-package (name &key use shadow export re-export

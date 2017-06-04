@@ -30,6 +30,18 @@ If you need this value as a list use #'viewport-dimensions or just the
 generic function #'dimensions
 ")
 
+  (defun viewport-resolution-x
+      "
+This function returns the x component of the resolution of the viewport as
+a float.
+")
+
+    (defun viewport-resolution-y
+      "
+This function returns the y component of the resolution of the viewport as
+a float.
+")
+
   (defun viewport-dimensions
             "
 This function returns the resolution of the viewport as a list of integers

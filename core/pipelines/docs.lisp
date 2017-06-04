@@ -55,6 +55,70 @@ That's the basics of gpu-functions. For more details on how they can be used
 in pipelines please see the documentation for def-g->.
 ")
 
+  (defmacro defun-g-equiv
+      "
+Defun-g-equiv let's you define a function which will be run on the gpu.
+Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
+
+The difference between defun-g-equiv & defun-g is that defun-g will create
+a 'dummy' lisp function so that 'jump to definition' and signature hits work
+in your editor, defun-g-equiv does not do this.
+
+The advantage of defun-g-equiv is that you are then free define a lisp
+equivalent of your gpu-function. This means you can use the same functions in
+cpu or gpu code, which is very compelling.
+
+*- the rest of the doc-string is the same as for defun-g -*
+
+Gpu functions try to feel similar to regular CL functions however naturally
+there are some differences.
+
+The first and most obvious one is that whilst gpu function can be called
+from other gpu functions, they cannot be called from lisp functions directly.
+They first must be composed into a pipeline using def-g->.
+
+When a gfunc is composed into a pipeline then that function takes on the role of
+one of the 'shader stages' of the pipeline. For a proper breakdown of pipelines
+see the docstring for def-g->.
+
+
+Let's see a simple example of a gpu function we can then break down
+
+    ;;       {0}          {3}          {1}         {2}
+    (defun-g-equiv example ((vert my-struct) &uniform (loop :float))
+      (values (v! (+ (my-struct-pos vert) ;; {4}
+                     (v! (sin loop) (cos loop) 0))
+                  1.0)
+              (my-struct-col vert)))
+
+
+{0} So like the normal defun we specify a name first, and the arguments as a
+    list straight afterwards
+
+{1} The &uniform lambda keyword says that arguments following it are 'uniform
+    arguments'. A uniform is an argument which has the same value for the entire
+    stage.
+    &optional and &key are not supported
+
+{2} Here is our definition for the uniform value. If used in a pipeline as a
+    vertex shader #'example will be called once for every value in the
+    gpu-stream given. That means the 'vert' argument will have a different value
+    for each of the potentially millions of invocations in that ONE pipeline
+    call, however 'loop' will have the same value for the entire pipeline call.
+
+{2 & 3} All arguments must have their types declared
+
+{4} Here we see we are using CL's values special form. CEPL fully supports
+    multiple value return in your shaders. If our function #'example was called
+    from another gpu-function then you can use multiple-value-bind to bind the
+    returned values. If however our example function were used as a stage in a
+    pipeline then the multiple returned values will be mapped to the multiple
+    arguments of the next stage in the pipeline.
+
+That's the basics of gpu-functions. For more details on how they can be used
+in pipelines please see the documentation for def-g->.
+")
+
   (defmacro def-g->
       "
 def-g-> is how we define named rendering pipelines in CEPL.
@@ -446,4 +510,24 @@ signature.
 
 Currently there is no reason to use this function. It is only available for the
 sake of completeness and future features.
+")
+
+  (defmacro bake-uniforms
+      "
+__WARNING__ EXPRERIMENTAL FEATURE
+
+This allows you to create a new lambda-pipeline from existing pipeline whilst also
+fixing the values for certain uniforms.
+
+These values will be baked into the gpu-code so that they will not need to be uploaded
+each time the pipeline is mapped over.
+
+For example:
+
+    (def-g-> draw-cube ()
+      :vertex (draw-cube-vert g-pnt)
+      :fragment (draw-cube-frag :vec2))
+
+    (defun fix-cube-size (size)
+      (bake-uniforms #'draw-cube :edge-length (float size)))
 "))

@@ -275,8 +275,8 @@ the gpu-array.
 A simple example would be if we wanted to set the 3rd element in a gpu array to
 5.0 we could do the following:
 
-    (with-gpu-array-as-c-array (my-gpu-array)
-      (setf (aref-c my-gpu-array 2) 5.0))
+    (with-gpu-array-as-c-array (tmp-c-arr my-gpu-array)
+      (setf (aref-c tmp-c-arr 2) 5.0))
 
 The reason we provide this and not a function like #'aref-c for gpu-arrays is
 that it would give the impression that this kind of operation is cheap, which it
@@ -298,6 +298,38 @@ a pointer. Within the scope of the body you can run any cffi command on it.
 This macro is really helpful if you need to have random access to the data in
 the gpu-array.
 
+The valid values for the :access argument are :read-only :write-only or
+:read-write.
+")
+
+  (defun with-gpu-array-range-as-pointer
+      "
+This macro takes a gpu-array and asks OpenGL to temporarily 'map' a portion
+ofit to a pointer. Within the scope of the body you can run any cffi command
+on it.
+
+This macro is really helpful if you need to have random access to the data in
+the gpu-array.
+
+The valid values for the :access argument are :read-only :write-only or
+:read-write.
+")
+
+  (defmacro with-gpu-array-range-as-c-array
+      "
+This macro takes a gpu-array and asks OpenGL to temporarily 'map' it a portion
+of it  to a c-array. Within the scope of the body you can run any of the
+c-array commands on it.
+
+This macro is really helpful if you need to have random access to the data in
+the gpu-array.
+
+A simple example would be if we wanted to set the 3rd element in a gpu array to
+5.0 we could do the following:
+
+    (with-gpu-array-range-as-c-array (tmp-c-arr my-gpu-array 10 20)
+      (setf (aref-c tmp-c-arr 2) 5.0))
+
 The reason we provide this and not a function like #'aref-c for gpu-arrays is
 that it would give the impression that this kind of operation is cheap, which it
 is not. There are cases where using with-gpu-array-as-c-array will perform
@@ -308,4 +340,9 @@ out the details.
 
 The valid values for the :access argument are :read-only :write-only or
 :read-write.
+")
+
+  (defun reallocate-gpu-array
+      "
+This function takes a gpu-array and reallocates the buffer that is backing it.
 "))
