@@ -42,9 +42,7 @@
   ;; at the tail
   ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
   ;; seperate any doc-string or declarations from the body
-  (let ((doc-string (when (stringp (first body)) (pop body)))
-        (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
-                        (pop body))))
+  (let ((doc-string (when (stringp (first body)) (pop body))))
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
@@ -58,7 +56,7 @@
                      :body body
                      :instancing instancing
                      :doc-string doc-string
-                     :declarations declarations
+                     :declarations nil
                      :context context))))
 
 (defmacro glambda (args &body body)
@@ -165,3 +163,16 @@
   closure)
 
 ;;------------------------------------------------------------
+
+(defmethod pull-g ((object gpu-lambda))
+  (let ((vresult (pull1-g object)))
+    (when vresult
+      (varjo:glsl-code vresult))))
+
+(defmethod pull1-g ((object gpu-lambda))
+  (with-slots (func-spec) object
+    (let ((compiled (slot-value func-spec 'cached-compile-results)))
+      (if compiled
+          compiled
+          (warn 'func-keyed-pipeline-not-found
+                :callee 'pull-g :func object)))))
