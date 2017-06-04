@@ -760,7 +760,7 @@ We can call this as follows:
       "
 __WARNING__ EXPERIMENTAL FEATURE
 
-pipeline (or g->) is how we define anonymous rendering pipelines in CEPL.
+pipeline is how we define anonymous rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
 
