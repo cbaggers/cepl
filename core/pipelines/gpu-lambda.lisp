@@ -14,22 +14,22 @@
    (func-spec :initform nil))
   (:metaclass closer-mop:funcallable-standard-class))
 
-(defmethod glambda->func-spec ((glambda gpu-lambda))
-  (slot-value glambda 'func-spec))
+(defmethod lambda-g->func-spec ((lambda-g gpu-lambda))
+  (slot-value lambda-g 'func-spec))
 
-(defmethod initialize-instance :after ((glambda gpu-lambda) &key)
+(defmethod initialize-instance :after ((lambda-g gpu-lambda) &key)
   ;; need to emit warning if called
-  (closer-mop:set-funcallable-instance-function glambda #'%glambda)
+  (closer-mop:set-funcallable-instance-function lambda-g #'%lambda-g)
   ;; need to make the func-spec so can be used in pipelines
   (with-slots (in-args uniforms body instancing doc-string
-                       declarations context func-spec) glambda
+                       declarations context func-spec) lambda-g
     (setf func-spec
           (%test-&-update-spec
            (%make-gpu-func-spec
             nil in-args uniforms context body instancing nil nil
             nil doc-string declarations nil)))))
 
-(defun %glambda (&rest args)
+(defun %lambda-g (&rest args)
   (declare (ignore args))
   (warn "GPU Functions cannot currently be used from the cpu"))
 
@@ -59,8 +59,11 @@
                      :declarations nil
                      :context context))))
 
-(defmacro glambda (args &body body)
+(defmacro lambda-g (args &body body)
   (make-gpu-lambda args body))
+
+(defmacro glambda (args &body body)
+  `(lambda-g ,args ,@body))
 
 ;;------------------------------------------------------------
 
@@ -139,7 +142,7 @@
 
 ;;------------------------------------------------------------
 
-(defmacro g-> (context &body gpipe-args)
+(defmacro pipeline-g (context &body gpipe-args)
   (labels ((unfunc (x)
              (if (and (listp x) (eq (first x) 'function))
                  `(quote ,(second x))
@@ -148,6 +151,9 @@
       (if (every #'constantp args)
           (make-lambda-pipeline gpipe-args context)
           `(make-n-compile-lambda-pipeline (list ,@args) ',context)))))
+
+(defmacro g-> (context &body gpipe-args)
+  `(pipeline-g ,context ,@gpipe-args))
 
 #+nil
 (defun example ()

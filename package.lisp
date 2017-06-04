@@ -859,7 +859,10 @@
            :define-compiler-macro-g
            :with-instances
            :glambda
+           :lambda-g
+           :defpipeline-g
            :def-g->
+           :pipeline-g
            :g->
            :map-g
            :map-g-into

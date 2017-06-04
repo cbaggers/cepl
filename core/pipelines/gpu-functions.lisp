@@ -360,7 +360,7 @@
     ((and (listp stage-designator) (eq (first stage-designator) 'function))
      (get-stage-key (second stage-designator)))
     ((typep stage-designator 'gpu-lambda)
-     (glambda->func-spec stage-designator))
+     (lambda-g->func-spec stage-designator))
     ((symbolp stage-designator)
      (let* ((name stage-designator)
             (funcs (gpu-func-specs name)))

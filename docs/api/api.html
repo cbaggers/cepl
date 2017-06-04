@@ -234,7 +234,9 @@ that all of the gpu-arrays created will share the same gpu-buffer.
 
 Usually you will know if you need this instead of #'make-gpu-array as you will
 have some behaviour or performance characteristic in mind.
-</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:REALLOCATE-GPU-ARRAY"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:REALLOCATE-GPU-ARRAY" class="name">REALLOCATE-GPU-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">(GPU-ARRAY)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:SUBSEQ-G"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:SUBSEQ-G" class="name">SUBSEQ-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(ARRAY START &amp;OPTIONAL END)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:REALLOCATE-GPU-ARRAY"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:REALLOCATE-GPU-ARRAY" class="name">REALLOCATE-GPU-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">(GPU-ARRAY)</span> </code> </header> <pre class="docstring">
+This function takes a gpu-array and reallocates the buffer that is backing it.
+</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS.BUFFER-BACKED:SUBSEQ-G"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.GPU-ARRAYS.BUFFER-BACKED:SUBSEQ-G" class="name">SUBSEQ-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(ARRAY START &amp;OPTIONAL END)</span> </code> </header> <pre class="docstring">
 This function returns a gpu-array which contains a subset of the gpu-array
 passed into this function.
 
@@ -333,8 +335,8 @@ the gpu-array.
 A simple example would be if we wanted to set the 3rd element in a gpu array to
 5.0 we could do the following:
 
-    (with-gpu-array-as-c-array (my-gpu-array)
-      (setf (aref-c my-gpu-array 2) 5.0))
+    (with-gpu-array-as-c-array (tmp-c-arr my-gpu-array)
+      (setf (aref-c tmp-c-arr 2) 5.0))
 
 The reason we provide this and not a function like #'aref-c for gpu-arrays is
 that it would give the impression that this kind of operation is cheap, which it
@@ -353,6 +355,22 @@ a pointer. Within the scope of the body you can run any cffi command on it.
 This macro is really helpful if you need to have random access to the data in
 the gpu-array.
 
+The valid values for the :access argument are :read-only :write-only or
+:read-write.
+</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-C-ARRAY"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-RANGE-AS-C-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+This macro takes a gpu-array and asks OpenGL to temporarily 'map' it a portion
+of it  to a c-array. Within the scope of the body you can run any of the
+c-array commands on it.
+
+This macro is really helpful if you need to have random access to the data in
+the gpu-array.
+
+A simple example would be if we wanted to set the 3rd element in a gpu array to
+5.0 we could do the following:
+
+    (with-gpu-array-range-as-c-array (tmp-c-arr my-gpu-array 10 20)
+      (setf (aref-c tmp-c-arr 2) 5.0))
+
 The reason we provide this and not a function like #'aref-c for gpu-arrays is
 that it would give the impression that this kind of operation is cheap, which it
 is not. There are cases where using with-gpu-array-as-c-array will perform
@@ -363,9 +381,17 @@ out the details.
 
 The valid values for the :access argument are :read-only :write-only or
 :read-write.
-</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-C-ARRAY"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-RANGE-AS-C-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-POINTER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-POINTER" class="name">WITH-GPU-ARRAY-RANGE-AS-POINTER</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">This macro is really handy if you need to have random access
-   to the data on the gpu. It takes a gpu-array and maps it
-   giving you the pointer</pre> </article> </li></ul></li><li class="package"> <h3> <a name="CEPL.STREAMS" href="#CEPL.STREAMS">CEPL.STREAMS</a> <span class="nicknames"/> </h3> <ul><li> <a name="%CEPL.TYPES:BUFFER-STREAM"/> <article> <header class="class"> <span class="type">class</span> <code> <h4><a href="#%CEPL.TYPES:BUFFER-STREAM" class="name">BUFFER-STREAM</a></h4> <span class="qualifiers"></span> <span class="arguments">()</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-POINTER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-POINTER" class="name">WITH-GPU-ARRAY-RANGE-AS-POINTER</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+This macro takes a gpu-array and asks OpenGL to temporarily 'map' a portion
+ofit to a pointer. Within the scope of the body you can run any cffi command
+on it.
+
+This macro is really helpful if you need to have random access to the data in
+the gpu-array.
+
+The valid values for the :access argument are :read-only :write-only or
+:read-write.
+</pre> </article> </li></ul></li><li class="package"> <h3> <a name="CEPL.STREAMS" href="#CEPL.STREAMS">CEPL.STREAMS</a> <span class="nicknames"/> </h3> <ul><li> <a name="%CEPL.TYPES:BUFFER-STREAM"/> <article> <header class="class"> <span class="type">class</span> <code> <h4><a href="#%CEPL.TYPES:BUFFER-STREAM" class="name">BUFFER-STREAM</a></h4> <span class="qualifiers"></span> <span class="arguments">()</span> </code> </header> <pre class="docstring">
 A buffer-stream is a structure that represents stream of gpu-data composed from
 gpu-array and/or gpu-buffers.
 
@@ -508,7 +534,13 @@ follows:
     (v! origin-x origin-y resolution-x resolution-y)
 
 If now viewport is provided the the current viewport is used.
-</pre> </article> </li><li> <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-X"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-X" class="name">VIEWPORT-RESOLUTION-X</a></h4> <span class="qualifiers"></span> <span class="arguments">(VIEWPORT)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-Y"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-Y" class="name">VIEWPORT-RESOLUTION-Y</a></h4> <span class="qualifiers"></span> <span class="arguments">(VIEWPORT)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.VIEWPORTS:WITH-FBO-VIEWPORT"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.VIEWPORTS:WITH-FBO-VIEWPORT" class="name">WITH-FBO-VIEWPORT</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-X"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-X" class="name">VIEWPORT-RESOLUTION-X</a></h4> <span class="qualifiers"></span> <span class="arguments">(VIEWPORT)</span> </code> </header> <pre class="docstring">
+This function returns the x component of the resolution of the viewport as
+a float.
+</pre> </article> </li><li> <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-Y"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-Y" class="name">VIEWPORT-RESOLUTION-Y</a></h4> <span class="qualifiers"></span> <span class="arguments">(VIEWPORT)</span> </code> </header> <pre class="docstring">
+This function returns the y component of the resolution of the viewport as
+a float.
+</pre> </article> </li><li> <a name="CEPL.VIEWPORTS:WITH-FBO-VIEWPORT"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.VIEWPORTS:WITH-FBO-VIEWPORT" class="name">WITH-FBO-VIEWPORT</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
 This macro behaves similarly to with-viewport in that is sets the
 current viewport. However rather than passing in a viewport, one is
 created[0] based on the dimensions of the gpu-array bound as the specified
@@ -1409,7 +1441,11 @@ example:
     (setf (wrap texture-or-sampler) :clamp-to-edge)
 
 
-</pre> </article> </li><li> <a name="CEPL.SAMPLERS:FREE-SAMPLER"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.SAMPLERS:FREE-SAMPLER" class="name">FREE-SAMPLER</a></h4> <span class="qualifiers"></span> <span class="arguments">(SAMPLER)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.SAMPLERS:SAMPLE"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.SAMPLERS:SAMPLE" class="name">SAMPLE</a></h4> <span class="qualifiers"></span> <span class="arguments">(TEXTURE &amp;KEY (LOD-BIAS 0.0) (MIN-LOD -1000.0) (MAX-LOD 1000.0)
+</pre> </article> </li><li> <a name="CEPL.SAMPLERS:FREE-SAMPLER"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.SAMPLERS:FREE-SAMPLER" class="name">FREE-SAMPLER</a></h4> <span class="qualifiers"></span> <span class="arguments">(SAMPLER)</span> </code> </header> <pre class="docstring">
+Calling this with a sampler will free the gl sampler and blank the lisp object representing it.
+
+Calling the generic function #'free with a sampler will call this function
+</pre> </article> </li><li> <a name="CEPL.SAMPLERS:SAMPLE"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.SAMPLERS:SAMPLE" class="name">SAMPLE</a></h4> <span class="qualifiers"></span> <span class="arguments">(TEXTURE &amp;KEY (LOD-BIAS 0.0) (MIN-LOD -1000.0) (MAX-LOD 1000.0)
  (MINIFY-FILTER :LINEAR-MIPMAP-LINEAR) (MAGNIFY-FILTER :LINEAR)
  (WRAP #(:REPEAT :REPEAT :REPEAT)) (COMPARE :NONE))</span> </code> </header> <pre class="docstring">
 This function takes a texture and optionally some sampling parameters and
@@ -1443,7 +1479,12 @@ This function returns t if the supplied value is a sampler and nil otherwise
 </pre> </article> </li><li> <a name="CEPL.SAMPLERS:SAMPLER-TEXTURE"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.SAMPLERS:SAMPLER-TEXTURE" class="name">SAMPLER-TEXTURE</a></h4> <span class="qualifiers"></span> <span class="arguments">(SAMPLER)</span> </code> </header> <pre class="docstring">
 This function takes a sampler as its only argument and returns the texture
 being sampled by the sampler.
-</pre> </article> </li><li> <a name="CEPL.SAMPLERS:SAMPLER-TYPE"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.SAMPLERS:SAMPLER-TYPE" class="name">SAMPLER-TYPE</a></h4> <span class="qualifiers"></span> <span class="arguments">(SAMPLER)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="%CEPL.TYPES:SET-MINIFY-FILTER"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#%CEPL.TYPES:SET-MINIFY-FILTER" class="name">SET-MINIFY-FILTER</a></h4> <span class="qualifiers"></span> <span class="arguments">(SAMPLER FOR-LEVEL &amp;KEY (BETWEEN-LEVELS NIL))</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.SAMPLERS:SAMPLER-TYPE"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.SAMPLERS:SAMPLER-TYPE" class="name">SAMPLER-TYPE</a></h4> <span class="qualifiers"></span> <span class="arguments">(SAMPLER)</span> </code> </header> <pre class="docstring">
+This function takes a sampler as its only argument and returns the kind
+of sampler it is.
+
+The result will be one of the kinds listed in cepl.samplers::*sampler-types*
+</pre> </article> </li><li> <a name="%CEPL.TYPES:SET-MINIFY-FILTER"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#%CEPL.TYPES:SET-MINIFY-FILTER" class="name">SET-MINIFY-FILTER</a></h4> <span class="qualifiers"></span> <span class="arguments">(SAMPLER FOR-LEVEL &amp;KEY (BETWEEN-LEVELS NIL))</span> </code> </header> <pre class="docstring">
 As the naming of the values for #'minify-filter are quite confusing this
 function allows you to set the minify filter for the given texture or sampler
 based on the following:
@@ -1454,7 +1495,13 @@ based on the following:
 - between-level: what sampling should be used between texels on different
                  mipmap levels. The value can be :linear or :nearest
                  This argument is optional.
-</pre> </article> </li><li> <a name="CEPL.SAMPLERS:WITH-SAMPLING"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.SAMPLERS:WITH-SAMPLING" class="name">WITH-SAMPLING</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring"/> </article> </li></ul></li><li class="package"> <h3> <a name="CEPL.MEMORY" href="#CEPL.MEMORY">CEPL.MEMORY</a> <span class="nicknames"/> </h3> <ul><li> <a name="CEPL.MEMORY:FREE"/> <article> <header class="generic"> <span class="type">generic</span> <code> <h4><a href="#CEPL.MEMORY:FREE" class="name">FREE</a></h4> <span class="qualifiers"></span> <span class="arguments">(OBJECT)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.SAMPLERS:WITH-SAMPLING"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.SAMPLERS:WITH-SAMPLING" class="name">WITH-SAMPLING</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+This macro takes a texture and creates a temporary sampler that is valid within
+the scope.
+
+As the sampler will be freed at the end of the scope, do not return it or
+assign it to any variable that outlasts the scope.
+</pre> </article> </li></ul></li><li class="package"> <h3> <a name="CEPL.MEMORY" href="#CEPL.MEMORY">CEPL.MEMORY</a> <span class="nicknames"/> </h3> <ul><li> <a name="CEPL.MEMORY:FREE"/> <article> <header class="generic"> <span class="type">generic</span> <code> <h4><a href="#CEPL.MEMORY:FREE" class="name">FREE</a></h4> <span class="qualifiers"></span> <span class="arguments">(OBJECT)</span> </code> </header> <pre class="docstring">
 The function takes a CEPL object of any one of the following types.
 - c-array
 - gpu-buffer
@@ -2147,7 +2194,7 @@ This macro will set the default blending parameters for the scope.
 These values will be used unless overriden by blend settings in an fbo.
 
 CEPL ensures the blending settings are undone at the end of the scope.
-</pre> </article> </li></ul></li><li class="package"> <h3> <a name="CEPL.PIPELINES" href="#CEPL.PIPELINES">CEPL.PIPELINES</a> <span class="nicknames"/> </h3> <ul><li> <a name="CEPL.PIPELINES:%GLAMBDA"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.PIPELINES:%GLAMBDA" class="name">%GLAMBDA</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.PIPELINES:GPU-FUNCTIONS"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.PIPELINES:GPU-FUNCTIONS" class="name">GPU-FUNCTIONS</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li></ul></li><li class="package"> <h3> <a name="CEPL.PIPELINES" href="#CEPL.PIPELINES">CEPL.PIPELINES</a> <span class="nicknames"/> </h3> <ul><li> <a name="CEPL.PIPELINES:GPU-FUNCTIONS"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.PIPELINES:GPU-FUNCTIONS" class="name">GPU-FUNCTIONS</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME)</span> </code> </header> <pre class="docstring">
 This function returns all the signatures of the gpu-functions named 'name'.
 
 The reason there may be many is that functions can be 'overloaded' so you
@@ -2163,8 +2210,30 @@ is overloaded then you will want to specify the function signature exactly.
 See the documentation for #'gpu-functions which will lists all the signatures
 for the gpu-functions with a given name.
 
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:INFER-IMPLICIT-UNIFORM-TYPE"/> <article> <header class="generic"> <span class="type">generic</span> <code> <h4><a href="#CEPL.PIPELINES:INFER-IMPLICIT-UNIFORM-TYPE" class="name">INFER-IMPLICIT-UNIFORM-TYPE</a></h4> <span class="qualifiers"></span> <span class="arguments">(THING)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.PIPELINES:BAKE-UNIFORMS"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:BAKE-UNIFORMS" class="name">BAKE-UNIFORMS</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.PIPELINES:DEF-G-&gt;"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEF-G-&gt;" class="name">DEF-G-&gt;</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
-def-g-&gt; is how we define named rendering pipelines in CEPL.
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:BAKE-UNIFORMS"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:BAKE-UNIFORMS" class="name">BAKE-UNIFORMS</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+__WARNING__ EXPRERIMENTAL FEATURE
+
+This allows you to create a new lambda-pipeline from existing pipeline whilst also
+fixing the values for certain uniforms.
+
+These values will be baked into the gpu-code so that they will not need to be uploaded
+each time the pipeline is mapped over.
+
+For example:
+
+    (defpipeline-g draw-cube ()
+      :vertex (draw-cube-vert g-pnt)
+      :fragment (draw-cube-frag :vec2))
+
+    (defun fix-cube-size (size)
+      (bake-uniforms #'draw-cube :edge-length (float size)))
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEF-G-&gt;"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEF-G-&gt;" class="name">DEF-G-&gt;</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+__WIP__ def-g-&gt; is the old name for defpipeline-g. def-g-&gt; is deprecated and will
+        be removed December 2017.
+        defpipeline-g does EXACTLY the same thing as def-g-&gt;
+
+
+def-g-&gt; (or defpipeline-g) is how we define named rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
 
@@ -2340,8 +2409,140 @@ The &amp;context lambda list keyword allows you to restrict this macro to only b
 valid in gpu functions with compatible contexts.
 
 &amp;whole and &amp;environment are not supported.
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFPIPELINE-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFPIPELINE-G" class="name">DEFPIPELINE-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+defpipeline-g is how we define named rendering pipelines in CEPL.
+
+Rendering pipelines are constructed by composing gpu-functions.
+
+Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+usually describing geometry) is mapped over whilst a number of uniforms are
+available as input and the outputs are written into an FBO.
+
+There are many stages to the pipeline and a full explanation of the GPU pipeline
+is beyond the scope of this docstring. However it surfices to say that only
+5 stages are fully programmable (and a few more customizable).
+
+defpipeline-g lets you specify the code (shaders) to run the programmable
+parts (stages) of the pipeline.
+
+The available stages kinds are:
+
+- :vertex
+- :tessellation-control
+- :tessellation-evaluation
+- :geometry
+- :fragment
+
+To define code that runs on the gpu in CEPL we use gpu functions (gfuncs). Which
+are defined with defun-g.
+
+Here is an example pipeline:
+
+    (defun-g vert ((position :vec4) &amp;uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (defpipeline-g prog-1 ()
+      (vert :vec4)
+      (frag :float :float))
+
+Here we define a pipeline #'prog-1 which uses the gfunc vert as its vertex
+shader and used the gfunc frag as the fragment shader.
+
+It is also possible to specify the name of the stages
+
+    (defpipeline-g prog-1 ()
+      :vertex (vert :vec4)
+      :fragment (frag :float :float))
+
+But this is not neccesary unless you need to distinguish between tessellation
+or geometry stages.
+
+-- Context --
+
+The second argument to defpipeline-g is the a list of additional information that is
+confusingly called the 'pipeline's context'. We need to change this name.
+
+Valid things that can be in this list are:
+
+- A primitive type: This specifies what primitives can be passed into this pipeline.
+  By default all pipelines expect triangles. When you map a buffer-stream over a
+  pipeline the primitive kind of the stream must match the pipeline.
+
+  The valid values are:
+  :dynamic
+  :points
+  :lines :line-loop :line-strip
+  :lines-adjacency :line-strip-adjacency
+  :triangles :triangle-fan :triangle-strip
+  :triangles-adjacency :triangle-strip-adjacency
+  (:patch &lt;patch-size&gt;)
+
+  :dynamic is special, it means that the pipeline will take the primitive kind
+  from the buffer-stream being mapped over. This won't work for with pipelines
+  with geometry or tessellation stages, but it otherwise quite useful.
+
+- A version restriction: This tells CEPL to compile the stage for a specific
+  version of GLSL. You usually do not want to use this as CEPL will compile for
+  the version the user is using.
+  The value can be one of:
+  :140 :150 :330 :400 :410 :420 :430 :440 :450
+
+-- Stage Names --
+
+Notice that we have to specify the typed signature of the stage. This is because
+CEPL allows you to 'overload' gpu functions. The signature for the a
+gpu-function is a list which starts with the function name and whose other
+elements are the types of the non-uniforms arguments. As an example we can see
+above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
+
+-- Passing values from Stage to Stage --
+
+The return values of the gpu functions that are used as stages are passed as the
+input arguments of the next. The exception to this rule is that the first return
+value from the vertex stage is taken and used by GL, so only the subsequent
+values are passed along.
+
+We can see this in the example above: #'vert returns 3 values but #'frag only
+receives 2.
+
+The values from the fragment stage are writen into the current FBO. This may be
+the default FBO, in which case you will likely see the result on the screen, or
+it may be a FBO of your own.
+
+By default GL only writed the fragment return value to the FBO. For handling
+multiple return values please see the docstring for with-fbo-bound.
+
+-- Using our pipelines --
+
+To call a pipeline we use the map-g macro (or one of its siblings
+map-g-into/map-g-into*). The doc-strings for those macros go into more details
+but the basics are that map-g maps a gpu-stream over our pipeline and the
+results of the pipeline are fed into the 'current' fbo.
+
+We pass our stream to map-g as the first argument after the pipeline, we then
+pass the uniforms in the same style as keyword arguments. For example let's see
+our prog-1 pipeline again:
+
+    (defun-g vert ((position :vec4) &amp;uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (defpipeline-g prog-1 ()
+      (vert :vec4)
+      (frag :float :float))
+
+We can call this as follows:
+
+    (map-g #'prog-1 v4-stream :i game-time)
+
+
 </pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFUN-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFUN-G" class="name">DEFUN-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
-Defun-g let's you define a function which will be run on the gpu.
+defun-g let's you define a function which will be run on the gpu.
 Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
 
 Gpu functions try to feel similar to regular CL functions however naturally
@@ -2349,11 +2550,11 @@ there are some differences.
 
 The first and most obvious one is that whilst gpu function can be called
 from other gpu functions, they cannot be called from lisp functions directly.
-They first must be composed into a pipeline using def-g-&gt;.
+They first must be composed into a pipeline using defpipeline-g.
 
 When a gfunc is composed into a pipeline then that function takes on the role of
 one of the 'shader stages' of the pipeline. For a proper breakdown of pipelines
-see the docstring for def-g-&gt;.
+see the docstring for defpipeline-g.
 
 
 Let's see a simple example of a gpu function we can then break down
@@ -2390,12 +2591,210 @@ Let's see a simple example of a gpu function we can then break down
     arguments of the next stage in the pipeline.
 
 That's the basics of gpu-functions. For more details on how they can be used
-in pipelines please see the documentation for def-g-&gt;.
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFUN-G-EQUIV"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFUN-G-EQUIV" class="name">DEFUN-G-EQUIV</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.PIPELINES:G-&gt;"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:G-&gt;" class="name">G-&gt;</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
-Making anonymous pipelines is not yet supported in CEPL. But it will be!
+in pipelines please see the documentation for defpipeline-g.
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFUN-G-EQUIV"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFUN-G-EQUIV" class="name">DEFUN-G-EQUIV</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+Defun-g-equiv let's you define a function which will be run on the gpu.
+Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
 
-g-&gt; is used to compose gpu-functions together into anonymous pipelines
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:GLAMBDA"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:GLAMBDA" class="name">GLAMBDA</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.PIPELINES:GPU-FUNCTION"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:GPU-FUNCTION" class="name">GPU-FUNCTION</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+The difference between defun-g-equiv &amp; defun-g is that defun-g will create
+a 'dummy' lisp function so that 'jump to definition' and signature hits work
+in your editor, defun-g-equiv does not do this.
+
+The advantage of defun-g-equiv is that you are then free define a lisp
+equivalent of your gpu-function. This means you can use the same functions in
+cpu or gpu code, which is very compelling.
+
+*- the rest of the doc-string is the same as for defun-g -*
+
+Gpu functions try to feel similar to regular CL functions however naturally
+there are some differences.
+
+The first and most obvious one is that whilst gpu function can be called
+from other gpu functions, they cannot be called from lisp functions directly.
+They first must be composed into a pipeline using defpipeline-g.
+
+When a gfunc is composed into a pipeline then that function takes on the role of
+one of the 'shader stages' of the pipeline. For a proper breakdown of pipelines
+see the docstring for defpipeline-g.
+
+
+Let's see a simple example of a gpu function we can then break down
+
+    ;;       {0}          {3}          {1}         {2}
+    (defun-g-equiv example ((vert my-struct) &amp;uniform (loop :float))
+      (values (v! (+ (my-struct-pos vert) ;; {4}
+                     (v! (sin loop) (cos loop) 0))
+                  1.0)
+              (my-struct-col vert)))
+
+
+{0} So like the normal defun we specify a name first, and the arguments as a
+    list straight afterwards
+
+{1} The &amp;uniform lambda keyword says that arguments following it are 'uniform
+    arguments'. A uniform is an argument which has the same value for the entire
+    stage.
+    &amp;optional and &amp;key are not supported
+
+{2} Here is our definition for the uniform value. If used in a pipeline as a
+    vertex shader #'example will be called once for every value in the
+    gpu-stream given. That means the 'vert' argument will have a different value
+    for each of the potentially millions of invocations in that ONE pipeline
+    call, however 'loop' will have the same value for the entire pipeline call.
+
+{2 &amp; 3} All arguments must have their types declared
+
+{4} Here we see we are using CL's values special form. CEPL fully supports
+    multiple value return in your shaders. If our function #'example was called
+    from another gpu-function then you can use multiple-value-bind to bind the
+    returned values. If however our example function were used as a stage in a
+    pipeline then the multiple returned values will be mapped to the multiple
+    arguments of the next stage in the pipeline.
+
+That's the basics of gpu-functions. For more details on how they can be used
+in pipelines please see the documentation for defpipeline-g.
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:G-&gt;"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:G-&gt;" class="name">G-&gt;</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+__WIP__ g-&gt; is the old name for pipeline. g-&gt; is deprecated and will
+        be removed December 2017.
+        pipeline does EXACTLY the same thing as g-&gt;
+
+__WARNING__ EXPERIMENTAL FEATURE
+
+g-&gt; is how we define anonymous rendering pipelines in CEPL.
+
+Rendering pipelines are constructed by composing gpu-functions.
+
+Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+usually describing geometry) is mapped over whilst a number of uniforms are
+available as input and the outputs are written into an FBO.
+
+There are many stages to the pipeline and a full explanation of the GPU
+pipeline is beyond the scope of this docstring. However it surfices to say that
+only 5 stages are fully programmable (and a few more customizable).
+
+g-&gt; lets you specify the code (shaders) to run the programmable parts (stages)
+of the pipeline.
+
+The available stages kinds are:
+
+- :vertex
+- :tessellation-control
+- :tessellation-evaluation
+- :geometry
+- :fragment
+
+To define code that runs on the gpu in CEPL we use gpu functions (gfuncs)
+Which are defined with defun-g or lambda-g.
+
+Here is an example pipeline:
+
+    (defun-g vert ((position :vec4) &amp;uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (defun make-lambda-pipeline ()
+      (g-&gt; ()
+        (vert :vec4)
+        (frag :float :float)))
+
+Here we define a lambda pipeline which uses the gfunc vert as its vertex
+shader and used the gfunc frag as the fragment shader.
+
+It is also possible to specify the name of the stages
+
+    (defun make-lambda-pipeline ()
+      (g-&gt; ()
+        :vertex (vert :vec4)
+        :fragment (frag :float :float)))
+
+But this is not neccesary unless you need to distinguish between tessellation
+or geometry stages.
+
+-- Context --
+
+The first argument to g-&gt; is the a list of optional information that is
+confusingly called the 'pipeline's context'. We need to change this name.
+
+Valid things that can be in this list are:
+
+- A primitive type: This specifies what primitives can be passed into this pipeline.
+  By default all pipelines expect triangles. When you map a buffer-stream over a
+  pipeline the primitive kind of the stream must match the pipeline.
+
+  The valid values are:
+  :dynamic
+  :points
+  :lines :line-loop :line-strip
+  :lines-adjacency :line-strip-adjacency
+  :triangles :triangle-fan :triangle-strip
+  :triangles-adjacency :triangle-strip-adjacency
+  (:patch &lt;patch-size&gt;)
+
+  :dynamic is special, it means that the pipeline will take the primitive kind
+  from the buffer-stream being mapped over. This won't work for with pipelines
+  with geometry or tessellation stages, but it otherwise quite useful.
+
+- A version restriction: This tells CEPL to compile the stage for a specific
+  version of GLSL. You usually do not want to use this as CEPL will compile for
+  the version the user is using.
+  The value can be one of:
+  :140 :150 :330 :400 :410 :420 :430 :440 :450
+
+-- Stage Names --
+
+Notice that we have to specify the typed signature of the stage. This is because
+CEPL allows you to 'overload' gpu functions. The signature for the a
+gpu-function is a list which starts with the function name and whose other
+elements are the types of the non-uniforms arguments. As an example we can see
+above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
+
+-- Passing values from Stage to Stage --
+
+The return values of the gpu functions that are used as stages are passed as the
+input arguments of the next. The exception to this rule is that the first return
+value from the vertex stage is taken and used by GL, so only the subsequent
+values are passed along.
+
+We can see this in the example above: #'vert returns 3 values but #'frag only
+receives 2.
+
+The values from the fragment stage are writen into the current FBO. This may be
+the default FBO, in which case you will likely see the result on the screen, or
+it may be a FBO of your own.
+
+By default GL only writed the fragment return value to the FBO. For handling
+multiple return values please see the docstring for with-fbo-bound.
+
+-- Using our pipelines --
+
+To call a pipeline we use the map-g macro (or one of its siblings
+map-g-into/map-g-into*). The doc-strings for those macros go into more details
+but the basics are that map-g maps a gpu-stream over our pipeline and the
+results of the pipeline are fed into the 'current' fbo.
+
+We pass our stream to map-g as the first argument after the pipeline, we then
+pass the uniforms in the same style as keyword arguments. For example let's see
+our lambda pipeline example again:
+
+    (defun-g vert ((position :vec4) &amp;uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (defun make-lambda-pipeline ()
+      (g-&gt; ()
+        (vert :vec4)
+        (frag :float :float)))
+
+We can call this as follows:
+
+    (setf some-var (make-lambda-pipeline))
+
+    (map-g some-var v4-stream :i game-time)
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:GPU-FUNCTION"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:GPU-FUNCTION" class="name">GPU-FUNCTION</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
 This is CEPL's equivalent of Common Lisp's #'function function.
 
 It returns the object that represents the gpu-function with the specified
@@ -2403,6 +2802,55 @@ signature.
 
 Currently there is no reason to use this function. It is only available for the
 sake of completeness and future features.
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:LAMBDA-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:LAMBDA-G" class="name">LAMBDA-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+lambda-g let's you define an anonymous function which can run on the gpu.
+Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
+
+Gpu functions try to feel similar to regular CL functions however naturally
+there are some differences.
+
+The first and most obvious one is that whilst gpu function can be called
+from other gpu functions, they cannot be called from lisp functions directly.
+They first must be composed into a pipeline using defpipeline-g.
+
+When a gfunc is composed into a pipeline then that function takes on the role
+of one of the 'shader stages' of the pipeline. For a proper breakdown of
+pipelines see the docstring for defpipeline-g.
+
+Let's see a simple example of a gpu function we can then break down
+
+    ;;       {0}       {3}        {1}           {2}
+    (lambda-g ((vert my-struct) &amp;uniform (loop :float))
+      (values (v! (+ (my-struct-pos vert) ;; {4}
+                     (v! (sin loop) (cos loop) 0))
+                  1.0)
+              (my-struct-col vert)))
+
+
+{0} So like the normal lambda we specify the arguments (as a list) first
+
+{1} The &amp;uniform lambda keyword says that arguments following it are 'uniform
+    arguments'. A uniform is an argument which has the same value for the entire
+    stage.
+    &amp;optional and &amp;key are not supported
+
+{2} Here is our definition for the uniform value. If used in a pipeline as a
+    vertex shader #'example will be called once for every value in the
+    gpu-stream given. That means the 'vert' argument will have a different value
+    for each of the potentially millions of invocations in that ONE pipeline
+    call, however 'loop' will have the same value for the entire pipeline call.
+
+{2 &amp; 3} All arguments must have their types declared
+
+{4} Here we see we are using CL's values special form. CEPL fully supports
+    multiple value return in your shaders. If our function #'example was called
+    from another gpu-function then you can use multiple-value-bind to bind the
+    returned values. If however our example function were used as a stage in a
+    pipeline then the multiple returned values will be mapped to the multiple
+    arguments of the next stage in the pipeline.
+
+That's the basics of gpu-functions. For more details on how they can be used
+in pipelines please see the documentation for defpipeline-g.
 </pre> </article> </li><li> <a name="CEPL.PIPELINES:MAP-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:MAP-G" class="name">MAP-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
 The map-g macro maps a gpu-stream over our pipeline and the results of the
 pipeline are fed into the 'current' fbo.
@@ -2475,6 +2923,143 @@ has its default configuration which means that:
 
 If you want to use map-g-into and have control over these options please use
 map-g-into*
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:PIPELINE-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:PIPELINE-G" class="name">PIPELINE-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+__WARNING__ EXPERIMENTAL FEATURE
+
+pipeline (or g-&gt;) is how we define anonymous rendering pipelines in CEPL.
+
+Rendering pipelines are constructed by composing gpu-functions.
+
+Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+usually describing geometry) is mapped over whilst a number of uniforms are
+available as input and the outputs are written into an FBO.
+
+There are many stages to the pipeline and a full explanation of the GPU
+pipeline is beyond the scope of this docstring. However it surfices to say that
+only 5 stages are fully programmable (and a few more customizable).
+
+pipeline lets you specify the code (shaders) to run the programmable
+parts (stages) of the pipeline.
+
+The available stages kinds are:
+
+- :vertex
+- :tessellation-control
+- :tessellation-evaluation
+- :geometry
+- :fragment
+
+To define code that runs on the gpu in CEPL we use gpu functions (gfuncs)
+Which are defined with defun-g or lambda-g.
+
+Here is an example pipeline:
+
+    (defun-g vert ((position :vec4) &amp;uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (defun make-lambda-pipeline ()
+      (pipeline ()
+        (vert :vec4)
+        (frag :float :float)))
+
+Here we define a lambda pipeline which uses the gfunc vert as its vertex
+shader and used the gfunc frag as the fragment shader.
+
+It is also possible to specify the name of the stages
+
+    (defun make-lambda-pipeline ()
+      (pipeline ()
+        :vertex (vert :vec4)
+        :fragment (frag :float :float)))
+
+But this is not neccesary unless you need to distinguish between tessellation
+or geometry stages.
+
+-- Context --
+
+The first argument to pipeline is the a list of optional information that is
+confusingly called the 'pipeline's context'. We need to change this name.
+
+Valid things that can be in this list are:
+
+- A primitive type: This specifies what primitives can be passed into this pipeline.
+  By default all pipelines expect triangles. When you map a buffer-stream over a
+  pipeline the primitive kind of the stream must match the pipeline.
+
+  The valid values are:
+  :dynamic
+  :points
+  :lines :line-loop :line-strip
+  :lines-adjacency :line-strip-adjacency
+  :triangles :triangle-fan :triangle-strip
+  :triangles-adjacency :triangle-strip-adjacency
+  (:patch &lt;patch-size&gt;)
+
+  :dynamic is special, it means that the pipeline will take the primitive kind
+  from the buffer-stream being mapped over. This won't work for with pipelines
+  with geometry or tessellation stages, but it otherwise quite useful.
+
+- A version restriction: This tells CEPL to compile the stage for a specific
+  version of GLSL. You usually do not want to use this as CEPL will compile for
+  the version the user is using.
+  The value can be one of:
+  :140 :150 :330 :400 :410 :420 :430 :440 :450
+
+-- Stage Names --
+
+Notice that we have to specify the typed signature of the stage. This is because
+CEPL allows you to 'overload' gpu functions. The signature for the a
+gpu-function is a list which starts with the function name and whose other
+elements are the types of the non-uniforms arguments. As an example we can see
+above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
+
+-- Passing values from Stage to Stage --
+
+The return values of the gpu functions that are used as stages are passed as the
+input arguments of the next. The exception to this rule is that the first return
+value from the vertex stage is taken and used by GL, so only the subsequent
+values are passed along.
+
+We can see this in the example above: #'vert returns 3 values but #'frag only
+receives 2.
+
+The values from the fragment stage are writen into the current FBO. This may be
+the default FBO, in which case you will likely see the result on the screen, or
+it may be a FBO of your own.
+
+By default GL only writed the fragment return value to the FBO. For handling
+multiple return values please see the docstring for with-fbo-bound.
+
+-- Using our pipelines --
+
+To call a pipeline we use the map-g macro (or one of its siblings
+map-g-into/map-g-into*). The doc-strings for those macros go into more details
+but the basics are that map-g maps a gpu-stream over our pipeline and the
+results of the pipeline are fed into the 'current' fbo.
+
+We pass our stream to map-g as the first argument after the pipeline, we then
+pass the uniforms in the same style as keyword arguments. For example let's see
+our lambda pipeline example again:
+
+    (defun-g vert ((position :vec4) &amp;uniform (i :float))
+      (values position (sin i) (cos i)))
+
+    (defun-g frag ((s :float) (c :float))
+      (v! s c 0.4 1.0))
+
+    (defun make-lambda-pipeline ()
+      (pipeline ()
+        (vert :vec4)
+        (frag :float :float)))
+
+We can call this as follows:
+
+    (setf some-var (make-lambda-pipeline))
+
+    (map-g some-var v4-stream :i game-time)
 </pre> </article> </li><li> <a name="CEPL.PIPELINES:WITH-INSTANCES"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:WITH-INSTANCES" class="name">WITH-INSTANCES</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
 The with-instances macro is used to enable instancing. You specify number number
 of instances with the count argument.
@@ -2810,7 +3395,9 @@ gpu-buffer and uploading the data. It does not limit how the buffer can be used
 in future parts of your program.</pre> </article> </li><li> <a name="CEPL.GPU-BUFFERS:MULTI-BUFFER-DATA"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.GPU-BUFFERS:MULTI-BUFFER-DATA" class="name">MULTI-BUFFER-DATA</a></h4> <span class="qualifiers"></span> <span class="arguments">(BUFFER C-ARRAYS TARGET USAGE)</span> </code> </header> <pre class="docstring">
 This function takes a list of c-arrays and uploads all of the data to the
 gpu-buffer.
-</pre> </article> </li><li> <a name="CEPL.GPU-BUFFERS:REALLOCATE-BUFFER"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.GPU-BUFFERS:REALLOCATE-BUFFER" class="name">REALLOCATE-BUFFER</a></h4> <span class="qualifiers"></span> <span class="arguments">(BUFFER)</span> </code> </header> <pre class="docstring"/> </article> </li><li> <a name="CEPL.GPU-BUFFERS:WITH-BUFFER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-BUFFERS:WITH-BUFFER" class="name">WITH-BUFFER</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.GPU-BUFFERS:REALLOCATE-BUFFER"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.GPU-BUFFERS:REALLOCATE-BUFFER" class="name">REALLOCATE-BUFFER</a></h4> <span class="qualifiers"></span> <span class="arguments">(BUFFER)</span> </code> </header> <pre class="docstring">
+This function takes a buffer and recreates the data-store for it. All data currently in the buffer will be lost.
+</pre> </article> </li><li> <a name="CEPL.GPU-BUFFERS:WITH-BUFFER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-BUFFERS:WITH-BUFFER" class="name">WITH-BUFFER</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
 This macro binds the given gpu-buffer to the target on the GL Context for the
 duration of the body.
 

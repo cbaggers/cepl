@@ -112,7 +112,7 @@
 ;;
 ;; Depending on whether the array is contained in a gpu-buffer or a texture it is said to be buffer backed or texture backed
 ;;
-;; Pipelines are made by composing gpu-functions with g-> and def-g->
+;; Pipelines are made by composing gpu-functions with pipeline and defpipeline
 ;;
 ;; Data is read from gpu-arrays using gpu-streams or ubos
 ;;
