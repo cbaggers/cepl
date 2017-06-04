@@ -125,10 +125,10 @@ Returns the size in bytes taken up by a single element of the c-array.
 Returns the type of the elements in the c-array.
 </pre> </article> </li><li> <a name="CEPL.C-ARRAYS:POINTER"/> <article> <header class="generic"> <span class="type">generic</span> <code> <h4><a href="#CEPL.C-ARRAYS:POINTER" class="name">POINTER</a></h4> <span class="qualifiers"></span> <span class="arguments">(C-ARRAY)</span> </code> </header> <pre class="docstring">
 Returns the pointer to the start of the foreign data that makes up the array
-</pre> </article> </li><li> <a name="CEPL.C-ARRAYS:WITH-C-ARRAY"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.C-ARRAYS:WITH-C-ARRAY" class="name">WITH-C-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.C-ARRAYS:WITH-C-ARRAY"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.C-ARRAYS:WITH-C-ARRAY" class="name">WITH-C-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">((VAR-NAME C-ARRAY) &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 Binds the c-array to the variable named by the var-name argument.
 Frees the c-array at the end of the scope.
-</pre> </article> </li><li> <a name="CEPL.C-ARRAYS:WITH-C-ARRAYS"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.C-ARRAYS:WITH-C-ARRAYS" class="name">WITH-C-ARRAYS</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.C-ARRAYS:WITH-C-ARRAYS"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.C-ARRAYS:WITH-C-ARRAYS" class="name">WITH-C-ARRAYS</a></h4> <span class="qualifiers"></span> <span class="arguments">((VAR-NAME C-ARRAYS) &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 Binds a list of c-arrays to the variable named by the var-name argument.
 Frees all of the c-arrays at the end of the scope.
 </pre> </article> </li></ul></li><li class="package"> <h3> <a name="CEPL.GPU-ARRAYS" href="#CEPL.GPU-ARRAYS">CEPL.GPU-ARRAYS</a> <span class="nicknames"/> </h3> <ul><li> <a name="%CEPL.TYPES:GPU-ARRAY"/> <article> <header class="class"> <span class="type">class</span> <code> <h4><a href="#%CEPL.TYPES:GPU-ARRAY" class="name">GPU-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">()</span> </code> </header> <pre class="docstring">
@@ -324,7 +324,7 @@ declared access-style (other than potential performance costs).
 :stream-draw  :static-draw  :dynamic-draw
 :stream-read  :static-read  :dynamic-read
 :stream-copy  :static-copy  :dynamic-copy
-</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-AS-C-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-AS-C-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE)) &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This macro takes a gpu-array and asks OpenGL to temporarily 'map' it to
 a c-array. Within the scope of the body you can run any of the c-array commands
 on it.
@@ -348,7 +348,8 @@ out the details.
 
 The valid values for the :access argument are :read-only :write-only or
 :read-write.
-</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER" class="name">WITH-GPU-ARRAY-AS-POINTER</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-AS-POINTER" class="name">WITH-GPU-ARRAY-AS-POINTER</a></h4> <span class="qualifiers"></span> <span class="arguments">((TEMP-NAME GPU-ARRAY &amp;KEY (ACCESS-TYPE :READ-WRITE) (TARGET :ARRAY-BUFFER))
+ &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This macro takes a gpu-array and asks OpenGL to temporarily 'map' it to
 a pointer. Within the scope of the body you can run any cffi command on it.
 
@@ -357,7 +358,8 @@ the gpu-array.
 
 The valid values for the :access argument are :read-only :write-only or
 :read-write.
-</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-C-ARRAY"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-RANGE-AS-C-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-C-ARRAY"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-C-ARRAY" class="name">WITH-GPU-ARRAY-RANGE-AS-C-ARRAY</a></h4> <span class="qualifiers"></span> <span class="arguments">((TEMP-NAME GPU-ARRAY START-INDEX LENGTH &amp;KEY (ACCESS-SET :MAP-READ)) &amp;BODY
+ BODY)</span> </code> </header> <pre class="docstring">
 This macro takes a gpu-array and asks OpenGL to temporarily 'map' it a portion
 of it  to a c-array. Within the scope of the body you can run any of the
 c-array commands on it.
@@ -381,7 +383,9 @@ out the details.
 
 The valid values for the :access argument are :read-only :write-only or
 :read-write.
-</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-POINTER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-POINTER" class="name">WITH-GPU-ARRAY-RANGE-AS-POINTER</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-POINTER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-ARRAYS:WITH-GPU-ARRAY-RANGE-AS-POINTER" class="name">WITH-GPU-ARRAY-RANGE-AS-POINTER</a></h4> <span class="qualifiers"></span> <span class="arguments">((TEMP-NAME GPU-ARRAY START-INDEX LENGTH &amp;KEY (ACCESS-SET :MAP-READ)
+ (TARGET :ARRAY-BUFFER))
+ &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This macro takes a gpu-array and asks OpenGL to temporarily 'map' a portion
 ofit to a pointer. Within the scope of the body you can run any cffi command
 on it.
@@ -540,7 +544,7 @@ a float.
 </pre> </article> </li><li> <a name="CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-Y"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.VIEWPORTS:VIEWPORT-RESOLUTION-Y" class="name">VIEWPORT-RESOLUTION-Y</a></h4> <span class="qualifiers"></span> <span class="arguments">(VIEWPORT)</span> </code> </header> <pre class="docstring">
 This function returns the y component of the resolution of the viewport as
 a float.
-</pre> </article> </li><li> <a name="CEPL.VIEWPORTS:WITH-FBO-VIEWPORT"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.VIEWPORTS:WITH-FBO-VIEWPORT" class="name">WITH-FBO-VIEWPORT</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.VIEWPORTS:WITH-FBO-VIEWPORT"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.VIEWPORTS:WITH-FBO-VIEWPORT" class="name">WITH-FBO-VIEWPORT</a></h4> <span class="qualifiers"></span> <span class="arguments">((FBO &amp;OPTIONAL (ATTACHMENT 0)) &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This macro behaves similarly to with-viewport in that is sets the
 current viewport. However rather than passing in a viewport, one is
 created[0] based on the dimensions of the gpu-array bound as the specified
@@ -555,7 +559,7 @@ It will remain as the current viewport until the end of the scope.
     of consing up a new viewport. This means that the viewport inside the scope
     may be eq to the viewport outside, but with different values in its slots
     for the duration of the body.
-</pre> </article> </li><li> <a name="CEPL.VIEWPORTS:WITH-VIEWPORT"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.VIEWPORTS:WITH-VIEWPORT" class="name">WITH-VIEWPORT</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.VIEWPORTS:WITH-VIEWPORT"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.VIEWPORTS:WITH-VIEWPORT" class="name">WITH-VIEWPORT</a></h4> <span class="qualifiers"></span> <span class="arguments">(VIEWPORT &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This macro sets the current viewport to the viewport given as the argument.
 It will remain as the current viewport until the end of the scope.
 </pre> </article> </li></ul></li><li class="package"> <h3> <a name="CEPL.TEXTURES" href="#CEPL.TEXTURES">CEPL.TEXTURES</a> <span class="nicknames"/> </h3> <ul><li> <a name="CEPL.TEXTURES:*IMMUTABLE-AVAILABLE*"/> <article> <header class="special"> <span class="type">special</span> <code> <h4><a href="#CEPL.TEXTURES:*IMMUTABLE-AVAILABLE*" class="name">*IMMUTABLE-AVAILABLE*</a></h4> <span class="qualifiers"></span> <span class="arguments">()</span> </code> </header> <pre class="docstring">
@@ -960,7 +964,7 @@ This function will free the texture and all texture-memory behind the texture's
 gpu-arrays.
 
 Be sure not to use those arrays after this function has been called.
-</pre> </article> </li><li> <a name="CEPL.TEXTURES:WITH-TEXTURE-BOUND"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.TEXTURES:WITH-TEXTURE-BOUND" class="name">WITH-TEXTURE-BOUND</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.TEXTURES:WITH-TEXTURE-BOUND"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.TEXTURES:WITH-TEXTURE-BOUND" class="name">WITH-TEXTURE-BOUND</a></h4> <span class="qualifiers"></span> <span class="arguments">(TEXTURE &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 Binds the given texture to the gl-context for the duration of the body and then
 ensures it is unbound.
 
@@ -1495,7 +1499,7 @@ based on the following:
 - between-level: what sampling should be used between texels on different
                  mipmap levels. The value can be :linear or :nearest
                  This argument is optional.
-</pre> </article> </li><li> <a name="CEPL.SAMPLERS:WITH-SAMPLING"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.SAMPLERS:WITH-SAMPLING" class="name">WITH-SAMPLING</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.SAMPLERS:WITH-SAMPLING"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.SAMPLERS:WITH-SAMPLING" class="name">WITH-SAMPLING</a></h4> <span class="qualifiers"></span> <span class="arguments">((VAR TEX) &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This macro takes a texture and creates a temporary sampler that is valid within
 the scope.
 
@@ -1802,7 +1806,9 @@ first attachment. You can however enable blending on any number of attachments
 and they will inherit their params from attachment 0
 
 For more details see cepl.blending
-</pre> </article> </li><li> <a name="CEPL.FBOS:WITH-FBO-BOUND"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.FBOS:WITH-FBO-BOUND" class="name">WITH-FBO-BOUND</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.FBOS:WITH-FBO-BOUND"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.FBOS:WITH-FBO-BOUND" class="name">WITH-FBO-BOUND</a></h4> <span class="qualifiers"></span> <span class="arguments">((FBO &amp;KEY (TARGET :DRAW-FRAMEBUFFER) (WITH-VIEWPORT T) (ATTACHMENT-FOR-SIZE 0)
+ (WITH-BLENDING T) (DRAW-BUFFERS T))
+ &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This is one macro you use when you want to capture the output from a pipeline in
 an FBO.
 
@@ -2188,7 +2194,7 @@ The valid values for mode-rgb and mode-alpha are:
 
 For details on their behaviour on the blending-params object please see the
 docstring for blending-params.
-</pre> </article> </li><li> <a name="CEPL.BLENDING:WITH-BLENDING"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.BLENDING:WITH-BLENDING" class="name">WITH-BLENDING</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.BLENDING:WITH-BLENDING"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.BLENDING:WITH-BLENDING" class="name">WITH-BLENDING</a></h4> <span class="qualifiers"></span> <span class="arguments">(BLENDING-PARAMS &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This macro will set the default blending parameters for the scope.
 
 These values will be used unless overriden by blend settings in an fbo.
@@ -2210,7 +2216,7 @@ is overloaded then you will want to specify the function signature exactly.
 See the documentation for #'gpu-functions which will lists all the signatures
 for the gpu-functions with a given name.
 
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:BAKE-UNIFORMS"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:BAKE-UNIFORMS" class="name">BAKE-UNIFORMS</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:BAKE-UNIFORMS"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:BAKE-UNIFORMS" class="name">BAKE-UNIFORMS</a></h4> <span class="qualifiers"></span> <span class="arguments">(PIPELINE &amp;REST UNIFORMS &amp;KEY &amp;ALLOW-OTHER-KEYS)</span> </code> </header> <pre class="docstring">
 __WARNING__ EXPRERIMENTAL FEATURE
 
 This allows you to create a new lambda-pipeline from existing pipeline whilst also
@@ -2227,7 +2233,7 @@ For example:
 
     (defun fix-cube-size (size)
       (bake-uniforms #'draw-cube :edge-length (float size)))
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEF-G-&gt;"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEF-G-&gt;" class="name">DEF-G-&gt;</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEF-G-&gt;"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEF-G-&gt;" class="name">DEF-G-&gt;</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME CONTEXT &amp;BODY GPIPE-ARGS)</span> </code> </header> <pre class="docstring">
 __WIP__ def-g-&gt; is the old name for defpipeline-g. def-g-&gt; is deprecated and will
         be removed December 2017.
         defpipeline-g does EXACTLY the same thing as def-g-&gt;
@@ -2364,7 +2370,7 @@ We can call this as follows:
     (map-g #'prog-1 v4-stream :i game-time)
 
 
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEF-GLSL-STAGE"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEF-GLSL-STAGE" class="name">DEF-GLSL-STAGE</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEF-GLSL-STAGE"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEF-GLSL-STAGE" class="name">DEF-GLSL-STAGE</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME ARGS BODY-FORM OUTPUTS)</span> </code> </header> <pre class="docstring">
 def-glsl-stage is useful when you wish to define a CEPL pipeline stage in glsl
 rather than lisp. This is especially useful if you want to use some
 pre-exisiting glsl without rewriting it to lisp.
@@ -2395,21 +2401,21 @@ not specify those yourself.
 
 This stage fully supports livecoding, so feel free to change and recomplile the
 text in the stage at runtime.
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFINE-COMPILER-MACRO-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFINE-COMPILER-MACRO-G" class="name">DEFINE-COMPILER-MACRO-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFINE-COMPILER-MACRO-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFINE-COMPILER-MACRO-G" class="name">DEFINE-COMPILER-MACRO-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME LAMBDA-LIST &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This lets you define a compiler-macro that only works with gpu-functions.
 
 The &amp;context lambda list keyword allows you to restrict this macro to only be
 valid in gpu functions with compatible contexts.
 
 &amp;whole and &amp;environment are not supported.
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFMACRO-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFMACRO-G" class="name">DEFMACRO-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFMACRO-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFMACRO-G" class="name">DEFMACRO-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME LAMBDA-LIST &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This lets you a define a macro that only works in gpu code.
 
 The &amp;context lambda list keyword allows you to restrict this macro to only be
 valid in gpu functions with compatible contexts.
 
 &amp;whole and &amp;environment are not supported.
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFPIPELINE-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFPIPELINE-G" class="name">DEFPIPELINE-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFPIPELINE-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFPIPELINE-G" class="name">DEFPIPELINE-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME CONTEXT &amp;BODY GPIPE-ARGS)</span> </code> </header> <pre class="docstring">
 defpipeline-g is how we define named rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
@@ -2541,7 +2547,7 @@ We can call this as follows:
     (map-g #'prog-1 v4-stream :i game-time)
 
 
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFUN-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFUN-G" class="name">DEFUN-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFUN-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFUN-G" class="name">DEFUN-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME ARGS &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 defun-g let's you define a function which will be run on the gpu.
 Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
 
@@ -2592,7 +2598,7 @@ Let's see a simple example of a gpu function we can then break down
 
 That's the basics of gpu-functions. For more details on how they can be used
 in pipelines please see the documentation for defpipeline-g.
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFUN-G-EQUIV"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFUN-G-EQUIV" class="name">DEFUN-G-EQUIV</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:DEFUN-G-EQUIV"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:DEFUN-G-EQUIV" class="name">DEFUN-G-EQUIV</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME ARGS &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 Defun-g-equiv let's you define a function which will be run on the gpu.
 Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
 
@@ -2653,7 +2659,7 @@ Let's see a simple example of a gpu function we can then break down
 
 That's the basics of gpu-functions. For more details on how they can be used
 in pipelines please see the documentation for defpipeline-g.
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:G-&gt;"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:G-&gt;" class="name">G-&gt;</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:G-&gt;"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:G-&gt;" class="name">G-&gt;</a></h4> <span class="qualifiers"></span> <span class="arguments">(CONTEXT &amp;BODY GPIPE-ARGS)</span> </code> </header> <pre class="docstring">
 __WIP__ g-&gt; is the old name for pipeline. g-&gt; is deprecated and will
         be removed December 2017.
         pipeline does EXACTLY the same thing as g-&gt;
@@ -2794,7 +2800,60 @@ We can call this as follows:
     (setf some-var (make-lambda-pipeline))
 
     (map-g some-var v4-stream :i game-time)
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:GPU-FUNCTION"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:GPU-FUNCTION" class="name">GPU-FUNCTION</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:GLAMBDA"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:GLAMBDA" class="name">GLAMBDA</a></h4> <span class="qualifiers"></span> <span class="arguments">(ARGS &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
+__WIP__ glambda is the old name for lambda-g. glambda is deprecated and will
+        be removed December 2017.
+        lambda-g does EXACTLY the same thing as glambda
+
+glambda let's you define an anonymous function which can run on the gpu.
+Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
+
+Gpu functions try to feel similar to regular CL functions however naturally
+there are some differences.
+
+The first and most obvious one is that whilst gpu function can be called
+from other gpu functions, they cannot be called from lisp functions directly.
+They first must be composed into a pipeline using defpipeline-g.
+
+When a gfunc is composed into a pipeline then that function takes on the role
+of one of the 'shader stages' of the pipeline. For a proper breakdown of
+pipelines see the docstring for defpipeline-g.
+
+Let's see a simple example of a gpu function we can then break down
+
+    ;;       {0}       {3}        {1}           {2}
+    (glambda ((vert my-struct) &amp;uniform (loop :float))
+      (values (v! (+ (my-struct-pos vert) ;; {4}
+                     (v! (sin loop) (cos loop) 0))
+                  1.0)
+              (my-struct-col vert)))
+
+
+{0} So like the normal lambda we specify the arguments (as a list) first
+
+{1} The &amp;uniform lambda keyword says that arguments following it are 'uniform
+    arguments'. A uniform is an argument which has the same value for the entire
+    stage.
+    &amp;optional and &amp;key are not supported
+
+{2} Here is our definition for the uniform value. If used in a pipeline as a
+    vertex shader #'example will be called once for every value in the
+    gpu-stream given. That means the 'vert' argument will have a different value
+    for each of the potentially millions of invocations in that ONE pipeline
+    call, however 'loop' will have the same value for the entire pipeline call.
+
+{2 &amp; 3} All arguments must have their types declared
+
+{4} Here we see we are using CL's values special form. CEPL fully supports
+    multiple value return in your shaders. If our function #'example was called
+    from another gpu-function then you can use multiple-value-bind to bind the
+    returned values. If however our example function were used as a stage in a
+    pipeline then the multiple returned values will be mapped to the multiple
+    arguments of the next stage in the pipeline.
+
+That's the basics of gpu-functions. For more details on how they can be used
+in pipelines please see the documentation for defpipeline-g.
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:GPU-FUNCTION"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:GPU-FUNCTION" class="name">GPU-FUNCTION</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME)</span> </code> </header> <pre class="docstring">
 This is CEPL's equivalent of Common Lisp's #'function function.
 
 It returns the object that represents the gpu-function with the specified
@@ -2802,7 +2861,7 @@ signature.
 
 Currently there is no reason to use this function. It is only available for the
 sake of completeness and future features.
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:LAMBDA-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:LAMBDA-G" class="name">LAMBDA-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:LAMBDA-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:LAMBDA-G" class="name">LAMBDA-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(ARGS &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 lambda-g let's you define an anonymous function which can run on the gpu.
 Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
 
@@ -2851,7 +2910,7 @@ Let's see a simple example of a gpu function we can then break down
 
 That's the basics of gpu-functions. For more details on how they can be used
 in pipelines please see the documentation for defpipeline-g.
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:MAP-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:MAP-G" class="name">MAP-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:MAP-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:MAP-G" class="name">MAP-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span> </code> </header> <pre class="docstring">
 The map-g macro maps a gpu-stream over our pipeline and the results of the
 pipeline are fed into the 'current' fbo.
 
@@ -2881,7 +2940,7 @@ written into the attachments of the FBO. To control this please see the
 doc-string for with-fbo-bound. The default behaviour is that each of the
 multiple returns values from the gpu-function used as the fragment shader will
 be written into the respective attachments of the FBO (first value to first attachment, second value to second attachment, etc)
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:MAP-G-INTO"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:MAP-G-INTO" class="name">MAP-G-INTO</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:MAP-G-INTO"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:MAP-G-INTO" class="name">MAP-G-INTO</a></h4> <span class="qualifiers"></span> <span class="arguments">(FBO PIPELINE-FUNC STREAM &amp;REST UNIFORMS)</span> </code> </header> <pre class="docstring">
 The map-g-into macro maps a gpu-stream over our pipeline and the results of the
 pipeline are fed into the supplied fbo.
 
@@ -2923,10 +2982,10 @@ has its default configuration which means that:
 
 If you want to use map-g-into and have control over these options please use
 map-g-into*
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:PIPELINE-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:PIPELINE-G" class="name">PIPELINE-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:PIPELINE-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:PIPELINE-G" class="name">PIPELINE-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(CONTEXT &amp;BODY GPIPE-ARGS)</span> </code> </header> <pre class="docstring">
 __WARNING__ EXPERIMENTAL FEATURE
 
-pipeline (or g-&gt;) is how we define anonymous rendering pipelines in CEPL.
+pipeline is how we define anonymous rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
 
@@ -3060,7 +3119,7 @@ We can call this as follows:
     (setf some-var (make-lambda-pipeline))
 
     (map-g some-var v4-stream :i game-time)
-</pre> </article> </li><li> <a name="CEPL.PIPELINES:WITH-INSTANCES"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:WITH-INSTANCES" class="name">WITH-INSTANCES</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.PIPELINES:WITH-INSTANCES"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.PIPELINES:WITH-INSTANCES" class="name">WITH-INSTANCES</a></h4> <span class="qualifiers"></span> <span class="arguments">(COUNT &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 The with-instances macro is used to enable instancing. You specify number number
 of instances with the count argument.
 
@@ -3397,7 +3456,7 @@ This function takes a list of c-arrays and uploads all of the data to the
 gpu-buffer.
 </pre> </article> </li><li> <a name="CEPL.GPU-BUFFERS:REALLOCATE-BUFFER"/> <article> <header class="function"> <span class="type">function</span> <code> <h4><a href="#CEPL.GPU-BUFFERS:REALLOCATE-BUFFER" class="name">REALLOCATE-BUFFER</a></h4> <span class="qualifiers"></span> <span class="arguments">(BUFFER)</span> </code> </header> <pre class="docstring">
 This function takes a buffer and recreates the data-store for it. All data currently in the buffer will be lost.
-</pre> </article> </li><li> <a name="CEPL.GPU-BUFFERS:WITH-BUFFER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-BUFFERS:WITH-BUFFER" class="name">WITH-BUFFER</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.GPU-BUFFERS:WITH-BUFFER"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.GPU-BUFFERS:WITH-BUFFER" class="name">WITH-BUFFER</a></h4> <span class="qualifiers"></span> <span class="arguments">((VAR-NAME BUFFER &amp;OPTIONAL (BUFFER-TARGET :ARRAY-BUFFER)) &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 This macro binds the given gpu-buffer to the target on the GL Context for the
 duration of the body.
 
@@ -3416,7 +3475,7 @@ This function returns a new GL VAO when given
 </pre> </article> </li><li> <a name="CEPL.VAOS:MAKE-VAO-FROM-ID"/> <article> <header class="generic"> <span class="type">generic</span> <code> <h4><a href="#CEPL.VAOS:MAKE-VAO-FROM-ID" class="name">MAKE-VAO-FROM-ID</a></h4> <span class="qualifiers"></span> <span class="arguments">(GL-OBJECT GPU-ARRAYS &amp;OPTIONAL INDEX-ARRAY)</span> </code> </header> <pre class="docstring">
 This function takes an existing OpenGL VAO and set it up to strema vertices from
 the given arrays.
-</pre> </article> </li><li> <a name="CEPL.VAOS:WITH-VAO-BOUND"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.VAOS:WITH-VAO-BOUND" class="name">WITH-VAO-BOUND</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.VAOS:WITH-VAO-BOUND"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.VAOS:WITH-VAO-BOUND" class="name">WITH-VAO-BOUND</a></h4> <span class="qualifiers"></span> <span class="arguments">(VAO &amp;BODY BODY)</span> </code> </header> <pre class="docstring">
 Binds the vao to the gl context and guarentees it will be unbound after the
 body scope.
 
@@ -3469,7 +3528,7 @@ This function, when given a lisp type name, will attempt to find and
 return an equivalent pixel-format.
 
 If no such type is found then nil is returned
-</pre> </article> </li><li> <a name="CEPL.TYPES:DEFSTRUCT-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.TYPES:DEFSTRUCT-G" class="name">DEFSTRUCT-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(&amp;REST ARGS)</span> </code> </header> <pre class="docstring">
+</pre> </article> </li><li> <a name="CEPL.TYPES:DEFSTRUCT-G"/> <article> <header class="macro"> <span class="type">macro</span> <code> <h4><a href="#CEPL.TYPES:DEFSTRUCT-G" class="name">DEFSTRUCT-G</a></h4> <span class="qualifiers"></span> <span class="arguments">(NAME-AND-OPTIONS &amp;BODY SLOT-DESCRIPTIONS)</span> </code> </header> <pre class="docstring">
 defstruct-g defines a struct that can be used both gpu-side (in gpu functions,
 gpu-arrays, ubos, etc) and also cpu-side (in c-arrays, other gstructs, etc)
 
