@@ -6,7 +6,7 @@
 A buffer-stream is a structure that represents stream of gpu-data composed from
 gpu-array and/or gpu-buffers.
 
-To render in cepl we map a buffer-stream over a gpu-pipeline. The buffer-stream
+To render in CEPL we map a buffer-stream over a gpu-pipeline. The buffer-stream
 contains data (usually geometry) that is passed to the vertex-shader.
 
 A buffer-stream composes various sources of gpu-data together. So if, for example,
@@ -19,13 +19,13 @@ can be composed with buffer-streams.
 
 Info for people used to OpenGL:
 A buffer-stream is basically a VAO with some extra metadata such as the 'range'
-of data to draw and the 'style' of drawing.
+of data to draw the 'style' of drawing & the 'primitive' the data represents .
 ")
 
   (defun buffer-stream-gpu-arrays
       "
-When you construct a buffer-stream you can request that the buffer-stream holds
-references to the gpu-arrays that were composed.
+When you construct a buffer-stream it will (by default) hold onto the
+gpu-arrays that were composed.
 
 This function when given a buffer-stream will return those stored gpu-arrays
 ")
@@ -46,7 +46,7 @@ Returns the number of elements in the buffer-stream
 Returns the OpenGL Vertex Array Object (VAO) owned by this stream.
 
 Do not modify this unless you are sure what you are doing.
-In most cases this is unnecessary
+In most cases you do not need to interact with the VAO directly
 ")
 
   (defun buffer-stream-p
@@ -80,8 +80,27 @@ gives bigs boosts in performance and memory usage when rendering.
 The element-type of the index-array must be of the following:
 :uint8 :ushort :uint :unsigned-short :unsigned-int
 
-Remember that you can also use gpu-sub-arrays in here if you want to limit the
-data you are using, for example the following is perfectly legal code:
+As well as an element type you also can specify the primitive-type. This says
+what the gpu will draw this data as. It can be any one of:
+
+:points
+:lines
+:line-loop
+:line-strip
+:lines-adjacency
+:line-strip-adjacency
+:triangles
+:triangle-fan
+:triangle-strip
+:triangles-adjacency
+:triangle-strip-adjacency
+(:patch <patch-size>)
+
+By default the primtive-type is :triangles
+
+It is also worth noting  that you can also use gpu-sub-arrays in here if you
+want to limit the data you are using, for example the following is perfectly
+legal code:
 
     (make-buffer-stream
       :gpu-arrays `(,(gpu-sub-array monster-pos-data 1000 2000)

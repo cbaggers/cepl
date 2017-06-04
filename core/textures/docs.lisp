@@ -164,7 +164,7 @@ To control this process GL (and thus CEPL) have a special object called a
 sampler. Samplers have a number of values that can be tweaked that affect how
 the sampling is done.
 
-To find out more see the Cepl.Samplers section.
+To find out more see the cepl.samplers section.
 
 [0] - more correctly the default-fbo
 [1] - https://www.opengl.org/wiki/Immutable_Storage_Texture#Texture_completeness

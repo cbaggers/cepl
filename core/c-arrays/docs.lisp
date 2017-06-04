@@ -5,7 +5,7 @@
     "
 C-ARRAY is a structure that represents an array in foreign memory.
 
-cepl keeps not only the pointer to the foreign data in this structure
+CEPL keeps not only the pointer to the foreign data in this structure
 but also metadata that makes moving this data to (and from) the gpu or
 lisp much easier.
 ")

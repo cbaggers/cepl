@@ -61,23 +61,24 @@ def-g-> is how we define named rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
 
-Rendering in OpenGL is descibed as a pipeline where a buffer-stream of
-data (usually describing geometry), and a number of uniforms are used as inputs
-and the outputs of the pipelines are written into an FBO.
+Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+usually describing geometry) is mapped over whilst a number of uniforms are
+available as input and the outputs are written into an FBO.
 
 There are many stages to the pipeline and a full explanation of the GPU pipeline
 is beyond the scope of this docstring. However it surfices to say that only
-4 stages are fully programmable (and a few more customizable).
+5 stages are fully programmable (and a few more customizable).
 
 def-g-> lets you specify the code (shaders) to run the programmable
 parts (stages) of the pipeline.
 
-The available stages are:
+The available stages kinds are:
 
-- vertex stage
-- tessellation - Not yet supported in CEPL
-- geometry     - Not yet supported in CEPL
-- fragment
+- :vertex
+- :tessellation-control
+- :tessellation-evaluation
+- :geometry
+- :fragment
 
 To define code that runs on the gpu in CEPL we use gpu functions (gfuncs). Which
 are defined with defun-g.
@@ -105,6 +106,36 @@ It is also possible to specify the name of the stages
 
 But this is not neccesary unless you need to distinguish between tessellation
 or geometry stages.
+
+-- Context --
+
+The second argument to def-g-> is the a list of additional information that is
+confusingly called the 'pipeline's context'. We need to change this name.
+
+Valid things that can be in this list are:
+
+- A primitive type: This specifies what primitives can be passed into this pipeline.
+  By default all pipelines expect triangles. When you map a buffer-stream over a
+  pipeline the primitive kind of the stream must match the pipeline.
+
+  The valid values are:
+  :dynamic
+  :points
+  :lines :line-loop :line-strip
+  :lines-adjacency :line-strip-adjacency
+  :triangles :triangle-fan :triangle-strip
+  :triangles-adjacency :triangle-strip-adjacency
+  (:patch <patch-size>)
+
+  :dynamic is special, it means that the pipeline will take the primitive kind
+  from the buffer-stream being mapped over. This won't work for with pipelines
+  with geometry or tessellation stages, but it otherwise quite useful.
+
+- A version restriction: This tells CEPL to compile the stage for a specific
+  version of GLSL. You usually do not want to use this as CEPL will compile for
+  the version the user is using.
+  The value can be one of:
+  :140 :150 :330 :400 :410 :420 :430 :440 :450
 
 -- Stage Names --
 
@@ -156,11 +187,7 @@ We can call this as follows:
 
     (map-g #'prog-1 v4-stream :i game-time)
 
--- Anonymous Pipelines --
 
-def-g-> is going to have a partner macro called g-> which will create
-anonymous pipelines (like the difference between lambda & defun). However it
-is not yet implemented.
 ")
 
   (defmacro map-g
