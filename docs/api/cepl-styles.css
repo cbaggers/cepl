@@ -1,9 +1,7 @@
 /* stylesheet for CEPL documentation
- * holly bagley 2016/03/22
+ * oliver bagley 2016/03/22
  * ver 1
  */
-
-
 
 
 /* LEGACY STYLES */
@@ -64,6 +62,7 @@ ul {
 li {
     margin-left:48px;
     line-height:2em;
+    list-style-type: disc;
 }
 
 code {
