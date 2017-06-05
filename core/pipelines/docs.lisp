@@ -3,7 +3,7 @@
 (docs:define-docs
   (defmacro defun-g
       "
-defun-g let's you define a function which will be run on the gpu.
+`defun-g` let's you define a function which will be run on the gpu.
 Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
 
 Gpu functions try to feel similar to regular CL functions however naturally
@@ -11,7 +11,7 @@ there are some differences.
 
 The first and most obvious one is that whilst gpu function can be called
 from other gpu functions, they cannot be called from lisp functions directly.
-They first must be composed into a pipeline using defpipeline-g.
+They first must be composed into a pipeline using `defpipeline-g`.
 
 When a gfunc is composed into a pipeline then that function takes on the role of
 one of the 'shader stages' of the pipeline. For a proper breakdown of pipelines
@@ -38,7 +38,7 @@ Let's see a simple example of a gpu function we can then break down
 
 {2} Here is our definition for the uniform value. If used in a pipeline as a
     vertex shader #'example will be called once for every value in the
-    gpu-stream given. That means the 'vert' argument will have a different value
+    `buffer-stream` given. That means the 'vert' argument will have a different value
     for each of the potentially millions of invocations in that ONE pipeline
     call, however 'loop' will have the same value for the entire pipeline call.
 
@@ -60,7 +60,7 @@ in pipelines please see the documentation for defpipeline-g.
 Defun-g-equiv let's you define a function which will be run on the gpu.
 Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
 
-The difference between defun-g-equiv & defun-g is that defun-g will create
+The difference between defun-g-equiv & `defun-g` is that defun-g will create
 a 'dummy' lisp function so that 'jump to definition' and signature hits work
 in your editor, defun-g-equiv does not do this.
 
@@ -75,7 +75,7 @@ there are some differences.
 
 The first and most obvious one is that whilst gpu function can be called
 from other gpu functions, they cannot be called from lisp functions directly.
-They first must be composed into a pipeline using defpipeline-g.
+They first must be composed into a pipeline using `defpipeline-g`.
 
 When a gfunc is composed into a pipeline then that function takes on the role of
 one of the 'shader stages' of the pipeline. For a proper breakdown of pipelines
@@ -102,7 +102,7 @@ Let's see a simple example of a gpu function we can then break down
 
 {2} Here is our definition for the uniform value. If used in a pipeline as a
     vertex shader #'example will be called once for every value in the
-    gpu-stream given. That means the 'vert' argument will have a different value
+    `buffer-stream` given. That means the 'vert' argument will have a different value
     for each of the potentially millions of invocations in that ONE pipeline
     call, however 'loop' will have the same value for the entire pipeline call.
 
@@ -121,7 +121,7 @@ in pipelines please see the documentation for defpipeline-g.
 
   (defmacro def-g->
       "
-__WIP__ def-g-> is the old name for defpipeline-g. def-g-> is deprecated and will
+__WIP__ def-g-> is the old name for `defpipeline-g`. def-g-> is deprecated and will
         be removed December 2017.
         defpipeline-g does EXACTLY the same thing as def-g->
 
@@ -130,9 +130,9 @@ def-g-> (or defpipeline-g) is how we define named rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
 
-Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+Rendering in OpenGL is descibed as a pipeline where a `buffer-stream` of data
 usually describing geometry) is mapped over whilst a number of uniforms are
-available as input and the outputs are written into an FBO.
+available as input and the outputs are written into an `FBO`.
 
 There are many stages to the pipeline and a full explanation of the GPU pipeline
 is beyond the scope of this docstring. However it surfices to say that only
@@ -176,37 +176,44 @@ It is also possible to specify the name of the stages
 But this is not neccesary unless you need to distinguish between tessellation
 or geometry stages.
 
--- Context --
+**-- Context --**
 
 The second argument to def-g-> is the a list of additional information that is
 confusingly called the 'pipeline's context'. We need to change this name.
 
 Valid things that can be in this list are:
 
-- A primitive type: This specifies what primitives can be passed into this pipeline.
-  By default all pipelines expect triangles. When you map a buffer-stream over a
-  pipeline the primitive kind of the stream must match the pipeline.
+*A primitive type:*
 
-  The valid values are:
-  :dynamic
-  :points
-  :lines :line-loop :line-strip
-  :lines-adjacency :line-strip-adjacency
-  :triangles :triangle-fan :triangle-strip
-  :triangles-adjacency :triangle-strip-adjacency
-  (:patch <patch-size>)
+This specifies what primitives can be passed into this pipeline.
+By default all pipelines expect triangles. When you map a `buffer-stream` over a
+pipeline the primitive kind of the stream must match the pipeline.
 
-  :dynamic is special, it means that the pipeline will take the primitive kind
-  from the buffer-stream being mapped over. This won't work for with pipelines
-  with geometry or tessellation stages, but it otherwise quite useful.
+The valid values are:
 
-- A version restriction: This tells CEPL to compile the stage for a specific
-  version of GLSL. You usually do not want to use this as CEPL will compile for
-  the version the user is using.
-  The value can be one of:
-  :140 :150 :330 :400 :410 :420 :430 :440 :450
+    :dynamic
+    :points
+    :lines :line-loop :line-strip
+    :lines-adjacency :line-strip-adjacency
+    :triangles :triangle-fan :triangle-strip
+    :triangles-adjacency :triangle-strip-adjacency
+    (:patch <patch-size>)
 
--- Stage Names --
+:dynamic is special, it means that the pipeline will take the primitive kind
+from the buffer-stream being mapped over. This won't work for with pipelines
+with geometry or tessellation stages, but it otherwise quite useful.
+
+*A version restriction:*
+
+This tells CEPL to compile the stage for a specific
+version of GLSL. You usually do not want to use this as CEPL will compile for
+the version the user is using.
+
+The value can be one of:
+
+    :140 :150 :330 :400 :410 :420 :430 :440 :450
+
+**-- Stage Names --**
 
 Notice that we have to specify the typed signature of the stage. This is because
 CEPL allows you to 'overload' gpu functions. The signature for the a
@@ -214,7 +221,7 @@ gpu-function is a list which starts with the function name and whose other
 elements are the types of the non-uniforms arguments. As an example we can see
 above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
 
--- Passing values from Stage to Stage --
+**-- Passing values from Stage to Stage --**
 
 The return values of the gpu functions that are used as stages are passed as the
 input arguments of the next. The exception to this rule is that the first return
@@ -229,13 +236,13 @@ the default FBO, in which case you will likely see the result on the screen, or
 it may be a FBO of your own.
 
 By default GL only writed the fragment return value to the FBO. For handling
-multiple return values please see the docstring for with-fbo-bound.
+multiple return values please see the docstring for `with-fbo-bound`.
 
--- Using our pipelines --
+**-- Using our pipelines --**
 
-To call a pipeline we use the map-g macro (or one of its siblings
-map-g-into/map-g-into*). The doc-strings for those macros go into more details
-but the basics are that map-g maps a gpu-stream over our pipeline and the
+To call a pipeline we use the `map-g` macro (or one of its siblings
+`map-g-into`/`map-g-into*`). The doc-strings for those macros go into more details
+but the basics are that map-g maps a buffer-stream over our pipeline and the
 results of the pipeline are fed into the 'current' fbo.
 
 We pass our stream to map-g as the first argument after the pipeline, we then
@@ -261,13 +268,13 @@ We can call this as follows:
 
   (defmacro defpipeline-g
       "
-defpipeline-g is how we define named rendering pipelines in CEPL.
+`defpipeline-g` is how we define named rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
 
-Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+Rendering in OpenGL is descibed as a pipeline where a `buffer-stream` of data
 usually describing geometry) is mapped over whilst a number of uniforms are
-available as input and the outputs are written into an FBO.
+available as input and the outputs are written into an `FBO`.
 
 There are many stages to the pipeline and a full explanation of the GPU pipeline
 is beyond the scope of this docstring. However it surfices to say that only
@@ -285,7 +292,7 @@ The available stages kinds are:
 - :fragment
 
 To define code that runs on the gpu in CEPL we use gpu functions (gfuncs). Which
-are defined with defun-g.
+are defined with `defun-g`.
 
 Here is an example pipeline:
 
@@ -311,37 +318,44 @@ It is also possible to specify the name of the stages
 But this is not neccesary unless you need to distinguish between tessellation
 or geometry stages.
 
--- Context --
+**-- Context --**
 
-The second argument to defpipeline-g is the a list of additional information that is
-confusingly called the 'pipeline's context'. We need to change this name.
+The second argument to defpipeline-g is the a list of additional information that
+is confusingly called the 'pipeline's context'. We need to change this name.
 
 Valid things that can be in this list are:
 
-- A primitive type: This specifies what primitives can be passed into this pipeline.
-  By default all pipelines expect triangles. When you map a buffer-stream over a
-  pipeline the primitive kind of the stream must match the pipeline.
+*A primitive type:*
 
-  The valid values are:
-  :dynamic
-  :points
-  :lines :line-loop :line-strip
-  :lines-adjacency :line-strip-adjacency
-  :triangles :triangle-fan :triangle-strip
-  :triangles-adjacency :triangle-strip-adjacency
-  (:patch <patch-size>)
+This specifies what primitives can be passed into this pipeline.
+By default all pipelines expect triangles. When you map a buffer-stream over a
+pipeline the primitive kind of the stream must match the pipeline.
 
-  :dynamic is special, it means that the pipeline will take the primitive kind
-  from the buffer-stream being mapped over. This won't work for with pipelines
-  with geometry or tessellation stages, but it otherwise quite useful.
+The valid values are:
 
-- A version restriction: This tells CEPL to compile the stage for a specific
-  version of GLSL. You usually do not want to use this as CEPL will compile for
-  the version the user is using.
-  The value can be one of:
-  :140 :150 :330 :400 :410 :420 :430 :440 :450
+    :dynamic
+    :points
+    :lines :line-loop :line-strip
+    :lines-adjacency :line-strip-adjacency
+    :triangles :triangle-fan :triangle-strip
+    :triangles-adjacency :triangle-strip-adjacency
+    (:patch <patch-size>)
 
--- Stage Names --
+:dynamic is special, it means that the pipeline will take the primitive kind
+from the buffer-stream being mapped over. This won't work for with pipelines
+with geometry or tessellation stages, but it otherwise quite useful.
+
+*A version restriction:*
+
+This tells CEPL to compile the stage for a specific
+version of GLSL. You usually do not want to use this as CEPL will compile for
+the version the user is using.
+
+The value can be one of:
+
+    :140 :150 :330 :400 :410 :420 :430 :440 :450
+
+**-- Stage Names --**
 
 Notice that we have to specify the typed signature of the stage. This is because
 CEPL allows you to 'overload' gpu functions. The signature for the a
@@ -349,7 +363,7 @@ gpu-function is a list which starts with the function name and whose other
 elements are the types of the non-uniforms arguments. As an example we can see
 above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
 
--- Passing values from Stage to Stage --
+**-- Passing values from Stage to Stage --**
 
 The return values of the gpu functions that are used as stages are passed as the
 input arguments of the next. The exception to this rule is that the first return
@@ -364,13 +378,13 @@ the default FBO, in which case you will likely see the result on the screen, or
 it may be a FBO of your own.
 
 By default GL only writed the fragment return value to the FBO. For handling
-multiple return values please see the docstring for with-fbo-bound.
+multiple return values please see the docstring for `with-fbo-bound`.
 
--- Using our pipelines --
+**-- Using our pipelines --**
 
-To call a pipeline we use the map-g macro (or one of its siblings
-map-g-into/map-g-into*). The doc-strings for those macros go into more details
-but the basics are that map-g maps a gpu-stream over our pipeline and the
+To call a pipeline we use the `map-g` macro (or one of its siblings
+`map-g-into`/`map-g-into*`). The doc-strings for those macros go into more details
+but the basics are that map-g maps a buffer-stream over our pipeline and the
 results of the pipeline are fed into the 'current' fbo.
 
 We pass our stream to map-g as the first argument after the pipeline, we then
@@ -396,8 +410,8 @@ We can call this as follows:
 
   (defmacro map-g
       "
-The map-g macro maps a gpu-stream over our pipeline and the results of the
-pipeline are fed into the 'current' fbo.
+The map-g macro maps a `buffer-stream` over our pipeline and the results of the
+pipeline are fed into the 'current' `fbo`.
 
 This is how we run our pipelines and thus is how we render in CEPL.
 
@@ -407,8 +421,8 @@ in the pipeline you are calling. However the layout is always as follows.
 - the pipeline function: The first argument is always the pipeline you wish to
   map the data over.
 
-- The stream: The next argument will be the gpu-stream which will be used as the
-  inputs to the vertex-shader of the pipeline. The type of the gpu-stream  must
+- The stream: The next argument will be the buffer-stream which will be used as the
+  inputs to the vertex-shader of the pipeline. The type of the buffer-stream  must
   be mappable onto types of the non uniform args of the gpu-function being used
   as the vertex-shader.
 
@@ -418,19 +432,19 @@ in the pipeline you are calling. However the layout is always as follows.
 CEPL will then run the pipeline with the given args and the results will be fed
 into the current FBO. If no FBO has been bound by the user then the current FBO
 will be the default FBO which will most likely mean you are rendering into the
-window visable on your screen.
+surface visable on your screen.
 
 If an FBO has been bound then the value/s from the fragment shader will be
 written into the attachments of the FBO. To control this please see the
-doc-string for with-fbo-bound. The default behaviour is that each of the
+doc-string for `with-fbo-bound`. The default behaviour is that each of the
 multiple returns values from the gpu-function used as the fragment shader will
 be written into the respective attachments of the FBO (first value to first attachment, second value to second attachment, etc)
 ")
 
   (defmacro map-g-into
       "
-The map-g-into macro maps a gpu-stream over our pipeline and the results of the
-pipeline are fed into the supplied fbo.
+The `map-g-into` macro maps a `buffer-stream` over our pipeline and the results of the
+pipeline are fed into the supplied `fbo`.
 
 This is how we run our pipelines and thus is how we render in CEPL.
 
@@ -443,8 +457,8 @@ follows:
 - the pipeline function: The first argument is always the pipeline you wish to
   map the data over.
 
-- The stream: The next argument will be the gpu-stream which will be used as the
-  inputs to the vertex-shader of the pipeline. The type of the gpu-stream  must
+- The stream: The next argument will be the buffer-stream which will be used as the
+  inputs to the vertex-shader of the pipeline. The type of the buffer-stream  must
   be mappable onto types of the non uniform args of the gpu-function being used
   as the vertex-shader.
 
@@ -454,30 +468,30 @@ follows:
 CEPL will then run the pipeline with the given args and the results will be fed
 into the specified FBO. The value/s from the fragment shader will be
 written into the attachments of the FBO. If you need to  control this in the
-fashion usualy provided by with-fbo-bound then please see the doc-string for
- map-g-into*.
+fashion usualy provided by `with-fbo-bound` then please see the doc-string for
+ `map-g-into*`.
 
 The default behaviour is that each of the multiple returns values from the
 gpu-function used as the fragment shader will be written into the respective
 attachments of the FBO (first value to first attachment, second value to
 second attachment, etc)
 
-Internally map-g-into wraps call to map-g in with-fbo-bound. The with-fbo-bound
+Internally map-g-into wraps call to `map-g` in with-fbo-bound. The with-fbo-bound
 has its default configuration which means that:
 
-- the viewport being will be the dimensions of the gpu-array in the first fbo attachment
+- the `viewport` being will be the dimensions of the `gpu-array` in the first fbo attachment
 - and blending is enabled
 
 If you want to use map-g-into and have control over these options please use
-map-g-into*
+`map-g-into*`
 ")
 
   (defmacro map-g-into*
       "
-The map-g-into* macro is a variant of map-g-into which differs in that you have
-more control over how the fbo is bound.
+The `map-g-into*` macro is a variant of `map-g-into` which differs in that you have
+more control over how the `fbo` is bound.
 
-Like map-g-into, map-g-into* maps a gpu-stream over our pipeline and the
+Like map-g-into, map-g-into* maps a `buffer-stream` over our pipeline and the
 results of the pipeline are fed into the supplied fbo.
 
 This is how we run our pipelines and thus is how we render in CEPL.
@@ -488,9 +502,9 @@ follows.
 
 - fbo: This is where the results of the pipeline will be written.
 
-- with-viewport: If with-viewport is t then with-fbo-bound adds a
-                 with-fbo-viewport that uses this fbo to this scope. This means
-                 that the current-viewport within this scope will be set to the
+- with-viewport: If with-viewport is t then `with-fbo-bound` adds a
+                 `with-fbo-viewport` that uses this fbo to this scope. This means
+                 that the `current-viewport` within this scope will be set to the
                  equivalent of:
 
                      (make-viewport dimensions-of-fbo '(0 0))
@@ -498,8 +512,8 @@ follows.
                  See the docstruct with-fbo-viewport for details on this
                  behavior.
 
-                 One last detail is that you may want to take the dimensions of
-                 the viewport from an attachment other than attachment-0.
+                 One last detail is that you may want to take the `dimensions` of
+                 the `viewport` from an attachment other than attachment-0.
                  To do this use the 'attachment-for-size argument and give the
                  index of the color-attachment to use.
 
@@ -514,8 +528,8 @@ follows.
 - the pipeline function: The first argument is always the pipeline you wish to
   map the data over.
 
-- The stream: The next argument will be the gpu-stream which will be used as the
-  inputs to the vertex-shader of the pipeline. The type of the gpu-stream  must
+- The stream: The next argument will be the buffer-stream which will be used as the
+  inputs to the vertex-shader of the pipeline. The type of the buffer-stream  must
   be mappable onto types of the non uniform args of the gpu-function being used
   as the vertex-shader.
 
@@ -526,14 +540,14 @@ CEPL will then run the pipeline with the given args and the results will be fed
 into the specified FBO. The value/s from the fragment shader will be
 written into the attachments of the FBO. If you need to control this in the
 fashion usualy provided by with-fbo-bound then please see the doc-string for
- map-g-into*.
+ `map-g-into*`.
 
 The default behaviour is that each of the multiple returns values from the
 gpu-function used as the fragment shader will be written into the respective
-attachments of the FBO (first value to first attachment, second value to
+attachments of the `FBO` (first value to first attachment, second value to
 second attachment, etc)
 
-Internally map-g-into* wraps call to map-g in with-fbo-bound. The with-fbo-bound
+Internally map-g-into* wraps call to `map-g` in with-fbo-bound. The with-fbo-bound
 has its default configuration which means that:
 ")
 
@@ -551,7 +565,7 @@ It is used like this:
        }\"
       ((\"color_out\" :vec4)))
 
-It differs from a regular defun-g definition in a few ways.
+It differs from a regular `defun-g` definition in a few ways.
 
 - argument names are specified using strings.
 
@@ -561,7 +575,7 @@ It differs from a regular defun-g definition in a few ways.
 - You are defining the entire stage, not just a function body. This means you
   can define local shader functions etc
 
-- You have to specify the outputs in lisp aswell as the inputs. This allows CEPL
+- You have to specify the outputs in lisp as well as the inputs. This allows CEPL
   to compose this stage in pipelines with regular CEPL gpu functions.
 
 CEPL will write all the in, out and uniform definitions for your shader so do
@@ -624,9 +638,9 @@ g-> is how we define anonymous rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
 
-Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+Rendering in OpenGL is descibed as a pipeline where a `buffer-stream` of data
 usually describing geometry) is mapped over whilst a number of uniforms are
-available as input and the outputs are written into an FBO.
+available as input and the outputs are written into an `FBO`.
 
 There are many stages to the pipeline and a full explanation of the GPU
 pipeline is beyond the scope of this docstring. However it surfices to say that
@@ -644,7 +658,7 @@ The available stages kinds are:
 - :fragment
 
 To define code that runs on the gpu in CEPL we use gpu functions (gfuncs)
-Which are defined with defun-g or lambda-g.
+Which are defined with `defun-g` or lambda-g.
 
 Here is an example pipeline:
 
@@ -672,37 +686,44 @@ It is also possible to specify the name of the stages
 But this is not neccesary unless you need to distinguish between tessellation
 or geometry stages.
 
--- Context --
+**-- Context --**
 
-The first argument to g-> is the a list of optional information that is
+The first argument to g-> is the a list of additional information that is
 confusingly called the 'pipeline's context'. We need to change this name.
 
 Valid things that can be in this list are:
 
-- A primitive type: This specifies what primitives can be passed into this pipeline.
-  By default all pipelines expect triangles. When you map a buffer-stream over a
-  pipeline the primitive kind of the stream must match the pipeline.
+*A primitive type:*
 
-  The valid values are:
-  :dynamic
-  :points
-  :lines :line-loop :line-strip
-  :lines-adjacency :line-strip-adjacency
-  :triangles :triangle-fan :triangle-strip
-  :triangles-adjacency :triangle-strip-adjacency
-  (:patch <patch-size>)
+This specifies what primitives can be passed into this pipeline.
+By default all pipelines expect triangles. When you map a buffer-stream over a
+pipeline the primitive kind of the stream must match the pipeline.
 
-  :dynamic is special, it means that the pipeline will take the primitive kind
-  from the buffer-stream being mapped over. This won't work for with pipelines
-  with geometry or tessellation stages, but it otherwise quite useful.
+The valid values are:
 
-- A version restriction: This tells CEPL to compile the stage for a specific
-  version of GLSL. You usually do not want to use this as CEPL will compile for
-  the version the user is using.
-  The value can be one of:
-  :140 :150 :330 :400 :410 :420 :430 :440 :450
+    :dynamic
+    :points
+    :lines :line-loop :line-strip
+    :lines-adjacency :line-strip-adjacency
+    :triangles :triangle-fan :triangle-strip
+    :triangles-adjacency :triangle-strip-adjacency
+    (:patch <patch-size>)
 
--- Stage Names --
+:dynamic is special, it means that the pipeline will take the primitive kind
+from the buffer-stream being mapped over. This won't work for with pipelines
+with geometry or tessellation stages, but it otherwise quite useful.
+
+*A version restriction:*
+
+This tells CEPL to compile the stage for a specific
+version of GLSL. You usually do not want to use this as CEPL will compile for
+the version the user is using.
+
+The value can be one of:
+
+    :140 :150 :330 :400 :410 :420 :430 :440 :450
+
+**-- Stage Names --**
 
 Notice that we have to specify the typed signature of the stage. This is because
 CEPL allows you to 'overload' gpu functions. The signature for the a
@@ -710,7 +731,7 @@ gpu-function is a list which starts with the function name and whose other
 elements are the types of the non-uniforms arguments. As an example we can see
 above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
 
--- Passing values from Stage to Stage --
+**-- Passing values from Stage to Stage --**
 
 The return values of the gpu functions that are used as stages are passed as the
 input arguments of the next. The exception to this rule is that the first return
@@ -725,13 +746,13 @@ the default FBO, in which case you will likely see the result on the screen, or
 it may be a FBO of your own.
 
 By default GL only writed the fragment return value to the FBO. For handling
-multiple return values please see the docstring for with-fbo-bound.
+multiple return values please see the docstring for `with-fbo-bound`.
 
--- Using our pipelines --
+**-- Using our pipelines --**
 
-To call a pipeline we use the map-g macro (or one of its siblings
-map-g-into/map-g-into*). The doc-strings for those macros go into more details
-but the basics are that map-g maps a gpu-stream over our pipeline and the
+To call a pipeline we use the `map-g` macro (or one of its siblings
+`map-g-into`/`map-g-into*`). The doc-strings for those macros go into more details
+but the basics are that map-g maps a buffer-stream over our pipeline and the
 results of the pipeline are fed into the 'current' fbo.
 
 We pass our stream to map-g as the first argument after the pipeline, we then
@@ -764,9 +785,9 @@ pipeline is how we define anonymous rendering pipelines in CEPL.
 
 Rendering pipelines are constructed by composing gpu-functions.
 
-Rendering in OpenGL is descibed as a pipeline where a buffer-stream of data
+Rendering in OpenGL is descibed as a pipeline where a `buffer-stream` of data
 usually describing geometry) is mapped over whilst a number of uniforms are
-available as input and the outputs are written into an FBO.
+available as input and the outputs are written into an `FBO`.
 
 There are many stages to the pipeline and a full explanation of the GPU
 pipeline is beyond the scope of this docstring. However it surfices to say that
@@ -784,7 +805,7 @@ The available stages kinds are:
 - :fragment
 
 To define code that runs on the gpu in CEPL we use gpu functions (gfuncs)
-Which are defined with defun-g or lambda-g.
+Which are defined with `defun-g` or lambda-g.
 
 Here is an example pipeline:
 
@@ -812,37 +833,44 @@ It is also possible to specify the name of the stages
 But this is not neccesary unless you need to distinguish between tessellation
 or geometry stages.
 
--- Context --
+**-- Context --**
 
-The first argument to pipeline is the a list of optional information that is
-confusingly called the 'pipeline's context'. We need to change this name.
+The first argument to pipeline-g is the a list of additional information that
+is confusingly called the 'pipeline's context'. We need to change this name.
 
 Valid things that can be in this list are:
 
-- A primitive type: This specifies what primitives can be passed into this pipeline.
-  By default all pipelines expect triangles. When you map a buffer-stream over a
-  pipeline the primitive kind of the stream must match the pipeline.
+*A primitive type:*
 
-  The valid values are:
-  :dynamic
-  :points
-  :lines :line-loop :line-strip
-  :lines-adjacency :line-strip-adjacency
-  :triangles :triangle-fan :triangle-strip
-  :triangles-adjacency :triangle-strip-adjacency
-  (:patch <patch-size>)
+This specifies what primitives can be passed into this pipeline.
+By default all pipelines expect triangles. When you map a buffer-stream over a
+pipeline the primitive kind of the stream must match the pipeline.
 
-  :dynamic is special, it means that the pipeline will take the primitive kind
-  from the buffer-stream being mapped over. This won't work for with pipelines
-  with geometry or tessellation stages, but it otherwise quite useful.
+The valid values are:
 
-- A version restriction: This tells CEPL to compile the stage for a specific
-  version of GLSL. You usually do not want to use this as CEPL will compile for
-  the version the user is using.
-  The value can be one of:
-  :140 :150 :330 :400 :410 :420 :430 :440 :450
+    :dynamic
+    :points
+    :lines :line-loop :line-strip
+    :lines-adjacency :line-strip-adjacency
+    :triangles :triangle-fan :triangle-strip
+    :triangles-adjacency :triangle-strip-adjacency
+    (:patch <patch-size>)
 
--- Stage Names --
+:dynamic is special, it means that the pipeline will take the primitive kind
+from the buffer-stream being mapped over. This won't work for with pipelines
+with geometry or tessellation stages, but it otherwise quite useful.
+
+*A version restriction:*
+
+This tells CEPL to compile the stage for a specific
+version of GLSL. You usually do not want to use this as CEPL will compile for
+the version the user is using.
+
+The value can be one of:
+
+    :140 :150 :330 :400 :410 :420 :430 :440 :450
+
+**-- Stage Names --**
 
 Notice that we have to specify the typed signature of the stage. This is because
 CEPL allows you to 'overload' gpu functions. The signature for the a
@@ -850,7 +878,7 @@ gpu-function is a list which starts with the function name and whose other
 elements are the types of the non-uniforms arguments. As an example we can see
 above that the signature for vert is (vert :vec4), not (vert :vec4 :float).
 
--- Passing values from Stage to Stage --
+**-- Passing values from Stage to Stage --**
 
 The return values of the gpu functions that are used as stages are passed as the
 input arguments of the next. The exception to this rule is that the first return
@@ -865,13 +893,13 @@ the default FBO, in which case you will likely see the result on the screen, or
 it may be a FBO of your own.
 
 By default GL only writed the fragment return value to the FBO. For handling
-multiple return values please see the docstring for with-fbo-bound.
+multiple return values please see the docstring for `with-fbo-bound`.
 
--- Using our pipelines --
+**-- Using our pipelines --**
 
 To call a pipeline we use the map-g macro (or one of its siblings
-map-g-into/map-g-into*). The doc-strings for those macros go into more details
-but the basics are that map-g maps a gpu-stream over our pipeline and the
+`map-g-into`/`map-g-into*`). The doc-strings for those macros go into more details
+but the basics are that map-g maps a buffer-stream over our pipeline and the
 results of the pipeline are fed into the 'current' fbo.
 
 We pass our stream to map-g as the first argument after the pipeline, we then
@@ -913,7 +941,7 @@ in new pipelines.
 This function will only delete one function at a time, so if your gpu-function
 is overloaded then you will want to specify the function signature exactly.
 
-See the documentation for #'gpu-functions which will lists all the signatures
+See the documentation for `gpu-functions` which will lists all the signatures
 for the gpu-functions with a given name.
 
 ")
@@ -959,7 +987,7 @@ there are some differences.
 
 The first and most obvious one is that whilst gpu function can be called
 from other gpu functions, they cannot be called from lisp functions directly.
-They first must be composed into a pipeline using defpipeline-g.
+They first must be composed into a pipeline using `defpipeline-g`.
 
 When a gfunc is composed into a pipeline then that function takes on the role
 of one of the 'shader stages' of the pipeline. For a proper breakdown of
@@ -984,7 +1012,7 @@ Let's see a simple example of a gpu function we can then break down
 
 {2} Here is our definition for the uniform value. If used in a pipeline as a
     vertex shader #'example will be called once for every value in the
-    gpu-stream given. That means the 'vert' argument will have a different value
+    `buffer-stream` given. That means the 'vert' argument will have a different value
     for each of the potentially millions of invocations in that ONE pipeline
     call, however 'loop' will have the same value for the entire pipeline call.
 
@@ -1015,7 +1043,7 @@ there are some differences.
 
 The first and most obvious one is that whilst gpu function can be called
 from other gpu functions, they cannot be called from lisp functions directly.
-They first must be composed into a pipeline using defpipeline-g.
+They first must be composed into a pipeline using `defpipeline-g`.
 
 When a gfunc is composed into a pipeline then that function takes on the role
 of one of the 'shader stages' of the pipeline. For a proper breakdown of
@@ -1040,7 +1068,7 @@ Let's see a simple example of a gpu function we can then break down
 
 {2} Here is our definition for the uniform value. If used in a pipeline as a
     vertex shader #'example will be called once for every value in the
-    gpu-stream given. That means the 'vert' argument will have a different value
+    `buffer-stream` given. That means the 'vert' argument will have a different value
     for each of the potentially millions of invocations in that ONE pipeline
     call, however 'loop' will have the same value for the entire pipeline call.
 

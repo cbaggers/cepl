@@ -3,8 +3,8 @@
 (docs:define-docs
   (defmacro defstruct-g
       "
-defstruct-g defines a struct that can be used both gpu-side (in gpu functions,
-gpu-arrays, ubos, etc) and also cpu-side (in c-arrays, other gstructs, etc)
+`defstruct-g` defines a struct that can be used both gpu-side (in gpu functions,
+`gpu-array`s, `ubos`, etc) and also cpu-side (in `c-array`s, other gstructs, etc)
 
 You create these using defstruct-g so lets look at an example right now:
 
@@ -75,12 +75,12 @@ but are documented here for the sake of completeness.
   Setting this to nil means that you will get *neither* of the above.
 
   :pull-push
-  Setting this to nil means that you will get *no* push-g or pull-g methods
+  Setting this to nil means that you will get *no* `push-g` or `pull-g` methods
   defined for your type
 
   :attribs
   Setting this to nil means that defstruct-g will not be able to make
-  gpu-streams from arrays of this type.
+  buffer-streams from arrays of this type.
 
   :populate
   Setting this to nil means that you will not get a internal populate function
@@ -88,8 +88,8 @@ but are documented here for the sake of completeness.
 
 
 Some of the above options are redundent in combination with others.
-For example the push-g method uses #'populate behind the scenes so with
-populate disabled you can have #'push-g for this type.
+For example the `push-g` method uses #'populate behind the scenes so with
+populate disabled you can have `push-g` for this type.
 
 CEPL currently does a poor job at communicating these conflicts to the user.
 
@@ -98,7 +98,7 @@ CEPL currently does a poor job at communicating these conflicts to the user.
   (defun lisp-type->pixel-format
       "
 This function, when given a lisp type name, will attempt to find and
-return an equivalent pixel-format.
+return an equivalent `pixel-format`.
 
 If no such type is found then nil is returned
 ")
@@ -114,7 +114,7 @@ If no such type is found then nil is returned
   (defun image-format->pixel-format
       "
 This function, when given an image-format name, will attempt to find and
-return equivalent equivalent pixel-format.
+return equivalent equivalent `pixel-format`.
 
 If no such type is found then nil is returned
 ")
@@ -129,7 +129,7 @@ If no such type is found then nil is returned
 
   (defun pixel-format->image-format
       "
-This function, when given a pixel-format object, will attempt to find and
+This function, when given a `pixel-format` object, will attempt to find and
 return the name of a GL image-format that is equivalent.
 
 If no such type is found then nil is returned
@@ -137,7 +137,7 @@ If no such type is found then nil is returned
 
   (defun pixel-format->lisp-type
       "
-This function, when given a pixel-format object, will attempt to find and
+This function, when given a `pixel-format` object, will attempt to find and
 return the name of a lisp type that is equivalent.
 
 If no such type is found then nil is returned
@@ -148,8 +148,11 @@ If no such type is found then nil is returned
 This function, when given a foreign type name returns a function that when given
 a pointer reads the named type foreign from the pointer.
 
-For example (get-typed-from-foreign :vec3) returns a function that when given a
-pointer to a :vec3 will return a lisp vec3.
+For example
+
+    (get-typed-from-foreign :vec3)
+
+returns a function that when given a pointer to a :vec3 will return a lisp vec3.
 ")
 
   (defun get-typed-to-foreign
@@ -158,6 +161,10 @@ This function, when given a foreign type name returns a function that when given
 a pointer and a lisp value, converts and writes the value to the foreign
 location specified by the pointer pointer.
 
-For example (get-typed-to-foreign :vec3) returns a function that when given a
-pointer and a lisp vec3 will write the value into foreign memory.
+For example:
+
+    (get-typed-to-foreign :vec3)
+
+returns a function that when given a pointer and a lisp vec3 will write the
+ value into foreign memory.
 "))

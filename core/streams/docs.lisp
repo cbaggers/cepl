@@ -61,7 +61,7 @@ and blank the buffer-stream object.
 
 It will not free any of the gpu-data that was composed to make this stream.
 
-Calling the generic function #'free with a buffer-stream will call this function")
+Calling the generic function `free` with a buffer-stream will call this function")
 
   (defun make-buffer-stream
       "

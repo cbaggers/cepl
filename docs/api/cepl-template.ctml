@@ -35,7 +35,7 @@
         <article id="symbol-index">
           <h2>Package Index</h2>
           <ul iterate="packages">
-            <c:package name="*" as="li" class="package">
+            <c:package name="*" as="li" class="package" style="list-style-type: none">
               <h3>
                 <a lquery="(text (package-name *)) (attr :name (package-name *) :href (anchor (package-name *)))">PACKAGE</a>
                 <span lquery="(text (package-nicknames *))" class="nicknames">NICKS</span>
@@ -49,10 +49,10 @@
                                       arguments)">
                         <c:then>
                           <h4 class="name">
+                            <code>(</code>
                             <code>
                               <a lquery="(text name) (attr :href (anchor full-name))">NAME</a>
                             </code>
-                            <code>(</code>
                             <code class="qualifiers" lquery="(text (present-qualifiers qualifiers))">QUALIFIERS</code>
                             <code class="arguments" lquery="(text (present-arguments arguments NIL))">ARGUMENTS</code>
                             <code>)</code>

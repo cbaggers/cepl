@@ -3,11 +3,12 @@
 (docs:define-docs
   (defmacro with-vao-bound
             "
-Binds the vao to the gl context and guarentees it will be unbound after the
+Binds the `vao` to the gl context and guarentees it will be unbound after the
 body scope.
 
 Usually you will not need to interact with the vao directly as you can simply
-use a buffer-stream and let map-g handle when it should be bound and unbound.
+use a `buffer-stream` and let `map-g` handle when it should be bound and
+unbound.
 ")
 
   (defun free-vao
