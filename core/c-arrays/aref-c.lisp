@@ -5,13 +5,10 @@
 ;; A: That requires looking up the size of the type on every call. Instead
 ;;    we cache that in the c-array and do the math ourselves.
 
-(declaim (inline ptr-index-1d)
-         (ftype (function (c-array fixnum) cffi-sys:foreign-pointer)
-                ptr-index-1d))
-(defun ptr-index-1d (c-array x)
-  (declare (c-array c-array)
-           (fixnum x)
-           (optimize (speed 3) (safety 0) (debug 1)))
+(defn-inline ptr-index-1d ((c-array c-array) (x fixnum))
+    cffi-sys:foreign-pointer
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (profile ptr-index-1d))
   (the cffi-sys:foreign-pointer
        (inc-pointer (c-array-pointer c-array)
                     (the fixnum

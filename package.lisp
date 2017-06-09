@@ -1,8 +1,7 @@
 ;;;; package.lisp
 
 (uiop:define-package :cepl-utils
-    (:use :cl)
-  (:import-from :%rtg-math :defn :defn-inline)
+    (:use :cl :%rtg-math)
   (:export :gdefun
            :dbind
            :assoc-bind
@@ -606,7 +605,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :%cepl.types :split-sequence
           :named-readtables :cepl.errors :cepl.internals :cepl.image-formats
-          :cepl.pixel-formats :cepl.memory :cepl.measurements)
+          :cepl.pixel-formats :cepl.memory :cepl.measurements
+          :cepl.perf.core)
   (:export :with-c-array
            :with-c-arrays
            :element-byte-size
