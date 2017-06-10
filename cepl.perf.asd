@@ -7,7 +7,8 @@
   :serial t
   :depends-on (:rtg-math
                :cepl.perf.core
-               :bordeaux-threads)
+               :bordeaux-threads
+               :chanl)
   :components ((:file "perf/package")
                (:file "perf/impl")
                (:file "perf/tools")))
