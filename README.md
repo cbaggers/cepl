@@ -18,7 +18,7 @@ Run `(ql:quickload :cepl)` at your REPL.
 
 ### Cloning
 
-Whist it is recommended to get CEPL from quicklisp, if you clone please note that `master` is not the stable branch. Please use `release-quicklisp` for the stable code that will be in the next CEPL release.
+Whilst it is recommended to get CEPL from quicklisp, if you clone please note that `master` is not the stable branch. Please use `release-quicklisp` for the stable code that will be in the next CEPL release.
 
 ### Documentation
 
