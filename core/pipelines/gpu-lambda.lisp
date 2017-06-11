@@ -14,22 +14,22 @@
    (func-spec :initform nil))
   (:metaclass closer-mop:funcallable-standard-class))
 
-(defmethod glambda->func-spec ((glambda gpu-lambda))
-  (slot-value glambda 'func-spec))
+(defmethod lambda-g->func-spec ((lambda-g gpu-lambda))
+  (slot-value lambda-g 'func-spec))
 
-(defmethod initialize-instance :after ((glambda gpu-lambda) &key)
+(defmethod initialize-instance :after ((lambda-g gpu-lambda) &key)
   ;; need to emit warning if called
-  (closer-mop:set-funcallable-instance-function glambda #'%glambda)
+  (closer-mop:set-funcallable-instance-function lambda-g #'%lambda-g)
   ;; need to make the func-spec so can be used in pipelines
   (with-slots (in-args uniforms body instancing doc-string
-                       declarations context func-spec) glambda
+                       declarations context func-spec) lambda-g
     (setf func-spec
           (%test-&-update-spec
            (%make-gpu-func-spec
             nil in-args uniforms context body instancing nil nil
             nil doc-string declarations nil)))))
 
-(defun %glambda (&rest args)
+(defun %lambda-g (&rest args)
   (declare (ignore args))
   (warn "GPU Functions cannot currently be used from the cpu"))
 
@@ -42,13 +42,11 @@
   ;; at the tail
   ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
   ;; seperate any doc-string or declarations from the body
-  (let ((doc-string (when (stringp (first body)) (pop body)))
-        (declarations (when (and (listp (car body)) (eq (caar body) 'declare))
-                        (pop body))))
+  (let ((doc-string (when (stringp (first body)) (pop body))))
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+        (varjo.utils:lambda-list-split '(:&uniform :&context :&instancing) args)
       ;; check the arguments are sanely formatted
       (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
@@ -58,11 +56,14 @@
                      :body body
                      :instancing instancing
                      :doc-string doc-string
-                     :declarations declarations
+                     :declarations nil
                      :context context))))
 
-(defmacro glambda (args &body body)
+(defmacro lambda-g (args &body body)
   (make-gpu-lambda args body))
+
+(defmacro glambda (args &body body)
+  `(lambda-g ,args ,@body))
 
 ;;------------------------------------------------------------
 
@@ -91,8 +92,8 @@
          (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
          (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
          (u-lets (mapcat #'let-forms uniform-assigners))
-         (primitive (varjo::primitive-name-to-instance
-                     (varjo:get-primitive-type-from-context context))))
+         (primitive (varjo.internals:primitive-name-to-instance
+                     (varjo.internals:get-primitive-type-from-context context))))
     `(multiple-value-bind (compiled-stages prog-id)
          (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
        (register-lambda-pipeline
@@ -116,13 +117,22 @@
             (declare (optimize (speed 3) (safety 1))
                      (ignore mapg-context) (ignorable ,@uniform-names))
             #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+            ,@(unless (typep primitive 'varjo::dynamic)
+                      `((when stream
+                          (assert
+                           (= ,(draw-mode-group-id primitive)
+                              (buffer-stream-primitive-group-id stream))
+                           ()
+                           'buffer-stream-has-invalid-primtive-for-stream
+                           :name "<lambda>"
+                           :pline-prim ',(varjo::lisp-name primitive)
+                           :stream-prim (buffer-stream-primitive stream)))))
             (use-program prog-id)
             ,@u-uploads
             (locally (declare (optimize (speed 3) (safety 1)))
               (funcall implicit-uniform-upload-func prog-id
                        ,@uniform-names))
             (when stream (draw-expander stream ,primitive))
-            (use-program 0)
             ,@u-cleanup
             stream))))))
 
@@ -132,7 +142,7 @@
 
 ;;------------------------------------------------------------
 
-(defmacro g-> (context &body gpipe-args)
+(defmacro pipeline-g (context &body gpipe-args)
   (labels ((unfunc (x)
              (if (and (listp x) (eq (first x) 'function))
                  `(quote ,(second x))
@@ -141,6 +151,9 @@
       (if (every #'constantp args)
           (make-lambda-pipeline gpipe-args context)
           `(make-n-compile-lambda-pipeline (list ,@args) ',context)))))
+
+(defmacro g-> (context &body gpipe-args)
+  `(pipeline-g ,context ,@gpipe-args))
 
 #+nil
 (defun example ()
@@ -156,3 +169,16 @@
   closure)
 
 ;;------------------------------------------------------------
+
+(defmethod pull-g ((object gpu-lambda))
+  (let ((vresult (pull1-g object)))
+    (when vresult
+      (varjo:glsl-code vresult))))
+
+(defmethod pull1-g ((object gpu-lambda))
+  (with-slots (func-spec) object
+    (let ((compiled (slot-value func-spec 'cached-compile-results)))
+      (if compiled
+          compiled
+          (warn 'func-keyed-pipeline-not-found
+                :callee 'pull-g :func object)))))

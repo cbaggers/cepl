@@ -37,19 +37,36 @@
                 <a lquery="(text (package-name *)) (attr :name (package-name *) :href (anchor (package-name *)))">PACKAGE</a>
                 <span lquery="(text (package-nicknames *))" class="nicknames">NICKS</span>
               </h3>
-              <c:do-external-symbols as="ul" package="*" exclude="method internal">
+              <c:do-symbols as="ul" package="*" exclude="method internal inherited">
                 <li>
-                  <a lquery="(attr :name full-name)"></a>
+                  <a lquery="(attr :name full-name)">&nbsp;</a>
                   <article>
                     <header lquery="(add-class type)">
-                      <span lquery="(text type)" class="type">TYPE</span>
-                      <code>
-                        <h4><a lquery="(text (present symbol)) (attr :href (anchor full-name))" class="name">NAME</a></h4>
-                        <span lquery="(text (present-qualifiers qualifiers))" class="qualifiers">QUALIFIERS</span>
-                        <span lquery="(text (present-arguments arguments))" class="arguments">ARGUMENTS</span>
-                      </code>
+                      <c:if test="(or (find type #(function accessor macro generic method) :test #'string-equal)
+                                      arguments)">
+                        <c:then>
+                          <h4 class="name">
+                            <code>
+                              <a lquery="(text name) (attr :href (anchor full-name))">NAME</a>
+                            </code>
+                            <code>(</code>
+                            <code class="qualifiers" lquery="(text (present-qualifiers qualifiers))">QUALIFIERS</code>
+                            <code class="arguments" lquery="(text (present-arguments arguments NIL))">ARGUMENTS</code>
+                            <code>)</code>
+                          </h4>
+                          <i class="type" lquery="(text type)">TYPE</i>
+                        </c:then>
+                        <c:else>
+                          <h4 class="name">
+                            <code>
+                              <a lquery="(text name) (attr :href (anchor full-name))">NAME</a>
+                            </code>
+                          </h4>
+                          <i class="type" lquery="(text type)">TYPE</i>
+                        </c:else>
+                      </c:if>
                     </header>
-                    <pre lquery="(text documentation)" class="docstring">DOCUMENTATION</pre>
+                    <div lquery="(html (render-docstring documentation (**** :asdf)))" class="docstring">DOCUMENTATION</div>
                   </article>
                 </li>
               </c:do-symbols>

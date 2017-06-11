@@ -53,7 +53,7 @@ Given an incoming and stored depths it will always return T.")
 This function specifies whether the depth buffer is enabled for writing.
 If setf'ed to nil, depth buffer writing is disabled. Otherwise, it is enabled.
 
-Initially, it is set to T (enabled)")
+Initially, it is set to t (enabled)")
 
   (defun depth-clamp
       "
@@ -64,7 +64,7 @@ If setf'ed to nil, the -wc ≤ zc ≤ wc plane equation is ignored
     plane clipping). See glDepthRange.
 If setf'ed to nil, depth buffer writing is disabled. Otherwise, it is enabled.
 
-Initially, it is set to T (enabled)")
+Initially, it is set to t (enabled)")
 
   (defun depth-range-vec2
       "

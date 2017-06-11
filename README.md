@@ -32,22 +32,25 @@ I can also be reached by my email (techsnuffle [at] gmail · com) and sometimes 
 
 All of the following will be downloaded automatically by quicklisp
 
-* cffi
-* cl-autowrap
-* cl-fad
-* cl-opengl
-* cl-plus-c
-* cl-ppcre
-* documentation-utils
-* fn
-* named-readtables
-* rtg-math
-* varjo
-
+- cffi
+- cl-autowrap
+- cl-fad
+- cl-opengl
+- cl-plus-c
+- cl-ppcre
+- documentation-utils
+- fn
+- ieee-floats
+- named-readtables
+- varjo
+- rtg-math
+- rtg-math.vari
+- closer-mop
+- bordeaux-threads
 
 #### C Library dependency
 
-CEPL uses OpenGL so you need to make sure it is available on your machine. Installing your GPU drivers will usually handle this.
+CEPL uses OpenGL ( version >= 3.1 ) so you need to make sure it is available on your machine. Installing your GPU drivers will usually handle this.
 
 
 #### CEPL's Host
@@ -57,7 +60,7 @@ CEPL abstracts working with OpenGL but is not responsible for creating a window 
 
 ### Getting Started
 
-_Note:_ On `Windows` and `OSX`, `slime` users may want to add the code specifed in `docs/single-thread-swank.md` to their Emacs config file, and use the command `slime-style` which will start `slime` in a more OpenGL friendly mode. Then follow the rest of this as usual.
+_Note:_ On `OSX`, `slime` users may want to add the code specifed in `docs/single-thread-swank.md` to their Emacs config file, and use the command `slime-style` which will start `slime` in a more OpenGL friendly mode. Then follow the rest of this as usual.
 
 To load CEPL and the default host (`sdl2`) do the following:
 
@@ -91,8 +94,52 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 ## CHANGELOG
 
-### 2017-03-25
-- Removed the
+### 2017-06-04
+
+- pipelines can take `:dynamic` as their draw mode. This means they will take the draw-mode from the `buffer-stream` they are mapped over. This only works for pipelines with `vertex` & `fragment` stages.
+
+- `buffer-stream`s now hold the primitive type of their data. Defaults to `:triangles`
+
+- Fix bug that was stopping g-structs contain matrices
+
+- Cache more values in `buffer-stream` to save time during rendering
+
+- Add `surface-dimensions`, `surface-resolution`, `surface-title` & `surface-fullscreen-p`
+
+- add `adjust-gpu-array` (pretty basic right now)
+
+- Remove `cepl.spaces`, It is now a seperate project (and will be in quicklisp in the next cycle)
+
+- Remove `cepl.misc`. If you were using the `draw-texture` function then please consider `Nineveh` (which will be in quicklisp in the next cycle)
+
+- `make-project` now uses `dirt` instead of `devil`. `dirt` uses `cl-soil` which ships with binaries for multiple paltforms so has a better 'out of the box' experience (plus also supports more formats)
+
+### 2017-05-16
+
+*I missed some logs here so this is a recap of everything since 2017-02-19*
+
+- Geometry & Tessellation fully supported (including for inline glsl stages)
+
+- Draw mode can now be specified for pipelines
+
+- fixes for pull-g with gpu-functions & pipelines
+
+- add `with-gpu-array-range-as-pointer` & `with-gpu-array-range-as-c-array`. These still feel experimental to me.
+
+- add `reallocate-gpu-array` & `reallocate-buffer`
+
+- buffer-streams always hold on to their gpu-arrays by default
+
+- Refactoring based on changes in Varjo
+
+- Added bordeux-threads as a dependency. Will be needed for some context related things
+
+- Very basic support for multiple surfaces (windows)
+
+- New 'host' api. Is versioned so old hosts are still supported
+
+- remove `run-session`. All of these attempts at thread hackery felt bad. I'm sticking with `slime-style` until we have a better fix
+
 
 ### 2017-02-19
 - Removed the `continuable` macro. The macro can be found in the `livesupport` project. Simply `(ql:quickload :livesupport)`

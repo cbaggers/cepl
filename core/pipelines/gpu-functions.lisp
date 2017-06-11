@@ -20,7 +20,7 @@
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
-        (varjo:lambda-list-split '(:&uniform :&context :&instancing) args)
+        (varjo.utils:lambda-list-split '(:&uniform :&context :&instancing) args)
       ;; check the arguments are sanely formatted
       (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
@@ -132,12 +132,12 @@
                                             context))
                      (compiled
                       (first
-                       (varjo:test-translate-function-split-details
+                       (varjo.internals::test-translate-function-split-details
                         name in-args uniforms context body varjo:*stage-names* t))))
                 (setf actual-uniforms ;;[2]
-                      (mapcar #'varjo:to-arg-form
+                      (mapcar #'varjo.internals:to-arg-form
                               (remove-if #'varjo:ephemeral-p
-                                         (varjo:uniform-variables compiled))))
+                                         (varjo.api:uniform-variables compiled))))
 
                 (%update-gpu-function-data
                  spec
@@ -146,7 +146,7 @@
                  compiled)))))
       ;; vv- called if failed
       (varjo-conditions:could-not-find-function (e) ;;[0]
-        (setf missing-dependencies (list (slot-value e 'varjo:name)))
+        (setf missing-dependencies (list (slot-value e 'varjo.internals:name)))
         (when *warn-when-cant-test-compile*
           (format t "~% cepl: the function ~s was not found when compiling ~s"
                   (first missing-dependencies) name))
@@ -360,7 +360,7 @@
     ((and (listp stage-designator) (eq (first stage-designator) 'function))
      (get-stage-key (second stage-designator)))
     ((typep stage-designator 'gpu-lambda)
-     (glambda->func-spec stage-designator))
+     (lambda-g->func-spec stage-designator))
     ((symbolp stage-designator)
      (let* ((name stage-designator)
             (funcs (gpu-func-specs name)))

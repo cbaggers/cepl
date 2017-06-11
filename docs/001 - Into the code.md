@@ -31,7 +31,7 @@ Below is the standard OpenGL version of 'hello world', a colored triangle.
   color)
 
 ;; Composing those gpu functions into a pipeline
-(def-g-> prog-1 ()
+(defpipeline-g prog-1 ()
   (vert pos-col)
   (frag :vec4))
 

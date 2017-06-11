@@ -24,7 +24,7 @@ with the in-arg types ~s"
   context)
 
 (deferror invalid-shader-gpipe-form () (pipeline-name valid-forms invalid-forms)
-    "When using defpipeline to compose GPU functions, the valid arguments to g-> are function literals~%(optionally with keyword stage names).~%~%In the defpipeline for ~a ~athese forms were not valid:~%~{~s~%~}~%"
+    "When using defpipeline-g to compose GPU functions, the valid arguments to g-> are function literals~%(optionally with keyword stage names).~%~%In the defpipeline-g for ~a ~athese forms were not valid:~%~{~s~%~}~%"
   pipeline-name
   (if valid-forms
       (format nil "these forms were valid:~%~{~s~%~}~%However"
@@ -37,7 +37,7 @@ with the in-arg types ~s"
   pipeline-name clauses)
 
 (deferror invalid-shader-gpipe-stage-keys () (pipeline-name keys)
-    "In the defpipeline form for ~s the gpipe args are incorrect.~%~s"
+    "In the defpipeline-g form for ~s the gpipe args are incorrect.~%~s"
   pipeline-name
   (let ((unknown-keys (remove-if (lambda (x) (member x varjo:*stage-names*))
                                  keys)))
@@ -48,7 +48,7 @@ with the in-arg types ~s"
                 keys varjo:*stage-names*))))
 
 (deferror invalid-compose-gpipe-form () (pipeline-name clauses)
-    "In the defpipeline for ~s there are some invalid pass clauses.~%
+    "In the defpipeline-g for ~s there are some invalid pass clauses.~%
 
 ~{~a~%~}
 
@@ -63,10 +63,10 @@ Example valid forms:
   pipeline-name clauses)
 
 (deferror invalid-defpipeline-options () (pipeline-name invalid-options valid-options)
-    "CEPL - defpipeline: The defpipeline for ~a contained the following invalid options:~%~a~%The valid options to this form of defpipeline are:~s" pipeline-name invalid-options valid-options)
+    "CEPL - defpipeline-g: The defpipeline-g for ~a contained the following invalid options:~%~a~%The valid options to this form of defpipeline-g are:~s" pipeline-name invalid-options valid-options)
 
 (deferror shader-pipeline-non-null-args () (pipeline-name)
-    "CEPL - defpipeline: In defpipeline for ~a. Args are not needed in pipelines composed of g-functions"
+    "CEPL - defpipeline-g: In defpipeline-g for ~a. Args are not needed in pipelines composed of g-functions"
   pipeline-name)
 
 
@@ -160,7 +160,7 @@ call to #'make-gpu-array were ~s"
   c-arr-dimensions provided-dimensions)
 
 (deferror symbol-stage-designator () (designator possible-choices)
-    "CEPL: def-g-> found a stage that was incorrectly specified.
+    "CEPL: defpipeline-g found a stage that was incorrectly specified.
 
 The problematic defintition was: ~s
 
@@ -175,7 +175,7 @@ The problem: because of potential overloading, CEPL stages must be fully qualifi
               designator possible-choices)))
 
 (deferror symbol-stage-designators () (designator-choice-pairs)
-    "CEPL: def-g-> found a stage that was incorrectly specified.
+    "CEPL: defpipeline-g found a stage that was incorrectly specified.
 
 The problematic stage designators were:
 ~{~s ~}
@@ -191,7 +191,7 @@ qualified. ~{~%~%~a~}"
                  designator choices))))
 
 (deferror stage-not-found () (designator)
-    "CEPL - def-g->: Could not find a gpu-function called ~s.
+    "CEPL - defpipeline-g: Could not find a gpu-function called ~s.
 This most likely means it hasn't been compiled yet or that the name is incorrect"
   designator)
 
@@ -353,7 +353,7 @@ Might you have meant to specify a gpu function?"
     "CEPL: G-> was called with at least one stage taking functions as uniform
 arguments.
 
-If this were def-g-> we would make a partial pipeline however we don't
+If this were defpipeline-g we would make a partial pipeline however we don't
 currently support partial lambda pipelines.
 
 Sorry for the inconvenience. It is a feature we are interested in adding so if
@@ -410,7 +410,7 @@ was expecting ~a.
 
 You can either change the type of primtives the pipeline was expecting e.g:
 
- (def-g-> ~s (~s)
+ (defpipeline-g ~s (~s)
    ..)
 
 Or you can create a stream with containing ~a e.g:

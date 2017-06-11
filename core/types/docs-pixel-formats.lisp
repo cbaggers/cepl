@@ -3,7 +3,7 @@
 (docs:define-docs
   (defstruct pixel-format
     "
-pixel-formats exist to aid the handling and conversion of types in CEPL.
+`pixel-format`s exist to aid the handling and conversion of types in CEPL.
 
 OpenGL does not make it easy to understand the types involved with textures.
 
@@ -31,13 +31,13 @@ list.
 
   (defun pixel-format-p
       "
-This function returns t if the the given value is a pixel-format. Otherwise it
+This function returns t if the the given value is a `pixel-format`. Otherwise it
 returns nil
 ")
 
   (defun pixel-format-components
       "
-This function returns the components of the given pixel-format as a keyword
+This function returns the components of the given `pixel-format` as a keyword
 
 possible values are:
 :r
@@ -51,7 +51,7 @@ possible values are:
   (defun pixel-format-type
       "
 This function returns the lisp type of a single 'element' of the given
-pixel-format.
+`pixel-format`.
 
 For example:
 - the element type of a :vec3 is a :float.
@@ -62,7 +62,7 @@ For example:
   (defun pixel-format-normalize
       "
 This function returns whether values of the components belonging to the
-pixel-format are normalized.
+`pixel-format` are normalized.
 
 If t then sampling the values on the gpu will gives values in the
 range 0s0 → 1s0
@@ -70,7 +70,7 @@ range 0s0 → 1s0
 
   (defun pixel-format-sizes
       "
-Some pixel-formats and image-formats are 'special' and have specifically sized
+Some `pixel-format`s and image-formats are 'special' and have specifically sized
 components.
 
 This function will return a list of sizes in bits of the components.
@@ -78,7 +78,7 @@ This function will return a list of sizes in bits of the components.
 
   (defun pixel-format-reversed
       "
-Some pixel-formats are 'reversed' meaning the component order in the data is
+Some `pixel-format`s are 'reversed' meaning the component order in the data is
 reversed.
 
 This function will return t if the pixel format provided is a reversed-type
@@ -86,6 +86,6 @@ This function will return t if the pixel format provided is a reversed-type
 
   (defun pixel-format-comp-length
       "
-This function when passed a pixel-format will return the number of components
+This function when passed a `pixel-format` will return the number of components
 it has. The values will be from 1 upto 4
 "))

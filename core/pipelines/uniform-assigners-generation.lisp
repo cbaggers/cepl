@@ -17,9 +17,11 @@
 ;;;---------------;;;
 
 (defun make-arg-assigners (uniform-arg)
-  (varjo:with-v-arg (arg-name varjo-type~1 qualifiers glsl-name) uniform-arg
+  (varjo.internals:with-v-arg (arg-name varjo-type~1 qualifiers glsl-name)
+      uniform-arg
     (let* ((local-arg-name 'val)
-           (glsl-name (or glsl-name (varjo:safe-glsl-name-string arg-name))))
+           (glsl-name (or glsl-name (varjo.internals:safe-glsl-name-string
+                                     arg-name))))
       (dispatch-make-assigner local-arg-name arg-name varjo-type~1
                               glsl-name qualifiers))))
 
@@ -149,12 +151,12 @@
   (merge-into-assigner
    t
    (loop
-      :for (l-slot-name v-slot-type) :in (varjo:v-slots type)
+      :for (l-slot-name v-slot-type) :in (varjo.internals:v-slots type)
       :for (pslot-type array-length . rest) := (listify v-slot-type)
       :do (just-ignore rest)
       :append
       (let* ((pslot-type (type-spec->type pslot-type))
-             (glsl-name (varjo:safe-glsl-name-string l-slot-name))
+             (glsl-name (varjo.internals:safe-glsl-name-string l-slot-name))
              (glsl-name-path (format nil "~a.~a" glsl-name-path glsl-name)))
         (cond
           ;;

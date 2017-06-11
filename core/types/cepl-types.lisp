@@ -270,7 +270,7 @@
 (defun make-raw-buffer-stream (&key vao start length
                                  index-type managed
                                  gpu-arrays (primitive :triangles))
-  (let* ((prim (varjo::primitive-name-to-instance primitive))
+  (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
          (prim-group-id (draw-mode-group-id prim))
          (enum-kwd (varjo::lisp-name prim))
          (enum-val (cffi:foreign-enum-value '%gl:enum enum-kwd :errorp t))

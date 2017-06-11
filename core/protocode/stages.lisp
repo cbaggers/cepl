@@ -4,9 +4,9 @@
   (p-> #'specify-vertices
     #'render-vertices))
 
-(def-g-> full-gl-pipeline
+(defpipeline-g full-gl-pipeline
     ;; vertex-processing
-    vertex-shader                 ;; user defined
+  vertex-shader                 ;; user defined
   #'limited-primitive-assembly
   tessellation-shader           ;; user defined
   geometry-shader               ;; user defined
