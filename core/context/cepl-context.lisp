@@ -161,8 +161,8 @@
   (unless (or (> (gl:major-version) 3)
               (and (= (gl:major-version) 3)
                    (>= (gl:minor-version) 1)))
-    (error "Cepl requires OpenGL 3.1 or higher. Found: ~a.~a"
-           (gl:major-version) (gl:minor-version))))
+    (error (format nil "Cepl requires OpenGL 3.1 or higher. Found: ~a.~a"
+           (gl:major-version) (gl:minor-version)))))
 
 (defun %set-default-fbo-and-viewport (surface cepl-context)
   (with-slots (current-viewport
