@@ -687,6 +687,7 @@
            :buffer-stream-length
            :buffer-stream-index-type
            :buffer-stream-gpu-arrays
+           :buffer-stream-primitive
            :free-buffer-stream
            :make-buffer-stream))
 

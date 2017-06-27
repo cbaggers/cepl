@@ -405,8 +405,8 @@ Array: ~a is sharing a gpu buffer with ~a other gpu-arrays"
 
 (deferror buffer-stream-has-invalid-primtive-for-stream ()
     (name pline-prim stream-prim)
-    "CEPL: The buffer-stream passed to ~a contains ~a, however ~a
-was expecting ~a.
+    "CEPL: The buffer-stream passed to ~a contains ~s, however ~a
+was expecting ~s.
 
 You can either change the type of primtives the pipeline was expecting e.g:
 

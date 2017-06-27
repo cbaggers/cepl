@@ -250,11 +250,24 @@
   (%index-type nil :type symbol)
   (%index-type-size 0 :type (unsigned-byte 8))
   (gpu-arrays nil :type list)
-  (primitive nil :type symbol)
+  (%primitive nil :type symbol)
   (primitive-group-id 0 :type (unsigned-byte 8))
   (draw-mode-val 0 :type (unsigned-byte 32))
   (patch-length 0 :type (unsigned-byte 8))
   (managed nil :type boolean))
+
+(defun buffer-stream-primitive (stream)
+  (buffer-stream-%primitive stream))
+
+(defun (setf buffer-stream-primitive) (primitive stream)
+  (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
+         (group-id (draw-mode-group-id prim))
+         (enum-kwd (varjo::lisp-name prim))
+         (enum-val (cffi:foreign-enum-value '%gl:enum enum-kwd :errorp t)))
+    (setf (buffer-stream-%primitive stream) primitive
+          (buffer-stream-primitive-group-id stream) group-id
+          (buffer-stream-draw-mode-val stream) enum-val))
+  primitive)
 
 (defun primitive-vert-length (prim)
   (typecase prim
@@ -287,7 +300,7 @@
                            (foreign-type-size index-type)
                            0)
      :managed managed
-     :primitive primitive
+     :%primitive primitive
      :primitive-group-id prim-group-id
      :draw-mode-val enum-val
      :patch-length patch-length
