@@ -7,8 +7,7 @@
 
 (defn-inline ptr-index-1d ((c-array c-array) (x fixnum))
     cffi-sys:foreign-pointer
-  (declare (optimize (speed 3) (safety 0) (debug 1))
-           (profile ptr-index-1d))
+  (declare (optimize (speed 3) (safety 0) (debug 1)))
   (the cffi-sys:foreign-pointer
        (inc-pointer (c-array-pointer c-array)
                     (the fixnum

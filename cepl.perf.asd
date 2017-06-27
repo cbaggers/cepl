@@ -8,7 +8,8 @@
   :depends-on (:rtg-math
                :cepl.perf.core
                :bordeaux-threads
-               :chanl)
+               :chanl
+               :cffi)
   :components ((:file "perf/package")
                (:file "perf/impl")
                (:file "perf/tools")))

@@ -1,8 +1,5 @@
 (in-package :cepl.perf)
 
-(defconstant +in+ 0)
-(defconstant +out+ 1)
-
 (defvar *perf-time-function* nil)
 (defvar *perf-second-as-units-function* nil)
 (defvar *tags* nil)
@@ -39,102 +36,141 @@
 
 ;;------------------------------------------------------------
 
-(defstruct perf-event
-  (id nil :type symbol)
-  (direction 0 :type bit)
-  (time 0 :type (unsigned-byte 64))
-  (units-per-second 0 :type (unsigned-byte 32)))
+(defconstant +chanl-size+ 60)
+(defconstant +buffer-size+ (* 16 1024))
+(defconstant +max-elems+
+  (floor (/ (/ (- +buffer-size+ 1) (cffi:foreign-type-size :uint64)) 2)))
 
-(defstruct profile-session
-  (chanl-to-thread (error "profile-session must be created with a channel")
-                   :type chanl:channel)
-  (chanl-from-thread (error "profile-session must be created with a channel")
-                     :type chanl:channel)
-  (thread (error "profile-session must be created with a thread")
-          :type bt:thread))
+(defvar *current-profiling-session* nil)
 
-(defvar *file-id* -1)
+(defstruct perf-session
+  (chanl-to-output-thread
+   (make-instance 'chanl:bounded-channel :size +chanl-size+)
+   :type chanl:bounded-channel)
+  (chanl-to-cepl-thread
+   (make-instance 'chanl:bounded-channel :size +chanl-size+)
+   :type chanl:bounded-channel)
+  (current-buffer nil :type (or null cffi:foreign-pointer))
+  (current-buffer-pos 1 :type (unsigned-byte 32)))
 
-(defvar *current-profiling-session*
-  nil)
-
-(defvar *profile-chanl*
-  (make-instance 'chanl:bounded-channel :size 10000))
-
-(defun profile-loop (incoming-chanl outgoing-chanl filepath)
-  (let ((session (make-profile-session :chanl-to-thread incoming-chanl
-                                       :chanl-from-thread outgoing-chanl
-                                       :thread (bt:current-thread))))
-    ;; announce our existence
-    (chanl:send outgoing-chanl session :blockp t))
-  (unwind-protect
-       (with-open-file (file-stream filepath :direction :output
-                                    :if-exists :rename-and-delete
-                                    :if-does-not-exist :create)
-         (loop :for event := (chanl:recv incoming-chanl :blockp t)
-            :while (not (eq event t)) :do
-            (format file-stream
-                    "(:id ~a :direction ~a :time ~a :units-per-second ~a)~%"
-                    (perf-event-id event)
-                    (if (= (perf-event-direction event) +in+) :in :out)
-                    (perf-event-time event)
-                    (perf-event-units-per-second event))))
-    (chanl:send outgoing-chanl :closed :blockp t)
-    (setf *current-profiling-session* nil)
-    (values)))
+(defun output-loop (session stream)
+  (format stream "~%-- perf thread starting up ---")
+  (with-open-file (o "/tmp/perf" :direction :output
+                     :if-exists :rename-and-delete
+                     :if-does-not-exist :create)
+    (let ((fd (sb-posix:file-descriptor o))
+          (from-cepl (perf-session-chanl-to-output-thread session))
+          (to-cepl (perf-session-chanl-to-cepl-thread session))
+          ;; Provide a bunch of
+          (buffers (loop :for i :below (floor (* 0.75 +chanl-size+)) :collect
+                      (cffi:foreign-alloc :uint8 :count +buffer-size+)))
+          (running t))
+      (loop :for buffer :in buffers :do (chanl:send to-cepl buffer))
+      (labels ((err (message)
+                 (format stream "~%Shutting down prematurely due to this message: ~a"
+                         message)))
+        (format stream "~%-- perf thread started ---")
+        (loop :while running :do
+           (let ((message (chanl:recv from-cepl :blockp nil)))
+             (etypecase message
+               (null nil)
+               (cffi:foreign-pointer
+                (if (cffi:null-pointer-p message)
+                    (setf running nil)
+                    (let ((data (cffi:inc-pointer
+                                 message (cffi:foreign-type-size :uint64))))
+                      (sb-posix:write
+                       fd data (cffi:mem-aref message :uint64 0))
+                      (chanl:send to-cepl message))))
+               (t (err message))))))
+      (chanl:send to-cepl (lambda () (map nil #'cffi:foreign-free buffers)))
+      (format stream "~%-- perf thread shut down ---"))))
 
 (defun start-profiling ()
   (if *current-profiling-session*
-      (format t "profile session already in progress")
-      (let* ((outgoing-chanl *profile-chanl*)
-             (return-chanl (make-instance 'chanl:bounded-channel :size 10))
-             (log-rel-path (format nil "./perf/log~a" (incf *file-id*)))
-             (log-path (asdf:system-relative-pathname :cepl.perf
-                                                      log-rel-path)))
+      (format t "~%profile session already in progress")
+      (let* ((session (make-perf-session))
+             (stream *standard-output*))
         (print "; -- starting profiling thread --")
-        (bt:make-thread (lambda ()
-                          (profile-loop outgoing-chanl return-chanl log-path))
+        (bt:make-thread (lambda () (output-loop session stream))
                         :name "cepl-perf-session")
-        (print "; -- waiting on thread init --")
-        (setf *current-profiling-session* (chanl:recv return-chanl :blockp t))
+        (setf *current-profiling-session* session)
         (print "; -- profiling session live --"))))
 
 (defun stop-profiling ()
   (if *current-profiling-session*
-      (let ((chanl-from-thread (profile-session-chanl-from-thread
-                                *current-profiling-session*)))
+      (let* ((session *current-profiling-session*)
+             (chanl-to-output (perf-session-chanl-to-output-thread session)))
+        (setf *current-profiling-session* nil)
         (print "; -- sending stop profiling --")
-        (chanl:send *profile-chanl* t :blockp t)
-        (print "; -- waiting on thread --")
-        (print (chanl:recv chanl-from-thread :blockp t))
+        (when (> (perf-session-current-buffer-pos session) 1)
+          (finalize-and-send session))
+        (chanl:send chanl-to-output (cffi:null-pointer) :blockp t)
+        (print "searching for destructor")
+        (let ((trying t))
+          (loop :while trying :for i :from 0 :do
+             (let ((message
+                    (find-if #'functionp
+                             (loop :for i :below +chanl-size+ :collect
+                                (chanl:recv
+                                 (perf-session-chanl-to-cepl-thread session)
+                                 :blockp nil)))))
+               (cond
+                 (message
+                  (print "-- destructor found --")
+                  (funcall message)
+                  (setf trying nil))
+                 ((> i 20)
+                  (print "-- giving up on destructor --")
+                  (setf trying nil))
+                 (t (format t "~%attempt ~a" i)
+                    (sleep 1))))))
         (print "; -- profiling stopped --")
         (values))
-      (format t "No profile session in progress")))
+      (format t "~%No profile session in progress")))
 
 ;;------------------------------------------------------------
 
-(defun %log-profile-event (name direction time units-per-second)
-  (let ((event (make-perf-event
-                :id name
-                :direction direction
-                :time time
-                :units-per-second units-per-second)))
-    (or (chanl:send *profile-chanl* event :blockp nil)
-        (print "-- profile event lost --"))))
+(defvar *last-id* 0)
+(defvar *func-map* (make-hash-table))
 
-(defmacro log-profile-event (name direction)
-  `(%log-profile-event ',name
-                       ,direction
-                       (,*perf-time-function*)
-                       (,*perf-second-as-units-function*)))
+(defun func-id (name)
+  (or (gethash name *func-map*)
+      (setf (gethash name *func-map*) (incf *last-id*))))
 
-(define-defn-declaration profile (name &rest tags)
-  ;; - change 'name' to signature
-  ;; - add way for defn to provide signature to declares
-  ;; - add map for signature to uid
-  ;; - pack ID, direction & times in a struct
-  (if (or (eq *tags* t) (intersection tags *tags*))
-      (values `(log-profile-event ,name +in+)
-              `(log-profile-event ,name +out+))))
+(defun finalize-and-send (session)
+  (let ((ptr (perf-session-current-buffer session)))
+    (setf (cffi:mem-aref ptr :uint64 0)
+          (perf-session-current-buffer-pos session))
+    (setf (perf-session-current-buffer session) nil)
+    (chanl:send (perf-session-chanl-to-output-thread session) ptr)
+    (values)))
+
+(defun %log-profile-event (id time)
+  (let ((session *current-profiling-session*))
+    (when session
+      (let ((buffer (perf-session-current-buffer session))
+            (pos (perf-session-current-buffer-pos session)))
+        (unless buffer
+          (setf buffer (chanl:recv (perf-session-chanl-to-cepl-thread session)
+                                   :blockp t))
+          (setf pos 0))
+        ;; write data into buffer
+        (setf (cffi:mem-aref buffer :int64 pos) id
+              (cffi:mem-aref buffer :uint64 (+ 1 pos)) time)
+        (incf pos 2)
+        ;; if buffer full, send it
+        (if (>= (print pos) (print +max-elems+))
+            (finalize-and-send session)
+            (setf (perf-session-current-buffer session) buffer))
+        ;; set the new pos
+        (setf (perf-session-current-buffer-pos session) pos)))))
+
+(define-defn-declaration profile (&rest tags)
+  (when (or (eq *tags* t) (intersection tags *tags*))
+    (assert *perf-time-function*)
+    (let* ((id (func-id %func-name)))
+      (values `(%log-profile-event ,id (,*perf-time-function*))
+              `(%log-profile-event ,(- id) (,*perf-time-function*))))))
 
 ;;------------------------------------------------------------
