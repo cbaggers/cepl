@@ -142,7 +142,7 @@
 (defun finalize-and-send (session)
   (let ((ptr (perf-session-current-buffer session)))
     (setf (cffi:mem-aref ptr :uint64 0)
-          (perf-session-current-buffer-pos session))
+          (- (perf-session-current-buffer-pos session) 1))
     (setf (perf-session-current-buffer session) nil)
     (chanl:send (perf-session-chanl-to-output-thread session) ptr)
     (values)))
@@ -155,14 +155,16 @@
         (unless buffer
           (setf buffer (chanl:recv (perf-session-chanl-to-cepl-thread session)
                                    :blockp t))
-          (setf pos 0))
+          (setf pos 1))
         ;; write data into buffer
         (setf (cffi:mem-aref buffer :int64 pos) id
               (cffi:mem-aref buffer :uint64 (+ 1 pos)) time)
         (incf pos 2)
         ;; if buffer full, send it
-        (if (>= (print pos) (print +max-elems+))
-            (finalize-and-send session)
+        (if (>= pos +max-elems+)
+            (progn
+              (setf (perf-session-current-buffer-pos session) pos)
+              (finalize-and-send session))
             (setf (perf-session-current-buffer session) buffer))
         ;; set the new pos
         (setf (perf-session-current-buffer-pos session) pos)))))
@@ -182,16 +184,19 @@
     r))
 
 (defun analyze ()
-  (let ((map (reverse-hash-map *func-map*)))
+  (let ((map (reverse-hash-map *func-map*))
+        (depth 0))
     (with-open-file (s "/tmp/perf" :element-type '(unsigned-byte 64))
-      (read-byte s nil nil)
       (loop :for id := (read-byte s nil nil) :while id :collect
          (let* ((id (u64-to-signed id))
                 (dir (if (< id 0) :out :in))
                 (name (gethash (abs id) map))
                 (time (read-byte s nil nil)))
+           (if (>= id 0)
+               (incf depth)
+               (decf depth))
            (when time
-             (list dir (or name id) time)))))))
+             (list depth dir (or name id) time)))))))
 
 (defun u64-to-signed (num)
   (cffi:with-foreign-object (x :uint64)
