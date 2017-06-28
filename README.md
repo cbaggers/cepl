@@ -81,6 +81,7 @@ The best way to get started is to make a new project that uses CEPL. Do the foll
  - [cepl.sdl2](https://github.com/cbaggers/cepl.sdl2) for the host
  - [skitter](https://github.com/cbaggers/skitter) for handling input and events
  - [dirt](https://github.com/cbaggers/dirt) for loading images
+ There are many good event systems & image loaders out there so browse around. But here are two :)
 
 You are now ready to get started. Simply run:
 - `(ql:quickload "my-proj")`
