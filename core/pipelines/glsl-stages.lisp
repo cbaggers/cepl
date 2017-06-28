@@ -15,7 +15,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun get-body-string (body)
+(defun2 get-body-string (body)
   (cond
     ((stringp body) body)
     ((and (listp body)
@@ -66,7 +66,7 @@
          (recompile-pipelines-that-use-this-as-a-stage ,(spec->func-key spec))
          ',name))))
 
-(defun assert-context (name context)
+(defun2 assert-context (name context)
   (let ((allowed (and (some (lambda (s) (member s context))
                             varjo:*stage-names*)
                       (some (lambda (s) (member s context))
@@ -74,14 +74,14 @@
     (unless allowed
       (error 'invalid-context-for-def-glsl-stage :name name :context context))))
 
-(defun type-contains-structs (type)
+(defun2 type-contains-structs (type)
   (cond
     ((v-typep type 'v-user-struct) t)
     ((v-typep type 'v-array)
      (type-contains-structs (v-element-type type)))
     (t nil)))
 
-(defun assert-glsl-stage-types (in-args uniforms)
+(defun2 assert-glsl-stage-types (in-args uniforms)
   (labels ((check (x)
              (when (type-contains-structs (varjo:type-spec->type (second x)))
                (first x))))
@@ -90,7 +90,7 @@
       (when struct-args
         (error 'struct-in-glsl-stage-args :arg-names struct-args)))))
 
-(defun %make-stand-in-lisp-func-for-glsl-stage (spec)
+(defun2 %make-stand-in-lisp-func-for-glsl-stage (spec)
   "Makes a regular lisp function with the same names and arguments
   (where possible) as the glsl-stage who's spec is provided.
 
@@ -104,12 +104,12 @@
          (declare (ignore ,@arg-names ,@uniform-names))
          (warn "GLSL stages cannot be used from the cpu")))))
 
-(defun process-glsl-arg (arg)
+(defun2 process-glsl-arg (arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
     (let ((name (symb (string-upcase glsl-name))))
       `(,name ,type ,@qualifiers ,glsl-name))))
 
-(defun assert-glsl-arg-format (name arg)
+(defun2 assert-glsl-arg-format (name arg)
   (destructuring-bind (glsl-name type . qualifiers) arg
     (assert (and (stringp glsl-name)
                  (varjo:type-specp type)

@@ -14,14 +14,14 @@
 
 (declaim (inline unknown-gl-id-p)
          (ftype (function (gl-id) boolean) unknown-gl-id-p))
-(defun unknown-gl-id-p (id)
+(defun2 unknown-gl-id-p (id)
   (declare (gl-id id))
   (= id +unknown-gl-id+))
 
 (deftype c-array-index ()
   '(unsigned-byte 32))
 
-(defun indexp (x)
+(defun2 indexp (x)
   (typep x 'c-array-index))
 
 ;;------------------------------------------------------------
@@ -139,13 +139,13 @@
   (expects-depth nil :type boolean)
   (compare nil :type symbol))
 
-(defun %sampler-id (sampler)
+(defun2 %sampler-id (sampler)
   (sampler-id-box-id (%sampler-id-box sampler)))
 
-(defun (setf %sampler-id) (value sampler)
+(defun2 (setf %sampler-id) (value sampler)
   (setf (%sampler-id-box sampler) value))
 
-(defun sampler-shared-p (sampler)
+(defun2 sampler-shared-p (sampler)
   (sampler-id-box-shared-p (%sampler-id-box sampler)))
 
 ;;------------------------------------------------------------
@@ -222,7 +222,7 @@
 
 ;;------------------------------------------------------------
 
-(defun draw-mode-group-id (x)
+(defun2 draw-mode-group-id (x)
   (or (typecase x
         (varjo::points 0)
         (varjo::line-strip 1)
@@ -262,10 +262,10 @@
   (patch-length 0 :type (unsigned-byte 8))
   (managed nil :type boolean))
 
-(defun buffer-stream-primitive (stream)
+(defun2 buffer-stream-primitive (stream)
   (buffer-stream-%primitive stream))
 
-(defun (setf buffer-stream-primitive) (primitive stream)
+(defun2 (setf buffer-stream-primitive) (primitive stream)
   (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
          (group-id (draw-mode-group-id prim))
          (enum-kwd (varjo::lisp-name prim))
@@ -275,7 +275,7 @@
           (buffer-stream-draw-mode-val stream) enum-val))
   primitive)
 
-(defun primitive-vert-length (prim)
+(defun2 primitive-vert-length (prim)
   (typecase prim
     (varjo::patches (varjo::vertex-count prim))
     (varjo::triangles 3)
@@ -283,10 +283,10 @@
     (varjo::points 1)
     (otherwise 0)))
 
-(defun %valid-index-type-p (x)
+(defun2 %valid-index-type-p (x)
   (and x (not (eq x :uninitialized))))
 
-(defun make-raw-buffer-stream (&key vao start length
+(defun2 make-raw-buffer-stream (&key vao start length
                                  index-type managed
                                  gpu-arrays (primitive :triangles))
   (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
@@ -312,10 +312,10 @@
      :patch-length patch-length
      :gpu-arrays gpu-arrays)))
 
-(defun buffer-stream-index-type (stream)
+(defun2 buffer-stream-index-type (stream)
   (buffer-stream-%index-type stream))
 
-(defun (setf buffer-stream-index-type) (value stream)
+(defun2 (setf buffer-stream-index-type) (value stream)
   (setf (buffer-stream-%index-type stream) value)
   ;; doing this vv forces recalculation of start-byte
   (when (%valid-index-type-p value)
@@ -325,10 +325,10 @@
 
 (declaim (ftype (function (buffer-stream) (unsigned-byte 64))
                 buffer-stream-start))
-(defun buffer-stream-start (stream)
+(defun2 buffer-stream-start (stream)
   (buffer-stream-%start stream))
 
-(defun (setf buffer-stream-start) (value stream)
+(defun2 (setf buffer-stream-start) (value stream)
   (setf (buffer-stream-%start stream) value)
   (let ((index-type (buffer-stream-index-type stream))
         (type-size (buffer-stream-%index-type-size stream)))
@@ -339,10 +339,10 @@
 
 (declaim (ftype (function (buffer-stream) (unsigned-byte 64))
                 buffer-stream-start-byte))
-(defun buffer-stream-start-byte (stream)
+(defun2 buffer-stream-start-byte (stream)
   (buffer-stream-%start-byte stream))
 
-(defun (setf buffer-stream-start-byte) (value stream)
+(defun2 (setf buffer-stream-start-byte) (value stream)
   (declare (ignore value))
   (error "CEPL Internal Error: Do not set stream %start-byte directly~%~s"
          stream))
@@ -360,7 +360,7 @@
 (defgeneric viewport (obj))
 (defgeneric (setf viewport) (value obj))
 
-(defun make-viewport (&optional (resolution '(320 240)) (origin '(0 0)))
+(defun2 make-viewport (&optional (resolution '(320 240)) (origin '(0 0)))
   (%make-viewport :resolution-x (ceiling (elt resolution 0))
                   :resolution-y (ceiling (elt resolution 1))
                   :origin-x (ceiling (elt origin 0))
@@ -368,7 +368,7 @@
 
 ;;------------------------------------------------------------
 
-(defun holds-gl-object-ref-p (object)
+(defun2 holds-gl-object-ref-p (object)
   (typecase object
     (texture t)
     (gpu-buffer t)
@@ -385,7 +385,7 @@
 (defvar +null-gpu-buffer+
   (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
 
-(defun make-uninitialized-texture (&optional buffer-backed-p)
+(defun2 make-uninitialized-texture (&optional buffer-backed-p)
   (if buffer-backed-p
       (%%make-buffer-texture
        :type :uninitialized
@@ -394,28 +394,28 @@
       (%%make-texture
        :type :uninitialized :image-format :uninitialized)))
 
-(defun make-uninitialized-gpu-array-bb (&optional buffer)
+(defun2 make-uninitialized-gpu-array-bb (&optional buffer)
   (%make-gpu-array-bb
    :buffer (or buffer +null-gpu-buffer+)
    :access-style :uninitialized))
 
-(defun make-uninitialized-gpu-array-t ()
+(defun2 make-uninitialized-gpu-array-t ()
   (%make-gpu-array-t
    :texture +null-texture+
    :texture-type :uninitialized))
 
-(defun make-uninitialized-sampler (texture context-id)
+(defun2 make-uninitialized-sampler (texture context-id)
   (%make-sampler
    :context-id context-id
    :texture texture
    :type :uninitialized))
 
-(defun make-uninitialized-fbo ()
+(defun2 make-uninitialized-fbo ()
   (%%make-fbo
    :draw-buffer-map nil
    :clear-mask -13))
 
-(defun make-uninitialized-buffer-stream (primitive)
+(defun2 make-uninitialized-buffer-stream (primitive)
   (make-raw-buffer-stream :index-type :uninitialized
                           :primitive primitive))
 
@@ -435,5 +435,5 @@
   (make-array 0 :element-type 'gpu-array-bb
               :initial-element +null-buffer-backed-gpu-array+))
 
-(defun make-uninitialized-gpu-buffer ()
+(defun2 make-uninitialized-gpu-buffer ()
   (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+))

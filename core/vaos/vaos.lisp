@@ -7,13 +7,13 @@
 ;; VAOS ;;
 ;;------;;
 
-(defun free-vao (vao)
+(defun2 free-vao (vao)
   (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) vao)
     (%gl:delete-vertex-arrays 1 id)))
 
 ;; [TODO] would a unboxed lisp array be faster?
-(defun free-vaos (vaos)
+(defun2 free-vaos (vaos)
   (with-foreign-object (ids :uint (length vaos))
     (loop :for vao :in vaos :for i :from 0 :do
        (setf (mem-aref ids :uint i) vao))
@@ -29,13 +29,13 @@
                    ,@body)
          (setf (vao-bound *cepl-context*) ,old-vao)))))
 
-(defun suitable-array-for-index-p (array)
+(defun2 suitable-array-for-index-p (array)
   (and (eql (length (gpu-buffer-arrays (gpu-array-buffer array))) 1)
        (1d-p array)
        (find (element-type array) '(:uint8 :ushort :uint :unsigned-short
                                     :unsigned-int))))
 
-(defun make-vao (gpu-arrays &optional index-array)
+(defun2 make-vao (gpu-arrays &optional index-array)
   (let ((gpu-arrays (listify gpu-arrays)))
     (make-vao-from-id
      (progn (assert (and (every #'1d-p gpu-arrays)

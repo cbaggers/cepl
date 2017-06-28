@@ -2,7 +2,7 @@
 
 (defgeneric populate (object data))
 
-(defun 1d-p (object)
+(defun2 1d-p (object)
   (= 1 (length (dimensions object))))
 
 (defgeneric gl-assign-attrib-pointers (array-type &optional attrib-num
@@ -44,33 +44,33 @@
   nil)
 
 
-(defun color-attachment-enum (attachment-num)
+(defun2 color-attachment-enum (attachment-num)
   (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :color-attachment0)))
 
-(defun draw-buffer-enum (buffer-num)
+(defun2 draw-buffer-enum (buffer-num)
   (+ buffer-num #.(cffi:foreign-enum-value '%gl:enum :draw-buffer0)))
 
-(defun surface-dimensions (surface)
+(defun2 surface-dimensions (surface)
   (cepl.host:window-size surface))
 
-(defun surface-resolution (surface)
+(defun2 surface-resolution (surface)
   (dbind (x y) (window-dimensions surface)
     (v! x y)))
 
-(defun window-dimensions (window)
+(defun2 window-dimensions (window)
   (warn "CEPL: window-dimensions is deprecated, please use surface-dimensions instead")
   (surface-dimensions window))
 
-(defun window-resolution (window)
+(defun2 window-resolution (window)
   (warn "CEPL: window-resolution is deprecated, please use surface-resolution instead")
   (surface-resolution window))
 
-(defun gl-type-size (type)
+(defun2 gl-type-size (type)
   (if (keywordp type)
       (cffi:foreign-type-size type)
       (autowrap:foreign-type-size type)))
 
-(defun cffi-type->gl-type (type)
+(defun2 cffi-type->gl-type (type)
   (case type
     ((:char :signed-char) :byte)
     ((:uchar :unsigned-char) :unsigned-byte)

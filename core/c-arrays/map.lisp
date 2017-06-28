@@ -1,12 +1,12 @@
 (in-package :cepl.c-arrays)
 
-(defun map-c (function c-array &optional destination-element-type)
+(defun2 map-c (function c-array &optional destination-element-type)
   (let ((r (make-c-array nil :dimensions (c-array-dimensions c-array)
                          :element-type (or destination-element-type
                                            (c-array-element-type c-array)))))
     (map-c-into r function c-array)))
 
-(defun map-c-into (destination-c-array function source-c-array)
+(defun2 map-c-into (destination-c-array function source-c-array)
   (let ((func function)
         (src source-c-array)
         (dst destination-c-array))
@@ -16,7 +16,7 @@
       (3 (%map-c-into-3d dst func src))
       (4 (%map-c-into-4d dst func src)))))
 
-(defun %map-c-into-1d (dst func src)
+(defun2 %map-c-into-1d (dst func src)
   (let ((dim (c-array-dimensions src)))
     (if dst
         (loop :for i :below (first dim) :do
@@ -25,7 +25,7 @@
            (funcall func (aref-c src i)))))
   dst)
 
-(defun %map-c-into-2d (dst func src)
+(defun2 %map-c-into-2d (dst func src)
   (let ((dim (c-array-dimensions src)))
     (if dst
         (loop :for y :below (second dim) :do
@@ -36,7 +36,7 @@
               (funcall func (aref-c src x y))))))
   dst)
 
-(defun %map-c-into-3d (dst func src)
+(defun2 %map-c-into-3d (dst func src)
   (let ((dim (c-array-dimensions src)))
     (if dst
         (loop :for z :below (third dim) :do
@@ -49,7 +49,7 @@
                  (funcall func (aref-c src x y z)))))))
   dst)
 
-(defun %map-c-into-4d (dst func src)
+(defun2 %map-c-into-4d (dst func src)
   (let ((dim (c-array-dimensions src)))
     (if dst
         (loop :for w :below (fourth dim) :do
@@ -67,7 +67,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun across-c (function c-array)
+(defun2 across-c (function c-array)
   (declare (type function function)
            (type c-array c-array))
   (case= (c-array-rank c-array)
@@ -76,7 +76,7 @@
     (3 (%across-c-3d function c-array))
     (4 (%across-c-4d function c-array))))
 
-(defun %across-c-1d (func arr)
+(defun2 %across-c-1d (func arr)
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
@@ -85,7 +85,7 @@
   arr)
 
 
-(defun %across-c-2d (func arr)
+(defun2 %across-c-2d (func arr)
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
@@ -94,7 +94,7 @@
           (funcall func arr x y))))
   arr)
 
-(defun %across-c-3d (func arr)
+(defun2 %across-c-3d (func arr)
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 1) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
@@ -104,7 +104,7 @@
              (funcall func arr x y z)))))
   arr)
 
-(defun %across-c-4d (func arr)
+(defun2 %across-c-4d (func arr)
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 1) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
@@ -117,7 +117,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun across-c-ptr (function c-array)
+(defun2 across-c-ptr (function c-array)
   (declare (type function function)
            (type c-array c-array))
   (case= (c-array-rank c-array)
@@ -126,7 +126,7 @@
     (3 (%across-c-ptr-3d function c-array))
     (4 (%across-c-ptr-4d function c-array))))
 
-(defun %across-c-ptr-1d (func arr)
+(defun2 %across-c-ptr-1d (func arr)
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
@@ -135,7 +135,7 @@
          (funcall func ptr x))))
   arr)
 
-(defun %across-c-ptr-2d (func arr)
+(defun2 %across-c-ptr-2d (func arr)
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
@@ -145,7 +145,7 @@
             (funcall func ptr x y)))))
   arr)
 
-(defun %across-c-ptr-3d (func arr)
+(defun2 %across-c-ptr-3d (func arr)
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 1) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
@@ -156,7 +156,7 @@
                (funcall func ptr x y z))))))
   arr)
 
-(defun %across-c-ptr-4d (func arr)
+(defun2 %across-c-ptr-4d (func arr)
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 1) (debug 1)))
   (let ((dim (c-array-dimensions arr)))

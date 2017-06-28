@@ -1,6 +1,6 @@
 (in-package :cepl)
 
-(defun repl (&optional (width 320) (height 240)
+(defun2 repl (&optional (width 320) (height 240)
                #+darwin (gl-version 4.1)
                #-darwin gl-version)
   "Initialize CEPL and open a window. If the gl-version argument is nil then
@@ -11,7 +11,7 @@
   (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%")
   (cls))
 
-(defun initialize-cepl (&key gl-version host-init-flags)
+(defun2 initialize-cepl (&key gl-version host-init-flags)
   ;;
   ;; Initialize Host
   (unless cepl.host::*current-host*
@@ -26,24 +26,24 @@
   (cepl.lifecycle::change-state :interactive)
   t)
 
-(defun quit () (cepl.lifecycle::change-state :shutting-down))
+(defun2 quit () (cepl.lifecycle::change-state :shutting-down))
 
-(defun register-event-listener (function)
+(defun2 register-event-listener (function)
   "Register a function to be called on every event.
    The function must take 1 argument, which will be the event."
   (cepl.host::register-event-listener function))
 
-(defun step-host (&optional (context *cepl-context*))
+(defun2 step-host (&optional (context *cepl-context*))
   (with-slots (cepl.context::current-surface) context
     (cepl.host::host-step cepl.context::current-surface))
   context)
 
-(defun swap (&optional (context *cepl-context*))
+(defun2 swap (&optional (context *cepl-context*))
   (with-slots (cepl.context::current-surface) context
     (cepl.host::host-swap cepl.context::current-surface))
   context)
 
-(defun cls ()
+(defun2 cls ()
   (with-slots (default-framebuffer) *cepl-context*
     (with-fbo-bound (default-framebuffer :target :framebuffer
                       :with-viewport nil

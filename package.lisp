@@ -2,7 +2,8 @@
 
 (uiop:define-package :cepl-utils
     (:use :cl :%rtg-math :cepl.perf.core)
-  (:export :gdefun
+  (:export :defun2
+           :gdefun
            :dbind
            :assoc-bind
            :case=
@@ -168,13 +169,13 @@
    :set-surface-title-function))
 
 (uiop:define-package :cepl.lifecycle
-    (:use :cl :glsl-symbols :cepl.perf.core)
+    (:use :cl :cepl-utils :glsl-symbols :cepl.perf.core)
   (:export :shutting-down-p
            :listen-to-lifecycle-changes
            :stop-listening-to-lifecycle-changes))
 
 (uiop:define-package :cepl.measurements
-    (:use :cl :glsl-symbols :cepl.perf.core)
+    (:use :cl :cepl-utils :glsl-symbols :cepl.perf.core)
   (:export :dimensions
            :resolution))
 
@@ -382,7 +383,7 @@
            :holds-gl-object-ref-p))
 
 (uiop:define-package :cepl.memory
-    (:use :cl :glsl-symbols :cffi :%cepl.types :cepl.perf.core)
+    (:use :cl :cepl-utils :glsl-symbols :cffi :%cepl.types :cepl.perf.core)
   (:export :free
            :initialized-p
            ;;---
@@ -920,6 +921,7 @@
   ;;
   (def-re-exporting-package :cepl
       :use (:cl
+            :cepl-utils
             :glsl-symbols
             :rtg-math.base-maths
             :cl-fad

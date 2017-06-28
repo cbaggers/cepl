@@ -5,7 +5,7 @@
 (defvar *lowest-unused-ubo-id* 0)
 (defvar *freed-ubo-id* nil)
 
-(defun get-free-ubo-id ()
+(defun2 get-free-ubo-id ()
   (if *freed-ubo-id*
       (pop *freed-ubo-id*)
       (incf *lowest-unused-ubo-id*)))
@@ -18,7 +18,7 @@
 
 ;;---------------------------------------------------
 
-(defun make-ubo (data &optional element-type)
+(defun2 make-ubo (data &optional element-type)
   (let ((ubo (%make-ubo :id (get-free-ubo-id)
                         :data (make-gpu-array
                                (when data (vector data))
@@ -28,7 +28,7 @@
     (%bind-ubo ubo)))
 
 
-(defun make-ubo-from-array (data &optional (index 0) element-type)
+(defun2 make-ubo-from-array (data &optional (index 0) element-type)
   (assert (>= index 0))
   (assert (or (null element-type) (symbolp element-type)))
   (let* ((id (get-free-ubo-id))
@@ -57,7 +57,7 @@
              (make-ubo (elt data index) element-type)))))
     (%bind-ubo ubo)))
 
-(defun make-ubo-from-buffer (&rest not-yet-implemented)
+(defun2 make-ubo-from-buffer (&rest not-yet-implemented)
   (declare (ignore not-yet-implemented))
   (error "make-ubo-from-buffer is not yet implemented"))
 
@@ -69,7 +69,7 @@ should be ~s" data element-type)
 
 ;;---------------------------------------------------
 
-(defun ubo-data-type (ubo)
+(defun2 ubo-data-type (ubo)
   (gpu-array-bb-element-type (ubo-data ubo)))
 
 ;;---------------------------------------------------
@@ -77,7 +77,7 @@ should be ~s" data element-type)
 ;; {TODO} using the id as the binding point is crazy town as it doesnt
 ;;        take :max-uniform-buffer-bindings into account.
 ;;        (For example it's only 84 on my desktop)
-(defun %bind-ubo (ubo)
+(defun2 %bind-ubo (ubo)
   (let* ((data (ubo-data ubo))
          (type (ubo-data-type ubo))
          (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer data)

@@ -3,11 +3,11 @@
 ;;------------------------------------------------------------
 ;; Clear Color
 
-(defun clear-color (cepl-context)
+(defun2 clear-color (cepl-context)
   (with-slots (clear-color) cepl-context
     clear-color))
 
-(defun (setf clear-color) (vec4-color cepl-context)
+(defun2 (setf clear-color) (vec4-color cepl-context)
   (assert (typep vec4-color 'rtg-math.types:vec4))
   (with-slots (clear-color) cepl-context
     (gl:clear-color (v:x vec4-color) (v:y vec4-color)
@@ -18,11 +18,11 @@
 ;;------------------------------------------------------------
 ;; Cull Face
 
-(defun cull-face (cepl-context)
+(defun2 cull-face (cepl-context)
   (with-slots (cull-face) cepl-context
     cull-face))
 
-(defun (setf cull-face) (face cepl-context)
+(defun2 (setf cull-face) (face cepl-context)
   (assert (member face '(nil :front :back :front-and-back)))
   (with-slots (cull-face) cepl-context
     (if face
@@ -35,11 +35,11 @@
 ;;------------------------------------------------------------
 ;; Front Face
 
-(defun front-face (cepl-context)
+(defun2 front-face (cepl-context)
   (with-slots (front-face) cepl-context
     front-face))
 
-(defun (setf front-face) (winding-direction cepl-context)
+(defun2 (setf front-face) (winding-direction cepl-context)
   (assert (or (eq winding-direction :ccw)
               (eq winding-direction :cw)))
   (with-slots (front-face) cepl-context
@@ -49,11 +49,11 @@
 ;;------------------------------------------------------------
 ;; Depth Range
 
-(defun depth-range-vec2 (cepl-context)
+(defun2 depth-range-vec2 (cepl-context)
   (with-slots (depth-range) cepl-context
     depth-range))
 
-(defun (setf depth-range-vec2) (vec2-range cepl-context)
+(defun2 (setf depth-range-vec2) (vec2-range cepl-context)
   (assert (typep vec2-range 'rtg-math.types:vec2))
   (with-slots (depth-range) cepl-context
     (gl:depth-range (v:x vec2-range) (v:y vec2-range))
@@ -62,11 +62,11 @@
 ;;------------------------------------------------------------
 ;; Depth Clamp
 
-(defun depth-clamp (cepl-context)
+(defun2 depth-clamp (cepl-context)
   (with-slots (depth-clamp) cepl-context
     depth-clamp))
 
-(defun (setf depth-clamp) (value cepl-context)
+(defun2 (setf depth-clamp) (value cepl-context)
   (with-slots (depth-clamp) cepl-context
     (let ((value (not (null value))))
       (if value
@@ -77,11 +77,11 @@
 ;;------------------------------------------------------------
 ;; Depth Mask
 
-(defun depth-mask (cepl-context)
+(defun2 depth-mask (cepl-context)
   (with-slots (depth-mask) cepl-context
     depth-mask))
 
-(defun (setf depth-mask) (value cepl-context)
+(defun2 (setf depth-mask) (value cepl-context)
   (with-slots (depth-mask) cepl-context
     (let ((value (not (null value))))
       (if value
@@ -92,11 +92,11 @@
 ;;------------------------------------------------------------
 ;; Depth Test
 
-(defun depth-test-function (cepl-context)
+(defun2 depth-test-function (cepl-context)
   (with-slots (depth-func) cepl-context
     depth-func))
 
-(defun (setf depth-test-function) (function cepl-context)
+(defun2 (setf depth-test-function) (function cepl-context)
   (with-slots (depth-func) cepl-context
     (if function
         (progn
@@ -142,12 +142,12 @@
           (gl:disable :depth-test)
           (setf depth-func nil)))))
 
-(defun never (incoming-depth stored-depth)
+(defun2 never (incoming-depth stored-depth)
   "Never passes"
   (declare (ignore incoming-depth stored-depth))
   nil)
 
-(defun always (incoming-depth stored-depth)
+(defun2 always (incoming-depth stored-depth)
   "Always passes"
   (declare (ignore incoming-depth stored-depth))
   t)

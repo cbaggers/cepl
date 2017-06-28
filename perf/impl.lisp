@@ -42,6 +42,12 @@
   (floor (/ (/ (- +buffer-size+ 1) (cffi:foreign-type-size :uint64)) 2)))
 
 (defvar *current-profiling-session* nil)
+(defvar *func-map* (make-hash-table))
+(defvar *last-id* 0)
+
+(defun func-id (name)
+  (or (gethash name *func-map*)
+      (setf (gethash name *func-map*) (incf *last-id*))))
 
 (defstruct perf-session
   (chanl-to-output-thread
@@ -55,6 +61,10 @@
 
 (defun output-loop (session stream)
   (format stream "~%-- perf thread starting up ---")
+  (with-open-file (s "/tmp/perf-map" :direction :output
+                     :if-exists :rename-and-delete
+                     :if-does-not-exist :create)
+    (format s "~s" (alexandria:hash-table-alist *func-map*)))
   (with-open-file (o "/tmp/perf" :direction :output
                      :if-exists :rename-and-delete
                      :if-does-not-exist :create)
@@ -130,15 +140,6 @@
         (values))
       (format t "~%No profile session in progress")))
 
-;;------------------------------------------------------------
-
-(defvar *last-id* 0)
-(defvar *func-map* (make-hash-table))
-
-(defun func-id (name)
-  (or (gethash name *func-map*)
-      (setf (gethash name *func-map*) (incf *last-id*))))
-
 (defun finalize-and-send (session)
   (let ((ptr (perf-session-current-buffer session)))
     (setf (cffi:mem-aref ptr :uint64 0)
@@ -183,20 +184,55 @@
     (maphash (lambda (k v) (setf (gethash v r) k)) hm)
     r))
 
-(defun analyze ()
-  (let ((map (reverse-hash-map *func-map*))
+(defun analyze (&optional (data-path "/tmp/perf") (map-path "/tmp/perf-map"))
+  (let ((map (make-hash-table :test #'equal))
+        (freq (make-hash-table :test #'equal))
+        (track (make-hash-table :test #'equal))
+        (total-time (make-hash-table :test #'equal))
+        (per-call (make-hash-table :test #'equal))
         (depth 0))
-    (with-open-file (s "/tmp/perf" :element-type '(unsigned-byte 64))
-      (loop :for id := (read-byte s nil nil) :while id :collect
+    (with-open-file (s map-path)
+      (loop :for (name . id) :in (read s nil nil) :do
+         (setf (gethash id map) name)))
+    (with-open-file (s data-path :element-type '(unsigned-byte 64))
+      (loop :for id := (read-byte s nil nil) :while id :do
          (let* ((id (u64-to-signed id))
-                (dir (if (< id 0) :out :in))
                 (name (gethash (abs id) map))
                 (time (read-byte s nil nil)))
-           (if (>= id 0)
-               (incf depth)
-               (decf depth))
            (when time
-             (list depth dir (or name id) time)))))))
+             (if (>= id 0)
+                 (progn
+                   (incf depth)
+                   (analyze-in-entry depth (or name id) time
+                                     track freq total-time))
+                 (progn
+                   (analyze-out-entry depth (or name id) time
+                                      track freq total-time)
+                   (decf depth)))))))
+    (maphash (lambda (k v)
+               (setf (gethash k per-call)
+                     (list (/ (float (gethash k total-time))
+                              (float v))
+                           v)))
+             freq)
+    (list freq
+          total-time
+          per-call)))
+
+(defun analyze-in-entry (depth name time
+                         track freq total-time)
+  (declare (ignore total-time))
+  (setf (gethash (cons name depth) track) time)
+  (incf (gethash name freq 0)))
+
+(defun analyze-out-entry (depth name time
+                          track freq total-time)
+  (declare (ignore freq))
+  (let* ((key (cons name depth))
+         (in-time (gethash key track))
+         (func-time (- time in-time)))
+    (remhash key track)
+    (incf (gethash name total-time 0) func-time)))
 
 (defun u64-to-signed (num)
   (cffi:with-foreign-object (x :uint64)

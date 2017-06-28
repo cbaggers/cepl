@@ -189,20 +189,20 @@
 
 ;;----------------------------------------------------------------------
 
-(defun image-formatp (format)
+(defun2 image-formatp (format)
   (not (null (find format *image-formats*))))
 
-(defun valid-image-format-for-buffer-backed-texturep (format)
+(defun2 valid-image-format-for-buffer-backed-texturep (format)
   (not (null (find format *valid-image-formats-for-buffer-backed-texture*))))
 
-(defun color-renderable-formatp (format)
+(defun2 color-renderable-formatp (format)
   (not (null (find format *color-renderable-formats*))))
 
-(defun depth-formatp (format)
+(defun2 depth-formatp (format)
   (not (null (find format *depth-formats*))))
 
-(defun stencil-formatp (format)
+(defun2 stencil-formatp (format)
   (not (null (find format *stencil-formats*))))
 
-(defun depth-stencil-formatp (format)
+(defun2 depth-stencil-formatp (format)
   (not (null (find format *depth-stencil-formats*))))

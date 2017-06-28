@@ -52,7 +52,7 @@
   (with-gpu-array-as-pointer (a thing :access-type :read-only)
     (print-mem (cffi:inc-pointer a offset) size-in-bytes)))
 
-(defun gpu-array-pull-1 (gpu-array)
+(defun2 gpu-array-pull-1 (gpu-array)
   "This function returns the contents of the gpu array as a c-array
    Note that you often dont need to use this as the generic
    function pull-g will call this function if given a gpu-array"
@@ -89,14 +89,14 @@ dimension then their sizes must match exactly"))
   (with-gpu-array-as-c-array (x object :access-type :read-only)
     (pull1-g x)))
 
-(defun gpu-array-element-type (gpu-array)
+(defun2 gpu-array-element-type (gpu-array)
   (etypecase gpu-array
     (gpu-array-t
      (%cepl.types::gpu-array-t-image-format gpu-array))
     (gpu-array-bb
      (cepl.gpu-arrays.buffer-backed::gpu-array-bb-element-type gpu-array))))
 
-(defun backed-by (gpu-array)
+(defun2 backed-by (gpu-array)
   (etypecase gpu-array
     (gpu-array-t :texture)
     (gpu-array-bb :buffer)))
@@ -114,7 +114,7 @@ dimension then their sizes must match exactly"))
          (unwind-protect (progn ,@body)
            (%gl:unmap-buffer ,target))))))
 
-(defun %process-with-gpu-array-range-macro-args (target access-set)
+(defun2 %process-with-gpu-array-range-macro-args (target access-set)
   (assert (keywordp target))
   (let* ((valid-set-elems (cffi:foreign-bitfield-symbol-list
                            '%gl::mapbufferusagemask))
@@ -129,7 +129,7 @@ dimension then their sizes must match exactly"))
               valid-set-elems)
     access-set))
 
-(defun %process-with-gpu-array-range-runtime (gpu-array start length)
+(defun2 %process-with-gpu-array-range-runtime (gpu-array start length)
   (unless (typep gpu-array 'gpu-array)
     (if (typep gpu-array 'gpu-array-t)
         (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
@@ -187,7 +187,7 @@ dimension then their sizes must match exactly"))
 
 ;;------------------------------------------------------------------------
 
-(defun reallocate-gpu-array (gpu-array)
+(defun2 reallocate-gpu-array (gpu-array)
   (assert (typep gpu-array 'gpu-array-bb) ()
           "CEPL: reallocate-gpu-array is not yet implemented for texture backed arrays")
   (reallocate-buffer (gpu-array-bb-buffer gpu-array)))

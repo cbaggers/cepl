@@ -2,7 +2,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun set-context-defaults (cepl-context)
+(defun2 set-context-defaults (cepl-context)
   ;; Enable depth testing and use 'less than' for testing
   (setf (depth-test-function cepl-context)
         #'<)

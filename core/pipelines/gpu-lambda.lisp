@@ -29,13 +29,13 @@
             nil in-args uniforms context body instancing nil nil
             nil doc-string declarations nil)))))
 
-(defun %lambda-g (&rest args)
+(defun2 %lambda-g (&rest args)
   (declare (ignore args))
   (warn "GPU Functions cannot currently be used from the cpu"))
 
 ;;------------------------------------------------------------
 
-(defun make-gpu-lambda  (args body)
+(defun2 make-gpu-lambda  (args body)
   "Define a function that runs on the gpu."
   ;; The code here splits and validates the arguments but the meat
   ;; of gpu function definition happens in the %def-gpu-function call
@@ -67,7 +67,7 @@
 
 ;;------------------------------------------------------------
 
-(defun make-lambda-pipeline (gpipe-args context)
+(defun2 make-lambda-pipeline (gpipe-args context)
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
            (aggregate-uniforms (aggregate-uniforms stage-keys nil t)))
@@ -76,14 +76,14 @@
           (make-complete-lambda-pipeline
            stage-pairs stage-keys aggregate-uniforms context post)))))
 
-(defun make-partial-lambda-pipeline (stage-keys)
+(defun2 make-partial-lambda-pipeline (stage-keys)
   (let ((stages (remove-if-not λ(with-gpu-func-spec (gpu-func-spec _)
                                   (some #'function-arg-p uniforms))
                                stage-keys)))
     (error 'partial-lambda-pipeline
            :partial-stages stages)))
 
-(defun make-complete-lambda-pipeline (stage-pairs stage-keys aggregate-uniforms
+(defun2 make-complete-lambda-pipeline (stage-pairs stage-keys aggregate-uniforms
                                       context post)
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
@@ -136,7 +136,7 @@
             ,@u-cleanup
             stream))))))
 
-(defun make-n-compile-lambda-pipeline (gpipe-args context)
+(defun2 make-n-compile-lambda-pipeline (gpipe-args context)
   (let ((code (make-lambda-pipeline gpipe-args context)))
     (funcall (compile nil `(lambda () ,code)))))
 
@@ -156,14 +156,14 @@
   `(pipeline-g ,context ,@gpipe-args))
 
 #+nil
-(defun example ()
+(defun2 example ()
   (g-> nil
     #'cepl.misc::draw-texture-vert
     #'cepl.misc::draw-texture-frag))
 
 ;;------------------------------------------------------------
 
-(defun register-lambda-pipeline (compiled-stages closure)
+(defun2 register-lambda-pipeline (compiled-stages closure)
   (setf (function-keyed-pipeline closure)
         (make-lambda-pipeline-spec compiled-stages))
   closure)

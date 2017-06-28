@@ -14,7 +14,7 @@
 (defmethod free ((object gpu-buffer))
   (free-buffer object))
 
-(defun blank-buffer-object (buffer)
+(defun2 blank-buffer-object (buffer)
   (setf (gpu-buffer-id buffer) 0)
   (setf (gpu-buffer-arrays buffer)
         (make-array 0 :element-type 'gpu-array-bb
@@ -22,13 +22,13 @@
                     :adjustable t :fill-pointer 0))
   buffer)
 
-(defun free-buffer (buffer)
+(defun2 free-buffer (buffer)
   (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) (gpu-buffer-id buffer))
     (blank-buffer-object buffer)
     (%gl:delete-buffers 1 id)))
 
-(defun free-buffers (buffers)
+(defun2 free-buffers (buffers)
   (with-foreign-object (id :uint (length buffers))
     (loop :for buffer :in buffers :for i :from 0 :do
        (setf (mem-aref id :uint i) (gpu-buffer-id buffer))
@@ -55,10 +55,10 @@
          (cepl.context::set-gpu-buffer-bound-id
           *cepl-context* ,cache-id ,old-id)))))
 
-(defun gen-buffer ()
+(defun2 gen-buffer ()
   (first (gl:gen-buffers 1)))
 
-(defun init-gpu-buffer-now (new-buffer gl-object initial-contents
+(defun2 init-gpu-buffer-now (new-buffer gl-object initial-contents
                             buffer-target usage)
   (declare (symbol buffer-target usage))
   (setf (gpu-buffer-id new-buffer) gl-object)
@@ -74,10 +74,10 @@
                        :target buffer-target :usage usage))
       new-buffer))
 
-(defun list-of-c-arrays-p (x)
+(defun2 list-of-c-arrays-p (x)
   (and (listp x) (every #'c-array-p x)))
 
-(defun make-gpu-buffer-from-id (gl-object &key initial-contents
+(defun2 make-gpu-buffer-from-id (gl-object &key initial-contents
                                             (buffer-target :array-buffer)
                                             (usage :static-draw))
   (declare (symbol buffer-target usage))
@@ -85,7 +85,7 @@
    (make-uninitialized-gpu-buffer) gl-object initial-contents
    buffer-target usage))
 
-(defun make-gpu-buffer (&key initial-contents
+(defun2 make-gpu-buffer (&key initial-contents
                           (buffer-target :array-buffer)
                           (usage :static-draw))
   (declare (symbol buffer-target usage))
@@ -97,7 +97,7 @@
     %pre% (gen-buffer) initial-contents buffer-target usage)
    (make-uninitialized-gpu-buffer)))
 
-(defun buffer-data-raw (data-pointer byte-size buffer
+(defun2 buffer-data-raw (data-pointer byte-size buffer
                         &optional (target :array-buffer) (usage :static-draw)
                           (byte-offset 0))
   (with-buffer (foo buffer target)
@@ -115,13 +115,13 @@
                        :offset-in-bytes-into-buffer 0)))
     buffer))
 
-(defun buffer-data (buffer c-array &key (target :array-buffer)
+(defun2 buffer-data (buffer c-array &key (target :array-buffer)
                                      (usage :static-draw) (offset 0) byte-size)
   (buffer-data-raw (pointer c-array)
                    (or byte-size (cepl.c-arrays::c-array-byte-size c-array))
                    buffer target usage (* offset (element-byte-size c-array))))
 
-(defun multi-buffer-data (buffer c-arrays target usage)
+(defun2 multi-buffer-data (buffer c-arrays target usage)
   (let* ((c-array-byte-sizes (loop :for c-array :in c-arrays :collect
                                 (cepl.c-arrays::c-array-byte-size c-array)))
          (total-size (reduce #'+ c-array-byte-sizes)))
@@ -149,7 +149,7 @@
          (gpu-array-sub-data g c :types-must-match nil)))
     buffer))
 
-(defun gpu-array-sub-data (gpu-array c-array &key (types-must-match t))
+(defun2 gpu-array-sub-data (gpu-array c-array &key (types-must-match t))
   (when types-must-match
     (assert (equal (gpu-array-bb-element-type gpu-array)
                    (c-array-element-type c-array))))
@@ -166,12 +166,12 @@ gpu-array: ~s (byte-size: ~s)"
       (%gl:buffer-sub-data :array-buffer byte-offset byte-size (pointer c-array))
       gpu-array)))
 
-(defun buffer-reserve-block-raw (buffer byte-size target usage)
+(defun2 buffer-reserve-block-raw (buffer byte-size target usage)
   (with-buffer (foo buffer target)
     (%gl:buffer-data target byte-size (cffi:null-pointer) usage)
     buffer))
 
-(defun buffer-reserve-block (buffer type dimensions target usage)
+(defun2 buffer-reserve-block (buffer type dimensions target usage)
   (with-buffer (foo buffer target)
     (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
     (let* ((dimensions (listify dimensions))
@@ -188,7 +188,7 @@ gpu-array: ~s (byte-size: ~s)"
                          :offset-in-bytes-into-buffer 0))))
     buffer))
 
-(defun reallocate-buffer (buffer)
+(defun2 reallocate-buffer (buffer)
   (assert (= (length (gpu-buffer-arrays buffer)) 1))
   (let ((curr (aref (gpu-buffer-arrays buffer) 0)))
     (buffer-reserve-block-raw buffer

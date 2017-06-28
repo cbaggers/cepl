@@ -3,7 +3,7 @@
 
 ;;------------------------------------------------------------
 
-(defun get-best-glsl-version ()
+(defun2 get-best-glsl-version ()
   (if *gl-context*
       (assocr (cons (major-version *gl-context*)
                     (minor-version *gl-context*))
@@ -24,7 +24,7 @@
 
 ;;------------------------------------------------------------
 
-(defun split-float-version (float)
+(defun2 split-float-version (float)
   (let* ((fix (round float .1)))
     (multiple-value-bind (maj min) (floor fix 10)
       (list maj min))))

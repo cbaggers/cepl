@@ -1,11 +1,11 @@
 (in-package :cepl.viewports)
 
-(defun %set-current-viewport (cepl-context viewport)
+(defun2 %set-current-viewport (cepl-context viewport)
   (with-slots (cepl.context::current-viewport) cepl-context
     (%viewport viewport)
     (setf cepl.context::current-viewport viewport)))
 
-(defun current-viewport ()
+(defun2 current-viewport ()
   (with-slots (cepl.context::current-viewport) cepl.context:*cepl-context*
     (or cepl.context::current-viewport
         (error "No default framebuffer found ~a"
@@ -22,11 +22,11 @@
 (defmethod (setf dimensions) (value (viewport viewport))
   (setf (viewport-dimensions viewport) value))
 
-(defun viewport-dimensions (viewport)
+(defun2 viewport-dimensions (viewport)
   (list (%viewport-resolution-x viewport)
         (%viewport-resolution-y viewport)))
 
-(defun (setf viewport-dimensions) (value viewport)
+(defun2 (setf viewport-dimensions) (value viewport)
   (let ((dim (if (typep value 'viewport)
                  (viewport-dimensions value)
                  value)))
@@ -46,13 +46,13 @@
   (v2:make (float (%viewport-resolution-x viewport))
            (float (%viewport-resolution-y viewport))))
 
-(defun (setf viewport-resolution) (value viewport)
+(defun2 (setf viewport-resolution) (value viewport)
   (unless (typep value 'rtg-math.types:vec2)
     (error "The value given to (setf viewport-resolution) must be a vec2"))
   (%set-resolution viewport (floor (v:x value)) (floor (v:y value)))
   value)
 
-(defun %set-resolution (viewport x y)
+(defun2 %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
   (with-slots (cepl.context::default-viewport) *cepl-context*
@@ -60,26 +60,26 @@
       (cepl.fbos::%update-default-framebuffer-dimensions x y)))
   (values))
 
-(defun viewport-resolution-x (viewport)
+(defun2 viewport-resolution-x (viewport)
   (%viewport-resolution-x viewport))
 
-(defun viewport-resolution-y (viewport)
+(defun2 viewport-resolution-y (viewport)
   (%viewport-resolution-y viewport))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun viewport-origin (viewport)
+(defun2 viewport-origin (viewport)
   (v! (%viewport-origin-x viewport)
       (%viewport-origin-y viewport)))
 
-(defun (setf viewport-origin) (value viewport)
+(defun2 (setf viewport-origin) (value viewport)
   (setf (%viewport-origin-x viewport) (floor (v:x value))
         (%viewport-origin-y viewport) (floor (v:y value)))
   value)
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-(defun %viewport (viewport)
+(defun2 %viewport (viewport)
   (gl:viewport
    (%viewport-origin-x viewport) (%viewport-origin-y viewport)
    (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
@@ -110,7 +110,7 @@
                    ,@body))
 
 
-(defun viewport-params-to-vec4 (&optional (viewport (current-viewport)))
+(defun2 viewport-params-to-vec4 (&optional (viewport (current-viewport)))
   (v! (%viewport-origin-x viewport)
       (%viewport-origin-y viewport)
       (%viewport-resolution-x viewport)
