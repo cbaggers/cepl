@@ -36,9 +36,7 @@
                   (or (validate-dimensions initial-contents dimensions)
                       (error "Dimensions are invalid for initial-contents~%~a~%~a"
                              dimensions initial-contents))
-                  (if (every #'integerp dimensions)
-                      dimensions
-                      (error "Invalid dimensions ~a" dimensions)))
+                  dimensions)
               (if initial-contents
                   (typecase initial-contents
                     (sequence (list (length initial-contents)))
@@ -60,6 +58,8 @@
                                (update-data initial-contents inferred-lisp-type)
                                initial-contents))
          (elem-size (gl-type-size element-type)))
+    (assert (every #'indexp dimensions) ()
+            "Invalid dimensions ~a" dimensions)
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))

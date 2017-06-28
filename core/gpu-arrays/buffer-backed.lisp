@@ -65,9 +65,13 @@
 
 ;;---------------------------------------------------------------
 
-(defun make-gpu-array-share-data (gpu-array-to-modify gpu-array-with-data
-                                  byte-offset-into-source-data element-type
-                                  dimensions &optional byte-size)
+(defn make-gpu-array-share-data ((gpu-array-to-modify gpu-array-bb)
+                                 (gpu-array-with-data gpu-array-bb)
+                                 (byte-offset-into-source-data integer)
+                                 element-type
+                                 dimensions
+                                 &optional byte-size)
+    gpu-array-bb
   (assert dimensions)
   (let* ((parent gpu-array-with-data)
          (child gpu-array-to-modify)
@@ -112,7 +116,7 @@
 (defun init-gpu-array-from-c-array (arr c-array access-style
                                     dimensions)
   (let ((dimensions (listify dimensions))
-        (c-dimensions (dimensions c-array)))
+        (c-dimensions (c-array-dimensions c-array)))
     (when dimensions
       (assert (and (every #'= c-dimensions dimensions)
                    (= (length c-dimensions) (length dimensions)))
@@ -165,7 +169,7 @@
          (g-arrays (mapcar (lambda (c-array)
                              (%make-gpu-array-bb
                               :buffer buffer
-                              :dimensions (dimensions c-array)
+                              :dimensions (c-array-dimensions c-array)
                               :access-style access-style))
                            c-arrays)))
     (cepl.context::if-gl-context
@@ -175,25 +179,31 @@
 
 ;;---------------------------------------------------------------
 
-(defun subseq-g (array start &optional end)
+(defn subseq-g ((array gpu-array-bb) (start c-array-index)
+                &optional (end c-array-index))
+    gpu-array-bb
   (subseq-g-raw array start end :new-element-type nil))
 
-(defun subseq-g-raw (array start end &key new-element-type)
+(defn subseq-g-raw ((array gpu-array-bb)
+                    (start c-array-index)
+                    (end (or null c-array-index))
+                    &key (new-element-type t))
+    gpu-array-bb
   (let ((dimensions (dimensions array)))
-    (if (> (length dimensions) 1)
-        (error "Cannot take subseq of multidimensional array")
-        (let* ((source-len (first dimensions))
-               (type (or new-element-type
-                         (gpu-array-bb-element-type array)))
-               (end (or end source-len)))
-          (if (and (< start end)
+    (assert (= (length dimensions) 1) ()
+            "Cannot take subseq of multidimensional array")
+    (let* ((source-len (first dimensions))
+           (type (or new-element-type
+                     (gpu-array-bb-element-type array)))
+           (end (or end source-len)))
+      (assert (and (< start end)
                    (< start source-len)
                    (<= end source-len))
-              (make-gpu-array-share-data
-               (make-uninitialized-gpu-array-bb) array
-               (cepl.c-arrays::gl-calc-byte-size type start) type
-               (list (- end start)))
-              (error "Invalid subseq start or end for c-array"))))))
+              () "Invalid subseq start or end for c-array")
+      (make-gpu-array-share-data
+       (make-uninitialized-gpu-array-bb) array
+       (cepl.c-arrays::gl-calc-byte-size type start) type
+       (list (- end start))))))
 
 ;; {TODO} copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData

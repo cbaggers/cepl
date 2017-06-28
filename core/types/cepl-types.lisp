@@ -18,6 +18,12 @@
   (declare (gl-id id))
   (= id +unknown-gl-id+))
 
+(deftype c-array-index ()
+  '(unsigned-byte 32))
+
+(defun indexp (x)
+  (typep x 'c-array-index))
+
 ;;------------------------------------------------------------
 
 (defstruct (c-array (:constructor %make-c-array))

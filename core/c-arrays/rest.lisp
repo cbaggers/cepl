@@ -2,7 +2,9 @@
 
 ;;------------------------------------------------------------
 
-(defun subseq-c (array start &optional end)
+(defn subseq-c ((array c-array) (start c-array-index)
+                &optional (end c-array-index))
+    c-array
   "This function returns a c-array which contains
    a subset of the array passed into this function.
    Right this will make more sense with a use case:
@@ -24,19 +26,20 @@
    array affect the child sub-array. This can really bite you
    in the backside if you change how the data in the array is
    laid out."
-  (let ((dimensions (dimensions array)))
-    (if (> (length dimensions) 1)
-        (error "Cannot take subseq of multidimensional array")
-        (let* ((length (first dimensions))
-               (type (c-array-element-type array))
-               (end (or end length)))
-          (if (and (< start end) (< start length) (<= end length))
-              (make-c-array-from-pointer
-               (list (- end start)) type
-               (cffi:inc-pointer (c-array-pointer array)
-                                 (%gl-calc-byte-size (c-array-element-byte-size array)
-                                                     (list start))))
-              (error "Invalid subseq start or end for c-array"))))))
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (let ((dimensions (c-array-dimensions array)))
+    (assert (= (length dimensions) 1) ()
+            "Cannot take subseq of multidimensional array")
+    (let* ((length (the c-array-index (first dimensions)))
+           (type (c-array-element-type array))
+           (end (or end length)))
+      (assert (and (< start end) (< start length) (<= end length)) ()
+              "Invalid subseq start or end for c-array")
+      (make-c-array-from-pointer
+       (list (- end start)) type
+       (cffi:inc-pointer (c-array-pointer array)
+                         (%gl-calc-byte-size (c-array-element-byte-size array)
+                                             (list start)))))))
 
 (defmethod pull1-g ((object c-array))
   (let* ((dimensions (c-array-dimensions object))

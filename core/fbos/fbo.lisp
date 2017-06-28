@@ -602,10 +602,10 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
        dimensions))
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t)
-     (dimensions (second pattern)))
+     (gpu-array-dimensions (second pattern)))
     ;; use the first gpu-array in texture
     ((typep (second pattern) 'texture)
-     (dimensions (texref (second pattern))))
+     (gpu-array-dimensions (texref (second pattern))))
     ;; take the dimensions from some object
     (t (dimensions (second pattern)))))
 
@@ -817,16 +817,17 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
     (otherwise (color-renderable-formatp image-format))))
 
-(defun clear (&optional target)
+(defn clear (&optional (target fbo)) (values)
   (if target
       (clear-fbo target)
       (dbind (read . draw) (fbo-bound *cepl-context*)
-        (if (eq read draw)
-            (clear-fbo read)
-            (cons (clear-fbo read)
-                  (clear-fbo draw))))))
+        (clear-fbo read)
+        (unless (eq read draw)
+          (clear-fbo draw))))
+  (values))
 
-(defun clear-fbo (fbo)
+(defn clear-fbo ((fbo fbo)) fbo
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
   (with-fbo-bound (fbo :target :draw-framebuffer
                        :with-blending nil
                        :with-viewport nil)

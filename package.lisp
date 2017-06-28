@@ -120,7 +120,7 @@
            :buffer-stream-has-invalid-primtive-for-stream))
 
 (uiop:define-package :cepl.host
-    (:use :cl :alexandria :cepl.perf.core)
+    (:use :cl :alexandria :cepl.perf.core :%rtg-math)
   (:export
    ;; common
    :register-host
@@ -187,6 +187,8 @@
            :+unknown-gl-id+
            :+null-gl-id+
            :unknown-gl-id-p
+           :c-array-index
+           :indexp
 
            :%make-gpu-array
            :gpu-array

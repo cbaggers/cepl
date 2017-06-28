@@ -61,15 +61,16 @@
 
 ;; allignmetn
 (defmethod push-g ((object list) (destination gpu-array-bb))
-  (with-c-array (tmp (make-c-array object
-                                   :dimensions (dimensions destination)
-                                   :element-type (element-type destination)))
+  (with-c-array (tmp (make-c-array
+                      object
+                      :dimensions (gpu-array-dimensions destination)
+                      :element-type (element-type destination)))
     (push-g tmp destination)))
 
 (defmethod push-g ((object c-array) (destination gpu-array-bb))
   (let* ((type (gpu-array-bb-element-type destination))
-         (ob-dimen (dimensions object))
-         (des-dimen (dimensions object)))
+         (ob-dimen (c-array-dimensions object))
+         (des-dimen (gpu-array-dimensions destination)))
     (if (and (eq (element-type object) type)
              (if (= 1 (length des-dimen) (length ob-dimen))
                  (<= (first ob-dimen) (first des-dimen))
