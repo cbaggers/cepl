@@ -78,9 +78,10 @@
                 (if (cffi:null-pointer-p message)
                     (setf running nil)
                     (let ((data (cffi:inc-pointer
-                                 message (cffi:foreign-type-size :uint64))))
-                      (sb-posix:write
-                       fd data (cffi:mem-aref message :uint64 0))
+                                 message (cffi:foreign-type-size :uint64)))
+                          (len (* (cffi:mem-aref message :uint64 0)
+                                  (cffi:foreign-type-size :uint64))))
+                      (sb-posix:write fd data len)
                       (chanl:send to-cepl message))))
                (t (err message))))))
       (chanl:send to-cepl (lambda () (map nil #'cffi:foreign-free buffers)))
@@ -174,3 +175,25 @@
               `(%log-profile-event ,(- id) (,*perf-time-function*))))))
 
 ;;------------------------------------------------------------
+
+(defun reverse-hash-map (hm)
+  (let ((r (make-hash-table :test #'eql)))
+    (maphash (lambda (k v) (setf (gethash v r) k)) hm)
+    r))
+
+(defun analyze ()
+  (let ((map (reverse-hash-map *func-map*)))
+    (with-open-file (s "/tmp/perf" :element-type '(unsigned-byte 64))
+      (read-byte s nil nil)
+      (loop :for id := (read-byte s nil nil) :while id :collect
+         (let* ((id (u64-to-signed id))
+                (dir (if (< id 0) :out :in))
+                (name (gethash (abs id) map))
+                (time (read-byte s nil nil)))
+           (when time
+             (list dir (or name id) time)))))))
+
+(defun u64-to-signed (num)
+  (cffi:with-foreign-object (x :uint64)
+    (setf (cffi:mem-aref x :uint64) num)
+    (cffi:mem-aref x :int64)))
