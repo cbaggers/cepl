@@ -232,7 +232,8 @@
             (lambda (prog-id ,@uniform-names)
               (declare (ignorable ,@uniform-names))
               (unless initd
-                ,@(mapcar (lambda (_) (cons 'setf _)) u-lets))
+                ,@(mapcar (lambda (_) (cons 'setf _)) u-lets)
+                (setf initd t))
               (let ,uniform-transforms
                 ,@(mapcar #'gen-uploaders-block assigners)))))))))
 
