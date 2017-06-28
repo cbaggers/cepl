@@ -28,7 +28,6 @@
                     :cepl.fbos
                     :cepl.blending
                     :cepl.pipelines
-                    :cepl.misc
                     :cffi
                     :%gl)))
     `(sb-profile:profile
@@ -68,7 +67,6 @@
                     :cepl.fbos
                     :cepl.blending
                     :cepl.pipelines
-                    :cepl.misc
                     :cffi
                     :%gl)))
     `(progn
