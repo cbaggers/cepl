@@ -5,4 +5,5 @@
   (:export :profile
            :load-with-instrumentation
            :start-profiling
-           :stop-profiling))
+           :stop-profiling
+           :analyze))
