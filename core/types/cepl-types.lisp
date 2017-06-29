@@ -137,13 +137,17 @@
   (expects-depth nil :type boolean)
   (compare nil :type symbol))
 
-(defun2 %sampler-id (sampler)
+(defn-inline %sampler-id ((sampler sampler)) fixnum
+  (declare (profile t))
   (sampler-id-box-id (%sampler-id-box sampler)))
 
-(defun2 (setf %sampler-id) (value sampler)
+(defn (setf %sampler-id) ((value sampler-id-box) (sampler sampler))
+    sampler-id-box
+  (declare (profile t))
   (setf (%sampler-id-box sampler) value))
 
-(defun2 sampler-shared-p (sampler)
+(defn-inline sampler-shared-p ((sampler sampler)) boolean
+  (declare (profile t))
   (sampler-id-box-shared-p (%sampler-id-box sampler)))
 
 ;;------------------------------------------------------------
@@ -310,7 +314,8 @@
      :patch-length patch-length
      :gpu-arrays gpu-arrays)))
 
-(defun2 buffer-stream-index-type (stream)
+(defn-inline buffer-stream-index-type ((stream buffer-stream)) symbol
+  (declare (profile t))
   (buffer-stream-%index-type stream))
 
 (defun2 (setf buffer-stream-index-type) (value stream)

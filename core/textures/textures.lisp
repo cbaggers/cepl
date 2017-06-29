@@ -769,8 +769,10 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (with-c-array (c-array (pull1-g object))
     (pull1-g c-array)))
 
-(defun2 active-texture-num (num)
-  (gl:active-texture (+ #x84C0 num)))
+(defn-inline active-texture-num ((num (unsigned-byte 16))) (values)
+  (declare (profile t))
+  (gl:active-texture (+ #x84C0 num))
+  (values))
 
 ;; {TODO}
 ;; copy data (from frame-buffer to texture image) - leave for now
