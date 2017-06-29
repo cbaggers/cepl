@@ -6,7 +6,7 @@
   "Initialize CEPL and open a window. If the gl-version argument is nil then
    the default for the OS will be used."
   (initialize-cepl :gl-version gl-version)
-  (cepl.context::legacy-add-surface *cepl-context* "CEPL" width height nil t
+  (cepl.context::legacy-add-surface (cepl-context) "CEPL" width height nil t
                                     nil nil t gl-version)
   (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%")
   (cls))
@@ -33,18 +33,18 @@
    The function must take 1 argument, which will be the event."
   (cepl.host::register-event-listener function))
 
-(defun2 step-host (&optional (context *cepl-context*))
+(defun2 step-host (&optional (context (cepl-context)))
   (with-slots (cepl.context::current-surface) context
     (cepl.host::host-step cepl.context::current-surface))
   context)
 
-(defun2 swap (&optional (context *cepl-context*))
+(defun2 swap (&optional (context (cepl-context)))
   (with-slots (cepl.context::current-surface) context
     (cepl.host::host-swap cepl.context::current-surface))
   context)
 
 (defun2 cls ()
-  (with-slots (default-framebuffer) *cepl-context*
+  (with-slots (default-framebuffer) (cepl-context)
     (with-fbo-bound (default-framebuffer :target :framebuffer
                       :with-viewport nil
                       :with-blending nil)

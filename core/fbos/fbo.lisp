@@ -64,7 +64,7 @@
         (or draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
                                            (max-draw-buffers *gl-context*)
                                            :initial-element :none)))
-  (cepl.context::register-fbo *cepl-context* fbo-obj)
+  (cepl.context::register-fbo (cepl-context) fbo-obj)
   fbo-obj)
 
 ;;----------------------------------------------------------------------
@@ -101,12 +101,12 @@
               :depth-array (when depth (gen-array dimensions)))
              :id 0))))
       (update-clear-mask result)
-      (with-slots (default-framebuffer) *cepl-context*
+      (with-slots (default-framebuffer) (cepl-context)
         (setf default-framebuffer result))
       result)))
 
 (defun2 %update-default-framebuffer-dimensions (x y)
-  (with-slots (default-framebuffer) *cepl-context*
+  (with-slots (default-framebuffer) (cepl-context)
     (let ((dimensions (list x y))
           (fbo default-framebuffer))
       (map nil
@@ -120,7 +120,7 @@
 
 
 (defun2 %set-default-fbo-viewport (new-dimensions)
-  (with-slots (default-framebuffer) *cepl-context*
+  (with-slots (default-framebuffer) (cepl-context)
     (let ((fbo default-framebuffer))
       ;; - - -
       (loop :for a :across (%fbo-color-arrays fbo) :when a :do
@@ -472,12 +472,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 ;;
 (defun2 %bind-fbo (fbo target)
   (ecase target
-    (:framebuffer (setf (fbo-bound *cepl-context*) fbo))
-    (:read-framebuffer (setf (read-fbo-bound *cepl-context*) fbo))
-    (:draw-framebuffer (setf (draw-fbo-bound *cepl-context*) fbo))))
+    (:framebuffer (setf (fbo-bound (cepl-context)) fbo))
+    (:read-framebuffer (setf (read-fbo-bound (cepl-context)) fbo))
+    (:draw-framebuffer (setf (draw-fbo-bound (cepl-context)) fbo))))
 
 (defun2 %unbind-fbo ()
-  (with-slots (default-framebuffer) *cepl-context*
+  (with-slots (default-framebuffer) (cepl-context)
     (%bind-fbo default-framebuffer :framebuffer)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -494,7 +494,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (labels ((gen-dual-with-fbo-bound (fbo with-viewport attachment-for-size
                                          with-blending draw-buffers body)
              (alexandria:with-gensyms (ctx old-read-fbo old-draw-fbo new-fbo)
-               `(let* ((,ctx *cepl-context*)
+               `(let* ((,ctx (cepl-context))
                        (,new-fbo ,fbo)
                        (,old-read-fbo (read-fbo-bound ,ctx))
                        (,old-draw-fbo (draw-fbo-bound ,ctx)))
@@ -515,7 +515,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                                              attachment-for-size with-blending
                                              draw-buffers body)
              (alexandria:with-gensyms (ctx old-fbo new-fbo)
-               `(let* ((,ctx *cepl-context*)
+               `(let* ((,ctx (cepl-context))
                        (,new-fbo ,fbo)
                        (,old-fbo ,(if (eq target :read-framebuffer)
                                       `(read-fbo-bound ,ctx)
@@ -821,7 +821,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (declare (profile t))
   (if target
       (clear-fbo target)
-      (dbind (read . draw) (fbo-bound *cepl-context*)
+      (dbind (read . draw) (fbo-bound (cepl-context))
         (clear-fbo read)
         (unless (eq read draw)
           (clear-fbo draw))))

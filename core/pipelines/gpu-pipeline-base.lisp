@@ -498,7 +498,7 @@ names are depended on by the functions named later in the list"
 ;;--------------------------------------------------
 
 (defun2 request-program-id-for (name)
-  (with-slots (cepl.context::map-of-pipeline-names-to-gl-ids) *cepl-context*
+  (with-slots (cepl.context::map-of-pipeline-names-to-gl-ids) (cepl-context)
     (if name
         (or (gethash name cepl.context::map-of-pipeline-names-to-gl-ids)
             (setf (gethash name cepl.context::map-of-pipeline-names-to-gl-ids)

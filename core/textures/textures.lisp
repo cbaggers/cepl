@@ -39,7 +39,7 @@
 
             (when (not cepl.context:*gl-context*)
               (cepl.context::delay-initialization
-               *cepl-context*
+               (cepl-context)
                (lambda () (reinit-on-context result))
                (list texture)))
             result)
@@ -251,7 +251,7 @@
                                          element-type mipmap-levels
                                          layer-count cubes allocated mutable-p)
   (cepl.context::register-texture
-   cepl.context:*cepl-context*
+   (cepl-context)
    (%%make-texture
     :id gl-object
     :base-dimensions base-dimensions
@@ -502,7 +502,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                       (texture-mutable-p tex-obj) (not (and immutable *immutable-available*)))
                 (setf (texture-cache-id tex-obj)
                       (cepl.context::tex-kind->cache-index texture-type))
-                (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
+                (cepl.context::register-texture (cepl-context) tex-obj)
                 (with-texture-bound tex-obj
                   (allocate-texture tex-obj)
                   (when initial-contents
@@ -603,7 +603,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
           (buffer-texture-owns-array tex-obj) t)
     (setf (texture-cache-id tex-obj)
           (cepl.context::tex-kind->cache-index :texture-buffer))
-    (cepl.context::register-texture cepl.context:*cepl-context* tex-obj)
+    (cepl.context::register-texture (cepl-context) tex-obj)
     ;; upload
     (with-texture-bound tex-obj
       (%gl::tex-buffer :texture-buffer image-format

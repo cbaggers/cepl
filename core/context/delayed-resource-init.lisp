@@ -45,11 +45,11 @@
 (defmacro if-gl-context (init-func-call pre-context-form &optional depends-on)
   (let ((pre (cepl-utils:symb :%pre%)))
     `(let ((,pre ,pre-context-form))
-       (if (slot-value *cepl-context* 'gl-context)
+       (if (slot-value (cepl-context) 'gl-context)
            (let ((,pre ,pre))
              ,init-func-call)
            (delay-initialization
-            *cepl-context*
+            (cepl-context)
             (lambda () ,init-func-call)
             ,depends-on))
        ,pre)))

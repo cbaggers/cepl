@@ -112,9 +112,9 @@
     `(let* ((,tex ,texture)
             (,cache-id (texture-cache-id ,tex))
             (,old-id (cepl.context::texture-bound-id
-                      *cepl-context* ,cache-id)))
+                      (cepl-context) ,cache-id)))
        (cepl.context::set-texture-bound-id
-        *cepl-context* ,cache-id (texture-id ,tex))
+        (cepl-context) ,cache-id (texture-id ,tex))
        (unwind-protect (progn ,@body)
          (cepl.context::set-texture-bound-id
-          *cepl-context* ,cache-id ,old-id)))))
+          (cepl-context) ,cache-id ,old-id)))))

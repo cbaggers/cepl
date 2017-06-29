@@ -523,6 +523,8 @@
            ;;----------------------------
            ;; CEPL.Context
            :*cepl-context*
+           :cepl-context
+           :with-cepl-context
            :gpu-buffer-bound
            :texture-bound
            :vao-bound

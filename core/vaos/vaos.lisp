@@ -21,13 +21,13 @@
 
 (defmacro with-vao-bound (vao &body body)
   (alexandria:with-gensyms (ctx vao-id old-vao)
-    `(let* ((,ctx *cepl-context*)
+    `(let* ((,ctx (cepl-context))
             (,old-vao (vao-bound ,ctx))
             (,vao-id ,vao))
        (unwind-protect
             (progn (setf (vao-bound ,ctx) ,vao-id)
                    ,@body)
-         (setf (vao-bound *cepl-context*) ,old-vao)))))
+         (setf (vao-bound (cepl-context)) ,old-vao)))))
 
 (defun2 suitable-array-for-index-p (array)
   (and (eql (length (gpu-buffer-arrays (gpu-array-buffer array))) 1)
@@ -62,7 +62,7 @@
       (let ((element-buffer (when index-array (gpu-array-buffer index-array)))
             (vao gl-object)
             (attr 0)
-            (ctx *cepl-context*))
+            (ctx (cepl-context)))
         (setf (vao-bound ctx) vao)
         (loop :for gpu-array :in gpu-arrays :do
            (let* ((buffer (gpu-array-buffer gpu-array))

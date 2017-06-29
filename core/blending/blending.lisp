@@ -68,7 +68,7 @@
 (defvar %current-blend-params nil)
 
 (defun2 current-blend-params ()
-  (with-slots (default-framebuffer) *cepl-context*
+  (with-slots (default-framebuffer) (cepl-context)
     (copy-blending-params
      (or %current-blend-params
          (attachment-viewport default-framebuffer 0)))))

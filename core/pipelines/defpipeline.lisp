@@ -253,7 +253,7 @@
   (funcall (compile nil `(lambda () ,code))))
 
 (defun2 %post-init (func)
-  (setf (vao-bound *cepl-context*) 0)
+  (setf (vao-bound (cepl-context)) 0)
   (force-use-program 0)
   (when func (funcall func)))
 

@@ -6,7 +6,7 @@
 
 (defmacro %map-g (pipeline-func stream &rest uniforms)
   (alexandria:with-gensyms (ctx)
-    `(let ((,ctx *cepl-context*))
+    `(let ((,ctx (cepl-context)))
        (funcall ,pipeline-func ,+mapg-constant+ ,stream ,@uniforms)
        (draw-fbo-bound ,ctx))))
 

@@ -46,14 +46,14 @@
                     (,cache-id (cepl.context::buffer-kind->cache-index
                                 ,target))))
             (,old-id
-             (cepl.context::gpu-buffer-bound-id *cepl-context* ,cache-id)))
+             (cepl.context::gpu-buffer-bound-id (cepl-context) ,cache-id)))
        (unwind-protect
             (progn
               (cepl.context::set-gpu-buffer-bound-id
-               *cepl-context* ,cache-id (if ,var-name (gpu-buffer-id ,var-name) 0))
+               (cepl-context) ,cache-id (if ,var-name (gpu-buffer-id ,var-name) 0))
               ,@body)
          (cepl.context::set-gpu-buffer-bound-id
-          *cepl-context* ,cache-id ,old-id)))))
+          (cepl-context) ,cache-id ,old-id)))))
 
 (defun2 gen-buffer ()
   (first (gl:gen-buffers 1)))
@@ -66,7 +66,7 @@
         (make-array 0 :element-type 'gpu-array-bb
                     :initial-element +null-buffer-backed-gpu-array+
                     :adjustable t :fill-pointer 0))
-  (cepl.context::register-gpu-buffer *cepl-context* new-buffer)
+  (cepl.context::register-gpu-buffer (cepl-context) new-buffer)
   (if initial-contents
       (if (list-of-c-arrays-p initial-contents)
           (multi-buffer-data new-buffer initial-contents buffer-target usage)

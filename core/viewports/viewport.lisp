@@ -6,7 +6,7 @@
     (setf cepl.context::current-viewport viewport)))
 
 (defun2 current-viewport ()
-  (with-slots (cepl.context::current-viewport) cepl.context:*cepl-context*
+  (with-slots (cepl.context::current-viewport) (cepl-context)
     (or cepl.context::current-viewport
         (error "No default framebuffer found ~a"
                (if (and (boundp '*gl-context*)
@@ -56,7 +56,7 @@
 (defun2 %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
-  (with-slots (cepl.context::default-viewport) *cepl-context*
+  (with-slots (cepl.context::default-viewport) (cepl-context)
     (when (eq viewport cepl.context::default-viewport)
       (cepl.fbos::%update-default-framebuffer-dimensions x y)))
   (values))
@@ -88,7 +88,7 @@
 
 (defmacro with-viewport (viewport &body body)
   (alexandria:with-gensyms (old-viewport vp ctx)
-    `(let* ((,ctx *cepl-context*)
+    `(let* ((,ctx (cepl-context))
             (,old-viewport (current-viewport))
             (,vp ,viewport))
        (%set-current-viewport ,ctx ,vp)

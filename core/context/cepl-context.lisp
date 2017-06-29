@@ -546,3 +546,38 @@
             (not (slot-value context 'cepl.context::gl-version)))
     (setf (slot-value context 'cepl.context::gl-version)
           gl-version)))
+
+;;----------------------------------------------------------------------
+
+(defmacro l-identity (context)
+  "An identity macro. Exists so it can be shadowed in certain contexts"
+  ;; l for local..bad name, but the others I had at the time were worse.
+  context)
+
+(defun %inner-with-context (cepl-context body ctx-var)
+  (if (eq cepl-context ctx-var)
+      `(progn ,@body)
+      (%with-context cepl-context body ctx-var)))
+
+(defun %with-context (cepl-context body ctx-var)
+  (let ((ctx (or ctx-var (gensym "CTX"))))
+    `(let ((,ctx ,cepl-context))
+       (declare (ignorable ,ctx))
+       (macrolet ((l-identity (context)
+                    (declare (ignore context))
+                    ',ctx)
+                  (with-cepl-context
+                      ((&optional (cepl-context ',ctx))
+                       &body body)
+                    (%inner-with-context cepl-context body ',ctx)))
+         ,@body))))
+
+(defmacro with-cepl-context ((&optional (cepl-context '(cepl-context)))
+                             &body body)
+  (%with-context cepl-context body nil))
+
+(defn-inline cepl-context () cepl-context
+  *cepl-context*)
+
+(define-compiler-macro cepl-context ()
+  `(l-identity *cepl-context*))
