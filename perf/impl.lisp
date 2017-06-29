@@ -28,11 +28,19 @@
   t)
 
 (defgeneric set-perf-options (perf-provider)
+  (:method ((perf-provider (eql :cl)))
+    (setf *perf-time-function*
+          'get-internal-real-time)
+    (setf *perf-second-as-units-function*
+          'cl-second-as-units))
   (:method ((perf-provider (eql :sdl2)))
     (setf *perf-time-function*
           (intern "GET-PERFORMANCE-COUNTER" :sdl2))
     (setf *perf-second-as-units-function*
-          (intern "GET-PERFORMANCE-FREQUENCY" :sdl2))))
+          (intern "SDL-GET-PERFORMANCE-FREQUENCY" :SDL2-FFI.FUNCTIONS))))
+
+(defun cl-second-as-units ()
+  internal-time-units-per-second)
 
 ;;------------------------------------------------------------
 
@@ -216,7 +224,7 @@
                            v)))
              freq)
     (let ((per-frame-freq (make-hash-table :test #'equal))
-          (frames (gethash 'cepl.host:host-swap freq)))
+          (frames (gethash (intern "HOST-SWAP" :cepl.host) freq)))
       (when frames
         (maphash (lambda (k v)
                    (setf (gethash k per-frame-freq) (/ v (float frames))))
@@ -243,24 +251,34 @@
 
 (defun overview (analyze-results)
   (destructuring-bind (freq total-time per-call per-frame-freq) analyze-results
-    (when per-frame-freq
-      (let* ((names-of-the-busy
-              (mapcar #'car (remove-if-not
-                             (lambda (x) (> x 1))
-                             (alexandria:hash-table-alist per-frame-freq)
-                             :key #'cdr))))
-        (format t "~%Per Frame Freq~%--------------~%~{~s~%~}"
-                (sort (alexandria:hash-table-alist per-frame-freq)
-                      #'> :key #'cdr))
-        (format t "~%~%Interesting Funcs~%--------------~%~{~s~%~}"
-                (sort (mapcar (lambda (n)
-                                (destructuring-bind (time cnt) (gethash n per-call)
-                                  (declare (ignore cnt))
-                                  (list n
-                                        (gethash n per-frame-freq)
-                                        (/ time 1000f0))))
-                              names-of-the-busy)
-                      #'> :key #'caddr))))
+    (let ((ticks-per-nanosecond
+           (/ (funcall (symbol-function *perf-second-as-units-function*))
+              1000000f0)))
+      (when per-frame-freq
+        (let* ((names-of-the-busy
+                (mapcar #'car (remove-if-not
+                               (lambda (x) (> x 1))
+                               (alexandria:hash-table-alist per-frame-freq)
+                               :key #'cdr))))
+          (format t "~%Per Frame Freq~%--------------~%~{~s~%~}"
+                  (sort (alexandria:hash-table-alist per-frame-freq)
+                        #'> :key #'cdr))
+          (format t "~%~%Per Call Cost (avg)~%--------------~%~{~s~%~}"
+                  (mapcar (lambda (x)
+                            (destructuring-bind (n p y) x
+                              (declare (ignore y))
+                              (cons n (/ p ticks-per-nanosecond))))
+                          (sort (alexandria:hash-table-alist per-call)
+                                #'> :key #'cadr)))
+          (format t "~%~%Interesting Funcs~%--------------~%~{~s~%~}"
+                  (sort (mapcar (lambda (n)
+                                  (destructuring-bind (time cnt) (gethash n per-call)
+                                    (declare (ignore cnt))
+                                    (list n
+                                          (gethash n per-frame-freq)
+                                          (/ time ticks-per-nanosecond))))
+                                names-of-the-busy)
+                        #'> :key #'caddr)))))
     (list freq total-time per-call per-frame-freq)))
 
 (defun u64-to-signed (num)

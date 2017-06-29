@@ -340,9 +340,9 @@
             (* value type-size))))
   value)
 
-(declaim (ftype (function (buffer-stream) (unsigned-byte 64))
-                buffer-stream-start-byte))
-(defun2 buffer-stream-start-byte (stream)
+(defn-inline buffer-stream-start-byte ((stream buffer-stream))
+    (unsigned-byte 64)
+  (declare (profile t))
   (buffer-stream-%start-byte stream))
 
 (defun2 (setf buffer-stream-start-byte) (value stream)
