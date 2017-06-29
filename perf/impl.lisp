@@ -37,7 +37,7 @@
 ;;------------------------------------------------------------
 
 (defconstant +chanl-size+ 60)
-(defconstant +buffer-size+ (* 16 1024))
+(defconstant +buffer-size+ 524288)
 (defconstant +max-elems+
   (floor (/ (/ (- +buffer-size+ 1) (cffi:foreign-type-size :uint64)) 2)))
 
@@ -215,9 +215,16 @@
                               (float v))
                            v)))
              freq)
-    (list freq
-          total-time
-          per-call)))
+    (let ((per-frame-freq (make-hash-table :test #'equal))
+          (frames (gethash 'cepl.host:host-swap freq)))
+      (when frames
+        (maphash (lambda (k v)
+                   (setf (gethash k per-frame-freq) (/ v (float frames))))
+                 freq))
+      (list freq
+            total-time
+            per-call
+            (when frames per-frame-freq)))))
 
 (defun analyze-in-entry (depth name time
                          track freq total-time)
@@ -233,6 +240,28 @@
          (func-time (- time in-time)))
     (remhash key track)
     (incf (gethash name total-time 0) func-time)))
+
+(defun overview (analyze-results)
+  (destructuring-bind (freq total-time per-call per-frame-freq) analyze-results
+    (when per-frame-freq
+      (let* ((names-of-the-busy
+              (mapcar #'car (remove-if-not
+                             (lambda (x) (> x 1))
+                             (alexandria:hash-table-alist per-frame-freq)
+                             :key #'cdr))))
+        (format t "~%Per Frame Freq~%--------------~%~{~s~%~}"
+                (sort (alexandria:hash-table-alist per-frame-freq)
+                      #'> :key #'cdr))
+        (format t "~%~%Interesting Funcs~%--------------~%~{~s~%~}"
+                (sort (mapcar (lambda (n)
+                                (destructuring-bind (time cnt) (gethash n per-call)
+                                  (declare (ignore cnt))
+                                  (list n
+                                        (gethash n per-frame-freq)
+                                        (/ time 1000f0))))
+                              names-of-the-busy)
+                      #'> :key #'caddr))))
+    (list freq total-time per-call per-frame-freq)))
 
 (defun u64-to-signed (num)
   (cffi:with-foreign-object (x :uint64)

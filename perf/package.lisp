@@ -6,4 +6,5 @@
            :load-with-instrumentation
            :start-profiling
            :stop-profiling
-           :analyze))
+           :analyze
+           :overview))
