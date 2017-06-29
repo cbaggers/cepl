@@ -223,7 +223,8 @@
 (let ((cache-id->enum-id
        #(34962 37568 36662 36663 37102 36671 34963 35051 35052 37266 37074
          35882)))
-  (defun set-gpu-buffer-bound-id (ctx index id)
+  (defun2 set-gpu-buffer-bound-id (ctx index id)
+    (declare (inline unknown-gl-id-p))
     (with-slots (array-of-bound-gpu-buffer-ids gl-context) ctx
       (let ((current (gpu-buffer-bound-id ctx index))
             (bind-id (if (unknown-gl-id-p id)
@@ -286,6 +287,7 @@
 
 (defun2 ubo-bind-buffer-id-range
     (ctx id ubo-binding-point offset size)
+  (declare (inline unknown-gl-id-p))
   (assert (and offset size))
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
@@ -308,6 +310,7 @@
 
 (defun2 transform-feedback-bind-buffer-id-range
     (ctx id tfb-binding-point offset size)
+  (declare (inline unknown-gl-id-p))
   (assert (and offset size))
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
@@ -337,7 +340,7 @@
 
 (let ((cache-id->enum-id
        #(32872 32873 32874 35868 35869 34038 34068 36874 35884 37124 37125)))
-  (defun %texture-binding (gl-ctx index)
+  (defun2 %texture-binding (gl-ctx index)
     (declare (ignore gl-ctx))
     (let ((enum-val (aref cache-id->enum-id index)))
       (cl-opengl:get-integer enum-val 1))))
@@ -349,7 +352,7 @@
 ;;           :texture-2d-multisample-array))
 (let ((cache-id->enum-id
        #(3552 3553 32879 35864 35866 34037 34067 36873 35882 37120 37122)))
-  (defun (setf %texture-binding) (id gl-ctx index)
+  (defun2 (setf %texture-binding) (id gl-ctx index)
     (declare (ignore gl-ctx))
     (let ((target-val (aref cache-id->enum-id index)))
       ;; {TODO} we have already calculated the enum, try and remove the
@@ -365,6 +368,7 @@
     (aref array-of-bound-texture-ids index)))
 
 (defun2 set-texture-bound-id (ctx index id)
+  (declare (inline unknown-gl-id-p))
   (with-slots (array-of-bound-texture-ids gl-context)
       ctx
     (let ((current (texture-bound-id ctx index))
@@ -394,6 +398,7 @@
     (:texture-2d-multisample-array 10)))
 
 (defun2 texture-bound (ctx target)
+  (declare (inline unknown-gl-id-p))
   (let ((index (tex-kind->cache-index target)))
     (with-slots (array-of-textures gl-context)
         ctx

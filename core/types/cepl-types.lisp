@@ -12,10 +12,8 @@
 (defconstant +unknown-gl-id+ #.(1- (expt 2 +gl-id-bit-size+)))
 (defconstant +null-gl-id+ 0)
 
-(declaim (inline unknown-gl-id-p)
-         (ftype (function (gl-id) boolean) unknown-gl-id-p))
-(defun2 unknown-gl-id-p (id)
-  (declare (gl-id id))
+(defn-inline unknown-gl-id-p ((id gl-id)) boolean
+  (declare (inline unknown-gl-id-p))
   (= id +unknown-gl-id+))
 
 (deftype c-array-index ()
