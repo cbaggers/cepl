@@ -886,89 +886,79 @@
            :delete-gpu-function
            :bake-uniforms))
 
-(macrolet
-    ((def-re-exporting-package (name &key use shadow export re-export
-                                     import-from export-from)
-       (labels ((exported-symbols (package-name)
-                  (let ((package (find-package package-name))
-                        result)
-                    (do-external-symbols (x package)
-                      (push (intern (symbol-name x) :keyword) result))
-                    result))
-                (calc-export-all (re)
-                  (exported-symbols re))
-                (calc-import-from (re)
-                  (rest re))
-                (calc-re-export (re)
-                  (typecase re
-                    (list (calc-import-from re))
-                    (symbol (calc-export-all re))))
-                (calc-exports-from (ef)
-                  (rest ef))
-                (calc-exports ()
-                  (append export (mapcan #'calc-re-export re-export)
-                          (mapcan #'calc-exports-from export-from)))
-                (calc-re-using (x)
-                  (if (listp x) (first x) x)))
-         (let ((use (append use (mapcar #'calc-re-using re-export)))
-               (exports (calc-exports)))
-           `(uiop:define-package ,name
-                ,@(when use `((:use ,@use)))
-              ,@(when shadow `((:shadow ,@shadow)))
-              ,@(loop :for i :in import-from :collect (cons :import-from i))
-              ,@(loop :for i :in export-from :collect (cons :import-from i))
-              ,@(when exports `((:export ,@exports))))))))
-  ;;
-  (def-re-exporting-package :cepl
-      :use (:cl
-            :cepl-utils
-            :glsl-symbols
-            :rtg-math.base-maths
-            :cl-fad
-            :named-readtables
-            :cepl.errors
-            :cepl.internals
-            :cepl.context
-            :cepl.perf.core
-            :%rtg-math)
-      :shadow (:quit)
-      :import-from ((:cepl-utils :deferror
-                                 :print-mem
-                                 :p->
-                                 :defvar*
-                                 :defparameter*))
-      :export (:make-project
-               :initialize-cepl
-               :quit
-               :repl
-               :register-event-listener
-               :step-host
-               :cls
-               :swap
-               :print-mem
-               :defvar*
-               :defparameter*)
-      :re-export (:cepl.render-state
-                  :cepl.viewports
-                  :cepl.types
-                  :cepl.memory
-                  :cepl.measurements
-                  :cepl.image-formats
-                  :cepl.pixel-formats
-                  :cepl.c-arrays
-                  :cepl.gpu-buffers
-                  :cepl.gpu-arrays.buffer-backed
-                  :cepl.gpu-arrays.texture-backed
-                  :cepl.gpu-arrays
-                  :cepl.streams
-                  :cepl.ubos
-                  :cepl.context
-                  :cepl.samplers
-                  :cepl.textures
-                  :cepl.fbos
-                  :cepl.blending
-                  :cepl.pipelines
-                  :cepl.types.predefined
-                  (:cepl.lifecycle :shutting-down-p)
-                  (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
-                             :radians :degrees))))
+(uiop:define-package :cepl
+    (:use :cl
+          :cl-fad
+          :glsl-symbols
+          :named-readtables
+          :cepl-utils
+          :cepl.blending
+          :cepl.c-arrays
+          :cepl.context
+          :cepl.errors
+          :cepl.fbos
+          :cepl.gpu-arrays
+          :cepl.gpu-arrays.buffer-backed
+          :cepl.gpu-arrays.texture-backed
+          :cepl.gpu-buffers
+          :cepl.image-formats
+          :cepl.internals
+          :cepl.lifecycle
+          :cepl.measurements
+          :cepl.memory
+          :cepl.perf.core
+          :cepl.pipelines
+          :cepl.pixel-formats
+          :cepl.render-state
+          :cepl.samplers
+          :cepl.streams
+          :cepl.textures
+          :cepl.types
+          :cepl.types.predefined
+          :cepl.ubos
+          :cepl.viewports
+          :rtg-math
+          :%rtg-math
+          :rtg-math.base-maths)
+  (:shadow :quit)
+  (:import-from :cepl-utils
+                :deferror
+                :print-mem
+                :p->
+                :defvar*
+                :defparameter*)
+  (:export :make-project
+           :initialize-cepl
+           :quit
+           :repl
+           :register-event-listener
+           :step-host
+           :cls
+           :swap
+           :print-mem
+           :defvar*
+           :defparameter*
+           :shutting-down-p
+           :q! :m! :v! :v!byte :v!ubyte :v!int :s~
+           :radians :degrees)
+  (:reexport :cepl.render-state
+             :cepl.viewports
+             :cepl.types
+             :cepl.memory
+             :cepl.measurements
+             :cepl.image-formats
+             :cepl.pixel-formats
+             :cepl.c-arrays
+             :cepl.gpu-buffers
+             :cepl.gpu-arrays.buffer-backed
+             :cepl.gpu-arrays.texture-backed
+             :cepl.gpu-arrays
+             :cepl.streams
+             :cepl.ubos
+             :cepl.context
+             :cepl.samplers
+             :cepl.textures
+             :cepl.fbos
+             :cepl.blending
+             :cepl.pipelines
+             :cepl.types.predefined))
