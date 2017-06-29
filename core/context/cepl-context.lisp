@@ -215,6 +215,7 @@
 
 (defn-inline gpu-buffer-bound-id ((ctx cepl-context) (index (integer 0 11)))
     gl-id
+  (declare (profile t))
   (with-slots (array-of-bound-gpu-buffer-ids) ctx
     (declare (type (simple-array gl-id) array-of-bound-gpu-buffer-ids))
     (aref array-of-bound-gpu-buffer-ids index)))
@@ -237,6 +238,7 @@
 
 (defn buffer-kind->cache-index ((kind keyword))
     (integer 0 11)
+  (declare (profile t))
   (ecase kind
     (:array-buffer 0)
     (:atomic-counter-buffer 1)

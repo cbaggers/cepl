@@ -72,6 +72,7 @@
                                  dimensions
                                  &optional byte-size)
     gpu-array-bb
+  (declare (profile t))
   (assert dimensions)
   (let* ((parent gpu-array-with-data)
          (child gpu-array-to-modify)
@@ -182,6 +183,7 @@
 (defn subseq-g ((array gpu-array-bb) (start c-array-index)
                 &optional (end c-array-index))
     gpu-array-bb
+  (declare (profile t))
   (subseq-g-raw array start end :new-element-type nil))
 
 (defn subseq-g-raw ((array gpu-array-bb)
@@ -189,6 +191,7 @@
                     (end (or null c-array-index))
                     &key (new-element-type t))
     gpu-array-bb
+  (declare (profile t))
   (let ((dimensions (dimensions array)))
     (assert (= (length dimensions) 1) ()
             "Cannot take subseq of multidimensional array")

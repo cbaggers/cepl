@@ -818,6 +818,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     (otherwise (color-renderable-formatp image-format))))
 
 (defn clear (&optional (target fbo)) (values)
+  (declare (profile t))
   (if target
       (clear-fbo target)
       (dbind (read . draw) (fbo-bound *cepl-context*)
@@ -827,7 +828,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (values))
 
 (defn clear-fbo ((fbo fbo)) fbo
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
   (with-fbo-bound (fbo :target :draw-framebuffer
                        :with-blending nil
                        :with-viewport nil)

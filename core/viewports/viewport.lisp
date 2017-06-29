@@ -43,6 +43,7 @@
   (setf (viewport-resolution viewport) value))
 
 (defn viewport-resolution ((viewport viewport)) rtg-math.types:vec2
+  (declare (profile t))
   (v2:make (float (%viewport-resolution-x viewport))
            (float (%viewport-resolution-y viewport))))
 

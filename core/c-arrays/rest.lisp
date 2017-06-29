@@ -27,6 +27,7 @@
    in the backside if you change how the data in the array is
    laid out."
   (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (declare (profile t))
   (let ((dimensions (c-array-dimensions array)))
     (assert (= (length dimensions) 1) ()
             "Cannot take subseq of multidimensional array")
