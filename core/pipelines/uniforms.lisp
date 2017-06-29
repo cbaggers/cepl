@@ -78,7 +78,7 @@
     (%gl:uniform-4fv location 1 ptr))
   (values))
 
-(defn-inline uniform-matrix-2f ((location (signed-byte 32))
+(defn-inline uniform-matrix-2ft ((location (signed-byte 32))
                                 (value (simple-array single-float (4))))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
@@ -87,7 +87,7 @@
     (%gl:uniform-matrix-2fv location 1 ptr))
   (values))
 
-(defn-inline uniform-matrix-3f ((location (signed-byte 32))
+(defn-inline uniform-matrix-3ft ((location (signed-byte 32))
                                 (value rtg-math.types:mat3))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
@@ -96,13 +96,13 @@
     (%gl:uniform-matrix-3fv location 1 ptr))
   (values))
 
-(defn-inline uniform-matrix-4f ((location (signed-byte 32))
+(defn-inline uniform-matrix-4ft ((location (signed-byte 32))
                                 (value rtg-math.types:mat4))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0)))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
-    (%gl:uniform-matrix-4fv location 1 ptr))
+    (%gl:uniform-matrix-4fv location 1 nil ptr))
   (values))
 
 
