@@ -641,12 +641,38 @@ source: ~s~%list-to-match: ~s" list list-to-match)
          (nums (mapcar #'parse-integer split)))
     nums))
 
-(defun2 ensure-vec-index (vec index null-element)
+(defn ensure-vec-index ((vec (array t (*)))
+                        (index array-index)
+                        (null-element t)
+                        &optional (element-type t))
+    array-index
+  (declare (ignore element-type)
+           (profile t))
   (when (<= (array-dimension vec 0) index)
     (adjust-array vec (1+ index) :initial-element null-element))
   (when (<= (fill-pointer vec) index)
     (setf (fill-pointer vec) (1+ index)))
   index)
+
+(define-compiler-macro ensure-vec-index (&whole whole
+                                         vec
+                                         index
+                                         null-element
+                                         &optional (element-type t))
+  (if (eq element-type t)
+      whole
+      (alexandria:with-gensyms (gvec gindex gnull)
+        `(locally (declare (optimize (speed 3) (debug 1) (safety 1)))
+           (let ((,gvec ,vec)
+                 (,gindex ,index)
+                 (,gnull ,null-element))
+             (declare (type ,element-type ,gnull)
+                      (type array-index ,gindex))
+             (when (<= (array-dimension ,gvec 0) ,gindex)
+               (adjust-array ,gvec (1+ ,gindex) :initial-element ,gnull))
+             (when (<= (fill-pointer ,gvec) ,gindex)
+               (setf (fill-pointer ,gvec) (1+ ,gindex)))
+             ,gindex)))))
 
 (defmacro def-artificial-id (name)
   (let ((lowest (symb :*lowest-unused- name :-id*))
