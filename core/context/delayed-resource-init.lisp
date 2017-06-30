@@ -11,14 +11,14 @@
          :type function))
 
 (defun delay-initialization (cepl-context init-thunk waiting-on-these-resources)
-  (with-slots (uninitialized-resources) cepl-context
+  (%with-cepl-context (uninitialized-resources) cepl-context
     (push (make-delayed :waiting-on waiting-on-these-resources
                         :thunk init-thunk)
           uninitialized-resources))
   t)
 
 (defun initialize-all-delay-items-in-context (cepl-context)
-  (with-slots (uninitialized-resources) cepl-context
+  (%with-cepl-context (uninitialized-resources) cepl-context
     (initialize-all-delayed uninitialized-resources)
     (setf uninitialized-resources nil)
     cepl-context))

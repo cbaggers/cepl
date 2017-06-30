@@ -231,6 +231,7 @@
                                  :test #'equal)))
         (%compile-closure
          `(let ((initd nil)
+                ;; {todo} is this related to the 'todo' above?
                 ,@(mapcar (lambda (_) `(,(first _) -1)) u-lets))
             (lambda (prog-id ,@uniform-names)
               (declare (ignorable ,@uniform-names))

@@ -14,7 +14,7 @@
   (free-buffer-stream object))
 
 (defun2 blank-buffer-stream (buffer-stream)
-  (setf (buffer-stream-vao buffer-stream) nil)
+  (setf (buffer-stream-vao buffer-stream) 0)
   (setf (buffer-stream-start buffer-stream) 0)
   (setf (buffer-stream-length buffer-stream) 0)
   (setf (buffer-stream-index-type buffer-stream) nil)

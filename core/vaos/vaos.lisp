@@ -35,15 +35,17 @@
        (find (element-type array) '(:uint8 :ushort :uint :unsigned-short
                                     :unsigned-int))))
 
-(defun2 make-vao (gpu-arrays &optional index-array)
+(defn make-vao ((gpu-arrays list) &optional (index-array gpu-array-bb))
+    gl-id
   (let ((gpu-arrays (listify gpu-arrays)))
-    (make-vao-from-id
-     (progn (assert (and (every #'1d-p gpu-arrays)
-                         (or (null index-array)
-                             (suitable-array-for-index-p
-                              index-array))))
-            (gl:gen-vertex-array))
-     gpu-arrays index-array)))
+    (the gl-id
+         (make-vao-from-id
+          (progn (assert (and (every #'1d-p gpu-arrays)
+                              (or (null index-array)
+                                  (suitable-array-for-index-p
+                                   index-array))))
+                 (gl:gen-vertex-array))
+          gpu-arrays index-array))))
 
 (defgeneric make-vao-from-id (gl-object gpu-arrays &optional index-array))
 

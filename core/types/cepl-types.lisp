@@ -3,7 +3,7 @@
 ;;------------------------------------------------------------
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defconstant +gl-id-bit-size+ 16))
+  (defconstant +gl-id-bit-size+ 32))
 
 (deftype gl-id ()
   '(unsigned-byte #.+gl-id-bit-size+))
@@ -52,7 +52,7 @@
 ;;------------------------------------------------------------
 
 (defstruct (texture (:constructor %%make-texture))
-  (id 0 :type real)
+  (id 0 :type gl-id)
   (cache-id 0 :type (integer 0 11))
   (base-dimensions nil :type list)
   (type (error "") :type symbol)
@@ -73,7 +73,7 @@
 ;;------------------------------------------------------------
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
-  (id 0 :type fixnum)
+  (id 0 :type gl-id)
   (cache-id 0 :type (integer 0 13))
   (arrays (error "") :type (array gpu-array-bb (*))))
 
@@ -153,7 +153,7 @@
 ;;------------------------------------------------------------
 
 (defstruct (ubo (:constructor %make-ubo))
-  (id 0 :type fixnum)
+  (id 0 :type gl-id)
   (data (error "gpu-array must be provided when making ubo")
         :type gpu-array)
   (index 0 :type fixnum)
@@ -179,7 +179,7 @@
 
 (defstruct (fbo (:constructor %%make-fbo)
                 (:conc-name %fbo-))
-  (id -1 :type fixnum)
+  (id 0 :type gl-id)
   ;;
   (color-arrays (make-array 0 :element-type 'att
                             :initial-element (make-att) :adjustable t
@@ -251,7 +251,7 @@
 ;;------------------------------------------------------------
 
 (defstruct (buffer-stream (:constructor %make-buffer-stream))
-  vao
+  (vao 0 :type gl-id)
   (%start 0 :type (unsigned-byte 64))
   (%start-byte 0 :type (unsigned-byte 64))
   (length 1 :type unsigned-byte)
@@ -297,7 +297,7 @@
          (enum-val (cffi:foreign-enum-value '%gl:enum enum-kwd :errorp t))
          (patch-length (primitive-vert-length prim)))
     (%make-buffer-stream
-     :vao vao
+     :vao (or vao 0)
      :%start (or start 0)
      :%start-byte (if (%valid-index-type-p index-type)
                       (* start (foreign-type-size index-type))

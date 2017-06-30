@@ -32,7 +32,7 @@
   (free-texture object))
 
 (defun2 blank-texture-object (texture)
-  (setf (texture-id texture) -1
+  (setf (texture-id texture) 0
         (texture-base-dimensions texture) nil
         (texture-type texture) nil
         (texture-image-format texture) nil
@@ -46,7 +46,7 @@
 (defmethod free-texture ((texture texture))
   (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) (texture-id texture))
-    (setf (texture-id texture) -1)
+    (setf (texture-id texture) 0)
     (%gl:delete-textures 1 id)
     t))
 
@@ -58,7 +58,7 @@
       (setf (buffer-texture-backing-array texture)
             +null-buffer-backed-gpu-array+))
     (setf (mem-ref id :uint) (texture-id texture))
-    (setf (texture-id texture) -1)
+    (setf (texture-id texture) 0)
     (%gl:delete-textures 1 id)))
 
 ;;------------------------------------------------------------

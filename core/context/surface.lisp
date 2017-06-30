@@ -26,7 +26,7 @@
          (surface (if cepl.host::*current-host*
                       (make-surface-from-pending surface)
                       surface)))
-    (with-slots (surfaces) context
+    (%with-cepl-context (surfaces) context
       (setf surfaces
             (if surfaces
                 (append surfaces (list surface))
@@ -40,7 +40,7 @@
 (defun2 make-surface-current (cepl-context surface)
   (assert cepl-context)
   (assert surface)
-  (with-slots (gl-context surfaces current-surface) cepl-context
+  (%with-cepl-context (gl-context surfaces current-surface) cepl-context
     (unless (eq surface current-surface)
       ;; GL may not be initialized yet
       (unless gl-context
@@ -55,7 +55,7 @@
 ;;----------------------------------------------------------------------
 
 (defun2 init-pending-surfaces (context)
-  (with-slots (surfaces) context
+  (%with-cepl-context (surfaces) context
     (setf surfaces
           (mapcar λ(typecase _
                      (pending-surface (make-surface-from-pending _))

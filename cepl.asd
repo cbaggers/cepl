@@ -41,6 +41,7 @@
                (:file "core/memory/memory")
                (:file "core/types/cepl-types")
                (:file "core/context/gl-context")
+               (:file "core/context/types")
                (:file "core/context/cepl-context")
                (:file "core/context/surface")
                (:file "core/context/delayed-resource-init")

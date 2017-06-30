@@ -101,12 +101,12 @@
               :depth-array (when depth (gen-array dimensions)))
              :id 0))))
       (update-clear-mask result)
-      (with-slots (default-framebuffer) (cepl-context)
+      (%with-cepl-context (default-framebuffer) (cepl-context)
         (setf default-framebuffer result))
       result)))
 
 (defun2 %update-default-framebuffer-dimensions (x y)
-  (with-slots (default-framebuffer) (cepl-context)
+  (%with-cepl-context (default-framebuffer) (cepl-context)
     (let ((dimensions (list x y))
           (fbo default-framebuffer))
       (map nil
@@ -120,7 +120,7 @@
 
 
 (defun2 %set-default-fbo-viewport (new-dimensions)
-  (with-slots (default-framebuffer) (cepl-context)
+  (%with-cepl-context (default-framebuffer) (cepl-context)
     (let ((fbo default-framebuffer))
       ;; - - -
       (loop :for a :across (%fbo-color-arrays fbo) :when a :do
@@ -477,7 +477,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     (:draw-framebuffer (setf (draw-fbo-bound (cepl-context)) fbo))))
 
 (defun2 %unbind-fbo ()
-  (with-slots (default-framebuffer) (cepl-context)
+  (%with-cepl-context (default-framebuffer) (cepl-context)
     (%bind-fbo default-framebuffer :framebuffer)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)

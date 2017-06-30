@@ -250,6 +250,7 @@
 (defun2 make-texture-from-id (gl-object &key base-dimensions texture-type
                                          element-type mipmap-levels
                                          layer-count cubes allocated mutable-p)
+  (assert (typep gl-object 'gl-id))
   (cepl.context::register-texture
    (cepl-context)
    (%%make-texture

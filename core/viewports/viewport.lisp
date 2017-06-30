@@ -1,12 +1,12 @@
 (in-package :cepl.viewports)
 
 (defun2 %set-current-viewport (cepl-context viewport)
-  (with-slots (cepl.context::current-viewport) cepl-context
+  (%with-cepl-context (cepl.context::current-viewport) cepl-context
     (%viewport viewport)
     (setf cepl.context::current-viewport viewport)))
 
 (defun2 current-viewport ()
-  (with-slots (cepl.context::current-viewport) (cepl-context)
+  (%with-cepl-context (cepl.context::current-viewport) (cepl-context)
     (or cepl.context::current-viewport
         (error "No default framebuffer found ~a"
                (if (and (boundp '*gl-context*)
@@ -56,7 +56,7 @@
 (defun2 %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
-  (with-slots (cepl.context::default-viewport) (cepl-context)
+  (%with-cepl-context (cepl.context::default-viewport) (cepl-context)
     (when (eq viewport cepl.context::default-viewport)
       (cepl.fbos::%update-default-framebuffer-dimensions x y)))
   (values))
