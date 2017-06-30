@@ -34,7 +34,9 @@
 ;; {TODO} move this to delayed-resource-init.lisp
 (defvar *on-context* nil)
 
-(defun2 init-gl-context (cepl-context surface)
+(defn init-gl-context ((cepl-context cepl-context) (surface t))
+    cepl-context
+  (declare (profile t))
   (assert cepl-context)
   (assert surface)
   (%with-cepl-context (gl-context gl-version current-surface gl-thread) cepl-context
@@ -74,14 +76,17 @@
         ;;
         cepl-context))))
 
-(defun2 ensure-cepl-compatible-setup ()
+(defn ensure-cepl-compatible-setup () boolean
+  (declare (profile t))
   (unless (or (> (gl:major-version) 3)
               (and (= (gl:major-version) 3)
                    (>= (gl:minor-version) 1)))
     (error "Cepl requires OpenGL 3.1 or higher. Found: ~a.~a"
            (gl:major-version) (gl:minor-version))))
 
-(defun2 %set-default-fbo-and-viewport (surface cepl-context)
+(defn %set-default-fbo-and-viewport ((surface t) (cepl-context cepl-context))
+    cepl-context
+  (declare (profile t))
   (%with-cepl-context (current-viewport
                default-viewport
                default-framebuffer) cepl-context
@@ -103,7 +108,8 @@
 (defn register-gpu-buffer ((cepl-context cepl-context)
                            (gpu-buffer gpu-buffer))
     gpu-buffer
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (let ((id (gpu-buffer-id gpu-buffer)))
     (declare (type fixnum id))
     (assert (> id 0) (id)
@@ -114,8 +120,10 @@
       (ensure-vec-index array-of-gpu-buffers id +null-gpu-buffer+)
       (setf (aref array-of-gpu-buffers id) gpu-buffer))))
 
-(defun2 register-texture (cepl-context texture)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+(defn register-texture ((cepl-context cepl-context) (texture texture))
+    texture
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (%with-cepl-context (array-of-textures)
       cepl-context
     (let ((id (texture-id texture)))
@@ -125,8 +133,9 @@
       (ensure-vec-index array-of-textures id +null-texture+)
       (setf (aref array-of-textures id) texture))))
 
-(defun2 register-fbo (cepl-context fbo)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+(defn register-fbo ((cepl-context cepl-context) (fbo fbo)) fbo
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (%with-cepl-context (fbos) cepl-context
     (let ((id (%fbo-id fbo)))
       (ensure-vec-index fbos id +null-fbo+)
@@ -139,18 +148,21 @@
 
 (defn-inline gpu-buffer-bound-id ((ctx cepl-context) (index (integer 0 11)))
     gl-id
-  (declare (profile t))
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (%with-cepl-context (array-of-bound-gpu-buffer-ids) ctx
     (declare (type (simple-array gl-id) array-of-bound-gpu-buffer-ids))
     (aref array-of-bound-gpu-buffer-ids index)))
 
-(let ((cache-id->enum-id
-       #(34962 37568 36662 36663 37102 36671 34963 35051 35052 37266 37074
-         35882)))
-  (defun2 set-gpu-buffer-bound-id (ctx index id)
-    (declare (inline unknown-gl-id-p))
-    (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+(defn set-gpu-buffer-bound-id ((ctx cepl-context) index id)
+    gl-id
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (inline unknown-gl-id-p)
+           (profile t))
+  (let ((cache-id->enum-id
+         #(34962 37568 36662 36663 37102 36671 34963 35051 35052 37266 37074
+           35882)))
+    (declare (dynamic-extent cache-id->enum-id))
     (%with-cepl-context (array-of-bound-gpu-buffer-ids gl-context) ctx
       (let ((current (gpu-buffer-bound-id ctx index))
             (bind-id (if (unknown-gl-id-p id)
@@ -183,8 +195,11 @@
 ;; :atomic-counter-buffer
 ;; :shader-storage-buffer
 
-(defun2 gpu-buffer-bound (ctx target)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+(defn gpu-buffer-bound ((ctx cepl-context)
+                        (target symbol))
+    gpu-buffer
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (let ((index (buffer-kind->cache-index target)))
     (%with-cepl-context (array-of-gpu-buffers gl-context)
         ctx
@@ -196,10 +211,15 @@
         (when (and (>= id 0) (< (length array-of-gpu-buffers)))
           (aref array-of-gpu-buffers id))))))
 
-(defun2 (setf gpu-buffer-bound) (val ctx target)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+(defn (setf gpu-buffer-bound) ((val gpu-buffer)
+                               (ctx cepl-context)
+                               (target symbol))
+    gpu-buffer
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (let ((index (buffer-kind->cache-index target)))
-    (set-gpu-buffer-bound-id ctx index (gpu-buffer-id val))))
+    (set-gpu-buffer-bound-id ctx index (gpu-buffer-id val)))
+  val)
 
 ;;----------------------------------------------------------------------
 ;; Uniform Buffer Objects
@@ -213,16 +233,21 @@
 ;; binding-points trying to mix them in the cache above was more confusing than
 ;; helpful.
 
-(defun2 ubo-bind-buffer-id-range
-    (ctx id ubo-binding-point offset size)
-  (declare (inline unknown-gl-id-p))
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+(defn ubo-bind-buffer-id-range ((ctx cepl-context)
+                                (id gl-id)
+                                (ubo-binding-point array-index)
+                                (offset (unsigned-byte 32))
+                                (size (unsigned-byte 32)))
+    gl-id
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (inline unknown-gl-id-p)
+           (profile t))
   (assert (and offset size))
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
   (%with-cepl-context (array-of-ubo-bindings-buffer-ids) ctx
     (ensure-vec-index array-of-ubo-bindings-buffer-ids ubo-binding-point
-                      +null-gl-id+)
+                      +null-gl-id+ gl-id)
     (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
       (%gl:bind-buffer-range
        :uniform-buffer ubo-binding-point bind-id offset size)
@@ -237,17 +262,23 @@
 ;; binding-points trying to mix them in the cache above was more confusing than
 ;; helpful.
 
-(defun2 transform-feedback-bind-buffer-id-range
-    (ctx id tfb-binding-point offset size)
-  (declare (inline unknown-gl-id-p))
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+(defn transform-feedback-bind-buffer-id-range ((ctx cepl-context)
+                                               (id gl-id)
+                                               (tfb-binding-point gl-id)
+                                               (offset (unsigned-byte 32))
+                                               (size (unsigned-byte 32)))
+    gl-id
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (inline unknown-gl-id-p)
+           (profile t))
   (assert (and offset size))
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
   (%with-cepl-context (array-of-transform-feedback-bindings-buffer-ids) ctx
     (ensure-vec-index array-of-transform-feedback-bindings-buffer-ids
                       tfb-binding-point
-                      +null-gl-id+)
+                      +null-gl-id+
+                      gl-id)
     (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
       (%gl:bind-buffer-range
        :uniform-buffer tfb-binding-point bind-id offset size)
@@ -268,41 +299,50 @@
 ;;           :texture-binding-2d-multisample
 ;;           :texture-binding-2d-multisample-array))
 
-(let ((cache-id->enum-id
-       #(32872 32873 32874 35868 35869 34038 34068 36874 35884 37124 37125)))
-  (defun2 %texture-binding (gl-ctx index)
-    (declare (ignore gl-ctx))
-    (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
-    (let ((enum-val (aref cache-id->enum-id index)))
-      (cl-opengl:get-integer enum-val 1))))
+(defn %texture-binding ((gl-ctx gl-context)
+                        (index (integer 0 11)))
+    (signed-byte 32)
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (ignore gl-ctx) (profile t))
+  (let* ((cache-id->enum-id #(32872 32873 32874 35868 35869 34038
+                              34068 36874 35884 37124 37125))
+         (enum-val (aref cache-id->enum-id index)))
+    (the (signed-byte 32) (cl-opengl:get-integer enum-val 1))))
 
 ;; (mapcar (lambda (x) (cffi:foreign-enum-value '%gl::enum x))
 ;;         '(:texture-1d :texture-2d :texture-3d :texture-1d-array
 ;;           :texture-2d-array :texture-rectangle :texture-cube-map
 ;;           :texture-cube-map-array :texture-buffer :texture-2d-multisample
 ;;           :texture-2d-multisample-array))
-(let ((cache-id->enum-id
-       #(3552 3553 32879 35864 35866 34037 34067 36873 35882 37120 37122)))
-  (defun2 (setf %texture-binding) (id gl-ctx index)
-    (declare (ignore gl-ctx))
-    (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
-    (let ((target-val (aref cache-id->enum-id index)))
-      ;; {TODO} we have already calculated the enum, try and remove the
-      ;;        condition checking if keyword
-      (gl:bind-texture target-val id))
-    id))
+(defn (setf %texture-binding) ((id gl-id)
+                               (gl-ctx gl-context)
+                               (index (integer 0 11)))
+    gl-id
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (ignore gl-ctx) (profile t))
+  (let* ((cache-id->enum-id #(3552 3553 32879 35864 35866 34037 34067 36873
+                              35882 37120 37122))
+         (target-val (aref cache-id->enum-id index)))
+    ;; {TODO} we have already calculated the enum, try and remove the
+    ;;        condition checking if keyword
+    (gl:bind-texture target-val id))
+  id)
 
 ;; Raw cached index part
 
-(declaim (inline texture-bound-id))
-(defun2 texture-bound-id (ctx index)
+(defn-inline texture-bound-id ((ctx cepl-context)
+                               (index array-index))
+    gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
   (%with-cepl-context (array-of-bound-texture-ids) ctx
     (aref array-of-bound-texture-ids index)))
 
-(defun2 set-texture-bound-id (ctx index id)
-  (declare (inline unknown-gl-id-p))
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+(defn set-texture-bound-id ((ctx cepl-context)
+                            (index array-index)
+                            (id gl-id))
+    gl-id
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (inline unknown-gl-id-p) (profile t))
   (%with-cepl-context (array-of-bound-texture-ids gl-context)
       ctx
     (let ((current (texture-bound-id ctx index))
@@ -332,9 +372,11 @@
     (:texture-2d-multisample 9)
     (:texture-2d-multisample-array 10)))
 
-(defun2 texture-bound (ctx target)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
-  (declare (inline unknown-gl-id-p))
+(defn texture-bound ((ctx cepl-context)
+                     (target symbol))
+    texture
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (inline unknown-gl-id-p) (profile t))
   (let ((index (tex-kind->cache-index target)))
     (%with-cepl-context (array-of-textures gl-context)
         ctx
@@ -347,9 +389,13 @@
         (when (and (>= id 0) (< (length array-of-textures)))
           (aref array-of-textures id))))))
 
-(defun2 (setf texture-bound) (val ctx target)
+(defn (setf texture-bound) ((val texture)
+                            (ctx cepl-context)
+                            (target symbol))
+    texture
   (let ((index (tex-kind->cache-index target)))
-    (set-texture-bound-id ctx index (texture-id val))))
+    (set-texture-bound-id ctx index (texture-id val))
+    val))
 
 
 ;;----------------------------------------------------------------------
