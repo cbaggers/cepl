@@ -5,6 +5,9 @@
 
 (in-package :cepl-utils)
 
+(deftype array-index ()
+  '(integer 0 #.array-dimension-limit))
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmacro defun2 (name args &body body)
     (multiple-value-bind (body decls doc) (alexandria:parse-body
