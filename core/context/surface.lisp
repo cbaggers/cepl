@@ -11,7 +11,7 @@
 
 (defun2 legacy-add-surface (context title width height fullscreen resizable
                            no-frame hidden make-current gl-version)
-  (when (> (length (slot-value context 'surfaces)) 0)
+  (when (> (length (%cepl-context-surfaces context)) 0)
     (assert (cepl.host:supports-multiple-surfaces-p) ()
             "CEPL: Sorry your current CEPL host does not currently support multiple surfaces "))
   (let* ((surface (make-instance 'pending-surface
