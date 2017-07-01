@@ -245,9 +245,11 @@
   (declare (ignore freq))
   (let* ((key (cons name depth))
          (in-time (gethash key track))
-         (func-time (- time in-time)))
+         (func-time (when in-time (- time in-time))))
     (remhash key track)
-    (incf (gethash name total-time 0) func-time)))
+    (if func-time
+        (incf (gethash name total-time 0) func-time)
+        (format t "missing 'in time' for ~a" name))))
 
 (defun overview (analyze-results)
   (destructuring-bind (freq total-time per-call per-frame-freq) analyze-results
@@ -270,15 +272,18 @@
                               (cons n (/ p ticks-per-nanosecond))))
                           (sort (alexandria:hash-table-alist per-call)
                                 #'> :key #'cadr)))
-          (format t "~%~%Interesting Funcs~%--------------~%~{~s~%~}"
+          (format t "~%~%Interesting Funcs (name calls-per-frame cost-per-call frame-time)~%--------------~%~{~s~%~}"
                   (sort (mapcar (lambda (n)
                                   (destructuring-bind (time cnt) (gethash n per-call)
                                     (declare (ignore cnt))
-                                    (list n
-                                          (gethash n per-frame-freq)
-                                          (/ time ticks-per-nanosecond))))
+                                    (let* ((ffreq (gethash n per-frame-freq))
+                                           (nano (/ time ticks-per-nanosecond)))
+                                      (list n
+                                            ffreq
+                                            nano
+                                            (* ffreq nano)))))
                                 names-of-the-busy)
-                        #'> :key #'caddr)))))
+                        #'> :key #'fourth)))))
     (list freq total-time per-call per-frame-freq)))
 
 (defun u64-to-signed (num)
