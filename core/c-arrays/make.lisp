@@ -2,9 +2,14 @@
 
 ;;------------------------------------------------------------
 
+(defun2 valid-c-array-dimension-p (x)
+  (>= x 0))
+
 (defun2 make-c-array-from-pointer (dimensions element-type pointer)
-  (unless dimensions
-    (error "dimensions are not optional when making an array from a pointer"))
+  (assert dimensions ()
+          "dimensions are not optional when making an array from a pointer")
+  (assert (every #'valid-c-array-dimension-p dimensions) ()
+          "Invalid dimensions for c-array ~a" dimensions)
   (let* ((dimensions (listify dimensions))
          (p-format (cepl.pixel-formats:pixel-format-p element-type))
          (element-type2 (if p-format
