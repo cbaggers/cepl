@@ -770,7 +770,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
     (pull1-g c-array)))
 
 (defun active-texture-num (num)
-  (gl:active-texture (+ #x84C0 num)))
+  (%gl:active-texture (+ #x84C0 num)))
 
 ;; {TODO}
 ;; copy data (from frame-buffer to texture image) - leave for now
