@@ -11,5 +11,4 @@
                :chanl
                :cffi)
   :components ((:file "perf/package")
-               (:file "perf/impl")
-               (:file "perf/tools")))
+               (:file "perf/impl")))
