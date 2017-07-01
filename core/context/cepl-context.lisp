@@ -169,7 +169,7 @@
                          0
                          id)))
         (unless (= id current)
-          (gl:bind-buffer (aref cache-id->enum-id index) bind-id)
+          (%gl:bind-buffer (aref cache-id->enum-id index) bind-id)
           (setf (aref array-of-bound-gpu-buffer-ids index) id))
         id))))
 
@@ -325,7 +325,7 @@
          (target-val (aref cache-id->enum-id index)))
     ;; {TODO} we have already calculated the enum, try and remove the
     ;;        condition checking if keyword
-    (gl:bind-texture target-val id))
+    (%gl:bind-texture target-val id))
   id)
 
 ;; Raw cached index part
@@ -411,7 +411,7 @@
 (defn (setf read-framebuffer-binding) ((id gl-id) (context cepl-context)) gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (ignore context) (profile t))
-  (gl:bind-framebuffer :read-framebuffer id)
+  (%gl:bind-framebuffer :read-framebuffer id)
   id)
 
 ;; GL_DRAW_FRAMEBUFFER_BINDING (name, initially 0, see glBindFramebuffer)
@@ -424,7 +424,7 @@
 (defn (setf draw-framebuffer-binding) ((id gl-id) (context cepl-context)) gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (ignore context) (profile t))
-  (gl:bind-framebuffer :draw-framebuffer id)
+  (%gl:bind-framebuffer :draw-framebuffer id)
   id)
 
 ;; The GL_FRAMEBUFFER target sets both the read and the write to the same FBO.
@@ -438,7 +438,7 @@
     gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (ignore context) (profile t))
-  (gl:bind-framebuffer :framebuffer id)
+  (%gl:bind-framebuffer :framebuffer id)
   id)
 
 (defn read-fbo-bound ((cepl-context cepl-context)) fbo
@@ -531,7 +531,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
   (declare (ignore cepl-context))
-  (gl:bind-vertex-array id)
+  (%gl:bind-vertex-array id)
   id)
 
 (defn vao-bound ((cepl-context cepl-context)) gl-id

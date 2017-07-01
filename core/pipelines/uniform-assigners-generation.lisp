@@ -74,7 +74,7 @@
      :let-forms `((,id-name (the (signed-byte 32)
                                  (gl:get-uniform-location prog-id ,glsl-name-path)))
                   (,i-unit (incf image-unit)))
-     :uploaders `((when (>= ,id-name 0)
+     :uploaders `((when (and (>= ,id-name 0) (>= ,i-unit 0))
                     (unless (eq (%sampler-type ,arg-name)
                                 ,(cepl.types::type->spec type))
                       (error "incorrect type of sampler passed to shader"))
@@ -84,10 +84,10 @@
                                                           (texture-cache-id tex)
                                                           (texture-id tex)))
                     (if cepl.samplers::*samplers-available*
-                        (gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
+                        (%gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
                         (cepl.textures::fallback-sampler-set ,arg-name))
                     (uniform-sampler ,id-name ,i-unit)))
-     :cleanup `((gl:bind-sampler ,i-unit 0)
+     :cleanup `((%gl:bind-sampler ,i-unit 0)
                 (cepl.context::set-texture-bound-id
                  (cepl-context)
                  (texture-cache-id (%sampler-texture ,arg-name))

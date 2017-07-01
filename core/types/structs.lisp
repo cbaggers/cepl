@@ -315,7 +315,7 @@
             (loop :for (len cffi-type normalized gl-type)
                :in (mapcat #'expand-slot-to-layout slots)
                :for i :from 0 :with offset = 0 :append
-               `((gl:enable-vertex-attrib-array (+ attrib-offset ,i))
+               `((%gl:enable-vertex-attrib-array (+ attrib-offset ,i))
                  (%gl:vertex-attrib-pointer
                   (+ attrib-offset ,i)
                   ,len

@@ -134,13 +134,7 @@
                    image-format texture-type))))))
 
 (defun2 %delete-sampler (sampler)
-  (gl::delete-sampler (%sampler-id sampler)))
-
-(defun2 %delete-samplers (&rest samplers)
-  (let ((ids (mapcar #'%sampler-id samplers)))
-    (gl::with-opengl-sequence (array '%gl:uint ids)
-      (%gl:delete-samplers (length ids) array))))
-
+  (gl:delete-sampler (%sampler-id sampler)))
 
 (defun2 sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
                          (minify-filter :linear-mipmap-linear)
@@ -184,7 +178,7 @@
 
 (defun2 %get-id ()
   (if *samplers-available*
-      (first (gl::gen-samplers 1))
+      (first (gl:gen-samplers 1))
       (decf *fake-sampler-id*)))
 
 (defun2 wrap-eq (wrap-a wrap-b)

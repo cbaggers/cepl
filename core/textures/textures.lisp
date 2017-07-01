@@ -66,7 +66,7 @@
 (defun2 generate-mipmaps (texture)
   (let ((type (texture-type texture)))
     (with-texture-bound texture
-      (gl:generate-mipmap type))))
+      (%gl:generate-mipmap type))))
 
 (defun2 error-on-invalid-upload-formats (target image-format pixel-format pixel-type)
   (unless (and image-format pixel-type pixel-format)

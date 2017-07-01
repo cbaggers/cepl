@@ -81,7 +81,7 @@
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defun2 %viewport (viewport)
-  (gl:viewport
+  (%gl:viewport
    (%viewport-origin-x viewport) (%viewport-origin-y viewport)
    (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
   viewport)

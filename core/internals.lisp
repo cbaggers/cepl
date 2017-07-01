@@ -23,7 +23,7 @@
              :for i :from 0
              :with offset = 0
              :do (progn
-                   (gl:enable-vertex-attrib-array (+ attrib-num i))
+                   (%gl:enable-vertex-attrib-array (+ attrib-num i))
                    (%gl:vertex-attrib-pointer
                     (+ attrib-num i) (first attr) (second attr)
                     (third attr) (or stride-override stride)

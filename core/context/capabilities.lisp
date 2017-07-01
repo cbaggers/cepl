@@ -11,8 +11,8 @@
     vec4
   (assert (typep vec4-color 'rtg-math.types:vec4))
   (%with-cepl-context (clear-color) cepl-context
-    (gl:clear-color (v:x vec4-color) (v:y vec4-color)
-                    (v:z vec4-color) (v:w vec4-color))
+    (%gl:clear-color (v:x vec4-color) (v:y vec4-color)
+                     (v:z vec4-color) (v:w vec4-color))
     (setf clear-color vec4-color)))
 
 
@@ -29,7 +29,7 @@
     (if face
         (progn
           (gl:enable :cull-face)
-          (gl:cull-face face))
+          (%gl:cull-face face))
         (gl:disable :cull-face))
     (setf cull-face face)))
 
@@ -44,7 +44,7 @@
   (assert (or (eq winding-direction :ccw)
               (eq winding-direction :cw)))
   (%with-cepl-context (front-face) cepl-context
-    (gl:front-face winding-direction)
+    (%gl:front-face winding-direction)
     (setf front-face winding-direction)))
 
 ;;------------------------------------------------------------
@@ -57,7 +57,7 @@
 (defun2 (setf depth-range-vec2) (vec2-range cepl-context)
   (assert (typep vec2-range 'rtg-math.types:vec2))
   (%with-cepl-context (depth-range) cepl-context
-    (gl:depth-range (v:x vec2-range) (v:y vec2-range))
+    (%gl:depth-range (v:x vec2-range) (v:y vec2-range))
     (setf depth-range vec2-range)))
 
 ;;------------------------------------------------------------
@@ -86,8 +86,8 @@
   (%with-cepl-context (depth-mask) cepl-context
     (let ((value (not (null value))))
       (if value
-          (gl:depth-mask :true)
-          (gl:depth-mask :false))
+          (%gl:depth-mask :true)
+          (%gl:depth-mask :false))
       (setf depth-mask value))))
 
 ;;------------------------------------------------------------
@@ -106,35 +106,35 @@
             ;;
             ((eq function depth-func) depth-func)
             ((or (eq function ':never) (eq function #'never)) nil
-             (gl:depth-func :never)
+             (%gl:depth-func :never)
              (setf depth-func #'never))
             ;;
             ((or (eq function ':less) (eq function #'<)) nil
-             (gl:depth-func :less)
+             (%gl:depth-func :less)
              (setf depth-func #'<))
             ;;
             ((or (eq function ':equal) (eq function #'=)) nil
-             (gl:depth-func :equal)
+             (%gl:depth-func :equal)
              (setf depth-func #'=))
             ;;
             ((or (eq function ':lequal) (eq function #'<=)) nil
-             (gl:depth-func :lequal)
+             (%gl:depth-func :lequal)
              (setf depth-func #'<=))
             ;;
             ((or (eq function ':greater) (eq function #'>)) nil
-             (gl:depth-func :greater)
+             (%gl:depth-func :greater)
              (setf depth-func #'>))
             ;;
             ((or (eq function ':notequal) (eq function #'/=)) nil
-             (gl:depth-func :notequal)
+             (%gl:depth-func :notequal)
              (setf depth-func #'/=))
             ;;
             ((or (eq function ':gequal) (eq function #'>=)) nil
-             (gl:depth-func :gequal)
+             (%gl:depth-func :gequal)
              (setf depth-func #'>=))
             ;;
             ((or (eq function ':always) (eq function #'always)) nil
-             (gl:depth-func :always)
+             (%gl:depth-func :always)
              (setf depth-func #'always))
             (t (error "CEPL: Invalid function for depth-test-function: ~a"
                       function))))

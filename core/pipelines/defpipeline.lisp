@@ -418,10 +418,10 @@
 (let ((program-cache -1))
   (defun use-program (program-id)
     (unless (= program-id program-cache)
-      (gl:use-program program-id)
+      (%gl:use-program program-id)
       (setf program-cache program-id)))
   (defun force-use-program (program-id)
-    (gl:use-program program-id)
+    (%gl:use-program program-id)
     (setf program-cache program-id)))
 
 (setf (documentation 'use-program 'function)
@@ -439,13 +439,13 @@
           (t (error "Could not extract shader type from shader file extension (must be .vert or .frag)")))))
 
 (defun2 make-shader
-    (shader-type source-string &optional (shader-id (gl:create-shader
+    (shader-type source-string &optional (shader-id (%gl:create-shader
                                                      shader-type)))
   "This makes a new opengl shader object by compiling the text
    in the specified file and, unless specified, establishing the
    shader type from the file extension"
   (gl:shader-source shader-id source-string)
-  (gl:compile-shader shader-id)
+  (%gl:compile-shader shader-id)
   ;;check for compile errors
   (when (not (gl:get-shader shader-id :compile-status))
     (error "Error compiling ~(~a~): ~%~a~%~%~a"
@@ -468,11 +468,11 @@
 (defun2 link-shaders (shaders program_id compiled-stages)
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
-  (let ((program (or program_id (gl:create-program))))
+  (let ((program (or program_id (%gl:create-program))))
     (unwind-protect
          (progn (loop :for shader :in shaders :do
-                   (gl:attach-shader program shader))
-                (gl:link-program program)
+                   (%gl:attach-shader program shader))
+                (%gl:link-program program)
                 ;;check for linking errors
                 (if (not (gl:get-program program :link-status))
                     (error (format nil "Error Linking Program~%~a~%~%Compiled-stages:~{~%~% ~a~}"

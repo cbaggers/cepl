@@ -5,7 +5,7 @@
 ;;;----------;;;
 
 (defun2 uniform-sampler (location image-unit)
-  (gl:uniformi location image-unit))
+  (%gl:uniform-1i location image-unit))
 
 (defn-inline uniform-1i ((location (signed-byte 32))
                          (value (signed-byte 32)))

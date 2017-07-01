@@ -502,8 +502,8 @@ names are depended on by the functions named later in the list"
     (if name
         (or (gethash name cepl.context::map-of-pipeline-names-to-gl-ids)
             (setf (gethash name cepl.context::map-of-pipeline-names-to-gl-ids)
-                  (gl:create-program)))
-        (gl:create-program))))
+                  (%gl:create-program)))
+        (%gl:create-program))))
 
 ;;--------------------------------------------------
 

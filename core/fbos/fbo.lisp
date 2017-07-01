@@ -414,7 +414,7 @@
 (defun2 check-framebuffer-status (fbo)
   (%bind-fbo fbo :framebuffer)
   (unwind-protect
-       (let ((status (gl:check-framebuffer-status :framebuffer)))
+       (let ((status (%gl:check-framebuffer-status :framebuffer)))
          (unless (member status '(:framebuffer-complete
                                   :framebuffer-complete-ext
                                   :framebuffer-complete-oes))
@@ -446,7 +446,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 ;;----------------------------------------------------------------------
 
 (defun2 %delete-fbo (fbo)
-  (gl::delete-framebuffers (listify (%fbo-id fbo))))
+  (gl:delete-framebuffers (listify (%fbo-id fbo))))
 
 
 (defmethod free ((thing fbo))
@@ -656,13 +656,13 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; A 1D texture contains 2D images that have the vertical height of 1.
             ;; Each individual image can be uniquely identified by a mipmap level.
             (:texture-1d
-             (gl:framebuffer-texture-1d :read-framebuffer attach-enum :texture-1d
-                                        tex-id level-num))
+             (%gl:framebuffer-texture-1d :read-framebuffer attach-enum :texture-1d
+                                         tex-id level-num))
             ;; A 2D texture contains 2D images. Each individual image can be
             ;; uniquely identified by a mipmap level.
             (:texture-2d
-             (gl:framebuffer-texture-2d :read-framebuffer attach-enum :texture-2d
-                                        tex-id level-num))
+             (%gl:framebuffer-texture-2d :read-framebuffer attach-enum :texture-2d
+                                         tex-id level-num))
             ;; Each mipmap level of a 3D texture is considered a set of 2D images,
             ;; with the number of these being the extent of the Z coordinate.
             ;; Each integer value for the depth of a 3D texture mipmap level is a
@@ -697,8 +697,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; A Rectangle Texture has a single 2D image, and thus is identified by
             ;; mipmap level 0.
             (:texture-rectangle
-             (gl:framebuffer-texture-2d :read-framebuffer attach-enum :texture-2d
-                                        tex-id 0))
+             (%gl:framebuffer-texture-2d :read-framebuffer attach-enum :texture-2d
+                                         tex-id 0))
             ;; When attaching a cubemap, you must use the Texture2D function, and
             ;; the textarget must be one of the 6 targets for cubemap binding.
             ;; Cubemaps contain 6 targets, each of which is a 2D image. Thus, each
@@ -715,15 +715,15 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; 4        GL_TEXTURE_CUBE_MAP_POSITIVE_Z
             ;; 5        GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
             (:texture-cube-map
-             (gl:framebuffer-texture-2d :read-framebuffer attach-enum
-                                        (elt '(:texture-cube-map-positive-x
-                                               :texture-cube-map-negative-x
-                                               :texture-cube-map-positive-y
-                                               :texture-cube-map-negative-y
-                                               :texture-cube-map-positive-z
-                                               :texture-cube-map-negative-z)
-                                             face-num)
-                                        tex-id level-num))
+             (%gl:framebuffer-texture-2d :read-framebuffer attach-enum
+                                         (elt '(:texture-cube-map-positive-x
+                                                :texture-cube-map-negative-x
+                                                :texture-cube-map-positive-y
+                                                :texture-cube-map-negative-y
+                                                :texture-cube-map-positive-z
+                                                :texture-cube-map-negative-z)
+                                              face-num)
+                                         tex-id level-num))
             ;; Buffer Textures work like 1D texture, only they have a single image,
             ;; identified by mipmap level 0.
             (:texture-buffer (error "attaching to buffer textures has not been implmented yet"))
