@@ -772,7 +772,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
 
 (defn-inline active-texture-num ((num (unsigned-byte 16))) (values)
   (declare (profile t))
-  (gl:active-texture (+ #x84C0 num))
+  (%gl:active-texture (+ #x84C0 num))
   (values))
 
 ;; {TODO}
