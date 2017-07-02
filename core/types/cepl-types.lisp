@@ -248,6 +248,36 @@
              (otherwise (+ count 12))))))
       (error "draw-mode-group-id: ~a is not a draw-mode" x)))
 
+(defn primitive-keyword-to-enum-val ((kwd symbol)) (signed-byte 32)
+  (declare (optimize (speed 3) (safety 1) (debug 1)
+                     (compilation-speed 0))
+           (profile t))
+  (ecase kwd
+    (:triangles
+     #.(cffi:foreign-enum-value '%gl:enum :triangles))
+    (:points
+     #.(cffi:foreign-enum-value '%gl:enum :points))
+    (:lines
+     #.(cffi:foreign-enum-value '%gl:enum :lines))
+    (:patches
+     #.(cffi:foreign-enum-value '%gl:enum :patches))
+    (:triangle-strip
+     #.(cffi:foreign-enum-value '%gl:enum :triangle-strip))
+    (:triangle-fan
+     #.(cffi:foreign-enum-value '%gl:enum :triangle-fan))
+    (:line-strip
+     #.(cffi:foreign-enum-value '%gl:enum :line-strip))
+    (:line-loop
+     #.(cffi:foreign-enum-value '%gl:enum :line-loop))
+    (:triangle-strip-adjacency
+     #.(cffi:foreign-enum-value '%gl:enum :triangle-strip-adjacency))
+    (:triangles-adjacency
+     #.(cffi:foreign-enum-value '%gl:enum :triangles-adjacency))
+    (:line-strip-adjacency
+     #.(cffi:foreign-enum-value '%gl:enum :line-strip-adjacency))
+    (:lines-adjacency
+     #.(cffi:foreign-enum-value '%gl:enum :lines-adjacency))))
+
 ;;------------------------------------------------------------
 
 (defstruct (buffer-stream (:constructor %make-buffer-stream))
@@ -264,37 +294,47 @@
   (patch-length 0 :type (unsigned-byte 8))
   (managed nil :type boolean))
 
-(defun2 buffer-stream-primitive (stream)
+(defn-inline buffer-stream-primitive ((stream buffer-stream)) symbol
+  (declare (profile t))
   (buffer-stream-%primitive stream))
 
-(defun2 (setf buffer-stream-primitive) (primitive stream)
-  (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
-         (group-id (draw-mode-group-id prim))
-         (enum-kwd (varjo::lisp-name prim))
-         (enum-val (cffi:foreign-enum-value '%gl:enum enum-kwd :errorp t)))
-    (setf (buffer-stream-%primitive stream) primitive
-          (buffer-stream-primitive-group-id stream) group-id
-          (buffer-stream-draw-mode-val stream) enum-val))
+(defn (setf buffer-stream-primitive) ((primitive symbol)
+                                      (stream buffer-stream))
+    symbol
+  (declare (optimize (speed 3) (safety 1) (debug 1)
+                     (compilation-speed 0))
+           (profile t))
+  (unless (eq primitive (buffer-stream-%primitive stream))
+    (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
+           (group-id (draw-mode-group-id prim))
+           (enum-kwd (varjo::lisp-name prim))
+           (enum-val (primitive-keyword-to-enum-val enum-kwd)))
+      (setf (buffer-stream-%primitive stream) primitive
+            (buffer-stream-primitive-group-id stream) group-id
+            (buffer-stream-draw-mode-val stream) enum-val)))
   primitive)
 
-(defun2 primitive-vert-length (prim)
+(defn primitive-vert-length ((prim varjo.internals:primitive))
+    (unsigned-byte 8)
+  (declare (profile t))
   (typecase prim
-    (varjo::patches (varjo::vertex-count prim))
+    (varjo::patches (the (unsigned-byte 8) (varjo::vertex-count prim)))
     (varjo::triangles 3)
     (varjo::lines 2)
     (varjo::points 1)
     (otherwise 0)))
 
-(defun2 %valid-index-type-p (x)
+(defn-inline %valid-index-type-p ((x symbol)) boolean
+  (declare (profile t))
   (and x (not (eq x :uninitialized))))
 
 (defun2 make-raw-buffer-stream (&key vao start length
-                                 index-type managed
-                                 gpu-arrays (primitive :triangles))
+                                     index-type managed
+                                     gpu-arrays (primitive :triangles))
   (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
          (prim-group-id (draw-mode-group-id prim))
          (enum-kwd (varjo::lisp-name prim))
-         (enum-val (cffi:foreign-enum-value '%gl:enum enum-kwd :errorp t))
+         (enum-val (primitive-keyword-to-enum-val enum-kwd))
          (patch-length (primitive-vert-length prim)))
     (%make-buffer-stream
      :vao (or vao 0)
@@ -318,26 +358,29 @@
   (declare (profile t))
   (buffer-stream-%index-type stream))
 
-(defun2 (setf buffer-stream-index-type) (value stream)
+(defn-inline buffer-stream-start ((stream buffer-stream)) (unsigned-byte 64)
+  (declare (profile t))
+  (buffer-stream-%start stream))
+
+(defn (setf buffer-stream-start) ((value (unsigned-byte 64))
+                                  (stream buffer-stream))
+    (unsigned-byte 64)
+  (declare (profile t) (inline buffer-stream-index-type))
+  (setf (buffer-stream-%start stream) value)
+  (let ((index-type (buffer-stream-index-type stream))
+        (type-size (buffer-stream-%index-type-size stream)))
+    (when (%valid-index-type-p index-type)
+      (setf (buffer-stream-%start-byte stream) (* value type-size))))
+  value)
+
+(defn (setf buffer-stream-index-type) ((value symbol) (stream buffer-stream))
+    symbol
+  (declare (profile t))
   (setf (buffer-stream-%index-type stream) value)
   ;; doing this vv forces recalculation of start-byte
   (when (%valid-index-type-p value)
     (setf (buffer-stream-%index-type-size stream) (foreign-type-size value)
           (buffer-stream-start stream) (buffer-stream-start stream)))
-  value)
-
-(declaim (ftype (function (buffer-stream) (unsigned-byte 64))
-                buffer-stream-start))
-(defun2 buffer-stream-start (stream)
-  (buffer-stream-%start stream))
-
-(defun2 (setf buffer-stream-start) (value stream)
-  (setf (buffer-stream-%start stream) value)
-  (let ((index-type (buffer-stream-index-type stream))
-        (type-size (buffer-stream-%index-type-size stream)))
-    (when (%valid-index-type-p index-type)
-      (setf (buffer-stream-%start-byte stream)
-            (* value type-size))))
   value)
 
 (defn-inline buffer-stream-start-byte ((stream buffer-stream))
