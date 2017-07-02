@@ -248,6 +248,24 @@
              (otherwise (+ count 12))))))
       (error "draw-mode-group-id: ~a is not a draw-mode" x)))
 
+(defn draw-mode-symbol-group-id ((x symbol)) (unsigned-byte 8)
+  (declare (optimize (speed 3) (safety 1) (debug 0) (compilation-speed 0)))
+  (or (case x
+        (:triangles 9)
+        (:points 0)
+        (:lines 4)
+        (:triangle-strip 6)
+        (:triangle-fan 8)
+        (:line-strip 1)
+        (:line-loop 3)
+        (:lines-adjacency 5)
+        (:line-strip-adjacency 2)
+        (:triangle-strip-adjacency 7)
+        (:triangles-adjacency 10)
+        (:quads 11)
+        (:patches (error "Patches can not be used without a length")))
+      (error "draw-mode-group-id: ~a is not a draw-mode" x)))
+
 (defn primitive-keyword-to-enum-val ((kwd symbol)) (signed-byte 32)
   (declare (optimize (speed 3) (safety 1) (debug 1)
                      (compilation-speed 0))
@@ -294,25 +312,41 @@
   (patch-length 0 :type (unsigned-byte 8))
   (managed nil :type boolean))
 
-(defn-inline buffer-stream-primitive ((stream buffer-stream)) symbol
+(defn buffer-stream-primitive ((stream buffer-stream)) t
+  ;; a slow function, should be used sparingly
   (declare (profile t))
-  (buffer-stream-%primitive stream))
+  (let ((prim (buffer-stream-%primitive stream)))
+    (if (eq prim :patches)
+        (list prim (buffer-stream-patch-length stream))
+        prim)))
 
-(defn (setf buffer-stream-primitive) ((primitive symbol)
+(defn (setf buffer-stream-primitive) ((primitive (or symbol list))
                                       (stream buffer-stream))
-    symbol
+    (or symbol list)
   (declare (optimize (speed 3) (safety 1) (debug 1)
                      (compilation-speed 0))
            (profile t))
-  (unless (eq primitive (buffer-stream-%primitive stream))
-    (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
-           (group-id (draw-mode-group-id prim))
-           (enum-kwd (varjo::lisp-name prim))
-           (enum-val (primitive-keyword-to-enum-val enum-kwd)))
-      (setf (buffer-stream-%primitive stream) primitive
-            (buffer-stream-primitive-group-id stream) group-id
-            (buffer-stream-draw-mode-val stream) enum-val)))
+  (if (keywordp primitive)
+      (unless (eq primitive (buffer-stream-%primitive stream))
+        (assert (not (or (eq :patches primitive) (eq :patches primitive))))
+        (setf (buffer-stream-%primitive stream) primitive)
+        (setf (buffer-stream-primitive-group-id stream)
+              (draw-mode-symbol-group-id primitive))
+        (setf (buffer-stream-draw-mode-val stream)
+              (primitive-keyword-to-enum-val primitive)))
+      (set-patch-stream-primitive stream primitive))
   primitive)
+
+(defun2 set-patch-stream-primitive (stream primitive)
+  (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
+         (group-id (draw-mode-group-id prim))
+         (enum-kwd (varjo::lisp-name prim))
+         (enum-val (primitive-keyword-to-enum-val enum-kwd))
+         (patch-length (primitive-vert-length prim)))
+    (setf (buffer-stream-%primitive stream) enum-kwd
+          (buffer-stream-primitive-group-id stream) group-id
+          (buffer-stream-draw-mode-val stream) enum-val
+          (buffer-stream-patch-length stream) patch-length)))
 
 (defn primitive-vert-length ((prim varjo.internals:primitive))
     (unsigned-byte 8)
@@ -348,7 +382,7 @@
                            (foreign-type-size index-type)
                            0)
      :managed managed
-     :%primitive primitive
+     :%primitive enum-kwd
      :primitive-group-id prim-group-id
      :draw-mode-val enum-val
      :patch-length patch-length
