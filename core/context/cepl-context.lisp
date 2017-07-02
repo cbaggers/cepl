@@ -27,6 +27,7 @@
     ;; done!
     result))
 
+(declaim (type cepl-context *cepl-context*))
 (defvar *cepl-context* (make-context))
 
 ;;----------------------------------------------------------------------
