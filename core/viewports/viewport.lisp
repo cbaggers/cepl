@@ -35,6 +35,13 @@
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+(defn-inline viewport-eql ((v0 viewport) (v1 viewport)) boolean
+  (and (= (%viewport-resolution-x v0) (%viewport-resolution-x v1))
+       (= (%viewport-resolution-y v0) (%viewport-resolution-y v1))
+       (= (%viewport-origin-x v0) (%viewport-origin-x v1))
+       (= (%viewport-origin-y v0) (%viewport-origin-y v1))))
+
+;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 (defmethod resolution ((viewport viewport))
   (viewport-resolution viewport))
