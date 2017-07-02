@@ -114,7 +114,7 @@
             (,old-id (cepl.context::texture-bound-id
                       (cepl-context) ,cache-id)))
        (cepl.context::set-texture-bound-id
-        (cepl-context) ,cache-id (texture-id ,tex))
+        (cepl-context) ,cache-id (texture-id ,tex) t)
        (unwind-protect (progn ,@body)
          (cepl.context::set-texture-bound-id
           (cepl-context) ,cache-id ,old-id)))))

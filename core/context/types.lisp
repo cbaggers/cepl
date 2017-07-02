@@ -66,6 +66,9 @@
   (array-of-bound-texture-ids
    (make-array 11 :element-type 'gl-id :initial-element +null-gl-id+)
    :type (array gl-id (11)))
+  (array-of-actual-bound-texture-ids
+   (make-array 11 :element-type 'gl-id :initial-element +null-gl-id+)
+   :type (array gl-id (11)))
   (array-of-textures
    (make-array 0 :element-type 'texture :initial-element +null-texture+
                :adjustable t :fill-pointer 0)
@@ -90,9 +93,10 @@
            array-of-bound-gpu-buffer-ids array-of-actual-bound-gpu-buffer-ids
            array-of-ubo-bindings-buffer-ids
            array-of-transform-feedback-bindings-buffer-ids
-           array-of-bound-texture-ids array-of-textures
-           map-of-pipeline-names-to-gl-ids depth-func depth-mask
-           depth-range depth-clamp cull-face front-face clear-color)))
+           array-of-bound-texture-ids array-of-actual-bound-texture-ids
+           array-of-textures map-of-pipeline-names-to-gl-ids depth-func
+           depth-mask depth-range depth-clamp cull-face front-face
+           clear-color)))
     (assert (every (lambda (x) (member x context-slots)) slots))
     (let ((slots (remove-duplicates slots))
           (accessors (loop :for slot :in slots :collect

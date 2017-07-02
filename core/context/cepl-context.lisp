@@ -318,15 +318,40 @@
 ;; GL binding part
 
 ;; (mapcar (lambda (x) (cffi:foreign-enum-value '%gl::enum x))
+;;         '(:texture-1d :texture-2d :texture-3d :texture-1d-array
+;;           :texture-2d-array :texture-rectangle :texture-cube-map
+;;           :texture-cube-map-array :texture-buffer :texture-2d-multisample
+;;           :texture-2d-multisample-array))
+(defn ensure-texture-id-bound ((cepl-context cepl-context)
+                               (index (integer 0 10)))
+    (values)
+  (declare (optimize (speed 3) (safety 1) (debug 0))
+           (profile t))
+  (%with-cepl-context (array-of-actual-bound-texture-ids
+                       array-of-bound-texture-ids)
+      cepl-context
+    (let ((id (aref array-of-bound-texture-ids index)))
+      (when (/= id (aref array-of-actual-bound-texture-ids index))
+        (let* ((cache-id->enum-id
+                #(3552 3553 32879 35864 35866 34037
+                  34067 36873 35882 37120 37122))
+               (id (if (unknown-gl-id-p id) 0 id)))
+          (declare (dynamic-extent cache-id->enum-id))
+          ;; {TODO} we have already calculated the enum, try and remove the
+          ;;        condition checking if keyword
+          (%gl:bind-texture (aref cache-id->enum-id index) id)
+          (setf (aref array-of-actual-bound-texture-ids index) id)))))
+  (values))
+
+;; (mapcar (lambda (x) (cffi:foreign-enum-value '%gl::enum x))
 ;;         '(:texture-binding-1d :texture-binding-2d :texture-binding-3d
 ;;           :texture-binding-1d-array :texture-binding-2d-array
 ;;           :texture-binding-rectangle :texture-binding-cube-map
 ;;           :texture-binding-cube-map-array :texture-binding-buffer
 ;;           :texture-binding-2d-multisample
 ;;           :texture-binding-2d-multisample-array))
-
 (defn %texture-binding ((gl-ctx gl-context)
-                        (index (integer 0 11)))
+                        (index (integer 0 10)))
     (signed-byte 32)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (ignore gl-ctx) (profile t))
@@ -334,25 +359,6 @@
                               34068 36874 35884 37124 37125))
          (enum-val (aref cache-id->enum-id index)))
     (the (signed-byte 32) (cl-opengl:get-integer enum-val 1))))
-
-;; (mapcar (lambda (x) (cffi:foreign-enum-value '%gl::enum x))
-;;         '(:texture-1d :texture-2d :texture-3d :texture-1d-array
-;;           :texture-2d-array :texture-rectangle :texture-cube-map
-;;           :texture-cube-map-array :texture-buffer :texture-2d-multisample
-;;           :texture-2d-multisample-array))
-(defn (setf %texture-binding) ((id gl-id)
-                               (gl-ctx gl-context)
-                               (index (integer 0 11)))
-    gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (ignore gl-ctx) (profile t))
-  (let* ((cache-id->enum-id #(3552 3553 32879 35864 35866 34037 34067 36873
-                              35882 37120 37122))
-         (target-val (aref cache-id->enum-id index)))
-    ;; {TODO} we have already calculated the enum, try and remove the
-    ;;        condition checking if keyword
-    (%gl:bind-texture target-val id))
-  id)
 
 ;; Raw cached index part
 
@@ -365,21 +371,16 @@
 
 (defn set-texture-bound-id ((ctx cepl-context)
                             (index array-index)
-                            (id gl-id))
+                            (id gl-id)
+                            &optional (eager boolean nil))
     gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (inline unknown-gl-id-p) (profile t))
-  (%with-cepl-context (array-of-bound-texture-ids gl-context)
-      ctx
-    (let ((current (texture-bound-id ctx index))
-          (bind-id
-           (if (unknown-gl-id-p id)
-               0
-               id)))
-      (unless (= id current)
-        (setf (%texture-binding gl-context index) bind-id)
-        (setf (aref array-of-bound-texture-ids index) id))
-      id)))
+  (%with-cepl-context (array-of-bound-texture-ids gl-context) ctx
+    (setf (aref array-of-bound-texture-ids index) id)
+    (when eager
+      (ensure-texture-id-bound ctx index))
+    id))
 
 ;; human friendly part
 
@@ -409,18 +410,17 @@
       (let* ((id (texture-bound-id ctx index))
              (id
               (if (unknown-gl-id-p id)
-                  (set-texture-bound-id ctx index
-                                        (%texture-binding gl-context index))
+                  (set-texture-bound-id
+                   ctx index (%texture-binding gl-context index) t)
                   id)))
-        (when (and (>= id 0) (< (length array-of-textures)))
-          (aref array-of-textures id))))))
+        (aref array-of-textures id)))))
 
 (defn (setf texture-bound) ((val texture)
                             (ctx cepl-context)
                             (target symbol))
     texture
   (let ((index (tex-kind->cache-index target)))
-    (set-texture-bound-id ctx index (texture-id val))
+    (set-texture-bound-id ctx index (texture-id val) t)
     val))
 
 

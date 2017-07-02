@@ -82,7 +82,8 @@
                     (let ((tex (%sampler-texture ,arg-name)))
                       (cepl.context::set-texture-bound-id (cepl-context)
                                                           (texture-cache-id tex)
-                                                          (texture-id tex)))
+                                                          (texture-id tex)
+                                                          t))
                     (if cepl.samplers::*samplers-available*
                         (%gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
                         (cepl.textures::fallback-sampler-set ,arg-name))
