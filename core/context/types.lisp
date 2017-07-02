@@ -48,6 +48,9 @@
   (array-of-bound-gpu-buffer-ids
    (make-array 12 :element-type 'gl-id :initial-element +null-gl-id+)
    :type (array gl-id (12)))
+  (array-of-actual-bound-gpu-buffer-ids
+   (make-array 12 :element-type 'gl-id :initial-element +null-gl-id+)
+   :type (array gl-id (12)))
   (array-of-gpu-buffers
    (make-array 0 :element-type 'gpu-buffer :initial-element +null-gpu-buffer+
                :adjustable t :fill-pointer 0)
@@ -83,8 +86,9 @@
          '(gl-context gl-version gl-thread uninitialized-resources shared
            surfaces current-surface vao-binding-id current-viewport
            default-viewport default-framebuffer read-fbo-binding-id
-           draw-fbo-binding-id fbos array-of-bound-gpu-buffer-ids
-           array-of-gpu-buffers array-of-ubo-bindings-buffer-ids
+           draw-fbo-binding-id fbos array-of-gpu-buffers
+           array-of-bound-gpu-buffer-ids array-of-actual-bound-gpu-buffer-ids
+           array-of-ubo-bindings-buffer-ids
            array-of-transform-feedback-bindings-buffer-ids
            array-of-bound-texture-ids array-of-textures
            map-of-pipeline-names-to-gl-ids depth-func depth-mask

@@ -50,7 +50,7 @@
        (unwind-protect
             (progn
               (cepl.context::set-gpu-buffer-bound-id
-               (cepl-context) ,cache-id (if ,var-name (gpu-buffer-id ,var-name) 0))
+               (cepl-context) ,cache-id (if ,var-name (gpu-buffer-id ,var-name) 0) t)
               ,@body)
          (cepl.context::set-gpu-buffer-bound-id
           (cepl-context) ,cache-id ,old-id)))))

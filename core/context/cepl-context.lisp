@@ -144,6 +144,27 @@
 ;;----------------------------------------------------------------------
 ;; GPU-Buffers
 
+;; Actually making the state change
+
+(defn ensure-buffer-bound-id ((cepl-context cepl-context)
+                              (index (integer 0 11)))
+    (values)
+  (declare (optimize (speed 3) (safety 1) (debug 0))
+           (profile t))
+  (%with-cepl-context (array-of-actual-bound-gpu-buffer-ids
+                       array-of-bound-gpu-buffer-ids)
+      cepl-context
+    (let ((id (aref array-of-bound-gpu-buffer-ids index)))
+      (when (/= id (aref array-of-actual-bound-gpu-buffer-ids index))
+        (let* ((id (if (unknown-gl-id-p id) 0 id))
+               (cache-id->enum-id
+                #(34962 37568 36662 36663 37102 36671 34963 35051 35052 37266
+                  37074 35882)))
+          (declare (dynamic-extent cache-id->enum-id))
+          (%gl:bind-buffer (aref cache-id->enum-id index) id)
+          (setf (aref array-of-actual-bound-gpu-buffer-ids index) id)))))
+  (values))
+
 ;; Raw Cache indexed part
 
 (defn-inline gpu-buffer-bound-id ((ctx cepl-context) (index (integer 0 11)))
@@ -154,29 +175,28 @@
     (declare (type (simple-array gl-id) array-of-bound-gpu-buffer-ids))
     (aref array-of-bound-gpu-buffer-ids index)))
 
-(defn set-gpu-buffer-bound-id ((ctx cepl-context) index id)
+(defn set-gpu-buffer-bound-id ((ctx cepl-context)
+                               (index (integer 0 11))
+                               (id gl-id)
+                               &optional (eager boolean nil))
     gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (inline unknown-gl-id-p)
            (profile t))
-  (let ((cache-id->enum-id
-         #(34962 37568 36662 36663 37102 36671 34963 35051 35052 37266 37074
-           35882)))
-    (declare (dynamic-extent cache-id->enum-id))
-    (%with-cepl-context (array-of-bound-gpu-buffer-ids gl-context) ctx
-      (let ((current (gpu-buffer-bound-id ctx index))
-            (bind-id (if (unknown-gl-id-p id)
-                         0
-                         id)))
-        (unless (= id current)
-          (%gl:bind-buffer (aref cache-id->enum-id index) bind-id)
-          (setf (aref array-of-bound-gpu-buffer-ids index) id))
-        id))))
+  (%with-cepl-context (array-of-bound-gpu-buffer-ids
+                       array-of-actual-bound-gpu-buffer-ids
+                       gl-context)
+      ctx
+    (setf (aref array-of-bound-gpu-buffer-ids index) id)
+    (when eager
+      (ensure-buffer-bound-id ctx index))
+    id))
 
 ;; User friendly part
 
-(defn buffer-kind->cache-index ((kind keyword))
-    (integer 0 11)
+(defn buffer-kind->cache-index ((kind keyword)) (integer 0 11)
+  ;; :atomic-counter-buffer
+  ;; :shader-storage-buffer
   (declare (profile t))
   (ecase kind
     (:array-buffer 0)
@@ -192,24 +212,20 @@
     (:shader-storage-buffer 10)
     (:texture-buffer 11)))
 
-;; :atomic-counter-buffer
-;; :shader-storage-buffer
-
 (defn gpu-buffer-bound ((ctx cepl-context)
                         (target symbol))
     gpu-buffer
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (let ((index (buffer-kind->cache-index target)))
-    (%with-cepl-context (array-of-gpu-buffers gl-context)
-        ctx
-      (let* ((id (gpu-buffer-bound-id ctx index))
-             (id
-              (if (unknown-gl-id-p id)
-                  (set-gpu-buffer-bound-id ctx index (gl:get* target))
-                  id)))
-        (when (and (>= id 0) (< (length array-of-gpu-buffers)))
-          (aref array-of-gpu-buffers id))))))
+  (%with-cepl-context (array-of-gpu-buffers gl-context) ctx
+    (let* ((index (buffer-kind->cache-index target))
+           (id (gpu-buffer-bound-id ctx index))
+           (id
+            (if (unknown-gl-id-p id)
+                (set-gpu-buffer-bound-id ctx index (gl:get* target))
+                id)))
+      (when (and (>= id 0) (< (length array-of-gpu-buffers)))
+        (aref array-of-gpu-buffers id)))))
 
 (defn (setf gpu-buffer-bound) ((val gpu-buffer)
                                (ctx cepl-context)
@@ -217,9 +233,19 @@
     gpu-buffer
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (let ((index (buffer-kind->cache-index target)))
-    (set-gpu-buffer-bound-id ctx index (gpu-buffer-id val)))
+  (let ((index (buffer-kind->cache-index target))
+        (id (if val (gpu-buffer-id val) 0)))
+    (set-gpu-buffer-bound-id ctx index id t))
   val)
+
+(define-compiler-macro (setf gpu-buffer-bound) (&whole whole val ctx target)
+  (if (keywordp target)
+      (let ((index (buffer-kind->cache-index target)))
+        (alexandria:with-gensyms (gval id)
+          `(let* ((,gval ,val)
+                  (,id (if ,gval (gpu-buffer-id ,gval) 0)))
+             (set-gpu-buffer-bound-id ,ctx ,index ,id t))))
+      whole))
 
 ;;----------------------------------------------------------------------
 ;; Uniform Buffer Objects
