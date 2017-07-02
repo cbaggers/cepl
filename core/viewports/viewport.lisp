@@ -1,5 +1,15 @@
 (in-package :cepl.viewports)
 
+;;------------------------------------------------------------
+
+(defn-inline viewport-eql ((v0 viewport) (v1 viewport)) boolean
+  (and (= (%viewport-resolution-x v0) (%viewport-resolution-x v1))
+       (= (%viewport-resolution-y v0) (%viewport-resolution-y v1))
+       (= (%viewport-origin-x v0) (%viewport-origin-x v1))
+       (= (%viewport-origin-y v0) (%viewport-origin-y v1))))
+
+;;------------------------------------------------------------
+
 (defn %set-current-viewport ((cepl-context cepl-context)
                              (viewport viewport))
     viewport
@@ -23,7 +33,7 @@
                    "but we do have a gl context. This is a bug"
                    "because the GL context is not yet available")))))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;------------------------------------------------------------
 
 (defmethod dimensions ((viewport viewport))
   (viewport-dimensions viewport))
@@ -42,15 +52,7 @@
     (%set-resolution viewport (first dim) (second dim))
     value))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-(defn-inline viewport-eql ((v0 viewport) (v1 viewport)) boolean
-  (and (= (%viewport-resolution-x v0) (%viewport-resolution-x v1))
-       (= (%viewport-resolution-y v0) (%viewport-resolution-y v1))
-       (= (%viewport-origin-x v0) (%viewport-origin-x v1))
-       (= (%viewport-origin-y v0) (%viewport-origin-y v1))))
-
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;------------------------------------------------------------
 
 (defmethod resolution ((viewport viewport))
   (viewport-resolution viewport))
@@ -83,7 +85,7 @@
 (defun2 viewport-resolution-y (viewport)
   (%viewport-resolution-y viewport))
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;------------------------------------------------------------
 
 (defun2 viewport-origin (viewport)
   (v! (%viewport-origin-x viewport)
@@ -94,7 +96,7 @@
         (%viewport-origin-y viewport) (floor (v:y value)))
   value)
 
-;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;;------------------------------------------------------------
 
 (defun2 %viewport (viewport)
   (%gl:viewport
