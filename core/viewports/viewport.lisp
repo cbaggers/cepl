@@ -1,9 +1,18 @@
 (in-package :cepl.viewports)
 
-(defun2 %set-current-viewport (cepl-context viewport)
+(defn %set-current-viewport ((cepl-context cepl-context)
+                             (viewport viewport))
+    viewport
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (inline viewport-eql)
+           (profile t))
   (%with-cepl-context (cepl.context::current-viewport) cepl-context
-    (%viewport viewport)
-    (setf cepl.context::current-viewport viewport)))
+    (if (viewport-eql cepl.context::current-viewport
+                      viewport)
+        viewport
+        (progn
+          (%viewport viewport)
+          (setf cepl.context::current-viewport viewport)))))
 
 (defun2 current-viewport ()
   (%with-cepl-context (cepl.context::current-viewport) (cepl-context)
