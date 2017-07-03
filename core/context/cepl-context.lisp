@@ -101,7 +101,10 @@
       ;; Setup Viewports
       (let ((vp (make-viewport surface-size)))
         (setf current-viewport vp
-              default-viewport vp)))
+              default-viewport vp)
+        (%gl:viewport
+         (%viewport-origin-x vp) (%viewport-origin-y vp)
+         (%viewport-resolution-x vp) (%viewport-resolution-y vp))))
     cepl-context))
 
 ;;----------------------------------------------------------------------
@@ -147,24 +150,35 @@
 
 ;; Actually making the state change
 
-(defn ensure-buffer-bound-id ((cepl-context cepl-context)
-                              (index (integer 0 11)))
+(defn-inline assert-buffer-bound-id ((cepl-context cepl-context)
+                                     (index (integer 0 11))
+                                     (id gl-id))
     (values)
   (declare (optimize (speed 3) (safety 0) (debug 0))
+           (inline unknown-gl-id-p)
            (profile t))
-  (%with-cepl-context-slots (array-of-actual-bound-gpu-buffer-ids
-                             array-of-bound-gpu-buffer-ids)
+  (%with-cepl-context-slots (array-of-actual-bound-gpu-buffer-ids)
+      cepl-context
+    (when (/= id (aref array-of-actual-bound-gpu-buffer-ids index))
+      (let* ((id (if (unknown-gl-id-p id) 0 id))
+             (cache-id->enum-id
+              #(34962 37568 36662 36663 37102 36671 34963 35051 35052 37266
+                37074 35882)))
+        (declare (dynamic-extent cache-id->enum-id))
+        (%gl:bind-buffer (aref cache-id->enum-id index) id)
+        (setf (aref array-of-actual-bound-gpu-buffer-ids index) id))))
+  (values))
+
+(defn-inline ensure-buffer-bound-id ((cepl-context cepl-context)
+                                     (index (integer 0 11)))
+    (values)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (inline assert-buffer-bound-id)
+           (profile t))
+  (%with-cepl-context-slots (array-of-bound-gpu-buffer-ids)
       cepl-context
     (let ((id (aref array-of-bound-gpu-buffer-ids index)))
-      (when (/= id (aref array-of-actual-bound-gpu-buffer-ids index))
-        (let* ((id (if (unknown-gl-id-p id) 0 id))
-               (cache-id->enum-id
-                #(34962 37568 36662 36663 37102 36671 34963 35051 35052 37266
-                  37074 35882)))
-          (declare (dynamic-extent cache-id->enum-id))
-          (%gl:bind-buffer (aref cache-id->enum-id index) id)
-          (setf (aref array-of-actual-bound-gpu-buffer-ids index) id)))))
-  (values))
+      (assert-buffer-bound-id cepl-context index id))))
 
 ;; Raw Cache indexed part
 
@@ -181,8 +195,8 @@
                                (id gl-id)
                                &optional (eager boolean nil))
     gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (inline unknown-gl-id-p)
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (inline unknown-gl-id-p assert-buffer-bound-id)
            (profile t))
   (%with-cepl-context-slots (array-of-bound-gpu-buffer-ids
                              array-of-actual-bound-gpu-buffer-ids
@@ -190,7 +204,7 @@
       ctx
     (setf (aref array-of-bound-gpu-buffer-ids index) id)
     (when eager
-      (ensure-buffer-bound-id ctx index))
+      (assert-buffer-bound-id ctx index id))
     id))
 
 ;; User friendly part
@@ -324,26 +338,38 @@
 ;;           :texture-2d-array :texture-rectangle :texture-cube-map
 ;;           :texture-cube-map-array :texture-buffer :texture-2d-multisample
 ;;           :texture-2d-multisample-array))
-(defn ensure-texture-id-bound ((cepl-context cepl-context)
-                               (index (integer 0 10)))
+(defn-inline assert-texture-id-bound ((cepl-context cepl-context)
+                                      (index (integer 0 10))
+                                      (id gl-id))
     (values)
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (inline unknown-gl-id-p)
+           (profile t))
+  (%with-cepl-context-slots (array-of-actual-bound-texture-ids)
+      cepl-context
+    (when (/= id (aref array-of-actual-bound-texture-ids index))
+      (let* ((cache-id->enum-id
+              #(3552 3553 32879 35864 35866 34037
+                34067 36873 35882 37120 37122))
+             (id (if (unknown-gl-id-p id) 0 id)))
+        (declare (dynamic-extent cache-id->enum-id))
+        ;; {TODO} we have already calculated the enum, try and remove the
+        ;;        condition checking if keyword
+        (%gl:bind-texture (aref cache-id->enum-id index) id)
+        (setf (aref array-of-actual-bound-texture-ids index) id))))
+  (values))
+
+(defn-inline ensure-texture-id-bound ((cepl-context cepl-context)
+                                      (index (integer 0 10)))
+    (values)
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (inline assert-texture-id-bound)
            (profile t))
   (%with-cepl-context-slots (array-of-actual-bound-texture-ids
                              array-of-bound-texture-ids)
       cepl-context
     (let ((id (aref array-of-bound-texture-ids index)))
-      (when (/= id (aref array-of-actual-bound-texture-ids index))
-        (let* ((cache-id->enum-id
-                #(3552 3553 32879 35864 35866 34037
-                  34067 36873 35882 37120 37122))
-               (id (if (unknown-gl-id-p id) 0 id)))
-          (declare (dynamic-extent cache-id->enum-id))
-          ;; {TODO} we have already calculated the enum, try and remove the
-          ;;        condition checking if keyword
-          (%gl:bind-texture (aref cache-id->enum-id index) id)
-          (setf (aref array-of-actual-bound-texture-ids index) id)))))
-  (values))
+      (assert-texture-id-bound cepl-context index id))))
 
 ;; (mapcar (lambda (x) (cffi:foreign-enum-value '%gl::enum x))
 ;;         '(:texture-binding-1d :texture-binding-2d :texture-binding-3d
@@ -376,12 +402,13 @@
                             (id gl-id)
                             &optional (eager boolean nil))
     gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (inline unknown-gl-id-p) (profile t))
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (inline assert-texture-id-bound)
+           (profile t))
   (%with-cepl-context-slots (array-of-bound-texture-ids gl-context) ctx
     (setf (aref array-of-bound-texture-ids index) id)
     (when eager
-      (ensure-texture-id-bound ctx index))
+      (assert-texture-id-bound ctx index id))
     id))
 
 ;; human friendly part

@@ -4,8 +4,14 @@
 ;;; UNIFORMS ;;;
 ;;;----------;;;
 
-(defun2 uniform-sampler (location image-unit)
-  (%gl:uniform-1i location image-unit))
+(defn-inline uniform-sampler ((location (signed-byte 32))
+                              (image-unit (signed-byte 32)))
+    (values)
+  (declare (optimize (speed 3) (safety 1) (debug 0)
+                     (compilation-speed 0))
+           (profile t))
+  (%gl:uniform-1i location image-unit)
+  (values))
 
 (defn-inline uniform-1i ((location (signed-byte 32))
                          (value (signed-byte 32)))

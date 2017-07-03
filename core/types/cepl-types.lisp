@@ -426,11 +426,15 @@
      :gpu-arrays gpu-arrays)))
 
 (defn-inline buffer-stream-index-type ((stream buffer-stream)) symbol
-  (declare (profile t))
+  (declare (optimize (speed 3) (safety 1) (debug 1)
+                     (compilation-speed 0))
+           (profile t))
   (buffer-stream-%index-type stream))
 
 (defn-inline buffer-stream-start ((stream buffer-stream)) (unsigned-byte 64)
-  (declare (profile t))
+  (declare (optimize (speed 3) (safety 1) (debug 1)
+                     (compilation-speed 0))
+           (profile t))
   (buffer-stream-%start stream))
 
 (defn (setf buffer-stream-start) ((value (unsigned-byte 64))
