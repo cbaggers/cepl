@@ -65,7 +65,7 @@
 
 (defun2 generate-mipmaps (texture)
   (let ((type (texture-type texture)))
-    (with-texture-bound texture
+    (%with-texture-bound texture
       (%gl:generate-mipmap type))))
 
 (defun2 error-on-invalid-upload-formats (target image-format pixel-format pixel-type)
@@ -103,7 +103,7 @@
                                        pix-type)
       (unless (equal (dimensions c-array) dimensions)
         (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
-      (with-texture-bound (gpu-array-t-texture gpu-array)
+      (%with-texture-bound (gpu-array-t-texture gpu-array)
         (%upload-tex texture texture-type level-num (dimensions c-array)
                      layer-num face-num pix-format pix-type (pointer c-array)))))
   gpu-array)
@@ -457,7 +457,7 @@ Max is: ~s"
 GL has no function for querying the number of mipmap levels
 so what we do is get the maxiumum possible count and iterate through checking
 the width to see at what point the width reaches 0 or GL throws an error."
-  (cepl.textures::with-texture-bound texture
+  (%with-texture-bound texture
     (let* ((count -1)
            (tex-type (texture-type texture))
            (max-level (gl:get-tex-parameter tex-type :texture-max-level)))
@@ -505,7 +505,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                 (setf (texture-cache-id tex-obj)
                       (cepl.context::tex-kind->cache-index texture-type))
                 (cepl.context::register-texture (cepl-context) tex-obj)
-                (with-texture-bound tex-obj
+                (%with-texture-bound tex-obj
                   (allocate-texture tex-obj)
                   (when initial-contents
                     (upload-c-array-to-gpu-array-t
@@ -607,7 +607,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
           (cepl.context::tex-kind->cache-index :texture-buffer))
     (cepl.context::register-texture (cepl-context) tex-obj)
     ;; upload
-    (with-texture-bound tex-obj
+    (%with-texture-bound tex-obj
       (%gl::tex-buffer :texture-buffer image-format
                        (gpu-buffer-id
                         (cepl.gpu-arrays::gpu-array-buffer
@@ -755,7 +755,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                                   :element-type p-format)))
       (destructuring-bind (format type)
           (cepl.pixel-formats::compile-pixel-format p-format)
-        (with-texture-bound texture
+        (%with-texture-bound texture
           (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
                              (coerce level-num 'real)
                              format

@@ -107,7 +107,7 @@
 
 ;;------------------------------------------------------------
 
-(defmacro with-texture-bound (texture &body body)
+(defmacro %with-texture-bound (texture &body body)
   (alexandria:with-gensyms (tex old-id cache-id ctx)
     `(with-cepl-context (,ctx)
        (let* ((,tex ,texture)

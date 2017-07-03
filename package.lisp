@@ -741,7 +741,6 @@
            :make-texture
            :free-texture
            :generate-mipmaps
-           :with-texture-bound
            :texref
            :*immutable-available*))
 

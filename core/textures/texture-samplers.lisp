@@ -10,33 +10,33 @@
 ;; other benefit.
 
 (defun2 (setf tex-lod-bias) (value texture)
-  (cepl.textures:with-texture-bound texture
+  (%with-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-lod-bias value))
   texture)
 
 
 (defun2 (setf tex-min-lod) (value texture)
-  (cepl.textures:with-texture-bound texture
+  (%with-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-min-lod value))
   texture)
 
 
 (defun2 (setf tex-max-lod) (value texture)
-  (cepl.textures:with-texture-bound texture
+  (%with-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-max-lod value))
   texture)
 
 
 (defun2 (setf tex-magnify-filter) (value texture)
   (assert (member value '(:linear :nearest)))
-  (cepl.textures:with-texture-bound texture
+  (%with-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-mag-filter
                           (%gl::foreign-enum-value '%gl:enum value)))
   texture)
 
 
 (defun2 (setf tex-minify-filter) (value texture)
-  (cepl.textures:with-texture-bound texture
+  (%with-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-min-filter
                           (%gl::foreign-enum-value '%gl:enum value)))
   texture)
@@ -50,7 +50,7 @@
     (assert (and (vectorp value)
                  (= (length value) 3)
                  (every (lambda (x) (member x options)) value)))
-    (cepl.textures:with-texture-bound texture
+    (%with-texture-bound texture
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-s
                             (%gl::foreign-enum-value '%gl:enum (aref value 0)))
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-t
@@ -61,7 +61,7 @@
 
 
 (defun2 (setf tex-compare) (value texture)
-  (cepl.textures:with-texture-bound texture
+  (%with-texture-bound texture
     (if value
         (progn
           (%gl:tex-parameter-i
