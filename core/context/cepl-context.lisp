@@ -150,7 +150,7 @@
 (defn ensure-buffer-bound-id ((cepl-context cepl-context)
                               (index (integer 0 11)))
     (values)
-  (declare (optimize (speed 3) (safety 1) (debug 0))
+  (declare (optimize (speed 3) (safety 0) (debug 0))
            (profile t))
   (%with-cepl-context (array-of-actual-bound-gpu-buffer-ids
                        array-of-bound-gpu-buffer-ids)
@@ -170,7 +170,7 @@
 
 (defn-inline gpu-buffer-bound-id ((ctx cepl-context) (index (integer 0 11)))
     gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
            (profile t))
   (%with-cepl-context (array-of-bound-gpu-buffer-ids) ctx
     (declare (type (simple-array gl-id) array-of-bound-gpu-buffer-ids))
@@ -198,7 +198,8 @@
 (defn buffer-kind->cache-index ((kind keyword)) (integer 0 11)
   ;; :atomic-counter-buffer
   ;; :shader-storage-buffer
-  (declare (profile t))
+  (declare (optimize (speed 3) (safety 1) (debug 0) (compilation-speed 0))
+           (profile t))
   (ecase kind
     (:array-buffer 0)
     (:atomic-counter-buffer 1)
@@ -326,7 +327,7 @@
 (defn ensure-texture-id-bound ((cepl-context cepl-context)
                                (index (integer 0 10)))
     (values)
-  (declare (optimize (speed 3) (safety 1) (debug 0))
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
            (profile t))
   (%with-cepl-context (array-of-actual-bound-texture-ids
                        array-of-bound-texture-ids)
@@ -366,7 +367,7 @@
 (defn-inline texture-bound-id ((ctx cepl-context)
                                (index array-index))
     gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0)))
   (%with-cepl-context (array-of-bound-texture-ids) ctx
     (aref array-of-bound-texture-ids index)))
 

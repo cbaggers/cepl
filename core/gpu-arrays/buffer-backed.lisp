@@ -23,10 +23,14 @@
 (defmethod cepl.gpu-arrays:free-gpu-array ((gpu-array gpu-array))
   (free-gpu-array-bb gpu-array))
 
-(defun2 gpu-array-buffer (gpu-array)
+(defn-inline gpu-array-buffer ((gpu-array gpu-array-bb)) gpu-buffer
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (%cepl.types::gpu-array-bb-buffer gpu-array))
 
-(defun2 gpu-array-access-style (gpu-array)
+(defn-inline gpu-array-access-style ((gpu-array gpu-array-bb)) symbol
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (%cepl.types::gpu-array-bb-access-style gpu-array))
 
 (defun2 blank-gpu-array-b-object (gpu-array)

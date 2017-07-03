@@ -47,10 +47,10 @@
    :type (array fbo (*)))
   (array-of-bound-gpu-buffer-ids
    (make-array 12 :element-type 'gl-id :initial-element +null-gl-id+)
-   :type (array gl-id (12)))
+   :type (simple-array gl-id (12)))
   (array-of-actual-bound-gpu-buffer-ids
    (make-array 12 :element-type 'gl-id :initial-element +null-gl-id+)
-   :type (array gl-id (12)))
+   :type (simple-array gl-id (12)))
   (array-of-gpu-buffers
    (make-array 0 :element-type 'gpu-buffer :initial-element +null-gpu-buffer+
                :adjustable t :fill-pointer 0)
@@ -65,10 +65,10 @@
    :type (array gl-id (*)))
   (array-of-bound-texture-ids
    (make-array 11 :element-type 'gl-id :initial-element +null-gl-id+)
-   :type (array gl-id (11)))
+   :type (simple-array gl-id (11)))
   (array-of-actual-bound-texture-ids
    (make-array 11 :element-type 'gl-id :initial-element +null-gl-id+)
-   :type (array gl-id (11)))
+   :type (simple-array gl-id (11)))
   (array-of-textures
    (make-array 0 :element-type 'texture :initial-element +null-texture+
                :adjustable t :fill-pointer 0)

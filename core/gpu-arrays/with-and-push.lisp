@@ -89,7 +89,9 @@ dimension then their sizes must match exactly"))
   (with-gpu-array-as-c-array (x object :access-type :read-only)
     (pull1-g x)))
 
-(defun2 gpu-array-element-type (gpu-array)
+(defn-inline gpu-array-element-type ((gpu-array gpu-array)) symbol
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (etypecase gpu-array
     (gpu-array-t
      (%cepl.types::gpu-array-t-image-format gpu-array))

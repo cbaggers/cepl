@@ -1,0 +1,5 @@
+- make all types store resolution (as an array) rather than dimensions (as a list). All the x-dimensions functions will become slow array->list funcs. We will use the resolution exclusively internally
+
+- find all uses of fixnum and replace with something more sensible
+
+- work through the perf logs micro-optimizing
