@@ -107,13 +107,26 @@
 
 ;;------------------------------------------------------------
 
-(defmacro %with-texture-bound (texture &body body)
-  (alexandria:with-gensyms (tex old-id cache-id ctx)
-    `(with-cepl-context (,ctx)
-       (let* ((,tex ,texture)
-              (,cache-id (texture-cache-id ,tex))
-              (,old-id (cepl.context::texture-bound-id ,ctx ,cache-id)))
-         (cepl.context::set-texture-bound-id ,ctx ,cache-id (texture-id ,tex)
-                                             t)
-         (unwind-protect (progn ,@body)
-           (cepl.context::set-texture-bound-id ,ctx ,cache-id ,old-id))))))
+(defn bind-scratch-texture ((texture texture)) (values)
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (inline active-texture-num)
+           (profile t))
+  (active-texture-num 0)
+  (%gl:bind-texture (texture-cache-id texture) (texture-id texture))
+  (values))
+
+(defn unbind-texture-from-scratch ((texture texture)) (values)
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (inline active-texture-num)
+           (profile t))
+  (active-texture-num 0)
+  (%gl:bind-texture (texture-cache-id texture) 0)
+  (values))
+
+
+(defmacro %with-scratch-texture-bound (texture &body body)
+  (alexandria:with-gensyms (tex)
+    `(let* ((,tex ,texture))
+       (bind-scratch-texture ,tex)
+       (unwind-protect (progn ,@body)
+         (unbind-texture-from-scratch ,tex)))))

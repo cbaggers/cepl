@@ -209,6 +209,7 @@
            :gpu-array-t-face-num
            :gpu-array-t-image-format
            :+null-texture-backed-gpu-array+
+           :active-texture-num
 
            :%make-gpu-array-bb
            :make-uninitialized-gpu-array-bb
@@ -523,7 +524,6 @@
            :cepl-context
            :with-cepl-context
            :gpu-buffer-bound
-           :texture-bound
            :vao-bound
            :read-fbo-bound
            :draw-fbo-bound

@@ -99,7 +99,8 @@
          (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
        (register-lambda-pipeline
         compiled-stages
-        (let* ((image-unit -1)
+        (let* (;; all image units will be >0 as 0 is used as scratch tex-unit
+               (image-unit 0)
                ;; If there are no implicit-uniforms we need a no-op
                ;; function to call
                (implicit-uniform-upload-func

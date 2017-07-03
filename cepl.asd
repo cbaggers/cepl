@@ -83,6 +83,7 @@
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")
                (:file "core/textures/texture-samplers")
+               (:file "core/samplers/context")
                (:file "core/pipelines/map-g")
                (:file "core/gpu-arrays/texture-backed")
                (:file "core/gpu-arrays/with-and-push")

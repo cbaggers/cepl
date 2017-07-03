@@ -65,7 +65,7 @@
 
 (defun2 generate-mipmaps (texture)
   (let ((type (texture-type texture)))
-    (%with-texture-bound texture
+    (%with-scratch-texture-bound texture
       (%gl:generate-mipmap type))))
 
 (defun2 error-on-invalid-upload-formats (target image-format pixel-format pixel-type)
@@ -103,7 +103,7 @@
                                        pix-type)
       (unless (equal (dimensions c-array) dimensions)
         (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
-      (%with-texture-bound (gpu-array-t-texture gpu-array)
+      (%with-scratch-texture-bound (gpu-array-t-texture gpu-array)
         (%upload-tex texture texture-type level-num (dimensions c-array)
                      layer-num face-num pix-format pix-type (pointer c-array)))))
   gpu-array)
@@ -457,7 +457,7 @@ Max is: ~s"
 GL has no function for querying the number of mipmap levels
 so what we do is get the maxiumum possible count and iterate through checking
 the width to see at what point the width reaches 0 or GL throws an error."
-  (%with-texture-bound texture
+  (%with-scratch-texture-bound texture
     (let* ((count -1)
            (tex-type (texture-type texture))
            (max-level (gl:get-tex-parameter tex-type :texture-max-level)))
@@ -468,6 +468,32 @@ the width to see at what point the width reaches 0 or GL throws an error."
              :when (= width 0) :return nil)
         (cl-opengl-bindings:opengl-error () nil))
       count)))
+
+(defn tex-kind->cache-index ((kind symbol)) (signed-byte 32)
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+  (ecase kind
+    (:texture-1d
+     #.(cffi:foreign-enum-value '%gl::enum :texture-1d))
+    (:texture-2d
+     #.(cffi:foreign-enum-value '%gl::enum :texture-2d))
+    (:texture-3d
+     #.(cffi:foreign-enum-value '%gl::enum :texture-3d))
+    (:texture-1d-array
+     #.(cffi:foreign-enum-value '%gl::enum :texture-1d-array))
+    (:texture-2d-array
+     #.(cffi:foreign-enum-value '%gl::enum :texture-2d-array))
+    (:texture-rectangle
+     #.(cffi:foreign-enum-value '%gl::enum :texture-rectangle))
+    (:texture-cube-map
+     #.(cffi:foreign-enum-value '%gl::enum :texture-cube-map))
+    (:texture-cube-map-array
+     #.(cffi:foreign-enum-value '%gl::enum :texture-cube-map-array))
+    (:texture-buffer
+     #.(cffi:foreign-enum-value '%gl::enum :texture-buffer))
+    (:texture-2d-multisample
+     #.(cffi:foreign-enum-value '%gl::enum :texture-2d-multisample))
+    (:texture-2d-multisample-array
+     #.(cffi:foreign-enum-value '%gl::enum :texture-2d-multisample-array))))
 
 (defun2 %make-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
@@ -503,9 +529,9 @@ the width to see at what point the width reaches 0 or GL throws an error."
                       (texture-image-format tex-obj) image-format
                       (texture-mutable-p tex-obj) (not (and immutable *immutable-available*)))
                 (setf (texture-cache-id tex-obj)
-                      (cepl.context::tex-kind->cache-index texture-type))
+                      (tex-kind->cache-index texture-type))
                 (cepl.context::register-texture (cepl-context) tex-obj)
-                (%with-texture-bound tex-obj
+                (%with-scratch-texture-bound tex-obj
                   (allocate-texture tex-obj)
                   (when initial-contents
                     (upload-c-array-to-gpu-array-t
@@ -604,10 +630,10 @@ the width to see at what point the width reaches 0 or GL throws an error."
           (texture-image-format tex-obj) image-format
           (buffer-texture-owns-array tex-obj) t)
     (setf (texture-cache-id tex-obj)
-          (cepl.context::tex-kind->cache-index :texture-buffer))
+          (tex-kind->cache-index :texture-buffer))
     (cepl.context::register-texture (cepl-context) tex-obj)
     ;; upload
-    (%with-texture-bound tex-obj
+    (%with-scratch-texture-bound tex-obj
       (%gl::tex-buffer :texture-buffer image-format
                        (gpu-buffer-id
                         (cepl.gpu-arrays::gpu-array-buffer
@@ -755,7 +781,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                                   :element-type p-format)))
       (destructuring-bind (format type)
           (cepl.pixel-formats::compile-pixel-format p-format)
-        (%with-texture-bound texture
+        (%with-scratch-texture-bound texture
           (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
                              (coerce level-num 'real)
                              format
@@ -770,11 +796,6 @@ the width to see at what point the width reaches 0 or GL throws an error."
 (defmethod pull-g ((object gpu-array-t))
   (with-c-array (c-array (pull1-g object))
     (pull1-g c-array)))
-
-(defn-inline active-texture-num ((num (unsigned-byte 16))) (values)
-  (declare (profile t))
-  (%gl:active-texture (+ #x84C0 num))
-  (values))
 
 ;; {TODO}
 ;; copy data (from frame-buffer to texture image) - leave for now

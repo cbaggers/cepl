@@ -71,23 +71,19 @@
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
     (make-assigner
-     :let-forms `((,id-name (the (signed-byte 32)
-                                 (gl:get-uniform-location prog-id ,glsl-name-path)))
-                  (,i-unit (incf image-unit)))
+     :let-forms `((,i-unit (incf image-unit))
+                  (,id-name
+                   (let ((name (the (signed-byte 32)
+                                    (gl:get-uniform-location
+                                     prog-id ,glsl-name-path))))
+                     (uniform-sampler name ,i-unit)
+                     name)))
      :uploaders `((when (and (>= ,id-name 0) (>= ,i-unit 0))
                     (unless (eq (%sampler-type ,arg-name)
                                 ,(cepl.types::type->spec type))
                       (error "incorrect type of sampler passed to shader"))
-                    (cepl.textures::active-texture-num ,i-unit)
-                    (let ((tex (%sampler-texture ,arg-name)))
-                      (cepl.context::set-texture-bound-id ,*pipeline-body-context-var*
-                                                          (texture-cache-id tex)
-                                                          (texture-id tex)
-                                                          t))
-                    (if cepl.samplers::*samplers-available*
-                        (%gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
-                        (cepl.textures::fallback-sampler-set ,arg-name))
-                    (uniform-sampler ,id-name ,i-unit))))))
+                    (cepl.context::set-sampler-bound
+                     ,*pipeline-body-context-var* ,arg-name ,i-unit))))))
 
 (defun2 make-ubo-assigner (arg-name varjo-type glsl-name)
   (let ((id-name (gensym))

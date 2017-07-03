@@ -65,7 +65,7 @@
 
 (defstruct (texture (:constructor %%make-texture))
   (id 0 :type gl-id)
-  (cache-id 0 :type (integer 0 11))
+  (cache-id 0 :type (signed-byte 32))
   (base-dimensions nil :type list)
   (type (error "") :type symbol)
   (image-format (error "") :type symbol)
@@ -81,6 +81,11 @@
 (defvar +null-texture+
   (%%make-texture :type nil
                   :image-format nil))
+
+(defn-inline active-texture-num ((num (unsigned-byte 16))) (values)
+  (declare (profile t))
+  (%gl:active-texture (+ #x84C0 num))
+  (values))
 
 ;;------------------------------------------------------------
 

@@ -266,13 +266,15 @@
          (mapcar #'first (aggregate-uniforms stage-keys))))
     `(,(gensym "init")
        ()
-       (let ((image-unit -1))
+       (let (;; all image units will be >0 as 0 is used as scratch tex-unit
+             (image-unit 0))
          (declare (ignorable image-unit))
          (multiple-value-bind (compiled-stages new-prog-id)
              (%compile-link-and-upload
               ',name ',primitive ,(serialize-stage-pairs stage-pairs))
            (declare (ignorable compiled-stages))
            (setf prog-id new-prog-id)
+           (use-program prog-id)
            (setf implicit-uniform-upload-func
                  (or (%create-implicit-uniform-uploader compiled-stages
                                                         ',uniform-names)
