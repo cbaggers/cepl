@@ -25,13 +25,13 @@
 
 (defmacro with-vao-bound (vao &body body)
   (alexandria:with-gensyms (ctx vao-id old-vao)
-    `(let* ((,ctx (cepl-context))
-            (,old-vao (vao-bound ,ctx))
-            (,vao-id ,vao))
-       (unwind-protect
-            (progn (setf (vao-bound ,ctx) ,vao-id)
-                   ,@body)
-         (setf (vao-bound (cepl-context)) ,old-vao)))))
+    `(with-cepl-context (,ctx)
+      (let* ((,old-vao (vao-bound ,ctx))
+             (,vao-id ,vao))
+         (unwind-protect
+              (progn (setf (vao-bound ,ctx) ,vao-id)
+                     ,@body)
+           (setf (vao-bound ,ctx) ,old-vao))))))
 
 (defun2 suitable-array-for-index-p (array)
   (and (eql (length (gpu-buffer-arrays (gpu-array-buffer array))) 1)
@@ -64,7 +64,7 @@
   (unless (and (every #'1d-p gpu-arrays)
                (or (null index-array) (suitable-array-for-index-p index-array)))
     (error "You can only make VAOs from 1D arrays"))
-  (with-cepl-context ()
+  (with-cepl-context (ctx)
     (with-buffer (xx nil :array-buffer)
       (with-buffer (yy nil :element-array-buffer)
         (let ((element-buffer (when index-array
@@ -81,6 +81,6 @@
                                (if (listp elem-type) (second elem-type) elem-type)
                                attr offset)))))
             (when element-buffer
-              (setf (gpu-buffer-bound (cepl-context) :element-array-buffer)
+              (setf (gpu-buffer-bound ctx :element-array-buffer)
                     element-buffer)))
           vao)))))

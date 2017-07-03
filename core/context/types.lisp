@@ -97,7 +97,7 @@
            array-of-textures map-of-pipeline-names-to-gl-ids depth-func
            depth-mask depth-range depth-clamp cull-face front-face
            clear-color)))
-    (assert (every (lambda (x) (member x context-slots)) slots))
+    (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))
           (accessors (loop :for slot :in slots :collect
                         (symb-package :cepl.context '%cepl-context- slot)))

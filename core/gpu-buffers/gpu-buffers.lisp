@@ -37,23 +37,24 @@
 
 (defmacro with-buffer ((var-name buffer &optional (buffer-target :array-buffer))
                        &body body)
-  (alexandria:with-gensyms (old-id cache-id target)
-    `(let* ((,var-name ,buffer)
-            ,@(if (keywordp buffer-target)
-                  `((,cache-id ,(cepl.context::buffer-kind->cache-index
-                                 buffer-target)))
-                  `((,target ,buffer-target)
-                    (,cache-id (cepl.context::buffer-kind->cache-index
-                                ,target))))
-            (,old-id
-             (cepl.context::gpu-buffer-bound-id (cepl-context) ,cache-id)))
-       (unwind-protect
-            (progn
-              (cepl.context::set-gpu-buffer-bound-id
-               (cepl-context) ,cache-id (if ,var-name (gpu-buffer-id ,var-name) 0) t)
-              ,@body)
-         (cepl.context::set-gpu-buffer-bound-id
-          (cepl-context) ,cache-id ,old-id)))))
+  (alexandria:with-gensyms (old-id cache-id target ctx)
+    `(with-cepl-context (,ctx)
+       (let* ((,var-name ,buffer)
+              ,@(if (keywordp buffer-target)
+                    `((,cache-id ,(cepl.context::buffer-kind->cache-index
+                                   buffer-target)))
+                    `((,target ,buffer-target)
+                      (,cache-id (cepl.context::buffer-kind->cache-index
+                                  ,target))))
+              (,old-id
+               (cepl.context::gpu-buffer-bound-id ,ctx ,cache-id)))
+         (unwind-protect
+              (progn
+                (cepl.context::set-gpu-buffer-bound-id
+                 ,ctx ,cache-id (if ,var-name (gpu-buffer-id ,var-name) 0) t)
+                ,@body)
+           (cepl.context::set-gpu-buffer-bound-id
+            ,ctx ,cache-id ,old-id))))))
 
 (defun2 gen-buffer ()
   (first (gl:gen-buffers 1)))
@@ -61,18 +62,19 @@
 (defun2 init-gpu-buffer-now (new-buffer gl-object initial-contents
                             buffer-target usage)
   (declare (symbol buffer-target usage))
-  (setf (gpu-buffer-id new-buffer) gl-object)
-  (setf (gpu-buffer-arrays new-buffer)
-        (make-array 0 :element-type 'gpu-array-bb
-                    :initial-element +null-buffer-backed-gpu-array+
-                    :adjustable t :fill-pointer 0))
-  (cepl.context::register-gpu-buffer (cepl-context) new-buffer)
-  (if initial-contents
-      (if (list-of-c-arrays-p initial-contents)
-          (multi-buffer-data new-buffer initial-contents buffer-target usage)
-          (buffer-data new-buffer initial-contents
-                       :target buffer-target :usage usage))
-      new-buffer))
+  (with-cepl-context (ctx)
+    (setf (gpu-buffer-id new-buffer) gl-object)
+    (setf (gpu-buffer-arrays new-buffer)
+          (make-array 0 :element-type 'gpu-array-bb
+                      :initial-element +null-buffer-backed-gpu-array+
+                      :adjustable t :fill-pointer 0))
+    (cepl.context::register-gpu-buffer ctx new-buffer)
+    (if initial-contents
+        (if (list-of-c-arrays-p initial-contents)
+            (multi-buffer-data new-buffer initial-contents buffer-target usage)
+            (buffer-data new-buffer initial-contents
+                         :target buffer-target :usage usage))
+        new-buffer)))
 
 (defun2 list-of-c-arrays-p (x)
   (and (listp x) (every #'c-array-p x)))

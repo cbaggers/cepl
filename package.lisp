@@ -875,6 +875,7 @@
           :cepl.gpu-arrays.buffer-backed :cepl.vaos :cepl.streams :cepl.ubos
           :cepl.textures :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays
           :cepl.samplers :cepl.fbos :cepl.blending :cepl.memory :cepl.perf.core)
+  (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :defun-g
            :defun-g-equiv
            :def-glsl-stage

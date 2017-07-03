@@ -498,10 +498,11 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;;
 (defun2 %bind-fbo (fbo target)
-  (ecase target
-    (:framebuffer (setf (fbo-bound (cepl-context)) fbo))
-    (:read-framebuffer (setf (read-fbo-bound (cepl-context)) fbo))
-    (:draw-framebuffer (setf (draw-fbo-bound (cepl-context)) fbo))))
+  (with-cepl-context (ctx)
+    (ecase target
+      (:framebuffer (setf (fbo-bound ctx) fbo))
+      (:read-framebuffer (setf (read-fbo-bound ctx) fbo))
+      (:draw-framebuffer (setf (draw-fbo-bound ctx) fbo)))))
 
 (defun2 %unbind-fbo ()
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
@@ -520,12 +521,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
           :target target)
   (labels ((gen-dual-with-fbo-bound (fbo with-viewport attachment-for-size
                                          with-blending draw-buffers body)
-             (alexandria:with-gensyms (old-read-fbo old-draw-fbo new-fbo)
-               `(with-cepl-context ()
+             (alexandria:with-gensyms (old-read-fbo old-draw-fbo new-fbo ctx)
+               `(with-cepl-context (,ctx)
                   (let* ((,new-fbo ,fbo)
-                         (,old-read-fbo (read-fbo-bound (cepl-context)))
-                         (,old-draw-fbo (draw-fbo-bound (cepl-context))))
-                    (setf (fbo-bound (cepl-context)) ,new-fbo)
+                         (,old-read-fbo (read-fbo-bound ,ctx))
+                         (,old-draw-fbo (draw-fbo-bound ,ctx)))
+                    (setf (fbo-bound ,ctx) ,new-fbo)
                     ,(%write-draw-buffer-pattern-call
                       draw-buffers new-fbo with-blending
                       `(,@(if with-viewport
@@ -533,23 +534,23 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                               '(progn))
                           (unwind-protect (progn ,@body)
                             (if (eq ,old-read-fbo ,old-draw-fbo)
-                                (setf (fbo-bound (cepl-context)) ,old-read-fbo)
+                                (setf (fbo-bound ,ctx) ,old-read-fbo)
                                 (progn
-                                  (setf (read-fbo-bound (cepl-context)) ,old-read-fbo)
-                                  (setf (draw-fbo-bound (cepl-context)) ,old-draw-fbo))))))))))
+                                  (setf (read-fbo-bound ,ctx) ,old-read-fbo)
+                                  (setf (draw-fbo-bound ,ctx) ,old-draw-fbo))))))))))
 
            (gen-singular-with-fbo-bound (fbo target with-viewport
                                              attachment-for-size with-blending
                                              draw-buffers body)
-             (alexandria:with-gensyms (old-fbo new-fbo)
-               `(with-cepl-context ()
+             (alexandria:with-gensyms (old-fbo new-fbo ctx)
+               `(with-cepl-context (,ctx)
                   (let* ((,new-fbo ,fbo)
                          (,old-fbo ,(if (eq target :read-framebuffer)
-                                        `(read-fbo-bound (cepl-context))
-                                        `(draw-fbo-bound (cepl-context)))))
+                                        `(read-fbo-bound ,ctx)
+                                        `(draw-fbo-bound ,ctx))))
                     ,(if (eq target :read-framebuffer)
-                         `(setf (read-fbo-bound (cepl-context)) ,new-fbo)
-                         `(setf (draw-fbo-bound (cepl-context)) ,new-fbo))
+                         `(setf (read-fbo-bound ,ctx) ,new-fbo)
+                         `(setf (draw-fbo-bound ,ctx) ,new-fbo))
                     ,(%write-draw-buffer-pattern-call
                       draw-buffers new-fbo with-blending
                       `(,@(if with-viewport
@@ -557,8 +558,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                               '(progn))
                           (unwind-protect (progn ,@body)
                             ,(if (eq target :read-framebuffer)
-                                 `(setf (read-fbo-bound (cepl-context)) ,old-fbo)
-                                 `(setf (draw-fbo-bound (cepl-context)) ,old-fbo))))))))))
+                                 `(setf (read-fbo-bound ,ctx) ,old-fbo)
+                                 `(setf (draw-fbo-bound ,ctx) ,old-fbo))))))))))
     (if (eq target :framebuffer)
         (gen-dual-with-fbo-bound fbo with-viewport attachment-for-size
                                  with-blending draw-buffers body)
@@ -844,7 +845,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
     (otherwise (color-renderable-formatp image-format))))
 
-(defn clear (&optional (target fbo)) (values)
+(defn-inline clear (&optional (target fbo)) (values)
   (declare (profile t))
   (if target
       (clear-fbo target)

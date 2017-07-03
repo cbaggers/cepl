@@ -108,13 +108,12 @@
 ;;------------------------------------------------------------
 
 (defmacro with-texture-bound (texture &body body)
-  (alexandria:with-gensyms (tex old-id cache-id)
-    `(let* ((,tex ,texture)
-            (,cache-id (texture-cache-id ,tex))
-            (,old-id (cepl.context::texture-bound-id
-                      (cepl-context) ,cache-id)))
-       (cepl.context::set-texture-bound-id
-        (cepl-context) ,cache-id (texture-id ,tex) t)
-       (unwind-protect (progn ,@body)
-         (cepl.context::set-texture-bound-id
-          (cepl-context) ,cache-id ,old-id)))))
+  (alexandria:with-gensyms (tex old-id cache-id ctx)
+    `(with-cepl-context (,ctx)
+       (let* ((,tex ,texture)
+              (,cache-id (texture-cache-id ,tex))
+              (,old-id (cepl.context::texture-bound-id ,ctx ,cache-id)))
+         (cepl.context::set-texture-bound-id ,ctx ,cache-id (texture-id ,tex)
+                                             t)
+         (unwind-protect (progn ,@body)
+           (cepl.context::set-texture-bound-id ,ctx ,cache-id ,old-id))))))

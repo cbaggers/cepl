@@ -5,9 +5,9 @@
 (defvar *contexts* nil)
 
 (defun2 make-context (&key gl-version (shared (first *contexts*))
-                       (title "CEPL") (width 600) (height 600)
-                       (fullscreen nil) (resizable t) (no-frame nil)
-                       (hidden nil))
+                           (title "CEPL") (width 600) (height 600)
+                           (fullscreen nil) (resizable t) (no-frame nil)
+                           (hidden nil))
   (declare (ignore title width height fullscreen resizable no-frame hidden))
   ;;
   (assert (or (null shared) (typep shared 'cepl-context)))
@@ -89,8 +89,8 @@
     cepl-context
   (declare (profile t))
   (%with-cepl-context-slots (current-viewport
-               default-viewport
-               default-framebuffer) cepl-context
+                             default-viewport
+                             default-framebuffer) cepl-context
     ;;
     (let* ((surface-size (cepl.host:window-size surface))
            (fbo (cepl.fbos::%make-default-framebuffer surface-size t t)))
@@ -153,7 +153,7 @@
   (declare (optimize (speed 3) (safety 0) (debug 0))
            (profile t))
   (%with-cepl-context-slots (array-of-actual-bound-gpu-buffer-ids
-                       array-of-bound-gpu-buffer-ids)
+                             array-of-bound-gpu-buffer-ids)
       cepl-context
     (let ((id (aref array-of-bound-gpu-buffer-ids index)))
       (when (/= id (aref array-of-actual-bound-gpu-buffer-ids index))
@@ -185,8 +185,8 @@
            (inline unknown-gl-id-p)
            (profile t))
   (%with-cepl-context-slots (array-of-bound-gpu-buffer-ids
-                       array-of-actual-bound-gpu-buffer-ids
-                       gl-context)
+                             array-of-actual-bound-gpu-buffer-ids
+                             gl-context)
       ctx
     (setf (aref array-of-bound-gpu-buffer-ids index) id)
     (when eager
@@ -330,7 +330,7 @@
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
            (profile t))
   (%with-cepl-context-slots (array-of-actual-bound-texture-ids
-                       array-of-bound-texture-ids)
+                             array-of-bound-texture-ids)
       cepl-context
     (let ((id (aref array-of-bound-texture-ids index)))
       (when (/= id (aref array-of-actual-bound-texture-ids index))

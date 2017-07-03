@@ -16,17 +16,16 @@
   (declare (optimize (speed 3) (debug 1) (safety 1))
            (inline viewport-eql)
            (profile t))
-  (%with-cepl-context-slots (cepl.context::current-viewport) cepl-context
-    (if (viewport-eql cepl.context::current-viewport
-                      viewport)
+  (%with-cepl-context-slots (current-viewport) cepl-context
+    (if (viewport-eql current-viewport viewport)
         viewport
         (progn
           (%viewport viewport)
-          (setf cepl.context::current-viewport viewport)))))
+          (setf current-viewport viewport)))))
 
 (defun2 current-viewport ()
-  (%with-cepl-context-slots (cepl.context::current-viewport) (cepl-context)
-    (or cepl.context::current-viewport
+  (%with-cepl-context-slots (current-viewport) (cepl-context)
+    (or current-viewport
         (error "No default framebuffer found ~a"
                (if (and (boundp '*gl-context*)
                         (symbol-value '*gl-context*))
@@ -74,8 +73,8 @@
 (defun2 %set-resolution (viewport x y)
   (setf (%viewport-resolution-x viewport) x
         (%viewport-resolution-y viewport) y)
-  (%with-cepl-context-slots (cepl.context::default-viewport) (cepl-context)
-    (when (eq viewport cepl.context::default-viewport)
+  (%with-cepl-context-slots (default-viewport) (cepl-context)
+    (when (eq viewport default-viewport)
       (cepl.fbos::%update-default-framebuffer-dimensions x y)))
   (values))
 
@@ -105,13 +104,13 @@
   viewport)
 
 (defmacro with-viewport (viewport &body body)
-  (alexandria:with-gensyms (old-viewport vp)
-    `(with-cepl-context ()
+  (alexandria:with-gensyms (old-viewport vp ctx)
+    `(with-cepl-context (,ctx)
        (let* ((,old-viewport (current-viewport))
               (,vp ,viewport))
-         (%set-current-viewport (cepl-context) ,vp)
+         (%set-current-viewport ,ctx ,vp)
          (unwind-protect (progn ,@body)
-           (%set-current-viewport (cepl-context) ,old-viewport))))))
+           (%set-current-viewport ,ctx ,old-viewport))))))
 
 ;;{TODO} how are we meant to set origin?
 ;;       Well attachments dont have position so it wouldnt make sense
