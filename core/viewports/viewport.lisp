@@ -97,18 +97,13 @@
 
 ;;------------------------------------------------------------
 
-(defun2 %viewport (viewport)
-  (%gl:viewport
-   (%viewport-origin-x viewport) (%viewport-origin-y viewport)
-   (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
-  viewport)
-
 (defmacro with-viewport (viewport &body body)
   (alexandria:with-gensyms (old-viewport vp ctx)
     `(with-cepl-context (,ctx)
        (let* ((,old-viewport (current-viewport))
               (,vp ,viewport))
-         (%set-current-viewport ,ctx ,vp)
+         (%gl:viewport (%viewport-origin-x vp) (%viewport-origin-y vp)
+                       (%viewport-resolution-x vp) (%viewport-resolution-y vp))
          (unwind-protect (progn ,@body)
            (%set-current-viewport ,ctx ,old-viewport))))))
 
