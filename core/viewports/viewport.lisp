@@ -10,8 +10,8 @@
 
 ;;------------------------------------------------------------
 
-(defn %set-current-viewport ((cepl-context cepl-context)
-                             (viewport viewport))
+(defn-inline %set-current-viewport ((cepl-context cepl-context)
+                                    (viewport viewport))
     viewport
   (declare (optimize (speed 3) (debug 1) (safety 1))
            (inline viewport-eql)
@@ -20,7 +20,9 @@
     (if (viewport-eql current-viewport viewport)
         viewport
         (progn
-          (%viewport viewport)
+          (%gl:viewport
+           (%viewport-origin-x viewport) (%viewport-origin-y viewport)
+           (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
           (setf current-viewport viewport)))))
 
 (defun2 current-viewport ()
@@ -102,8 +104,7 @@
     `(with-cepl-context (,ctx)
        (let* ((,old-viewport (current-viewport))
               (,vp ,viewport))
-         (%gl:viewport (%viewport-origin-x vp) (%viewport-origin-y vp)
-                       (%viewport-resolution-x vp) (%viewport-resolution-y vp))
+         (%set-current-viewport ,ctx ,vp)
          (unwind-protect (progn ,@body)
            (%set-current-viewport ,ctx ,old-viewport))))))
 
