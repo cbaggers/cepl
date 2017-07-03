@@ -190,6 +190,7 @@
            :+null-gl-id+
            :unknown-gl-id-p
            :c-array-index
+           :tex-unit
            :indexp
 
            :%make-gpu-array

@@ -28,6 +28,9 @@
 (deftype gbuf-byte-size ()
   '(unsigned-byte 32))
 
+(deftype tex-unit ()
+  '(unsigned-byte 8))
+
 (defun2 indexp (x)
   (typep x 'c-array-index))
 
