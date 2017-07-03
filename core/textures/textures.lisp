@@ -110,7 +110,7 @@
 
 ;; [TODO] add offsets
 (defun2 %upload-tex (tex tex-type level-num dimensions layer-num face-num
-                    pix-format pix-type pointer)
+                         pix-format pix-type pointer)
   (if (texture-mutable-p tex)
       (%upload-to-mutable-tex tex tex-type level-num dimensions layer-num
                               face-num pix-format pix-type pointer)
@@ -118,7 +118,8 @@
                                 face-num pix-format pix-type pointer)))
 
 (defun2 %upload-to-mutable-tex (tex tex-type level-num dimensions layer-num
-                               face-num pix-format pix-type pointer)
+                                    face-num pix-format pix-type pointer)
+  ;; border is an old (now unsupported) parameter and so is always be set to 0
   (case tex-type
     (:texture-1d (gl:tex-image-1d
                   tex-type level-num (texture-image-format tex)
