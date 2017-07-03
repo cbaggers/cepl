@@ -288,14 +288,17 @@
 
 (defun2 def-dispatch-func (name init-func-name stage-keys context
                           primitive uniform-assigners)
-  (let* ((uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
+  (let* ((ctx *pipeline-body-context-var*)
+         (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
          (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
-         (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners))))
+         (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
+         (typed-uniforms (loop :for name :in uniform-names :collect
+                            `(,name t nil))))
     (values
      `(eval-when (:compile-toplevel :load-toplevel :execute)
-        (define-compiler-macro ,name (&whole whole mapg-context &rest rest)
+        (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
           (declare (ignore rest))
-          (unless (mapg-constantp mapg-context)
+          (unless (mapg-context-p ,ctx)
             (error 'dispatch-called-outside-of-map-g :name ',name))
           whole))
      `(progn
@@ -314,9 +317,14 @@
                               (mapcar λ(list (let-forms _) _1)
                                       uniform-assigners u-uploads)))))
           t)
-        (defun ,name (mapg-context stream
-                      ,@(when uniform-names `(&key ,@uniform-names)))
-          (declare (ignore mapg-context) (ignorable ,@uniform-names))
+        (defn ,name ((,ctx cepl-context)
+                     (stream (or null buffer-stream))
+                     ,@(when uniform-names `(&key ,@typed-uniforms)))
+            (values)
+          (declare (speed 3) (debug 1) (safety 1) (compilation-speed 0)
+                   (ignorable ,@uniform-names)
+                   (profile t))
+          ;;#+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
           ,@(unless (typep primitive 'varjo::dynamic)
                     `((when stream
                         (assert
@@ -338,7 +346,7 @@
           (when stream (draw-expander stream ,primitive))
           ;;(use-program 0)
           ,@u-cleanup
-          stream)
+          (values))
         (register-named-pipeline ',name #',name)
         ',name))))
 

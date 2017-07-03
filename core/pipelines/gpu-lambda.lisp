@@ -129,9 +129,7 @@
                            :stream-prim (buffer-stream-primitive stream)))))
             (use-program prog-id)
             ,@u-uploads
-            (locally (declare (optimize (speed 3) (safety 1)))
-              (funcall implicit-uniform-upload-func prog-id
-                       ,@uniform-names))
+            (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
             (when stream (draw-expander stream ,primitive))
             ,@u-cleanup
             stream))))))

@@ -80,7 +80,7 @@
                       (error "incorrect type of sampler passed to shader"))
                     (cepl.textures::active-texture-num ,i-unit)
                     (let ((tex (%sampler-texture ,arg-name)))
-                      (cepl.context::set-texture-bound-id (cepl-context)
+                      (cepl.context::set-texture-bound-id ,*pipeline-body-context-var*
                                                           (texture-cache-id tex)
                                                           (texture-id tex)
                                                           t))
@@ -90,7 +90,7 @@
                     (uniform-sampler ,id-name ,i-unit)))
      :cleanup `((%gl:bind-sampler ,i-unit 0)
                 (cepl.context::set-texture-bound-id
-                 (cepl-context)
+                 ,*pipeline-body-context-var*
                  (texture-cache-id (%sampler-texture ,arg-name))
                  0)))))
 
