@@ -253,7 +253,7 @@
 (defun2 %compile-closure (code)
   (funcall (compile nil `(lambda () ,code))))
 
-(defn-inline %post-init ((func function)) (values)
+(defn-inline %post-init ((func (or null function))) (values)
   (declare (profile t))
   (setf (vao-bound (cepl-context)) 0)
   (force-use-program 0)
