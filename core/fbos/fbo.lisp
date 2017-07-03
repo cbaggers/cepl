@@ -1,6 +1,14 @@
 (in-package :cepl.fbos)
 (in-readtable fn:fn-reader)
 
+;; {TODO} what is the meaning of an attachment with no array, no attachment?
+;;        in that case should attachment-viewport return nil or error?
+;;        same goes for attachment-tex. Could we use the +null-att+ instead
+;;        and force attr to be populated?
+
+(deftype attachment-name ()
+  '(or (unsigned-byte 16) symbol))
+
 (defvar %possible-texture-keys
   '(:dimensions :element-type :mipmap :layer-count :cubes-p :rectangle
     :multisample :immutable :buffer-storage))
@@ -13,6 +21,11 @@
 
 (defun2 fbo-color-arrays (fbo)
   (loop :for i :across (%fbo-color-arrays fbo) :collect (att-array i)))
+
+;;----------------------------------------------------------------------
+
+(defn viewport-for-array ((arr (or null gpu-array))) (or null viewport)
+  (when (make-viewport (gpu-array-dimensions arr) (v! 0 0))))
 
 ;;----------------------------------------------------------------------
 
@@ -34,12 +47,17 @@
     (setf (%fbo-color-arrays fbo-obj)
           (make-array (length color-arrays)
                       :element-type 'att
-                      :initial-contents (mapcar (lambda (x) (make-att :array x))
+                      :initial-contents (mapcar (lambda (x)
+                                                  (let ((v (viewport-for-array
+                                                            x)))
+                                                    (make-att :array x
+                                                              :viewport v)))
                                                 color-arrays))))
   ;;
   (when depth-array
     (setf (%fbo-depth-array fbo-obj)
-          (make-att :array depth-array)))
+          (make-att :array depth-array
+                    :viewport (viewport-for-array depth-array))))
   ;;
   (setf (%fbo-is-default fbo-obj) is-default)
   ;;
@@ -66,17 +84,6 @@
                                            :initial-element :none)))
   (cepl.context::register-fbo (cepl-context) fbo-obj)
   fbo-obj)
-
-;;----------------------------------------------------------------------
-
-(defmethod print-object ((object fbo) stream)
-  (if (initialized-p object)
-      (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENT ~a~]>"
-              (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
-              (loop :for i :from 0 :for j :in (fbo-color-arrays object)
-                 :when j :collect i)
-              (when (attachment object :d) t))
-      (format stream "#<FBO :UNINITIALIZED>")))
 
 ;;----------------------------------------------------------------------
 
@@ -111,11 +118,13 @@
           (fbo default-framebuffer))
       (map nil
            (lambda (x)
-             (setf (gpu-array-dimensions (att-array x)) dimensions))
+             (setf (gpu-array-dimensions (att-array x)) dimensions)
+             (setf (viewport-dimensions (att-viewport x)) dimensions))
            (%fbo-color-arrays fbo))
       (when (%fbo-depth-array fbo)
-        (setf (gpu-array-dimensions (att-array (%fbo-depth-array fbo)))
-              dimensions))
+        (let ((arr (%fbo-depth-array fbo)))
+          (setf (gpu-array-dimensions (att-array arr)) dimensions)
+          (setf (viewport-dimensions (att-viewport arr)) dimensions)))
       fbo)))
 
 
@@ -124,18 +133,30 @@
     (let ((fbo default-framebuffer))
       ;; - - -
       (loop :for a :across (%fbo-color-arrays fbo) :when a :do
+         (setf (viewport-dimensions (att-viewport a)) new-dimensions)
          (cepl.textures::with-gpu-array-t (att-array a)
            (setf dimensions new-dimensions)))
       ;; - - -
-      (cepl.textures::with-gpu-array-t
-          (attachment fbo :d)
-        (setf dimensions new-dimensions)))))
-
+      (let ((d (%fbo-depth-array fbo)))
+        (setf (viewport-dimensions (att-viewport d)) new-dimensions)
+        (cepl.textures::with-gpu-array-t (att-array d)
+          (setf dimensions new-dimensions))))))
 
 ;; {TODO} this is pretty wasteful but will do for now
-(defun2 attachment-viewport (fbo attachment-name)
-  (make-viewport (gpu-array-dimensions (attachment fbo attachment-name))
-                 (v! 0 0)))
+(defn attachment-viewport ((fbo fbo)
+                           (attachment-name attachment-name))
+    viewport
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (case attachment-name
+    (:d (att-viewport (%fbo-depth-array fbo)))
+    ;;(:s (... :stencil-attachment))
+    ;;(:ds (... :depth-stencil-attachment))
+    (otherwise
+     (let ((arr (%fbo-color-arrays fbo)))
+       (if (< attachment-name (length arr))
+           (att-viewport (aref arr attachment-name))
+           (error "No attachment at ~a" attachment-name))))))
 
 ;;----------------------------------------------------------------------
 
@@ -229,7 +250,8 @@
 
 ;;----------------------------------------------------------------------
 
-(defun2 %attachment (fbo attachment-name)
+(defn %attachment ((fbo fbo) (attachment-name attachment-name))
+    (or null gpu-array-t)
   (case attachment-name
     (:d (att-array (%fbo-depth-array fbo)))
     ;;(:s (... :stencil-attachment))
@@ -246,6 +268,8 @@
      (when (not value)
        (setf (att-blend (%fbo-depth-array fbo)) nil
              (att-bparams (%fbo-depth-array fbo)) nil))
+     (setf (att-viewport (%fbo-depth-array fbo))
+           (viewport-for-array value))
      (setf (att-array (%fbo-depth-array fbo)) value))
     ;;(:s (... :stencil-attachment))
     ;;(:ds (... :depth-stencil-attachment))
@@ -256,10 +280,13 @@
          (when (not value)
            (setf (att-blend att) nil)
            (setf (att-bparams att) nil))
+         (setf (att-viewport att) (viewport-for-array value))
          (setf (att-array att) value))))))
 
+
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
-(defun2 attachment (fbo attachment-name)
+(defn-inline attachment ((fbo fbo) (attachment-name attachment-name))
+    (or null gpu-array-t)
   (%attachment fbo attachment-name))
 
 (defun2 (setf attachment) (value fbo attachment-name)
@@ -493,45 +520,45 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
           :target target)
   (labels ((gen-dual-with-fbo-bound (fbo with-viewport attachment-for-size
                                          with-blending draw-buffers body)
-             (alexandria:with-gensyms (ctx old-read-fbo old-draw-fbo new-fbo)
-               `(let* ((,ctx (cepl-context))
-                       (,new-fbo ,fbo)
-                       (,old-read-fbo (read-fbo-bound ,ctx))
-                       (,old-draw-fbo (draw-fbo-bound ,ctx)))
-                  (setf (fbo-bound ,ctx) ,new-fbo)
-                  ,(%write-draw-buffer-pattern-call
-                    draw-buffers new-fbo with-blending
-                    `(,@(if with-viewport
-                            `(with-fbo-viewport (,new-fbo ,attachment-for-size))
-                            '(progn))
-                        (unwind-protect (progn ,@body)
-                          (if (eq ,old-read-fbo ,old-draw-fbo)
-                              (setf (fbo-bound ,ctx) ,old-read-fbo)
-                              (progn
-                                (setf (read-fbo-bound ,ctx) ,old-read-fbo)
-                                (setf (draw-fbo-bound ,ctx) ,old-draw-fbo)))))))))
+             (alexandria:with-gensyms (old-read-fbo old-draw-fbo new-fbo)
+               `(with-cepl-context ()
+                  (let* ((,new-fbo ,fbo)
+                         (,old-read-fbo (read-fbo-bound (cepl-context)))
+                         (,old-draw-fbo (draw-fbo-bound (cepl-context))))
+                    (setf (fbo-bound (cepl-context)) ,new-fbo)
+                    ,(%write-draw-buffer-pattern-call
+                      draw-buffers new-fbo with-blending
+                      `(,@(if with-viewport
+                              `(with-fbo-viewport (,new-fbo ,attachment-for-size))
+                              '(progn))
+                          (unwind-protect (progn ,@body)
+                            (if (eq ,old-read-fbo ,old-draw-fbo)
+                                (setf (fbo-bound (cepl-context)) ,old-read-fbo)
+                                (progn
+                                  (setf (read-fbo-bound (cepl-context)) ,old-read-fbo)
+                                  (setf (draw-fbo-bound (cepl-context)) ,old-draw-fbo))))))))))
 
            (gen-singular-with-fbo-bound (fbo target with-viewport
                                              attachment-for-size with-blending
                                              draw-buffers body)
-             (alexandria:with-gensyms (ctx old-fbo new-fbo)
-               `(let* ((,ctx (cepl-context))
-                       (,new-fbo ,fbo)
-                       (,old-fbo ,(if (eq target :read-framebuffer)
-                                      `(read-fbo-bound ,ctx)
-                                      `(draw-fbo-bound ,ctx))))
-                  ,(if (eq target :read-framebuffer)
-                       `(setf (read-fbo-bound ,ctx) ,new-fbo)
-                       `(setf (draw-fbo-bound ,ctx) ,new-fbo))
-                  ,(%write-draw-buffer-pattern-call
-                    draw-buffers new-fbo with-blending
-                    `(,@(if with-viewport
-                            `(with-fbo-viewport (,new-fbo ,attachment-for-size))
-                            '(progn))
-                        (unwind-protect (progn ,@body)
-                          ,(if (eq target :read-framebuffer)
-                               `(setf (read-fbo-bound ,ctx) ,old-fbo)
-                               `(setf (draw-fbo-bound ,ctx) ,old-fbo)))))))))
+             (alexandria:with-gensyms (old-fbo new-fbo)
+               `(with-cepl-context ()
+                  (let* ((,new-fbo ,fbo)
+                         (,old-fbo ,(if (eq target :read-framebuffer)
+                                        `(read-fbo-bound (cepl-context))
+                                        `(draw-fbo-bound (cepl-context)))))
+                    ,(if (eq target :read-framebuffer)
+                         `(setf (read-fbo-bound (cepl-context)) ,new-fbo)
+                         `(setf (draw-fbo-bound (cepl-context)) ,new-fbo))
+                    ,(%write-draw-buffer-pattern-call
+                      draw-buffers new-fbo with-blending
+                      `(,@(if with-viewport
+                              `(with-fbo-viewport (,new-fbo ,attachment-for-size))
+                              '(progn))
+                          (unwind-protect (progn ,@body)
+                            ,(if (eq target :read-framebuffer)
+                                 `(setf (read-fbo-bound (cepl-context)) ,old-fbo)
+                                 `(setf (draw-fbo-bound (cepl-context)) ,old-fbo))))))))))
     (if (eq target :framebuffer)
         (gen-dual-with-fbo-bound fbo with-viewport attachment-for-size
                                  with-blending draw-buffers body)
@@ -841,3 +868,14 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (error "CEPL: clear-attachment is not yet implemented"))
 
 ;;--------------------------------------------------------------
+
+(defmethod print-object ((object fbo) stream)
+  (if (initialized-p object)
+      (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENT ~a~]>"
+              (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
+              (loop :for i :from 0 :for j :in (fbo-color-arrays object)
+                 :when j :collect i)
+              (when (attachment object :d) t))
+      (format stream "#<FBO :UNINITIALIZED>")))
+
+;;----------------------------------------------------------------------

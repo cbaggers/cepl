@@ -319,6 +319,7 @@
            :att-blend
            :att-bparams
            :att-owned-p
+           :att-viewport
 
            :%make-ubo
            :ubo

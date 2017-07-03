@@ -170,6 +170,27 @@
 
 ;;------------------------------------------------------------
 
+;;{NOTE} if optimization called for it this could easily be an
+;;       array of 16bit ints (or whatever works)
+(defstruct (viewport (:conc-name %viewport-) (:constructor %make-viewport))
+  (resolution-x 320 :type (unsigned-byte 16))
+  (resolution-y 240 :type (unsigned-byte 16))
+  (origin-x 0 :type (unsigned-byte 16))
+  (origin-y 0 :type (unsigned-byte 16)))
+
+(defgeneric viewport (obj))
+(defgeneric (setf viewport) (value obj))
+
+(defn make-viewport (&optional (resolution (or list vec2) '(320 240))
+                               (origin (or list vec2) '(0 0)))
+    viewport
+  (%make-viewport :resolution-x (ceiling (elt resolution 0))
+                  :resolution-y (ceiling (elt resolution 1))
+                  :origin-x (ceiling (elt origin 0))
+                  :origin-y (ceiling (elt origin 1))))
+
+;;------------------------------------------------------------
+
 (defstruct blending-params
   (mode-rgb :func-add :type keyword)
   (mode-alpha :func-add :type keyword)
@@ -184,14 +205,20 @@
   (array nil :type (or null gpu-array-t))
   (blend nil :type boolean)
   (bparams nil :type (or null blending-params))
-  (owned-p nil :type boolean))
+  (owned-p nil :type boolean)
+  (viewport nil :type (or null viewport)))
+
+(defvar +null-att+
+  (make-att))
+
+;;------------------------------------------------------------
 
 (defstruct (fbo (:constructor %%make-fbo)
                 (:conc-name %fbo-))
   (id 0 :type gl-id)
   ;;
   (color-arrays (make-array 0 :element-type 'att
-                            :initial-element (make-att) :adjustable t
+                            :initial-element +null-att+ :adjustable t
                             :fill-pointer 0)
                 :type (array att *))
   (depth-array (make-att) :type att)
@@ -436,25 +463,6 @@
   (declare (ignore value))
   (error "CEPL Internal Error: Do not set stream %start-byte directly~%~s"
          stream))
-
-;;------------------------------------------------------------
-
-;;{NOTE} if optimization called for it this could easily be an
-;;       array of 16bit ints (or whatever works)
-(defstruct (viewport (:conc-name %viewport-) (:constructor %make-viewport))
-  (resolution-x 320 :type (unsigned-byte 16))
-  (resolution-y 240 :type (unsigned-byte 16))
-  (origin-x 0 :type (unsigned-byte 16))
-  (origin-y 0 :type (unsigned-byte 16)))
-
-(defgeneric viewport (obj))
-(defgeneric (setf viewport) (value obj))
-
-(defun2 make-viewport (&optional (resolution '(320 240)) (origin '(0 0)))
-  (%make-viewport :resolution-x (ceiling (elt resolution 0))
-                  :resolution-y (ceiling (elt resolution 1))
-                  :origin-x (ceiling (elt origin 0))
-                  :origin-y (ceiling (elt origin 1))))
 
 ;;------------------------------------------------------------
 
