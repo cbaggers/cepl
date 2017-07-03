@@ -50,7 +50,6 @@
                (:file "core/types/initalized-p")
                (:file "core/internals")
                (:file "core/types/types")
-               (:file "core/context/render-state")
                (:file "core/errors")
                (:file "core/viewports/viewport")
                (:file "core/types/image-format")

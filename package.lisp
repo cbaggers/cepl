@@ -502,12 +502,6 @@
            :window-resolution
            :*on-context*))
 
-(uiop:define-package :cepl.render-state
-    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
-          :cepl.types :%cepl.types :split-sequence
-          :named-readtables :cepl.errors :cepl.perf.core)
-  (:export))
-
 (uiop:define-package :cepl.context
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.memory :cepl.types :%cepl.types :split-sequence
@@ -870,7 +864,7 @@
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables
           :cepl-utils :cepl.errors :%cepl.types :cepl.types
-          :cepl.internals :cepl.render-state :cepl.viewports :cepl.context
+          :cepl.internals :cepl.viewports :cepl.context
           :cepl.image-formats :cepl.pixel-formats :cepl.c-arrays :cepl.gpu-buffers
           :cepl.gpu-arrays.buffer-backed :cepl.vaos :cepl.streams :cepl.ubos
           :cepl.textures :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays
@@ -918,7 +912,6 @@
           :cepl.perf.core
           :cepl.pipelines
           :cepl.pixel-formats
-          :cepl.render-state
           :cepl.samplers
           :cepl.streams
           :cepl.textures
@@ -952,8 +945,7 @@
            :shutting-down-p
            :q! :m! :v! :v!byte :v!ubyte :v!int :s~
            :radians :degrees)
-  (:reexport :cepl.render-state
-             :cepl.viewports
+  (:reexport :cepl.viewports
              :cepl.types
              :cepl.memory
              :cepl.measurements
