@@ -638,7 +638,8 @@
            :across-c-ptr
            :map-c-into
            :map-c
-           :ptr-index))
+           :ptr-index
+           :c-array-index))
 
 (uiop:define-package :cepl.gpu-buffers
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math

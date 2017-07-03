@@ -19,6 +19,15 @@
 (deftype c-array-index ()
   '(unsigned-byte 32))
 
+(deftype elem-byte-size ()
+  '(unsigned-byte 16))
+
+(deftype row-byte-size ()
+  '(unsigned-byte 32))
+
+(deftype gbuf-byte-size ()
+  '(unsigned-byte 32))
+
 (defun2 indexp (x)
   (typep x 'c-array-index))
 
@@ -36,11 +45,11 @@
    :type symbol)
   (element-byte-size
    (error "cepl: c-array must be created with an element-byte-size")
-   :type fixnum)
+   :type elem-byte-size)
   (struct-element-typep nil :type boolean)
   (row-byte-size
    (error "cepl: c-array must be created with a pointer")
-   :type fixnum)
+   :type row-byte-size)
   (element-pixel-format nil :type (or null pixel-format))
   (element-from-foreign
    (error "cepl: c-array must be created with a from-foreign function")
@@ -57,8 +66,8 @@
   (base-dimensions nil :type list)
   (type (error "") :type symbol)
   (image-format (error "") :type symbol)
-  (mipmap-levels 0 :type fixnum)
-  (layer-count 0 :type fixnum)
+  (mipmap-levels 0 :type (unsigned-byte 16))
+  (layer-count 0 :type (unsigned-byte 16))
   (cubes-p nil :type boolean)
   (allocated-p nil :type boolean)
   (mutable-p nil :type boolean)
@@ -88,17 +97,17 @@
   (access-style :static-draw :type symbol)
   ;; buffer-data
   (element-type nil :type symbol) ;; data-type
-  (byte-size 0 :type (unsigned-byte 64)) ;; data-index-length
-  (element-byte-size 0 :type (unsigned-byte 32))
-  (offset-in-bytes-into-buffer 0 :type (unsigned-byte 64))) ;; offset-in-bytes-into-buffer
+  (byte-size 0 :type gbuf-byte-size) ;; data-index-length
+  (element-byte-size 0 :type elem-byte-size)
+  (offset-in-bytes-into-buffer 0 :type gbuf-byte-size)) ;; offset-in-bytes-into-buffer
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)
                         (:include gpu-array))
   (texture (error "") :type texture)
   (texture-type (error "") :type symbol)
-  (level-num 0 :type fixnum)
-  (layer-num 0 :type fixnum)
-  (face-num 0 :type fixnum)
+  (level-num 0 :type (unsigned-byte 16))
+  (layer-num 0 :type (unsigned-byte 16))
+  (face-num 0 :type (integer 0 5))
   (image-format nil :type symbol))
 
 ;;------------------------------------------------------------
@@ -117,7 +126,7 @@
 ;;------------------------------------------------------------
 
 (defstruct sampler-id-box
-  (id -1 :type fixnum)
+  (id -1 :type (signed-byte 32))
   (shared-p nil :type boolean))
 
 ;; {TODO} border-color
@@ -137,7 +146,7 @@
   (expects-depth nil :type boolean)
   (compare nil :type symbol))
 
-(defn-inline %sampler-id ((sampler sampler)) fixnum
+(defn-inline %sampler-id ((sampler sampler)) (signed-byte 32)
   (declare (profile t))
   (sampler-id-box-id (%sampler-id-box sampler)))
 
@@ -155,8 +164,8 @@
 (defstruct (ubo (:constructor %make-ubo))
   (id 0 :type gl-id)
   (data (error "gpu-array must be provided when making ubo")
-        :type gpu-array)
-  (index 0 :type fixnum)
+        :type gpu-array-bb)
+  (index 0 :type c-array-index)
   (owns-gpu-array nil :type boolean))
 
 ;;------------------------------------------------------------
@@ -212,7 +221,7 @@
   (normalize t :type boolean)
   (sizes nil :type list)
   (reversed nil :type boolean)
-  (comp-length 0 :type fixnum))
+  (comp-length 0 :type (unsigned-byte 8)))
 
 ;;------------------------------------------------------------
 
@@ -359,7 +368,8 @@
     (otherwise 0)))
 
 (defn-inline %valid-index-type-p ((x symbol)) boolean
-  (declare (profile t))
+  (declare (optimize (speed 3) (safety 1) (compilation-speed 0))
+           (profile t))
   (and x (not (eq x :uninitialized))))
 
 (defun2 make-raw-buffer-stream (&key vao start length
@@ -432,10 +442,10 @@
 ;;{NOTE} if optimization called for it this could easily be an
 ;;       array of 16bit ints (or whatever works)
 (defstruct (viewport (:conc-name %viewport-) (:constructor %make-viewport))
-  (resolution-x 320 :type fixnum)
-  (resolution-y 240 :type fixnum)
-  (origin-x 0 :type fixnum)
-  (origin-y 0 :type fixnum))
+  (resolution-x 320 :type (unsigned-byte 16))
+  (resolution-y 240 :type (unsigned-byte 16))
+  (origin-x 0 :type (unsigned-byte 16))
+  (origin-y 0 :type (unsigned-byte 16)))
 
 (defgeneric viewport (obj))
 (defgeneric (setf viewport) (value obj))
