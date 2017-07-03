@@ -84,7 +84,7 @@
   (front-face :unknown :type (or symbol function))
   (clear-color (v! 0 0 0 0) :type vec4))
 
-(defmacro %with-cepl-context (slots context &body body)
+(defmacro %with-cepl-context-slots (slots context &body body)
   (let ((context-slots
          '(gl-context gl-version gl-thread uninitialized-resources shared
            surfaces current-surface vao-binding-id current-viewport

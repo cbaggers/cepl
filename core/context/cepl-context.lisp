@@ -40,7 +40,7 @@
   (declare (profile t))
   (assert cepl-context)
   (assert surface)
-  (%with-cepl-context (gl-context gl-version current-surface gl-thread) cepl-context
+  (%with-cepl-context-slots (gl-context gl-version current-surface gl-thread) cepl-context
     (setf gl-thread (bt:current-thread))
     (assert (not gl-context))
     (let ((raw-context (cepl.host:make-gl-context :version gl-version
@@ -88,7 +88,7 @@
 (defn %set-default-fbo-and-viewport ((surface t) (cepl-context cepl-context))
     cepl-context
   (declare (profile t))
-  (%with-cepl-context (current-viewport
+  (%with-cepl-context-slots (current-viewport
                default-viewport
                default-framebuffer) cepl-context
     ;;
@@ -112,11 +112,11 @@
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
   (let ((id (gpu-buffer-id gpu-buffer)))
-    (declare (type fixnum id))
+    (declare (type gl-id id))
     (assert (> id 0) (id)
             "Attempted to register ~s before id fully initialized"
             'gpu-buffer)
-    (%with-cepl-context (array-of-gpu-buffers)
+    (%with-cepl-context-slots (array-of-gpu-buffers)
         cepl-context
       (ensure-vec-index array-of-gpu-buffers id +null-gpu-buffer+)
       (setf (aref array-of-gpu-buffers id) gpu-buffer))))
@@ -125,7 +125,7 @@
     texture
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (array-of-textures)
+  (%with-cepl-context-slots (array-of-textures)
       cepl-context
     (let ((id (texture-id texture)))
       (declare (type gl-id id))
@@ -137,7 +137,7 @@
 (defn register-fbo ((cepl-context cepl-context) (fbo fbo)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (fbos) cepl-context
+  (%with-cepl-context-slots (fbos) cepl-context
     (let ((id (%fbo-id fbo)))
       (ensure-vec-index fbos id +null-fbo+)
       (setf (aref fbos id) fbo))))
@@ -152,7 +152,7 @@
     (values)
   (declare (optimize (speed 3) (safety 0) (debug 0))
            (profile t))
-  (%with-cepl-context (array-of-actual-bound-gpu-buffer-ids
+  (%with-cepl-context-slots (array-of-actual-bound-gpu-buffer-ids
                        array-of-bound-gpu-buffer-ids)
       cepl-context
     (let ((id (aref array-of-bound-gpu-buffer-ids index)))
@@ -172,7 +172,7 @@
     gl-id
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (array-of-bound-gpu-buffer-ids) ctx
+  (%with-cepl-context-slots (array-of-bound-gpu-buffer-ids) ctx
     (declare (type (simple-array gl-id) array-of-bound-gpu-buffer-ids))
     (aref array-of-bound-gpu-buffer-ids index)))
 
@@ -184,7 +184,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (inline unknown-gl-id-p)
            (profile t))
-  (%with-cepl-context (array-of-bound-gpu-buffer-ids
+  (%with-cepl-context-slots (array-of-bound-gpu-buffer-ids
                        array-of-actual-bound-gpu-buffer-ids
                        gl-context)
       ctx
@@ -219,7 +219,7 @@
     gpu-buffer
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (array-of-gpu-buffers gl-context) ctx
+  (%with-cepl-context-slots (array-of-gpu-buffers gl-context) ctx
     (let* ((index (buffer-kind->cache-index target))
            (id (gpu-buffer-bound-id ctx index))
            (id
@@ -273,7 +273,7 @@
   (assert (and offset size))
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
-  (%with-cepl-context (array-of-ubo-bindings-buffer-ids) ctx
+  (%with-cepl-context-slots (array-of-ubo-bindings-buffer-ids) ctx
     (ensure-vec-index array-of-ubo-bindings-buffer-ids ubo-binding-point
                       +null-gl-id+ gl-id)
     (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
@@ -302,7 +302,7 @@
   (assert (and offset size))
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
-  (%with-cepl-context (array-of-transform-feedback-bindings-buffer-ids) ctx
+  (%with-cepl-context-slots (array-of-transform-feedback-bindings-buffer-ids) ctx
     (ensure-vec-index array-of-transform-feedback-bindings-buffer-ids
                       tfb-binding-point
                       +null-gl-id+
@@ -329,7 +329,7 @@
     (values)
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (array-of-actual-bound-texture-ids
+  (%with-cepl-context-slots (array-of-actual-bound-texture-ids
                        array-of-bound-texture-ids)
       cepl-context
     (let ((id (aref array-of-bound-texture-ids index)))
@@ -368,7 +368,7 @@
                                (index array-index))
     gl-id
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0)))
-  (%with-cepl-context (array-of-bound-texture-ids) ctx
+  (%with-cepl-context-slots (array-of-bound-texture-ids) ctx
     (aref array-of-bound-texture-ids index)))
 
 (defn set-texture-bound-id ((ctx cepl-context)
@@ -378,7 +378,7 @@
     gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (inline unknown-gl-id-p) (profile t))
-  (%with-cepl-context (array-of-bound-texture-ids gl-context) ctx
+  (%with-cepl-context-slots (array-of-bound-texture-ids gl-context) ctx
     (setf (aref array-of-bound-texture-ids index) id)
     (when eager
       (ensure-texture-id-bound ctx index))
@@ -407,7 +407,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (inline unknown-gl-id-p) (profile t))
   (let ((index (tex-kind->cache-index target)))
-    (%with-cepl-context (array-of-textures gl-context)
+    (%with-cepl-context-slots (array-of-textures gl-context)
         ctx
       (let* ((id (texture-bound-id ctx index))
              (id
@@ -472,7 +472,7 @@
 (defn read-fbo-bound ((cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (fbos read-fbo-binding-id) cepl-context
+  (%with-cepl-context-slots (fbos read-fbo-binding-id) cepl-context
     (let* ((id (if (= read-fbo-binding-id +unknown-gl-id+)
                    (setf read-fbo-binding-id
                          (read-framebuffer-binding cepl-context))
@@ -484,7 +484,7 @@
 (defn (setf read-fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (fbos read-fbo-binding-id) cepl-context
+  (%with-cepl-context-slots (fbos read-fbo-binding-id) cepl-context
     (let ((id (if fbo
                   (%fbo-id fbo)
                   0)))
@@ -496,7 +496,7 @@
 (defn draw-fbo-bound ((cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (fbos draw-fbo-binding-id) cepl-context
+  (%with-cepl-context-slots (fbos draw-fbo-binding-id) cepl-context
     (let* ((id (if (= draw-fbo-binding-id +unknown-gl-id+)
                    (setf draw-fbo-binding-id
                          (draw-framebuffer-binding cepl-context))
@@ -508,7 +508,7 @@
 (defn (setf draw-fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (fbos draw-fbo-binding-id) cepl-context
+  (%with-cepl-context-slots (fbos draw-fbo-binding-id) cepl-context
     (let ((id (if fbo
                   (%fbo-id fbo)
                   0)))
@@ -527,7 +527,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
   (assert (typep fbo 'fbo))
-  (%with-cepl-context (fbos read-fbo-binding-id draw-fbo-binding-id)
+  (%with-cepl-context-slots (fbos read-fbo-binding-id draw-fbo-binding-id)
       cepl-context
     (let* ((id (if fbo
                    (%fbo-id fbo)
@@ -548,34 +548,21 @@
 ;; The name of the vertex array object currently bound to the context, or 0 if
 ;; none is bound.
 
-(defn vertex-array-binding ((cepl-context cepl-context)) (unsigned-byte 32)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (profile t))
-  (declare (ignore cepl-context))
-  (the (unsigned-byte 32) (cl-opengl:get* :vertex-array-binding)))
-
-(defn (setf vertex-array-binding) ((id gl-id) (cepl-context cepl-context))
-    gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (profile t))
-  (declare (ignore cepl-context))
-  (%gl:bind-vertex-array id)
-  id)
-
 (defn vao-bound ((cepl-context cepl-context)) gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (vao-binding-id) cepl-context
+  (%with-cepl-context-slots (vao-binding-id) cepl-context
     (if (= vao-binding-id +unknown-gl-id+)
-        (setf vao-binding-id (vertex-array-binding cepl-context))
+        (setf vao-binding-id (the (unsigned-byte 32)
+                                  (cl-opengl:get* :vertex-array-binding)))
         vao-binding-id)))
 
 (defn (setf vao-bound) ((vao gl-id) (cepl-context cepl-context)) gl-id
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context (vao-binding-id) cepl-context
+  (%with-cepl-context-slots (vao-binding-id) cepl-context
     (when (/= vao-binding-id vao)
-      (setf (vertex-array-binding cepl-context) vao)
+      (%gl:bind-vertex-array vao)
       (setf vao-binding-id vao)))
   vao)
 

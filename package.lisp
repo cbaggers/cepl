@@ -556,7 +556,7 @@
           :cepl.types :%cepl.types :split-sequence :cepl.measurements
           :named-readtables :cepl.errors :cepl.internals :cepl.context
           :cepl.perf.core)
-  (:import-from :cepl.context :%with-cepl-context)
+  (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :current-viewport
            :viewport
            :viewport-p
@@ -830,7 +830,7 @@
           :cepl.internals :cepl.image-formats :cepl.textures
           :cepl.viewports :cepl.measurements :cepl.memory
           :cepl.perf.core)
-  (:import-from :cepl.context :%with-cepl-context)
+  (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :fbo
            :fbo-p
            :fbo-blending-params
@@ -852,7 +852,7 @@
           :cepl.types :split-sequence :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.perf.core)
-  (:import-from :cepl.context :%with-cepl-context)
+  (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :blending-params
            :blending-params-p
            :copy-blending-params
@@ -929,7 +929,7 @@
           :rtg-math.base-maths)
   (:shadow :quit)
   (:import-from :cepl.context
-                :%with-cepl-context)
+                :%with-cepl-context-slots)
   (:import-from :cepl-utils
                 :deferror
                 :print-mem

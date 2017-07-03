@@ -34,17 +34,17 @@
   (cepl.host::register-event-listener function))
 
 (defun2 step-host (&optional (context (cepl-context)))
-  (%with-cepl-context (cepl.context::current-surface) context
+  (%with-cepl-context-slots (cepl.context::current-surface) context
     (cepl.host::host-step cepl.context::current-surface))
   context)
 
 (defun2 swap (&optional (context (cepl-context)))
-  (%with-cepl-context (cepl.context::current-surface) context
+  (%with-cepl-context-slots (cepl.context::current-surface) context
     (cepl.host::host-swap cepl.context::current-surface))
   context)
 
 (defun2 cls ()
-  (%with-cepl-context (default-framebuffer) (cepl-context)
+  (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (with-fbo-bound (default-framebuffer :target :framebuffer
                       :with-viewport nil
                       :with-blending nil)
