@@ -1,5 +1,11 @@
 - make all types store resolution (as an array) rather than dimensions (as a list). All the x-dimensions functions will become slow array->list funcs. We will use the resolution exclusively internally
 
-- find all uses of fixnum and replace with something more sensible
+- √ find all uses of fixnum and replace with something more sensible
 
 - work through the perf logs micro-optimizing
+
+- use with-cepl-context in all major macros
+
+- make the map-g context into the cepl-context
+
+- take CEPL.PIPELINES::UNIFORM-MATRIX-4FT and change to sending values rather than ptr. Profile the result.
