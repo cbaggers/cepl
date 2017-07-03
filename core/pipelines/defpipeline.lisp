@@ -253,10 +253,12 @@
 (defun2 %compile-closure (code)
   (funcall (compile nil `(lambda () ,code))))
 
-(defun2 %post-init (func)
+(defn-inline %post-init ((func function)) (values)
+  (declare (profile t))
   (setf (vao-bound (cepl-context)) 0)
   (force-use-program 0)
-  (when func (funcall func)))
+  (when func (funcall func))
+  (values))
 
 (defun2 gen-pipeline-init (name primitive stage-pairs post uniform-assigners
                           stage-keys)
@@ -302,7 +304,7 @@
             (error 'dispatch-called-outside-of-map-g :name ',name))
           whole))
      `(progn
-        (defun ,(symb :%touch- name) (&key verbose)
+        (defun2 ,(symb :%touch- name) (&key verbose)
           (unless prog-id
             (setf prog-id (,init-func-name)))
           (when verbose
