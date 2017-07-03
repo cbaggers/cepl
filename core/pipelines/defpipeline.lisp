@@ -322,9 +322,9 @@
                      ,@(when uniform-names `(&key ,@typed-uniforms)))
             (values)
           (declare (speed 3) (debug 1) (safety 1) (compilation-speed 0)
-                   (ignorable ,@uniform-names)
+                   (ignorable ,ctx ,@uniform-names)
                    (profile t))
-          ;;#+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+          #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
           ,@(unless (typep primitive 'varjo::dynamic)
                     `((when stream
                         (assert
@@ -340,9 +340,7 @@
             (unless prog-id (return-from ,name)))
           (use-program prog-id)
           ,@u-uploads
-          (locally
-              (declare (optimize (speed 3) (safety 1)))
-            (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
+          (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
           (when stream (draw-expander stream ,primitive))
           ;;(use-program 0)
           ,@u-cleanup
@@ -371,12 +369,14 @@
      (with-vao-bound (buffer-stream-vao stream)
        (if (= (the (unsigned-byte 16) |*instance-count*|) 0)
            (if index-type
-               (locally (declare (optimize (speed 3) (safety 0)))
+               (locally (declare (optimize (speed 3) (safety 0))
+                                 #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
                  (%gl:draw-elements draw-type
                                     (buffer-stream-length stream)
                                     (cffi-type->gl-type index-type)
                                     (%cepl.types:buffer-stream-start-byte stream)))
-               (locally (declare (optimize (speed 3) (safety 0)))
+               (locally (declare (optimize (speed 3) (safety 0))
+                                 #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
                  (%gl:draw-arrays draw-type
                                   (buffer-stream-start stream)
                                   (buffer-stream-length stream))))
