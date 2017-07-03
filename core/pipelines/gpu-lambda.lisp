@@ -85,7 +85,8 @@
 
 (defun2 make-complete-lambda-pipeline (stage-pairs stage-keys aggregate-uniforms
                                       context post)
-  (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
+  (let* ((ctx *pipeline-body-context-var*)
+         (uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
@@ -113,9 +114,9 @@
           ;;
           ;; generate the code that actually renders
           (%post-init ,post)
-          (lambda (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
+          (lambda (,ctx stream ,@(when uniform-names `(&key ,@uniform-names)))
             (declare (optimize (speed 3) (safety 1))
-                     (ignore mapg-context) (ignorable ,@uniform-names))
+                     (ignorable ,ctx ,@uniform-names))
             #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
             ,@(unless (typep primitive 'varjo::dynamic)
                       `((when stream
