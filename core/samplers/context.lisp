@@ -7,7 +7,7 @@
                          (sampler sampler)
                          (tex-unit tex-unit))
     (values)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
            (inline %sampler-texture)
            (profile t))
   (%with-cepl-context-slots (array-of-bound-samplers) ctx
