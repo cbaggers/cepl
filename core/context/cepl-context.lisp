@@ -583,29 +583,37 @@
   ;; l for local..bad name, but the others I had at the time were worse.
   context)
 
-(defun %inner-with-context (cepl-context body ctx-var)
+(defun %inner-with-context (var-name cepl-context forgo-let body ctx-var)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
   (if (eq cepl-context ctx-var)
-      `(progn ,@body)
-      (%with-context cepl-context body ctx-var)))
+      (if var-name
+          `(let ((,var-name ,ctx-var))
+             ,@body)
+          `(progn ,@body))
+      (%with-context var-name cepl-context forgo-let body ctx-var)))
 
-(defun %with-context (cepl-context body ctx-var)
+(defun %with-context (var-name cepl-context forgo-let body ctx-var)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+  (assert (constantp forgo-let))
   (let ((ctx (or ctx-var (gensym "CTX"))))
-    `(let ((,ctx ,cepl-context))
+    `(let* ((,ctx ,cepl-context)
+            ,@(when var-name `((,var-name ,ctx)))
+            ,@(unless forgo-let `((*cepl-context* ,ctx))))
        (declare (ignorable ,ctx))
        (macrolet ((l-identity (context)
                     (declare (ignore context))
                     ',ctx)
                   (with-cepl-context
-                      ((&optional (cepl-context ',ctx))
+                      ((&optional var-name  (cepl-context ',ctx) forgo-let)
                        &body body)
-                    (%inner-with-context cepl-context body ',ctx)))
+                    (%inner-with-context
+                     var-name cepl-context forgo-let body ',ctx)))
          ,@body))))
 
-(defmacro with-cepl-context ((&optional (cepl-context '(cepl-context)))
+(defmacro with-cepl-context ((&optional var-name (cepl-context '(cepl-context))
+                                        forgo-let)
                              &body body)
-  (%with-context cepl-context body nil))
+  (%with-context var-name cepl-context forgo-let body nil))
 
 (defn-inline cepl-context () cepl-context
   *cepl-context*)

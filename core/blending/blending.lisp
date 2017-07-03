@@ -69,10 +69,11 @@
 
 (defn current-blend-params () (or null blending-params)
   (declare (profile t))
-  (%with-cepl-context-slots (default-framebuffer) (cepl-context)
-    (copy-blending-params
-     (or %current-blend-params
-         (attachment-blending default-framebuffer 0)))))
+  (with-cepl-context (ctx)
+    (%with-cepl-context-slots (default-framebuffer) ctx
+      (copy-blending-params
+       (or %current-blend-params
+           (attachment-blending default-framebuffer 0))))))
 
 (defmacro with-blending (blending-params &body body)
   (let ((b-params (gensym "blending-params")))
