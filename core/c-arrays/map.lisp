@@ -80,7 +80,7 @@
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
-    (loop :for i :below (the fixnum (first dim)) :do
+    (loop :for i :below (the c-array-index (first dim)) :do
        (funcall func arr i)))
   arr)
 
@@ -89,8 +89,8 @@
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
-    (loop :for y :below (the fixnum (second dim)) :do
-       (loop :for x :below (the fixnum (first dim)) :do
+    (loop :for y :below (the c-array-index (second dim)) :do
+       (loop :for x :below (the c-array-index (first dim)) :do
           (funcall func arr x y))))
   arr)
 
@@ -98,9 +98,9 @@
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 1) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
-    (loop :for z :below (the fixnum (third dim)) :do
-       (loop :for y :below (the fixnum (second dim)) :do
-          (loop :for x :below (the fixnum (first dim)) :do
+    (loop :for z :below (the c-array-index (third dim)) :do
+       (loop :for y :below (the c-array-index (second dim)) :do
+          (loop :for x :below (the c-array-index (first dim)) :do
              (funcall func arr x y z)))))
   arr)
 
@@ -108,10 +108,10 @@
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 1) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
-    (loop :for w :below (the fixnum (fourth dim)) :do
-       (loop :for z :below (the fixnum (third dim)) :do
-          (loop :for y :below (the fixnum (second dim)) :do
-             (loop :for x :below (the fixnum (first dim)) :do
+    (loop :for w :below (the c-array-index (fourth dim)) :do
+       (loop :for z :below (the c-array-index (third dim)) :do
+          (loop :for y :below (the c-array-index (second dim)) :do
+             (loop :for x :below (the c-array-index (first dim)) :do
                 (funcall func arr x y z w))))))
   arr)
 
@@ -130,7 +130,7 @@
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
-    (loop :for x :below (the fixnum (first dim)) :do
+    (loop :for x :below (the c-array-index (first dim)) :do
        (let ((ptr (ptr-index arr x)))
          (funcall func ptr x))))
   arr)
@@ -139,8 +139,8 @@
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
-    (loop :for y :below (the fixnum (second dim)) :do
-       (loop :for x :below (the fixnum (first dim)) :do
+    (loop :for y :below (the c-array-index (second dim)) :do
+       (loop :for x :below (the c-array-index (first dim)) :do
           (let ((ptr (ptr-index arr x y)))
             (funcall func ptr x y)))))
   arr)
@@ -149,9 +149,9 @@
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 1) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
-    (loop :for z :below (the fixnum (third dim)) :do
-       (loop :for y :below (the fixnum (second dim)) :do
-          (loop :for x :below (the fixnum (first dim)) :do
+    (loop :for z :below (the c-array-index (third dim)) :do
+       (loop :for y :below (the c-array-index (second dim)) :do
+          (loop :for x :below (the c-array-index (first dim)) :do
              (let ((ptr (ptr-index arr x y z)))
                (funcall func ptr x y z))))))
   arr)
@@ -160,10 +160,10 @@
   (declare (type function func) (type c-array arr)
            (optimize (speed 3) (safety 1) (debug 1)))
   (let ((dim (c-array-dimensions arr)))
-    (loop :for w :below (the fixnum (fourth dim)) :do
-       (loop :for z :below (the fixnum (third dim)) :do
-          (loop :for y :below (the fixnum (second dim)) :do
-             (loop :for x :below (the fixnum (first dim)) :do
+    (loop :for w :below (the c-array-index (fourth dim)) :do
+       (loop :for z :below (the c-array-index (third dim)) :do
+          (loop :for y :below (the c-array-index (second dim)) :do
+             (loop :for x :below (the c-array-index (first dim)) :do
                 (let ((ptr (ptr-index arr x y z w)))
                   (funcall func ptr x y z w)))))))
   arr)

@@ -361,7 +361,7 @@
                (%gl:patch-parameter-i
                 :patch-vertices ,(varjo::vertex-count primitive))))
      (with-vao-bound (buffer-stream-vao stream)
-       (if (= (the fixnum |*instance-count*|) 0)
+       (if (= (the (unsigned-byte 16) |*instance-count*|) 0)
            (if index-type
                (locally (declare (optimize (speed 3) (safety 0)))
                  (%gl:draw-elements draw-type

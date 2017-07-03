@@ -44,6 +44,7 @@
 
 ;;------------------------------------------------------------
 
-(declaim (ftype (function (c-array) fixnum) c-array-rank))
-(defun2 c-array-rank (c-array)
-  (the fixnum (length (c-array-dimensions c-array))))
+(defn-inline c-array-rank ((c-array c-array)) (integer 0 4)
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (the (integer 0 4) (length (c-array-dimensions c-array))))

@@ -519,7 +519,9 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
+(declaim (type (unsigned-byte 16) |*instance-count*|))
 (defvar |*instance-count*| 0)
+
 (defmacro with-instances (count &body body)
   `(let ((|*instance-count*| ,count))
      (unless (> |*instance-count*| 0)
