@@ -134,7 +134,7 @@
                    image-format texture-type))))))
 
 (defun2 %delete-sampler (sampler)
-  (gl:delete-sampler (%sampler-id sampler)))
+  (gl::delete-sampler (%sampler-id sampler)))
 
 (defun2 sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
                          (minify-filter :linear-mipmap-linear)
