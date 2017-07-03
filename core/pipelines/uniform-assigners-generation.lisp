@@ -87,12 +87,7 @@
                     (if cepl.samplers::*samplers-available*
                         (%gl:bind-sampler ,i-unit (%sampler-id ,arg-name))
                         (cepl.textures::fallback-sampler-set ,arg-name))
-                    (uniform-sampler ,id-name ,i-unit)))
-     :cleanup `((%gl:bind-sampler ,i-unit 0)
-                (cepl.context::set-texture-bound-id
-                 ,*pipeline-body-context-var*
-                 (texture-cache-id (%sampler-texture ,arg-name))
-                 0)))))
+                    (uniform-sampler ,id-name ,i-unit))))))
 
 (defun2 make-ubo-assigner (arg-name varjo-type glsl-name)
   (let ((id-name (gensym))
