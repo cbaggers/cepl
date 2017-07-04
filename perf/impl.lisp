@@ -185,6 +185,16 @@
       (values `(%log-profile-event ,id (,*perf-time-function*))
               `(%log-profile-event ,(- id) (,*perf-time-function*))))))
 
+(defmacro profile-block (name &body body)
+  (let* ((name (if (listp name)
+                   (cons :block name)
+                   (list :block name)))
+         (id (func-id name)))
+    `(progn
+       (%log-profile-event ,id (,*perf-time-function*))
+       (multiple-value-prog1 (progn ,@body)
+         (%log-profile-event ,(- id) (,*perf-time-function*))))))
+
 ;;------------------------------------------------------------
 
 (defun reverse-hash-map (hm)
