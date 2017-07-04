@@ -330,22 +330,24 @@
                    (profile t))
           #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
           ,@(unless (typep primitive 'varjo::dynamic)
-                    `((when stream
-                        (assert
-                         (= ,(draw-mode-group-id primitive)
-                            (buffer-stream-primitive-group-id stream))
-                         ()
-                         'buffer-stream-has-invalid-primtive-for-stream
-                         :name ',name
-                         :pline-prim ',(varjo::lisp-name primitive)
-                         :stream-prim (buffer-stream-primitive stream)))))
+              `((when stream
+                  (assert
+                   (= ,(draw-mode-group-id primitive)
+                      (buffer-stream-primitive-group-id stream))
+                   ()
+                   'buffer-stream-has-invalid-primtive-for-stream
+                   :name ',name
+                   :pline-prim ',(varjo::lisp-name primitive)
+                   :stream-prim (buffer-stream-primitive stream)))))
           (unless prog-id
             (setf prog-id (,init-func-name))
             (unless prog-id (return-from ,name)))
           (use-program prog-id)
-          ,@u-uploads
-          (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
-          (when stream (draw-expander stream ,primitive))
+          (profile-block (,name :uniforms)
+            ,@u-uploads
+            (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
+          (profile-block (,name :draw)
+            (when stream (draw-expander stream ,primitive)))
           ;;(use-program 0)
           ,@u-cleanup
           (values))
