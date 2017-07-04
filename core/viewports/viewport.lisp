@@ -25,7 +25,10 @@
            (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
           (setf current-viewport viewport)))))
 
-(defun+ current-viewport ()
+(defn current-viewport () viewport
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (inline viewport-eql)
+           (profile t))
   (%with-cepl-context-slots (current-viewport) (cepl-context)
     (or current-viewport
         (error "No default framebuffer found ~a"
