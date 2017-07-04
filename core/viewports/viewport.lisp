@@ -66,10 +66,12 @@
   (v2:make (float (%viewport-resolution-x viewport))
            (float (%viewport-resolution-y viewport))))
 
-(defun+ (setf viewport-resolution) (value viewport)
-  (unless (typep value 'rtg-math.types:vec2)
-    (error "The value given to (setf viewport-resolution) must be a vec2"))
+(defn (setf viewport-resolution) ((value vec2) (viewport viewport)) vec2
   (%set-resolution viewport (floor (v:x value)) (floor (v:y value)))
+  (when (eq viewport (current-viewport))
+    (%gl:viewport
+     (%viewport-origin-x viewport) (%viewport-origin-y viewport)
+     (%viewport-resolution-x viewport) (%viewport-resolution-y viewport)))
   value)
 
 (defun+ %set-resolution (viewport x y)
