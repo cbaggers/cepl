@@ -10,6 +10,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
            (profile t))
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (%gl:uniform-1i location image-unit)
   (values))
 
@@ -19,6 +20,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
            (profile t))
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (%gl:uniform-1i location value)
   (values))
 
@@ -29,6 +31,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-2iv location 1 ptr))
   (values))
 
@@ -39,6 +42,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-3iv location 1 ptr))
   (values))
 
@@ -49,6 +53,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-4iv location 1 ptr))
   (values))
 
@@ -59,6 +64,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
            (profile t))
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (%gl:uniform-1f location value)
   (values))
 
@@ -69,6 +75,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-2fv location 1 ptr))
   (values))
 
@@ -79,6 +86,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-3fv location 1 ptr))
   (values))
 
@@ -89,6 +97,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-4fv location 1 ptr))
   (values))
 
@@ -99,6 +108,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-matrix-2fv location 1 ptr))
   (values))
 
@@ -109,6 +119,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-matrix-3fv location 1 ptr))
   (values))
 
@@ -119,6 +130,7 @@
                      (compilation-speed 0))
            (profile t))
   (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (%gl:uniform-matrix-4fv location 1 nil ptr))
   (values))
 
@@ -128,6 +140,7 @@
                            (ptr foreign-pointer))
     (values)
   (declare (profile t))
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (%gl:uniform-matrix-2fv location count nil ptr)
   (values))
 
@@ -136,6 +149,7 @@
                            (ptr foreign-pointer))
     (values)
   (declare (profile t))
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (%gl:uniform-matrix-3fv location count nil ptr)
   (values))
 
@@ -144,6 +158,7 @@
                            (ptr foreign-pointer))
     (values)
   (declare (profile t))
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (%gl:uniform-matrix-4fv location count nil ptr)
   (values))
 
