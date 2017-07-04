@@ -191,15 +191,6 @@ The function returns a buffer object with its format slot populated with the
 details of the data stored within the buffer")
 
 
-
-  (defmacro with-buffer
-      "
-This macro binds the given `gpu-buffer` to the target on the GL Context for the
-duration of the body.
-
-The `gpu-buffer` is then unbound at the end.
-")
-
   (defun reallocate-buffer
       "
 This function takes a buffer and recreates the data-store for it. All data currently in the buffer will be lost.

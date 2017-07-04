@@ -45,12 +45,9 @@
    (make-array 0 :element-type 'fbo :initial-element +null-fbo+
                :adjustable t :fill-pointer 0)
    :type (array fbo (*)))
-  (array-of-bound-gpu-buffer-ids
-   (make-array 12 :element-type 'gl-id :initial-element +null-gl-id+)
-   :type (simple-array gl-id (12)))
-  (array-of-actual-bound-gpu-buffer-ids
-   (make-array 12 :element-type 'gl-id :initial-element +null-gl-id+)
-   :type (simple-array gl-id (12)))
+  (array-of-bound-gpu-buffers
+   (make-array 12 :element-type '(or gpu-buffer null) :initial-element nil)
+   :type (simple-array (or gpu-buffer null) (12)))
   (array-of-gpu-buffers
    (make-array 0 :element-type 'gpu-buffer :initial-element +null-gpu-buffer+
                :adjustable t :fill-pointer 0)
@@ -89,7 +86,7 @@
            surfaces current-surface vao-binding-id current-viewport
            default-viewport default-framebuffer read-fbo-binding-id
            draw-fbo-binding-id fbos array-of-gpu-buffers
-           array-of-bound-gpu-buffer-ids array-of-actual-bound-gpu-buffer-ids
+           array-of-bound-gpu-buffers
            array-of-ubo-bindings-buffer-ids
            array-of-transform-feedback-bindings-buffer-ids
            array-of-bound-samplers array-of-textures

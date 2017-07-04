@@ -13,19 +13,19 @@
         (array-sym (gensym "BUFFER"))
         (buffer-sym (gensym "BUFFER"))
         (gtarget (gensym "target")))
-    `(progn
-       (let ((,array-sym ,gpu-array))
-         (unless (typep ,array-sym 'gpu-array)
-           (if (typep ,array-sym 'gpu-array-t)
-               (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
-               (error "with-gpu-array-* does not support the type ~s"
-                      (type-of ,array-sym))))
-         (let ((,buffer-sym (gpu-array-buffer ,array-sym))
-               (,gtarget ,target))
-           (cepl.gpu-buffers::with-buffer
-               (foo ,buffer-sym ,gtarget)
+    (labels ((tgt () (if (keywordp target) target gtarget)))
+      `(progn
+         (let ((,array-sym ,gpu-array))
+           (unless (typep ,array-sym 'gpu-array)
+             (if (typep ,array-sym 'gpu-array-t)
+                 (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
+                 (error "with-gpu-array-* does not support the type ~s"
+                        (type-of ,array-sym))))
+           (let ((,buffer-sym (gpu-array-buffer ,array-sym))
+                 ,@(unless (keywordp target) `((,gtarget ,target))))
+             (setf (cepl.context:gpu-buffer-bound (cepl.context:cepl-context) ,(tgt)) ,buffer-sym)
              (gl:with-mapped-buffer (,glarray-pointer
-                                     ,gtarget
+                                     ,(tgt)
                                      ,access-type)
                (if (pointer-eq ,glarray-pointer (null-pointer))
                    (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
@@ -152,26 +152,28 @@ dimension then their sizes must match exactly"))
     ((temp-name gpu-array start-index length
                 &key (access-set :map-read) (target :array-buffer))
      &body body)
-  (alexandria:with-gensyms (glarray-pointer
-                            array-sym buffer gtarget
+  (alexandria:with-gensyms (glarray-pointer array-sym gtarget
                             byte-start byte-len)
     (let ((access-set
            (%process-with-gpu-array-range-macro-args
             target access-set)))
-      `(dbind (,array-sym ,byte-start ,byte-len)
-           (%process-with-gpu-array-range-runtime
-            ,gpu-array ,start-index ,length)
-         (let* ((,gtarget ,target))
-           (cepl.gpu-buffers::with-buffer (,buffer
-                                           (gpu-array-buffer ,array-sym)
-                                           ,gtarget)
-             (with-buffer-range-mapped
-                 (,glarray-pointer ,gtarget ,byte-start ,byte-len ,access-set)
-               (if (pointer-eq ,glarray-pointer (null-pointer))
-                   (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an OpenGL context?~%~s"
-                          ,glarray-pointer)
-                   (let ((,temp-name ,glarray-pointer))
-                     ,@body)))))))))
+      (labels ((tgt () (if (keywordp target) target gtarget)))
+        `(dbind (,array-sym ,byte-start ,byte-len)
+             (%process-with-gpu-array-range-runtime
+              ,gpu-array ,start-index ,length)
+           (,@(if (keywordp target)
+                  '(progn)
+                  `(let* ((,gtarget ,target))))
+              (setf (cepl.context:gpu-buffer-bound
+                     (cepl.context:cepl-context) ,(tgt))
+                    (gpu-array-buffer ,array-sym))
+              (with-buffer-range-mapped
+                  (,glarray-pointer ,(tgt) ,byte-start ,byte-len ,access-set)
+                (if (pointer-eq ,glarray-pointer (null-pointer))
+                    (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an OpenGL context?~%~s"
+                           ,glarray-pointer)
+                    (let ((,temp-name ,glarray-pointer))
+                      ,@body)))))))))
 
 (defmacro with-gpu-array-range-as-c-array
     ((temp-name gpu-array start-index length &key (access-set :map-read))

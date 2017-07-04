@@ -68,16 +68,6 @@ The `byte-offset` parameter specifies where you wish to start overwriting data f
 
 When the `:safe` option is `t`, the function checks to see if the data you are about to write into the buffer will cross the boundaries between data already in the buffer, and will emit an error if necessary.
 
-### Bind a buffer
-Macro:
-```lisp
-(with-buffer ((var-name buffer &optional (buffer-target :array-buffer)) &body body))
-```
-Example
-```lisp
-(with-buffer (x some-buffer)
-  (buffer-sub-data x ...other args...))
-```
 ### Free buffer
 
 Buffers can be freed with `#'free` or `#'free-buffer`

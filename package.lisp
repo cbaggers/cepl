@@ -642,8 +642,7 @@
           :cepl.types :split-sequence :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.memory :cepl.perf.core)
-  (:export :with-buffer
-           :gpu-buffer
+  (:export :gpu-buffer
            :gpu-buffer-p
            :gpu-buffer-id
            :gpu-buffer-arrays

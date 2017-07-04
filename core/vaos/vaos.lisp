@@ -65,22 +65,28 @@
                (or (null index-array) (suitable-array-for-index-p index-array)))
     (error "You can only make VAOs from 1D arrays"))
   (with-cepl-context (ctx)
-    (with-buffer (xx nil :array-buffer)
-      (with-buffer (yy nil :element-array-buffer)
-        (let ((element-buffer (when index-array
-                                (gpu-array-buffer index-array)))
-              (vao gl-object)
-              (attr 0))
-          (with-vao-bound vao
-            (loop :for gpu-array :in gpu-arrays :do
-               (let* ((buffer (gpu-array-buffer gpu-array))
-                      (elem-type (gpu-array-bb-element-type gpu-array))
-                      (offset (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
-                 (with-buffer (foo buffer :array-buffer)
-                   (incf attr (gl-assign-attrib-pointers
-                               (if (listp elem-type) (second elem-type) elem-type)
-                               attr offset)))))
-            (when element-buffer
-              (setf (gpu-buffer-bound ctx :element-array-buffer)
-                    element-buffer)))
-          vao)))))
+    (setf (cepl.context:gpu-buffer-bound ctx :array-buffer) nil)
+    (setf (cepl.context:gpu-buffer-bound ctx :element-array-buffer) nil)
+    (let ((element-buffer (when index-array
+                            (gpu-array-buffer index-array)))
+          (vao gl-object)
+          (attr 0))
+      (with-vao-bound vao
+        (loop :for gpu-array :in gpu-arrays :do
+           (let* ((buffer (gpu-array-buffer gpu-array))
+                  (elem-type (gpu-array-bb-element-type gpu-array))
+                  (offset (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
+
+             (setf (gpu-buffer-bound ctx :array-buffer) buffer)
+             (unwind-protect
+                  (incf attr
+                        (gl-assign-attrib-pointers
+                         (if (listp elem-type)
+                             (second elem-type)
+                             elem-type)
+                         attr offset))
+               (setf (gpu-buffer-bound ctx :array-buffer) nil))))
+        (when element-buffer
+          (setf (gpu-buffer-bound ctx :element-array-buffer)
+                element-buffer)))
+      vao)))
