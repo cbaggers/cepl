@@ -6,9 +6,6 @@
 ;;        same goes for attachment-tex. Could we use the +null-att+ instead
 ;;        and force attr to be populated?
 
-(deftype attachment-name ()
-  '(or (unsigned-byte 16) symbol))
-
 (defvar %possible-texture-keys
   '(:dimensions :element-type :mipmap :layer-count :cubes-p :rectangle
     :multisample :immutable :buffer-storage))
@@ -177,6 +174,17 @@
            )))
   fbo)
 
+(defn-inline default-fbo-attachment-enum ((attachment-num (integer 0 3)))
+    (signed-byte 32)
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (let ((vals #(#.(cffi:foreign-enum-value '%gl:enum :back-left)
+                #.(cffi:foreign-enum-value '%gl:enum :front-left)
+                #.(cffi:foreign-enum-value '%gl:enum :back-right)
+                #.(cffi:foreign-enum-value '%gl:enum :front-right))))
+    (declare (type (simple-array (signed-byte 32) (4))))
+    (aref vals attachment-num)))
+
 (defun+ update-draw-buffer-map (fbo)
   (let ((ptr (%fbo-draw-buffer-map fbo))
         (default-fbo (%fbo-is-default fbo)))
@@ -189,13 +197,6 @@
                        (color-attachment-enum i))
                    :none)))))
   fbo)
-
-(let ((vals #(#.(cffi:foreign-enum-value '%gl:enum :back-left)
-              #.(cffi:foreign-enum-value '%gl:enum :front-left)
-              #.(cffi:foreign-enum-value '%gl:enum :back-right)
-              #.(cffi:foreign-enum-value '%gl:enum :front-right))))
-  (defun default-fbo-attachment-enum (attachment-num)
-    (aref vals attachment-num)))
 
 ;;----------------------------------------------------------------------
 
@@ -316,7 +317,10 @@
 ;;----------------------------------------------------------------------
 
 (let ((max-draw-buffers -1))
-  (defun get-gl-attachment-keyword (x)
+  (declare (type (signed-byte 32) max-draw-buffers))
+  (defn get-gl-attachment-keyword ((x attachment-name)) (signed-byte 32)
+    (declare (optimize (speed 3) (safety 1) (debug 1))
+             (profile t))
     (unless (> max-draw-buffers 0)
       (when cepl.context:*gl-context*
         (setf max-draw-buffers (max-draw-buffers *gl-context*))))
@@ -569,7 +573,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                                      draw-buffers body))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)
+  (defun+ %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)
     "This plays with the dispatch call from compose-pipelines
      The idea is that the dispatch func can preallocate one array
      with the draw-buffers patterns for ALL the passes in it, then

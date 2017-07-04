@@ -192,6 +192,8 @@
            :unknown-gl-id-p
            :c-array-index
            :tex-unit
+           :attachment-num
+           :attachment-name
            :indexp
 
            :%make-gpu-array

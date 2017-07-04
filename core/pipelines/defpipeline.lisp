@@ -119,7 +119,7 @@
 (defun+ gen-recompile-func (name stage-pairs post context)
   (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
          (gpipe-args (append stages (list :post post))))
-    `(defun ,(recompile-name name) ()
+    `(defun+ ,(recompile-name name) ()
        (format t "~&; recompile cpu side of (~a ...)~&" ',name)
        (force-output)
        (let ((*standard-output* (make-string-output-stream)))
@@ -427,12 +427,13 @@
                  (gl:get-active-uniform program-id i)
                (list name type size))))
 
-(let ((program-cache -1))
-  (defun use-program (program-id)
+(let ((program-cache 0))
+  (declare (type gl-id program-cache))
+  (defn use-program ((program-id gl-id)) gl-id
     (unless (= program-id program-cache)
       (%gl:use-program program-id)
       (setf program-cache program-id)))
-  (defun force-use-program (program-id)
+  (defn force-use-program ((program-id gl-id)) gl-id
     (%gl:use-program program-id)
     (setf program-cache program-id)))
 

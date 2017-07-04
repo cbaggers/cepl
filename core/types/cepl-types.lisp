@@ -31,6 +31,12 @@
 (deftype tex-unit ()
   '(unsigned-byte 8))
 
+(deftype attachment-num ()
+  '(unsigned-byte 16))
+
+(deftype attachment-name ()
+  '(or attachment-num symbol))
+
 (defun+ indexp (x)
   (typep x 'c-array-index))
 

@@ -219,7 +219,7 @@
 ;;{TODO} should be setting fields here
 (defun+ make-make-struct (constructor-name awrap-type-name slots)
   (let ((vars (loop :for s :in slots :collect (s-name s))))
-    `(defun ,constructor-name ,(cons '&key vars)
+    `(defun+ ,constructor-name ,(cons '&key vars)
        (let ((result (autowrap:alloc ',awrap-type-name)))
          ,@(loop :for s :in slots :for v :in vars :collect
               `(when ,v (setf (,(s-writer s) result) ,v)))
@@ -393,7 +393,7 @@
 
 (defun+ make-populate (autowrap-name slots struct-name)
   (let ((typed-name (symb :populate- struct-name)))
-    `((defun ,typed-name (object data)
+    `((defun+ ,typed-name (object data)
         (declare (type ,autowrap-name object))
         (unless (or (vectorp data) (listp data))
           (error "can only populate a struct of type ~a with a list or an array"
