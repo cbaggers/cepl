@@ -8,27 +8,27 @@
 (defun+ make-c-array-from-pointer (dimensions element-type pointer)
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
-  (assert (every #'valid-c-array-dimension-p dimensions) ()
-          "Invalid dimensions for c-array ~a" dimensions)
-  (let* ((dimensions (listify dimensions))
-         (p-format (cepl.pixel-formats:pixel-format-p element-type))
-         (element-type2 (if p-format
-                            (pixel-format->lisp-type element-type)
-                            element-type))
-         (elem-size (gl-type-size element-type2)))
-    (multiple-value-bind (byte-size row-byte-size)
-        (%gl-calc-byte-size elem-size dimensions)
-      (declare (ignore byte-size))
-      (%make-c-array
-       :pointer pointer
-       :dimensions dimensions
-       :element-type element-type2
-       :element-byte-size elem-size
-       :struct-element-typep (symbol-names-cepl-structp element-type2)
-       :row-byte-size row-byte-size
-       :element-pixel-format (when p-format element-type)
-       :element-from-foreign (get-typed-from-foreign element-type2)
-       :element-to-foreign (get-typed-to-foreign element-type2)))))
+  (let ((dimensions (listify dimensions)))
+    (assert (every #'valid-c-array-dimension-p dimensions) ()
+            "Invalid dimensions for c-array ~a" dimensions)
+    (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
+           (element-type2 (if p-format
+                              (pixel-format->lisp-type element-type)
+                              element-type))
+           (elem-size (gl-type-size element-type2)))
+      (multiple-value-bind (byte-size row-byte-size)
+          (%gl-calc-byte-size elem-size dimensions)
+        (declare (ignore byte-size))
+        (%make-c-array
+         :pointer pointer
+         :dimensions dimensions
+         :element-type element-type2
+         :element-byte-size elem-size
+         :struct-element-typep (symbol-names-cepl-structp element-type2)
+         :row-byte-size row-byte-size
+         :element-pixel-format (when p-format element-type)
+         :element-from-foreign (get-typed-from-foreign element-type2)
+         :element-to-foreign (get-typed-to-foreign element-type2))))))
 
 ;;------------------------------------------------------------
 
