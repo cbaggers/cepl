@@ -72,8 +72,7 @@
        ',name)))
 
 (defun+ %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
-                               post context
-                               &optional suppress-compile)
+                               post context &optional suppress-compile)
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
@@ -86,7 +85,8 @@
     (%update-spec name stage-pairs context)
     (multiple-value-bind (cpr-macro dispatch)
         (def-dispatch-func name (first init-func) stage-keys
-                           context primitive uniform-assigners)
+                           context primitive uniform-assigners
+                           (find :static context))
       `(progn
          ,cpr-macro
          (let ((prog-id nil)
@@ -291,13 +291,22 @@
 
 
 (defun+ def-dispatch-func (name init-func-name stage-keys context
-                          primitive uniform-assigners)
+                                primitive uniform-assigners static)
   (let* ((ctx *pipeline-body-context-var*)
          (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
          (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
          (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
          (typed-uniforms (loop :for name :in uniform-names :collect
-                            `(,name t nil))))
+                            `(,name t nil)))
+         (def (if static 'defn 'defun+))
+         (signature (if static
+                        `(((,ctx cepl-context)
+                            (stream (or null buffer-stream))
+                           ,@(when uniform-names `(&key ,@typed-uniforms)))
+                          (values))
+                        `((,ctx
+                            stream
+                            ,@(when uniform-names `(&key ,@uniform-names)))))))
     (values
      `(eval-when (:compile-toplevel :load-toplevel :execute)
         (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
@@ -307,6 +316,7 @@
           whole))
      `(progn
         (defun+ ,(symb :%touch- name) (&key verbose)
+          #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
           (unless prog-id
             (setf prog-id (,init-func-name)))
           (when verbose
@@ -321,13 +331,10 @@
                               (mapcar λ(list (let-forms _) _1)
                                       uniform-assigners u-uploads)))))
           t)
-        (defn ,name ((,ctx cepl-context)
-                     (stream (or null buffer-stream))
-                     ,@(when uniform-names `(&key ,@typed-uniforms)))
-            (values)
+        (,def ,name ,@signature
           (declare (speed 3) (debug 1) (safety 1) (compilation-speed 0)
                    (ignorable ,ctx ,@uniform-names)
-                   (profile t))
+                   ,@(when static `((profile t))))
           #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
           ,@(unless (typep primitive 'varjo::dynamic)
               `((when stream
@@ -434,7 +441,8 @@
   (defn use-program ((program-id gl-id)) gl-id
     (unless (= program-id program-cache)
       (%gl:use-program program-id)
-      (setf program-cache program-id)))
+      (setf program-cache program-id))
+    program-id)
   (defn force-use-program ((program-id gl-id)) gl-id
     (%gl:use-program program-id)
     (setf program-cache program-id)))
