@@ -1,11 +1,11 @@
 (in-package :cepl.blending)
 
-(defun blending-params (fbo &optional attachment-name)
+(defun+ blending-params (fbo &optional attachment-name)
   (if attachment-name
       (attachment-blending fbo attachment-name)
       (%fbo-blending-params fbo)))
 
-(defun (setf blending-params) (value fbo &optional attachment-name)
+(defun+ (setf blending-params) (value fbo &optional attachment-name)
   (if attachment-name
       (setf (attachment-blending fbo attachment-name) value)
       (setf (%fbo-blending-params fbo) value)))
@@ -24,7 +24,7 @@
 
 (defvar *blend-color* (v! 0 0 0 0))
 
-(defun blend-func-namep (keyword)
+(defun+ blend-func-namep (keyword)
   (not (null (member keyword '(:zero
                                :one
                                :src-color
@@ -67,11 +67,13 @@
 
 (defvar %current-blend-params nil)
 
-(defun current-blend-params ()
-  (with-slots (default-framebuffer) *cepl-context*
-    (copy-blending-params
-     (or %current-blend-params
-         (attachment-viewport default-framebuffer 0)))))
+(defn current-blend-params () (or null blending-params)
+  (declare (profile t))
+  (with-cepl-context (ctx)
+    (%with-cepl-context-slots (default-framebuffer) ctx
+      (copy-blending-params
+       (or %current-blend-params
+           (attachment-blending default-framebuffer 0))))))
 
 (defmacro with-blending (blending-params &body body)
   (let ((b-params (gensym "blending-params")))
@@ -121,7 +123,7 @@
      ;;   can unroll the loop.
      (%gen-attachment-blend pattern fbo body))))
 
-(defun %gen-attachment-blend (attachments fbo body)
+(defun+ %gen-attachment-blend (attachments fbo body)
   (let ((blendp-syms (cepl-utils:n-of* (gensym "attachment") (length attachments)))
         (override-syms (cepl-utils:n-of* (gensym "override")
                                          (length attachments)))
@@ -159,31 +161,31 @@
        ,@(loop :for b :in blendp-syms :for i :from 0 :collect
             `(when ,b (%gl:disable-i :blend ,i))))))
 
-(defun loop-enabling-attachments (fbo)
+(defun+ loop-enabling-attachments (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
      (when (att-blend a) (%gl:enable-i :blend i))))
 
-(defun loop-disabling-attachments (fbo)
+(defun+ loop-disabling-attachments (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
      (when (att-blend a) (%gl:disable-i :blend i))))
 
-(defun %loop-setting-per-attachment-blend-params (fbo)
+(defun+ %loop-setting-per-attachment-blend-params (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
      (when (att-blend a)
        (if (att-bparams a)
            (%blend-i (att-bparams a) i)
            (%blend-i (%fbo-blending-params fbo) i)))))
 
-(defun %blend-i (params i)
+(defun+ %blend-i (params i)
   (with-blending-param-slots params
     (%gl:blend-equation-separate-i i mode-rgb mode-alpha)
     (%gl:blend-func-separate-i
      i source-rgb destination-rgb source-alpha destination-alpha)))
 
-(defun %blend-fbo (fbo)
+(defun+ %blend-fbo (fbo)
   (%blend-using-params (%fbo-blending-params fbo)))
 
-(defun %blend-using-params (params)
+(defun+ %blend-using-params (params)
   (%gl:blend-equation-separate (blending-params-mode-rgb params)
                                (blending-params-mode-alpha params))
   (%gl:blend-func-separate (blending-params-source-rgb params)
@@ -194,64 +196,64 @@
 
 ;;----------------------------------------------------------------------
 
-(defun mode-rgb (fbo &optional attachment-name)
+(defun+ mode-rgb (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     mode-rgb))
 
-(defun mode-alpha (fbo &optional attachment-name)
+(defun+ mode-alpha (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     mode-alpha))
 
-(defun source-rgb (fbo &optional attachment-name)
+(defun+ source-rgb (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     source-rgb))
 
-(defun source-alpha (fbo &optional attachment-name)
+(defun+ source-alpha (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     source-alpha))
 
-(defun destination-rgb (fbo &optional attachment-name)
+(defun+ destination-rgb (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     destination-rgb))
 
-(defun destination-alpha (fbo &optional attachment-name)
+(defun+ destination-alpha (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     destination-alpha))
 
 (let ((major-v 0))
-  (defun per-attachment-blending-available-p ()
+  (defun+ per-attachment-blending-available-p ()
     (when (= major-v 0) (setf major-v (cl-opengl:get* :major-version)))
     (>= major-v 4))
   (labels ((check-version-for-per-attachment-params ()
              (unless (per-attachment-blending-available-p)
                (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0" (version-float *gl-context*)))))
 
-    (defun (setf mode-rgb) (value fbo &optional attachment-name)
+    (defun+ (setf mode-rgb) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
         (setf mode-rgb value)))
 
-    (defun (setf mode-alpha) (value fbo &optional attachment-name)
+    (defun+ (setf mode-alpha) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
         (setf mode-alpha value)))
 
-    (defun (setf source-rgb) (value fbo &optional attachment-name)
+    (defun+ (setf source-rgb) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
         (setf source-rgb value)))
 
-    (defun (setf source-alpha) (value fbo &optional attachment-name)
+    (defun+ (setf source-alpha) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
         (setf source-alpha value)))
 
-    (defun (setf destination-rgb) (value fbo &optional attachment-name)
+    (defun+ (setf destination-rgb) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
         (setf destination-rgb value)))
 
-    (defun (setf destination-alpha) (value fbo &optional attachment-name)
+    (defun+ (setf destination-alpha) (value fbo &optional attachment-name)
       (when attachment-name (check-version-for-per-attachment-params))
       (with-blending-param-slots (blending-params fbo attachment-name)
         (setf destination-alpha value)))))

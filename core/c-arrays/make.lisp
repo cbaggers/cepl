@@ -2,33 +2,38 @@
 
 ;;------------------------------------------------------------
 
-(defun make-c-array-from-pointer (dimensions element-type pointer)
-  (unless dimensions
-    (error "dimensions are not optional when making an array from a pointer"))
-  (let* ((dimensions (listify dimensions))
-         (p-format (cepl.pixel-formats:pixel-format-p element-type))
-         (element-type2 (if p-format
-                            (pixel-format->lisp-type element-type)
-                            element-type))
-         (elem-size (gl-type-size element-type2)))
-    (multiple-value-bind (byte-size row-byte-size)
-        (%gl-calc-byte-size elem-size dimensions)
-      (declare (ignore byte-size))
-      (%make-c-array
-       :pointer pointer
-       :dimensions dimensions
-       :element-type element-type2
-       :element-byte-size elem-size
-       :struct-element-typep (symbol-names-cepl-structp element-type2)
-       :row-byte-size row-byte-size
-       :element-pixel-format (when p-format element-type)
-       :element-from-foreign (get-typed-from-foreign element-type2)
-       :element-to-foreign (get-typed-to-foreign element-type2)))))
+(defun+ valid-c-array-dimension-p (x)
+  (>= x 0))
+
+(defun+ make-c-array-from-pointer (dimensions element-type pointer)
+  (assert dimensions ()
+          "dimensions are not optional when making an array from a pointer")
+  (let ((dimensions (listify dimensions)))
+    (assert (every #'valid-c-array-dimension-p dimensions) ()
+            "Invalid dimensions for c-array ~a" dimensions)
+    (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
+           (element-type2 (if p-format
+                              (pixel-format->lisp-type element-type)
+                              element-type))
+           (elem-size (gl-type-size element-type2)))
+      (multiple-value-bind (byte-size row-byte-size)
+          (%gl-calc-byte-size elem-size dimensions)
+        (declare (ignore byte-size))
+        (%make-c-array
+         :pointer pointer
+         :dimensions dimensions
+         :element-type element-type2
+         :element-byte-size elem-size
+         :struct-element-typep (symbol-names-cepl-structp element-type2)
+         :row-byte-size row-byte-size
+         :element-pixel-format (when p-format element-type)
+         :element-from-foreign (get-typed-from-foreign element-type2)
+         :element-to-foreign (get-typed-to-foreign element-type2))))))
 
 ;;------------------------------------------------------------
 
 ;; [TODO] extract error messages
-(defun make-c-array (initial-contents &key dimensions element-type)
+(defun+ make-c-array (initial-contents &key dimensions element-type)
   (let* ((dimensions (listify dimensions))
          (dimensions
           (if dimensions
@@ -36,9 +41,7 @@
                   (or (validate-dimensions initial-contents dimensions)
                       (error "Dimensions are invalid for initial-contents~%~a~%~a"
                              dimensions initial-contents))
-                  (if (every #'integerp dimensions)
-                      dimensions
-                      (error "Invalid dimensions ~a" dimensions)))
+                  dimensions)
               (if initial-contents
                   (typecase initial-contents
                     (sequence (list (length initial-contents)))
@@ -60,6 +63,8 @@
                                (update-data initial-contents inferred-lisp-type)
                                initial-contents))
          (elem-size (gl-type-size element-type)))
+    (assert (every #'indexp dimensions) ()
+            "Invalid dimensions ~a" dimensions)
     (when (> (length dimensions) 4)
       (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
              (length dimensions)))
@@ -86,7 +91,7 @@
 
 ;;------------------------------------------------------------
 
-(defun clone-c-array (c-array)
+(defun+ clone-c-array (c-array)
   (let* ((size (c-array-byte-size c-array))
          (new-pointer (cffi::%foreign-alloc size)))
     (cepl.types::%memcpy new-pointer (c-array-pointer c-array) size)
@@ -113,7 +118,7 @@
 
 ;; ideally we would use a generic reduce in this case to handle the different
 ;; kinds of structures, but alas this is not available.
-(defun scan-for-type (data)
+(defun+ scan-for-type (data)
   (typecase data
     ((or array vector)
      (let ((initial-type (first (find-suitable-type (row-major-aref data 0)))))
@@ -126,7 +131,7 @@
             (values tmp (equal tmp initial-type))))
     (t (error "Can not infer the type the c-array should be unless it is a vector, array or flat list"))))
 
-(defun update-data (data type)
+(defun+ update-data (data type)
   (if (or (eq type 'single-float) (eq type 'double-float))
       (typecase data
         ((or array vector)

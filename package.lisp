@@ -1,9 +1,11 @@
 ;;;; package.lisp
 
 (uiop:define-package :cepl-utils
-    (:use :cl)
-  (:import-from :%rtg-math :defn :defn-inline)
-  (:export :gdefun
+    (:use :cl :%rtg-math :cepl.perf.core)
+  (:export :array-index
+           :defun+
+           :defmethod+
+           :gdefun
            :dbind
            :assoc-bind
            :case=
@@ -63,7 +65,7 @@
            :defn-inline))
 
 (uiop:define-package :cepl.errors
-    (:use :cl :cffi :cepl-utils :varjo :rtg-math)
+    (:use :cl :cffi :cepl-utils :varjo :rtg-math :cepl.perf.core)
   (:export :buffer-backed-texture-establish-image-format
            :buffer-backed-texture-invalid-args
            :buffer-backed-texture-invalid-image-format
@@ -121,7 +123,7 @@
            :buffer-stream-has-invalid-primtive-for-stream))
 
 (uiop:define-package :cepl.host
-    (:use :cl :alexandria)
+    (:use :cl :alexandria :cepl.perf.core :%rtg-math)
   (:export
    ;; common
    :register-host
@@ -169,25 +171,30 @@
    :set-surface-title-function))
 
 (uiop:define-package :cepl.lifecycle
-    (:use :cl :glsl-symbols)
+    (:use :cl :cepl-utils :glsl-symbols :cepl.perf.core)
   (:export :shutting-down-p
            :listen-to-lifecycle-changes
            :stop-listening-to-lifecycle-changes))
 
 (uiop:define-package :cepl.measurements
-    (:use :cl :glsl-symbols)
+    (:use :cl :cepl-utils :glsl-symbols :cepl.perf.core)
   (:export :dimensions
            :resolution))
 
 (uiop:define-package :%cepl.types
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :split-sequence :named-readtables
-          :cepl.errors)
+          :cepl.errors :cepl.perf.core)
   (:export :+gl-id-bit-size+
            :gl-id
            :+unknown-gl-id+
            :+null-gl-id+
            :unknown-gl-id-p
+           :c-array-index
+           :tex-unit
+           :attachment-num
+           :attachment-name
+           :indexp
 
            :%make-gpu-array
            :gpu-array
@@ -205,6 +212,7 @@
            :gpu-array-t-face-num
            :gpu-array-t-image-format
            :+null-texture-backed-gpu-array+
+           :active-texture-num
 
            :%make-gpu-array-bb
            :make-uninitialized-gpu-array-bb
@@ -316,6 +324,7 @@
            :att-blend
            :att-bparams
            :att-owned-p
+           :att-viewport
 
            :%make-ubo
            :ubo
@@ -381,7 +390,7 @@
            :holds-gl-object-ref-p))
 
 (uiop:define-package :cepl.memory
-    (:use :cl :glsl-symbols :cffi :%cepl.types)
+    (:use :cl :cepl-utils :glsl-symbols :cffi :%cepl.types :cepl.perf.core)
   (:export :free
            :initialized-p
            ;;---
@@ -392,12 +401,12 @@
 (uiop:define-package :cepl.types.foreign
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :split-sequence :named-readtables
-          :cepl.errors :%cepl.types :cepl.memory))
+          :cepl.errors :%cepl.types :cepl.memory :cepl.perf.core))
 
 (uiop:define-package :cepl.types
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :split-sequence :named-readtables
-          :cepl.errors :%cepl.types :cepl.memory)
+          :cepl.errors :%cepl.types :cepl.memory :cepl.perf.core)
   (:export :defstruct-g
            :lisp-type->pixel-format
            :image-format->lisp-type
@@ -415,7 +424,7 @@
 (uiop:define-package :cepl.types.predefined
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :split-sequence :named-readtables :cepl.types
-          :cepl.errors :%cepl.types :cepl.memory)
+          :cepl.errors :%cepl.types :cepl.memory :cepl.perf.core)
   (:export :g-pc
            :g-pn
            :g-pnc
@@ -470,7 +479,8 @@
 (uiop:define-package :cepl.internals
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :%cepl.types :split-sequence
-          :named-readtables :cepl.errors :cepl.measurements)
+          :named-readtables :cepl.errors :cepl.measurements
+          :cepl.perf.core)
   (:export :1d-p
            :clear-gl-context-cache
            :gl-assign-attrib-pointers
@@ -497,16 +507,11 @@
            :window-resolution
            :*on-context*))
 
-(uiop:define-package :cepl.render-state
-    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
-          :cepl.types :%cepl.types :split-sequence
-          :named-readtables :cepl.errors)
-  (:export))
-
 (uiop:define-package :cepl.context
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.memory :cepl.types :%cepl.types :split-sequence
-          :named-readtables :cepl.errors :cepl.internals)
+          :named-readtables :cepl.errors :cepl.internals
+          :cepl.perf.core)
   (:export :gl-context
            :*gl-context*
            :has-feature
@@ -519,8 +524,9 @@
            ;;----------------------------
            ;; CEPL.Context
            :*cepl-context*
+           :cepl-context
+           :with-cepl-context
            :gpu-buffer-bound
-           :texture-bound
            :vao-bound
            :read-fbo-bound
            :draw-fbo-bound
@@ -547,7 +553,9 @@
 (uiop:define-package :cepl.viewports
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :%cepl.types :split-sequence :cepl.measurements
-          :named-readtables :cepl.errors :cepl.internals :cepl.context)
+          :named-readtables :cepl.errors :cepl.internals :cepl.context
+          :cepl.perf.core)
+  (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :current-viewport
            :viewport
            :viewport-p
@@ -565,7 +573,8 @@
            :viewport-params-to-vec4))
 
 (uiop:define-package :cepl.image-formats
-    (:use #:cl :glsl-symbols #:fn #:named-readtables #:cepl-utils :%cepl.types :cepl.errors)
+    (:use #:cl :glsl-symbols #:fn #:named-readtables #:cepl-utils :%cepl.types
+          :cepl.errors :cepl.perf.core)
   (:export :image-formatp
            :valid-image-format-for-buffer-backed-texturep
            :color-renderable-formatp
@@ -592,7 +601,7 @@
 
 (uiop:define-package :cepl.pixel-formats
     (:use #:cl :glsl-symbols #:fn #:named-readtables #:cepl-utils :%cepl.types
-          :cepl.types :cepl.errors :cepl.internals)
+          :cepl.types :cepl.errors :cepl.internals :cepl.perf.core)
   (:export :pixel-format
            :pixel-format-p
            :pixel-format-components
@@ -606,7 +615,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :%cepl.types :split-sequence
           :named-readtables :cepl.errors :cepl.internals :cepl.image-formats
-          :cepl.pixel-formats :cepl.memory :cepl.measurements)
+          :cepl.pixel-formats :cepl.memory :cepl.measurements
+          :cepl.perf.core)
   (:export :with-c-array
            :with-c-arrays
            :element-byte-size
@@ -627,15 +637,15 @@
            :across-c-ptr
            :map-c-into
            :map-c
-           :ptr-index))
+           :ptr-index
+           :c-array-index))
 
 (uiop:define-package :cepl.gpu-buffers
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :split-sequence :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
-          :cepl.internals :cepl.memory)
-  (:export :with-buffer
-           :gpu-buffer
+          :cepl.internals :cepl.memory :cepl.perf.core)
+  (:export :gpu-buffer
            :gpu-buffer-p
            :gpu-buffer-id
            :gpu-buffer-arrays
@@ -653,7 +663,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :split-sequence :named-readtables
           :cepl.errors :%cepl.types :cepl.internals :cepl.image-formats
-          :cepl.c-arrays :cepl.gpu-buffers :cepl.memory :cepl.measurements)
+          :cepl.c-arrays :cepl.gpu-buffers :cepl.memory :cepl.measurements
+          :cepl.perf.core)
   (:export :gpu-array-buffer
            :gpu-array-format
            :gpu-array-access-style
@@ -668,7 +679,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :%cepl.types :split-sequence :cepl.context
           :named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
-          :cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed)
+          :cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed
+          :cepl.perf.core)
   (:export :free-vao
            :free-vaos
            :with-vao-bound
@@ -680,7 +692,7 @@
           :cepl.types :%cepl.types :split-sequence
           :named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
           :cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed :cepl.vaos
-          :cepl.measurements :cepl.memory)
+          :cepl.measurements :cepl.memory :cepl.perf.core)
   (:export :buffer-stream
            :buffer-stream-p
            :buffer-stream-vao
@@ -695,7 +707,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :%cepl.types :split-sequence :cepl.context
           :named-readtables :cepl.errors :cepl.c-arrays :cepl.memory
-          :cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers)
+          :cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers
+          :cepl.perf.core)
   (:export :ubo
            :make-ubo
            :make-ubo-from-array
@@ -711,7 +724,7 @@
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.pixel-formats
           :cepl.image-formats :cepl.gpu-buffers :cepl.measurements
-          :cepl.memory)
+          :cepl.memory :cepl.perf.core)
   (:export :texture
            :texture-p
            :texture-id
@@ -730,7 +743,6 @@
            :make-texture
            :free-texture
            :generate-mipmaps
-           :with-texture-bound
            :texref
            :*immutable-available*))
 
@@ -738,7 +750,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :split-sequence :named-readtables :cepl.errors
           :cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
-          :cepl.textures :%cepl.types :cepl.memory :cepl.measurements)
+          :cepl.textures :%cepl.types :cepl.memory :cepl.measurements
+          :cepl.perf.core)
   (:export :gpu-array-texture
            :gpu-array-texture-type
            :gpu-array-level-num
@@ -751,7 +764,8 @@
           :cepl.types :split-sequence :named-readtables :cepl.errors
           :cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
           :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays.texture-backed
-          :cepl.textures :%cepl.types :cepl.measurements :cepl.memory)
+          :cepl.textures :%cepl.types :cepl.measurements :cepl.memory
+          :cepl.perf.core)
   (:export :gpu-array
            :gpu-array-p
            :backed-by
@@ -778,7 +792,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :split-sequence :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays
-          :cepl.internals :%cepl.types :cepl.memory)
+          :cepl.internals :%cepl.types :cepl.memory
+          :cepl.perf.core)
   (:export :sampler
            :sampler-p
            :sampler-type
@@ -810,7 +825,9 @@
           :cepl.types :split-sequence :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.image-formats :cepl.textures
-          :cepl.viewports :cepl.measurements :cepl.memory)
+          :cepl.viewports :cepl.measurements :cepl.memory
+          :cepl.perf.core)
+  (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :fbo
            :fbo-p
            :fbo-blending-params
@@ -831,7 +848,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :split-sequence :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
-          :cepl.internals :cepl.fbos)
+          :cepl.internals :cepl.fbos :cepl.perf.core)
+  (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :blending-params
            :blending-params-p
            :copy-blending-params
@@ -848,11 +866,12 @@
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables
           :cepl-utils :cepl.errors :%cepl.types :cepl.types
-          :cepl.internals :cepl.render-state :cepl.viewports :cepl.context
+          :cepl.internals :cepl.viewports :cepl.context
           :cepl.image-formats :cepl.pixel-formats :cepl.c-arrays :cepl.gpu-buffers
           :cepl.gpu-arrays.buffer-backed :cepl.vaos :cepl.streams :cepl.ubos
           :cepl.textures :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays
-          :cepl.samplers :cepl.fbos :cepl.blending :cepl.memory)
+          :cepl.samplers :cepl.fbos :cepl.blending :cepl.memory :cepl.perf.core)
+  (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :defun-g
            :defun-g-equiv
            :def-glsl-stage
@@ -872,86 +891,79 @@
            :delete-gpu-function
            :bake-uniforms))
 
-(macrolet
-    ((def-re-exporting-package (name &key use shadow export re-export
-                                     import-from export-from)
-       (labels ((exported-symbols (package-name)
-                  (let ((package (find-package package-name))
-                        result)
-                    (do-external-symbols (x package)
-                      (push (intern (symbol-name x) :keyword) result))
-                    result))
-                (calc-export-all (re)
-                  (exported-symbols re))
-                (calc-import-from (re)
-                  (rest re))
-                (calc-re-export (re)
-                  (typecase re
-                    (list (calc-import-from re))
-                    (symbol (calc-export-all re))))
-                (calc-exports-from (ef)
-                  (rest ef))
-                (calc-exports ()
-                  (append export (mapcan #'calc-re-export re-export)
-                          (mapcan #'calc-exports-from export-from)))
-                (calc-re-using (x)
-                  (if (listp x) (first x) x)))
-         (let ((use (append use (mapcar #'calc-re-using re-export)))
-               (exports (calc-exports)))
-           `(uiop:define-package ,name
-                ,@(when use `((:use ,@use)))
-              ,@(when shadow `((:shadow ,@shadow)))
-              ,@(loop :for i :in import-from :collect (cons :import-from i))
-              ,@(loop :for i :in export-from :collect (cons :import-from i))
-              ,@(when exports `((:export ,@exports))))))))
-  ;;
-  (def-re-exporting-package :cepl
-      :use (:cl
-            :glsl-symbols
-            :rtg-math.base-maths
-            :cl-fad
-            :named-readtables
-            :cepl.errors
-            :cepl.internals
-            :cepl.context)
-      :shadow (:quit)
-      :import-from ((:cepl-utils :deferror
-                                 :print-mem
-                                 :p->
-                                 :defvar*
-                                 :defparameter*))
-      :export (:make-project
-               :initialize-cepl
-               :quit
-               :repl
-               :register-event-listener
-               :step-host
-               :cls
-               :swap
-               :print-mem
-               :defvar*
-               :defparameter*)
-      :re-export (:cepl.render-state
-                  :cepl.viewports
-                  :cepl.types
-                  :cepl.memory
-                  :cepl.measurements
-                  :cepl.image-formats
-                  :cepl.pixel-formats
-                  :cepl.c-arrays
-                  :cepl.gpu-buffers
-                  :cepl.gpu-arrays.buffer-backed
-                  :cepl.gpu-arrays.texture-backed
-                  :cepl.gpu-arrays
-                  :cepl.streams
-                  :cepl.ubos
-                  :cepl.context
-                  :cepl.samplers
-                  :cepl.textures
-                  :cepl.fbos
-                  :cepl.blending
-                  :cepl.pipelines
-                  :cepl.types.predefined
-                  (:cepl.lifecycle :shutting-down-p)
-                  (:rtg-math :q! :m! :v! :v!byte :v!ubyte :v!int :s~
-                             :radians :degrees))))
+(uiop:define-package :cepl
+    (:use :cl
+          :cl-fad
+          :glsl-symbols
+          :named-readtables
+          :cepl-utils
+          :cepl.blending
+          :cepl.c-arrays
+          :cepl.context
+          :cepl.errors
+          :cepl.fbos
+          :cepl.gpu-arrays
+          :cepl.gpu-arrays.buffer-backed
+          :cepl.gpu-arrays.texture-backed
+          :cepl.gpu-buffers
+          :cepl.image-formats
+          :cepl.internals
+          :cepl.lifecycle
+          :cepl.measurements
+          :cepl.memory
+          :cepl.perf.core
+          :cepl.pipelines
+          :cepl.pixel-formats
+          :cepl.samplers
+          :cepl.streams
+          :cepl.textures
+          :cepl.types
+          :cepl.types.predefined
+          :cepl.ubos
+          :cepl.viewports
+          :rtg-math
+          :%rtg-math
+          :rtg-math.base-maths)
+  (:shadow :quit)
+  (:import-from :cepl.context
+                :%with-cepl-context-slots)
+  (:import-from :cepl-utils
+                :deferror
+                :print-mem
+                :p->
+                :defvar*
+                :defparameter*)
+  (:export :make-project
+           :initialize-cepl
+           :quit
+           :repl
+           :register-event-listener
+           :step-host
+           :cls
+           :swap
+           :print-mem
+           :defvar*
+           :defparameter*
+           :shutting-down-p
+           :q! :m! :v! :v!byte :v!ubyte :v!int :s~
+           :radians :degrees)
+  (:reexport :cepl.viewports
+             :cepl.types
+             :cepl.memory
+             :cepl.measurements
+             :cepl.image-formats
+             :cepl.pixel-formats
+             :cepl.c-arrays
+             :cepl.gpu-buffers
+             :cepl.gpu-arrays.buffer-backed
+             :cepl.gpu-arrays.texture-backed
+             :cepl.gpu-arrays
+             :cepl.streams
+             :cepl.ubos
+             :cepl.context
+             :cepl.samplers
+             :cepl.textures
+             :cepl.fbos
+             :cepl.blending
+             :cepl.pipelines
+             :cepl.types.predefined))

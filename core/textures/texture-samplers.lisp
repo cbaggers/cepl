@@ -9,39 +9,39 @@
 ;; the texture directly but this makes for a less consistant api with no
 ;; other benefit.
 
-(defun (setf tex-lod-bias) (value texture)
-  (cepl.textures:with-texture-bound texture
+(defun+ (setf tex-lod-bias) (value texture)
+  (%with-scratch-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-lod-bias value))
   texture)
 
 
-(defun (setf tex-min-lod) (value texture)
-  (cepl.textures:with-texture-bound texture
+(defun+ (setf tex-min-lod) (value texture)
+  (%with-scratch-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-min-lod value))
   texture)
 
 
-(defun (setf tex-max-lod) (value texture)
-  (cepl.textures:with-texture-bound texture
+(defun+ (setf tex-max-lod) (value texture)
+  (%with-scratch-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-max-lod value))
   texture)
 
 
-(defun (setf tex-magnify-filter) (value texture)
+(defun+ (setf tex-magnify-filter) (value texture)
   (assert (member value '(:linear :nearest)))
-  (cepl.textures:with-texture-bound texture
+  (%with-scratch-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-mag-filter
                           (%gl::foreign-enum-value '%gl:enum value)))
   texture)
 
 
-(defun (setf tex-minify-filter) (value texture)
-  (cepl.textures:with-texture-bound texture
+(defun+ (setf tex-minify-filter) (value texture)
+  (%with-scratch-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-min-filter
                           (%gl::foreign-enum-value '%gl:enum value)))
   texture)
 
-(defun (setf tex-wrap) (value texture)
+(defun+ (setf tex-wrap) (value texture)
   (let ((options '(:repeat :mirrored-repeat :clamp-to-edge :clamp-to-border
                    :mirror-clamp-to-edge))
         (value (if (keywordp value)
@@ -50,7 +50,7 @@
     (assert (and (vectorp value)
                  (= (length value) 3)
                  (every (lambda (x) (member x options)) value)))
-    (cepl.textures:with-texture-bound texture
+    (%with-scratch-texture-bound texture
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-s
                             (%gl::foreign-enum-value '%gl:enum (aref value 0)))
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-t
@@ -60,8 +60,8 @@
   texture)
 
 
-(defun (setf tex-compare) (value texture)
-  (cepl.textures:with-texture-bound texture
+(defun+ (setf tex-compare) (value texture)
+  (%with-scratch-texture-bound texture
     (if value
         (progn
           (%gl:tex-parameter-i
@@ -87,7 +87,7 @@
          (%gl::foreign-enum-value '%gl:enum :none))))
   texture)
 
-(defun fallback-sampler-set (sampler)
+(defun+ fallback-sampler-set (sampler)
   (let ((texture (%sampler-texture sampler))
         (id (%sampler-id sampler)))
     (unless (= id (texture-last-sampler-id texture))

@@ -104,7 +104,7 @@
     ((:rgba t :short (5 5 5 1)) :rgb5-a1)
     ((:rgb t :uint8 (3 3 2)) :r3-g3-b2)))
 
-(defun describe-pixel-format (object)
+(defun+ describe-pixel-format (object)
   (let ((pf (if (pixel-format-p object)
                 object
                 (lisp-type->pixel-format object))))
@@ -117,15 +117,15 @@
     (print "---------------"))
   t)
 
-(defun describe-image-format (format)
+(defun+ describe-image-format (format)
   (describe-pixel-format (image-format->pixel-format format)))
 
-(defun get-component-length (components)
+(defun+ get-component-length (components)
   (case components
     (:depth 1) (:depth-stencil 2)
     (t (length (symbol-name components)))))
 
-(defun valid-pixel-format-p (components type normalize reversed)
+(defun+ valid-pixel-format-p (components type normalize reversed)
   (let ((component-length (get-component-length components)))
     (when (and (find components *valid-pixel-components*)
                (if (listp type) (eql component-length (length type)) t))
@@ -143,7 +143,7 @@
           (list components type (if reversed (rest sizes) sizes)
                 normalize reversed component-length))))))
 
-(defun process-pixel-format (components type normalize reversed)
+(defun+ process-pixel-format (components type normalize reversed)
   (unless (find components *valid-pixel-components*)
     (error "Not a valid pixel component layout.~%~s not found in '~s"
            components *valid-pixel-components*))
@@ -164,7 +164,7 @@
       (list components type (if reversed (rest sizes) sizes)
             normalize reversed component-length))))
 
-(defun pixel-format! (components &optional (type :uint8) (normalize t) reversed)
+(defun+ pixel-format! (components &optional (type :uint8) (normalize t) reversed)
   (destructuring-bind
         (components type sizes normalize reversed component-length)
       (process-pixel-format components type normalize reversed)
@@ -174,7 +174,7 @@
                        :comp-length component-length)))
 
 ;; [TODO] swap intern for cepl-utils:kwd
-(defun compile-pixel-format (pixel-format)
+(defun+ compile-pixel-format (pixel-format)
   (let* ((components (pixel-format-components pixel-format))
          (components (if (eq components :depth) :depth-component components))
          (gl-comps (or (rest (assoc components '((:r . :red) (:g . :green)
@@ -193,7 +193,7 @@
                     expanded-type)))
       (list format type))))
 
-(defun pixel-format->lisp-type (pixel-format)
+(defun+ pixel-format->lisp-type (pixel-format)
   (if (pixel-format-sizes pixel-format)
       (pixel-format-type pixel-format)
       (let ((len (pixel-format-comp-length pixel-format))
@@ -210,14 +210,14 @@
                      'keyword)
                     type)))))
 
-(defun image-format->lisp-type (image-format)
+(defun+ image-format->lisp-type (image-format)
   (let ((pformat (image-format->pixel-format image-format)))
     (if pformat
         (pixel-format->lisp-type pformat)
         (error 'image-format->lisp-type-failed
                :type-name image-format))))
 
-(defun lisp-type->image-format (lisp-type)
+(defun+ lisp-type->image-format (lisp-type)
   (let ((pformat (lisp-type->pixel-format lisp-type)))
     (or (pixel-format->image-format pformat :error-if-missing nil)
         (error 'lisp-type->image-format-failed
@@ -227,7 +227,7 @@
 ;; Image-Formats
 ;;------------------
 
-(defun pixel-format->image-format (pixel-format &key (error-if-missing t))
+(defun+ pixel-format->image-format (pixel-format &key (error-if-missing t))
   (let ((result (second (assoc (list (pixel-format-components pixel-format)
                                      (pixel-format-normalize pixel-format)
                                      (pixel-format-type pixel-format)
@@ -240,7 +240,7 @@
                  :type-name pixel-format)))))
 
 ;; [TODO] REVERSED??
-(defun image-format->pixel-format
+(defun+ image-format->pixel-format
     (image-format &key (error-if-missing t))
   (let ((pf (first (rassoc image-format *gl-pixel-to-internal-map*
                            :key #'car :test #'eq))))

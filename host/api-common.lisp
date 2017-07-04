@@ -34,13 +34,19 @@
      make the context current"
     (setf make-current-func func))
 
-  (defun host-step (win)
+  (defn host-step (win) (values)
     "not external"
-    (funcall step-func win))
+    (declare (speed 3) (safety 1) (debug 0)
+             (profile t))
+    (funcall step-func win)
+    (values))
 
-  (defun host-swap (win)
+  (defn host-swap (win) (values)
     "not external"
-    (funcall swap-func win))
+    (declare (speed 3) (safety 1) (debug 0)
+             (profile t))
+    (funcall swap-func win)
+    (values))
 
   (defun window-size (win)
     "When given the host-specific window handle will return the size of the window"

@@ -2,7 +2,9 @@
 
 ;;------------------------------------------------------------
 
-(defun subseq-c (array start &optional end)
+(defn subseq-c ((array c-array) (start c-array-index)
+                &optional (end c-array-index))
+    c-array
   "This function returns a c-array which contains
    a subset of the array passed into this function.
    Right this will make more sense with a use case:
@@ -24,19 +26,25 @@
    array affect the child sub-array. This can really bite you
    in the backside if you change how the data in the array is
    laid out."
-  (let ((dimensions (dimensions array)))
-    (if (> (length dimensions) 1)
-        (error "Cannot take subseq of multidimensional array")
-        (let* ((length (first dimensions))
-               (type (c-array-element-type array))
-               (end (or end length)))
-          (if (and (< start end) (< start length) (<= end length))
-              (make-c-array-from-pointer
-               (list (- end start)) type
-               (cffi:inc-pointer (c-array-pointer array)
-                                 (%gl-calc-byte-size (c-array-element-byte-size array)
-                                                     (list start))))
-              (error "Invalid subseq start or end for c-array"))))))
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (declare (profile t))
+  (let* ((dimensions (c-array-dimensions array))
+         (length (the c-array-index (first dimensions)))
+         (elem-size (c-array-element-byte-size array)))
+    (assert (= (length dimensions) 1) ()
+            "Cannot take subseq of multidimensional array")
+    (assert (and (< start end) (< start length) (<= end length)) ()
+            "Invalid subseq start or end for c-array")
+    (%make-c-array
+     :pointer (cffi:inc-pointer (c-array-pointer array)
+                                (* elem-size start))
+     :dimensions (c-array-dimensions array)
+     :element-byte-size (c-array-element-byte-size array)
+     :element-type (c-array-element-type array)
+     :struct-element-typep (c-array-struct-element-typep array)
+     :row-byte-size (c-array-row-byte-size array)
+     :element-from-foreign (c-array-element-from-foreign array)
+     :element-to-foreign (c-array-element-to-foreign array))))
 
 (defmethod pull1-g ((object c-array))
   (let* ((dimensions (c-array-dimensions object))

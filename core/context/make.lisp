@@ -2,7 +2,12 @@
 
 ;;----------------------------------------------------------------------
 
-(defun set-context-defaults (cepl-context)
+(defun+ set-context-defaults (cepl-context)
+  ;; Set up the cache for samplers
+  (setf (%cepl-context-array-of-bound-samplers cepl-context)
+        (make-array (gl:get* :max-combined-texture-image-units)
+                    :element-type '(or null sampler)
+                    :initial-element nil))
   ;; Enable depth testing and use 'less than' for testing
   (setf (depth-test-function cepl-context)
         #'<)

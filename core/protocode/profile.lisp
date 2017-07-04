@@ -28,9 +28,10 @@
                     :cepl.fbos
                     :cepl.blending
                     :cepl.pipelines
-                    :cepl.misc
                     :cffi
                     :%gl)))
+    (when (find-package :livesupport)
+      (pushnew :livesupport packages))
     `(sb-profile:profile
       ,@(loop :for p :in packages :append
            (let ((pkg (find-package p)))
@@ -68,9 +69,10 @@
                     :cepl.fbos
                     :cepl.blending
                     :cepl.pipelines
-                    :cepl.misc
                     :cffi
                     :%gl)))
+    (when (find-package :livesupport)
+      (pushnew :livesupport packages))
     `(progn
        (sb-profile:unprofile
         ,@(loop :for p :in packages :append

@@ -22,7 +22,7 @@
               (texture-base-dimensions object))
       (format stream "#<TEXTURE :UNINITIALIZED>")))
 
-(defun texture-element-type (texture)
+(defun+ texture-element-type (texture)
   (texture-image-format texture))
 
 (defmethod element-type ((texture texture))
@@ -31,8 +31,8 @@
 (defmethod free ((object texture))
   (free-texture object))
 
-(defun blank-texture-object (texture)
-  (setf (texture-id texture) -1
+(defun+ blank-texture-object (texture)
+  (setf (texture-id texture) 0
         (texture-base-dimensions texture) nil
         (texture-type texture) nil
         (texture-image-format texture) nil
@@ -46,7 +46,7 @@
 (defmethod free-texture ((texture texture))
   (with-foreign-object (id :uint)
     (setf (mem-ref id :uint) (texture-id texture))
-    (setf (texture-id texture) -1)
+    (setf (texture-id texture) 0)
     (%gl:delete-textures 1 id)
     t))
 
@@ -58,7 +58,7 @@
       (setf (buffer-texture-backing-array texture)
             +null-buffer-backed-gpu-array+))
     (setf (mem-ref id :uint) (texture-id texture))
-    (setf (texture-id texture) -1)
+    (setf (texture-id texture) 0)
     (%gl:delete-textures 1 id)))
 
 ;;------------------------------------------------------------
@@ -82,7 +82,7 @@
   (declare (ignore gpu-array))
   (free-gpu-array-t))
 
-(defun free-gpu-array-t ()
+(defun+ free-gpu-array-t ()
   (error "Cannot free a texture backed gpu-array. free the texture containing this array "))
 
 (defmacro with-gpu-array-t (gpu-array-t &body body)
@@ -107,14 +107,26 @@
 
 ;;------------------------------------------------------------
 
-(defmacro with-texture-bound (texture &body body)
-  (alexandria:with-gensyms (tex old-id cache-id)
-    `(let* ((,tex ,texture)
-            (,cache-id (texture-cache-id ,tex))
-            (,old-id (cepl.context::texture-bound-id
-                      *cepl-context* ,cache-id)))
-       (cepl.context::set-texture-bound-id
-        *cepl-context* ,cache-id (texture-id ,tex))
+(defn bind-scratch-texture ((texture texture)) (values)
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (inline active-texture-num)
+           (profile t))
+  (active-texture-num 0)
+  (%gl:bind-texture (texture-cache-id texture) (texture-id texture))
+  (values))
+
+(defn unbind-texture-from-scratch ((texture texture)) (values)
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (inline active-texture-num)
+           (profile t))
+  (active-texture-num 0)
+  (%gl:bind-texture (texture-cache-id texture) 0)
+  (values))
+
+
+(defmacro %with-scratch-texture-bound (texture &body body)
+  (alexandria:with-gensyms (tex)
+    `(let* ((,tex ,texture))
+       (bind-scratch-texture ,tex)
        (unwind-protect (progn ,@body)
-         (cepl.context::set-texture-bound-id
-          *cepl-context* ,cache-id ,old-id)))))
+         (unbind-texture-from-scratch ,tex)))))

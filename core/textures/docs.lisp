@@ -254,15 +254,6 @@ The possible values are:
     :texture-2d-multisample-array
 ")
 
-  (defmacro with-texture-bound
-      "
-Binds the given `texture` to the `gl-context` for the duration of the body and then
-ensures it is unbound.
-
-You do not need to interact with this directly as it will be handled
-by `map-g` and the `pipeline` itself.
-")
-
   (defun buffer-texture-p
       "
 Return t if the given value is a `texture` who data is stored in a `gpu-buffer` as

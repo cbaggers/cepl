@@ -10,7 +10,7 @@
                  x)))
     `(%bake ,pipeline ,@(mapcar #'expand-literal-func uniforms))))
 
-(defun %bake (pipeline &rest uniforms &key &allow-other-keys)
+(defun+ %bake (pipeline &rest uniforms &key &allow-other-keys)
   (let* ((pipeline (typecase pipeline
                      ((or list symbol) (pipeline-spec pipeline))
                      (function (cepl.pipelines::function-keyed-pipeline
@@ -55,7 +55,7 @@
       (bake-and-g-> draw-mode stage-pairs final-uniform-pairs))))
 
 
-(defun bake-and-g-> (draw-mode stage-pairs uniforms-to-bake)
+(defun+ bake-and-g-> (draw-mode stage-pairs uniforms-to-bake)
   (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
          (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version)))

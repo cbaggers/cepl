@@ -13,19 +13,19 @@
         (array-sym (gensym "BUFFER"))
         (buffer-sym (gensym "BUFFER"))
         (gtarget (gensym "target")))
-    `(progn
-       (let ((,array-sym ,gpu-array))
-         (unless (typep ,array-sym 'gpu-array)
-           (if (typep ,array-sym 'gpu-array-t)
-               (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
-               (error "with-gpu-array-* does not support the type ~s"
-                      (type-of ,array-sym))))
-         (let ((,buffer-sym (gpu-array-buffer ,array-sym))
-               (,gtarget ,target))
-           (cepl.gpu-buffers::with-buffer
-               (foo ,buffer-sym ,gtarget)
+    (labels ((tgt () (if (keywordp target) target gtarget)))
+      `(progn
+         (let ((,array-sym ,gpu-array))
+           (unless (typep ,array-sym 'gpu-array)
+             (if (typep ,array-sym 'gpu-array-t)
+                 (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
+                 (error "with-gpu-array-* does not support the type ~s"
+                        (type-of ,array-sym))))
+           (let ((,buffer-sym (gpu-array-buffer ,array-sym))
+                 ,@(unless (keywordp target) `((,gtarget ,target))))
+             (setf (cepl.context:gpu-buffer-bound (cepl.context:cepl-context) ,(tgt)) ,buffer-sym)
              (gl:with-mapped-buffer (,glarray-pointer
-                                     ,gtarget
+                                     ,(tgt)
                                      ,access-type)
                (if (pointer-eq ,glarray-pointer (null-pointer))
                    (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an opengl context?~%~s"
@@ -52,7 +52,7 @@
   (with-gpu-array-as-pointer (a thing :access-type :read-only)
     (print-mem (cffi:inc-pointer a offset) size-in-bytes)))
 
-(defun gpu-array-pull-1 (gpu-array)
+(defun+ gpu-array-pull-1 (gpu-array)
   "This function returns the contents of the gpu array as a c-array
    Note that you often dont need to use this as the generic
    function pull-g will call this function if given a gpu-array"
@@ -61,15 +61,16 @@
 
 ;; allignmetn
 (defmethod push-g ((object list) (destination gpu-array-bb))
-  (with-c-array (tmp (make-c-array object
-                                   :dimensions (dimensions destination)
-                                   :element-type (element-type destination)))
+  (with-c-array (tmp (make-c-array
+                      object
+                      :dimensions (gpu-array-dimensions destination)
+                      :element-type (element-type destination)))
     (push-g tmp destination)))
 
 (defmethod push-g ((object c-array) (destination gpu-array-bb))
   (let* ((type (gpu-array-bb-element-type destination))
-         (ob-dimen (dimensions object))
-         (des-dimen (dimensions object)))
+         (ob-dimen (c-array-dimensions object))
+         (des-dimen (gpu-array-dimensions destination)))
     (if (and (eq (element-type object) type)
              (if (= 1 (length des-dimen) (length ob-dimen))
                  (<= (first ob-dimen) (first des-dimen))
@@ -88,14 +89,16 @@ dimension then their sizes must match exactly"))
   (with-gpu-array-as-c-array (x object :access-type :read-only)
     (pull1-g x)))
 
-(defun gpu-array-element-type (gpu-array)
+(defn-inline gpu-array-element-type ((gpu-array gpu-array)) symbol
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
   (etypecase gpu-array
     (gpu-array-t
      (%cepl.types::gpu-array-t-image-format gpu-array))
     (gpu-array-bb
      (cepl.gpu-arrays.buffer-backed::gpu-array-bb-element-type gpu-array))))
 
-(defun backed-by (gpu-array)
+(defun+ backed-by (gpu-array)
   (etypecase gpu-array
     (gpu-array-t :texture)
     (gpu-array-bb :buffer)))
@@ -113,7 +116,7 @@ dimension then their sizes must match exactly"))
          (unwind-protect (progn ,@body)
            (%gl:unmap-buffer ,target))))))
 
-(defun %process-with-gpu-array-range-macro-args (target access-set)
+(defun+ %process-with-gpu-array-range-macro-args (target access-set)
   (assert (keywordp target))
   (let* ((valid-set-elems (cffi:foreign-bitfield-symbol-list
                            '%gl::mapbufferusagemask))
@@ -128,7 +131,7 @@ dimension then their sizes must match exactly"))
               valid-set-elems)
     access-set))
 
-(defun %process-with-gpu-array-range-runtime (gpu-array start length)
+(defun+ %process-with-gpu-array-range-runtime (gpu-array start length)
   (unless (typep gpu-array 'gpu-array)
     (if (typep gpu-array 'gpu-array-t)
         (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
@@ -149,26 +152,28 @@ dimension then their sizes must match exactly"))
     ((temp-name gpu-array start-index length
                 &key (access-set :map-read) (target :array-buffer))
      &body body)
-  (alexandria:with-gensyms (glarray-pointer
-                            array-sym buffer gtarget
+  (alexandria:with-gensyms (glarray-pointer array-sym gtarget
                             byte-start byte-len)
     (let ((access-set
            (%process-with-gpu-array-range-macro-args
             target access-set)))
-      `(dbind (,array-sym ,byte-start ,byte-len)
-           (%process-with-gpu-array-range-runtime
-            ,gpu-array ,start-index ,length)
-         (let* ((,gtarget ,target))
-           (cepl.gpu-buffers::with-buffer (,buffer
-                                           (gpu-array-buffer ,array-sym)
-                                           ,gtarget)
-             (with-buffer-range-mapped
-                 (,glarray-pointer ,gtarget ,byte-start ,byte-len ,access-set)
-               (if (pointer-eq ,glarray-pointer (null-pointer))
-                   (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an OpenGL context?~%~s"
-                          ,glarray-pointer)
-                   (let ((,temp-name ,glarray-pointer))
-                     ,@body)))))))))
+      (labels ((tgt () (if (keywordp target) target gtarget)))
+        `(dbind (,array-sym ,byte-start ,byte-len)
+             (%process-with-gpu-array-range-runtime
+              ,gpu-array ,start-index ,length)
+           (,@(if (keywordp target)
+                  '(progn)
+                  `(let* ((,gtarget ,target))))
+              (setf (cepl.context:gpu-buffer-bound
+                     (cepl.context:cepl-context) ,(tgt))
+                    (gpu-array-buffer ,array-sym))
+              (with-buffer-range-mapped
+                  (,glarray-pointer ,(tgt) ,byte-start ,byte-len ,access-set)
+                (if (pointer-eq ,glarray-pointer (null-pointer))
+                    (error "with-gpu-array-as-*: buffer mapped to null pointer~%Have you defintely got an OpenGL context?~%~s"
+                           ,glarray-pointer)
+                    (let ((,temp-name ,glarray-pointer))
+                      ,@body)))))))))
 
 (defmacro with-gpu-array-range-as-c-array
     ((temp-name gpu-array start-index length &key (access-set :map-read))
@@ -186,7 +191,7 @@ dimension then their sizes must match exactly"))
 
 ;;------------------------------------------------------------------------
 
-(defun reallocate-gpu-array (gpu-array)
+(defun+ reallocate-gpu-array (gpu-array)
   (assert (typep gpu-array 'gpu-array-bb) ()
           "CEPL: reallocate-gpu-array is not yet implemented for texture backed arrays")
   (reallocate-buffer (gpu-array-bb-buffer gpu-array)))

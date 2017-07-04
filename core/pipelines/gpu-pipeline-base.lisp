@@ -71,7 +71,7 @@
 
 (defclass glsl-stage-spec (gpu-func-spec) ())
 
-(defun %make-gpu-func-spec (name in-args uniforms context body instancing
+(defun+ %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
                             actual-uniforms
                             doc-string declarations missing-dependencies)
@@ -89,7 +89,7 @@
                  :declarations declarations
                  :missing-dependencies missing-dependencies))
 
-(defun %make-glsl-stage-spec (name in-args uniforms context body-string
+(defun+ %make-glsl-stage-spec (name in-args uniforms context body-string
                               compiled)
   (let ((uniforms (mapcar #'listify uniforms)))
     (make-instance 'glsl-stage-spec
@@ -132,7 +132,7 @@
       ',actual-uniforms
       ,doc-string ',declarations ',missing-dependencies)))
 
-(defun clone-stage-spec (spec &key new-name new-in-args new-uniforms new-context
+(defun+ clone-stage-spec (spec &key new-name new-in-args new-uniforms new-context
                                 new-body new-instancing new-equivalent-inargs
                                 new-equivalent-uniforms new-actual-uniforms
                                 new-doc-string new-declarations
@@ -169,7 +169,7 @@
   (declare (ignore environment))
   `(new-func-key ',(name key) ',(in-args key)))
 
-(defun new-func-key (name in-args-types)
+(defun+ new-func-key (name in-args-types)
   (make-instance
    'func-key
    :name name
@@ -237,7 +237,7 @@
                            :key #'car :test #'func-key=
                            :from-end t)))
 
-(defun gpu-func-specs (name &optional error-if-missing)
+(defun+ gpu-func-specs (name &optional error-if-missing)
   (or (remove nil
               (mapcar λ(dbind (k . v) _
                          (when (eq (name k) name)
@@ -276,7 +276,7 @@
                         :key #'car :test #'func-key=
                         :from-end t)))
 
-(defun funcs-these-funcs-use (names &optional (include-names t))
+(defun+ funcs-these-funcs-use (names &optional (include-names t))
   (remove-duplicates
    (append (apply #'concatenate 'list
                   (mapcar #'funcs-this-func-uses names))
@@ -284,7 +284,7 @@
    :from-end t
    :test #'eq))
 
-(defun funcs-this-func-uses (key)
+(defun+ funcs-this-func-uses (key)
   "Recursivly searches for functions by this function.
 Sorts the list of function names by dependency so the earlier
 names are depended on by the functions named later in the list"
@@ -318,7 +318,7 @@ names are depended on by the functions named later in the list"
             *gpu-pipeline-specs*))
    :test #'eq))
 
-(defun update-specs-with-missing-dependencies ()
+(defun+ update-specs-with-missing-dependencies ()
   (map 'nil λ(dbind (k . v) _
                (with-gpu-func-spec v
                  (when missing-dependencies
@@ -358,12 +358,12 @@ names are depended on by the functions named later in the list"
 (defmacro gpu-function (name)
   (%gpu-function name))
 
-(defun gpu-functions (name)
+(defun+ gpu-functions (name)
   (mapcar λ(cons (slot-value _ 'name)
                  (mapcar #'second (slot-value _ 'in-args)))
           (gpu-func-specs name)))
 
-(defun read-gpu-function-choice (intro-text gfunc-name)
+(defun+ read-gpu-function-choice (intro-text gfunc-name)
   (let ((choices (gpu-functions gfunc-name)))
     (when choices
       (format t "~%~a~{~%~a: ~a~}~%Choice: "
@@ -374,7 +374,7 @@ names are depended on by the functions named later in the list"
             (elt choices (first choice))
             nil)))))
 
-(defun interactive-pick-gpu-function (name)
+(defun+ interactive-pick-gpu-function (name)
   (read-gpu-function-choice
    "Please choose which of the following functions you wish to use"
    name))
@@ -383,11 +383,11 @@ names are depended on by the functions named later in the list"
 
 (defvar +cache-last-compile-result+ t)
 
-(defun make-lambda-pipeline-spec (compiled-stages)
+(defun+ make-lambda-pipeline-spec (compiled-stages)
   (make-instance 'lambda-pipeline-spec
                  :cached-compile-results compiled-stages))
 
-(defun make-pipeline-spec (name stages context)
+(defun+ make-pipeline-spec (name stages context)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment) (flatten stages)
     (make-instance 'pipeline-spec
@@ -399,27 +399,27 @@ names are depended on by the functions named later in the list"
                    :fragment-stage fragment
                    :context context)))
 
-(defun pipeline-spec (name)
+(defun+ pipeline-spec (name)
   (gethash name *gpu-pipeline-specs*))
 
-(defun (setf pipeline-spec) (value name)
+(defun+ (setf pipeline-spec) (value name)
   (setf (gethash name *gpu-pipeline-specs*) value))
 
-(defun update-pipeline-spec (spec)
+(defun+ update-pipeline-spec (spec)
   (setf (pipeline-spec (slot-value spec 'name)) spec))
 
-(defun add-compile-results-to-pipeline (name compiled-results)
+(defun+ add-compile-results-to-pipeline (name compiled-results)
   (setf (slot-value (pipeline-spec name) 'cached-compile-results)
         compiled-results))
 
-(defun function-keyed-pipeline (func)
+(defun+ function-keyed-pipeline (func)
   (assert (typep func 'function))
   (let ((spec (gethash func *gpu-pipeline-specs*)))
     (if (typep spec 'lambda-pipeline-spec)
         spec
         (pipeline-spec spec))))
 
-(defun (setf function-keyed-pipeline) (spec func)
+(defun+ (setf function-keyed-pipeline) (spec func)
   (assert (typep func 'function))
   (assert (or (symbolp spec) (typep spec 'lambda-pipeline-spec)))
   (labels ((scan (k v)
@@ -432,7 +432,7 @@ names are depended on by the functions named later in the list"
   (setf (gethash func *gpu-pipeline-specs*)
         spec))
 
-(defun %pull-spec-common (asset-name)
+(defun+ %pull-spec-common (asset-name)
   (labels ((gfunc-spec (x)
              (handler-case (gpu-func-spec (%gpu-function x))
                (cepl.errors:gpu-func-spec-not-found ()
@@ -466,7 +466,7 @@ names are depended on by the functions named later in the list"
       (list (mapcar #'varjo:glsl-code compiled))
       (varjo:compiled-stage (glsl-code compiled)))))
 
-(defun pull-g-soft-multi-func-message (asset-name)
+(defun+ pull-g-soft-multi-func-message (asset-name)
   (let ((choices (gpu-functions asset-name)))
     (restart-case
         (error 'multi-func-error :name asset-name :choices choices)
@@ -497,17 +497,17 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defun request-program-id-for (name)
-  (with-slots (cepl.context::map-of-pipeline-names-to-gl-ids) *cepl-context*
+(defun+ request-program-id-for (name)
+  (%with-cepl-context-slots (map-of-pipeline-names-to-gl-ids) (cepl-context)
     (if name
-        (or (gethash name cepl.context::map-of-pipeline-names-to-gl-ids)
-            (setf (gethash name cepl.context::map-of-pipeline-names-to-gl-ids)
-                  (gl:create-program)))
-        (gl:create-program))))
+        (or (gethash name map-of-pipeline-names-to-gl-ids)
+            (setf (gethash name map-of-pipeline-names-to-gl-ids)
+                  (%gl:create-program)))
+        (%gl:create-program))))
 
 ;;--------------------------------------------------
 
-(defun varjo->gl-stage-names (stage)
+(defun+ varjo->gl-stage-names (stage)
   (typecase stage
     (varjo::vertex-stage :vertex-shader)
     (varjo::tessellation-evaluation-stage :tess-evaluation-shader)
@@ -519,7 +519,9 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
+(declaim (type (unsigned-byte 16) |*instance-count*|))
 (defvar |*instance-count*| 0)
+
 (defmacro with-instances (count &body body)
   `(let ((|*instance-count*| ,count))
      (unless (> |*instance-count*| 0)
@@ -528,7 +530,7 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defun recompile-name (name) (symb-package :cepl '~~- name))
+(defun+ recompile-name (name) (symb-package :cepl '~~- name))
 
 ;;--------------------------------------------------
 

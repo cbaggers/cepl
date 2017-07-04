@@ -11,14 +11,14 @@
          :type function))
 
 (defun delay-initialization (cepl-context init-thunk waiting-on-these-resources)
-  (with-slots (uninitialized-resources) cepl-context
+  (%with-cepl-context-slots (uninitialized-resources) cepl-context
     (push (make-delayed :waiting-on waiting-on-these-resources
                         :thunk init-thunk)
           uninitialized-resources))
   t)
 
 (defun initialize-all-delay-items-in-context (cepl-context)
-  (with-slots (uninitialized-resources) cepl-context
+  (%with-cepl-context-slots (uninitialized-resources) cepl-context
     (initialize-all-delayed uninitialized-resources)
     (setf uninitialized-resources nil)
     cepl-context))
@@ -45,11 +45,11 @@
 (defmacro if-gl-context (init-func-call pre-context-form &optional depends-on)
   (let ((pre (cepl-utils:symb :%pre%)))
     `(let ((,pre ,pre-context-form))
-       (if (slot-value *cepl-context* 'gl-context)
+       (if (%cepl-context-gl-context (cepl-context))
            (let ((,pre ,pre))
              ,init-func-call)
            (delay-initialization
-            *cepl-context*
+            (cepl-context)
             (lambda () ,init-func-call)
             ,depends-on))
        ,pre)))

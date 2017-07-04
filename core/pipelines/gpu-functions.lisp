@@ -9,7 +9,7 @@
 (defmacro defun-g-equiv (name args &body body)
   (defun-g-common name args body t))
 
-(defun defun-g-common (name args body equiv)
+(defun+ defun-g-common (name args body equiv)
   "Define a function that runs on the gpu."
   ;; The code here splits and validates the arguments but the meat
   ;; of gpu function definition happens in the %def-gpu-function call
@@ -28,14 +28,14 @@
       (%def-gpu-function name in-args uniforms body instancing
                          doc-string equiv context))))
 
-(defun assert-arg-format (gfunc-name x)
+(defun+ assert-arg-format (gfunc-name x)
   (unless (listp x)
     (error 'gfun-invalid-arg-format :gfun-name gfunc-name :invalid-pair x))
   x)
 
 ;;--------------------------------------------------
 
-(defun %def-gpu-function (name in-args uniforms body instancing
+(defun+ %def-gpu-function (name in-args uniforms body instancing
                           doc-string equiv context)
   "This is the meat of defun-g. it is broken down as follows:
 
@@ -82,21 +82,21 @@
        (update-specs-with-missing-dependencies);;[5]
        ',name)))
 
-(defun get-versions-from-context (context)
+(defun+ get-versions-from-context (context)
   (%sort-versions
    (remove-if-not λ(member _ varjo:*supported-versions*)
                   context)))
 
-(defun %sort-versions (versions)
+(defun+ %sort-versions (versions)
   (mapcar #'first
           (sort (mapcar λ(list _ (parse-integer (symbol-name _)))
                         versions)
                 #'< :key #'second)))
 
-(defun swap-version (glsl-version context)
+(defun+ swap-version (glsl-version context)
   (cons glsl-version (remove-if λ(find _ varjo:*supported-versions*) context)))
 
-(defun lowest-suitable-glsl-version (context)
+(defun+ lowest-suitable-glsl-version (context)
   (let* ((versions (or (get-versions-from-context context)
                        (list (cepl.context::get-best-glsl-version)))))
     (case= (length versions)
@@ -105,7 +105,7 @@
 
 (defvar *warn-when-cant-test-compile* t)
 
-(defun %test-&-update-spec (spec)
+(defun+ %test-&-update-spec (spec)
   "Use varjo to compile the code.
    [0] If the compilation throws a could-not-find-function error, then record
    that missing function's name as a missing dependency.
@@ -174,7 +174,7 @@
   ;; and recompile pipelines that depend on name
   (recompile-pipelines-that-use-this-as-a-stage key))
 
-(defun %update-gpu-function-data (spec depends-on compiled)
+(defun+ %update-gpu-function-data (spec depends-on compiled)
   "[0] Add or update the spec
 
    [1] (re)subscribe to all the dependencies
@@ -187,7 +187,7 @@
     (setf (slot-value spec 'cached-compile-results) compiled));;[2]
   (setf (gpu-func-spec spec) spec));;[0]
 
-(defun %update-glsl-stage-data (spec)
+(defun+ %update-glsl-stage-data (spec)
   "[0] Add or update the spec"
   (setf (gpu-func-spec spec) spec));;[0]
 
@@ -208,7 +208,7 @@
                   (name subscribe-to)))
         (push func func-specs)))))
 
-(defun make-stand-in-lisp-func (spec)
+(defun+ make-stand-in-lisp-func (spec)
   "Makes a regular lisp function with the same names and arguments
   (where possible) as the gpu function who's spec is provided.
 
@@ -229,7 +229,7 @@
 
 ;;--------------------------------------------------
 
-(defun %aggregate-uniforms (uniforms &optional accum)
+(defun+ %aggregate-uniforms (uniforms &optional accum)
   "The meat behind the uniform aggregation functions
    The reason we need to aggregate uniforms is as follows:
    - pipelines are made of composed gpu functions
@@ -255,7 +255,7 @@
                     u accum))))
       accum))
 
-(defun aggregate-uniforms (keys &optional accum interal-uniforms-p)
+(defun+ aggregate-uniforms (keys &optional accum interal-uniforms-p)
   "[0] Aggregates the uniforms from the named gpu-functions,
 
    The reason we need to aggregate uniforms is as follows:
@@ -277,13 +277,13 @@
 
 ;;--------------------------------------------------
 
-(defun get-func-as-stage-code (stage)
+(defun+ get-func-as-stage-code (stage)
   (with-gpu-func-spec stage
     (list in-args uniforms context body)))
 
 ;;--------------------------------------------------
 
-(defun %varjo-compile-as-pipeline (draw-mode parsed-gpipe-args)
+(defun+ %varjo-compile-as-pipeline (draw-mode parsed-gpipe-args)
   "Compile the gpu functions for a pipeline
    The argument to this function is a list of pairs.
    Each pair contains:
@@ -296,7 +296,7 @@
                parsed-gpipe-args)))))
 
 ;; {TODO} make the replacements related code more robust
-(defun parsed-gpipe-args->v-translate-args (draw-mode stage-pair
+(defun+ parsed-gpipe-args->v-translate-args (draw-mode stage-pair
                                             &optional replacements)
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
    %compile-link-and-upload needs to call v-rolling-translate. To do this
@@ -350,12 +350,12 @@
 
 ;;--------------------------------------------------
 
-(defun get-possible-designators-for-name (name)
+(defun+ get-possible-designators-for-name (name)
   (mapcar λ(with-gpu-func-spec _
              (cons name (mapcar #'second in-args)))
           (gpu-func-specs name)))
 
-(defun get-stage-key (stage-designator &optional (error-on-symbol t))
+(defun+ get-stage-key (stage-designator &optional (error-on-symbol t))
   (cond
     ((and (listp stage-designator) (eq (first stage-designator) 'function))
      (get-stage-key (second stage-designator)))
@@ -387,7 +387,7 @@
                                  stage-designator))))
     (t (error "CEPL: Bug in get-stage-key - ~s" stage-designator))))
 
-(defun parse-gpipe-args (args)
+(defun+ parse-gpipe-args (args)
   "Gets the stage pairs and context for the given gpipe form.
    If there are only two gpu functions named and no explicit stages then
    it is assumed that the first is the vertex stage and the second the fragment
@@ -406,12 +406,12 @@
              (parse-gpipe-args-explicit args))
          post)))))
 
-(defun parse-gpipe-args-implicit (args)
+(defun+ parse-gpipe-args-implicit (args)
   (destructuring-bind (v-key f-key) (validate-stage-names args)
     (list (cons :vertex v-key)
           (cons :fragment f-key))))
 
-(defun parse-gpipe-args-explicit (args)
+(defun+ parse-gpipe-args-explicit (args)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment) args
     (dbind (v-key tc-key te-key g-key f-key)
@@ -430,7 +430,7 @@
                     (when fragment
                       (cons :fragment f-key)))))))
 
-(defun validate-stage-names (names)
+(defun+ validate-stage-names (names)
   (let* (invalid
          (valid
           (loop :for name :in names :collect
@@ -456,7 +456,7 @@
 
 ;;--------------------------------------------------
 
-(defun try-injecting-a-constant (constant-name)
+(defun+ try-injecting-a-constant (constant-name)
   (assert (constantp constant-name))
   (let ((val (symbol-value constant-name)))
     (typecase val
@@ -465,7 +465,7 @@
       ((signed-byte 32) val)
       ((unsigned-byte 32) val))))
 
-(defun try-guessing-a-varjo-type-for-symbol (s)
+(defun+ try-guessing-a-varjo-type-for-symbol (s)
   "This function is provided to varjo to allow inference of the
    types of implicit uniforms."
   ;; only works on specials because of symbol-value
@@ -477,7 +477,7 @@
     (declare (ignore thing))
     nil))
 
-(defun guess-a-varjo-type (x)
+(defun+ guess-a-varjo-type (x)
   (typecase x
     (number (guess-a-varjo-number-type x))
     (array (guess-a-varjo-array-type x))
@@ -486,12 +486,12 @@
     (t (or (infer-implicit-uniform-type x)
            (error "Cant guess a suitable type for ~s" x)))))
 
-(defun guess-a-varjo-bool-type (x)
+(defun+ guess-a-varjo-bool-type (x)
   (if (eql x t)
       :bool
       (error "Cant guess a suitable type for ~s" x)))
 
-(defun guess-a-varjo-array-type (x)
+(defun+ guess-a-varjo-array-type (x)
   (typecase x
     ((simple-array single-float (2)) :vec2)
     ((simple-array single-float (3)) :vec3)
@@ -499,18 +499,18 @@
     ((simple-array single-float (9)) :mat3)
     ((simple-array single-float (16)) :mat4)))
 
-(defun guess-a-varjo-number-type (x)
+(defun+ guess-a-varjo-number-type (x)
   (typecase x
     ((or single-float double-float) (guess-a-varjo-float-type x))
     (integer (guess-a-varjo-integer-type x))
     (t (error "Cant guess a suitable type for ~s" x))))
 
-(defun guess-a-varjo-float-type (x)
+(defun+ guess-a-varjo-float-type (x)
   (if (typep x 'single-float)
       :float
       :double))
 
-(defun guess-a-varjo-integer-type (x)
+(defun+ guess-a-varjo-integer-type (x)
   (typecase x
     ((signed-byte 32) :int)
     ((unsigned-byte 32) :uint)
@@ -558,7 +558,7 @@
 
 
 
-(defun interactive-delete-gpu-function (name)
+(defun+ interactive-delete-gpu-function (name)
   (let ((picked
          (read-gpu-function-choice
           "Please choose which of the following functions you wish to delete"

@@ -5,83 +5,80 @@
 ;; A: That requires looking up the size of the type on every call. Instead
 ;;    we cache that in the c-array and do the math ourselves.
 
-(declaim (inline ptr-index-1d)
-         (ftype (function (c-array fixnum) cffi-sys:foreign-pointer)
-                ptr-index-1d))
-(defun ptr-index-1d (c-array x)
-  (declare (c-array c-array)
-           (fixnum x)
-           (optimize (speed 3) (safety 0) (debug 1)))
+(defn-inline ptr-index-1d ((c-array c-array) (x c-array-index))
+    cffi-sys:foreign-pointer
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (profile t))
   (the cffi-sys:foreign-pointer
        (inc-pointer (c-array-pointer c-array)
-                    (the fixnum
-                         (* (the fixnum (c-array-element-byte-size
+                    (the c-array-index
+                         (* (the c-array-index (c-array-element-byte-size
                                          c-array))
                             x)))))
 
 (declaim (inline ptr-index-2d)
-         (ftype (function (c-array fixnum fixnum) cffi-sys:foreign-pointer)
+         (ftype (function (c-array c-array-index c-array-index) cffi-sys:foreign-pointer)
                 ptr-index-2d))
 (defun ptr-index-2d (c-array x y)
   (declare (c-array c-array)
-           (fixnum x) (fixnum y)
+           (c-array-index x) (c-array-index y)
            (optimize (speed 3) (safety 0) (debug 1))
            (inline inc-pointer c-array-pointer))
   (the cffi-sys:foreign-pointer
        (inc-pointer
         (c-array-pointer c-array)
-        (the fixnum
-             (+ (the fixnum
-                     (* y (the fixnum
+        (the c-array-index
+             (+ (the c-array-index
+                     (* y (the c-array-index
                                (c-array-row-byte-size c-array))))
-                (the fixnum
-                     (* x (the fixnum
+                (the c-array-index
+                     (* x (the c-array-index
                                (c-array-element-byte-size c-array)))))))))
 
 (declaim (inline ptr-index-3d)
-         (ftype (function (c-array fixnum fixnum fixnum)
+         (ftype (function (c-array c-array-index c-array-index c-array-index)
                           cffi-sys:foreign-pointer)
                 ptr-index-3d))
 (defun ptr-index-3d (c-array x y z)
   (declare (c-array c-array)
-           (fixnum x) (fixnum y) (fixnum z)
+           (c-array-index x) (c-array-index y) (c-array-index z)
            (optimize (speed 3) (safety 0) (debug 1)))
-  (let* ((row-size (the fixnum (c-array-row-byte-size c-array)))
-         (2d-size (the fixnum
-                       (* (the fixnum (third (c-array-dimensions c-array)))
+  (let* ((row-size (the c-array-index (c-array-row-byte-size c-array)))
+         (2d-size (the c-array-index
+                       (* (the c-array-index (third (c-array-dimensions c-array)))
                           row-size)))
-         (byte-offset (the fixnum
-                           (+ (the fixnum (* z 2d-size))
-                              (the fixnum (* y row-size))
-                              (the fixnum (* (c-array-element-byte-size c-array)
+         (byte-offset (the c-array-index
+                           (+ (the c-array-index (* z 2d-size))
+                              (the c-array-index (* y row-size))
+                              (the c-array-index (* (c-array-element-byte-size c-array)
                                              x))))))
     (the cffi-sys:foreign-pointer
          (inc-pointer (c-array-pointer c-array)
                       byte-offset))))
 
 (declaim (inline ptr-index-4d)
-         (ftype (function (c-array fixnum fixnum fixnum fixnum)
+         (ftype (function (c-array c-array-index c-array-index c-array-index c-array-index)
                           cffi-sys:foreign-pointer)
                 ptr-index-4d))
 (defun ptr-index-4d (c-array x y z w)
   (declare (c-array c-array)
-           (fixnum x) (fixnum y) (fixnum z) (fixnum w)
+           (c-array-index x) (c-array-index y) (c-array-index z) (c-array-index w)
            (optimize (speed 3) (safety 0) (debug 1)))
-  (let* ((row-size (the fixnum (c-array-row-byte-size c-array)))
+  (let* ((row-size (the c-array-index (c-array-row-byte-size c-array)))
          (dimensions (c-array-dimensions c-array))
-         (2d-size (the fixnum
-                       (* (the fixnum (third dimensions))
+         (2d-size (the c-array-index
+                       (* (the c-array-index (third dimensions))
                           row-size)))
-         (3d-size (the fixnum
-                       (* (the fixnum (fourth dimensions))
+         (3d-size (the c-array-index
+                       (* (the c-array-index (fourth dimensions))
                           2d-size)))
          (byte-offset
-          (the fixnum
-               (+ (the fixnum (* w 3d-size))
-                  (the fixnum
-                       (+ (the fixnum (* z 2d-size))
-                          (the fixnum (* y row-size))
-                          (the fixnum (* (c-array-element-byte-size c-array)
+          (the c-array-index
+               (+ (the c-array-index (* w 3d-size))
+                  (the c-array-index
+                       (+ (the c-array-index (* z 2d-size))
+                          (the c-array-index (* y row-size))
+                          (the c-array-index (* (c-array-element-byte-size c-array)
                                          x))))))))
     (the cffi-sys:foreign-pointer
          (inc-pointer (c-array-pointer c-array)
@@ -90,7 +87,7 @@
 
 (defun ptr-index (c-array &optional (x 0) (y 0 y-set) (z 0 z-set) (w 0 w-set))
   (declare (c-array c-array)
-           (fixnum x y z w)
+           (c-array-index x y z w)
            (optimize (speed 3) (safety 0) (debug 1)))
   (cond (w-set (ptr-index-4d c-array x y z w))
         (z-set (ptr-index-3d c-array x y z))
@@ -236,7 +233,7 @@ github issue for this when it becomes a problem for you"
 
 (defun aref-c*-1d (c-array x)
   (declare (c-array c-array)
-           (fixnum x)
+           (c-array-index x)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((ptr (ptr-index-1d c-array x))
         (ref (c-array-element-from-foreign c-array)))
@@ -244,8 +241,8 @@ github issue for this when it becomes a problem for you"
 
 (defun aref-c*-2d (c-array x y)
   (declare (c-array c-array)
-           (fixnum x)
-           (fixnum y)
+           (c-array-index x)
+           (c-array-index y)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((ptr (ptr-index-2d c-array x y))
         (ref (c-array-element-from-foreign c-array)))
@@ -253,9 +250,9 @@ github issue for this when it becomes a problem for you"
 
 (defun aref-c*-3d (c-array x y z)
   (declare (c-array c-array)
-           (fixnum x)
-           (fixnum y)
-           (fixnum z)
+           (c-array-index x)
+           (c-array-index y)
+           (c-array-index z)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((ptr (ptr-index-3d c-array x y z))
         (ref (c-array-element-from-foreign c-array)))
@@ -263,10 +260,10 @@ github issue for this when it becomes a problem for you"
 
 (defun aref-c*-4d (c-array x y z w)
   (declare (c-array c-array)
-           (fixnum x)
-           (fixnum y)
-           (fixnum z)
-           (fixnum w)
+           (c-array-index x)
+           (c-array-index y)
+           (c-array-index z)
+           (c-array-index w)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((ptr (ptr-index-4d c-array x y z w))
         (ref (c-array-element-from-foreign c-array)))
@@ -276,7 +273,7 @@ github issue for this when it becomes a problem for you"
 
 (defun (setf aref-c*-1d) (value c-array x)
   (declare (c-array c-array)
-           (fixnum x)
+           (c-array-index x)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((ptr (ptr-index-1d c-array x))
         (ref (c-array-element-to-foreign c-array)))
@@ -284,8 +281,8 @@ github issue for this when it becomes a problem for you"
 
 (defun (setf aref-c*-2d) (value c-array x y)
   (declare (c-array c-array)
-           (fixnum x)
-           (fixnum y)
+           (c-array-index x)
+           (c-array-index y)
            (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-2d))
   (let ((ptr (ptr-index-2d c-array x y))
@@ -294,9 +291,9 @@ github issue for this when it becomes a problem for you"
 
 (defun (setf aref-c*-3d) (value c-array x y z)
   (declare (c-array c-array)
-           (fixnum x)
-           (fixnum y)
-           (fixnum z)
+           (c-array-index x)
+           (c-array-index y)
+           (c-array-index z)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((ptr (ptr-index-3d c-array x y z))
         (ref (c-array-element-to-foreign c-array)))
@@ -304,10 +301,10 @@ github issue for this when it becomes a problem for you"
 
 (defun (setf aref-c*-4d) (value c-array x y z w)
   (declare (c-array c-array)
-           (fixnum x)
-           (fixnum y)
-           (fixnum z)
-           (fixnum w)
+           (c-array-index x)
+           (c-array-index y)
+           (c-array-index z)
+           (c-array-index w)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let ((ptr (ptr-index-4d c-array x y z w))
         (ref (c-array-element-to-foreign c-array)))

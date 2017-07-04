@@ -1,17 +1,17 @@
 (in-package :cepl)
 
-(defun repl (&optional (width 320) (height 240)
+(defun+ repl (&optional (width 320) (height 240)
                #+darwin (gl-version 4.1)
                #-darwin gl-version)
   "Initialize CEPL and open a window. If the gl-version argument is nil then
    the default for the OS will be used."
   (initialize-cepl :gl-version gl-version)
-  (cepl.context::legacy-add-surface *cepl-context* "CEPL" width height nil t
+  (cepl.context::legacy-add-surface (cepl-context) "CEPL" width height nil t
                                     nil nil t gl-version)
   (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%")
   (cls))
 
-(defun initialize-cepl (&key gl-version host-init-flags)
+(defun+ initialize-cepl (&key gl-version host-init-flags)
   ;;
   ;; Initialize Host
   (unless cepl.host::*current-host*
@@ -26,25 +26,27 @@
   (cepl.lifecycle::change-state :interactive)
   t)
 
-(defun quit () (cepl.lifecycle::change-state :shutting-down))
+(defun+ quit () (cepl.lifecycle::change-state :shutting-down))
 
-(defun register-event-listener (function)
+(defun+ register-event-listener (function)
   "Register a function to be called on every event.
    The function must take 1 argument, which will be the event."
   (cepl.host::register-event-listener function))
 
-(defun step-host (&optional (context *cepl-context*))
-  (with-slots (cepl.context::current-surface) context
-    (cepl.host::host-step cepl.context::current-surface))
+(defn-inline step-host (&optional (context cepl-context (cepl-context)))
+    cepl-context
+  (%with-cepl-context-slots (current-surface) context
+    (cepl.host::host-step current-surface))
   context)
 
-(defun swap (&optional (context *cepl-context*))
-  (with-slots (cepl.context::current-surface) context
-    (cepl.host::host-swap cepl.context::current-surface))
+(defn-inline swap (&optional (context cepl-context (cepl-context)))
+    cepl-context
+  (%with-cepl-context-slots (current-surface) context
+    (cepl.host::host-swap current-surface))
   context)
 
-(defun cls ()
-  (with-slots (default-framebuffer) *cepl-context*
+(defn cls () fbo
+  (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (with-fbo-bound (default-framebuffer :target :framebuffer
                       :with-viewport nil
                       :with-blending nil)

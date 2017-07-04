@@ -6,7 +6,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun sampler-texture (sampler)
+(defun+ sampler-texture (sampler)
   (%sampler-texture sampler))
 
 ;;----------------------------------------------------------------------
@@ -90,7 +90,7 @@
 
 ;; [TODO] Add shadow samplers
 ;; [TODO] does cl-opengl use multisample instead of ms?
-(defun calc-sampler-type (texture-type image-format &optional shadow-sampler)
+(defun+ calc-sampler-type (texture-type image-format &optional shadow-sampler)
   "Makes the keyword that names the sampler-type for the given texture-type and format"
   (cepl-utils:kwd
    (case image-format
@@ -133,16 +133,10 @@
          (t (error "CEPL: Unable to calculate the sampler type for ~s with texture type ~s. Mapping missing"
                    image-format texture-type))))))
 
-(defun %delete-sampler (sampler)
+(defun+ %delete-sampler (sampler)
   (gl::delete-sampler (%sampler-id sampler)))
 
-(defun %delete-samplers (&rest samplers)
-  (let ((ids (mapcar #'%sampler-id samplers)))
-    (gl::with-opengl-sequence (array '%gl:uint ids)
-      (%gl:delete-samplers (length ids) array))))
-
-
-(defun sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
+(defun+ sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
                          (minify-filter :linear-mipmap-linear)
                          (magnify-filter :linear)
                          (wrap #(:repeat :repeat :repeat)) (compare :none))
@@ -163,16 +157,16 @@
 (defvar *samplers-available* t)
 (defvar *default-sampler-id-box* (make-sampler-id-box))
 
-(defun check-sampler-feature ()
+(defun+ check-sampler-feature ()
   (unless (has-feature "GL_ARB_sampler_objects")
     (setf *samplers-available* nil)))
 
-(defun make-default-sampler-id-box ()
+(defun+ make-default-sampler-id-box ()
   (when (= (sampler-id-box-id *default-sampler-id-box*) -1)
     (setf *default-sampler-id-box*
           (make-sampler-id-box :id (%get-id) :shared-p t))))
 
-(defun sampler-on-context ()
+(defun+ sampler-on-context ()
   (check-sampler-feature)
   (make-default-sampler-id-box))
 
@@ -182,17 +176,17 @@
 
 (defvar *fake-sampler-id* 0)
 
-(defun %get-id ()
+(defun+ %get-id ()
   (if *samplers-available*
-      (first (gl::gen-samplers 1))
+      (first (gl:gen-samplers 1))
       (decf *fake-sampler-id*)))
 
-(defun wrap-eq (wrap-a wrap-b)
+(defun+ wrap-eq (wrap-a wrap-b)
   (loop :for a :across wrap-a
      :for b :across wrap-b
      :always (eq a b)))
 
-(defun get-sampler-id-box (lod-bias min-lod max-lod minify-filter
+(defun+ get-sampler-id-box (lod-bias min-lod max-lod minify-filter
                            magnify-filter wrap compare)
   ;; this will have the lovely logic for deduping sampler-ids
   (let ((wrap (if (keywordp wrap)
@@ -205,7 +199,7 @@
         *default-sampler-id-box*
         (make-sampler-id-box :id (%get-id)))))
 
-(defun note-change (sampler)
+(defun+ note-change (sampler)
   ;; check if need to change box
   (when (sampler-id-box-shared-p (%sampler-id-box sampler))
     ;; change box
@@ -215,7 +209,7 @@
   sampler)
 
 
-(defun make-sampler-now (sampler-obj lod-bias min-lod max-lod minify-filter
+(defun+ make-sampler-now (sampler-obj lod-bias min-lod max-lod minify-filter
                          magnify-filter wrap compare)
   (let* ((texture (%sampler-texture sampler-obj))
          (sampler-type (cepl.samplers::calc-sampler-type
@@ -245,7 +239,7 @@
               (%sampler-texture object))
       (format stream "#<SAMPLER :UNINITIALIZED>")))
 
-(defun free-sampler (sampler)
+(defun+ free-sampler (sampler)
   (unless (sampler-shared-p sampler)
     ;; Be sure to add this back in when you implement freeing
     ;; samplers.
@@ -261,37 +255,37 @@
 
 ;;----------------------------------------------------------------------
 
-(defun lod-bias (sampler) (%sampler-lod-bias sampler))
-(defun (setf lod-bias) (value sampler)
+(defun+ lod-bias (sampler) (%sampler-lod-bias sampler))
+(defun+ (setf lod-bias) (value sampler)
   (unless (= (lod-bias sampler) value)
     (let ((sampler (note-change sampler)))
       (%set-lod-bias sampler value)))
   value)
 
-(defun min-lod (sampler) (%sampler-min-lod sampler))
-(defun (setf min-lod) (value sampler)
+(defun+ min-lod (sampler) (%sampler-min-lod sampler))
+(defun+ (setf min-lod) (value sampler)
   (unless (= (min-lod sampler) value)
     (let ((sampler (note-change sampler)))
       (%set-min-lod sampler value)))
   value)
 
-(defun max-lod (sampler) (%sampler-max-lod sampler))
-(defun (setf max-lod) (value sampler)
+(defun+ max-lod (sampler) (%sampler-max-lod sampler))
+(defun+ (setf max-lod) (value sampler)
   (unless (= (max-lod sampler) value)
     (let ((sampler (note-change sampler)))
       (%set-max-lod sampler value)))
   value)
 
-(defun magnify-filter (sampler) (%sampler-magnify-filter sampler))
-(defun (setf magnify-filter) (value sampler)
+(defun+ magnify-filter (sampler) (%sampler-magnify-filter sampler))
+(defun+ (setf magnify-filter) (value sampler)
   (assert (member value '(:linear :nearest)))
   (unless (eq (magnify-filter sampler) value)
     (let ((sampler (note-change sampler)))
       (%set-magnify-filter sampler value)))
   value)
 
-(defun minify-filter (sampler) (%sampler-minify-filter sampler))
-(defun (setf minify-filter) (value sampler)
+(defun+ minify-filter (sampler) (%sampler-minify-filter sampler))
+(defun+ (setf minify-filter) (value sampler)
   (unless (eq (minify-filter sampler) value)
     (let ((sampler (note-change sampler)))
       (%set-minify-filter sampler value)))
@@ -300,10 +294,10 @@
 ;; remembering the gl names for the interpolation is a bit annoying so
 ;; this function does it for you, alas because it takes two arguments it
 ;; doesnt work well as a setf func.
-(defun set-minify-filter (sampler for-level &key (between-levels nil))
+(defun+ set-minify-filter (sampler for-level &key (between-levels nil))
   (setf (minify-filter sampler) (calc-minify-filter for-level between-levels)))
 
-(defun calc-minify-filter (between-arrays-on-this-level
+(defun+ calc-minify-filter (between-arrays-on-this-level
                            between-arrays-on-different-levels)
   (assert (and (member between-arrays-on-this-level '(:linear :nearest))
                (member between-arrays-on-different-levels '(:linear :nearest))))
@@ -317,8 +311,8 @@
               :nearest-mipmap-nearest))
       between-arrays-on-this-level))
 
-(defun wrap (sampler) (%sampler-wrap sampler))
-(defun (setf wrap) (value sampler)
+(defun+ wrap (sampler) (%sampler-wrap sampler))
+(defun+ (setf wrap) (value sampler)
   (let ((value (if (keywordp value)
                    (vector value value value)
                    value)))
@@ -327,8 +321,8 @@
         (%set-wrap sampler value))))
   value)
 
-(defun compare (sampler) (%sampler-compare sampler))
-(defun (setf compare) (value sampler)
+(defun+ compare (sampler) (%sampler-compare sampler))
+(defun+ (setf compare) (value sampler)
   (unless (eq (compare sampler) value)
     (let ((sampler (note-change sampler)))
       (%set-compare sampler value)))
@@ -336,28 +330,28 @@
 
 ;;----------------------------------------------------------------------
 
-(defun %set-lod-bias (sampler value)
+(defun+ %set-lod-bias (sampler value)
   (setf (%sampler-lod-bias sampler) value)
   (%gl:sampler-parameter-f (%sampler-id sampler) :texture-lod-bias value)
   sampler)
 
-(defun %set-min-lod (sampler value)
+(defun+ %set-min-lod (sampler value)
   (setf (%sampler-min-lod sampler) value)
   (%gl:sampler-parameter-f (%sampler-id sampler) :texture-min-lod value)
   sampler)
 
-(defun %set-max-lod (sampler value)
+(defun+ %set-max-lod (sampler value)
   (setf (%sampler-max-lod sampler) value)
   (%gl:sampler-parameter-f (%sampler-id sampler) :texture-max-lod value)
   sampler)
 
-(defun %set-magnify-filter (sampler value)
+(defun+ %set-magnify-filter (sampler value)
   (setf (%sampler-magnify-filter sampler) value)
   (%gl::sampler-parameter-i (%sampler-id sampler) :texture-mag-filter
                             (%gl::foreign-enum-value '%gl:enum value))
   sampler)
 
-(defun %set-minify-filter (sampler value)
+(defun+ %set-minify-filter (sampler value)
   (setf (%sampler-expects-mipmap sampler)
         (not (null (member value '(:linear-mipmap-linear
                                    :nearest-mipmap-linear
@@ -368,7 +362,7 @@
                             (%gl::foreign-enum-value '%gl:enum value))
   sampler)
 
-(defun %set-wrap (sampler value)
+(defun+ %set-wrap (sampler value)
   (let ((options '(:repeat :mirrored-repeat :clamp-to-edge :clamp-to-border
                    :mirror-clamp-to-edge))
         (value (if (keywordp value)
@@ -386,7 +380,7 @@
                               (%gl::foreign-enum-value '%gl:enum (aref value 2))))
   sampler)
 
-(defun %set-compare (sampler value)
+(defun+ %set-compare (sampler value)
   (setf (%sampler-compare sampler)
         (or value :none))
   (if (and value (not (eq :none value)))
@@ -444,11 +438,11 @@
     :usampler-2d-ms-array-arb :usampler-2d-rect-arb :usampler-3d-arb
     :usampler-buffer-arb :usampler-cube-arb :usampler-cube-array-arb))
 
-(defun sampler-typep (type)
+(defun+ sampler-typep (type)
   (or (member type *sampler-types*)
       (varjo:v-typep type 'v-sampler)))
 
-(defun sampler-type (sampler)
+(defun+ sampler-type (sampler)
   (%sampler-type sampler))
 
 ;; (defun has-default-params (sampler)

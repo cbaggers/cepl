@@ -29,13 +29,13 @@
             nil in-args uniforms context body instancing nil nil
             nil doc-string declarations nil)))))
 
-(defun %lambda-g (&rest args)
+(defun+ %lambda-g (&rest args)
   (declare (ignore args))
   (warn "GPU Functions cannot currently be used from the cpu"))
 
 ;;------------------------------------------------------------
 
-(defun make-gpu-lambda  (args body)
+(defun+ make-gpu-lambda  (args body)
   "Define a function that runs on the gpu."
   ;; The code here splits and validates the arguments but the meat
   ;; of gpu function definition happens in the %def-gpu-function call
@@ -67,7 +67,7 @@
 
 ;;------------------------------------------------------------
 
-(defun make-lambda-pipeline (gpipe-args context)
+(defun+ make-lambda-pipeline (gpipe-args context)
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
            (aggregate-uniforms (aggregate-uniforms stage-keys nil t)))
@@ -76,16 +76,17 @@
           (make-complete-lambda-pipeline
            stage-pairs stage-keys aggregate-uniforms context post)))))
 
-(defun make-partial-lambda-pipeline (stage-keys)
+(defun+ make-partial-lambda-pipeline (stage-keys)
   (let ((stages (remove-if-not λ(with-gpu-func-spec (gpu-func-spec _)
                                   (some #'function-arg-p uniforms))
                                stage-keys)))
     (error 'partial-lambda-pipeline
            :partial-stages stages)))
 
-(defun make-complete-lambda-pipeline (stage-pairs stage-keys aggregate-uniforms
+(defun+ make-complete-lambda-pipeline (stage-pairs stage-keys aggregate-uniforms
                                       context post)
-  (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
+  (let* ((ctx *pipeline-body-context-var*)
+         (uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
@@ -98,7 +99,8 @@
          (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
        (register-lambda-pipeline
         compiled-stages
-        (let* ((image-unit -1)
+        (let* (;; all image units will be >0 as 0 is used as scratch tex-unit
+               (image-unit 0)
                ;; If there are no implicit-uniforms we need a no-op
                ;; function to call
                (implicit-uniform-upload-func
@@ -113,9 +115,9 @@
           ;;
           ;; generate the code that actually renders
           (%post-init ,post)
-          (lambda (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
+          (lambda (,ctx stream ,@(when uniform-names `(&key ,@uniform-names)))
             (declare (optimize (speed 3) (safety 1))
-                     (ignore mapg-context) (ignorable ,@uniform-names))
+                     (ignorable ,ctx ,@uniform-names))
             #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
             ,@(unless (typep primitive 'varjo::dynamic)
                       `((when stream
@@ -129,14 +131,12 @@
                            :stream-prim (buffer-stream-primitive stream)))))
             (use-program prog-id)
             ,@u-uploads
-            (locally (declare (optimize (speed 3) (safety 1)))
-              (funcall implicit-uniform-upload-func prog-id
-                       ,@uniform-names))
+            (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
             (when stream (draw-expander stream ,primitive))
             ,@u-cleanup
             stream))))))
 
-(defun make-n-compile-lambda-pipeline (gpipe-args context)
+(defun+ make-n-compile-lambda-pipeline (gpipe-args context)
   (let ((code (make-lambda-pipeline gpipe-args context)))
     (funcall (compile nil `(lambda () ,code)))))
 
@@ -156,14 +156,14 @@
   `(pipeline-g ,context ,@gpipe-args))
 
 #+nil
-(defun example ()
+(defun+ example ()
   (g-> nil
     #'cepl.misc::draw-texture-vert
     #'cepl.misc::draw-texture-frag))
 
 ;;------------------------------------------------------------
 
-(defun register-lambda-pipeline (compiled-stages closure)
+(defun+ register-lambda-pipeline (compiled-stages closure)
   (setf (function-keyed-pipeline closure)
         (make-lambda-pipeline-spec compiled-stages))
   closure)

@@ -166,7 +166,7 @@ Returns the type of the elements in the `c-array`.
       "
 This function takes two arguments:
 
-- A function that takes a pointer and a fixnum
+- A function that takes a pointer and a (unsigned-byte 32)
 - A `c-array`
 
 `across-c-ptr` will then call the given function once for every element in the

@@ -5,6 +5,21 @@
 
 (in-package :cepl-utils)
 
+(deftype array-index ()
+  '(integer 0 #.array-dimension-limit))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmacro defun+ (name args &body body)
+    `(defun ,name ,args
+       ,@(parse-body+ name body)))
+
+  (defmacro defmethod+ (name &rest args)
+    (let* ((arg-pos (position-if #'listp args))
+           (qual (subseq args 0 arg-pos))
+           (body (subseq args (1+ arg-pos)))
+           (args (elt args arg-pos)))
+      `(defmethod ,name ,@qual ,args ,@(parse-body+ name body)))))
+
 (defmacro gdefun (name lambda-list &body body/options)
   (if (or (null body/options)
           (consp (car body/options))
@@ -12,9 +27,9 @@
       `(defgeneric ,name ,lambda-list ,@body/options)
       `(defmethod ,name ,lambda-list ,@body/options)))
 
-(defun listify (x) (if (listp x) x (list x)))
+(defun+ listify (x) (if (listp x) x (list x)))
 
-(defun n-of (thing count)
+(defun+ n-of (thing count)
   (loop :for i :below count :collect thing))
 
 (defmacro n-of* (form count)
@@ -23,7 +38,7 @@
 (defmacro dbind (lambda-list expressions &body body)
   `(destructuring-bind ,lambda-list ,expressions ,@body))
 
-(defun assocr (item alist &key (key nil keyp) (test nil testp)
+(defun+ assocr (item alist &key (key nil keyp) (test nil testp)
                             (test-not nil notp))
   (cdr (apply #'assoc item alist (append (when keyp (list :key key))
                                          (when testp (list :test test))
@@ -51,23 +66,23 @@
          (declare (cl:ignorable ,@(mapcar #'first bindings)))
          ,@body))))
 
-(defun sn-equal (a b) (equal (symbol-name a) (symbol-name b)))
+(defun+ sn-equal (a b) (equal (symbol-name a) (symbol-name b)))
 
-(defun replace-nth (list n form)
+(defun+ replace-nth (list n form)
   `(,@(subseq list 0 n) ,form ,@(subseq list (1+ n))))
 
-(defun hash-values (hash-table)
+(defun+ hash-values (hash-table)
   (loop for i being the hash-values of hash-table collect i))
 
-(defun hash-keys (hash-table)
+(defun+ hash-keys (hash-table)
   (loop for i being the hash-keys of hash-table collect i))
 
-(defun intersperse (symb sequence)
+(defun+ intersperse (symb sequence)
   (rest (mapcat #'(lambda (x) (list symb x)) sequence)))
 
 ;; This will be pretty inefficient, but shoudl be fine for code trees
 ;; {TODO} how is this not subst?
-(defun walk-replace (to-replace replace-with form
+(defun+ walk-replace (to-replace replace-with form
                      &key (test #'eql))
   "This walks a list tree ('form') replacing all occurences of
    'to-replace' with 'replace-with'. This is pretty inefficent
@@ -85,7 +100,7 @@
                                (cdr form)
                                :test test)))))
 
-(defun file-to-string (path)
+(defun+ file-to-string (path)
   "Sucks up an entire file from PATH into a freshly-allocated
    string, returning two values: the string and the number of
    bytes read."
@@ -94,7 +109,7 @@
            (data (make-string len)))
       (values data (read-sequence data s)))))
 
-(defun flatten (x)
+(defun+ flatten (x)
   "Walks a list tree and flattens it (returns a 1d list
    containing all the elements from the tree)"
   (labels ((rec (x acc)
@@ -105,7 +120,7 @@
     (rec x nil)))
 
 ;; [TODO] damn this is slow
-(defun find-in-tree (item tree &key (test #'eql))
+(defun+ find-in-tree (item tree &key (test #'eql))
   ""
   (labels ((rec (x)
              (cond ((null x) nil)
@@ -114,7 +129,7 @@
     (rec tree)))
 
 
-(defun mkstr (&rest args)
+(defun+ mkstr (&rest args)
   "Takes a list of strings or symbols and returns one string
    of them concatenated together. For example:
     CEPL-EXAMPLES> (cepl-utils:mkstr 'jam 'ham')
@@ -124,7 +139,7 @@
   (with-output-to-string (s)
     (dolist (a args) (princ a s))))
 
-(defun symb (&rest args)
+(defun+ symb (&rest args)
   "This takes a list of symbols (or strings) and outputs one
    symbol.
    If the input is symbol/s then the output is a regular symbol
@@ -132,13 +147,13 @@
    a |symbol like this|"
   (values (intern (apply #'mkstr args))))
 
-(defun symb-package (package &rest args)
+(defun+ symb-package (package &rest args)
   (values (intern (apply #'cepl-utils:mkstr args)
                   (if (packagep package)
                       package
                       (find-package package)))))
 
-(defun make-keyword (&rest args)
+(defun+ make-keyword (&rest args)
   "This takes a list of symbols (or strings) and outputs one
    keyword symbol.
    If the input is symbol/s then the output is a regular keyword
@@ -146,7 +161,7 @@
    a :|keyword like this|"
   (values (intern (apply #'mkstr args) "KEYWORD")))
 
-(defun kwd (&rest args)
+(defun+ kwd (&rest args)
   "This takes a list of symbols (or strings) and outputs one
    keyword symbol.
    If the input is symbol/s then the output is a regular keyword
@@ -154,7 +169,7 @@
    a :|keyword like this|"
   (values (intern (apply #'mkstr args) "KEYWORD")))
 
-(defun group (source n)
+(defun+ group (source n)
   "This takes a  flat list and emit a list of lists, each n long
    containing the elements of the original list"
   (if (zerop n) (error "zero length"))
@@ -191,13 +206,13 @@
             (read-from-string s)))
         fail)))
 
-(defun sub-at-index (seq index new-val)
+(defun+ sub-at-index (seq index new-val)
   (append (subseq seq 0 index)
           (list new-val)
           (subseq seq (1+ index))))
 
 
-(defun lispify-name (name)
+(defun+ lispify-name (name)
   "take a string and changes it to uppercase and replaces
    all underscores _ with minus symbols -"
   (let ((name (if (symbolp name)
@@ -205,10 +220,10 @@
                   name)))
     (string-upcase (substitute #\- #\_ name))))
 
-(defun symbol-name-equal (a b)
+(defun+ symbol-name-equal (a b)
   (and (symbolp a) (symbolp b) (equal (symbol-name a) (symbol-name b))))
 
-(defun range (x &optional y z u v)
+(defun+ range (x &optional y z u v)
   (let ((step (or (and (eq y :step) z)
                   (and (eq z :step) u)
                   (and (eq u :step) v)
@@ -228,7 +243,7 @@
                     (if (> y x) (fun x y z) (fun-down x y z))))
         (function (if (> x 0) (fun 0 x y) (fun-down 0 x y)))))))
 
-(defun rangei (x &optional y z u v)
+(defun+ rangei (x &optional y z u v)
   (let ((step (or (and (eq y :step) z)
                   (and (eq z :step) u)
                   (and (eq u :step) v)
@@ -248,7 +263,7 @@
                     (if (> y x) (fun x y z) (fun-down x y z))))
         (function (if (> x 0) (fun 0 x y) (fun-down 0 x y)))))))
 
-(defun arange (x &optional y z u v)
+(defun+ arange (x &optional y z u v)
   (let ((step (or (and (eq y :step) z)
                   (and (eq z :step) u)
                   (and (eq u :step) v)
@@ -273,7 +288,7 @@
         (function (make-array x :initial-contents
                               (if (> x 0) (fun 0 x y) (fun-down 0 x y))))))))
 
-(defun arangei (x &optional y z u v)
+(defun+ arangei (x &optional y z u v)
   (let ((step (or (and (eq y :step) z)
                   (and (eq z :step) u)
                   (and (eq u :step) v)
@@ -302,10 +317,10 @@
 
 
 
-(defun mapcat (function &rest lists)
+(defun+ mapcat (function &rest lists)
   (reduce #'append (apply #'mapcar function lists) :initial-value nil))
 
-(defun split-seq-by-seq (delim sequence)
+(defun+ split-seq-by-seq (delim sequence)
   (let* ((delim-len (length delim))
          (seq-len (length sequence))
          (result nil)
@@ -429,7 +444,7 @@
                        (type-of thing))))
   nil)
 
-(defun %print-mem (pointer &optional (size-in-bytes 64))
+(defun+ %print-mem (pointer &optional (size-in-bytes 64))
   (let* ((size (if (oddp size-in-bytes) (1+ size-in-bytes) size-in-bytes))
          (data (loop :for i :below size :collect
                   (cffi:mem-ref pointer :uchar i)))
@@ -473,7 +488,7 @@
                     keys var-key-pairs)
          ,@body))))
 
-(defun map-hash (function hash-table)
+(defun+ map-hash (function hash-table)
   "map through a hash and actually return something"
   (let* ((head (list nil))
          (tail head))
@@ -482,7 +497,7 @@
       (maphash #'do-it hash-table))
     (cdr head)))
 
-(defun filter-hash (function hash-table)
+(defun+ filter-hash (function hash-table)
   "map through a hash and actually return something"
   (let* ((head (list nil))
          (tail head))
@@ -493,7 +508,7 @@
       (maphash #'do-it hash-table))
     (cdr head)))
 
-(defun last1 (list) (car (last list)))
+(defun+ last1 (list) (car (last list)))
 
 
 (defmacro p-> (args &body stages)
@@ -546,19 +561,7 @@
 source: ~s~%list-to-match: ~s" list list-to-match)
                  (subseq list 0 (length list-to-match)))))))
 
-(defmacro case= (form &body cases)
-  (let ((g (gensym "val")))
-    (labels ((wrap-case (c) `((= ,g ,(first c)) ,@(rest c))))
-      (let* ((cases-but1 (mapcar #'wrap-case (butlast cases)))
-             (last-case (car (last cases)))
-             (last-case (if (eq (car last-case) 'otherwise)
-                            `(t ,@(rest last-case))
-                            (wrap-case last-case)))
-             (cases (append cases-but1 (list last-case))))
-        `(let ((,g ,form))
-           (cond ,@cases))))))
-
-(defun split-string (delimiter string)
+(defun+ split-string (delimiter string)
   (let* ((string (string-trim (list delimiter) string))
          (result (list ())))
     (loop :for c :across string
@@ -568,7 +571,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
               (concatenate 'string (reverse x)))
             (reverse result))))
 
-(defun ni-call (package-name func-name &rest args)
+(defun+ ni-call (package-name func-name &rest args)
   "Non-interning funcall"
   (let ((p (find-package package-name)))
     (unless p (error "ni-call: package ~s not found" package-name))
@@ -580,7 +583,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
                                func-name package-name))
       (apply (symbol-function func-symb) args))))
 
-(defun ni-val (package-name symb-name)
+(defun+ ni-val (package-name symb-name)
   "Non-interning get value"
   (let ((p (find-package package-name)))
     (unless p (error "ni-call: package ~s not found" package-name))
@@ -592,7 +595,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
                                symb-name package-name))
       (symbol-value symb))))
 
-(defun just-ignore (&rest args)
+(defun+ just-ignore (&rest args)
   (declare (ignore args))
   nil)
 
@@ -604,7 +607,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
              (:predicate defxstar-hidden::boop-p))
   defxstar-hidden::boop-x defxstar-hidden::boop-y)
 
-(defun defx* (defname name slots)
+(defun+ defx* (defname name slots)
   (labels ((extract-slot-def (x)
              (dbind (slot-name _ &key type) x
                (declare (ignore _))
@@ -633,19 +636,45 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 (defmacro defparameter* (name &body slots)
   (defx* 'defparameter name slots))
 
-(defun read-integers (&optional (stream *standard-input*) (eof-error-p t)
+(defun+ read-integers (&optional (stream *standard-input*) (eof-error-p t)
                         eof-value recursive-p)
   (let* ((str (read-line stream eof-error-p eof-value recursive-p))
          (split (split-sequence:split-sequence #\space str))
          (nums (mapcar #'parse-integer split)))
     nums))
 
-(defun ensure-vec-index (vec index null-element)
+(defn ensure-vec-index ((vec (array t (*)))
+                        (index array-index)
+                        (null-element t)
+                        &optional (element-type t))
+    array-index
+  (declare (ignore element-type)
+           (profile t))
   (when (<= (array-dimension vec 0) index)
     (adjust-array vec (1+ index) :initial-element null-element))
   (when (<= (fill-pointer vec) index)
     (setf (fill-pointer vec) (1+ index)))
   index)
+
+(define-compiler-macro ensure-vec-index (&whole whole
+                                         vec
+                                         index
+                                         null-element
+                                         &optional (element-type t))
+  (if (eq element-type t)
+      whole
+      (alexandria:with-gensyms (gvec gindex gnull)
+        `(locally (declare (optimize (speed 3) (debug 1) (safety 1)))
+           (let ((,gvec ,vec)
+                 (,gindex ,index)
+                 (,gnull ,null-element))
+             (declare (type ,element-type ,gnull)
+                      (type array-index ,gindex))
+             (when (<= (array-dimension ,gvec 0) ,gindex)
+               (adjust-array ,gvec (1+ ,gindex) :initial-element ,gnull))
+             (when (<= (fill-pointer ,gvec) ,gindex)
+               (setf (fill-pointer ,gvec) (1+ ,gindex)))
+             ,gindex)))))
 
 (defmacro def-artificial-id (name)
   (let ((lowest (symb :*lowest-unused- name :-id*))
@@ -687,3 +716,12 @@ source: ~s~%list-to-match: ~s" list list-to-match)
        (setf ,@place-value-pairs)
        (unwind-protect (progn ,@body)
          (setf ,@restore-values)))))
+
+;;------------------------------------------------------------
+
+
+
+;; (defun+ foo (bar)
+;;   "wub wub"
+;;   (declare (type single-float bar))
+;;   (* 10 bar))

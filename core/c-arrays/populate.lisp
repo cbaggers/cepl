@@ -1,6 +1,6 @@
 (in-package :cepl.c-arrays)
 
-(defun c-populate (c-array data &optional (check-sizes t))
+(defun+ c-populate (c-array data &optional (check-sizes t))
   (labels ((walk-to-dpop (data dimensions &optional structp pos)
              (let ((still-to-walk (rest dimensions)))
                (map nil (lambda (sublist i)
@@ -29,7 +29,7 @@
                               (c-array-struct-element-typep c-array))))
     c-array))
 
-(defun rm-index-to-coords (index subscripts)
+(defun+ rm-index-to-coords (index subscripts)
   (let ((cur index))
     (nreverse
      (loop :for s :in subscripts :collect
@@ -37,7 +37,7 @@
           (setq cur x)
           rem)))))
 
-(defun validate-dimensions (data dimensions)
+(defun+ validate-dimensions (data dimensions)
   (let* ((dimensions (listify dimensions))
          (r (typecase data
               (sequence (validate-seq-dimensions data dimensions))
@@ -45,7 +45,7 @@
               (otherwise nil))))
     (when (and r (every #'identity r)) r)))
 
-(defun validate-arr-dimensions (data dimensions)
+(defun+ validate-arr-dimensions (data dimensions)
   (let* ((actual-dims (array-dimensions data)))
     (if (= (length actual-dims) (length dimensions))
         (mapcar (lambda (d a) (if (eq d :?) a (when (= d a) d)))
@@ -53,7 +53,7 @@
                 actual-dims)
         nil)))
 
-(defun validate-seq-dimensions (data dimensions &optional (orig-dim dimensions) accum)
+(defun+ validate-seq-dimensions (data dimensions &optional (orig-dim dimensions) accum)
   (if (null dimensions)
       (reverse accum)
       (typecase data
@@ -69,15 +69,15 @@
 
 ;;------------------------------------------------------------
 
-(defun c-array-byte-size (c-array)
+(defun+ c-array-byte-size (c-array)
   (%gl-calc-byte-size (c-array-element-byte-size c-array)
                       (c-array-dimensions c-array)))
 
-(defun %gl-calc-byte-size (elem-size dimensions)
+(defun+ %gl-calc-byte-size (elem-size dimensions)
   (let* ((x-size (first dimensions)) (rest (rest dimensions))
          (row-byte-size (* x-size elem-size)))
     (values (* row-byte-size (max (reduce #'* rest) 1))
             row-byte-size)))
 
-(defun gl-calc-byte-size (type dimensions)
+(defun+ gl-calc-byte-size (type dimensions)
   (%gl-calc-byte-size (gl-type-size type) (listify dimensions)))

@@ -24,7 +24,8 @@
                #:rtg-math
                #:rtg-math.vari
                #:closer-mop
-               #:bordeaux-threads)
+               #:bordeaux-threads
+               #:cepl.perf.core)
   :components ((:file "package")
                (:file "host/api-api")
                (:file "host/api-generics")
@@ -40,6 +41,7 @@
                (:file "core/memory/memory")
                (:file "core/types/cepl-types")
                (:file "core/context/gl-context")
+               (:file "core/context/types")
                (:file "core/context/cepl-context")
                (:file "core/context/surface")
                (:file "core/context/delayed-resource-init")
@@ -48,7 +50,6 @@
                (:file "core/types/initalized-p")
                (:file "core/internals")
                (:file "core/types/types")
-               (:file "core/context/render-state")
                (:file "core/errors")
                (:file "core/viewports/viewport")
                (:file "core/types/image-format")
@@ -68,12 +69,12 @@
                (:file "core/streams/buffer-streams")
                (:file "core/pipelines/generics")
                (:file "core/pipelines/uniforms")
-               (:file "core/pipelines/map-g-constant")
                (:file "core/pipelines/gpu-macros")
                (:file "core/pipelines/gpu-pipeline-base")
                (:file "core/pipelines/pipeline-validation")
                (:file "core/pipelines/gpu-functions")
                (:file "core/pipelines/glsl-stages")
+               (:file "core/pipelines/mapg-context")
                (:file "core/pipelines/uniform-assigners-generation")
                (:file "core/pipelines/defpipeline")
                (:file "core/pipelines/gpu-lambda")
@@ -82,6 +83,7 @@
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")
                (:file "core/textures/texture-samplers")
+               (:file "core/samplers/context")
                (:file "core/pipelines/map-g")
                (:file "core/gpu-arrays/texture-backed")
                (:file "core/gpu-arrays/with-and-push")
