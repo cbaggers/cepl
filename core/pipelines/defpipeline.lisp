@@ -1,22 +1,22 @@
 (in-package :cepl.pipelines)
 (in-readtable :fn.reader)
 
-(defun2 function-arg-p (arg)
+(defun+ function-arg-p (arg)
   (typep (varjo:type-spec->type (second arg))
          'varjo:v-function-type))
 
-(defun2 stages-require-partial-pipeline (stage-keys)
+(defun+ stages-require-partial-pipeline (stage-keys)
   (some λ(with-gpu-func-spec (gpu-func-spec _)
            (or (some #'function-arg-p in-args)
                (some #'function-arg-p uniforms)))
         stage-keys))
 
-(defun2 has-func-type-in-args (stage-keys)
+(defun+ has-func-type-in-args (stage-keys)
   (some λ(with-gpu-func-spec (gpu-func-spec _)
            (some #'function-arg-p in-args))
         stage-keys))
 
-(defun2 function-uniforms (stage-keys)
+(defun+ function-uniforms (stage-keys)
   (mapcat λ(with-gpu-func-spec (gpu-func-spec _)
              (remove-if-not #'function-arg-p uniforms))
           stage-keys))
@@ -24,14 +24,14 @@
 (defmacro def-g-> (name context &body gpipe-args)
   `(defpipeline-g ,name ,context ,@gpipe-args))
 
-(defun2 foop ()
+(defun+ foop ()
   (values 1 2 3))
 
 (defmacro defpipeline-g (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
   (%defpipeline-gfuncs name gpipe-args context))
 
-(defun2 %defpipeline-gfuncs (name gpipe-args context &optional suppress-compile)
+(defun+ %defpipeline-gfuncs (name gpipe-args context &optional suppress-compile)
   ;;
   ;; {todo} explain
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
@@ -44,7 +44,7 @@
           (%def-complete-pipeline name stage-keys stage-pairs aggregate-uniforms
                                   post context suppress-compile)))))
 
-(defun2 %def-partial-pipeline (name stage-keys stage-pairs aggregate-uniforms
+(defun+ %def-partial-pipeline (name stage-keys stage-pairs aggregate-uniforms
                               context)
   ;;
   ;; freak out if try and use funcs in stage args
@@ -71,7 +71,7 @@
        (register-named-pipeline ',name #',name)
        ',name)))
 
-(defun2 %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
+(defun+ %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
                                post context
                                &optional suppress-compile)
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
@@ -113,10 +113,10 @@
          ,(gen-recompile-func name stage-pairs post context)
          ,(unless suppress-compile `(,(recompile-name name)))))))
 
-(defun2 fallback-iuniform-func (prog-id &rest uniforms)
+(defun+ fallback-iuniform-func (prog-id &rest uniforms)
   (declare (ignore prog-id uniforms) (optimize (speed 3) (safety 1))))
 
-(defun2 gen-recompile-func (name stage-pairs post context)
+(defun+ gen-recompile-func (name stage-pairs post context)
   (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
          (gpipe-args (append stages (list :post post))))
     `(defun ,(recompile-name name) ()
@@ -127,11 +127,11 @@
            (eval (%defpipeline-gfuncs
                   ',name ',gpipe-args ',context t)))))))
 
-(defun2 %update-spec (name stage-pairs context)
+(defun+ %update-spec (name stage-pairs context)
   (update-pipeline-spec
    (make-pipeline-spec name stage-pairs context)))
 
-(defun2 gen-update-spec (name stage-pairs context)
+(defun+ gen-update-spec (name stage-pairs context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (update-pipeline-spec
       (make-pipeline-spec
@@ -141,34 +141,34 @@
                                    stage-pairs))
        ',context))))
 
-(defun2 register-named-pipeline (name func)
+(defun+ register-named-pipeline (name func)
   (setf (function-keyed-pipeline func)
         name))
 
 (defvar *all-quiet* nil)
 
-(defun2 quiet-warning-handler (c)
+(defun+ quiet-warning-handler (c)
   (when *all-quiet*
     (let ((r (find-restart 'muffle-warning c)))
       (when r
         (invoke-restart r)))))
 
-(defun2 %gl-make-shader-from-varjo (compiled-stage)
+(defun+ %gl-make-shader-from-varjo (compiled-stage)
   (make-shader (varjo->gl-stage-names compiled-stage)
                (varjo:glsl-code compiled-stage)))
 
-(defun2 pairs-key-to-stage (stage-pairs)
+(defun+ pairs-key-to-stage (stage-pairs)
   (mapcar λ(dbind (name . key) _ (cons name (gpu-func-spec key)))
           stage-pairs))
 
-(defun2 swap-versions (stage-pairs glsl-version)
+(defun+ swap-versions (stage-pairs glsl-version)
   (mapcar λ(dbind (x . s) _
              (let ((new-context
                     (swap-version glsl-version (with-gpu-func-spec s context))))
                (cons x (clone-stage-spec s :new-context new-context))))
           stage-pairs))
 
-(defun2 %compile-link-and-upload (name draw-mode stage-pairs)
+(defun+ %compile-link-and-upload (name draw-mode stage-pairs)
   (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
          (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version))
@@ -182,7 +182,7 @@
       (mapcar #'%gl:delete-shader stages-objects)
       (values compiled-stages prog-id))))
 
-(defun2 compute-glsl-version-from-stage-pairs (stage-pairs)
+(defun+ compute-glsl-version-from-stage-pairs (stage-pairs)
   ;; - If not specified & the context is not yet available then use
   ;;   the highest version available.
   ;;
@@ -209,13 +209,13 @@
           (throw-version-error
            stage-pairs (mapcar #'get-version-from-context contexts))))))
 
-(defun2 throw-version-error (pairs versions)
+(defun+ throw-version-error (pairs versions)
   (let ((issue (remove-if-not #'second
                               (mapcar λ(list (car _) _1)
                                       pairs versions))))
     (error 'glsl-version-conflict :pairs issue)))
 
-(defun2 %create-implicit-uniform-uploader (compiled-stages uniform-names)
+(defun+ %create-implicit-uniform-uploader (compiled-stages uniform-names)
   (let* ((varjo-implicit (remove-if #'varjo:ephemeral-p
                                     (mapcat #'varjo:implicit-uniforms
                                             compiled-stages)))
@@ -241,7 +241,7 @@
               (let ,uniform-transforms
                 ,@(mapcar #'gen-uploaders-block assigners)))))))))
 
-(defun2 %implicit-uniforms-dont-have-type-mismatches (uniforms)
+(defun+ %implicit-uniforms-dont-have-type-mismatches (uniforms)
   (loop :for (name type . i) :in uniforms
      :do (just-ignore i)
      :always
@@ -250,7 +250,7 @@
         :do (just-ignore n i_)
         :always (equal type tp))))
 
-(defun2 %compile-closure (code)
+(defun+ %compile-closure (code)
   (funcall (compile nil `(lambda () ,code))))
 
 (defn-inline %post-init ((func (or null function))) (values)
@@ -260,7 +260,7 @@
   (when func (funcall func))
   (values))
 
-(defun2 gen-pipeline-init (name primitive stage-pairs post uniform-assigners
+(defun+ gen-pipeline-init (name primitive stage-pairs post uniform-assigners
                           stage-keys)
   (let ((uniform-names
          (mapcar #'first (aggregate-uniforms stage-keys))))
@@ -284,13 +284,13 @@
          (%post-init ,post)
          prog-id))))
 
-(defun2 serialize-stage-pairs (stage-pairs)
+(defun+ serialize-stage-pairs (stage-pairs)
   (cons 'list (mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
                       stage-pairs)))
 
 
 
-(defun2 def-dispatch-func (name init-func-name stage-keys context
+(defun+ def-dispatch-func (name init-func-name stage-keys context
                           primitive uniform-assigners)
   (let* ((ctx *pipeline-body-context-var*)
          (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
@@ -306,7 +306,7 @@
             (error 'dispatch-called-outside-of-map-g :name ',name))
           whole))
      `(progn
-        (defun2 ,(symb :%touch- name) (&key verbose)
+        (defun+ ,(symb :%touch- name) (&key verbose)
           (unless prog-id
             (setf prog-id (,init-func-name)))
           (when verbose
@@ -352,7 +352,7 @@
         (register-named-pipeline ',name #',name)
         ',name))))
 
-(defun2 escape-tildes (str)
+(defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
 
 (defmacro draw-expander (stream primitive)
@@ -401,11 +401,11 @@
 ;;; GL HELPERS ;;;
 ;;;------------;;;
 
-(defun2 program-attrib-count (program)
+(defun+ program-attrib-count (program)
   "Returns the number of attributes used by the shader"
   (gl:get-program program :active-attributes))
 
-(defun2 program-attributes (program)
+(defun+ program-attributes (program)
   "Returns a list of details of the attributes used by
    the program. Each element in the list is a list in the
    format: (attribute-name attribute-type attribute-size)"
@@ -414,11 +414,11 @@
                  (gl:get-active-attrib program i)
                (list name type size))))
 
-(defun2 program-uniform-count (program)
+(defun+ program-uniform-count (program)
   "Returns the number of uniforms used by the shader"
   (gl:get-program program :active-uniforms))
 
-(defun2 program-uniforms (program-id)
+(defun+ program-uniforms (program-id)
   "Returns a list of details of the uniforms used by
    the program. Each element in the list is a list in the
    format: (uniform-name uniform-type uniform-size)"
@@ -441,7 +441,7 @@
 
 ;; [TODO] Expand on this and allow loading on strings/text files for making
 ;;        shaders
-(defun2 shader-type-from-path (path)
+(defun+ shader-type-from-path (path)
   "This uses the extension to return the type of the shader.
    Currently it only recognises .vert or .frag files"
   (let* ((plen (length path))
@@ -450,7 +450,7 @@
           ((equal exten ".frag") :fragment-shader)
           (t (error "Could not extract shader type from shader file extension (must be .vert or .frag)")))))
 
-(defun2 make-shader
+(defun+ make-shader
     (shader-type source-string &optional (shader-id (%gl:create-shader
                                                      shader-type)))
   "This makes a new opengl shader object by compiling the text
@@ -466,7 +466,7 @@
            source-string))
   shader-id)
 
-(defun2 load-shader (file-path
+(defun+ load-shader (file-path
                     &optional (shader-type
                                (shader-type-from-path file-path)))
   (restart-case
@@ -474,10 +474,10 @@
     (reload-recompile-shader () (load-shader file-path
                                              shader-type))))
 
-(defun2 load-shaders (&rest shader-paths)
+(defun+ load-shaders (&rest shader-paths)
   (mapcar #'load-shader shader-paths))
 
-(defun2 link-shaders (shaders program_id compiled-stages)
+(defun+ link-shaders (shaders program_id compiled-stages)
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
   (let ((program (or program_id (%gl:create-program))))

@@ -1,11 +1,11 @@
 (in-package :cepl.blending)
 
-(defun2 blending-params (fbo &optional attachment-name)
+(defun+ blending-params (fbo &optional attachment-name)
   (if attachment-name
       (attachment-blending fbo attachment-name)
       (%fbo-blending-params fbo)))
 
-(defun2 (setf blending-params) (value fbo &optional attachment-name)
+(defun+ (setf blending-params) (value fbo &optional attachment-name)
   (if attachment-name
       (setf (attachment-blending fbo attachment-name) value)
       (setf (%fbo-blending-params fbo) value)))
@@ -24,7 +24,7 @@
 
 (defvar *blend-color* (v! 0 0 0 0))
 
-(defun2 blend-func-namep (keyword)
+(defun+ blend-func-namep (keyword)
   (not (null (member keyword '(:zero
                                :one
                                :src-color
@@ -123,7 +123,7 @@
      ;;   can unroll the loop.
      (%gen-attachment-blend pattern fbo body))))
 
-(defun2 %gen-attachment-blend (attachments fbo body)
+(defun+ %gen-attachment-blend (attachments fbo body)
   (let ((blendp-syms (cepl-utils:n-of* (gensym "attachment") (length attachments)))
         (override-syms (cepl-utils:n-of* (gensym "override")
                                          (length attachments)))
@@ -161,31 +161,31 @@
        ,@(loop :for b :in blendp-syms :for i :from 0 :collect
             `(when ,b (%gl:disable-i :blend ,i))))))
 
-(defun2 loop-enabling-attachments (fbo)
+(defun+ loop-enabling-attachments (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
      (when (att-blend a) (%gl:enable-i :blend i))))
 
-(defun2 loop-disabling-attachments (fbo)
+(defun+ loop-disabling-attachments (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
      (when (att-blend a) (%gl:disable-i :blend i))))
 
-(defun2 %loop-setting-per-attachment-blend-params (fbo)
+(defun+ %loop-setting-per-attachment-blend-params (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
      (when (att-blend a)
        (if (att-bparams a)
            (%blend-i (att-bparams a) i)
            (%blend-i (%fbo-blending-params fbo) i)))))
 
-(defun2 %blend-i (params i)
+(defun+ %blend-i (params i)
   (with-blending-param-slots params
     (%gl:blend-equation-separate-i i mode-rgb mode-alpha)
     (%gl:blend-func-separate-i
      i source-rgb destination-rgb source-alpha destination-alpha)))
 
-(defun2 %blend-fbo (fbo)
+(defun+ %blend-fbo (fbo)
   (%blend-using-params (%fbo-blending-params fbo)))
 
-(defun2 %blend-using-params (params)
+(defun+ %blend-using-params (params)
   (%gl:blend-equation-separate (blending-params-mode-rgb params)
                                (blending-params-mode-alpha params))
   (%gl:blend-func-separate (blending-params-source-rgb params)
@@ -196,27 +196,27 @@
 
 ;;----------------------------------------------------------------------
 
-(defun2 mode-rgb (fbo &optional attachment-name)
+(defun+ mode-rgb (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     mode-rgb))
 
-(defun2 mode-alpha (fbo &optional attachment-name)
+(defun+ mode-alpha (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     mode-alpha))
 
-(defun2 source-rgb (fbo &optional attachment-name)
+(defun+ source-rgb (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     source-rgb))
 
-(defun2 source-alpha (fbo &optional attachment-name)
+(defun+ source-alpha (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     source-alpha))
 
-(defun2 destination-rgb (fbo &optional attachment-name)
+(defun+ destination-rgb (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     destination-rgb))
 
-(defun2 destination-alpha (fbo &optional attachment-name)
+(defun+ destination-alpha (fbo &optional attachment-name)
   (with-blending-param-slots (blending-params fbo attachment-name)
     destination-alpha))
 

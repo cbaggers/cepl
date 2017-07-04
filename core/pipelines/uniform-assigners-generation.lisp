@@ -16,7 +16,7 @@
 ;;; ARG ASSIGNERS ;;;
 ;;;---------------;;;
 
-(defun2 make-arg-assigners (uniform-arg)
+(defun+ make-arg-assigners (uniform-arg)
   (varjo.internals:with-v-arg (arg-name varjo-type~1 qualifiers glsl-name)
       uniform-arg
     (let* ((local-arg-name 'val)
@@ -43,7 +43,7 @@
            (declare (ignorable ,local-arg-name))
            ,@(cleanup assigner))))))
 
-(defun2 dispatch-make-assigner (local-arg-name arg-name type glsl-name qualifiers)
+(defun+ dispatch-make-assigner (local-arg-name arg-name type glsl-name qualifiers)
   (assert (not (null glsl-name)))
   (let* ((varjo-type (varjo:type-spec->type type))
          (struct-arg (varjo:v-typep varjo-type 'varjo:v-user-struct))
@@ -67,7 +67,7 @@
     assigner))
 
 ;; {TODO} Why does this not have a byte-offset? Very tired cant work it out :)
-(defun2 make-sampler-assigner (arg-name type glsl-name-path)
+(defun+ make-sampler-assigner (arg-name type glsl-name-path)
   (let ((id-name (gensym))
         (i-unit (gensym "IMAGE-UNIT")))
     (make-assigner
@@ -85,7 +85,7 @@
                     (cepl.context::set-sampler-bound
                      ,*pipeline-body-context-var* ,arg-name ,i-unit))))))
 
-(defun2 make-ubo-assigner (arg-name varjo-type glsl-name)
+(defun+ make-ubo-assigner (arg-name varjo-type glsl-name)
   (let ((id-name (gensym))
         (type-spec (varjo:type->type-spec varjo-type)))
     (make-assigner
@@ -101,12 +101,12 @@
              (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
                     ',type-spec (ubo-data-type ,arg-name))))))))
 
-(defun2 get-uniform-block-index (program name)
+(defun+ get-uniform-block-index (program name)
   (with-foreign-string (s name)
     (%gl:get-uniform-block-index program s)))
 
 ;; NOTE: byte-offset can be nil, this is a legit value
-(defun2 make-simple-assigner (arg-name type glsl-name-path
+(defun+ make-simple-assigner (arg-name type glsl-name-path
                              &optional (byte-offset 0))
   (let ((id-name (gensym)))
     (make-assigner
@@ -121,7 +121,7 @@
                  ,id-name 1 (cffi:inc-pointer ,arg-name ,byte-offset))
               `(,(get-uniform-function-name (cepl.types::type->spec type)) ,id-name ,arg-name)))))))
 
-(defun2 make-array-assigners (arg-name type glsl-name-path &optional (byte-offset 0))
+(defun+ make-array-assigners (arg-name type glsl-name-path &optional (byte-offset 0))
   (let ((element-type (varjo:v-element-type type))
         (array-length (apply #'* (v-dimensions type))))
     (merge-into-assigner
@@ -138,7 +138,7 @@
         :do (incf byte-offset (gl-type-size (cepl.types::type->spec element-type)))))))
 
 
-(defun2 make-struct-assigners (arg-name type glsl-name-path
+(defun+ make-struct-assigners (arg-name type glsl-name-path
                               &optional (byte-offset 0))
   (merge-into-assigner
    t
@@ -166,14 +166,14 @@
                                  (or array-length 1)))))))
 
 
-(defun2 make-assigner (&key let-forms uploaders pointer-arg
+(defun+ make-assigner (&key let-forms uploaders pointer-arg
                         arg-name local-arg-name cleanup)
   (make-instance 'assigner :let-forms let-forms :uploaders uploaders
                  :pointer-arg pointer-arg :arg-name arg-name
                  :local-arg-name local-arg-name
                  :cleanup cleanup))
 
-(defun2 merge-into-assigner (pointer-arg assingers)
+(defun+ merge-into-assigner (pointer-arg assingers)
   (make-assigner :let-forms (mapcat #'let-forms assingers)
                  :uploaders (mapcat #'uploaders assingers)
                  :pointer-arg pointer-arg

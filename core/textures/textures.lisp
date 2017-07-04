@@ -10,7 +10,7 @@
                             :texture-cube-map-positive-z
                             :texture-cube-map-negative-z))
 
-(defun2 check-immutable-feature ()
+(defun+ check-immutable-feature ()
   (unless (has-feature "GL_ARB_texture_storage")
     (setf *immutable-available* nil)))
 
@@ -18,7 +18,7 @@
 
 ;;------------------------------------------------------------
 
-(defun2 texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
+(defun+ texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
   (when (and (> cube-face 0) (not (texture-cubes-p texture)))
     (error "Cannot get the cube-face from a texture that wasnt made with :cubes-p t:~%~a" texture))
   (if (eq (texture-type texture) :texture-buffer)
@@ -45,7 +45,7 @@
             result)
           (error "Texture index out of range"))))
 
-(defun2 reinit-on-context (gpu-array)
+(defun+ reinit-on-context (gpu-array)
   (let ((texture (gpu-array-t-texture gpu-array)))
     (setf (gpu-array-t-texture-type gpu-array) (texture-type texture)
           (gpu-array-dimensions gpu-array) (dimensions-at-mipmap-level
@@ -53,7 +53,7 @@
                                                      gpu-array))
           (gpu-array-t-image-format gpu-array) (texture-image-format texture))))
 
-(defun2 valid-index-p (texture mipmap-level layer cube-face)
+(defun+ valid-index-p (texture mipmap-level layer cube-face)
   (or (= 0 mipmap-level layer cube-face)
       (and (< mipmap-level (texture-mipmap-levels texture))
            (< layer (texture-layer-count texture))
@@ -63,12 +63,12 @@
 
 ;;------------------------------------------------------------
 
-(defun2 generate-mipmaps (texture)
+(defun+ generate-mipmaps (texture)
   (let ((type (texture-type texture)))
     (%with-scratch-texture-bound texture
       (%gl:generate-mipmap type))))
 
-(defun2 error-on-invalid-upload-formats (target image-format pixel-format pixel-type)
+(defun+ error-on-invalid-upload-formats (target image-format pixel-format pixel-type)
   (unless (and image-format pixel-type pixel-format)
     (error "Could not establish all the required formats for the pixel transfer"))
   (when (eq target :texture-buffer)
@@ -92,7 +92,7 @@
     (error "Pixel data is a depth format however the texture is not"))
   t)
 
-(defun2 upload-c-array-to-gpu-array-t (gpu-array c-array &optional pixel-format)
+(defun+ upload-c-array-to-gpu-array-t (gpu-array c-array &optional pixel-format)
   (let* ((element-pf (lisp-type->pixel-format c-array))
          (compiled-pf (or pixel-format (cepl.pixel-formats::compile-pixel-format
                                         element-pf)))
@@ -109,7 +109,7 @@
   gpu-array)
 
 ;; [TODO] add offsets
-(defun2 %upload-tex (tex tex-type level-num dimensions layer-num face-num
+(defun+ %upload-tex (tex tex-type level-num dimensions layer-num face-num
                          pix-format pix-type pointer)
   (if (texture-mutable-p tex)
       (%upload-to-mutable-tex tex tex-type level-num dimensions layer-num
@@ -117,7 +117,7 @@
       (%upload-to-immutable-tex tex tex-type level-num dimensions layer-num
                                 face-num pix-format pix-type pointer)))
 
-(defun2 %upload-to-mutable-tex (tex tex-type level-num dimensions layer-num
+(defun+ %upload-to-mutable-tex (tex tex-type level-num dimensions layer-num
                                     face-num pix-format pix-type pointer)
   ;; border is an old (now unsupported) parameter and so is always be set to 0
   (case tex-type
@@ -152,7 +152,7 @@
     (t (error "not currently supported for upload: ~a" tex-type))))
 
 
-(defun2 %upload-to-immutable-tex (tex tex-type level-num dimensions layer-num
+(defun+ %upload-to-immutable-tex (tex tex-type level-num dimensions layer-num
                                  face-num pix-format pix-type pointer)
   (declare (ignore tex))
   (case tex-type
@@ -178,7 +178,7 @@
                                             pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))
 
-(defun2 upload-from-buffer-to-gpu-array-t (&rest args)
+(defun+ upload-from-buffer-to-gpu-array-t (&rest args)
   (declare (ignore args))
   (error "upload-from-buffer-to-gpu-array-t is not implemented yet"))
 
@@ -203,12 +203,12 @@
 
 ;;------------------------------------------------------------
 
-(defun2 gen-texture ()
+(defun+ gen-texture ()
   (first (gl:gen-textures 1)))
 
-(defun2 po2p (x) (eql 0 (logand x (- x 1))))
+(defun+ po2p (x) (eql 0 (logand x (- x 1))))
 
-(defun2 dimensions-at-mipmap-level (texture level)
+(defun+ dimensions-at-mipmap-level (texture level)
   (if (= level 0)
       (texture-base-dimensions texture)
       (loop :for i :in (texture-base-dimensions texture) :collect
@@ -216,7 +216,7 @@
 
 ;;------------------------------------------------------------
 
-(defun2 establish-texture-type (dimensions mipmap layers cubes po2 multisample
+(defun+ establish-texture-type (dimensions mipmap layers cubes po2 multisample
                                buffer rectangle)
   (declare (ignore po2))
   (cadr (assoc (list mipmap layers cubes dimensions multisample buffer rectangle)
@@ -241,14 +241,14 @@
 ;; [TODO] how does mipmap-max affect this
 ;; [TODO] what is the max layercount?
 ;; [TODO] should fail on layer-count=0?
-(defun2 %texture-dimensions (initial-contents dimensions)
+(defun+ %texture-dimensions (initial-contents dimensions)
   (if initial-contents
       (if dimensions
           (error "Cannot specify dimensions and initial-contents")
           (dimensions initial-contents))
       (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
 
-(defun2 make-texture-from-id (gl-object &key base-dimensions texture-type
+(defun+ make-texture-from-id (gl-object &key base-dimensions texture-type
                                          element-type mipmap-levels
                                          layer-count cubes allocated mutable-p)
   (assert (typep gl-object 'gl-id))
@@ -266,7 +266,7 @@
     :mutable-p mutable-p)))
 
 
-(defun2 make-texture (initial-contents
+(defun+ make-texture (initial-contents
                      &key dimensions element-type (mipmap nil)
                        (layer-count 1) (cubes nil) (rectangle nil)
                        (multisample nil) (immutable t) (buffer-storage nil)
@@ -280,7 +280,7 @@
      (when (typep initial-contents 'gpu-array-bb)
        (list initial-contents)))))
 
-(defun2 make-texture-now (tex-obj initial-contents dimensions element-type mipmap
+(defun+ make-texture-now (tex-obj initial-contents dimensions element-type mipmap
                          layer-count cubes rectangle multisample immutable
                          buffer-storage generate-mipmaps pixel-format)
   ;;
@@ -317,7 +317,7 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun2 calc-dimensions (image-format dimensions cube-tex)
+(defun+ calc-dimensions (image-format dimensions cube-tex)
   (declare (ignore image-format dimensions cube-tex)))
 
 ;; other
@@ -332,7 +332,7 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun2 calc-image-format (element-type initial-contents)
+(defun+ calc-image-format (element-type initial-contents)
   (cond
     ;; need to infer the type
     ((null element-type)
@@ -352,7 +352,7 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun2 %calc-image-format-without-declared-format (initial-contents)
+(defun+ %calc-image-format-without-declared-format (initial-contents)
   ;; The user didnt declare an element-type so try and infer one
   (typecase initial-contents
     (null (error 'make-tex-no-content-no-type))
@@ -364,7 +364,7 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun2 %calc-image-format-with-declared-format
+(defun+ %calc-image-format-with-declared-format
     (element-type image-format initial-contents)
   ;; Here the users declared the internal format in :element-type so
   ;; we need to make sure that no other arguments conflict with this
@@ -378,7 +378,7 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun2 %calc-image-format-with-pixel-format (pixel-format initial-contents)
+(defun+ %calc-image-format-with-pixel-format (pixel-format initial-contents)
   "Convert the pixel-format to an internal format and delegate to
    %calc-image-format"
   (%calc-image-format-with-declared-format
@@ -386,7 +386,7 @@
    (pixel-format->image-format pixel-format)
    initial-contents))
 
-(defun2 %calc-image-format-with-lisp-type (element-type initial-contents)
+(defun+ %calc-image-format-with-lisp-type (element-type initial-contents)
   "Convert the lisp type to an internal format and delegate to
    %calc-image-format"
   (%calc-image-format-with-declared-format
@@ -396,7 +396,7 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun2 %make-texture-with-lisp-data
+(defun+ %make-texture-with-lisp-data
     (tex-obj dimensions mipmap layer-count cubes buffer-storage
      rectangle multisample immutable initial-contents
      generate-mipmaps element-type image-format pixel-format)
@@ -408,7 +408,7 @@
                         multisample immutable buffer-storage
                         generate-mipmaps pixel-format))))
 
-(defun2 %make-cube-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
+(defun+ %make-cube-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
                            rectangle multisample immutable initial-contents
                            image-format pixel-format generate-mipmaps)
   (assert (= 6 (length initial-contents)))
@@ -426,7 +426,7 @@
     result))
 
 
-(defun2 validate-pixel-format (initial-contents pixel-format)
+(defun+ validate-pixel-format (initial-contents pixel-format)
   (let ((element-type (element-type initial-contents))
         (supposed-type (pixel-format->lisp-type pixel-format)))
     (if (equal element-type supposed-type)
@@ -448,10 +448,10 @@
 Max is: ~s"
                level-count dimensions max-levels))))
 
-(defun2 calc-max-num-mipmap-levels (dimensions)
+(defun+ calc-max-num-mipmap-levels (dimensions)
   (floor (log (apply #'max dimensions) 2)))
 
-(defun2 slow-query-mipmap-count (texture)
+(defun+ slow-query-mipmap-count (texture)
   "This is a hack, never use it in production code.
 
 GL has no function for querying the number of mipmap levels
@@ -495,7 +495,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
     (:texture-2d-multisample-array
      #.(cffi:foreign-enum-value '%gl::enum :texture-2d-multisample-array))))
 
-(defun2 %make-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
+(defun+ %make-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
                       image-format pixel-format generate-mipmaps)
   (let* ((dimensions (listify dimensions))
@@ -547,7 +547,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
           (error "This combination of texture features is invalid")))))
 
 
-(defun2 gen-buffer-tex-initial-contents (initial-contents dimensions image-format
+(defun+ gen-buffer-tex-initial-contents (initial-contents dimensions image-format
                                         cubes rectangle multisample mipmap
                                         layer-count pixel-format)
   (when pixel-format
@@ -609,7 +609,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
               texture-type)
              (values (make-gpu-array carr) texture-type)))))))
 
-(defun2 %make-buffer-texture (tex-obj dimensions image-format mipmap layer-count
+(defun+ %make-buffer-texture (tex-obj dimensions image-format mipmap layer-count
                              cubes rectangle multisample immutable
                              initial-contents pixel-format)
   (declare (ignore immutable))
@@ -641,7 +641,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
       (setf (texture-allocated-p tex-obj) t)
       tex-obj)))
 
-(defun2 assert-valid-args-for-buffer-backend-texture
+(defun+ assert-valid-args-for-buffer-backend-texture
     (image-format cubes rectangle multisample mipmap layer-count
      texture-type)
   (when (or mipmap (not (= layer-count 1)) cubes rectangle multisample)
@@ -653,7 +653,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
     (error 'buffer-backed-texture-establish-image-format
            :type-name texture-type)))
 
-(defun2 %find-tex-image-format (element-format)
+(defun+ %find-tex-image-format (element-format)
   (if (pixel-format-p element-format)
       (pixel-format->image-format element-format)
       (let ((pfo (lisp-type->pixel-format element-format)))
@@ -661,20 +661,20 @@ the width to see at what point the width reaches 0 or GL throws an error."
             (pixel-format->image-format pfo)
             element-format))))
 
-(defun2 allocate-texture (texture)
+(defun+ allocate-texture (texture)
   (when (buffer-texture-p texture)
     (error "This function should not have been called with a buffer backed texture"))
   (if (texture-mutable-p texture)
       (allocate-mutable-texture texture)
       (allocate-immutable-texture texture)))
 
-(defun2 allocate-mutable-texture (texture)
+(defun+ allocate-mutable-texture (texture)
   (gl:tex-parameter (texture-type texture) :texture-base-level 0)
   (gl:tex-parameter (texture-type texture) :texture-max-level
                     (1- (texture-mipmap-levels texture)))
   (setf (texture-allocated-p texture) t))
 
-(defun2 allocate-immutable-texture (texture)
+(defun+ allocate-immutable-texture (texture)
   (if (texture-allocated-p texture)
       (error "Attempting to reallocate a previously allocated texture")
       (let ((base-dimensions (texture-base-dimensions texture))
@@ -716,15 +716,15 @@ the width to see at what point the width reaches 0 or GL throws an error."
                            (texture-layer-count texture))))
         (setf (texture-allocated-p texture) t))))
 
-(defun2 tex-storage-1d (target levels image-format width)
+(defun+ tex-storage-1d (target levels image-format width)
   (%gl:tex-storage-1d target levels (gl::internal-format->int image-format)
                       width))
 
-(defun2 tex-storage-2d (target levels image-format width height)
+(defun+ tex-storage-2d (target levels image-format width height)
   (%gl:tex-storage-2d target levels (gl::internal-format->int image-format)
                       width height))
 
-(defun2 tex-storage-3d (target levels image-format width height depth)
+(defun+ tex-storage-3d (target levels image-format width height depth)
   (%gl:tex-storage-3d target levels (gl::internal-format->int image-format)
                       width height depth))
 

@@ -2,7 +2,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun2 set-context-defaults (cepl-context)
+(defun+ set-context-defaults (cepl-context)
   ;; Set up the cache for samplers
   (setf (%cepl-context-array-of-bound-samplers cepl-context)
         (make-array (gl:get* :max-combined-texture-image-units)

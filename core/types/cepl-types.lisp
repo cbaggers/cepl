@@ -31,7 +31,7 @@
 (deftype tex-unit ()
   '(unsigned-byte 8))
 
-(defun2 indexp (x)
+(defun+ indexp (x)
   (typep x 'c-array-index))
 
 ;;------------------------------------------------------------
@@ -268,7 +268,7 @@
 
 ;;------------------------------------------------------------
 
-(defun2 draw-mode-group-id (x)
+(defun+ draw-mode-group-id (x)
   (or (typecase x
         (varjo::points 0)
         (varjo::line-strip 1)
@@ -381,7 +381,7 @@
       (set-patch-stream-primitive stream primitive))
   primitive)
 
-(defun2 set-patch-stream-primitive (stream primitive)
+(defun+ set-patch-stream-primitive (stream primitive)
   (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
          (group-id (draw-mode-group-id prim))
          (enum-kwd (varjo::lisp-name prim))
@@ -407,7 +407,7 @@
            (profile t))
   (and x (not (eq x :uninitialized))))
 
-(defun2 make-raw-buffer-stream (&key vao start length
+(defun+ make-raw-buffer-stream (&key vao start length
                                      index-type managed
                                      gpu-arrays (primitive :triangles))
   (let* ((prim (varjo.internals:primitive-name-to-instance primitive))
@@ -471,14 +471,14 @@
   (declare (profile t))
   (buffer-stream-%start-byte stream))
 
-(defun2 (setf buffer-stream-start-byte) (value stream)
+(defun+ (setf buffer-stream-start-byte) (value stream)
   (declare (ignore value))
   (error "CEPL Internal Error: Do not set stream %start-byte directly~%~s"
          stream))
 
 ;;------------------------------------------------------------
 
-(defun2 holds-gl-object-ref-p (object)
+(defun+ holds-gl-object-ref-p (object)
   (typecase object
     (texture t)
     (gpu-buffer t)
@@ -495,7 +495,7 @@
 (defvar +null-gpu-buffer+
   (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
 
-(defun2 make-uninitialized-texture (&optional buffer-backed-p)
+(defun+ make-uninitialized-texture (&optional buffer-backed-p)
   (if buffer-backed-p
       (%%make-buffer-texture
        :type :uninitialized
@@ -504,28 +504,28 @@
       (%%make-texture
        :type :uninitialized :image-format :uninitialized)))
 
-(defun2 make-uninitialized-gpu-array-bb (&optional buffer)
+(defun+ make-uninitialized-gpu-array-bb (&optional buffer)
   (%make-gpu-array-bb
    :buffer (or buffer +null-gpu-buffer+)
    :access-style :uninitialized))
 
-(defun2 make-uninitialized-gpu-array-t ()
+(defun+ make-uninitialized-gpu-array-t ()
   (%make-gpu-array-t
    :texture +null-texture+
    :texture-type :uninitialized))
 
-(defun2 make-uninitialized-sampler (texture context-id)
+(defun+ make-uninitialized-sampler (texture context-id)
   (%make-sampler
    :context-id context-id
    :texture texture
    :type :uninitialized))
 
-(defun2 make-uninitialized-fbo ()
+(defun+ make-uninitialized-fbo ()
   (%%make-fbo
    :draw-buffer-map nil
    :clear-mask -13))
 
-(defun2 make-uninitialized-buffer-stream (primitive)
+(defun+ make-uninitialized-buffer-stream (primitive)
   (make-raw-buffer-stream :index-type :uninitialized
                           :primitive primitive))
 
@@ -545,5 +545,5 @@
   (make-array 0 :element-type 'gpu-array-bb
               :initial-element +null-buffer-backed-gpu-array+))
 
-(defun2 make-uninitialized-gpu-buffer ()
+(defun+ make-uninitialized-gpu-buffer ()
   (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+))

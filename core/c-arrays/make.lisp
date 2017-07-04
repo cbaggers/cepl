@@ -2,10 +2,10 @@
 
 ;;------------------------------------------------------------
 
-(defun2 valid-c-array-dimension-p (x)
+(defun+ valid-c-array-dimension-p (x)
   (>= x 0))
 
-(defun2 make-c-array-from-pointer (dimensions element-type pointer)
+(defun+ make-c-array-from-pointer (dimensions element-type pointer)
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
   (assert (every #'valid-c-array-dimension-p dimensions) ()
@@ -33,7 +33,7 @@
 ;;------------------------------------------------------------
 
 ;; [TODO] extract error messages
-(defun2 make-c-array (initial-contents &key dimensions element-type)
+(defun+ make-c-array (initial-contents &key dimensions element-type)
   (let* ((dimensions (listify dimensions))
          (dimensions
           (if dimensions
@@ -91,7 +91,7 @@
 
 ;;------------------------------------------------------------
 
-(defun2 clone-c-array (c-array)
+(defun+ clone-c-array (c-array)
   (let* ((size (c-array-byte-size c-array))
          (new-pointer (cffi::%foreign-alloc size)))
     (cepl.types::%memcpy new-pointer (c-array-pointer c-array) size)
@@ -118,7 +118,7 @@
 
 ;; ideally we would use a generic reduce in this case to handle the different
 ;; kinds of structures, but alas this is not available.
-(defun2 scan-for-type (data)
+(defun+ scan-for-type (data)
   (typecase data
     ((or array vector)
      (let ((initial-type (first (find-suitable-type (row-major-aref data 0)))))
@@ -131,7 +131,7 @@
             (values tmp (equal tmp initial-type))))
     (t (error "Can not infer the type the c-array should be unless it is a vector, array or flat list"))))
 
-(defun2 update-data (data type)
+(defun+ update-data (data type)
   (if (or (eq type 'single-float) (eq type 'double-float))
       (typecase data
         ((or array vector)

@@ -15,7 +15,7 @@
 (defmethod element-byte-size ((array c-array))
   (c-array-element-byte-size array))
 
-(defun2 blank-c-array-object (c-array)
+(defun+ blank-c-array-object (c-array)
   (setf (c-array-pointer c-array) (cffi:null-pointer))
   (setf (c-array-dimensions c-array) nil)
   (setf (c-array-element-type c-array) nil)
@@ -26,7 +26,7 @@
 (defmethod free ((object c-array))
   (free-c-array object))
 
-(defun2 free-c-array (c-array)
+(defun+ free-c-array (c-array)
   (let ((ptr (c-array-pointer c-array)))
     (unless (cffi:null-pointer-p ptr)
       (foreign-free ptr)

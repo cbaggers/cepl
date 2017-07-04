@@ -3,13 +3,13 @@
 
 ;;----------------------------------------------------------------------
 
-(defun2 add-surface (context &key (title "CEPL") (width 600) (height 600)
+(defun+ add-surface (context &key (title "CEPL") (width 600) (height 600)
                               (fullscreen nil) (resizable t) (no-frame nil)
                               (hidden nil) (make-current nil))
   (legacy-add-surface context title width height fullscreen resizable no-frame
                       hidden make-current nil))
 
-(defun2 legacy-add-surface (context title width height fullscreen resizable
+(defun+ legacy-add-surface (context title width height fullscreen resizable
                            no-frame hidden make-current gl-version)
   (when (> (length (%cepl-context-surfaces context)) 0)
     (assert (cepl.host:supports-multiple-surfaces-p) ()
@@ -37,7 +37,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun2 make-surface-current (cepl-context surface)
+(defun+ make-surface-current (cepl-context surface)
   (assert cepl-context)
   (assert surface)
   (%with-cepl-context-slots (gl-context surfaces current-surface) cepl-context
@@ -54,7 +54,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun2 init-pending-surfaces (context)
+(defun+ init-pending-surfaces (context)
   (%with-cepl-context-slots (surfaces) context
     (setf surfaces
           (mapcar λ(typecase _
@@ -62,7 +62,7 @@
                      (t _))
                   surfaces))))
 
-(defun2 make-surface-from-pending (pending-surface)
+(defun+ make-surface-from-pending (pending-surface)
   (assert cepl.host::*current-host* ()
           "CEPL: Cannot fully initialize surface without CEPL having been initialized")
   ;;
@@ -78,29 +78,29 @@
 
 ;;----------------------------------------------------------------------
 
-(defun2 surface-dimensions (surface)
+(defun+ surface-dimensions (surface)
   (cepl.host:window-size surface))
 
-(defun2 surface-resolution (surface)
+(defun+ surface-resolution (surface)
   (v! (cepl.host:window-size surface)))
 
-(defun2 (setf surface-dimensions) (value surface)
+(defun+ (setf surface-dimensions) (value surface)
   (destructuring-bind (width height) value
     (cepl.host:set-surface-size surface width height)))
 
-(defun2 (setf surface-resolution) (value surface)
+(defun+ (setf surface-resolution) (value surface)
   (cepl.host:set-surface-size surface
                               (ceiling (v:x value))
                               (ceiling (v:y value))))
 
-(defun2 surface-title (surface)
+(defun+ surface-title (surface)
   (cepl.host:surface-title surface))
 
-(defun2 (setf surface-title) (value surface)
+(defun+ (setf surface-title) (value surface)
   (cepl.host:set-surface-title surface value))
 
-(defun2 surface-fullscreen-p (surface)
+(defun+ surface-fullscreen-p (surface)
   (cepl.host:surface-fullscreen-p surface))
 
-(defun2 (setf surface-fullscreen-p) (value surface)
+(defun+ (setf surface-fullscreen-p) (value surface)
   (cepl.host:set-surface-fullscreen surface value))

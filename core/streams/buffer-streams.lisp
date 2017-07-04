@@ -13,14 +13,14 @@
 (defmethod free ((object buffer-stream))
   (free-buffer-stream object))
 
-(defun2 blank-buffer-stream (buffer-stream)
+(defun+ blank-buffer-stream (buffer-stream)
   (setf (buffer-stream-vao buffer-stream) 0)
   (setf (buffer-stream-start buffer-stream) 0)
   (setf (buffer-stream-length buffer-stream) 0)
   (setf (buffer-stream-index-type buffer-stream) nil)
   (setf (buffer-stream-managed buffer-stream) nil))
 
-(defun2 free-buffer-stream (buffer-stream)
+(defun+ free-buffer-stream (buffer-stream)
   (when (buffer-stream-managed buffer-stream)
     (free-vao (buffer-stream-vao buffer-stream)))
   ;; (when (buffer-stream-gpu-arrays buffer-stream)
@@ -28,7 +28,7 @@
   (blank-buffer-stream buffer-stream))
 
 
-(defun2 make-buffer-stream (gpu-arrays
+(defun+ make-buffer-stream (gpu-arrays
                            &key index-array (start 0) length
                              (retain-arrays t) (primitive :triangles))
   (unless gpu-arrays
@@ -41,7 +41,7 @@
      (make-uninitialized-buffer-stream primitive)
      gpu-arrays)))
 
-(defun2 make-buffer-stream-from-id (vao-gl-object gpu-arrays
+(defun+ make-buffer-stream-from-id (vao-gl-object gpu-arrays
                                    &key index-array (start 0) length
                                      retain-arrays (primitive :triangles))
   (unless gpu-arrays
@@ -51,7 +51,7 @@
      (make-raw-buffer-stream :primitive primitive) vao-gl-object gpu-arrays
      index-array start length retain-arrays)))
 
-(defun2 init-buffer-stream-from-id (stream-obj vao-gl-object gpu-arrays
+(defun+ init-buffer-stream-from-id (stream-obj vao-gl-object gpu-arrays
                                    index-array start length retain-arrays)
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))

@@ -148,13 +148,13 @@
   (values))
 
 ;; [TODO] HANDLE DOUBLES
-(defun2 get-foreign-uniform-function (type)
+(defun+ get-foreign-uniform-function (type)
   (symbol-function (get-foreign-uniform-function-name type)))
 
-(defun2 get-uniform-function (type)
+(defun+ get-uniform-function (type)
   (symbol-function (get-uniform-function-name type)))
 
-(defun2 get-foreign-uniform-function-name (type)
+(defun+ get-foreign-uniform-function-name (type)
   "Used when uploading from a foreign data source (like a c-array)
    This lets your uploading from an offset the source"
   (case type
@@ -172,7 +172,7 @@
     (t (if (cepl.samplers::sampler-typep (type-spec->type type)) nil
            (error "Sorry cepl doesnt handle that type yet")))))
 
-(defun2 get-uniform-function-name (type)
+(defun+ get-uniform-function-name (type)
   "Used when uploading lisp data"
   (case type
     ((:int :int-arb :bool :bool-arb) 'uniform-1i)

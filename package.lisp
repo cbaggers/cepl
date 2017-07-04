@@ -3,7 +3,8 @@
 (uiop:define-package :cepl-utils
     (:use :cl :%rtg-math :cepl.perf.core)
   (:export :array-index
-           :defun2
+           :defun+
+           :defmethod+
            :gdefun
            :dbind
            :assoc-bind

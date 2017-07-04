@@ -114,4 +114,6 @@ Interesting Funcs (name calls-per-frame cost-per-call frame-time)
 
 4220.2124, so where is the rest of that 8946 coming from?
 
+..and the stuff not in the pline is 5985.511 so thats 14932.402 which is still
+60fps teritory, not 36fps
 ||#

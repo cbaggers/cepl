@@ -16,7 +16,7 @@
     (values)))
 
 ;; [TODO] would a unboxed lisp array be faster?
-(defun2 free-vaos (vaos)
+(defun+ free-vaos (vaos)
   (with-foreign-object (ids :uint (length vaos))
     (loop :for vao :in vaos :for i :from 0 :do
        (setf (mem-aref ids :uint i) vao))
@@ -33,7 +33,7 @@
                      ,@body)
            (setf (vao-bound ,ctx) ,old-vao))))))
 
-(defun2 suitable-array-for-index-p (array)
+(defun+ suitable-array-for-index-p (array)
   (and (eql (length (gpu-buffer-arrays (gpu-array-buffer array))) 1)
        (1d-p array)
        (find (element-type array) '(:uint8 :ushort :uint :unsigned-short

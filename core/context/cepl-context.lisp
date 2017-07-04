@@ -4,7 +4,7 @@
 
 (defvar *contexts* nil)
 
-(defun2 make-context (&key gl-version (shared (first *contexts*))
+(defun+ make-context (&key gl-version (shared (first *contexts*))
                            (title "CEPL") (width 600) (height 600)
                            (fullscreen nil) (resizable t) (no-frame nil)
                            (hidden nil))

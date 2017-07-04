@@ -20,19 +20,19 @@
 ;;----------------------------------------------------------------------
 ;; inspect
 
-(defun2 uninitialized-p ()
+(defun+ uninitialized-p ()
   (eq *lifecycle-state* :uninitialized))
 
-(defun2 suspended-p ()
+(defun+ suspended-p ()
   (eq *lifecycle-state* :suspended))
 
-(defun2 active-p ()
+(defun+ active-p ()
   (eq *lifecycle-state* :active))
 
-(defun2 interactive-p ()
+(defun+ interactive-p ()
   (eq *lifecycle-state* :interactive))
 
-(defun2 shutting-down-p ()
+(defun+ shutting-down-p ()
   (eq *lifecycle-state* :shutting-down))
 
 ;;----------------------------------------------------------------------
@@ -43,7 +43,7 @@
       interactive
       shutting-down)
   ;;
-  (defun2 listen-to-lifecycle-changes (func &rest states-to-subscribe-to)
+  (defun+ listen-to-lifecycle-changes (func &rest states-to-subscribe-to)
     (assert (every (lambda (x) (member x *lifecycle-states*))
                    states-to-subscribe-to))
     (let ((stst (or states-to-subscribe-to *lifecycle-states*)))
@@ -60,13 +60,13 @@
                  (not (member func shutting-down)))
         (push func shutting-down))))
   ;;
-  (defun2 stop-listening-to-lifecycle-changes (func)
+  (defun+ stop-listening-to-lifecycle-changes (func)
     (setf suspended (remove func suspended)
           active (remove func active)
           interactive (remove func interactive)
           shutting-down (remove func shutting-down)))
   ;;
-  (defun2 call-listeners ()
+  (defun+ call-listeners ()
     (ecase *lifecycle-state*
       (:suspended
        (loop :for l :in suspended :do
@@ -93,35 +93,35 @@
 ;;----------------------------------------------------------------------
 ;; state logic
 
-(defun2 change-state (target-state)
+(defun+ change-state (target-state)
   (ecase *lifecycle-state*
     (:uninitialized (from-unitialized target-state))
     (:suspended (from-suspended target-state))
     (:active (from-active target-state))
     (:interactive (from-interactive target-state))))
 
-(defun2 from-unitialized (target-state)
+(defun+ from-unitialized (target-state)
   (assert (uninitialized-p))
   (ecase target-state
     (:suspended (to-suspended target-state))
     (:active (to-suspended target-state))
     (:interactive (to-suspended target-state))))
 
-(defun2 from-suspended (target-state)
+(defun+ from-suspended (target-state)
   (assert (suspended-p))
   (ecase target-state
     (:active (to-active target-state))
     (:interactive (to-active target-state))
     (:shutting-down (to-shutting-down))))
 
-(defun2 from-active (target-state)
+(defun+ from-active (target-state)
   (assert (active-p))
   (ecase target-state
     (:suspended (to-suspended target-state))
     (:interactive (to-interactive target-state))
     (:shutting-down (to-suspended target-state))))
 
-(defun2 from-interactive (target-state)
+(defun+ from-interactive (target-state)
   (assert (interactive-p))
   (ecase target-state
     (:suspended (to-active target-state))
@@ -129,25 +129,25 @@
     (:shutting-down (to-active target-state))))
 
 
-(defun2 to-suspended (target-state)
+(defun+ to-suspended (target-state)
   (setf *lifecycle-state* :suspended)
   (call-listeners)
   (when (not (eq *lifecycle-state* target-state))
     (change-state target-state)))
 
-(defun2 to-active (target-state)
+(defun+ to-active (target-state)
   (setf *lifecycle-state* :active)
   (call-listeners)
   (when (not (eq *lifecycle-state* target-state))
     (change-state target-state)))
 
-(defun2 to-interactive (target-state)
+(defun+ to-interactive (target-state)
   (setf *lifecycle-state* :interactive)
   (call-listeners)
   (when (not (eq *lifecycle-state* target-state))
     (change-state target-state)))
 
-(defun2 to-shutting-down ()
+(defun+ to-shutting-down ()
   (setf *lifecycle-state* :shutting-down)
   (call-listeners)
   ;; do shutdown stuff

@@ -22,7 +22,7 @@
               (texture-base-dimensions object))
       (format stream "#<TEXTURE :UNINITIALIZED>")))
 
-(defun2 texture-element-type (texture)
+(defun+ texture-element-type (texture)
   (texture-image-format texture))
 
 (defmethod element-type ((texture texture))
@@ -31,7 +31,7 @@
 (defmethod free ((object texture))
   (free-texture object))
 
-(defun2 blank-texture-object (texture)
+(defun+ blank-texture-object (texture)
   (setf (texture-id texture) 0
         (texture-base-dimensions texture) nil
         (texture-type texture) nil
@@ -82,7 +82,7 @@
   (declare (ignore gpu-array))
   (free-gpu-array-t))
 
-(defun2 free-gpu-array-t ()
+(defun+ free-gpu-array-t ()
   (error "Cannot free a texture backed gpu-array. free the texture containing this array "))
 
 (defmacro with-gpu-array-t (gpu-array-t &body body)

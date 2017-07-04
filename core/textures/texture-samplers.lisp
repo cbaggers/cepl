@@ -9,25 +9,25 @@
 ;; the texture directly but this makes for a less consistant api with no
 ;; other benefit.
 
-(defun2 (setf tex-lod-bias) (value texture)
+(defun+ (setf tex-lod-bias) (value texture)
   (%with-scratch-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-lod-bias value))
   texture)
 
 
-(defun2 (setf tex-min-lod) (value texture)
+(defun+ (setf tex-min-lod) (value texture)
   (%with-scratch-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-min-lod value))
   texture)
 
 
-(defun2 (setf tex-max-lod) (value texture)
+(defun+ (setf tex-max-lod) (value texture)
   (%with-scratch-texture-bound texture
     (%gl:tex-parameter-f (texture-type texture) :texture-max-lod value))
   texture)
 
 
-(defun2 (setf tex-magnify-filter) (value texture)
+(defun+ (setf tex-magnify-filter) (value texture)
   (assert (member value '(:linear :nearest)))
   (%with-scratch-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-mag-filter
@@ -35,13 +35,13 @@
   texture)
 
 
-(defun2 (setf tex-minify-filter) (value texture)
+(defun+ (setf tex-minify-filter) (value texture)
   (%with-scratch-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-min-filter
                           (%gl::foreign-enum-value '%gl:enum value)))
   texture)
 
-(defun2 (setf tex-wrap) (value texture)
+(defun+ (setf tex-wrap) (value texture)
   (let ((options '(:repeat :mirrored-repeat :clamp-to-edge :clamp-to-border
                    :mirror-clamp-to-edge))
         (value (if (keywordp value)
@@ -60,7 +60,7 @@
   texture)
 
 
-(defun2 (setf tex-compare) (value texture)
+(defun+ (setf tex-compare) (value texture)
   (%with-scratch-texture-bound texture
     (if value
         (progn
@@ -87,7 +87,7 @@
          (%gl::foreign-enum-value '%gl:enum :none))))
   texture)
 
-(defun2 fallback-sampler-set (sampler)
+(defun+ fallback-sampler-set (sampler)
   (let ((texture (%sampler-texture sampler))
         (id (%sampler-id sampler)))
     (unless (= id (texture-last-sampler-id texture))

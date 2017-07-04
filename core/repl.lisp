@@ -1,6 +1,6 @@
 (in-package :cepl)
 
-(defun2 repl (&optional (width 320) (height 240)
+(defun+ repl (&optional (width 320) (height 240)
                #+darwin (gl-version 4.1)
                #-darwin gl-version)
   "Initialize CEPL and open a window. If the gl-version argument is nil then
@@ -11,7 +11,7 @@
   (format t "~%-----------------~%    CEPL-REPL    ~%-----------------~%")
   (cls))
 
-(defun2 initialize-cepl (&key gl-version host-init-flags)
+(defun+ initialize-cepl (&key gl-version host-init-flags)
   ;;
   ;; Initialize Host
   (unless cepl.host::*current-host*
@@ -26,9 +26,9 @@
   (cepl.lifecycle::change-state :interactive)
   t)
 
-(defun2 quit () (cepl.lifecycle::change-state :shutting-down))
+(defun+ quit () (cepl.lifecycle::change-state :shutting-down))
 
-(defun2 register-event-listener (function)
+(defun+ register-event-listener (function)
   "Register a function to be called on every event.
    The function must take 1 argument, which will be the event."
   (cepl.host::register-event-listener function))
