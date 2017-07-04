@@ -711,6 +711,9 @@ source: ~s~%list-to-match: ~s" list list-to-match)
        (unwind-protect (progn ,@body)
          (setf ,@restore-values)))))
 
+(defun list-not-consp (x)
+  (and (listp x) (or (null (cdr x)) (consp (cdr x)))))
+
 ;;------------------------------------------------------------
 
 

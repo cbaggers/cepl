@@ -316,6 +316,9 @@
                :in (mapcat #'expand-slot-to-layout slots)
                :for i :from 0 :with offset = 0 :append
                `((%gl:enable-vertex-attrib-array (+ attrib-offset ,i))
+                 (when instance-divisor
+                   (%gl:vertex-attrib-divisor (+ attrib-offset ,i)
+                                              instance-divisor))
                  (%gl:vertex-attrib-pointer
                   (+ attrib-offset ,i)
                   ,len
@@ -329,7 +332,7 @@
            (defmethod cepl.internals:gl-assign-attrib-pointers
                ((array-type (EQL ',type-name))
                 &optional (attrib-offset 0) (pointer-offset 0)
-                  stride-override normalized)
+                  stride-override normalized instance-divisor)
              (declare (ignore array-type normalized))
              (let ((,stride-sym (or stride-override ,stride)))
                ,@definitions

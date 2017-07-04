@@ -33,6 +33,6 @@ This function returns a new GL VAO when given
 
   (defun make-vao-from-id
       "
-This function takes an existing OpenGL VAO and set it up to strema vertices from
+This function takes an existing OpenGL VAO and set it up to stream vertices from
 the given arrays.
 "))

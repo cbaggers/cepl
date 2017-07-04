@@ -8,12 +8,14 @@
 (defgeneric gl-assign-attrib-pointers (array-type &optional attrib-num
                                                     pointer-offset
                                                     stride-override
-                                                    normalized))
+                                                    normalized
+                                                    instance-divisor))
 
 (defmethod gl-assign-attrib-pointers ((array-type t) &optional (attrib-num 0)
                                                        (pointer-offset 0)
                                                        stride-override
-                                                       normalized)
+                                                       normalized
+                                                       instance-divisor)
   (let ((type (varjo:type-spec->type array-type)))
     (if (and (varjo:core-typep type) (not (varjo:v-typep type 'v-sampler)))
         (let ((slot-layout (cepl.types::expand-slot-to-layout
@@ -24,6 +26,9 @@
              :with offset = 0
              :do (progn
                    (%gl:enable-vertex-attrib-array (+ attrib-num i))
+                   (when instance-divisor
+                     (%gl:vertex-attrib-divisor
+                      (+ attrib-num i) instance-divisor))
                    (%gl:vertex-attrib-pointer
                     (+ attrib-num i) (first attr) (second attr)
                     (third attr) (or stride-override stride)

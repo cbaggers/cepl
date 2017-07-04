@@ -33,7 +33,7 @@
                              (retain-arrays t) (primitive :triangles))
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
-  (let ((gpu-arrays (listify gpu-arrays)))
+  (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
     (cepl.context::if-gl-context
      (init-buffer-stream-from-id %pre% (make-vao gpu-arrays index-array)
                                  gpu-arrays index-array start length
@@ -46,33 +46,43 @@
                                      retain-arrays (primitive :triangles))
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
-  (let ((gpu-arrays (listify gpu-arrays)))
+  (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
     (init-buffer-stream-from-id
      (make-raw-buffer-stream :primitive primitive) vao-gl-object gpu-arrays
      index-array start length retain-arrays)))
 
-(defun+ init-buffer-stream-from-id (stream-obj vao-gl-object gpu-arrays
-                                   index-array start length retain-arrays)
+(defun+ init-buffer-stream-from-id (stream-obj
+                                    vao-gl-object gpu-arrays
+                                    index-array start length retain-arrays)
   (unless gpu-arrays
     (error 'make-buffer-stream-with-no-gpu-arrays))
-  (let* ((gpu-arrays (listify gpu-arrays))
+  (let* ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays))
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
          ;; OF TRIANGLES
          (length (or length
                      (when index-array (first (dimensions index-array)))
-                     (apply #'min (mapcar #'(lambda (x) (first (dimensions x)))
+                     (apply #'min (mapcar #'(lambda (x)
+                                              (let ((x (if (consp x)
+                                                           (car x)
+                                                           x)))
+                                                (first (dimensions x))))
                                           gpu-arrays)))))
-    (if (and (every #'1d-p gpu-arrays) (if index-array (1d-p index-array) t))
-        (progn
-          (setf (buffer-stream-vao stream-obj) (make-vao-from-id vao-gl-object gpu-arrays index-array)
-                (buffer-stream-start stream-obj) start
-                (buffer-stream-length stream-obj) length
-                (buffer-stream-index-type stream-obj) (when index-array
-                                                        (gpu-array-bb-element-type
-                                                         index-array))
-                (buffer-stream-managed stream-obj) t
-                (buffer-stream-gpu-arrays stream-obj) (when retain-arrays
-                                                        (list gpu-arrays index-array)))
-          stream-obj)
-        (error "You can only make buffer-streams from 1D arrays"))))
+    (assert (and (every #'cons-aware-1d-p gpu-arrays)
+                 (if index-array (1d-p index-array) t))
+            () "You can only make buffer-streams from 1D arrays")
+    (setf (buffer-stream-start stream-obj) start
+          (buffer-stream-length stream-obj) length
+          (buffer-stream-managed stream-obj) t
+
+          (buffer-stream-vao stream-obj) (make-vao-from-id vao-gl-object
+                                                           gpu-arrays
+                                                           index-array)
+
+          (buffer-stream-index-type stream-obj) (when index-array
+                                                  (gpu-array-bb-element-type
+                                                   index-array))
+
+          (buffer-stream-gpu-arrays stream-obj) (when retain-arrays
+                                                  (list gpu-arrays index-array)))
+    stream-obj))

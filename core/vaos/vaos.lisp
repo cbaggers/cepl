@@ -39,12 +39,20 @@
        (find (element-type array) '(:uint8 :ushort :uint :unsigned-short
                                     :unsigned-int))))
 
+(defun+ preprocess-gpu-arrays-for-vao (gpu-arrays)
+  (if (list-not-consp gpu-arrays)
+      gpu-arrays
+      (list gpu-arrays)))
+
+(defun+ cons-aware-1d-p (x)
+  (1d-p (if (consp x) (car x) x)))
+
 (defn make-vao ((gpu-arrays list) &optional (index-array gpu-array-bb))
     gl-id
-  (let ((gpu-arrays (listify gpu-arrays)))
+  (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
     (the gl-id
          (make-vao-from-id
-          (progn (assert (and (every #'1d-p gpu-arrays)
+          (progn (assert (and (every #'cons-aware-1d-p gpu-arrays)
                               (or (null index-array)
                                   (suitable-array-for-index-p
                                    index-array))))
@@ -52,41 +60,48 @@
           gpu-arrays index-array))))
 
 (defn make-vao-from-id ((gl-object gl-id)
-                        (gpu-arrays list)
+                        (gpu-arrays (or list gpu-array-bb))
                         &optional (index-array gpu-array-bb))
     gl-id
-  "makes a vao using a list of gpu-arrays as the source data
-   (remember that you can also use gpu-sub-array here if you
-   need a subsection of a gpu-array).
-   You can also specify an index-array which will be used as
-   the indicies when rendering"
   (declare (profile t))
-  (unless (and (every #'1d-p gpu-arrays)
-               (or (null index-array) (suitable-array-for-index-p index-array)))
-    (error "You can only make VAOs from 1D arrays"))
-  (with-cepl-context (ctx)
-    (setf (cepl.context:gpu-buffer-bound ctx :array-buffer) nil)
-    (setf (cepl.context:gpu-buffer-bound ctx :element-array-buffer) nil)
-    (let ((element-buffer (when index-array
-                            (gpu-array-buffer index-array)))
-          (vao gl-object)
-          (attr 0))
-      (with-vao-bound vao
-        (loop :for gpu-array :in gpu-arrays :do
-           (let* ((buffer (gpu-array-buffer gpu-array))
-                  (elem-type (gpu-array-bb-element-type gpu-array))
-                  (offset (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
-
-             (setf (gpu-buffer-bound ctx :array-buffer) buffer)
-             (unwind-protect
-                  (incf attr
-                        (gl-assign-attrib-pointers
-                         (if (listp elem-type)
-                             (second elem-type)
-                             elem-type)
-                         attr offset))
-               (setf (gpu-buffer-bound ctx :array-buffer) nil))))
-        (when element-buffer
-          (setf (gpu-buffer-bound ctx :element-array-buffer)
-                element-buffer)))
-      vao)))
+  (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
+    (assert (and (every #'cons-aware-1d-p gpu-arrays)
+                 (or (null index-array)
+                     (suitable-array-for-index-p index-array)))
+            () "You can only make VAOs from 1D arrays")
+    (with-cepl-context (ctx)
+      (setf (cepl.context:gpu-buffer-bound ctx :array-buffer) nil)
+      (setf (cepl.context:gpu-buffer-bound ctx :element-array-buffer) nil)
+      (let ((element-buffer (when index-array
+                              (gpu-array-buffer index-array)))
+            (vao gl-object)
+            (attr 0))
+        (with-vao-bound vao
+          (loop :for gpu-array :in gpu-arrays :do
+             (let* ((instance-divisor (when (consp gpu-array)
+                                        (cdr gpu-array)))
+                    (instance-divisor (if (eql instance-divisor 0)
+                                          nil
+                                          instance-divisor))
+                    (gpu-array (if (consp gpu-array)
+                                   (car gpu-array)
+                                   gpu-array))
+                    (buffer (gpu-array-buffer gpu-array))
+                    (elem-type (gpu-array-bb-element-type gpu-array))
+                    (offset (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
+               (assert (or (null instance-divisor) (> instance-divisor 0))
+                       () "Instance divisor for ~a was ~a, however a positive integer was expected"
+                       gpu-array instance-divisor)
+               (setf (gpu-buffer-bound ctx :array-buffer) buffer)
+               (unwind-protect
+                    (incf attr
+                          (gl-assign-attrib-pointers
+                           (if (listp elem-type)
+                               (second elem-type)
+                               elem-type)
+                           attr offset nil nil instance-divisor))
+                 (setf (gpu-buffer-bound ctx :array-buffer) nil))))
+          (when element-buffer
+            (setf (gpu-buffer-bound ctx :element-array-buffer)
+                  element-buffer)))
+        vao))))

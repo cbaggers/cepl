@@ -62,7 +62,8 @@
            :with-setf*
            :defn
            :defn-inline
-           :defn-inlinable))
+           :defn-inlinable
+           :list-not-consp))
 
 (uiop:define-package :cepl.errors
     (:use :cl :cffi :cepl-utils :varjo :rtg-math :cepl.perf.core)
@@ -694,6 +695,9 @@
           :named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
           :cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed :cepl.vaos
           :cepl.measurements :cepl.memory :cepl.perf.core)
+  (:import-from :cepl.vaos
+                :preprocess-gpu-arrays-for-vao
+                :cons-aware-1d-p)
   (:export :buffer-stream
            :buffer-stream-p
            :buffer-stream-vao
