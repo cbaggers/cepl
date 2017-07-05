@@ -140,13 +140,13 @@ that.")
 Returns the pointer to the start of the foreign data that makes up the array
 ")
 
-  (defun with-c-array
+  (defun with-c-array-freed
       "
 Binds the `c-array` to the variable named by the var-name argument.
 Frees the c-array at the end of the scope.
 ")
 
-  (defun with-c-arrays
+  (defun with-c-arrays-freed
       "
 Binds a list of `c-array`s to the variable named by the var-name argument.
 Frees all of the c-arrays at the end of the scope.
