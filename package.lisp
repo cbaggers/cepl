@@ -619,8 +619,8 @@
           :named-readtables :cepl.errors :cepl.internals :cepl.image-formats
           :cepl.pixel-formats :cepl.memory :cepl.measurements
           :cepl.perf.core)
-  (:export :with-c-array
-           :with-c-arrays
+  (:export :with-c-array-freed
+           :with-c-arrays-freed
            :element-byte-size
            :element-type
            :pointer

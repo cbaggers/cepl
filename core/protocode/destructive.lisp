@@ -22,7 +22,7 @@
                            (setf (aref data index)
                                  (v! (v:x qv) (v:y qv) x y)))))
                    :finally (return (make-gpu-array data :element-type :vec4))))
-         (indices (with-c-array
+         (indices (with-c-array-freed
                       (x (make-c-array nil :dimensions (* 6 size-x size-y)
                                        :element-type :uint))
                     (let ((index #(3 0 1 3 1 2))

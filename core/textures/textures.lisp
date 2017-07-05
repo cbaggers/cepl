@@ -402,7 +402,7 @@
      generate-mipmaps element-type image-format pixel-format)
   (declare (ignore element-type))
   (let ((element-type (image-format->lisp-type image-format)))
-    (with-c-array (tmp (make-c-array initial-contents :dimensions dimensions
+    (with-c-array-freed (tmp (make-c-array initial-contents :dimensions dimensions
                                      :element-type element-type))
       (make-texture-now tex-obj tmp nil nil mipmap layer-count cubes rectangle
                         multisample immutable buffer-storage
@@ -593,7 +593,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
           image-format cubes rectangle multisample mipmap layer-count
           texture-type)
          (values initial-contents texture-type)))
-      (t (with-c-array (carr (make-c-array initial-contents
+      (t (with-c-array-freed (carr (make-c-array initial-contents
                                            :element-type element-type
                                            :dimensions dimensions))
            (when element-type
@@ -746,14 +746,14 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (push-g object (texref destination)))
 
 (defmethod push-g ((object list) (destination gpu-array-t))
-  (with-c-array (c-a (make-c-array object
+  (with-c-array-freed (c-a (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (image-format->pixel-format
                                                   (gpu-array-t-image-format destination))))
     (push-g c-a destination)))
 
 (defmethod push-g ((object array) (destination gpu-array-t))
-  (with-c-array (c-a (make-c-array object
+  (with-c-array-freed (c-a (make-c-array object
                                    :dimensions (dimensions destination)
                                    :element-type (image-format->pixel-format
                                                   (gpu-array-t-image-format destination))))
@@ -792,9 +792,9 @@ the width to see at what point the width reaches 0 or GL throws an error."
 (defmethod pull1-g ((object texture))
   (pull1-g (texref object)))
 
-;; [TODO] With-c-array is wrong
+;; [TODO] With-c-array-freed is wrong
 (defmethod pull-g ((object gpu-array-t))
-  (with-c-array (c-array (pull1-g object))
+  (with-c-array-freed (c-array (pull1-g object))
     (pull1-g c-array)))
 
 ;; {TODO}

@@ -61,7 +61,7 @@
 
 ;; allignmetn
 (defmethod push-g ((object list) (destination gpu-array-bb))
-  (with-c-array (tmp (make-c-array
+  (with-c-array-freed (tmp (make-c-array
                       object
                       :dimensions (gpu-array-dimensions destination)
                       :element-type (element-type destination)))

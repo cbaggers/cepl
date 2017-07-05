@@ -105,11 +105,11 @@
      :element-from-foreign (c-array-element-from-foreign c-array)
      :element-to-foreign (c-array-element-to-foreign c-array))))
 
-(defmacro with-c-array ((var-name c-array) &body body)
+(defmacro with-c-array-freed ((var-name c-array) &body body)
   `(let* ((,var-name ,c-array))
      (unwind-protect (progn ,@body) (free-c-array ,var-name))))
 
-(defmacro with-c-arrays ((var-name c-arrays) &body body)
+(defmacro with-c-arrays-freed ((var-name c-arrays) &body body)
   `(let* ((,var-name ,c-arrays))
      (unwind-protect (progn ,@body)
        (loop :for a :in ,var-name :do (free-c-array a)))))

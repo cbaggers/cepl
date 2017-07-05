@@ -150,7 +150,7 @@
                            &key dimensions element-type (access-style :static-draw))
   (let ((buffer (cepl.gpu-buffers::make-gpu-buffer)))
     (cepl.context::if-gl-context
-     (with-c-array (c-array (make-c-array initial-contents :dimensions dimensions
+     (with-c-array-freed (c-array (make-c-array initial-contents :dimensions dimensions
                                           :element-type element-type))
        (init-gpu-array-from-c-array %pre% c-array access-style
                                     (c-array-dimensions c-array)))
@@ -231,7 +231,7 @@
             :array arr :shared-count (length buffer-arrays))
     ;;
     (if initial-contents
-        (with-c-array (c-array (if (typep initial-contents 'c-array)
+        (with-c-array-freed (c-array (if (typep initial-contents 'c-array)
                                    initial-contents
                                    (make-c-array initial-contents
                                                  :dimensions new-dimensions

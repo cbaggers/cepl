@@ -100,7 +100,7 @@ should be ~s" data element-type)
 
 (defmethod push-g ((object list) (destination ubo))
   (let ((g-array (ubo-data destination)))
-    (with-c-array (arr (make-c-array
+    (with-c-array-freed (arr (make-c-array
                         (list object) :dimensions 1
                         :element-type (element-type g-array)))
       (push-g arr destination))))
