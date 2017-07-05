@@ -26,23 +26,23 @@
       (setf current-viewport viewport)
       t)))
 
-(defn-inlinable %current-viewport ((cepl-context cepl-context)) viewport
+(defn-inline %current-viewport ((cepl-context cepl-context)) viewport
   (declare (optimize (speed 3) (debug 1) (safety 1))
            (profile t))
   (%with-cepl-context-slots (current-viewport) cepl-context
-    (or current-viewport
-        (error "No current viewport found ~a"
-               (if (and (boundp '*gl-context*)
-                        (symbol-value '*gl-context*))
-                   "but we do have a gl context. This is a bug"
-                   "because the GL context is not yet available")))))
+    current-viewport))
 
 (defn current-viewport (&optional (cepl-context cepl-context (cepl-context)))
     viewport
   (declare (optimize (speed 3) (debug 1) (safety 1))
            (inline %current-viewport)
            (profile t))
-  (%current-viewport cepl-context))
+  (or (%current-viewport cepl-context)
+      (error "No current viewport found ~a"
+             (if (and (boundp '*gl-context*)
+                      (symbol-value '*gl-context*))
+                 "but we do have a gl context. This is a bug"
+                 "because the GL context is not yet available"))))
 
 (define-compiler-macro current-viewport (&whole whole &optional cepl-context)
   (if (null cepl-context)

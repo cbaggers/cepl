@@ -402,7 +402,7 @@
   (values (read-fbo-bound cepl-context)
           (draw-fbo-bound cepl-context)))
 
-(defn-inlinable %set-fbo-bound ((cepl-context cepl-context) (fbo fbo))
+(defn %set-fbo-bound ((cepl-context cepl-context) (fbo fbo))
     (values boolean boolean)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
@@ -425,12 +425,11 @@
                 (setf draw-fbo-binding fbo))))
       (values r-eq d-eq))))
 
-(defn (setf fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
+(defn-inline (setf fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (inline set-fbo-bound)
            (profile t))
   (assert (typep fbo 'fbo))
-  (set-fbo-bound fbo cepl-context)
+  (%set-fbo-bound cepl-context fbo)
   fbo)
 
 ;;----------------------------------------------------------------------
