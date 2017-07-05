@@ -38,6 +38,7 @@
   (vao-binding-id +unknown-gl-id+ :type vao-id)
   (current-viewport nil :type (or null viewport))
   (default-viewport nil :type (or null viewport))
+  (current-scissor-viewport nil :type (or null viewport))
   (default-framebuffer nil :type (or null fbo))
   (read-fbo-binding nil :type (or null fbo))
   (draw-fbo-binding nil :type (or null fbo))
@@ -87,6 +88,7 @@
          '(gl-context gl-version gl-thread uninitialized-resources shared
            surfaces current-surface vao-binding-id current-viewport
            default-viewport
+           current-scissor-viewport
            default-framebuffer read-fbo-binding draw-fbo-binding fbos
            array-of-bound-gpu-buffers array-of-gpu-buffers
            array-of-ubo-bindings-buffer-ids

@@ -567,6 +567,7 @@
            :depth-clamp
            :depth-mask
            :depth-test-function
+           :scissor-viewport
            :add-surface
            :surfaces
            :current-surface

@@ -144,6 +144,32 @@
           (setf depth-func nil)))))
 
 ;;------------------------------------------------------------
+;; Scissor Viewport
+
+(defn scissor-viewport ((cepl-context cepl-context)) (or null viewport)
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (profile t))
+  (%with-cepl-context-slots (current-scissor-viewport) cepl-context
+    current-scissor-viewport))
+
+(defn (setf scissor-viewport) ((viewport (or null viewport))
+                               (cepl-context cepl-context))
+    (or null viewport)
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (profile t))
+  (%with-cepl-context-slots (current-scissor-viewport) cepl-context
+    (if viewport
+        (progn
+          (%gl:enable :scissor-test)
+          (gl:scissor (%viewport-origin-x viewport)
+                      (%viewport-origin-y viewport)
+                      (%viewport-resolution-x viewport)
+                      (%viewport-resolution-y viewport)))
+        (%gl:disable :scissor-test))
+    (setf current-scissor-viewport viewport)
+    viewport))
+
+;;------------------------------------------------------------
 ;; Todo
 
 ;; :BLEND If enabled, blend the computed fragment color values with the
