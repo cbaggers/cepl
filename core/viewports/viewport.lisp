@@ -19,7 +19,7 @@
            (inline viewport-eql)
            (profile t))
   (%with-cepl-context-slots (current-viewport) cepl-context
-    (unless (viewport-eql current-viewport viewport)
+    (unless (eq current-viewport viewport)
       (%gl:viewport
         (%viewport-origin-x viewport) (%viewport-origin-y viewport)
         (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))

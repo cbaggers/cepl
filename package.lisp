@@ -559,6 +559,7 @@
   (:export :current-viewport
            :viewport
            :viewport-p
+           :viewport-eql
            :viewport-resolution-x
            :viewport-resolution-y
            :viewport-origin-x
