@@ -178,10 +178,10 @@
     (signed-byte 32)
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
-  (let ((vals #(#.(cffi:foreign-enum-value '%gl:enum :back-left)
-                #.(cffi:foreign-enum-value '%gl:enum :front-left)
-                #.(cffi:foreign-enum-value '%gl:enum :back-right)
-                #.(cffi:foreign-enum-value '%gl:enum :front-right))))
+  (let ((vals #(#.(gl-enum :back-left)
+                #.(gl-enum :front-left)
+                #.(gl-enum :back-right)
+                #.(gl-enum :front-right))))
     (declare (type (simple-array (signed-byte 32) (4))))
     (aref vals attachment-num)))
 
@@ -325,8 +325,8 @@
       (when cepl.context:*gl-context*
         (setf max-draw-buffers (max-draw-buffers *gl-context*))))
     (case x
-      (:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
-      (:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
+      (:d #.(gl-enum :depth-attachment))
+      (:s #.(gl-enum :stencil-attachment))
       (:ds #.(cffi:foreign-enum-value
               '%gl:enum :depth-stencil-attachment))
       (otherwise
@@ -341,8 +341,8 @@
   (if (numberp x)
       (color-attachment-enum x)
       (case x
-        (:d #.(cffi:foreign-enum-value '%gl:enum :depth-attachment))
-        (:s #.(cffi:foreign-enum-value '%gl:enum :stencil-attachment))
+        (:d #.(gl-enum :depth-attachment))
+        (:s #.(gl-enum :stencil-attachment))
         (:ds #.(cffi:foreign-enum-value
                 '%gl:enum :depth-stencil-attachment))
         (otherwise whole))))

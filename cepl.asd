@@ -36,6 +36,7 @@
                (:file "core/utils")
                (:file "project")
                (:file "core/context/vars")
+               (:file "core/context/documentation-functions")
                (:file "core/lifecycle")
                (:file "core/measurements/measurements")
                (:file "core/memory/memory")

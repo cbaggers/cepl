@@ -53,12 +53,12 @@
     (signed-byte 32)
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
-  (+ attachment-num #.(cffi:foreign-enum-value '%gl:enum :color-attachment0)))
+  (+ attachment-num #.(gl-enum :color-attachment0)))
 
 (defn-inline draw-buffer-enum ((buffer-num (signed-byte 32))) (signed-byte 32)
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
-  (+ buffer-num #.(cffi:foreign-enum-value '%gl:enum :draw-buffer0)))
+  (+ buffer-num #.(gl-enum :draw-buffer0)))
 
 (defun+ surface-dimensions (surface)
   (cepl.host:window-size surface))

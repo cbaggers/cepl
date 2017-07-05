@@ -143,16 +143,6 @@
           (gl:disable :depth-test)
           (setf depth-func nil)))))
 
-(defun+ never (incoming-depth stored-depth)
-  "Never passes"
-  (declare (ignore incoming-depth stored-depth))
-  nil)
-
-(defun+ always (incoming-depth stored-depth)
-  "Always passes"
-  (declare (ignore incoming-depth stored-depth))
-  t)
-
 ;;------------------------------------------------------------
 ;; Todo
 

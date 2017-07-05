@@ -322,29 +322,29 @@
            (profile t))
   (ecase kwd
     (:triangles
-     #.(cffi:foreign-enum-value '%gl:enum :triangles))
+     #.(gl-enum :triangles))
     (:points
-     #.(cffi:foreign-enum-value '%gl:enum :points))
+     #.(gl-enum :points))
     (:lines
-     #.(cffi:foreign-enum-value '%gl:enum :lines))
+     #.(gl-enum :lines))
     (:patches
-     #.(cffi:foreign-enum-value '%gl:enum :patches))
+     #.(gl-enum :patches))
     (:triangle-strip
-     #.(cffi:foreign-enum-value '%gl:enum :triangle-strip))
+     #.(gl-enum :triangle-strip))
     (:triangle-fan
-     #.(cffi:foreign-enum-value '%gl:enum :triangle-fan))
+     #.(gl-enum :triangle-fan))
     (:line-strip
-     #.(cffi:foreign-enum-value '%gl:enum :line-strip))
+     #.(gl-enum :line-strip))
     (:line-loop
-     #.(cffi:foreign-enum-value '%gl:enum :line-loop))
+     #.(gl-enum :line-loop))
     (:triangle-strip-adjacency
-     #.(cffi:foreign-enum-value '%gl:enum :triangle-strip-adjacency))
+     #.(gl-enum :triangle-strip-adjacency))
     (:triangles-adjacency
-     #.(cffi:foreign-enum-value '%gl:enum :triangles-adjacency))
+     #.(gl-enum :triangles-adjacency))
     (:line-strip-adjacency
-     #.(cffi:foreign-enum-value '%gl:enum :line-strip-adjacency))
+     #.(gl-enum :line-strip-adjacency))
     (:lines-adjacency
-     #.(cffi:foreign-enum-value '%gl:enum :lines-adjacency))))
+     #.(gl-enum :lines-adjacency))))
 
 ;;------------------------------------------------------------
 

@@ -63,7 +63,8 @@
            :defn
            :defn-inline
            :defn-inlinable
-           :list-not-consp))
+           :list-not-consp
+           :gl-enum))
 
 (uiop:define-package :cepl.errors
     (:use :cl :cffi :cepl-utils :varjo :rtg-math :cepl.perf.core)
@@ -177,6 +178,19 @@
            :listen-to-lifecycle-changes
            :stop-listening-to-lifecycle-changes))
 
+(uiop:define-package :cepl.documentation-functions
+    (:use :cl :cepl-utils :glsl-symbols :cepl.perf.core)
+  (:export :never
+           :always
+           :keep
+           :one
+           :zero
+           :invert
+           :stencil-incf
+           :stencil-decf
+           :stencil-incf-wrap
+           :stencil-decf-wrap))
+
 (uiop:define-package :cepl.measurements
     (:use :cl :cepl-utils :glsl-symbols :cepl.perf.core)
   (:export :dimensions
@@ -185,7 +199,9 @@
 (uiop:define-package :%cepl.types
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :split-sequence :named-readtables
+          :cepl.documentation-functions
           :cepl.errors :cepl.perf.core)
+  (:reexport :cepl.documentation-functions)
   (:export :+gl-id-bit-size+
            :gl-id
            :+unknown-gl-id+
@@ -540,8 +556,6 @@
            :depth-clamp
            :depth-mask
            :depth-test-function
-           :never
-           :always
            :add-surface
            :surfaces
            :current-surface
@@ -928,7 +942,8 @@
           :cepl.viewports
           :rtg-math
           :%rtg-math
-          :rtg-math.base-maths)
+          :rtg-math.base-maths
+          :cepl.documentation-functions)
   (:shadow :quit)
   (:import-from :cepl.context
                 :%with-cepl-context-slots)
@@ -971,4 +986,5 @@
              :cepl.fbos
              :cepl.blending
              :cepl.pipelines
-             :cepl.types.predefined))
+             :cepl.types.predefined
+             :cepl.documentation-functions))

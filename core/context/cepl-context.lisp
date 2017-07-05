@@ -201,29 +201,29 @@
            (profile t))
   (ecase kind
     (:array-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :array-buffer))
+     #.(gl-enum :array-buffer))
     (:atomic-counter-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :atomic-counter-buffer))
+     #.(gl-enum :atomic-counter-buffer))
     (:copy-read-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :copy-read-buffer))
+     #.(gl-enum :copy-read-buffer))
     (:copy-write-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :copy-write-buffer))
+     #.(gl-enum :copy-write-buffer))
     (:dispatch-indirect-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :dispatch-indirect-buffer))
+     #.(gl-enum :dispatch-indirect-buffer))
     (:draw-indirect-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :draw-indirect-buffer))
+     #.(gl-enum :draw-indirect-buffer))
     (:element-array-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :element-array-buffer))
+     #.(gl-enum :element-array-buffer))
     (:pixel-pack-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :pixel-pack-buffer))
+     #.(gl-enum :pixel-pack-buffer))
     (:pixel-unpack-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :pixel-unpack-buffer))
+     #.(gl-enum :pixel-unpack-buffer))
     (:query-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :query-buffer))
+     #.(gl-enum :query-buffer))
     (:shader-storage-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :shader-storage-buffer))
+     #.(gl-enum :shader-storage-buffer))
     (:texture-buffer
-     #.(cffi:foreign-enum-value '%gl:enum :texture-buffer))))
+     #.(gl-enum :texture-buffer))))
 
 (defn gpu-buffer-bound ((cepl-context cepl-context) (target symbol)) gpu-buffer
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
