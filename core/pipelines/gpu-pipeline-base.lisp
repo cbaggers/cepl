@@ -140,8 +140,8 @@
   (with-gpu-func-spec spec
     (make-instance
      (etypecase spec
-       (gpu-func-spec 'gpu-func-spec)
-       (glsl-stage-spec 'glsl-stage-spec))
+       (glsl-stage-spec 'glsl-stage-spec)
+       (gpu-func-spec 'gpu-func-spec))
      :name (or name new-name)
      :in-args (or in-args new-in-args)
      :uniforms (or uniforms new-uniforms)
