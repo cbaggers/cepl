@@ -215,6 +215,25 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (stencil-params (:constructor %make-stencil-params)
+                           (:conc-name %stencil-params-))
+  (test #.(gl-enum :never) :type (signed-byte 32) :read-only t)
+
+  (value 0 :type (unsigned-byte 8) :read-only t)
+
+  (mask 0 :type (unsigned-byte 8) :read-only t)
+
+  (on-stencil-test-fail
+   #.(gl-enum :keep) :type (signed-byte 32) :read-only t)
+
+  (on-stencil-pass-depth-test-fail
+   #.(gl-enum :keep) :type (signed-byte 32) :read-only t)
+
+  (on-stencil-pass-depth-test-pass
+   #.(gl-enum :keep) :type (signed-byte 32) :read-only t))
+
+;;------------------------------------------------------------
+
 (defstruct att
   (array nil :type (or null gpu-array-t))
   (blend nil :type boolean)

@@ -30,6 +30,15 @@
   (declare (ignore incoming-val stored-val))
   0)
 
+(defn-inline stencil-replace ((incoming-val number) (stored-val number)) number
+  "Invert the stored value
+
+   We only show the implementation for 8bit stencil here due to strong
+   recommendations from guides to use 8bit stencils. Not an issue
+   as this function only exists as documentation anyway"
+  (declare (ignore stored-val))
+  incoming-val)
+
 (defn-inline stencil-invert ((incoming-val number) (stored-val number)) number
   "Invert the stored value
 
@@ -57,7 +66,7 @@
   (declare (ignore incoming-val))
   (max 0 (1- stored-val)))
 
-(defn-inline incf-wrap ((incoming-val number) (stored-val number)) number
+(defn-inline stencil-incf-wrap ((incoming-val number) (stored-val number)) number
   "Increment the stored value wrapping if it overflows
 
    We only show the implementation for 8bit stencil here due to strong

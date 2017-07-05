@@ -8,6 +8,13 @@
         (make-array (gl:get* :max-combined-texture-image-units)
                     :element-type '(or null sampler)
                     :initial-element nil))
+
+  (let ((stencil-params (%make-stencil-params)))
+    (setf (%cepl-context-current-stencil-params-front cepl-context)
+          stencil-params)
+    (setf (%cepl-context-current-stencil-params-back cepl-context)
+          stencil-params))
+
   ;; Enable depth testing and use 'less than' for testing
   (setf (depth-test-function cepl-context)
         #'<)

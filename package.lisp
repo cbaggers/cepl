@@ -185,7 +185,8 @@
            :keep
            :one
            :zero
-           :invert
+           :stencil-replace
+           :stencil-invert
            :stencil-incf
            :stencil-decf
            :stencil-incf-wrap
@@ -212,6 +213,15 @@
            :attachment-num
            :attachment-name
            :indexp
+
+           :stencil-params
+           :%make-stencil-params
+           :%stencil-params-test
+           :%stencil-params-value
+           :%stencil-params-mask
+           :%stencil-params-on-stencil-pass-depth-test-fail
+           :%stencil-params-on-stencil-pass-depth-test-pass
+           :%stencil-params-on-stencil-test-fail
 
            :%make-gpu-array
            :gpu-array
@@ -882,6 +892,25 @@
            :destination-rgb
            :destination-alpha))
 
+(uiop:define-package :cepl.stencil
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
+          :cepl.types :split-sequence :named-readtables
+          :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
+          :cepl.internals :cepl.fbos :cepl.perf.core)
+  (:import-from :cepl.context :%with-cepl-context-slots)
+  (:export :stencil-params
+           :make-stencil-params
+           :apply-stencil-params
+           :stencil-params-test
+           :stencil-params-value
+           :stencil-params-mask
+           :stencil-params-on-stencil-pass-depth-test-fail
+           :stencil-params-on-stencil-pass-depth-test-pass
+           :stencil-params-on-stencil-test-fail
+           :stencil-params-on-sfail
+           :stencil-params-on-dpfail
+           :stencil-params-on-dppass))
+
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables
           :cepl-utils :cepl.errors :%cepl.types :cepl.types
@@ -917,6 +946,7 @@
           :named-readtables
           :cepl-utils
           :cepl.blending
+          :cepl.stencil
           :cepl.c-arrays
           :cepl.context
           :cepl.errors
@@ -985,6 +1015,7 @@
              :cepl.textures
              :cepl.fbos
              :cepl.blending
+             :cepl.stencil
              :cepl.pipelines
              :cepl.types.predefined
              :cepl.documentation-functions))

@@ -41,6 +41,8 @@
   (default-framebuffer nil :type (or null fbo))
   (read-fbo-binding nil :type (or null fbo))
   (draw-fbo-binding nil :type (or null fbo))
+  (current-stencil-params-front nil :type (or null stencil-params))
+  (current-stencil-params-back nil :type (or null stencil-params))
   (fbos
    (make-array 0 :element-type 'fbo :initial-element +null-fbo+
                :adjustable t :fill-pointer 0)
@@ -92,6 +94,7 @@
            array-of-bound-samplers array-of-textures
            map-of-pipeline-names-to-gl-ids depth-func
            depth-mask depth-range depth-clamp cull-face front-face
+           current-stencil-params-front current-stencil-params-back
            clear-color)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))

@@ -91,6 +91,7 @@
                (:file "core/fbos/fbo")
                (:file "core/ubos/ubo")
                (:file "core/blending/blending")
+               (:file "core/stencil/stencil")
                (:file "core/types/predefined/gpu-structs")
                (:file "core/context/make")
                (:file "core/repl")
