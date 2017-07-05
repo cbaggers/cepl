@@ -5,7 +5,6 @@
   (:export :array-index
            :defun+
            :defmethod+
-           :gdefun
            :dbind
            :assoc-bind
            :case=

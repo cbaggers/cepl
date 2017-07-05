@@ -11,21 +11,15 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmacro defun+ (name args &body body)
     `(defun ,name ,args
-       ,@(parse-body+ name body)))
+       ,@(parse-body+ name body '((profile t)))))
 
   (defmacro defmethod+ (name &rest args)
     (let* ((arg-pos (position-if #'listp args))
            (qual (subseq args 0 arg-pos))
            (body (subseq args (1+ arg-pos)))
            (args (elt args arg-pos)))
-      `(defmethod ,name ,@qual ,args ,@(parse-body+ name body)))))
-
-(defmacro gdefun (name lambda-list &body body/options)
-  (if (or (null body/options)
-          (consp (car body/options))
-          (keywordp (car body/options)))
-      `(defgeneric ,name ,lambda-list ,@body/options)
-      `(defmethod ,name ,lambda-list ,@body/options)))
+      `(defmethod ,name ,@qual ,args
+                  ,@(parse-body+ name body '((profile t)))))))
 
 (defun+ listify (x) (if (listp x) x (list x)))
 
