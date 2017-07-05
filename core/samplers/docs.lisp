@@ -576,7 +576,7 @@ Calling this with a `sampler` will free the gl sampler and blank the lisp object
 
 Calling the generic function `free` with a sampler will call this function
 ")
-    (defmacro with-sampling
+    (defmacro with-temp-sampler
         "
 This macro takes a `texture` and creates a temporary `sampler` that is valid
 within the scope.

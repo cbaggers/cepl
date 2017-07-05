@@ -823,7 +823,7 @@
            :wrap
            :compare
            :free-sampler
-           :with-sampling))
+           :with-temp-sampler))
 
 (uiop:define-package :cepl.fbos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math

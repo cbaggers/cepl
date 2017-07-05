@@ -1,7 +1,7 @@
 (in-package :cepl)
 
 ;; this
-(with-sampling ((tex sampler-a) (norm sampler-b) (spec sampler-a))
+(with-temp-sampler ((tex sampler-a) (norm sampler-b) (spec sampler-a))
   (map-g #'pline stream :tex tex :norm norm :specular spec))
 
 ;; could be like with-slots and make symbols macros for this
@@ -11,7 +11,7 @@
        :specular (sample spec sampler-a))
 
 ;; which means we have to work out what this means
-(defmacro with-sampling (bindings-pairs &body body)
+(defmacro with-temp-sampler (bindings-pairs &body body)
   (let ((syms (loop for i in bindings-pairs collect (gensym))))
     `(let ,(loop :for (_ form) :in bindings-pairs :for g :in syms
               :collect `(,g ,form))
@@ -39,14 +39,14 @@
 ;; Ok, I worked it out!
 ;; All textures will have a fixnum slot for sampler-id.
 ;; This will almost always be zero
-;; with-sampling will set the internal sampler value of the texture and set
+;; with-temp-sampler will set the internal sampler value of the texture and set
 ;; it back to zero at the end of the block.
 ;;
 ;; With this we take the value into the dispatch functions and can use it.
 ;; BOOM, solved.
 
 
-(defmacro with-sampling (bindings-pairs &body body)
+(defmacro with-temp-sampler (bindings-pairs &body body)
   (let* ((tex-syms (loop for i in bindings-pairs collect (gensym "texture")))
          (sampler-syms (loop for i in bindings-pairs collect (gensym "sampler")))
          (letting (loop for b in bindings-pairs
