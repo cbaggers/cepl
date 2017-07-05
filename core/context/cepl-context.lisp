@@ -96,7 +96,9 @@
            (fbo (cepl.fbos::%make-default-framebuffer surface-size t t)))
       ;;
       ;; Setup default fbo
-      (setf (%cepl-context-default-framebuffer cepl-context) fbo)
+      (setf (%cepl-context-default-framebuffer cepl-context) fbo
+            (%cepl-context-read-fbo-binding cepl-context) fbo
+            (%cepl-context-draw-fbo-binding cepl-context) fbo)
       ;;
       ;; Setup Viewports
       (let ((vp (make-viewport surface-size)))
@@ -332,119 +334,104 @@
 
 ;;----------------------------------------------------------------------
 
-;; GL_READ_FRAMEBUFFER_BINDING (name, intially 0, see glBindFramebuffer)
-;;     The framebuffer object currently bound to the GL_READ_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
-(defn read-framebuffer-binding ((context cepl-context))
-    (unsigned-byte 32)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (ignore context) (profile t))
-  (the (unsigned-byte 32) (cl-opengl:get* :read-framebuffer-binding)))
-
-(defn (setf read-framebuffer-binding) ((id gl-id) (context cepl-context)) gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (ignore context) (profile t))
-  (%gl:bind-framebuffer :read-framebuffer id)
-  id)
-
-;; GL_DRAW_FRAMEBUFFER_BINDING (name, initially 0, see glBindFramebuffer)
-;;     The framebuffer object currently bound to the GL_DRAW_FRAMEBUFFER target. If the default framebuffer is bound, this value will be zero.
-(defn draw-framebuffer-binding ((context cepl-context)) (unsigned-byte 32)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (ignore context) (profile t))
-  (the (unsigned-byte 32) (cl-opengl:get* :draw-framebuffer-binding)))
-
-(defn (setf draw-framebuffer-binding) ((id gl-id) (context cepl-context)) gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (ignore context) (profile t))
-  (%gl:bind-framebuffer :draw-framebuffer id)
-  id)
-
-;; The GL_FRAMEBUFFER target sets both the read and the write to the same FBO.
-(defn framebuffer-binding ((context cepl-context)) cons
+(defn-inline %set-read-fbo-no-check ((cepl-context cepl-context) (fbo fbo))
+    (values)
+  ;; used in cases where the caller is doing the bound check
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (cons (read-framebuffer-binding context)
-        (draw-framebuffer-binding context)))
+  (%with-cepl-context-slots (read-fbo-binding) cepl-context
+    (%gl:bind-framebuffer :read-framebuffer (%fbo-id fbo))
+    (setf read-fbo-binding fbo)
+    (values)))
 
-(defn (setf framebuffer-binding) ((id gl-id) (context cepl-context))
-    gl-id
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
-           (ignore context) (profile t))
-  (%gl:bind-framebuffer :framebuffer id)
-  id)
-
-(defn read-fbo-bound ((cepl-context cepl-context)) fbo
+(defn-inline %set-draw-fbo-no-check ((cepl-context cepl-context) (fbo fbo))
+    (values)
+  ;; used in cases where the caller is doing the bound check
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context-slots (fbos read-fbo-binding-id) cepl-context
-    (let* ((id (if (= read-fbo-binding-id +unknown-gl-id+)
-                   (setf read-fbo-binding-id
-                         (read-framebuffer-binding cepl-context))
-                   read-fbo-binding-id))
-           (fbo (when (>= id 0) (aref fbos id))))
-      (assert (not (eq fbo +null-fbo+)))
-      fbo)))
+  (%with-cepl-context-slots (draw-fbo-binding) cepl-context
+    (%gl:bind-framebuffer :draw-framebuffer (%fbo-id fbo))
+    (setf draw-fbo-binding fbo)
+    (values)))
+
+(defn-inline %set-fbo-no-check ((cepl-context cepl-context) (fbo fbo)) (values)
+  (%with-cepl-context-slots (read-fbo-binding draw-fbo-binding)
+      cepl-context
+    (%gl:bind-framebuffer :framebuffer (%fbo-id fbo))
+    (setf read-fbo-binding fbo)
+    (setf draw-fbo-binding fbo))
+  (values))
+
+(defn-inline read-fbo-bound ((cepl-context cepl-context)) fbo
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
+  (%with-cepl-context-slots (read-fbo-binding) cepl-context
+    (let ((read-fbo read-fbo-binding))
+      (assert read-fbo)
+      read-fbo)))
 
 (defn (setf read-fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context-slots (fbos read-fbo-binding-id) cepl-context
-    (let ((id (if fbo
-                  (%fbo-id fbo)
-                  0)))
-      (when (/= id read-fbo-binding-id)
-        (setf (read-framebuffer-binding cepl-context) id
-              read-fbo-binding-id id))
-      fbo)))
+  (%with-cepl-context-slots (read-fbo-binding) cepl-context
+    (unless (eq fbo read-fbo-binding)
+      (%gl:bind-framebuffer :read-framebuffer (%fbo-id fbo))
+      (setf read-fbo-binding fbo))
+    fbo))
 
-(defn draw-fbo-bound ((cepl-context cepl-context)) fbo
+(defn-inline draw-fbo-bound ((cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context-slots (fbos draw-fbo-binding-id) cepl-context
-    (let* ((id (if (= draw-fbo-binding-id +unknown-gl-id+)
-                   (setf draw-fbo-binding-id
-                         (draw-framebuffer-binding cepl-context))
-                   draw-fbo-binding-id))
-           (fbo (when (>= id 0) (aref fbos id))))
-      (assert (not (eq fbo +null-fbo+)))
-      fbo)))
+  (%with-cepl-context-slots (draw-fbo-binding) cepl-context
+    (let ((draw-fbo draw-fbo-binding))
+      (assert draw-fbo)
+      draw-fbo)))
 
 (defn (setf draw-fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context-slots (fbos draw-fbo-binding-id) cepl-context
-    (let ((id (if fbo
-                  (%fbo-id fbo)
-                  0)))
-      (when (/= id draw-fbo-binding-id)
-        (setf (draw-framebuffer-binding cepl-context) id
-              draw-fbo-binding-id id))
-      fbo)))
+  (%with-cepl-context-slots (draw-fbo-binding) cepl-context
+    (unless (eq fbo draw-fbo-binding)
+      (%gl:bind-framebuffer :draw-framebuffer (%fbo-id fbo))
+      (setf draw-fbo-binding fbo))
+    fbo))
 
-(defn fbo-bound ((cepl-context cepl-context)) cons
+(defn fbo-bound ((cepl-context cepl-context)) (values fbo fbo)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (cons (read-fbo-bound cepl-context)
-        (draw-fbo-bound cepl-context)))
+  (values (read-fbo-bound cepl-context)
+          (draw-fbo-bound cepl-context)))
+
+(defn-inlinable %set-fbo-bound ((cepl-context cepl-context) (fbo fbo))
+    (values boolean boolean)
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
+  (%with-cepl-context-slots (read-fbo-binding draw-fbo-binding)
+      cepl-context
+    (let* ((r-eq (eq fbo read-fbo-binding))
+           (d-eq (eq fbo draw-fbo-binding))
+           (id (%fbo-id fbo)))
+      (if r-eq
+          (unless d-eq
+            (%gl:bind-framebuffer :draw-framebuffer id)
+            (setf draw-fbo-binding fbo))
+          (if d-eq
+              (progn
+                (%gl:bind-framebuffer :read-framebuffer id)
+                (setf read-fbo-binding fbo))
+              (progn
+                (%gl:bind-framebuffer :framebuffer id)
+                (setf read-fbo-binding fbo)
+                (setf draw-fbo-binding fbo))))
+      (values r-eq d-eq))))
 
 (defn (setf fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (inline set-fbo-bound)
            (profile t))
   (assert (typep fbo 'fbo))
-  (%with-cepl-context-slots (fbos read-fbo-binding-id draw-fbo-binding-id)
-      cepl-context
-    (let* ((id (if fbo
-                   (%fbo-id fbo)
-                   0))
-           (r-dif (/= id read-fbo-binding-id))
-           (d-dif (/= id draw-fbo-binding-id)))
-      (cond
-        ((and r-dif d-dif) (setf (framebuffer-binding cepl-context) id))
-        (r-dif (setf (read-framebuffer-binding cepl-context) id))
-        (d-dif (setf (draw-framebuffer-binding cepl-context) id)))
-      (setf draw-fbo-binding-id id
-            read-fbo-binding-id id)
-      fbo)))
+  (set-fbo-bound fbo cepl-context)
+  fbo)
 
 ;;----------------------------------------------------------------------
 

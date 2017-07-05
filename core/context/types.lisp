@@ -39,8 +39,8 @@
   (current-viewport nil :type (or null viewport))
   (default-viewport nil :type (or null viewport))
   (default-framebuffer nil :type (or null fbo))
-  (read-fbo-binding-id +unknown-gl-id+ :type gl-id)
-  (draw-fbo-binding-id +unknown-gl-id+ :type gl-id)
+  (read-fbo-binding nil :type (or null fbo))
+  (draw-fbo-binding nil :type (or null fbo))
   (fbos
    (make-array 0 :element-type 'fbo :initial-element +null-fbo+
                :adjustable t :fill-pointer 0)
@@ -84,9 +84,9 @@
   (let ((context-slots
          '(gl-context gl-version gl-thread uninitialized-resources shared
            surfaces current-surface vao-binding-id current-viewport
-           default-viewport default-framebuffer read-fbo-binding-id
-           draw-fbo-binding-id fbos array-of-gpu-buffers
-           array-of-bound-gpu-buffers
+           default-viewport
+           default-framebuffer read-fbo-binding draw-fbo-binding fbos
+           array-of-bound-gpu-buffers array-of-gpu-buffers
            array-of-ubo-bindings-buffer-ids
            array-of-transform-feedback-bindings-buffer-ids
            array-of-bound-samplers array-of-textures

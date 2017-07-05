@@ -502,7 +502,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 ;; attachment point, a location in the FBO where an image can be attached.
 
 ;;
-(defun+ %bind-fbo (fbo target)
+(defn %bind-fbo ((fbo fbo) (target symbol)) fbo
   (with-cepl-context (ctx)
     (ecase target
       (:framebuffer (setf (fbo-bound ctx) fbo))
@@ -854,7 +854,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (declare (profile t))
   (if target
       (clear-fbo target)
-      (dbind (read . draw) (fbo-bound (cepl-context))
+      (multiple-value-bind (read draw) (fbo-bound (cepl-context))
         (clear-fbo read)
         (unless (eq read draw)
           (clear-fbo draw))))
