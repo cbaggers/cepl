@@ -49,7 +49,6 @@
 (defconstant +max-elems+
   (floor (/ (/ (- +buffer-size+ 1) (cffi:foreign-type-size :uint64)) 2)))
 
-(defvar *current-profiling-session* nil)
 (defvar *func-map* (make-hash-table))
 (defvar *last-id* 0)
 
@@ -58,6 +57,7 @@
       (setf (gethash name *func-map*) (incf *last-id*))))
 
 (defstruct perf-session
+  (size-limit-in-mb 0 :type (unsigned-byte 16))
   (chanl-to-output-thread
    (make-instance 'chanl:bounded-channel :size +chanl-size+)
    :type chanl:bounded-channel)
@@ -66,6 +66,9 @@
    :type chanl:bounded-channel)
   (current-buffer nil :type (or null cffi:foreign-pointer))
   (current-buffer-pos 1 :type (unsigned-byte 32)))
+
+(declaim (type (or null perf-session) *current-profiling-session*))
+(defvar *current-profiling-session* nil)
 
 (defun output-loop (session stream)
   (format stream "~%-- perf thread starting up ---")
@@ -79,9 +82,12 @@
     (let ((fd (sb-posix:file-descriptor o))
           (from-cepl (perf-session-chanl-to-output-thread session))
           (to-cepl (perf-session-chanl-to-cepl-thread session))
+          (size-limit-in-bytes (* (perf-session-size-limit-in-mb session)
+                                  1000000))
           ;; Provide a bunch of
           (buffers (loop :for i :below (floor (* 0.75 +chanl-size+)) :collect
                       (cffi:foreign-alloc :uint8 :count +buffer-size+)))
+          (bytes-total 0)
           (running t))
       (loop :for buffer :in buffers :do (chanl:send to-cepl buffer))
       (labels ((err (message)
@@ -93,22 +99,27 @@
              (etypecase message
                (null nil)
                (cffi:foreign-pointer
-                (if (cffi:null-pointer-p message)
+                (if (or (cffi:null-pointer-p message)
+                        (and (> size-limit-in-bytes 0)
+                             (> bytes-total size-limit-in-bytes)))
                     (setf running nil)
                     (let ((data (cffi:inc-pointer
                                  message (cffi:foreign-type-size :uint64)))
                           (len (* (cffi:mem-aref message :uint64 0)
                                   (cffi:foreign-type-size :uint64))))
                       (sb-posix:write fd data len)
+                      (incf bytes-total len)
                       (chanl:send to-cepl message))))
                (t (err message))))))
       (chanl:send to-cepl (lambda () (map nil #'cffi:foreign-free buffers)))
       (format stream "~%-- perf thread shut down ---"))))
 
-(defun start-profiling ()
+(defun start-profiling (&optional (size-limit-in-mb 400))
+  (assert (>= size-limit-in-mb 0))
   (if *current-profiling-session*
       (format t "~%profile session already in progress")
-      (let* ((session (make-perf-session))
+      (let* ((session (make-perf-session
+                       :size-limit-in-mb size-limit-in-mb))
              (stream *standard-output*))
         (print "; -- starting profiling thread --")
         (bt:make-thread (lambda () (output-loop session stream))
@@ -148,6 +159,12 @@
         (values))
       (format t "~%No profile session in progress")))
 
+(defun profiling-terminated (destructor)
+  (print "-- destructor found --")
+  (setf *current-profiling-session* nil)
+  (funcall destructor)
+  (print "; -- profiling stopped --"))
+
 (defun finalize-and-send (session)
   (let ((ptr (perf-session-current-buffer session)))
     (setf (cffi:mem-aref ptr :uint64 0)
@@ -162,21 +179,28 @@
       (let ((buffer (perf-session-current-buffer session))
             (pos (perf-session-current-buffer-pos session)))
         (unless buffer
-          (setf buffer (chanl:recv (perf-session-chanl-to-cepl-thread session)
-                                   :blockp t))
-          (setf pos 1))
-        ;; write data into buffer
-        (setf (cffi:mem-aref buffer :int64 pos) id
-              (cffi:mem-aref buffer :uint64 (+ 1 pos)) time)
-        (incf pos 2)
-        ;; if buffer full, send it
-        (if (>= pos +max-elems+)
-            (progn
-              (setf (perf-session-current-buffer-pos session) pos)
-              (finalize-and-send session))
-            (setf (perf-session-current-buffer session) buffer))
-        ;; set the new pos
-        (setf (perf-session-current-buffer-pos session) pos)))))
+          (let ((recvd (chanl:recv (perf-session-chanl-to-cepl-thread session)
+                                   :blockp t)))
+            (if (functionp recvd)
+                (progn
+                  (setf buffer nil)
+                  (profiling-terminated recvd))
+                (progn
+                  (setf buffer recvd)
+                  (setf pos 1)))))
+        (when buffer
+          ;; write data into buffer
+          (setf (cffi:mem-aref buffer :int64 pos) id
+                (cffi:mem-aref buffer :uint64 (+ 1 pos)) time)
+          (incf pos 2)
+          ;; if buffer full, send it
+          (if (>= pos +max-elems+)
+              (progn
+                (setf (perf-session-current-buffer-pos session) pos)
+                (finalize-and-send session))
+              (setf (perf-session-current-buffer session) buffer))
+          ;; set the new pos
+          (setf (perf-session-current-buffer-pos session) pos))))))
 
 (define-defn-declaration profile (&rest tags)
   (when (or (eq *tags* t) (intersection tags *tags*))
