@@ -12,30 +12,42 @@
 
 (defn-inline %set-current-viewport ((cepl-context cepl-context)
                                     (viewport viewport))
-    viewport
+    boolean
+  ;; the boolean tells with-viewport whether it needs to restore the
+  ;; old value.
   (declare (optimize (speed 3) (debug 1) (safety 1))
            (inline viewport-eql)
            (profile t))
   (%with-cepl-context-slots (current-viewport) cepl-context
-    (if (viewport-eql current-viewport viewport)
-        viewport
-        (progn
-          (%gl:viewport
-           (%viewport-origin-x viewport) (%viewport-origin-y viewport)
-           (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
-          (setf current-viewport viewport)))))
+    (unless (viewport-eql current-viewport viewport)
+      (%gl:viewport
+        (%viewport-origin-x viewport) (%viewport-origin-y viewport)
+        (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
+      (setf current-viewport viewport)
+      t)))
 
-(defn current-viewport () viewport
+(defn-inlinable %current-viewport ((cepl-context cepl-context)) viewport
   (declare (optimize (speed 3) (debug 1) (safety 1))
-           (inline viewport-eql)
            (profile t))
-  (%with-cepl-context-slots (current-viewport) (cepl-context)
+  (%with-cepl-context-slots (current-viewport) cepl-context
     (or current-viewport
-        (error "No default framebuffer found ~a"
+        (error "No current viewport found ~a"
                (if (and (boundp '*gl-context*)
                         (symbol-value '*gl-context*))
                    "but we do have a gl context. This is a bug"
                    "because the GL context is not yet available")))))
+
+(defn current-viewport (&optional (cepl-context cepl-context (cepl-context)))
+    viewport
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (inline %current-viewport)
+           (profile t))
+  (%current-viewport cepl-context))
+
+(define-compiler-macro current-viewport (&whole whole &optional cepl-context)
+  (if (null cepl-context)
+      `(%current-viewport (cepl-context))
+      whole))
 
 ;;------------------------------------------------------------
 
@@ -105,13 +117,14 @@
 ;;------------------------------------------------------------
 
 (defmacro with-viewport (viewport &body body)
-  (alexandria:with-gensyms (old-viewport vp ctx)
+  (alexandria:with-gensyms (old-viewport vp ctx unbind)
     `(with-cepl-context (,ctx)
        (let* ((,old-viewport (current-viewport))
-              (,vp ,viewport))
-         (%set-current-viewport ,ctx ,vp)
+              (,vp ,viewport)
+              (,unbind (%set-current-viewport ,ctx ,vp)))
          (unwind-protect (progn ,@body)
-           (%set-current-viewport ,ctx ,old-viewport))))))
+           (when ,unbind
+             (%set-current-viewport ,ctx ,old-viewport)))))))
 
 ;;{TODO} how are we meant to set origin?
 ;;       Well attachments dont have position so it wouldnt make sense
@@ -129,8 +142,10 @@
                    ,@body))
 
 
-(defun+ viewport-params-to-vec4 (&optional (viewport (current-viewport)))
-  (v! (%viewport-origin-x viewport)
-      (%viewport-origin-y viewport)
-      (%viewport-resolution-x viewport)
-      (%viewport-resolution-y viewport)))
+(defn viewport-params-to-vec4 (&optional (viewport viewport (current-viewport)))
+    vec4
+  (declare (profile t))
+  (v4:make (float (%viewport-origin-x viewport) 0f0)
+           (float (%viewport-origin-y viewport) 0f0)
+           (float (%viewport-resolution-x viewport) 0f0)
+           (float (%viewport-resolution-y viewport) 0f0)))
