@@ -195,7 +195,8 @@
 (uiop:define-package :cepl.measurements
     (:use :cl :cepl-utils :glsl-symbols :cepl.perf.core)
   (:export :dimensions
-           :resolution))
+           :resolution
+           :origin))
 
 (uiop:define-package :%cepl.types
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math

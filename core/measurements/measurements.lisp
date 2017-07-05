@@ -24,3 +24,6 @@
   (array-dimensions object))
 
 ;;----------------------------------------------------------------------
+
+(defgeneric origin (object)) ;; returns a vec2
+(defgeneric (setf origin) (value object))
