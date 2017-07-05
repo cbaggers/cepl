@@ -62,7 +62,8 @@
            :with-setf
            :with-setf*
            :defn
-           :defn-inline))
+           :defn-inline
+           :defn-inlinable))
 
 (uiop:define-package :cepl.errors
     (:use :cl :cffi :cepl-utils :varjo :rtg-math :cepl.perf.core)
