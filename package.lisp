@@ -282,6 +282,8 @@
            :texture-cubes-p
            :texture-mutable-p
            :texture-allocated-p
+           :texture-samples
+           :texture-fixed-sample-locations-p
            :buffer-texture
            :buffer-texture-p
            :buffer-texture-backing-array

@@ -80,6 +80,8 @@
   (cubes-p nil :type boolean)
   (allocated-p nil :type boolean)
   (mutable-p nil :type boolean)
+  (samples 0 :type (unsigned-byte 32))
+  (fixed-sample-locations-p nil :type boolean)
   ;; last-sampler-id is used for perf optimizations
   ;; on gl v<3.3
   (last-sampler-id 0 :type (signed-byte 32)))
