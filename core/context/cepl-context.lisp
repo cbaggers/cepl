@@ -500,7 +500,7 @@
                     (declare (ignore context))
                     ',ctx)
                   (with-cepl-context
-                      ((&optional var-name  (cepl-context ',ctx) forgo-let)
+                      ((&optional var-name (cepl-context ',ctx) forgo-let)
                        &body body)
                     (%inner-with-context
                      var-name cepl-context forgo-let body ',ctx)))

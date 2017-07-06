@@ -116,8 +116,9 @@
 (defmacro with-blending (blending-params &body body)
   (let ((b-params (gensym "blending-params")))
     `(let* ((,b-params ,blending-params))
-       (%with-blending nil nil ,b-params
-         ,@body))))
+       (with-cepl-context ()
+         (%with-blending nil nil ,b-params
+           ,@body)))))
 
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
