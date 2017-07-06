@@ -27,8 +27,104 @@
     ;; done!
     result))
 
+;;----------------------------------------------------------------------
+;; Implicit Context & Inlining Logic
+
 (declaim (type cepl-context *cepl-context*))
 (defvar *cepl-context* (make-context))
+
+(defmacro l-identity (context)
+  "An identity macro. Exists so it can be shadowed in certain contexts"
+  ;; l for local..bad name, but the others I had at the time were worse.
+  context)
+
+(defun %inner-with-context (var-name cepl-context forgo-let body ctx-var)
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+  (if (eq cepl-context ctx-var)
+      (if var-name
+          `(let ((,var-name ,ctx-var))
+             (declare (ignorable ,var-name))
+             ,@body)
+          `(progn ,@body))
+      (%with-context var-name cepl-context forgo-let body ctx-var)))
+
+(defun %with-context (var-name cepl-context forgo-let body ctx-var)
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
+  (assert (constantp forgo-let))
+  (let ((forgo-let (or forgo-let (eq cepl-context '(cepl-context))))
+        (ctx (or ctx-var (gensym "CTX"))))
+    `(let* ((,ctx ,cepl-context)
+            ,@(when var-name `((,var-name ,ctx)))
+            ,@(unless forgo-let `((*cepl-context* ,ctx))))
+       (declare (ignorable ,ctx))
+       (macrolet ((l-identity (context)
+                    (declare (ignore context))
+                    ',ctx)
+                  (with-cepl-context
+                      ((&optional var-name (cepl-context ',ctx) forgo-let)
+                       &body body)
+                    (%inner-with-context
+                     var-name cepl-context forgo-let body ',ctx)))
+         ,@body))))
+
+(defmacro with-cepl-context ((&optional var-name (cepl-context '(cepl-context))
+                                        forgo-let)
+                             &body body)
+  (%with-context var-name cepl-context forgo-let body nil))
+
+(defn-inline cepl-context () cepl-context
+  *cepl-context*)
+
+(define-compiler-macro cepl-context ()
+  `(l-identity *cepl-context*))
+
+;;----------------------------------------------------------------------
+;; Define Functions for interacting with the current context
+
+(defmacro define-context-func (name args ret-type context-slots &body body)
+  "This simple encodes a pattern I was writing too many times.
+   Basically we want to have the call to #'cepl-context inline
+   at the callsite as then a surrounding with-cepl-context block
+   will be able to replace it with a local version (improving performance)
+   the way we have taken to doing this "
+  (let* ((setfp (and (listp name) (eq (first name) 'setf)))
+         (hname (if setfp
+                    (symb-package (symbol-package (second name))
+                                  :%set- (second name))
+                    (symb-package (symbol-package name) :% name)))
+         (args-opt (if (find :&optional args :test #'symb-name=)
+                       args
+                       `(,@args &optional)))
+         (arg-symbs (mapcar
+                     (lambda (x) (if (listp x) (first x) x))
+                     args-opt))
+         (arg-names (remove-if
+                     (lambda (x) (char= #\& (char (symbol-name x) 0)))
+                     arg-symbs)))
+    (multiple-value-bind (body decls doc)
+        (alexandria:parse-body body :documentation t)
+      (let* ((not-inline (find 'not-inline-internals
+                               decls :key #'second :test #'string=))
+             (decls (remove not-inline decls))
+             (def (if not-inline 'defn 'defn-inline)))
+        `(progn
+           (,def ,hname (,@args (cepl-context cepl-context)) ,ret-type
+                 ,@(when doc (list doc))
+                 (declare (optimize (speed 3) (debug 0) (safety 1))
+                          (profile t))
+                 ,@decls
+                 (with-cepl-context (cepl-context cepl-context t)
+                   (%with-cepl-context-slots ,context-slots cepl-context
+                     ,@body)))
+           (defn ,name (,@args-opt (cepl-context cepl-context (cepl-context)))
+               ,ret-type
+             (declare (optimize (speed 3) (debug 1) (safety 1))
+                      (profile t))
+             (,hname ,@arg-names cepl-context))
+           (define-compiler-macro ,name (,@arg-symbs cepl-context)
+             (if cepl-context
+                 (list ',hname ,@arg-names cepl-context)
+                 (list ',hname ,@arg-names '(cepl-context)))))))))
 
 ;;----------------------------------------------------------------------
 
@@ -472,47 +568,3 @@
           requested-gl-version)))
 
 ;;----------------------------------------------------------------------
-
-(defmacro l-identity (context)
-  "An identity macro. Exists so it can be shadowed in certain contexts"
-  ;; l for local..bad name, but the others I had at the time were worse.
-  context)
-
-(defun %inner-with-context (var-name cepl-context forgo-let body ctx-var)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
-  (if (eq cepl-context ctx-var)
-      (if var-name
-          `(let ((,var-name ,ctx-var))
-             (declare (ignorable ,var-name))
-             ,@body)
-          `(progn ,@body))
-      (%with-context var-name cepl-context forgo-let body ctx-var)))
-
-(defun %with-context (var-name cepl-context forgo-let body ctx-var)
-  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
-  (assert (constantp forgo-let))
-  (let ((ctx (or ctx-var (gensym "CTX"))))
-    `(let* ((,ctx ,cepl-context)
-            ,@(when var-name `((,var-name ,ctx)))
-            ,@(unless forgo-let `((*cepl-context* ,ctx))))
-       (declare (ignorable ,ctx))
-       (macrolet ((l-identity (context)
-                    (declare (ignore context))
-                    ',ctx)
-                  (with-cepl-context
-                      ((&optional var-name (cepl-context ',ctx) forgo-let)
-                       &body body)
-                    (%inner-with-context
-                     var-name cepl-context forgo-let body ',ctx)))
-         ,@body))))
-
-(defmacro with-cepl-context ((&optional var-name (cepl-context '(cepl-context))
-                                        forgo-let)
-                             &body body)
-  (%with-context var-name cepl-context forgo-let body nil))
-
-(defn-inline cepl-context () cepl-context
-  *cepl-context*)
-
-(define-compiler-macro cepl-context ()
-  `(l-identity *cepl-context*))
