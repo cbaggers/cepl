@@ -76,6 +76,30 @@
       (setf depth-clamp value))))
 
 ;;------------------------------------------------------------
+;; Color Mask
+
+(defun+ color-mask (index cepl-context)
+  (%with-cepl-context-slots (color-masks) cepl-context
+    (aref color-masks index)))
+
+(defun+ (setf color-mask) (value index cepl-context)
+  (%with-cepl-context-slots (color-masks) cepl-context
+    (setf (aref color-masks index) value)
+    (%gl:color-mask-i index (x value) (y value) (z value) (w value))
+    value))
+
+(defun+ color-masks (cepl-context)
+  (%with-cepl-context-slots (color-masks) cepl-context
+    color-masks))
+
+(defun+ (setf color-masks) (value cepl-context)
+  (%with-cepl-context-slots (color-masks) cepl-context
+    (loop :for i :below (length color-masks) :do
+       (setf (aref color-masks i) value))
+    (%gl:color-mask (x value) (y value) (z value) (w value))
+    value))
+
+;;------------------------------------------------------------
 ;; Depth Mask
 
 (defun+ depth-mask (cepl-context)

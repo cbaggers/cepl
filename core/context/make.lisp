@@ -9,6 +9,14 @@
                     :element-type '(or null sampler)
                     :initial-element nil))
 
+  (let ((len (gl:get* :max-draw-buffers)))
+    (setf (%cepl-context-color-masks cepl-context)
+          (make-array len :element-type '(simple-array boolean (4))
+                      :initial-contents
+                      (loop :for i :below len :collect
+                         (make-array 4 :element-type 'boolean
+                                     :initial-element nil)))))
+
   (let ((stencil-params (%make-stencil-params)))
     (setf (%cepl-context-current-stencil-params-front cepl-context)
           stencil-params)

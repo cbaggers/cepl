@@ -80,6 +80,8 @@
    :type hash-table)
   (depth-func :unknown :type (or symbol function))
   (depth-mask :unknown :type (or symbol function))
+  (color-masks (make-array 0 :element-type '(simple-array boolean (4)))
+               :type (array (simple-array boolean (4)) (*)))
   (depth-range (v! 0 1) :type vec2)
   (depth-clamp :unknown :type (or symbol function))
   (cull-face :unknown :type (or symbol function))
@@ -96,7 +98,7 @@
            array-of-ubo-bindings-buffer-ids
            array-of-transform-feedback-bindings-buffer-ids
            array-of-bound-samplers array-of-textures
-           map-of-pipeline-names-to-gl-ids depth-func
+           map-of-pipeline-names-to-gl-ids depth-func color-masks
            depth-mask depth-range depth-clamp cull-face front-face
            current-stencil-params-front current-stencil-params-back
            clear-color gl-version-float)))

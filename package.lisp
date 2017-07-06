@@ -567,6 +567,8 @@
            :depth-range-vec2
            :depth-clamp
            :depth-mask
+           :color-mask
+           :color-masks
            :depth-test-function
            :scissor-viewport
            :add-surface
