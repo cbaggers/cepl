@@ -186,20 +186,40 @@
 
 (defvar *mipmap-max-levels* 20)
 (defvar *valid-texture-storage-options*
-  ;; mipmap layers cubes dimensions multisample buffer rectangle
-  '(((t nil nil 1 nil nil nil) :texture-1d)
-    ((t nil nil 2 nil nil nil) :texture-2d)
-    ((t nil nil 3 nil nil nil) :texture-3d)
-    ((t t nil 1 nil nil nil) :texture-1d-array)
-    ((t t nil 2 nil nil nil) :texture-2d-array)
-    ((t nil t 2 nil nil nil) :texture-cube-map)
-    ((t t t 2 nil nil nil) :texture-cube-map-array)
-    ((nil nil nil 2 nil nil t) :texture-rectangle)
-    ((nil nil nil 1 nil t nil) :texture-buffer)
-    ((nil nil nil 2 nil t nil) :texture-buffer)
-    ((nil nil nil 3 nil t nil) :texture-buffer)
-    ((nil nil nil 2 t nil nil) :texture-2d-multisample)
-    ((nil t nil 2 t nil nil) :texture-2d-multisample-array)))
+  ;; 0.mipmap 1.layers 2.cubes 3.dimensions 4.multisample 5.buffer 6.rectangle
+  ;;
+  ;;  0    1    2    3    4    5    6
+  '(((t    nil  nil  1    nil  nil  nil) :texture-1d)
+    ((t    nil  nil  2    nil  nil  nil) :texture-2d)
+    ((t    nil  nil  3    nil  nil  nil) :texture-3d)
+    ((t    t    nil  1    nil  nil  nil) :texture-1d-array)
+    ((t    t    nil  2    nil  nil  nil) :texture-2d-array)
+    ((t    nil  t    2    nil  nil  nil) :texture-cube-map)
+    ((t    t    t    2    nil  nil  nil) :texture-cube-map-array)
+    ((nil  nil  nil  2    nil  nil  t  ) :texture-rectangle)
+    ((nil  nil  nil  1    nil  t    nil) :texture-buffer)
+    ((nil  nil  nil  2    nil  t    nil) :texture-buffer)
+    ((nil  nil  nil  3    nil  t    nil) :texture-buffer)
+    ((nil  nil  nil  2    t    nil  nil) :texture-2d-multisample)
+    ((nil  t    nil  2    t    nil  nil) :texture-2d-multisample-array)))
+
+;;------------------------------------------------------------
+
+(defun+ establish-texture-type (dimensions mipmap layers cubes po2 multisample
+                                           buffer rectangle)
+  ;; Dont strain too hard trying to work out this function, see the table
+  ;; above to see what input result in what texture types
+  (declare (ignore po2))
+  (cadr (assoc
+         (list mipmap layers cubes dimensions multisample buffer rectangle)
+         *valid-texture-storage-options*
+         :test #'(lambda (a b)
+                   (destructuring-bind
+                         (a1 a2 a3 a4 a5 a6 a7 b1 b2 b3 b4 b5 b6 b7)
+                       (append a b)
+                     (and (if b1 t (not a1)) (if b2 t (not a2))
+                          (if b3 t (not a3)) (eql b4 a4)
+                          (eql b5 a5) (eql b6 a6) (eql b7 a7)))))))
 
 ;;------------------------------------------------------------
 
@@ -213,21 +233,6 @@
       (texture-base-dimensions texture)
       (loop :for i :in (texture-base-dimensions texture) :collect
          (/ i (expt 2 level)))))
-
-;;------------------------------------------------------------
-
-(defun+ establish-texture-type (dimensions mipmap layers cubes po2 multisample
-                               buffer rectangle)
-  (declare (ignore po2))
-  (cadr (assoc (list mipmap layers cubes dimensions multisample buffer rectangle)
-               *valid-texture-storage-options*
-               :test #'(lambda (a b)
-                         (destructuring-bind
-                               (a1 a2 a3 a4 a5 a6 a7 b1 b2 b3 b4 b5 b6 b7)
-                             (append a b)
-                           (and (if b1 t (not a1)) (if b2 t (not a2))
-                                (if b3 t (not a3)) (eql b4 a4)
-                                (eql b5 a5) (eql b6 a6) (eql b7 a7)))))))
 
 ;;------------------------------------------------------------
 ;; {TODO} Texture sizes have a limit based on the GL
@@ -287,8 +292,6 @@
   (let ((element-type (cffi-type->gl-type element-type))
         (image-format (calc-image-format element-type initial-contents)))
     (cond
-      ;; ms
-      (multisample (error "cepl: Multisample textures are not supported"))
       ;; cube textures
       ((and initial-contents cubes)
        (%make-cube-texture tex-obj dimensions mipmap layer-count cubes
@@ -472,28 +475,17 @@ the width to see at what point the width reaches 0 or GL throws an error."
 (defn tex-kind->cache-index ((kind symbol)) (signed-byte 32)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
   (ecase kind
-    (:texture-1d
-     #.(cffi:foreign-enum-value '%gl::enum :texture-1d))
-    (:texture-2d
-     #.(cffi:foreign-enum-value '%gl::enum :texture-2d))
-    (:texture-3d
-     #.(cffi:foreign-enum-value '%gl::enum :texture-3d))
-    (:texture-1d-array
-     #.(cffi:foreign-enum-value '%gl::enum :texture-1d-array))
-    (:texture-2d-array
-     #.(cffi:foreign-enum-value '%gl::enum :texture-2d-array))
-    (:texture-rectangle
-     #.(cffi:foreign-enum-value '%gl::enum :texture-rectangle))
-    (:texture-cube-map
-     #.(cffi:foreign-enum-value '%gl::enum :texture-cube-map))
-    (:texture-cube-map-array
-     #.(cffi:foreign-enum-value '%gl::enum :texture-cube-map-array))
-    (:texture-buffer
-     #.(cffi:foreign-enum-value '%gl::enum :texture-buffer))
-    (:texture-2d-multisample
-     #.(cffi:foreign-enum-value '%gl::enum :texture-2d-multisample))
-    (:texture-2d-multisample-array
-     #.(cffi:foreign-enum-value '%gl::enum :texture-2d-multisample-array))))
+    (:texture-1d #.(gl-enum :texture-1d))
+    (:texture-2d #.(gl-enum :texture-2d))
+    (:texture-3d #.(gl-enum :texture-3d))
+    (:texture-1d-array #.(gl-enum :texture-1d-array))
+    (:texture-2d-array #.(gl-enum :texture-2d-array))
+    (:texture-rectangle #.(gl-enum :texture-rectangle))
+    (:texture-cube-map #.(gl-enum :texture-cube-map))
+    (:texture-cube-map-array #.(gl-enum :texture-cube-map-array))
+    (:texture-buffer #.(gl-enum :texture-buffer))
+    (:texture-2d-multisample #.(gl-enum :texture-2d-multisample))
+    (:texture-2d-multisample-array #.(gl-enum :texture-2d-multisample-array))))
 
 (defun+ %make-texture (tex-obj dimensions mipmap layer-count cubes buffer-storage
                       rectangle multisample immutable initial-contents
@@ -544,7 +536,14 @@ the width to see at what point the width reaches 0 or GL throws an error."
                     ;; levels
                     (generate-mipmaps tex-obj)))
                 tex-obj))
-          (error "This combination of texture features is invalid")))))
+          (error 'invalid-options-for-texture
+                 :buffer-storage buffer-storage
+                 :cubes cubes
+                 :dimensions dimensions
+                 :layer-count layer-count
+                 :mipmap mipmap
+                 :multisample multisample
+                 :rectangle rectangle)))))
 
 
 (defun+ gen-buffer-tex-initial-contents (initial-contents dimensions image-format

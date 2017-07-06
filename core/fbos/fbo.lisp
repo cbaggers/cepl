@@ -713,6 +713,13 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             (:texture-2d
              (%gl:framebuffer-texture-2d :read-framebuffer attach-enum :texture-2d
                                          tex-id level-num))
+            ;; The image in this texture (only one image. No mipmapping) is 2D.
+            ;; Each pixel in these images contains multiple samples instead of
+            ;; just one value.
+            (:texture-2d-multisample
+             (%gl:framebuffer-texture-2d :read-framebuffer attach-enum
+                                         :texture-2d-multisample tex-id
+                                         level-num))
             ;; Each mipmap level of a 3D texture is considered a set of 2D images,
             ;; with the number of these being the extent of the Z coordinate.
             ;; Each integer value for the depth of a 3D texture mipmap level is a

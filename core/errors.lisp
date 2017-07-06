@@ -424,6 +424,25 @@ to take (:patch 2) and points to pipelines taking (:patch 1)"
   name stream-prim
   pline-prim pline-prim)
 
+(deferror invalid-options-for-texture ()
+    (buffer-storage
+     cubes dimensions layer-count mipmap multisample rectangle)
+    "CEPL: We could not establish the correct texture type for the following
+combination of options:
+
+buffer-storage - ~a
+cubes          - ~a
+dimensions     - ~a
+layer-count    - ~a
+mipmap         - ~a
+multisample    - ~a
+rectangle      - ~a
+
+If the GL spec says this is valid then we are sorry for the mistake. If you
+have the time please report the issue here:
+https://github.com/cbaggers/cepl/issues"
+  buffer-storage cubes dimensions layer-count mipmap multisample rectangle)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

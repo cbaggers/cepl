@@ -123,7 +123,8 @@
            :invalid-inline-glsl-stage-arg-layout
            :adjust-gpu-array-mismatched-dimensions
            :adjust-gpu-array-shared-buffer
-           :buffer-stream-has-invalid-primtive-for-stream))
+           :buffer-stream-has-invalid-primtive-for-stream
+           :invalid-options-for-texture))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)

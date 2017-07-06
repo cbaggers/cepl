@@ -82,7 +82,7 @@
   (mutable-p nil :type boolean)
   ;; last-sampler-id is used for perf optimizations
   ;; on gl v<3.3
-  (last-sampler-id 0 :type real))
+  (last-sampler-id 0 :type (signed-byte 32)))
 
 (defvar +null-texture+
   (%%make-texture :type nil
