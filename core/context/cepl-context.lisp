@@ -483,6 +483,7 @@
   (if (eq cepl-context ctx-var)
       (if var-name
           `(let ((,var-name ,ctx-var))
+             (declare (ignorable ,var-name))
              ,@body)
           `(progn ,@body))
       (%with-context var-name cepl-context forgo-let body ctx-var)))
