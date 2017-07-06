@@ -25,7 +25,8 @@
 (defstruct (cepl-context (:constructor %make-cepl-context)
                          (:conc-name %cepl-context-))
   (gl-context nil :type (or null gl-context))
-  (gl-version nil :type t)
+  (requested-gl-version nil :type t)
+  (gl-version-float 0f0 :type single-float)
   (gl-thread nil :type (or null bt:thread))
   (uninitialized-resources nil :type list)
   (shared
@@ -38,7 +39,9 @@
   (vao-binding-id +unknown-gl-id+ :type vao-id)
   (current-viewport nil :type (or null viewport))
   (default-viewport nil :type (or null viewport))
-  (current-scissor-viewport nil :type (or null viewport))
+  (current-scissor-viewports
+   (make-array 32 :element-type '(or null viewport) :initial-element nil)
+   :type (simple-array (or null viewport) (32)))
   (default-framebuffer nil :type (or null fbo))
   (read-fbo-binding nil :type (or null fbo))
   (draw-fbo-binding nil :type (or null fbo))
@@ -85,10 +88,9 @@
 
 (defmacro %with-cepl-context-slots (slots context &body body)
   (let ((context-slots
-         '(gl-context gl-version gl-thread uninitialized-resources shared
-           surfaces current-surface vao-binding-id current-viewport
-           default-viewport
-           current-scissor-viewport
+         '(gl-context requested-gl-version gl-thread uninitialized-resources
+           shared surfaces current-surface vao-binding-id current-viewport
+           default-viewport current-scissor-viewports
            default-framebuffer read-fbo-binding draw-fbo-binding fbos
            array-of-bound-gpu-buffers array-of-gpu-buffers
            array-of-ubo-bindings-buffer-ids
@@ -97,7 +99,7 @@
            map-of-pipeline-names-to-gl-ids depth-func
            depth-mask depth-range depth-clamp cull-face front-face
            current-stencil-params-front current-stencil-params-back
-           clear-color)))
+           clear-color gl-version-float)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))
           (accessors (loop :for slot :in slots :collect

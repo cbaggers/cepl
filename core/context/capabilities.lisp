@@ -146,27 +146,55 @@
 ;;------------------------------------------------------------
 ;; Scissor Viewport
 
-(defn scissor-viewport ((cepl-context cepl-context)) (or null viewport)
-  (declare (optimize (speed 3) (debug 1) (safety 1))
-           (profile t))
-  (%with-cepl-context-slots (current-scissor-viewport) cepl-context
-    current-scissor-viewport))
-
-(defn (setf scissor-viewport) ((viewport (or null viewport))
-                               (cepl-context cepl-context))
+(defn scissor-viewport (&optional (index (unsigned-byte 8) 0)
+                                  (cepl-context cepl-context (cepl-context)))
     (or null viewport)
   (declare (optimize (speed 3) (debug 1) (safety 1))
            (profile t))
-  (%with-cepl-context-slots (current-scissor-viewport) cepl-context
-    (if viewport
-        (progn
-          (%gl:enable :scissor-test)
-          (gl:scissor (%viewport-origin-x viewport)
-                      (%viewport-origin-y viewport)
-                      (%viewport-resolution-x viewport)
-                      (%viewport-resolution-y viewport)))
-        (%gl:disable :scissor-test))
-    (setf current-scissor-viewport viewport)
+  (%with-cepl-context-slots (current-scissor-viewports
+                             gl-version-float)
+      cepl-context
+    (when (< gl-version-float 4.1)
+      (assert (= index 0)))
+    (aref current-scissor-viewports index)))
+
+(defn (setf scissor-viewport) ((viewport (or null viewport))
+                               &optional (index (unsigned-byte 8) 0)
+                               (cepl-context cepl-context (cepl-context)))
+    (or null viewport)
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (profile t))
+  (%with-cepl-context-slots (current-scissor-viewports gl-version-float)
+      cepl-context
+    (let ((current (aref current-scissor-viewports index)))
+      (unless (eq current viewport)
+        (if (>= gl-version-float 4.1)
+            (if viewport
+                (progn
+                  (unless current
+                    (%gl:enable-i :scissor-test index))
+                  (%gl:scissor-indexed index
+                                       (%viewport-origin-x viewport)
+                                       (%viewport-origin-y viewport)
+                                       (%viewport-resolution-x viewport)
+                                       (%viewport-resolution-y viewport)))
+                (when current
+                  (%gl:disable-i :scissor-test index)))
+
+            ;; If gl-version < 4.1
+            (progn
+              (assert (= index 0))
+              (if viewport
+                  (progn
+                    (unless current
+                      (%gl:enable :scissor-test))
+                    (gl:scissor (%viewport-origin-x viewport)
+                                (%viewport-origin-y viewport)
+                                (%viewport-resolution-x viewport)
+                                (%viewport-resolution-y viewport)))
+                  (when current
+                    (%gl:disable :scissor-test)))))
+        (setf (aref current-scissor-viewports index) viewport)))
     viewport))
 
 ;;------------------------------------------------------------

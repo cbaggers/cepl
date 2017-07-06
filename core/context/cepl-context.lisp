@@ -16,7 +16,7 @@
                      (%cepl-context-shared shared)
                      (make-instance 'cepl-context-shared)))
          (result (%make-cepl-context
-                  :gl-version gl-version
+                  :requested-gl-version gl-version
                   :shared shared
                   :current-surface nil
                   :surfaces nil)))
@@ -40,26 +40,30 @@
   (declare (profile t))
   (assert cepl-context)
   (assert surface)
-  (%with-cepl-context-slots (gl-context gl-version current-surface gl-thread) cepl-context
+  (%with-cepl-context-slots (gl-context gl-version-float requested-gl-version
+                                        current-surface gl-thread)
+      cepl-context
     (setf gl-thread (bt:current-thread))
     (assert (not gl-context))
-    (let ((raw-context (cepl.host:make-gl-context :version gl-version
+    (let ((raw-context (cepl.host:make-gl-context :version requested-gl-version
                                                   :surface surface)))
       (ensure-cepl-compatible-setup)
-      (let ((wrapped-context
+      (let* ((maj (gl:major-version))
+             (min (gl:minor-version))
+             (ver-f (float (+ maj (/ min 10)) 0f0))
+            (wrapped-context
              (make-instance
               'gl-context
               :handle raw-context
-              :version-major (gl:major-version)
-              :version-minor (gl:minor-version)
-              :version-float (coerce (+ (gl:major-version)
-                                        (/ (gl:minor-version) 10))
-                                     'single-float))))
+              :version-major maj
+              :version-minor min
+              :version-float ver-f)))
         ;;
         ;; hack until we support contexts properly
         (setf *gl-context* wrapped-context)
         ;;
         (setf gl-context wrapped-context)
+        (setf gl-version-float ver-f)
         ;;
         ;; {TODO} Hmm this feels wrong
         (map nil #'funcall *on-context*)
@@ -459,12 +463,13 @@
 ;;----------------------------------------------------------------------
 
 (defn patch-uninitialized-context-with-version ((cepl-context cepl-context)
-                                                gl-version)
+                                                requested-gl-version)
     t
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (when (not (%cepl-context-gl-version cepl-context))
-    (setf (%cepl-context-gl-version cepl-context) gl-version)))
+  (when (not (%cepl-context-requested-gl-version cepl-context))
+    (setf (%cepl-context-requested-gl-version cepl-context)
+          requested-gl-version)))
 
 ;;----------------------------------------------------------------------
 
