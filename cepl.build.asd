@@ -5,4 +5,5 @@
   :author "Chris Bagley <techsnuffle@gmail.com>"
   :license "BSD 2 Clause"
   :serial t
-  :components ((:file "perf/core/package")))
+  :components ((:file "build/package")
+               (:file "build/build")))
