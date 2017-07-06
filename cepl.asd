@@ -25,7 +25,7 @@
                #:rtg-math.vari
                #:closer-mop
                #:bordeaux-threads
-               #:cepl.perf.core)
+               #:cepl.build)
   :components ((:file "package")
                (:file "host/api-api")
                (:file "host/api-generics")

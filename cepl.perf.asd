@@ -6,7 +6,7 @@
   :license "BSD 2 Clause"
   :serial t
   :depends-on (:rtg-math
-               :cepl.perf.core
+               :cepl.build
                :bordeaux-threads
                :chanl
                :cffi)
