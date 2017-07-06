@@ -179,6 +179,68 @@
             (stencil-params-on-stencil-pass-depth-test-fail sp)
             (stencil-params-on-stencil-pass-depth-test-pass sp))))
 
+;;------------------------------------------------------------
+;; Get Current
+
+(defn-inline %current-stencil-params ((face symbol)
+                                      (cepl-context cepl-context))
+    (values stencil-params (or null stencil-params))
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (%with-cepl-context-slots (current-stencil-params-front
+                             current-stencil-params-back)
+      cepl-context
+    (ecase face
+      (:front (values current-stencil-params-front nil))
+      (:back (values current-stencil-params-back nil))
+      (:front-and-back (values current-stencil-params-front
+                               current-stencil-params-back)))))
+
+(defn current-stencil-params ((face symbol)
+                              &optional (cepl-context cepl-context (cepl-context)))
+    (values stencil-params (or null stencil-params))
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (inline %current-stencil-params)
+           (profile t))
+  (%current-stencil-params face cepl-context))
+
+(define-compiler-macro current-stencil-params
+    (face &optional cepl-context)
+  (if cepl-context
+    `(%current-stencil-params ,face ,cepl-context)
+    `(%current-stencil-params ,face (cepl-context))))
+
+;;------------------------------------------------------------
+;; Set current
+
+(defn (setf current-stencil-params) ((params stencil-params)
+                                     (face symbol)
+                                     &optional (cepl-context cepl-context (cepl-context)))
+    stencil-params
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (let ((enum (ecase face
+                (:front #.(gl-enum :front))
+                (:back #.(gl-enum :back))
+                (:front-and-back #.(gl-enum :front-and-back)))))
+    (%apply-stencil-params enum params cepl-context))
+  params)
+
+(define-compiler-macro (setf current-stencil-params)
+    (&whole whole params face &optional cepl-context)
+  (let ((enum (case face
+                (:front #.(gl-enum :front))
+                (:back #.(gl-enum :back))
+                (:front-and-back #.(gl-enum :front-and-back))
+                (otherwise face))))
+    (cond
+      ((symbolp enum) whole)
+
+      (cepl-context `(%apply-stencil-params
+                      ,enum ,params ,cepl-context))
+
+      (t `(%apply-stencil-params
+           ,enum ,params (cepl-context))))))
 
 (defn %apply-stencil-params ((face (signed-byte 32))
                              (params stencil-params)
@@ -233,34 +295,4 @@
            (%stencil-params-on-stencil-pass-depth-test-pass params))))))
   (values))
 
-
-(defn apply-stencil-params ((face symbol)
-                            (params stencil-params)
-                            &optional
-                            (cepl-context cepl-context (cepl-context)))
-    stencil-params
-  (declare (optimize (speed 3) (safety 1) (debug 1))
-           (profile t))
-  (let ((enum (ecase face
-                (:front #.(gl-enum :front))
-                (:back #.(gl-enum :back))
-                (:front-and-back #.(gl-enum :front-and-back)))))
-    (%apply-stencil-params enum params cepl-context))
-  params)
-
-
-(define-compiler-macro apply-stencil-params
-    (&whole whole face params &optional cepl-context)
-  (let ((enum (case face
-                (:front #.(gl-enum :front))
-                (:back #.(gl-enum :back))
-                (:front-and-back #.(gl-enum :front-and-back))
-                (otherwise face))))
-    (cond
-      ((symbolp enum) whole)
-
-      (cepl-context `(%apply-stencil-params
-                      ,enum ,params ,cepl-context))
-
-      (t `(%apply-stencil-params
-           ,enum ,params (cepl-context))))))
+;;------------------------------------------------------------
