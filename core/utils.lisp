@@ -684,33 +684,6 @@ source: ~s~%list-to-match: ~s" list list-to-match)
        (defun ,release (id)
          (push id ,freed)))))
 
-(defmacro with-setf (place value &body body)
-  "Used like this:
-   (with-setf (aref x 0) 10
-     blah
-     blah)"
-  (alexandria:with-gensyms (starting-value)
-    `(let ((,starting-value ,place))
-       (setf ,place ,value)
-       (release-unwind-protect (progn ,@body)
-         (setf ,place ,starting-value)))))
-
-(defmacro with-setf* (place-value-pairs &body body)
-  "Used like this:
-   (with-setf* ((aref a 0) 10
-                (foo :plinge) :narf)
-     (print \"blarr\"))"
-  (let* ((pairs-grouped (group place-value-pairs 2))
-         (gvars (loop :for i :below (length pairs-grouped) :collect
-                   (gensym "starting-val")))
-         (starting-values (mapcar (lambda (g p) (list g (first p)))
-                                  gvars pairs-grouped))
-         (restore-values (reduce #'append (mapcar #'reverse starting-values))))
-    `(let ,starting-values
-       (setf ,@place-value-pairs)
-       (release-unwind-protect (progn ,@body)
-         (setf ,@restore-values)))))
-
 (defun list-not-consp (x)
   (and (listp x) (or (null (cdr x)) (consp (cdr x)))))
 
@@ -725,9 +698,50 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 
 ;;------------------------------------------------------------
 
+(defun with-setf-internals (env places values)
+  (let ((expanded
+         (loop :for place :in places :for value :in values :collect
+            (multiple-value-bind (dummies vals new setter getter)
+                (get-setf-expansion place env)
+              (assert (not (cdr new)) () "with-setf failed to expand: ~a"
+                      place)
+              (let ((new (car new))
+                    (old-value (gensym "OLD-VAL")))
+                (list `(,@(mapcar #'list dummies vals)
+                          (,old-value ,getter)
+                          (,new ,value))
+                      setter
+                      `(let ((,new ,old-value))
+                         ,setter)))))))
+    (values (mapcan #'first (copy-list expanded))
+            (mapcar #'second expanded)
+            (mapcar #'third expanded))))
 
+(defmacro with-setf (&environment env place value &body body)
+  "Used like this:
+   (with-setf (aref x 0) 10
+     blah
+     blah)"
+  (multiple-value-bind (lets setters restores)
+      (with-setf-internals env (list place) (list value))
+    `(let* (,@lets)
+       ,@setters
+       (release-unwind-protect (progn ,@body)
+         ,@restores))))
 
-;; (defun+ foo (bar)
-;;   "wub wub"
-;;   (declare (type single-float bar))
-;;   (* 10 bar))
+(defmacro with-setf* (&environment env place-value-pairs &body body)
+  "Used like this:
+   (with-setf* ((aref a 0) 10
+                (foo :plinge) :narf)
+     (print \"blarr\"))"
+  (let* ((pairs-grouped (group place-value-pairs 2))
+         (places (mapcar #'first pairs-grouped))
+         (values (mapcar #'second pairs-grouped)))
+    (multiple-value-bind (lets setters restores)
+        (with-setf-internals env places values)
+      `(let* (,@lets)
+         ,@setters
+         (release-unwind-protect (progn ,@body)
+           ,@restores)))))
+
+;;------------------------------------------------------------
