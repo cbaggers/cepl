@@ -40,7 +40,8 @@
 ;;----------------------------------------------------------------------
 
 (defun+ pre-gl-init (fbo-obj
-                    &key color-arrays depth-array is-default blending-params)
+                     &key color-arrays depth-array stencil-array
+                     is-default blending-params)
   (when color-arrays
     (setf (%fbo-color-arrays fbo-obj)
           (make-array (length color-arrays)
@@ -56,6 +57,17 @@
     (setf (%fbo-depth-array fbo-obj)
           (make-att :array depth-array
                     :viewport (viewport-for-array depth-array))))
+  (when stencil-array
+    (if depth-array
+        (assert (and (eq depth-array stencil-array)
+                     (member (element-type stencil-array)
+                             *depth-stencil-formats*)))
+        (assert (member (element-type stencil-array)
+                        *stencil-formats*)))
+
+    (setf (%fbo-stencil-array fbo-obj)
+          (make-att :array stencil-array
+                    :viewport (viewport-for-array stencil-array))))
   ;;
   (setf (%fbo-is-default fbo-obj) is-default)
   ;;
@@ -72,14 +84,15 @@
 
 (defun+ post-gl-init (fbo-obj &key id draw-buffer-map clear-mask)
   (setf (%fbo-id fbo-obj) (or id (first (gl::gen-framebuffers 1))))
+  (setf (%fbo-draw-buffer-map fbo-obj)
+        (or draw-buffer-map
+            (foreign-alloc 'cl-opengl-bindings:enum :count
+                           (max-draw-buffers *gl-context*)
+                           :initial-element :none)))
   (setf (%fbo-clear-mask fbo-obj)
         (or clear-mask
             (cffi:foreign-bitfield-value
              '%gl::ClearBufferMask '(:color-buffer-bit))))
-  (setf (%fbo-draw-buffer-map fbo-obj)
-        (or draw-buffer-map (foreign-alloc 'cl-opengl-bindings:enum :count
-                                           (max-draw-buffers *gl-context*)
-                                           :initial-element :none)))
   (cepl.context::register-fbo (cepl-context) fbo-obj)
   fbo-obj)
 
@@ -140,7 +153,6 @@
         (cepl.textures::with-gpu-array-t (att-array d)
           (setf dimensions new-dimensions))))))
 
-;; {TODO} this is pretty wasteful but will do for now
 (defn attachment-viewport ((fbo fbo)
                            (attachment-name attachment-name))
     viewport
@@ -148,13 +160,20 @@
            (profile t))
   (case attachment-name
     (:d (att-viewport (%fbo-depth-array fbo)))
-    ;;(:s (... :stencil-attachment))
-    ;;(:ds (... :depth-stencil-attachment))
+    (:s (att-viewport (%fbo-stencil-array fbo)))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo)))
        (if (< attachment-name (length arr))
            (att-viewport (aref arr attachment-name))
            (error "No attachment at ~a" attachment-name))))))
+
+;;----------------------------------------------------------------------
+
+(defn-inline color-attachment-enum ((attachment-num attachment-num))
+    (signed-byte 32)
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (+ attachment-num #.(gl-enum :color-attachment0)))
 
 ;;----------------------------------------------------------------------
 
@@ -168,10 +187,10 @@
         (cffi:foreign-bitfield-value
          '%gl::ClearBufferMask
          `(:color-buffer-bit
-           ,@(when (att-array (%fbo-depth-array fbo)) '(:depth-buffer-bit))
-           ;; ,@(list (and (attachment-gpu-array (%fbo-attachment-stencil object))
-           ;;              :stencil-buffer-bit))
-           )))
+           ,@(when (att-array (%fbo-depth-array fbo))
+               '(:depth-buffer-bit))
+           ,@(when (att-array (%fbo-stencil-array fbo))
+               '(:stencil-buffer-bit)))))
   fbo)
 
 (defn-inline default-fbo-attachment-enum ((attachment-num (integer 0 3)))
@@ -203,15 +222,13 @@
 (defun+ %fbo-owns (fbo attachment-name)
   (case attachment-name
     (:d (att-owned-p (%fbo-depth-array fbo)))
-    ;;(:s (... :stencil-attachment))
-    ;;(:ds (... :depth-stencil-attachment))
+    (:s (att-owned-p (%fbo-stencil-array fbo)))
     (otherwise (att-owned-p (aref (%fbo-color-arrays fbo) attachment-name)))))
 
 (defun+ (setf %fbo-owns) (value fbo attachment-name)
   (case attachment-name
     (:d (setf (att-owned-p (%fbo-depth-array fbo)) value))
-    ;;(:s (... :stencil-attachment))
-    ;;(:ds (... :depth-stencil-attachment))
+    (:s (setf (att-owned-p (%fbo-stencil-array fbo)) value))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo))
            (index attachment-name))
@@ -224,8 +241,7 @@
   (case attachment-name
     (:d (let ((att (%fbo-depth-array fbo)))
           (or (att-bparams att) (att-blend att))))
-    ;;(:s (... :stencil-attachment))
-    ;;(:ds (... :depth-stencil-attachment))
+    (:s nil)
     (otherwise
      (let ((arr (%fbo-color-arrays fbo))
            (index attachment-name))
@@ -238,8 +254,7 @@
 (defun+ (setf attachment-blending) (value fbo attachment-name)
   (let ((att (case attachment-name
                (:d (%fbo-depth-array fbo))
-               ;;(:s (... :stencil-attachment))
-               ;;(:ds (... :depth-stencil-attachment))
+               (:s (error "Cannot specifiy blending params for the stencil attachment"))
                (otherwise
                 (let ((arr (%fbo-color-arrays fbo)))
                   (ensure-fbo-array-size fbo (1+ attachment-name))
@@ -256,8 +271,7 @@
     (or null gpu-array-t)
   (case attachment-name
     (:d (att-array (%fbo-depth-array fbo)))
-    ;;(:s (... :stencil-attachment))
-    ;;(:ds (... :depth-stencil-attachment))
+    (:s (att-array (%fbo-stencil-array fbo)))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo)))
        (if (< attachment-name (length arr))
@@ -273,8 +287,10 @@
      (setf (att-viewport (%fbo-depth-array fbo))
            (viewport-for-array value))
      (setf (att-array (%fbo-depth-array fbo)) value))
-    ;;(:s (... :stencil-attachment))
-    ;;(:ds (... :depth-stencil-attachment))
+    (:s
+     (setf (att-viewport (%fbo-stencil-array fbo))
+           (viewport-for-array value))
+     (setf (att-array (%fbo-stencil-array fbo)) value))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo)))
        (ensure-fbo-array-size fbo (1+ attachment-name))
@@ -316,9 +332,11 @@
 
 ;;----------------------------------------------------------------------
 
+;; The caching of the value is janky, use the cepl-context
 (let ((max-draw-buffers -1))
   (declare (type (signed-byte 32) max-draw-buffers))
-  (defn get-gl-attachment-keyword ((x attachment-name)) (signed-byte 32)
+  (defn get-gl-attachment-keyword ((fbo fbo) (x attachment-name))
+      (signed-byte 32)
     (declare (optimize (speed 3) (safety 1) (debug 1))
              (profile t))
     (unless (> max-draw-buffers 0)
@@ -326,9 +344,9 @@
         (setf max-draw-buffers (max-draw-buffers *gl-context*))))
     (case x
       (:d #.(gl-enum :depth-attachment))
-      (:s #.(gl-enum :stencil-attachment))
-      (:ds #.(cffi:foreign-enum-value
-              '%gl:enum :depth-stencil-attachment))
+      (:s (if (att-array (%fbo-depth-array fbo))
+              #.(gl-enum  :depth-stencil-attachment)
+              #.(gl-enum :stencil-attachment)))
       (otherwise
        (if (<= x max-draw-buffers)
            (color-attachment-enum x)
@@ -337,14 +355,12 @@
                       x max-draw-buffers)
                (color-attachment-enum x)))))))
 
-(define-compiler-macro get-gl-attachment-keyword (&whole whole x)
+(define-compiler-macro get-gl-attachment-keyword (&whole whole fbo x)
+  (declare (ignore fbo))
   (if (numberp x)
       (color-attachment-enum x)
       (case x
         (:d #.(gl-enum :depth-attachment))
-        (:s #.(gl-enum :stencil-attachment))
-        (:ds #.(cffi:foreign-enum-value
-                '%gl:enum :depth-stencil-attachment))
         (otherwise whole))))
 
 ;;--------------------------------------------------------------
@@ -439,6 +455,8 @@
      (when a (setf (attachment fbo-obj i) (att-array a))))
   (when (attachment fbo-obj :d)
     (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
+  (when (attachment fbo-obj :s)
+    (setf (attachment fbo-obj :s) (attachment fbo-obj :s)))
   (%update-fbo-state fbo-obj)
   (check-framebuffer-status fbo-obj)
   fbo-obj)
@@ -611,14 +629,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
         (error 'attachments-with-different-sizes
                :args args
                :sizes dims))))
-  (mapcar (lambda (texture-pair attachment-name)
-            (dbind (tex-array . owned-by-fbo) texture-pair
+  (mapcar (lambda (processed-pattern)
+            (dbind (attachment-name tex-array owned-by-fbo) processed-pattern
               (setf (%fbo-owns fbo attachment-name) owned-by-fbo)
               (setf (attachment fbo attachment-name) tex-array)
               tex-array))
-          (mapcar #'%gen-textures args)
-          (mapcar (lambda (x) (first x))
-                  (mapcar #'listify args))))
+          (process-fbo-init-pattern args)))
 
 (defun+ extract-dimension-from-make-fbo-pattern (pattern)
   (assert (or (listp pattern) (keywordp pattern) (numberp pattern)))
@@ -654,7 +670,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   ;; target could be any of '(:framebuffer :read-framebuffer :draw-framebuffer)
   ;; but we just pick :read-framebuffer as in this case it makes no difference
   ;; to us
-  (let ((attach-enum (get-gl-attachment-keyword attachment-name)))
+  (let ((attach-enum (get-gl-attachment-keyword fbo attachment-name)))
     (with-fbo-bound (fbo :target :read-framebuffer :with-viewport nil :draw-buffers nil)
       ;; FBOs have the following attachment points:
       ;; GL_COLOR_ATTACHMENTi: These are an implementation-dependent number of
@@ -682,8 +698,9 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       ;; When attaching a non-cubemap, textarget should be the proper
       ;; texture-type: GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE, etc.
       (cepl.textures::with-gpu-array-t tex-array
-        (unless (attachment-compatible attachment-name image-format)
-          (error "attachment is not compatible with this array"))
+        (assert (attachment-compatible attachment-name image-format t)
+                ()  "attachment is not compatible with this array~%~a~%~a"
+                image-format tex-array)
         (let ((tex-id (texture-id texture)))
           (case (gpu-array-t-texture-type tex-array)
             ;; A 1D texture contains 2D images that have the vertical height of 1.
@@ -759,7 +776,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                                          tex-id level-num))
             ;; Buffer Textures work like 1D texture, only they have a single image,
             ;; identified by mipmap level 0.
-            (:texture-buffer (error "attaching to buffer textures has not been implmented yet"))
+            (:texture-buffer (error "attaching to buffer textures has not been implemented yet"))
             ;; Cubemap array textures work like 2D array textures, only with 6 times
             ;; the number of images. Thus a 2D image in the array is identified by
             ;; the array layer (technically layer-face) and a mipmap level.
@@ -767,7 +784,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; layer-face index. Thus it is the face within a layer, ordered as
             ;; above. So if you want to render to the 3rd layer, +z face, you would
             ;; set gl_Layer to (2 * 6) + 4, or 16.
-            (:texture-cube-map-array (error "attaching to cube-map-array textures has not been implmented yet"))))))))
+            (:texture-cube-map-array (error "attaching to cube-map-array textures has not been implemented yet"))))))))
 
 (defun+ fbo-detach (fbo attachment-name)
   ;; The texture argument is the texture object name you want to attach from.
@@ -778,27 +795,90 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   ;;
   ;; {TODO} when using GL v4.5 use %gl:named-framebuffer-texture-layer,
   ;;        avoids binding
-  (with-fbo-bound (fbo :target :read-framebuffer
-                       :with-viewport nil
-                       :with-blending nil
-                       :draw-buffers nil)
-    (let ((enum
-           (case attachment-name
-             (:d :depth-attachment)
-             ;;(:s (... :stencil-attachment))
-             (otherwise (color-attachment-enum attachment-name)))))
+  (let ((enum (get-gl-attachment-keyword fbo attachment-name)))
+    (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :with-blending nil
+                         :draw-buffers nil)
       (%gl:framebuffer-texture-layer :read-framebuffer enum 0 0 0))))
+
+;;----------------------------------------------------------------------
+;; Generating Textures from FBO Patterns
 
 (defvar %valid-texture-subset '(:dimensions :element-type :mipmap :immutable))
 
-(defun+ %gen-textures (pattern)
+(defun+ process-fbo-init-pattern (pattern)
+  (labels ((name (x) (if (listp x) (first x) x))
+           (for-color (x) (numberp (name x)))
+           (for-depth (x) (eq (name x) :d))
+           (for-stencil (x) (eq (name x) :s)))
+
+    (let* ((c (remove-if-not #'for-color pattern))
+           (d (remove-if-not #'for-depth pattern))
+           (s (remove-if-not #'for-stencil pattern))
+           (o (set-difference pattern (append c d s) :test #'equal)))
+      (assert (not o)
+              () "CEPL: Invalid arguments passed to make-fbo: ~s" o)
+      (assert (<= (length d) 1)
+              () "FBO can only have 1 depth attachemnt: ~s" pattern)
+      (assert (<= (length s) 1)
+              () "FBO can only have 1 stencil attachemnt: ~s" pattern)
+
+      (let ((d (first d))
+            (s (first s)))
+        (append (mapcar #'%gen-texture c)
+                (cond ((and d s) (gen-depth-stencil-texture d s))
+                      (d (list (%gen-texture d)))
+                      (s (list (%gen-texture s)))))))))
+
+(defun+ gen-depth-stencil-texture (depth stencil)
+  (labels ((tweak (x y) `(,x ,@(rest y))))
+    (cond
+      ;;
+      ;; If both are symbols then we can return the same tex for both
+      ((and (symbolp depth) (symbolp stencil))
+       (let ((tex (%gen-texture :ds)))
+         (list (tweak :d tex) (tweak :s tex))))
+      ;;
+      ;; If only one is a list pattern then use that for both
+      ((or (symbolp depth) (symbolp stencil))
+       (let* ((pattern (if (listp depth) depth stencil))
+              (elem-pos (position :element-type pattern))
+              (existing (or (texture-p (second pattern))
+                            (gpu-array-t-p (second pattern)))))
+         (cond
+           ;;
+           ;; The pattern contains a valid ds texture
+           (existing
+            (let ((tex (%gen-texture (tweak :ds pattern))))
+              (list (tweak :d tex) (tweak :s tex))))
+           ;;
+           ;; It was a pattern that will result in a valid ds texture
+           ((and elem-pos (attachment-compatible
+                           :ds (elt pattern (1+ elem-pos))))
+            (let ((tex (%gen-texture (tweak :ds pattern))))
+              (list (tweak :d tex) (tweak :s tex)))))))
+      ;; Nope :(
+      (t (if (and (eq (second depth) (second stencil))
+                  (or (gpu-array-p (second depth))
+                      (texture-p (second depth))))
+             (let ((tex (%gen-texture (tweak :ds depth))))
+               (list (tweak :d tex) (tweak :s tex)))
+             (error "CEPL: Could not find a satifactory way to create a depth-stencil texture from:~%~a & ~a"
+                    depth stencil))))))
+
+(defun+ %gen-texture (pattern)
+  ;;
+  ;; (attachment-name tex-array owned-by-fbo)
+  ;;
   (assert (or (listp pattern) (keywordp pattern)
               (numberp pattern)))
   (cond
     ;; simple keyword pattern to texture
     ((or (keywordp pattern)
          (numberp pattern))
-     (cons (texref
+     (list pattern
+      (texref
             (make-texture
              nil :dimensions (viewport-dimensions (current-viewport))
              :element-type (%get-default-texture-format pattern)))
@@ -820,7 +900,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                   element-type
                   (lisp-type->image-format element-type))))
          (assert (attachment-compatible (first pattern) element-type))
-         (cons (texref
+         (list (first pattern)
+               (texref
                 (make-texture nil
                               :dimensions dimensions
                               :element-type element-type
@@ -828,11 +909,16 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                               :immutable immutable))
                t))))
     ;; use an existing gpu-array
-    ((typep (second pattern) 'gpu-array-t) (cons (second pattern) t))
+    ((typep (second pattern) 'gpu-array-t) (list (first pattern)
+                                                 (second pattern)
+                                                 t))
     ;; use the first gpu-array in texture
-    ((typep (second pattern) 'texture) (cons (texref (second pattern)) t))
+    ((typep (second pattern) 'texture) (list (first pattern)
+                                             (texref (second pattern))
+                                             t))
     ;; take the dimensions from some object
-    (t (cons (texref
+    (t (list (first pattern)
+             (texref
               (make-texture nil :dimensions (dimensions (second pattern))
                             :element-type (%get-default-texture-format
                                            (first pattern))))
@@ -841,12 +927,18 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defun+ %get-default-texture-format (attachment)
   (cond ((numberp attachment) :rgba8)
         ((eq attachment :d) :depth-component24)
+        ((eq attachment :s) :stencil-index8)
+        ((eq attachment :ds) :depth24-stencil8)
         (t (error "No default texture format for attachment: ~s" attachment))))
 
-(defun+ attachment-compatible (attachment-name image-format)
+(defun+ attachment-compatible (attachment-name image-format &optional for-bind)
   (case attachment-name
-    ((:d :depth-attachment) (depth-formatp image-format))
-    ((:s :stencil-attachment) (stencil-formatp image-format))
+    ((:d :depth-attachment) (or (depth-formatp image-format)
+                                (when for-bind
+                                  (depth-stencil-formatp image-format))))
+    ((:s :stencil-attachment) (or (stencil-formatp image-format)
+                                  (when for-bind
+                                    (depth-stencil-formatp image-format))))
     ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
     (otherwise (color-renderable-formatp image-format))))
 
@@ -877,11 +969,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 (defmethod print-object ((object fbo) stream)
   (if (initialized-p object)
-      (format stream "#<~a~@[ COLOR-ATTACHMENTS ~a~]~@[ DEPTH-ATTACHMENT ~a~]>"
+      (format stream "#<~a~@[ COLOR-ATTRS ~a~]~@[ DEPTH-ATTR ~a~]~@[ STENCIL-ATTR ~a~]>"
               (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
               (loop :for i :from 0 :for j :in (fbo-color-arrays object)
                  :when j :collect i)
-              (when (attachment object :d) t))
+              (when (attachment object :d) t)
+              (when (attachment object :s) t))
       (format stream "#<FBO :UNINITIALIZED>")))
 
 ;;----------------------------------------------------------------------

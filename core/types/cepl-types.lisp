@@ -255,6 +255,7 @@
                             :fill-pointer 0)
                 :type (array att *))
   (depth-array (make-att) :type att)
+  (stencil-array (make-att) :type att)
   ;;
   (draw-buffer-map
    (error "draw-buffer array must be provided when initializing an fbo"))

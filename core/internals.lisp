@@ -48,13 +48,6 @@
 (defmethod symbol-names-cepl-structp ((sym t))
   nil)
 
-
-(defn-inline color-attachment-enum ((attachment-num attachment-num))
-    (signed-byte 32)
-  (declare (optimize (speed 3) (safety 1) (debug 1))
-           (profile t))
-  (+ attachment-num #.(gl-enum :color-attachment0)))
-
 (defn-inline draw-buffer-enum ((buffer-num (signed-byte 32))) (signed-byte 32)
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))

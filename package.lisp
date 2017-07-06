@@ -341,6 +341,7 @@
            :%fbo-id
            :%fbo-color-arrays
            :%fbo-depth-array
+           :%fbo-stencil-array
            :%fbo-draw-buffer-map
            :%fbo-clear-mask
            :%fbo-is-default
