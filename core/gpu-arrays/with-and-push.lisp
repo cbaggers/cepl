@@ -113,7 +113,7 @@ dimension then their sizes must match exactly"))
                    '%gl::mapbufferusagemask
                    access)))
       `(let ((,p (%gl:map-buffer-range ,target ,offset ,length ,access)))
-         (unwind-protect (progn ,@body)
+         (release-unwind-protect (progn ,@body)
            (%gl:unmap-buffer ,target))))))
 
 (defun+ %process-with-gpu-array-range-macro-args (target access-set)

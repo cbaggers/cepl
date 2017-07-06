@@ -128,5 +128,5 @@
   (alexandria:with-gensyms (tex)
     `(let* ((,tex ,texture))
        (bind-scratch-texture ,tex)
-       (unwind-protect (progn ,@body)
+       (release-unwind-protect (progn ,@body)
          (unbind-texture-from-scratch ,tex)))))

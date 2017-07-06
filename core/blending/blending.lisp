@@ -133,12 +133,12 @@
      ;; The user wants blending to be set by a blending params struct
      `(progn
         (set-current-blend-params ,explicit-blend-params)
-        (unwind-protect (progn ,@body)
+        (release-unwind-protect (progn ,@body)
           (set-current-blend-params nil))))
     ((eq pattern t)
      `(progn
         (set-current-blend-params-from-fbo ,fbo)
-        (unwind-protect (progn ,@body)
+        (release-unwind-protect (progn ,@body)
           (set-current-blend-params nil))))
     ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     (t ;; We have a pattern that tells us which attachments will be drawn into

@@ -250,7 +250,7 @@
 (defmacro with-temp-sampler ((var tex) &body body)
   (assert (and (symbolp var) (not (keywordp var))))
   `(let ((,var (sample ,tex)))
-     (unwind-protect (progn ,@body)
+     (release-unwind-protect (progn ,@body)
        (free-sampler ,var))))
 
 ;;----------------------------------------------------------------------

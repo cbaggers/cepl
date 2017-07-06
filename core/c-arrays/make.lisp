@@ -107,11 +107,11 @@
 
 (defmacro with-c-array-freed ((var-name c-array) &body body)
   `(let* ((,var-name ,c-array))
-     (unwind-protect (progn ,@body) (free-c-array ,var-name))))
+     (release-unwind-protect (progn ,@body) (free-c-array ,var-name))))
 
 (defmacro with-c-arrays-freed ((var-name c-arrays) &body body)
   `(let* ((,var-name ,c-arrays))
-     (unwind-protect (progn ,@body)
+     (release-unwind-protect (progn ,@body)
        (loop :for a :in ,var-name :do (free-c-array a)))))
 
 ;;------------------------------------------------------------

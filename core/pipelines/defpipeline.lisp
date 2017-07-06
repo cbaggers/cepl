@@ -492,7 +492,7 @@
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
   (let ((program (or program_id (%gl:create-program))))
-    (unwind-protect
+    (release-unwind-protect
          (progn (loop :for shader :in shaders :do
                    (%gl:attach-shader program shader))
                 (%gl:link-program program)

@@ -692,7 +692,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
   (alexandria:with-gensyms (starting-value)
     `(let ((,starting-value ,place))
        (setf ,place ,value)
-       (unwind-protect (progn ,@body)
+       (release-unwind-protect (progn ,@body)
          (setf ,place ,starting-value)))))
 
 (defmacro with-setf* (place-value-pairs &body body)
@@ -708,7 +708,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
          (restore-values (reduce #'append (mapcar #'reverse starting-values))))
     `(let ,starting-values
        (setf ,@place-value-pairs)
-       (unwind-protect (progn ,@body)
+       (release-unwind-protect (progn ,@body)
          (setf ,@restore-values)))))
 
 (defun list-not-consp (x)

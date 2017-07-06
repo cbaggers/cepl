@@ -28,7 +28,7 @@
     `(with-cepl-context (,ctx)
       (let* ((,old-vao (vao-bound ,ctx))
              (,vao-id ,vao))
-         (unwind-protect
+         (release-unwind-protect
               (progn (setf (vao-bound ,ctx) ,vao-id)
                      ,@body)
            (setf (vao-bound ,ctx) ,old-vao))))))
@@ -93,7 +93,7 @@
                        () "Instance divisor for ~a was ~a, however a positive integer was expected"
                        gpu-array instance-divisor)
                (setf (gpu-buffer-bound ctx :array-buffer) buffer)
-               (unwind-protect
+               (release-unwind-protect
                     (incf attr
                           (gl-assign-attrib-pointers
                            (if (listp elem-type)

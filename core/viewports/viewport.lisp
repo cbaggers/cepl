@@ -130,7 +130,7 @@
        (let* ((,old-viewport (current-viewport))
               (,vp ,viewport)
               (,unbind (%set-current-viewport ,ctx ,vp)))
-         (unwind-protect (progn ,@body)
+         (release-unwind-protect (progn ,@body)
            (when ,unbind
              (%set-current-viewport ,ctx ,old-viewport)))))))
 
