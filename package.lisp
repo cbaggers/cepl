@@ -21,6 +21,7 @@
            :find-in-tree
            :mkstr
            :symb
+           :symb-name=
            :make-keyword
            :kwd
            :group
@@ -570,7 +571,6 @@
            :color-mask
            :color-masks
            :depth-test-function
-           :scissor-viewport
            :add-surface
            :surfaces
            :current-surface
@@ -915,6 +915,14 @@
            :stencil-params-on-sfail
            :stencil-params-on-dpfail
            :stencil-params-on-dppass))
+
+(uiop:define-package :cepl.scissor
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
+          :cepl.types :split-sequence :named-readtables
+          :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
+          :cepl.internals :cepl.fbos :cepl.perf.core)
+  (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
+  (:export :scissor-viewport))
 
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables

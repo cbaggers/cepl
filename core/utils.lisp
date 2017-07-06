@@ -718,6 +718,11 @@ source: ~s~%list-to-match: ~s" list list-to-match)
   (the (signed-byte 32)
        (cffi:foreign-enum-value '%gl:enum kwd)))
 
+(defun symb-name= (a b)
+  (when (and (or (symbolp a) (stringp a))
+             (or (symbolp b) (stringp b)))
+    (string= a b)))
+
 ;;------------------------------------------------------------
 
 

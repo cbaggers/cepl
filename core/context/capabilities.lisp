@@ -19,111 +19,117 @@
 ;;------------------------------------------------------------
 ;; Cull Face
 
-(defun+ cull-face (cepl-context)
-  (%with-cepl-context-slots (cull-face) cepl-context
-    cull-face))
+(define-context-func cull-face () (or symbol function)
+    (cull-face)
+  cull-face)
 
-(defun+ (setf cull-face) (face cepl-context)
+(define-context-func (setf cull-face) ((face symbol)) symbol
+    (cull-face)
   (assert (member face '(nil :front :back :front-and-back)))
-  (%with-cepl-context-slots (cull-face) cepl-context
-    (if face
-        (progn
-          (gl:enable :cull-face)
-          (%gl:cull-face face))
-        (gl:disable :cull-face))
-    (setf cull-face face)))
+  (if face
+      (progn
+        (gl:enable :cull-face)
+        (%gl:cull-face face))
+      (gl:disable :cull-face))
+  (setf cull-face face))
 
 ;;------------------------------------------------------------
 ;; Front Face
 
-(defun+ front-face (cepl-context)
-  (%with-cepl-context-slots (front-face) cepl-context
-    front-face))
+(define-context-func front-face () symbol
+    (front-face)
+  front-face)
 
-(defun+ (setf front-face) (winding-direction cepl-context)
+(define-context-func (setf front-face) ((winding-direction symbol))
+    symbol
+    (front-face)
   (assert (or (eq winding-direction :ccw)
               (eq winding-direction :cw)))
-  (%with-cepl-context-slots (front-face) cepl-context
-    (%gl:front-face winding-direction)
-    (setf front-face winding-direction)))
+  (%gl:front-face winding-direction)
+  (setf front-face winding-direction))
 
 ;;------------------------------------------------------------
 ;; Depth Range
 
-(defun+ depth-range-vec2 (cepl-context)
-  (%with-cepl-context-slots (depth-range) cepl-context
-    depth-range))
+(define-context-func depth-range-vec2 () vec2
+    (depth-range)
+  depth-range)
 
-(defun+ (setf depth-range-vec2) (vec2-range cepl-context)
+(define-context-func (setf depth-range-vec2) ((vec2-range vec2)) vec2
+    (depth-range)
   (assert (typep vec2-range 'rtg-math.types:vec2))
-  (%with-cepl-context-slots (depth-range) cepl-context
-    (%gl:depth-range (v:x vec2-range) (v:y vec2-range))
-    (setf depth-range vec2-range)))
+  (%gl:depth-range (v:x vec2-range) (v:y vec2-range))
+  (setf depth-range vec2-range))
 
 ;;------------------------------------------------------------
 ;; Depth Clamp
 
-(defun+ depth-clamp (cepl-context)
-  (%with-cepl-context-slots (depth-clamp) cepl-context
-    depth-clamp))
+(define-context-func depth-clamp () boolean
+    (depth-clamp)
+  depth-clamp)
 
-(defun+ (setf depth-clamp) (value cepl-context)
-  (%with-cepl-context-slots (depth-clamp) cepl-context
-    (let ((value (not (null value))))
-      (if value
-          (gl:enable :depth-clamp)
-          (gl:disable :depth-clamp))
-      (setf depth-clamp value))))
+(define-context-func (setf depth-clamp) ((value boolean)) boolean
+    (depth-clamp)
+  (if value
+      (gl:enable :depth-clamp)
+      (gl:disable :depth-clamp))
+  (setf depth-clamp value))
 
 ;;------------------------------------------------------------
 ;; Color Mask
 
-(defun+ color-mask (index cepl-context)
-  (%with-cepl-context-slots (color-masks) cepl-context
-    (aref color-masks index)))
 
-(defun+ (setf color-mask) (value index cepl-context)
-  (%with-cepl-context-slots (color-masks) cepl-context
-    (setf (aref color-masks index) value)
-    (%gl:color-mask-i index (x value) (y value) (z value) (w value))
-    value))
+(define-context-func color-mask ((index (unsigned-byte 16)))
+    (simple-array boolean (4))
+    (color-masks)
+  (aref color-masks index))
 
-(defun+ color-masks (cepl-context)
-  (%with-cepl-context-slots (color-masks) cepl-context
-    color-masks))
+(define-context-func (setf color-mask) ((value (simple-array boolean (4)))
+                                        (index (unsigned-byte 16)))
+    (simple-array boolean (4))
+    (color-masks)
+  (setf (aref color-masks index) value)
+  (%gl:color-mask-i index (x value) (y value) (z value) (w value))
+  value)
 
-(defun+ (setf color-masks) (value cepl-context)
-  (%with-cepl-context-slots (color-masks) cepl-context
-    (loop :for i :below (length color-masks) :do
-       (setf (aref color-masks i) value))
-    (%gl:color-mask (x value) (y value) (z value) (w value))
-    value))
+(define-context-func color-masks ()
+    (simple-array (simple-array boolean (4)) (*))
+    (color-masks)
+  color-masks)
+
+(define-context-func (setf color-masks) ((value (simple-array boolean (4))))
+    (simple-array boolean (4))
+    (color-masks)
+  (loop :for i :below (length color-masks) :do
+     (setf (aref color-masks i) value))
+  (%gl:color-mask (x value) (y value) (z value) (w value))
+  value)
 
 ;;------------------------------------------------------------
 ;; Depth Mask
 
-(defun+ depth-mask (cepl-context)
-  (%with-cepl-context-slots (depth-mask) cepl-context
-    depth-mask))
+(define-context-func depth-mask () boolean
+    (depth-mask)
+  depth-mask)
 
-(defun+ (setf depth-mask) (value cepl-context)
-  (%with-cepl-context-slots (depth-mask) cepl-context
-    (let ((value (not (null value))))
-      (if value
-          (%gl:depth-mask :true)
-          (%gl:depth-mask :false))
-      (setf depth-mask value))))
+(define-context-func (setf depth-mask) ((value boolean)) boolean
+    (depth-mask)
+  (if value
+      (%gl:depth-mask :true)
+      (%gl:depth-mask :false))
+  (setf depth-mask value))
 
 ;;------------------------------------------------------------
 ;; Depth Test
 
-(defun+ depth-test-function (cepl-context)
-  (%with-cepl-context-slots (depth-func) cepl-context
-    depth-func))
+(define-context-func depth-test-function () (or symbol function)
+    (depth-func)
+  depth-func)
 
-(defun+ (setf depth-test-function) (function cepl-context)
-  (%with-cepl-context-slots (depth-func) cepl-context
-    (if function
+(define-context-func (setf depth-test-function) ((function (or symbol function)))
+    (or symbol function)
+    (depth-func)
+  (if function
         (progn
           (gl:enable :depth-test)
           (cond
@@ -165,61 +171,7 @@
         ;; function was nil
         (progn
           (gl:disable :depth-test)
-          (setf depth-func nil)))))
-
-;;------------------------------------------------------------
-;; Scissor Viewport
-
-(defn scissor-viewport (&optional (index (unsigned-byte 8) 0)
-                                  (cepl-context cepl-context (cepl-context)))
-    (or null viewport)
-  (declare (optimize (speed 3) (debug 1) (safety 1))
-           (profile t))
-  (%with-cepl-context-slots (current-scissor-viewports
-                             gl-version-float)
-      cepl-context
-    (when (< gl-version-float 4.1)
-      (assert (= index 0)))
-    (aref current-scissor-viewports index)))
-
-(defn (setf scissor-viewport) ((viewport (or null viewport))
-                               &optional (index (unsigned-byte 8) 0)
-                               (cepl-context cepl-context (cepl-context)))
-    (or null viewport)
-  (declare (optimize (speed 3) (debug 1) (safety 1))
-           (profile t))
-  (%with-cepl-context-slots (current-scissor-viewports gl-version-float)
-      cepl-context
-    (let ((current (aref current-scissor-viewports index)))
-      (unless (eq current viewport)
-        (if (>= gl-version-float 4.1)
-            (if viewport
-                (progn
-                  (unless current
-                    (%gl:enable-i :scissor-test index))
-                  (%gl:scissor-indexed index
-                                       (%viewport-origin-x viewport)
-                                       (%viewport-origin-y viewport)
-                                       (%viewport-resolution-x viewport)
-                                       (%viewport-resolution-y viewport)))
-                (when current
-                  (%gl:disable-i :scissor-test index)))
-
-            ;; If gl-version < 4.1
-            (progn
-              (assert (= index 0))
-              (if viewport
-                  (progn
-                    (unless current
-                      (%gl:enable :scissor-test))
-                    (gl:scissor (%viewport-origin-x viewport)
-                                (%viewport-origin-y viewport)
-                                (%viewport-resolution-x viewport)
-                                (%viewport-resolution-y viewport)))
-                  (when current
-                    (%gl:disable :scissor-test)))))
-        (setf (aref current-scissor-viewports index) viewport)))
-    viewport))
+          (setf depth-func nil))))
 
 ;;------------------------------------------------------------
 ;; Todo

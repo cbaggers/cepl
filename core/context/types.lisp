@@ -79,13 +79,13 @@
    (make-hash-table :test #'eq)
    :type hash-table)
   (depth-func :unknown :type (or symbol function))
-  (depth-mask :unknown :type (or symbol function))
+  (depth-mask :unknown :type boolean)
   (color-masks (make-array 0 :element-type '(simple-array boolean (4)))
-               :type (array (simple-array boolean (4)) (*)))
+               :type (simple-array (simple-array boolean (4)) (*)))
   (depth-range (v! 0 1) :type vec2)
-  (depth-clamp :unknown :type (or symbol function))
+  (depth-clamp :unknown :type boolean)
   (cull-face :unknown :type (or symbol function))
-  (front-face :unknown :type (or symbol function))
+  (front-face :unknown :type symbol)
   (clear-color (v! 0 0 0 0) :type vec4))
 
 (defmacro %with-cepl-context-slots (slots context &body body)
@@ -121,3 +121,47 @@
 
 (defn current-surface ((cepl-context cepl-context)) t
   (%cepl-context-current-surface cepl-context))
+
+(defmacro define-context-func (name args ret-type context-slots &body body)
+  "This simple encodes a pattern I was writing too many times.
+   Basically we want to have the call to #'cepl-context inline
+   at the callsite as then a surrounding with-cepl-context block
+   will be able to replace it with a local version (improving performance)
+   the way we have taken to doing this "
+  (let* ((setfp (and (listp name) (eq (first name) 'setf)))
+         (hname (if setfp
+                    (symb-package (symbol-package (second name))
+                                  :%set- (second name))
+                    (symb-package (symbol-package name) :% name)))
+         (args-opt (if (find :&optional args :test #'symb-name=)
+                       args
+                       `(,@args &optional)))
+         (arg-symbs (mapcar
+                     (lambda (x) (if (listp x) (first x) x))
+                     args-opt))
+         (arg-names (remove-if
+                     (lambda (x) (char= #\& (char (symbol-name x) 0)))
+                     arg-symbs)))
+    (multiple-value-bind (body decls doc)
+        (alexandria:parse-body body :documentation t)
+      (let* ((not-inline (find 'not-inline-internals
+                               decls :key #'second :test #'string=))
+             (decls (remove not-inline decls))
+             (def (if not-inline 'defn 'defn-inline)))
+        `(progn
+           (,def ,hname (,@args (cepl-context cepl-context)) ,ret-type
+                 ,@(when doc (list doc))
+                 (declare (optimize (speed 3) (debug 0) (safety 1))
+                          (profile t))
+                 ,@decls
+                 (%with-cepl-context-slots ,context-slots cepl-context
+                   ,@body))
+           (defn ,name (,@args-opt (cepl-context cepl-context (cepl-context)))
+               ,ret-type
+             (declare (optimize (speed 3) (debug 1) (safety 1))
+                      (profile t))
+             (,hname ,@arg-names cepl-context))
+           (define-compiler-macro ,name (,@arg-symbs cepl-context)
+             (if cepl-context
+                 (list ',hname ,@arg-names cepl-context)
+                 (list ',hname ,@arg-names '(cepl-context)))))))))
