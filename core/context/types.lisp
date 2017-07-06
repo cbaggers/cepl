@@ -155,8 +155,9 @@
                  (declare (optimize (speed 3) (debug 0) (safety 1))
                           (profile t))
                  ,@decls
-                 (%with-cepl-context-slots ,context-slots cepl-context
-                   ,@body))
+                 (with-cepl-context (cepl-context cepl-context t)
+                   (%with-cepl-context-slots ,context-slots cepl-context
+                     ,@body)))
            (defn ,name (,@args-opt (cepl-context cepl-context (cepl-context)))
                ,ret-type
              (declare (optimize (speed 3) (debug 1) (safety 1))
