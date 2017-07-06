@@ -883,7 +883,8 @@
           :cepl.types :split-sequence :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.perf.core)
-  (:import-from :cepl.context :%with-cepl-context-slots)
+  (:import-from :cepl.context :%with-cepl-context-slots
+                :define-context-func)
   (:export :blending-params
            :blending-params-p
            :copy-blending-params

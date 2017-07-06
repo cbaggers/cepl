@@ -47,6 +47,7 @@
   (draw-fbo-binding nil :type (or null fbo))
   (current-stencil-params-front nil :type (or null stencil-params))
   (current-stencil-params-back nil :type (or null stencil-params))
+  (current-blend-params nil :type (or null blending-params))
   (fbos
    (make-array 0 :element-type 'fbo :initial-element +null-fbo+
                :adjustable t :fill-pointer 0)
@@ -95,7 +96,7 @@
            default-viewport current-scissor-viewports
            default-framebuffer read-fbo-binding draw-fbo-binding fbos
            array-of-bound-gpu-buffers array-of-gpu-buffers
-           array-of-ubo-bindings-buffer-ids
+           array-of-ubo-bindings-buffer-ids current-blend-params
            array-of-transform-feedback-bindings-buffer-ids
            array-of-bound-samplers array-of-textures
            map-of-pipeline-names-to-gl-ids depth-func color-masks
