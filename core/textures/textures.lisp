@@ -93,7 +93,7 @@
   t)
 
 (defun+ multisample-texture-p (texture)
-  (not (null (texture-samples texture))))
+  (not (= 0 (texture-samples texture))))
 
 (defun+ upload-c-array-to-gpu-array-t (gpu-array c-array &optional pixel-format)
   (let* ((element-pf (lisp-type->pixel-format c-array))
@@ -543,7 +543,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                       (texture-layer-count tex-obj) layer-count
                       (texture-cubes-p tex-obj) cubes
                       (texture-image-format tex-obj) image-format
-                      (texture-samples tex-obj) samples
+                      (texture-samples tex-obj) (or samples 0)
                       (texture-fixed-sample-locations-p tex-obj) fixed-sample-locations
                       (texture-mutable-p tex-obj) (not (and immutable *immutable-available*)))
                 (setf (texture-cache-id tex-obj)
