@@ -47,8 +47,8 @@
   (draw-fbo-binding nil :type (or null fbo))
   (current-stencil-params-front nil :type (or null stencil-params))
   (current-stencil-params-back nil :type (or null stencil-params))
-  (current-stencil-mask-front nil :type stencil-mask)
-  (current-stencil-mask-back nil :type stencil-mask)
+  (current-stencil-mask-front #xFF :type stencil-mask)
+  (current-stencil-mask-back #xFF :type stencil-mask)
   (current-blend-params nil :type (or null blending-params))
   (fbos
    (make-array 0 :element-type 'fbo :initial-element +null-fbo+

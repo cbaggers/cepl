@@ -49,6 +49,7 @@
                (:file "core/context/version")
                (:file "core/blending/blending")
                (:file "core/stencil/stencil")
+               (:file "core/stencil/mask")
                (:file "core/scissor/scissor")
                (:file "core/color/color")
                (:file "core/depth/depth")
