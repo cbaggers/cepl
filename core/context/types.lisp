@@ -47,6 +47,8 @@
   (draw-fbo-binding nil :type (or null fbo))
   (current-stencil-params-front nil :type (or null stencil-params))
   (current-stencil-params-back nil :type (or null stencil-params))
+  (current-stencil-mask-front nil :type stencil-mask)
+  (current-stencil-mask-back nil :type stencil-mask)
   (current-blend-params nil :type (or null blending-params))
   (fbos
    (make-array 0 :element-type 'fbo :initial-element +null-fbo+
@@ -102,6 +104,7 @@
            map-of-pipeline-names-to-gl-ids depth-func color-masks
            depth-mask depth-range depth-clamp cull-face front-face
            current-stencil-params-front current-stencil-params-back
+           current-stencil-mask-front current-stencil-mask-back
            clear-color gl-version-float)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))

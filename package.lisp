@@ -213,6 +213,7 @@
            :unknown-gl-id-p
            :c-array-index
            :tex-unit
+           :stencil-mask
            :attachment-num
            :attachment-name
            :indexp
@@ -573,6 +574,7 @@
            :depth-mask
            :color-mask
            :color-masks
+           :stencil-mask
            :depth-test-function
            :add-surface
            :surfaces

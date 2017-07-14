@@ -37,6 +37,9 @@
 (deftype attachment-name ()
   '(or attachment-num symbol))
 
+(deftype stencil-mask ()
+  '(unsigned-byte 8))
+
 (defun+ indexp (x)
   (typep x 'c-array-index))
 
@@ -221,9 +224,9 @@
                            (:conc-name %stencil-params-))
   (test #.(gl-enum :never) :type (signed-byte 32) :read-only t)
 
-  (value 0 :type (unsigned-byte 8) :read-only t)
+  (value 0 :type stencil-mask :read-only t)
 
-  (mask 0 :type (unsigned-byte 8) :read-only t)
+  (mask 0 :type stencil-mask :read-only t)
 
   (on-stencil-test-fail
    #.(gl-enum :keep) :type (signed-byte 32) :read-only t)
