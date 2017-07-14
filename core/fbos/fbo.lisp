@@ -495,14 +495,21 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;;----------------------------------------------------------------------
 
-(defun+ %delete-fbo (fbo)
-  (gl:delete-framebuffers (listify (%fbo-id fbo))))
+(defmethod free ((fbo fbo))
+  (free-fbo fbo))
 
-
-(defmethod free ((thing fbo))
-  (if (%fbo-is-default thing)
+(defun free-fbo (fbo)
+  (if (%fbo-is-default fbo)
       (error "Cannot free the default framebuffer")
-      (print "FREE FBO NOT IMPLEMENTED - LEAKING")))
+      (free-user-fbo fbo)))
+
+(defun free-user-fbo (fbo)
+  (with-foreign-object (id :uint)
+    (setf (mem-ref id :uint) (%fbo-id fbo))
+    (cepl.context::forget-fbo (cepl-context) fbo)
+    (setf (%fbo-id fbo) +null-gl-id+)
+    (%gl:delete-framebuffers 1 id)
+    nil))
 
 ;;----------------------------------------------------------------------
 

@@ -247,6 +247,31 @@
       (ensure-vec-index fbos id +null-fbo+)
       (setf (aref fbos id) fbo))))
 
+(defn forget-gpu-buffer ((cepl-context cepl-context)
+                           (gpu-buffer gpu-buffer))
+    gpu-buffer
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
+  (%with-cepl-context-slots (array-of-gpu-buffers)
+      cepl-context
+    (setf (aref array-of-gpu-buffers (gpu-buffer-id gpu-buffer))
+          +null-gpu-buffer+)))
+
+(defn forget-texture ((cepl-context cepl-context) (texture texture))
+    texture
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
+  (%with-cepl-context-slots (array-of-textures)
+      cepl-context
+    (setf (aref array-of-textures (texture-id texture))
+          +null-texture+)))
+
+(defn forget-fbo ((cepl-context cepl-context) (fbo fbo)) fbo
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
+  (%with-cepl-context-slots (fbos) cepl-context
+    (setf (aref fbos (%fbo-id fbo)) +null-fbo+)))
+
 ;;----------------------------------------------------------------------
 ;; GPU-Buffers
 

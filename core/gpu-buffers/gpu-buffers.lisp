@@ -22,18 +22,28 @@
                     :adjustable t :fill-pointer 0))
   buffer)
 
+(defun+ free-gpu-buffer (buffer)
+  (with-cepl-context (ctx)
+    (with-foreign-object (id :uint)
+      (setf (mem-ref id :uint) (gpu-buffer-id buffer))
+      (cepl.context::forget-gpu-buffer ctx buffer)
+      (blank-buffer-object buffer)
+      (%gl:delete-buffers 1 id))))
+
 (defun+ free-buffer (buffer)
-  (with-foreign-object (id :uint)
-    (setf (mem-ref id :uint) (gpu-buffer-id buffer))
-    (blank-buffer-object buffer)
-    (%gl:delete-buffers 1 id)))
+  (free-gpu-buffer buffer))
+
+(defun+ free-gpu-buffers (buffers)
+  (with-cepl-context (ctx)
+    (with-foreign-object (id :uint (length buffers))
+      (loop :for buffer :in buffers :for i :from 0 :do
+         (setf (mem-aref id :uint i) (gpu-buffer-id buffer))
+         (cepl.context::forget-gpu-buffer ctx buffer)
+         (blank-buffer-object buffer))
+      (%gl:delete-buffers 1 id))))
 
 (defun+ free-buffers (buffers)
-  (with-foreign-object (id :uint (length buffers))
-    (loop :for buffer :in buffers :for i :from 0 :do
-       (setf (mem-aref id :uint i) (gpu-buffer-id buffer))
-       (blank-buffer-object buffer))
-    (%gl:delete-buffers 1 id)))
+  (free-gpu-buffers buffers))
 
 (defun+ gen-buffer ()
   (first (gl:gen-buffers 1)))
