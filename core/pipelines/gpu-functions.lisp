@@ -355,7 +355,7 @@
              (cons name (mapcar #'second in-args)))
           (gpu-func-specs name)))
 
-(defun+ get-stage-key (stage-designator &optional (error-on-symbol t))
+(defun+ get-stage-key (stage-designator &optional options-on-error)
   (cond
     ((and (listp stage-designator) (eq (first stage-designator) 'function))
      (get-stage-key (second stage-designator)))
@@ -364,27 +364,20 @@
     ((symbolp stage-designator)
      (let* ((name stage-designator)
             (funcs (gpu-func-specs name)))
-       (case= (length funcs)
-         (0 (error 'stage-not-found :designator name))
-         (1 (func-key (first funcs)))
-         (otherwise
-          (error 'multiple-gpu-func-matches
-                 :designator stage-designator
-                 :possible-choices (mapcar λ(with-gpu-func-spec _
-                                              (cons stage-designator
-                                                    (mapcar #'second in-args)))
-                                           funcs))))))
+       (if (= (length funcs) 0)
+         (error 'stage-not-found :designator name)
+         (error 'gpu-func-symbol-name
+                :name stage-designator
+                :alternatives (mapcar λ(with-gpu-func-spec _
+                                         (cons stage-designator
+                                               (mapcar #'second in-args)))
+                                      funcs)
+                :env options-on-error))))
     ((listp stage-designator)
      (let ((key (new-func-key (first stage-designator) (rest stage-designator))))
        (if (gpu-func-spec key)
            key
            (error 'stage-not-found :designator stage-designator))))
-    ((symbolp stage-designator)
-     (when error-on-symbol
-       (error 'symbol-stage-designator
-              :designator stage-designator
-              :possible-choices (get-possible-designators-for-name
-                                 stage-designator))))
     (t (error "CEPL: Bug in get-stage-key - ~s" stage-designator))))
 
 (defun+ parse-gpipe-args (args)
@@ -437,7 +430,7 @@
              (when name
                (let ((sn (if (typep name 'func-key)
                              name
-                             (get-stage-key name nil))))
+                             (get-stage-key name))))
                  (if sn
                      sn
                      (progn

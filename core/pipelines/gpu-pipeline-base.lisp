@@ -337,13 +337,15 @@ names are depended on by the functions named later in the list"
 
 (defmethod %gpu-function ((name symbol))
   (let ((choices (gpu-functions name)))
-    (case= (length choices)
-      (0 (error 'gpu-func-spec-not-found :name name :types nil))
-      (1 (%gpu-function (first choices)))
-      (otherwise (restart-case
-                     (error 'multi-func-error :name name :choices choices)
-                   (use-value ()
-                     (%gpu-function (interactive-pick-gpu-function name))))))))
+    (if (> (length choices) 0)
+        (restart-case
+            (error 'gpu-func-symbol-name
+                   :name name
+                   :alternatives choices
+                   :env t)
+          (use-value ()
+            (%gpu-function (interactive-pick-gpu-function name))))
+        (error 'gpu-func-spec-not-found :name name :types nil))))
 
 (defmethod %gpu-function ((name null))
   (error 'gpu-func-spec-not-found :name name :types nil))

@@ -124,7 +124,8 @@
            :adjust-gpu-array-mismatched-dimensions
            :adjust-gpu-array-shared-buffer
            :buffer-stream-has-invalid-primtive-for-stream
-           :invalid-options-for-texture))
+           :invalid-options-for-texture
+           :gpu-func-symbol-name))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
