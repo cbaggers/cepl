@@ -10,12 +10,14 @@
   (when shared
     (error "cepl-context sharing not yet implmenent"))
   ;;
-  (let* ((gl-version (if (and (eq gl-version t) *contexts*)
-                         (let ((ctx (first *contexts*)))
-                           (if (> (%cepl-context-gl-version-float ctx) 0.0)
-                               (%cepl-context-gl-version-float ctx)
-                               (%cepl-context-requested-gl-version ctx)))
-                         gl-version))
+  (let* ((gl-version (cond
+                       ((and (eq gl-version t) *contexts*)
+                        (let ((ctx (first *contexts*)))
+                          (if (> (%cepl-context-gl-version-float ctx) 0.0)
+                              (%cepl-context-gl-version-float ctx)
+                              (%cepl-context-requested-gl-version ctx))))
+                       ((eq gl-version t) nil)
+                       (t gl-version)))
          (shared-arr (if shared
                          (%cepl-context-shared shared)
                          (make-array 0 :fill-pointer 0 :adjustable t)))
