@@ -502,3 +502,14 @@
       (loop :for shader :in shaders :do
          (gl:detach-shader program shader)))
     program))
+
+(defmethod free ((pipeline-name symbol))
+  (free-pipeline pipeline-name))
+
+(defmethod free ((pipeline-func function))
+  (free-pipeline pipeline-func))
+
+(defun+ free-pipeline (pipeline)
+  (with-slots (prog-id) (pipeline-spec pipeline)
+    (gl:delete-program prog-id)
+    (setf prog-id nil)))

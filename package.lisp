@@ -956,7 +956,8 @@
            :gpu-function
            :gpu-functions
            :delete-gpu-function
-           :bake-uniforms))
+           :bake-uniforms
+           :free-pipeline))
 
 (uiop:define-package :cepl
     (:use :cl
