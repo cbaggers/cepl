@@ -624,12 +624,6 @@ source: ~s~%list-to-match: ~s" list list-to-match)
              (let* ,(mapcar #'extract-let slots)
                (,cname ,@(mapcat #'extract-init slots))))))))
 
-(defmacro defvar* (name &body slots)
-  (defx* 'defvar name slots))
-
-(defmacro defparameter* (name &body slots)
-  (defx* 'defparameter name slots))
-
 (defun+ read-integers (&optional (stream *standard-input*) (eof-error-p t)
                         eof-value recursive-p)
   (let* ((str (read-line stream eof-error-p eof-value recursive-p))

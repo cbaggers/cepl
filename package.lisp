@@ -54,8 +54,6 @@
            :n-of
            :n-of*
            :just-ignore
-           :defvar*
-           :defparameter*
            :read-integers
            :ensure-vec-index
            :def-artificial-id
@@ -561,6 +559,7 @@
            :*cepl-context*
            :cepl-context
            :with-cepl-context
+           :with-new-cepl-context
            :gpu-buffer-bound
            :vao-bound
            :read-fbo-bound
@@ -1000,9 +999,7 @@
   (:import-from :cepl-utils
                 :deferror
                 :print-mem
-                :p->
-                :defvar*
-                :defparameter*)
+                :p->)
   (:export :make-project
            :initialize-cepl
            :quit
@@ -1012,8 +1009,6 @@
            :cls
            :swap
            :print-mem
-           :defvar*
-           :defparameter*
            :shutting-down-p
            :q! :m! :v! :v!byte :v!ubyte :v!int :s~
            :radians :degrees)

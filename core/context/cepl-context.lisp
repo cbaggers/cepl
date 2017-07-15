@@ -4,28 +4,48 @@
 
 (defvar *contexts* nil)
 
-(defun+ make-context (&key gl-version (shared (first *contexts*))
-                           (title "CEPL") (width 600) (height 600)
-                           (fullscreen nil) (resizable t) (no-frame nil)
-                           (hidden nil))
-  (declare (ignore title width height fullscreen resizable no-frame hidden))
+(defun+ make-context (&key (gl-version t) (shared (first *contexts*)))
   ;;
   (assert (or (null shared) (typep shared 'cepl-context)))
+  (when shared
+    (error "cepl-context sharing not yet implmenent"))
   ;;
-  (let* ((shared (if shared
-                     (%cepl-context-shared shared)
-                     (make-instance 'cepl-context-shared)))
+  (let* ((gl-version (if (and (eq gl-version t) *contexts*)
+                         (let ((ctx (first *contexts*)))
+                           (if (> (%cepl-context-gl-version-float ctx) 0.0)
+                               (%cepl-context-gl-version-float ctx)
+                               (%cepl-context-requested-gl-version ctx)))
+                         gl-version))
+         (shared-arr (if shared
+                         (%cepl-context-shared shared)
+                         (make-array 0 :fill-pointer 0 :adjustable t)))
          (result (%make-cepl-context
                   :requested-gl-version gl-version
-                  :shared shared
                   :current-surface nil
+                  :shared shared-arr
                   :surfaces nil)))
-    (push result (slot-value shared 'members))
+    (vector-push-extend result (%cepl-context-shared result))
+    (when shared
+      (setf (%cepl-context-array-of-gpu-buffers result)
+            (%cepl-context-array-of-gpu-buffers shared))
+      (setf (%cepl-context-array-of-textures result)
+            (%cepl-context-array-of-textures shared)))
     (when cepl.host::*current-host*
       (on-host-initialized result))
     (push result *contexts*)
     ;; done!
     result))
+
+(defmacro with-new-cepl-context ((var-name &key shared (gl-version t))
+                                 &body body)
+  (alexandria:with-gensyms (new-context)
+    `(let (,new-context (make-context :gl-version ,gl-version
+                                      :shared ,shared))
+       (unwind-protect (with-cepl-context (,var-name ,new-context) ,@body)
+         (free-context ,new-context)))))
+
+(defun+ free-context (cepl-context)
+  (format t "free-context not yet implemented. Leaking ~a" cepl-context))
 
 ;;----------------------------------------------------------------------
 ;; Implicit Context & Inlining Logic

@@ -12,16 +12,6 @@
    (hidden :initarg :hidden)
    (legacy-gl-version :initarg :legacy-gl-version)))
 
-(defclass cepl-context-shared ()
-  ((members :initform nil))
-  ;; Things that arent shared between contexts
-  ;;
-  ;; FBOs
-  ;; VAOs
-  ;; Transform Feedback Objects
-  ;; Program Pipeline Objects (from seperable stages gl>=4.5)
-  )
-
 (defstruct (cepl-context (:constructor %make-cepl-context)
                          (:conc-name %cepl-context-))
   (gl-context nil :type (or null gl-context))
@@ -29,9 +19,8 @@
   (gl-version-float 0f0 :type single-float)
   (gl-thread nil :type (or null bt:thread))
   (uninitialized-resources nil :type list)
-  (shared
-   (error "Context must be initialized via #'make-context")
-   :type cepl-context-shared)
+  (shared (error "Context must be in-package via #'make-context")
+          :type (array cepl-context (*)))e
   (surfaces
    (error "Context must be initialized via #'make-context")
    :type list)
@@ -90,6 +79,9 @@
   (cull-face :unknown :type (or symbol function))
   (front-face :unknown :type symbol)
   (clear-color (v! 0 0 0 0) :type vec4))
+
+(defmethod print-object ((context cepl-context) stream)
+  (format stream "#<CEPL-CONTEXT>"))
 
 (defmacro %with-cepl-context-slots (slots context &body body)
   (let ((context-slots
