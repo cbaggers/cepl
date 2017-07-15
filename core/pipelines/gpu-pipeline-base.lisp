@@ -24,7 +24,8 @@
    (geometry-stage
     :initarg :geometry-stage :initform nil)
    (fragment-stage
-    :initarg :fragment-stage :initform nil)))
+    :initarg :fragment-stage :initform nil)
+   prog-id))
 
 (defclass gpu-func-spec ()
   ((name :initarg :name)
@@ -402,7 +403,10 @@ names are depended on by the functions named later in the list"
                    :context context)))
 
 (defun+ pipeline-spec (name)
-  (gethash name *gpu-pipeline-specs*))
+  (let ((res (gethash name *gpu-pipeline-specs*)))
+    (if (symbolp res)
+        (pipeline-spec res)
+        res)))
 
 (defun+ (setf pipeline-spec) (value name)
   (setf (gethash name *gpu-pipeline-specs*) value))
