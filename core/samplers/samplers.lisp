@@ -247,6 +247,9 @@
     (warn "CEPL: free-sampler not yet implemented~%leaking ~s"
           sampler)))
 
+(defmethod free ((sampler sampler))
+  (free-sampler sampler))
+
 (defmacro with-temp-sampler ((var tex) &body body)
   (assert (and (symbolp var) (not (keywordp var))))
   `(let ((,var (sample ,tex)))
