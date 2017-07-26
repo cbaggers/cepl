@@ -544,9 +544,3 @@ names are depended on by the functions named later in the list"
   (defun %gen-pass-key () (incf current-key)))
 
 ;;--------------------------------------------------
-
-(defmethod free ((function function))
-  (warn "CEPL: Free has not yet been implemented for pipelines.
-Please bug me to work on this issue: https://github.com/cbaggers/cepl/issues/130"))
-
-;;--------------------------------------------------
