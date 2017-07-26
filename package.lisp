@@ -176,6 +176,7 @@
 (uiop:define-package :cepl.lifecycle
     (:use :cl :cepl-utils :glsl-symbols :cepl.build)
   (:export :shutting-down-p
+           :uninitialized-p
            :listen-to-lifecycle-changes
            :stop-listening-to-lifecycle-changes))
 

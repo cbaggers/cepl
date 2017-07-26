@@ -12,19 +12,20 @@
   (cls))
 
 (defun+ initialize-cepl (&key gl-version host-init-flags)
-  ;;
-  ;; Initialize Host
-  (unless cepl.host::*current-host*
-    (apply #'cepl.host::initialize host-init-flags))
-  ;;
-  ;; Initalized the already created CEPL contexts
-  (loop :for context :in cepl.context::*contexts* :do
-     (cepl.context::patch-uninitialized-context-with-version context gl-version)
-     (cepl.context::on-host-initialized context))
-  ;;
-  ;; Inform the world that CEPL is live
-  (cepl.lifecycle::change-state :interactive)
-  t)
+  (when (uninitialized-p)
+    ;;
+    ;; Initialize Host
+    (unless cepl.host::*current-host*
+      (apply #'cepl.host::initialize host-init-flags))
+    ;;
+    ;; Initalized the already created CEPL contexts
+    (loop :for context :in cepl.context::*contexts* :do
+       (cepl.context::patch-uninitialized-context-with-version context gl-version)
+       (cepl.context::on-host-initialized context))
+    ;;
+    ;; Inform the world that CEPL is live
+    (cepl.lifecycle::change-state :interactive)
+    t))
 
 (defun+ quit () (cepl.lifecycle::change-state :shutting-down))
 
