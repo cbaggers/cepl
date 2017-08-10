@@ -404,7 +404,7 @@ names are depended on by the functions named later in the list"
 
 (defun+ pipeline-spec (name)
   (let ((res (gethash name *gpu-pipeline-specs*)))
-    (if (symbolp res)
+    (if (and res (symbolp res))
         (pipeline-spec res)
         res)))
 
