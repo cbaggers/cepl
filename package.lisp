@@ -404,6 +404,7 @@
            :c-array-element-type
            :c-array-element-type
            :c-array-element-byte-size
+           :c-array-free
            :c-array-row-byte-size
            :c-array-struct-element-typep
            :c-array-element-pixel-format

@@ -68,7 +68,9 @@
    :type function)
   (element-to-foreign
    (error "cepl: c-array must be created with a to-foreign function")
-   :type (function (foreign-pointer t) t)))
+   :type (function (foreign-pointer t) t))
+  (free #'cffi:foreign-free
+   :type function))
 
 ;;------------------------------------------------------------
 

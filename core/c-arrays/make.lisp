@@ -5,7 +5,11 @@
 (defun+ valid-c-array-dimension-p (x)
   (>= x 0))
 
-(defun+ make-c-array-from-pointer (dimensions element-type pointer)
+(defun+ make-c-array-from-pointer (dimensions
+                                   element-type
+                                   pointer
+                                   &key
+                                   (free #'cffi:foreign-free))
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
   (let ((dimensions (listify dimensions)))
@@ -28,7 +32,8 @@
          :row-byte-size row-byte-size
          :element-pixel-format (when p-format element-type)
          :element-from-foreign (get-typed-from-foreign element-type2)
-         :element-to-foreign (get-typed-to-foreign element-type2))))))
+         :element-to-foreign (get-typed-to-foreign element-type2)
+         :free free)))))
 
 ;;------------------------------------------------------------
 
