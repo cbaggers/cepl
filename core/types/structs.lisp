@@ -311,9 +311,10 @@
                        `(cepl.internals:gl-type-size ',type-name)
                        0))
            (stride-sym (gensym "stride"))
+           (def-sets (mapcat #'expand-slot-to-layout slots))
            (definitions
             (loop :for (len cffi-type normalized gl-type)
-               :in (mapcat #'expand-slot-to-layout slots)
+               :in def-sets
                :for i :from 0 :with offset = 0 :append
                `((%gl:enable-vertex-attrib-array (+ attrib-offset ,i))
                  (when instance-divisor
@@ -336,7 +337,7 @@
              (declare (ignore array-type normalized))
              (let ((,stride-sym (or stride-override ,stride)))
                ,@definitions
-               ,(length definitions))))))))
+               ,(length def-sets))))))))
 
 (defun+ expand-slot-to-layout (slot &optional type normalize)
   ;; if it one of the types in *cpu->gpu-vec-mappings* then it is one
