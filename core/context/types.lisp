@@ -68,7 +68,7 @@
                :adjustable t :fill-pointer 0)
    :type (array texture (*)))
   (map-of-pipeline-names-to-gl-ids
-   (make-hash-table :test #'eq)
+   (make-hash-table :test #'equal)
    :type hash-table)
   (depth-func :unknown :type (or symbol function))
   (depth-mask nil :type boolean)
@@ -78,7 +78,8 @@
   (depth-clamp nil :type boolean)
   (cull-face :unknown :type (or symbol function))
   (front-face :unknown :type symbol)
-  (clear-color (v! 0 0 0 0) :type vec4))
+  (clear-color (v! 0 0 0 0) :type vec4)
+  (debug-scratch-vert-buffer nil :type (or null gpu-array-bb)))
 
 (defmethod print-object ((context cepl-context) stream)
   (format stream "#<CEPL-CONTEXT>"))

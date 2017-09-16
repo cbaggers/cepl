@@ -70,13 +70,14 @@
 
 (defun+ %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
                                post context &optional suppress-compile)
-  (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
+  (let* ((debug (find :debug context))
+         (uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (primitive (varjo.internals:primitive-name-to-instance
                      (varjo.internals:get-primitive-type-from-context context)))
          (init-func (gen-pipeline-init name primitive stage-pairs post
-                                       uniform-assigners stage-keys)))
+                                       uniform-assigners stage-keys debug)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (%update-spec name stage-pairs context)
@@ -87,6 +88,9 @@
       `(progn
          ,cpr-macro
          (let ((prog-id nil)
+               ;;
+               ,(when debug `(debug-pass-prog-ids (make-array 0 :element-type 'gl-id)))
+               ;;
                ;; If there are no implicit-uniforms we need a no-op
                ;; function to call
                (implicit-uniform-upload-func #'fallback-iuniform-func)
@@ -96,7 +100,8 @@
                          (mapcat #'let-forms uniform-assigners)))
            ;;
            ;; To help the compiler we make sure it knows it's a function :)
-           (declare (type function implicit-uniform-upload-func))
+           (declare (type function implicit-uniform-upload-func)
+                    ,(when debug `(type debug-pass-prog-ids (array gl-id (*)))))
            ;;
            ;; we upload the spec at compile time (using eval-when)
            ,(gen-update-spec name stage-pairs context)
@@ -165,11 +170,15 @@
                (cons x (clone-stage-spec s :new-context new-context))))
           stage-pairs))
 
+(defun+ preprocess-stages-for-version (stage-pairs)
+  (let ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs)))
+    (swap-versions stage-pairs glsl-version)))
+
 (defun+ %compile-link-and-upload (name draw-mode stage-pairs)
-  (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
-         (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
-         (stage-pairs (swap-versions stage-pairs glsl-version))
-         (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
+  (let* ((compiled-stages (%varjo-compile-as-pipeline
+                           (mapcar λ(parsed-gpipe-args->v-translate-args
+                                     draw-mode _)
+                                   stage-pairs)))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
     (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA"))
     (let ((prog-id (request-program-id-for name)))
@@ -178,6 +187,49 @@
         (add-compile-results-to-pipeline name compiled-stages))
       (mapcar #'%gl:delete-shader stages-objects)
       (values compiled-stages prog-id))))
+
+(v-def-glsl-template-fun peek-val (val) "~a" (t) 0 :v-place-index t )
+
+(defun+ %compile-link-and-upload-debug-stages (name compiled-stages)
+  (let* ((name `(:debug ,name 0))
+         ;; this is too indirect, making gpu-func-specs just to make
+         ;; varjo inputs again is dump
+         (v-stages (mapcar #'make-vstage-from-compiled-for-debug
+                           compiled-stages))
+         (compiled-stages (%varjo-compile-as-pipeline v-stages))
+         (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages))
+         (prog-id (request-program-id-for name)))
+    (link-shaders stages-objects prog-id compiled-stages)
+    (when (and name +cache-last-compile-result+)
+      (add-compile-results-to-pipeline name compiled-stages))
+    (mapcar #'%gl:delete-shader stages-objects)
+    (values compiled-stages prog-id)))
+
+(defun+ make-vstage-from-compiled-for-debug (compiled-stage)
+  (let ((i 0)
+        (vars nil))
+    (labels ((swap-dbg-for-setf (form)
+               (cond
+                 ((atom form) form)
+                 ((eq (first form) 'peek-val)
+                  (let ((vname (intern (format nil "DBG~a" (incf i)))))
+                    (push vname vars)
+                    `(setf ,vname ,@(mapcar #'swap-dbg-for-setf (rest form)))))
+                 (t (mapcar #'swap-dbg-for-setf form))))
+             (process-code-for-debug (code)
+               (let ((code (swap-dbg-for-setf code)))
+                 `(let ,vars
+                    ,@code))))
+      (make-stage (varjo.internals::starting-stage compiled-stage)
+                  (mapcar #'varjo.internals:to-arg-form
+                          (input-variables compiled-stage))
+                  (mapcar #'varjo.internals:to-arg-form
+                          (uniform-variables compiled-stage))
+                  (context compiled-stage)
+                  (process-code-for-debug (ast->code compiled-stage))
+                  (stemcells-allowed compiled-stage)
+                  (primitive-in compiled-stage)))))
+
 
 (defun+ compute-glsl-version-from-stage-pairs (stage-pairs)
   ;; - If not specified & the context is not yet available then use
@@ -258,17 +310,23 @@
   (values))
 
 (defun+ gen-pipeline-init (name primitive stage-pairs post uniform-assigners
-                          stage-keys)
+                          stage-keys debug)
   (let ((uniform-names
          (mapcar #'first (aggregate-uniforms stage-keys))))
     `(,(gensym "init")
        ()
        (let (;; all image units will be >0 as 0 is used as scratch tex-unit
-             (image-unit 0))
+             (image-unit 0)
+             (stg-pairs (preprocess-stages-for-version
+                         (pairs-key-to-stage
+                          ,(serialize-stage-pairs stage-pairs)))))
          (declare (ignorable image-unit))
          (multiple-value-bind (compiled-stages new-prog-id)
-             (%compile-link-and-upload
-              ',name ',primitive ,(serialize-stage-pairs stage-pairs))
+             (%compile-link-and-upload ',name ',primitive stg-pairs)
+           (when ,debug
+             (setf debug-pass-prog-ids
+                   (%compile-link-and-upload-debug-stages
+                    ',name ',primitive compiled-stages)))
            (declare (ignorable compiled-stages))
            (setf prog-id new-prog-id)
            (setf (slot-value (pipeline-spec ',name) 'prog-id) prog-id)
