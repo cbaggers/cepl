@@ -283,7 +283,7 @@
     (remhash key track)
     (if func-time
         (incf (gethash name total-time 0) func-time)
-        (format t "missing 'in time' for ~a" name))))
+        (format t "~%missing 'in time' for ~a" name))))
 
 (defun overview (analyze-results)
   (destructuring-bind (freq total-time per-call per-frame-freq) analyze-results
