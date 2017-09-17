@@ -89,7 +89,7 @@
          ,cpr-macro
          (let ((prog-id nil)
                ;;
-               ,(when debug `(debug-pass-prog-ids (make-array 0 :element-type 'gl-id)))
+               ,@(when debug `((debug-pass-prog-ids (make-array 0 :element-type 'gl-id))))
                ;;
                ;; If there are no implicit-uniforms we need a no-op
                ;; function to call
@@ -101,7 +101,7 @@
            ;;
            ;; To help the compiler we make sure it knows it's a function :)
            (declare (type function implicit-uniform-upload-func)
-                    ,(when debug `(type debug-pass-prog-ids (array gl-id (*)))))
+                    ,@(when debug `((type (array gl-id (*)) debug-pass-prog-ids))))
            ;;
            ;; we upload the spec at compile time (using eval-when)
            ,(gen-update-spec name stage-pairs context)
@@ -188,7 +188,7 @@
       (mapcar #'%gl:delete-shader stages-objects)
       (values compiled-stages prog-id))))
 
-(v-def-glsl-template-fun peek-val (val) "~a" (t) 0 :v-place-index t )
+(v-def-glsl-template-fun peek-val (val) "~a" (t) 0 :v-place-index 0)
 
 (defun+ %compile-link-and-upload-debug-stages (name compiled-stages)
   (let* ((name `(:debug ,name 0))
@@ -200,33 +200,43 @@
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages))
          (prog-id (request-program-id-for name)))
     (link-shaders stages-objects prog-id compiled-stages)
-    (when (and name +cache-last-compile-result+)
-      (add-compile-results-to-pipeline name compiled-stages))
     (mapcar #'%gl:delete-shader stages-objects)
-    (values compiled-stages prog-id)))
+    (list prog-id)))
 
 (defun+ make-vstage-from-compiled-for-debug (compiled-stage)
   (let ((i 0)
         (vars nil))
-    (labels ((swap-dbg-for-setf (form)
-               (cond
-                 ((atom form) form)
-                 ((eq (first form) 'peek-val)
-                  (let ((vname (intern (format nil "DBG~a" (incf i)))))
-                    (push vname vars)
-                    `(setf ,vname ,@(mapcar #'swap-dbg-for-setf (rest form)))))
-                 (t (mapcar #'swap-dbg-for-setf form))))
-             (process-code-for-debug (code)
-               (let ((code (swap-dbg-for-setf code)))
-                 `(let ,vars
-                    ,@code))))
-      (make-stage (varjo.internals::starting-stage compiled-stage)
+    (labels ((peek-p (node)
+               (eq (varjo.internals:ast-kind node) 'peek-val))
+             (tweak-node (node walk)
+               (let ((code (varjo.internals::serialize-node node walk)))
+                 (if (peek-p node)
+                     (let* ((args (varjo.internals:ast-args node))
+                            (type (varjo.internals::primary-type
+                                   (varjo.internals:ast-return-type
+                                    (first args))))
+                            (var-name (symb :dbg (incf i)))
+                            (init `((,var-name ,(type->type-spec type)))))
+                       (push init vars)
+                       `(setf ,var-name ,@(rest code)))
+                     code)))
+             (ast->tweaked-code (ast)
+               (varjo.internals::walk-ast #'tweak-node ast))
+             (process-code-for-debug (stage)
+               (let ((code (ast->tweaked-code (varjo.internals:ast stage))))
+                 `((let ,vars
+                      ,@code
+                      (values (v! 0 0 0 0)
+                              ,@(mapcar #'caar vars)))))))
+      (make-stage (varjo.internals::stage-obj-to-name
+                   (varjo.internals::starting-stage
+                    compiled-stage))
                   (mapcar #'varjo.internals:to-arg-form
                           (input-variables compiled-stage))
                   (mapcar #'varjo.internals:to-arg-form
                           (uniform-variables compiled-stage))
                   (context compiled-stage)
-                  (process-code-for-debug (ast->code compiled-stage))
+                  (process-code-for-debug compiled-stage)
                   (stemcells-allowed compiled-stage)
                   (primitive-in compiled-stage)))))
 
@@ -323,11 +333,13 @@
          (declare (ignorable image-unit))
          (multiple-value-bind (compiled-stages new-prog-id)
              (%compile-link-and-upload ',name ',primitive stg-pairs)
-           (when ,debug
-             (setf debug-pass-prog-ids
-                   (%compile-link-and-upload-debug-stages
-                    ',name ',primitive compiled-stages)))
            (declare (ignorable compiled-stages))
+           ,@(when debug
+               `((let ((ids (%compile-link-and-upload-debug-stages
+                             ',name compiled-stages)))
+                     (setf debug-pass-prog-ids
+                           (make-array (length ids) :element-type 'gl-id
+                                       :initial-contents ids)))))
            (setf prog-id new-prog-id)
            (setf (slot-value (pipeline-spec ',name) 'prog-id) prog-id)
            (use-program prog-id)
@@ -544,22 +556,21 @@
 (defun+ load-shaders (&rest shader-paths)
   (mapcar #'load-shader shader-paths))
 
-(defun+ link-shaders (shaders program_id compiled-stages)
+(defun+ link-shaders (shaders program compiled-stages)
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
-  (let ((program (or program_id (%gl:create-program))))
-    (release-unwind-protect
-         (progn (loop :for shader :in shaders :do
-                   (%gl:attach-shader program shader))
-                (%gl:link-program program)
-                ;;check for linking errors
-                (if (not (gl:get-program program :link-status))
-                    (error (format nil "Error Linking Program~%~a~%~%Compiled-stages:~{~%~% ~a~}"
-                                   (gl:get-program-info-log program)
-                                   (mapcar #'glsl-code compiled-stages)))))
-      (loop :for shader :in shaders :do
-         (gl:detach-shader program shader)))
-    program))
+  (release-unwind-protect
+      (progn (loop :for shader :in shaders :do
+                (%gl:attach-shader program shader))
+             (%gl:link-program program)
+             ;;check for linking errors
+             (if (not (gl:get-program program :link-status))
+                 (error (format nil "Error Linking Program~%~a~%~%Compiled-stages:~{~%~% ~a~}"
+                                (gl:get-program-info-log program)
+                                (mapcar #'glsl-code compiled-stages)))))
+    (loop :for shader :in shaders :do
+       (gl:detach-shader program shader)))
+  program)
 
 (defmethod free ((pipeline-name symbol))
   (free-pipeline pipeline-name))

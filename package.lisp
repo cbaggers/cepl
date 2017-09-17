@@ -959,7 +959,8 @@
            :gpu-functions
            :delete-gpu-function
            :bake-uniforms
-           :free-pipeline))
+           :free-pipeline
+           :peek-val))
 
 (uiop:define-package :cepl
     (:use :cl
@@ -1014,7 +1015,8 @@
            :print-mem
            :shutting-down-p
            :q! :m! :v! :v!byte :v!ubyte :v!int :s~
-           :radians :degrees)
+           :radians :degrees
+           :peek-val)
   (:reexport :cepl.viewports
              :cepl.types
              :cepl.memory
