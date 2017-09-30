@@ -320,6 +320,7 @@
            :%sampler-expects-mipmap
            :%sampler-minify-filter
            :%sampler-magnify-filter
+           :%sampler-border-color
            :%sampler-wrap
            :%sampler-expects-depth
            :%sampler-compare

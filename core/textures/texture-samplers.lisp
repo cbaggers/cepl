@@ -26,6 +26,12 @@
     (%gl:tex-parameter-f (texture-type texture) :texture-max-lod value))
   texture)
 
+(defun+ (setf border-color) (value texture)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+    (%with-scratch-texture-bound texture
+      (%gl:tex-parameter-fv (texture-type texture) :texture-border-color ptr)))
+  texture)
 
 (defun+ (setf tex-magnify-filter) (value texture)
   (assert (member value '(:linear :nearest)))
@@ -97,5 +103,6 @@
             (tex-minify-filter texture) (%sampler-minify-filter sampler)
             (tex-magnify-filter texture) (%sampler-magnify-filter sampler)
             (tex-wrap texture) (%sampler-wrap sampler)
+            (border-color texture) (%sampler-border-color sampler)
             (tex-compare texture) (%sampler-compare sampler)))
     sampler))

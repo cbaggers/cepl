@@ -333,6 +333,25 @@
 
 ;;----------------------------------------------------------------------
 
+(defn border-color ((sampler sampler))
+    vec4
+  (%sampler-border-color sampler))
+
+(defn (setf border-color) ((value vec4) (sampler sampler)) vec4
+  (unless (eq (border-color sampler) value)
+    (let ((sampler (note-change sampler)))
+      (%set-border-color sampler value)))
+  value)
+
+;;----------------------------------------------------------------------
+
+(defn %set-border-color ((sampler sampler) (value vec4)) sampler
+  (setf (%sampler-border-color sampler) value)
+  (cffi-sys:with-pointer-to-vector-data (ptr value)
+    #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+    (%gl:sampler-parameter-fv (%sampler-id sampler) :texture-border-color ptr))
+  sampler)
+
 (defun+ %set-lod-bias (sampler value)
   (setf (%sampler-lod-bias sampler) value)
   (%gl:sampler-parameter-f (%sampler-id sampler) :texture-lod-bias value)

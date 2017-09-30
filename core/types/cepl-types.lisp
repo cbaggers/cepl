@@ -160,6 +160,7 @@
   (lod-bias 0.0 :type single-float)
   (min-lod -1000.0 :type single-float)
   (max-lod 1000.0 :type single-float)
+  (border-color (v! 0 0 0 0) :type vec4)
   (expects-mipmap nil :type boolean)
   (minify-filter :linear :type keyword)
   (magnify-filter :linear :type keyword)
