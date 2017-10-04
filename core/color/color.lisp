@@ -3,11 +3,12 @@
 ;;------------------------------------------------------------
 ;; Clear Color
 
-(defun+ clear-color (cepl-context)
+(defun+ clear-color (&optional (cepl-context (cepl-context)))
   (%with-cepl-context-slots (clear-color) cepl-context
     clear-color))
 
-(defn (setf clear-color) ((vec4-color vec4) (cepl-context cepl-context))
+(defn (setf clear-color)
+    ((vec4-color vec4) &optional (cepl-context cepl-context (cepl-context)))
     vec4
   (assert (typep vec4-color 'rtg-math.types:vec4))
   (%with-cepl-context-slots (clear-color) cepl-context
