@@ -549,76 +549,65 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (assert (member target *valid-fbo-targets*) (target)
           'fbo-target-not-valid-constant
           :target target)
-  (labels ((gen-dual-with-fbo-bound (fbo with-viewport attachment-for-size
-                                         with-blending draw-buffers body)
-             (alexandria:with-gensyms (old-read-fbo old-draw-fbo new-fbo ctx)
-               `(with-cepl-context (,ctx)
-                  (let* ((,new-fbo ,fbo)
-                         (,old-read-fbo (read-fbo-bound ,ctx))
-                         (,old-draw-fbo (draw-fbo-bound ,ctx)))
-                    (setf (fbo-bound ,ctx) ,new-fbo)
-                    ,(%write-draw-buffer-pattern-call
-                      draw-buffers new-fbo with-blending
-                      `(,@(if with-viewport
-                              `(with-fbo-viewport (,new-fbo ,attachment-for-size))
-                              '(progn))
-                          (release-unwind-protect (progn ,@body)
-                            (if (eq ,old-read-fbo ,old-draw-fbo)
-                                (setf (fbo-bound ,ctx) ,old-read-fbo)
-                                (progn
-                                  (setf (read-fbo-bound ,ctx) ,old-read-fbo)
-                                  (setf (draw-fbo-bound ,ctx) ,old-draw-fbo))))))))))
-
-           (gen-singular-with-fbo-bound (fbo target with-viewport
-                                             attachment-for-size with-blending
-                                             draw-buffers body)
-             (alexandria:with-gensyms (old-fbo new-fbo ctx)
-               `(with-cepl-context (,ctx)
-                  (let* ((,new-fbo ,fbo)
-                         (,old-fbo ,(if (eq target :read-framebuffer)
-                                        `(read-fbo-bound ,ctx)
-                                        `(draw-fbo-bound ,ctx))))
-                    ,(if (eq target :read-framebuffer)
-                         `(setf (read-fbo-bound ,ctx) ,new-fbo)
-                         `(setf (draw-fbo-bound ,ctx) ,new-fbo))
-                    ,(%write-draw-buffer-pattern-call
-                      draw-buffers new-fbo with-blending
-                      `(,@(if with-viewport
-                              `(with-fbo-viewport (,new-fbo ,attachment-for-size))
-                              '(progn))
-                          (release-unwind-protect (progn ,@body)
-                            ,(if (eq target :read-framebuffer)
-                                 `(setf (read-fbo-bound ,ctx) ,old-fbo)
-                                 `(setf (draw-fbo-bound ,ctx) ,old-fbo))))))))))
+  (labels ((%write-draw-buffer-pattern-call (fbo body)
+             "This plays with the dispatch call from compose-pipelines
+              The idea is that the dispatch func can preallocate one array
+              with the draw-buffers patterns for ALL the passes in it, then
+              we just upload from that one block of memory.
+              All of this can be decided at compile time. It's gonna go fast!"
+             (cond ((null draw-buffers)
+                    `(progn
+                       ,@body))
+                   ((equal draw-buffers t)
+                    `(progn
+                       (%fbo-draw-buffers ,fbo)
+                       ,@(if with-blending
+                             `((cepl.blending::%with-blending ,fbo t nil ,@body))
+                             `(progn body))))
+                   ((listp draw-buffers)
+                    (destructuring-bind (pointer len attachments) draw-buffers
+                      (assert (numberp len))
+                      `(progn
+                         (%gl:draw-buffers ,len ,pointer)
+                         (%with-blending ,fbo ,attachments nil ,@body)
+                         (cffi:incf-pointer
+                          ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum)))))))))
     (if (eq target :framebuffer)
-        (gen-dual-with-fbo-bound fbo with-viewport attachment-for-size
-                                 with-blending draw-buffers body)
-        (gen-singular-with-fbo-bound fbo target with-viewport
-                                     attachment-for-size with-blending
-                                     draw-buffers body))))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun+ %write-draw-buffer-pattern-call (pattern fbo with-blending &rest body)
-    "This plays with the dispatch call from compose-pipelines
-     The idea is that the dispatch func can preallocate one array
-     with the draw-buffers patterns for ALL the passes in it, then
-     we just upload from that one block of memory.
-     All of this can be decided at compile time. It's gonna go fast!"
-    (cond ((null pattern) `(progn ,@body))
-          ((equal pattern t)
-           `(progn
-              (%fbo-draw-buffers ,fbo)
-              ,@(if with-blending
-                    `((cepl.blending::%with-blending ,fbo t nil ,@body))
-                    body)))
-          ((listp pattern)
-           (destructuring-bind (pointer len attachments) pattern
-             (assert (numberp len))
-             `(progn
-                (%gl:draw-buffers ,len ,pointer)
-                (%with-blending ,fbo ,attachments nil ,@body)
-                (cffi:incf-pointer
-                 ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum)))))))))
+        (alexandria:with-gensyms (old-read-fbo old-draw-fbo new-fbo ctx)
+          `(with-cepl-context (,ctx)
+             (let* ((,new-fbo ,fbo)
+                    (,old-read-fbo (read-fbo-bound ,ctx))
+                    (,old-draw-fbo (draw-fbo-bound ,ctx)))
+               (,@(if with-viewport
+                      `(with-fbo-viewport (,new-fbo ,attachment-for-size))
+                      '(progn))
+                  (release-unwind-protect
+                      (progn
+                        (setf (fbo-bound ,ctx) ,new-fbo)
+                        ,(%write-draw-buffer-pattern-call new-fbo body))
+                    (if (eq ,old-read-fbo ,old-draw-fbo)
+                        (setf (fbo-bound ,ctx) ,old-read-fbo)
+                        (progn
+                          (setf (read-fbo-bound ,ctx) ,old-read-fbo)
+                          (setf (draw-fbo-bound ,ctx) ,old-draw-fbo))))))))
+        (alexandria:with-gensyms (old-fbo new-fbo ctx)
+          `(with-cepl-context (,ctx)
+             (let* ((,new-fbo ,fbo)
+                    (,old-fbo ,(if (eq target :read-framebuffer)
+                                   `(read-fbo-bound ,ctx)
+                                   `(draw-fbo-bound ,ctx))))
+               (,@(if with-viewport
+                      `(with-fbo-viewport (,new-fbo ,attachment-for-size))
+                      '(progn))
+                  (release-unwind-protect
+                      (progn
+                        ,(if (eq target :read-framebuffer)
+                             `(setf (read-fbo-bound ,ctx) ,new-fbo)
+                             `(setf (draw-fbo-bound ,ctx) ,new-fbo))
+                        ,(%write-draw-buffer-pattern-call new-fbo body))
+                    ,(if (eq target :read-framebuffer)
+                         `(setf (read-fbo-bound ,ctx) ,old-fbo)
+                         `(setf (draw-fbo-bound ,ctx) ,old-fbo))))))))))
 
 
 (defun+ fbo-gen-attach (fbo check-dimensions-matchp &rest args)
