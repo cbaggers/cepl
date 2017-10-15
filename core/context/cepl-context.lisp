@@ -2,41 +2,58 @@
 
 ;;----------------------------------------------------------------------
 
+;;
 (defvar *contexts* nil)
 
-(defun+ make-context (&key (gl-version t) (shared (first *contexts*)))
+(defun+ make-context (&key (gl-version t) shared)
   ;;
-  (assert (or (null shared) (typep shared 'cepl-context)))
-  (when shared
-    (error "cepl-context sharing not yet implmenent"))
+  ;; We need to patch the hosts before we support this
+  (assert (not shared) () "CEPL: shared contexts are not yet supported")
   ;;
-  (let* ((gl-version (cond
-                       ((and (eq gl-version t) *contexts*)
-                        (let ((ctx (first *contexts*)))
-                          (if (> (%cepl-context-gl-version-float ctx) 0.0)
-                              (%cepl-context-gl-version-float ctx)
-                              (%cepl-context-requested-gl-version ctx))))
-                       ((eq gl-version t) nil)
-                       (t gl-version)))
-         (shared-arr (if shared
-                         (%cepl-context-shared shared)
-                         (make-array 0 :fill-pointer 0 :adjustable t)))
-         (result (%make-cepl-context
-                  :requested-gl-version gl-version
-                  :current-surface nil
-                  :shared shared-arr
-                  :surfaces nil)))
-    (vector-push-extend result (%cepl-context-shared result))
-    (when shared
-      (setf (%cepl-context-array-of-gpu-buffers result)
-            (%cepl-context-array-of-gpu-buffers shared))
-      (setf (%cepl-context-array-of-textures result)
-            (%cepl-context-array-of-textures shared)))
-    (when cepl.host::*current-host*
-      (on-host-initialized result))
-    (push result *contexts*)
-    ;; done!
-    result))
+  ;; Make sure there is only 1 cepl context per thread
+  (let ((this-thread (bt:current-thread)))
+    (loop :for context :in *contexts* :do
+       (%with-cepl-context-slots (bound-thread) context
+         (let ((existing-context-thread bound-thread))
+           (assert (not (eq this-thread existing-context-thread))
+                   (this-thread existing-context-thread)
+                   'tried-to-make-context-on-thread-that-already-has-one
+                   :context context
+                   :thread this-thread))))
+    ;;
+    (assert (or (null shared) (typep shared 'cepl-context)))
+    ;;
+    (let* ((gl-version (cond
+                         ((and (eq gl-version t) *contexts*)
+                          (let ((ctx (first *contexts*)))
+                            (if (> (%cepl-context-gl-version-float ctx) 0.0)
+                                (%cepl-context-gl-version-float ctx)
+                                (%cepl-context-requested-gl-version ctx))))
+                         ((eq gl-version t) nil)
+                         (t gl-version)))
+           ;; {TODO} UNCOMMENT WHEN SHARED CONTEXTS ARE IMPLEMENTED
+           (shared-arr (progn ;; if shared
+                           ;; (%cepl-context-shared shared)
+                           (make-array 0 :fill-pointer 0 :adjustable t)))
+           (result (%make-cepl-context
+                    :id (get-free-context-id)
+                    :bound-thread this-thread
+                    :requested-gl-version gl-version
+                    :current-surface nil
+                    :shared shared-arr
+                    :surfaces nil)))
+      (vector-push-extend result (%cepl-context-shared result))
+      ;; {TODO} UNCOMMENT WHEN SHARED CONTEXTS ARE IMPLEMENTED
+      ;; (when shared
+      ;;   (setf (%cepl-context-array-of-gpu-buffers result)
+      ;;         (%cepl-context-array-of-gpu-buffers shared))
+      ;;   (setf (%cepl-context-array-of-textures result)
+      ;;         (%cepl-context-array-of-textures shared)))
+      (when cepl.host::*current-host*
+        (on-host-initialized result))
+      (push result *contexts*)
+      ;; done!
+      result)))
 
 (defmacro with-new-cepl-context ((var-name &key shared (gl-version t))
                                  &body body)
@@ -159,10 +176,14 @@
   (assert cepl-context)
   (assert surface)
   (%with-cepl-context-slots (gl-context gl-version-float requested-gl-version
-                                        current-surface gl-thread)
+                                        current-surface bound-thread)
       cepl-context
-    (setf gl-thread (bt:current-thread))
     (assert (not gl-context))
+    (let ((this-thread (bt:current-thread)))
+      (assert (eq bound-thread this-thread) (bound-thread this-thread)
+              'gl-context-initialized-from-incorrect-thread
+              :ctx-thread bound-thread
+              :init-thread this-thread))
     (let ((raw-context (cepl.host:make-gl-context :version requested-gl-version
                                                   :surface surface)))
       (ensure-cepl-compatible-setup)

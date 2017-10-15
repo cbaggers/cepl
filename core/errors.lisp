@@ -462,6 +462,36 @@ your code, you will get this error on the next compile unless it is fixed~]"
   alternatives
   (not (null env)))
 
+(deferror gl-context-initialized-from-incorrect-thread ()
+    (ctx-thread init-thread)
+    "CEPL: This CEPL context is tied to thread A (below) however something tried
+to create the gl-context from thread B:
+A: ~a
+B: ~a"
+  ctx-thread init-thread)
+
+(deferror tried-to-make-context-on-thread-that-already-has-one ()
+    (context thread)
+    "CEPL: An attempt was made to create a context on thread ~a however
+that thread already has the CEPL context ~a.
+
+In CEPL you may only have 1 CEPL context per thread. That context then holds
+the handles to any GL contexts and any caching related to those gl contexts"
+  thread context)
+
+(deferror max-context-count-reached () (max)
+    "CEPL: Currently CEPL has a silly restriction on the number of contexts
+that can be active at once. The current maximum is max.
+
+It's silly in that GL itself doesnt have this restriction and it was only
+introduced in CEPL to make the implementation of multi-threading simpler.
+
+This restriction does need to be removed however so if you are hitting
+this then please report it at https://github.com/cbaggers/cepl. This lets us
+know that this is causing real issues for people and we can prioritize it
+accordingingly.")
+
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

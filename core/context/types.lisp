@@ -12,18 +12,37 @@
    (hidden :initarg :hidden)
    (legacy-gl-version :initarg :legacy-gl-version)))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defconstant +max-context-count+ 8))
+
+(deftype context-id ()
+  `(integer -1 ,+max-context-count+))
+
+(defvar *free-context-ids*
+  (loop :for i :below +max-context-count+ :collect i))
+
+(defun get-free-context-id ()
+  (or (pop *free-context-ids*)
+      (error 'max-context-count-reached
+             :max +max-context-count+)))
+
+(defun discard-context-id (id)
+  (push id *free-context-ids*))
+
 (defstruct (cepl-context (:constructor %make-cepl-context)
                          (:conc-name %cepl-context-))
+  (id (error "Context missing an ID") :type context-id)
   (gl-context nil :type (or null gl-context))
   (requested-gl-version nil :type t)
   (gl-version-float 0f0 :type single-float)
-  (gl-thread nil :type (or null bt:thread))
+  (bound-thread nil :type (or null bt:thread))
   (uninitialized-resources nil :type list)
   (shared (error "Context must be in-package via #'make-context")
-          :type (array cepl-context (*)))e
+          :type (array cepl-context (*)))
   (surfaces
    (error "Context must be initialized via #'make-context")
    :type list)
+  (current-program +unknown-gl-id+ :type gl-id)
   (current-surface nil :type t)
   (vao-binding-id +unknown-gl-id+ :type vao-id)
   (current-viewport nil :type (or null viewport))
@@ -67,9 +86,6 @@
    (make-array 0 :element-type 'texture :initial-element +null-texture+
                :adjustable t :fill-pointer 0)
    :type (array texture (*)))
-  (map-of-pipeline-names-to-gl-ids
-   (make-hash-table :test #'eq)
-   :type hash-table)
   (depth-func :unknown :type (or symbol function))
   (depth-mask nil :type boolean)
   (color-masks (make-array 0 :element-type '(simple-array boolean (4)))
@@ -81,21 +97,20 @@
   (clear-color (v! 0 0 0 0) :type vec4))
 
 (defmethod print-object ((context cepl-context) stream)
-  (format stream "#<CEPL-CONTEXT>"))
+  (format stream "#<CEPL-CONTEXT ~a>" (slot-value context 'bound-thread)))
 
 (defmacro %with-cepl-context-slots (slots context &body body)
   (let ((context-slots
-         '(gl-context requested-gl-version gl-thread uninitialized-resources
-           shared surfaces current-surface vao-binding-id current-viewport
-           default-viewport current-scissor-viewports
-           default-framebuffer read-fbo-binding draw-fbo-binding fbos
-           array-of-bound-gpu-buffers array-of-gpu-buffers
-           array-of-ubo-bindings-buffer-ids current-blend-params
-           array-of-transform-feedback-bindings-buffer-ids
+         '(id gl-context requested-gl-version bound-thread current-program
+           uninitialized-resources shared surfaces current-surface
+           vao-binding-id current-viewport default-viewport
+           current-scissor-viewports default-framebuffer read-fbo-binding
+           draw-fbo-binding fbos array-of-bound-gpu-buffers
+           array-of-gpu-buffers array-of-ubo-bindings-buffer-ids
+           current-blend-params array-of-transform-feedback-bindings-buffer-ids
            array-of-bound-samplers array-of-textures
-           map-of-pipeline-names-to-gl-ids depth-func color-masks
-           depth-mask depth-range depth-clamp cull-face front-face
-           current-stencil-params-front current-stencil-params-back
+           depth-func color-masks depth-mask depth-range depth-clamp cull-face
+           front-face current-stencil-params-front current-stencil-params-back
            current-stencil-mask-front current-stencil-mask-back
            clear-color gl-version-float)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
@@ -111,6 +126,9 @@
                  `(,slot (,acc ,ctx)))
            ,@body)))))
 
+
+(defn-inline context-id ((context cepl-context)) context-id
+  (%cepl-context-id context))
 
 (defn surfaces ((cepl-context cepl-context)) list
   (%cepl-context-surfaces cepl-context))

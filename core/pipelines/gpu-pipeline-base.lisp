@@ -3,8 +3,13 @@
 
 ;;--------------------------------------------------
 
+(defvar *gpu-func-specs-lock* (bt:make-lock))
 (defvar *gpu-func-specs* nil)
+
+(defvar *dependent-gpu-functions-lock* (bt:make-lock))
 (defvar *dependent-gpu-functions* nil)
+
+(defvar *gpu-pipeline-specs-lock* (bt:make-lock))
 (defvar *gpu-pipeline-specs* (make-hash-table :test #'eq))
 
 ;;--------------------------------------------------
@@ -25,7 +30,7 @@
     :initarg :geometry-stage :initform nil)
    (fragment-stage
     :initarg :fragment-stage :initform nil)
-   prog-id))
+   prog-ids))
 
 (defclass gpu-func-spec ()
   ((name :initarg :name)
@@ -221,11 +226,18 @@
   (gpu-func-spec (func-key key) error-if-missing))
 
 (defmethod gpu-func-spec ((func-key func-key) &optional error-if-missing)
-  (or (assocr func-key *gpu-func-specs* :test #'func-key=)
-      (when error-if-missing
-        (error 'gpu-func-spec-not-found
-               :name (name func-key)
-               :types (in-args func-key)))))
+  (bt:with-lock-held (*gpu-func-specs-lock*)
+    (or (assocr func-key *gpu-func-specs* :test #'func-key=)
+        (when error-if-missing
+          (error 'gpu-func-spec-not-found
+                 :name (name func-key)
+                 :types (in-args func-key))))))
+
+(defmethod delete-func-spec (func-key)
+  (bt:with-lock-held (*gpu-func-specs-lock*)
+    (setf *gpu-func-specs*
+          (remove func-key *gpu-func-specs*
+                  :test #'func-key= :key #'car))))
 
 (defmethod (setf gpu-func-spec) (value key &optional error-if-missing)
   (setf (gpu-func-spec (func-key key) error-if-missing) value))
@@ -233,19 +245,21 @@
 (defmethod (setf gpu-func-spec) (value (key func-key) &optional error-if-missing)
   (when error-if-missing
     (gpu-func-spec key t))
-  (setf *gpu-func-specs*
-        (remove-duplicates (acons key value *gpu-func-specs*)
-                           :key #'car :test #'func-key=
-                           :from-end t)))
+  (bt:with-lock-held (*gpu-func-specs-lock*)
+    (setf *gpu-func-specs*
+          (remove-duplicates (acons key value *gpu-func-specs*)
+                             :key #'car :test #'func-key=
+                             :from-end t))))
 
 (defun+ gpu-func-specs (name &optional error-if-missing)
-  (or (remove nil
-              (mapcar λ(dbind (k . v) _
-                         (when (eq (name k) name)
-                           v))
-                      *gpu-func-specs*))
-      (when error-if-missing
-        (error 'gpu-func-spec-not-found :spec-name name))))
+  (bt:with-lock-held (*gpu-func-specs-lock*)
+    (or (remove nil
+                (mapcar λ(dbind (k . v) _
+                           (when (eq (name k) name)
+                             v))
+                        *gpu-func-specs*))
+        (when error-if-missing
+          (error 'gpu-func-spec-not-found :spec-name name)))))
 
 (defmethod %unsubscibe-from-all (spec)
   (%unsubscibe-from-all (func-key spec)))
@@ -253,29 +267,32 @@
 (defmethod %unsubscibe-from-all ((func-key func-key))
   "As the name would suggest this removes one function's dependency on another
    It is used by #'%test-&-update-spec via #'%update-gpu-function-data"
-  (labels ((%remove-gpu-function-from-dependancy-table (pair)
-             (dbind (key . dependencies) pair
-               (when (member func-key dependencies :test #'func-key=)
-                 (setf (funcs-that-use-this-func key)
-                       (remove func-key dependencies :test #'func-key=))))))
-    (map nil #'%remove-gpu-function-from-dependancy-table
-         *dependent-gpu-functions*)))
+  (bt:with-lock-held (*dependent-gpu-functions-lock*)
+    (labels ((%remove-gpu-function-from-dependancy-table (pair)
+               (dbind (key . dependencies) pair
+                 (when (member func-key dependencies :test #'func-key=)
+                   (setf (funcs-that-use-this-func key)
+                         (remove func-key dependencies :test #'func-key=))))))
+      (map nil #'%remove-gpu-function-from-dependancy-table
+           *dependent-gpu-functions*))))
 
 (defmethod funcs-that-use-this-func (key)
   (funcs-that-use-this-func (func-key key)))
 
 (defmethod funcs-that-use-this-func ((key func-key))
-  (assocr key *dependent-gpu-functions*
-          :test #'func-key=))
+  (bt:with-lock-held (*dependent-gpu-functions-lock*)
+    (assocr key *dependent-gpu-functions*
+            :test #'func-key=)))
 
 (defmethod (setf funcs-that-use-this-func) (value key)
   (setf (funcs-that-use-this-func (func-key key)) value))
 
 (defmethod (setf funcs-that-use-this-func) (value (key func-key))
+  (bt:with-lock-held (*dependent-gpu-functions-lock*)
     (setf *dependent-gpu-functions*
-     (remove-duplicates (acons key value *dependent-gpu-functions*)
-                        :key #'car :test #'func-key=
-                        :from-end t)))
+          (remove-duplicates (acons key value *dependent-gpu-functions*)
+                             :key #'car :test #'func-key=
+                             :from-end t))))
 
 (defun+ funcs-these-funcs-use (names &optional (include-names t))
   (remove-duplicates
@@ -296,36 +313,39 @@ names are depended on by the functions named later in the list"
            :key #'car)))
 
 (defmethod %funcs-this-func-uses ((key func-key) &optional (depth 0))
-  (let ((this-func-calls
-         (remove nil (mapcar
-                      λ(dbind (k . v) _
-                         (when (member key v)
-                           (cons k depth)))
-                      *dependent-gpu-functions*))))
-    (append this-func-calls
-            (apply #'append
-                   (mapcar λ(%funcs-this-func-uses (car _) (1+ depth))
-                           this-func-calls)))))
+  (bt:with-lock-held (*dependent-gpu-functions-lock*)
+    (let ((this-func-calls
+           (remove nil (mapcar
+                        λ(dbind (k . v) _
+                           (when (member key v)
+                             (cons k depth)))
+                        *dependent-gpu-functions*))))
+      (append this-func-calls
+              (apply #'append
+                     (mapcar λ(%funcs-this-func-uses (car _) (1+ depth))
+                             this-func-calls))))))
 
 (defmethod pipelines-that-use-this-as-a-stage ((func-key func-key))
-  (remove-duplicates
-   (remove nil
-           (map-hash
-            (lambda (k v)
-              (when (and (symbolp k)
-                         (typep v 'pipeline-spec)
-                         (member func-key (pipeline-stages v) :test #'func-key=))
-                k))
-            *gpu-pipeline-specs*))
-   :test #'eq))
+  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+    (remove-duplicates
+     (remove nil
+             (map-hash
+              (lambda (k v)
+                (when (and (symbolp k)
+                           (typep v 'pipeline-spec)
+                           (member func-key (pipeline-stages v) :test #'func-key=))
+                  k))
+              *gpu-pipeline-specs*))
+     :test #'eq)))
 
 (defun+ update-specs-with-missing-dependencies ()
-  (map 'nil λ(dbind (k . v) _
-               (with-gpu-func-spec v
-                 (when missing-dependencies
-                   (%test-&-update-spec v)
-                   k)))
-       *gpu-func-specs*))
+  (bt:with-lock-held (*gpu-func-specs-lock*)
+    (map 'nil λ(dbind (k . v) _
+                 (with-gpu-func-spec v
+                   (when missing-dependencies
+                     (%test-&-update-spec v)
+                     k)))
+         *gpu-func-specs*)))
 
 (defmethod recompile-pipelines-that-use-this-as-a-stage ((key func-key))
   "Recompile all pipelines that depend on the named gpu function or any other
@@ -403,13 +423,15 @@ names are depended on by the functions named later in the list"
                    :context context)))
 
 (defun+ pipeline-spec (name)
-  (let ((res (gethash name *gpu-pipeline-specs*)))
-    (if (and res (symbolp res))
-        (pipeline-spec res)
-        res)))
+  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+    (let ((res (gethash name *gpu-pipeline-specs*)))
+      (if (and res (symbolp res))
+          (pipeline-spec res)
+          res))))
 
 (defun+ (setf pipeline-spec) (value name)
-  (setf (gethash name *gpu-pipeline-specs*) value))
+  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+    (setf (gethash name *gpu-pipeline-specs*) value)))
 
 (defun+ update-pipeline-spec (spec)
   (setf (pipeline-spec (slot-value spec 'name)) spec))
@@ -420,23 +442,25 @@ names are depended on by the functions named later in the list"
 
 (defun+ function-keyed-pipeline (func)
   (assert (typep func 'function))
-  (let ((spec (gethash func *gpu-pipeline-specs*)))
-    (if (typep spec 'lambda-pipeline-spec)
-        spec
-        (pipeline-spec spec))))
+  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+    (let ((spec (gethash func *gpu-pipeline-specs*)))
+      (if (typep spec 'lambda-pipeline-spec)
+          spec
+          (pipeline-spec spec)))))
 
 (defun+ (setf function-keyed-pipeline) (spec func)
   (assert (typep func 'function))
   (assert (or (symbolp spec) (typep spec 'lambda-pipeline-spec)))
-  (labels ((scan (k v)
-             (when (eq v spec)
-               (remhash k *gpu-pipeline-specs*))))
-    ;; and this is a horribly lazy hack. We need a better
-    ;; mechanism for this.
-    (when (symbolp spec)
-      (maphash #'scan *gpu-pipeline-specs*)))
-  (setf (gethash func *gpu-pipeline-specs*)
-        spec))
+  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+    (labels ((scan (k v)
+               (when (eq v spec)
+                 (remhash k *gpu-pipeline-specs*))))
+      ;; and this is a horribly lazy hack. We need a better
+      ;; mechanism for this.
+      (when (symbolp spec)
+        (maphash #'scan *gpu-pipeline-specs*)))
+    (setf (gethash func *gpu-pipeline-specs*)
+          spec)))
 
 (defun+ %pull-spec-common (asset-name)
   (labels ((gfunc-spec (x)
@@ -503,13 +527,31 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defun+ request-program-id-for (name)
-  (%with-cepl-context-slots (map-of-pipeline-names-to-gl-ids) (cepl-context)
-    (if name
-        (or (gethash name map-of-pipeline-names-to-gl-ids)
-            (setf (gethash name map-of-pipeline-names-to-gl-ids)
-                  (%gl:create-program)))
-        (%gl:create-program))))
+(defvar *map-of-pipeline-names-to-gl-ids-lock*
+  (bt:make-lock))
+
+(defvar *map-of-pipeline-names-to-gl-ids*
+  (make-hash-table :test #'eq))
+
+(defun+ request-program-id-for (context name)
+  (bt:with-lock-held (*map-of-pipeline-names-to-gl-ids-lock*)
+    (%with-cepl-context-slots (id) context
+      (let ((context-id id))
+        (if name
+            ;; named pipelines need to handle multiple contexts
+            (let* ((map (or (gethash name *map-of-pipeline-names-to-gl-ids*)
+                            (make-array cepl.context:+max-context-count+
+                                        :initial-element +unknown-gl-id+
+                                        :element-type 'gl-id)))
+                   (prog-id (aref map context-id)))
+              (when (= prog-id +unknown-gl-id+)
+                (setf prog-id (%gl:create-program))
+                (setf (aref map context-id) prog-id)
+                (setf (gethash name *map-of-pipeline-names-to-gl-ids*) map))
+              (values map prog-id))
+            ;; lambda pipelines are locked to a specific context
+            (let ((prog-id (%gl:create-program)))
+              (values prog-id prog-id)))))))
 
 ;;--------------------------------------------------
 

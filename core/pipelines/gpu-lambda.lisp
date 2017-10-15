@@ -129,7 +129,7 @@
                            :name "<lambda>"
                            :pline-prim ',(varjo::lisp-name primitive)
                            :stream-prim (buffer-stream-primitive stream)))))
-            (use-program prog-id)
+            (use-program ,ctx prog-id)
             ,@u-uploads
             (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
             (when stream (draw-expander stream ,primitive))

@@ -540,8 +540,7 @@
            (spec (gpu-func-spec func-key nil)))
       (if spec
           (progn
-            (setf *gpu-func-specs* (remove func-key *gpu-func-specs*
-                                           :test #'func-key= :key #'car))
+            (delete-func-spec func-key)
             (varjo:delete-external-function name in-arg-types))
           (when error-if-missing
             (error 'gpu-func-spec-not-found
