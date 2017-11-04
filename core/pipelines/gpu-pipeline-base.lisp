@@ -25,7 +25,7 @@
     :initarg :geometry-stage :initform nil)
    (fragment-stage
     :initarg :fragment-stage :initform nil)
-   prog-id))
+   prog-ids))
 
 (defclass gpu-func-spec ()
   ((name :initarg :name)
@@ -503,13 +503,24 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defun+ request-program-id-for (name)
-  (%with-cepl-context-slots (map-of-pipeline-names-to-gl-ids) (cepl-context)
-    (if name
-        (or (gethash name map-of-pipeline-names-to-gl-ids)
-            (setf (gethash name map-of-pipeline-names-to-gl-ids)
-                  (%gl:create-program)))
-        (%gl:create-program))))
+(defun+ request-program-id-for (context name)
+  (%with-cepl-context-slots (id map-of-pipeline-names-to-gl-ids) context
+    (let ((context-id id))
+      (if name
+          ;; named pipelines need to handle multiple contexts
+          (let* ((map (or (gethash name map-of-pipeline-names-to-gl-ids)
+                          (make-array cepl.context:+max-context-count+
+                                      :initial-element -1
+                                      :element-type 'context-id)))
+                 (prog-id (aref map context-id)))
+            (unless (> prog-id -1)
+              (setf prog-id (%gl:create-program))
+              (setf (aref map context-id) prog-id)
+              (setf (gethash name map-of-pipeline-names-to-gl-ids) map))
+            (values map prog-id))
+          ;; lambda pipelines are locked to a specific context
+          (let ((prog-id (%gl:create-program)))
+            (values prog-id prog-id))))))
 
 ;;--------------------------------------------------
 

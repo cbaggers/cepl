@@ -123,7 +123,8 @@
            :adjust-gpu-array-shared-buffer
            :buffer-stream-has-invalid-primtive-for-stream
            :invalid-options-for-texture
-           :gpu-func-symbol-name))
+           :gpu-func-symbol-name
+           :max-context-count-reached))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -560,6 +561,8 @@
            ;; CEPL.Context
            :*cepl-context*
            :cepl-context
+           :context-id
+           :+max-context-count+
            :with-cepl-context
            :with-new-cepl-context
            :gpu-buffer-bound

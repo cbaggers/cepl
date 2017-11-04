@@ -9,3 +9,10 @@
 - make the map-g context into the cepl-context
 
 - take CEPL.PIPELINES::UNIFORM-MATRIX-4FT and change to sending values rather than ptr. Profile the result.
+
+
+---
+
+when a context is deleted:
+- run through ID cache and delete all IDs that were for that context
+-

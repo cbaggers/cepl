@@ -12,8 +12,26 @@
    (hidden :initarg :hidden)
    (legacy-gl-version :initarg :legacy-gl-version)))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defconstant +max-context-count+ 8))
+
+(deftype context-id ()
+  `(integer -1 ,+max-context-count+))
+
+(defvar *free-context-ids*
+  (loop :for i :below +max-context-count+ :collect i))
+
+(defun get-free-context-id ()
+  (or (pop *free-context-ids*)
+      (error 'max-context-count-reached
+             :max +max-context-count+)))
+
+(defun discard-context-id (id)
+  (push id *free-context-ids*))
+
 (defstruct (cepl-context (:constructor %make-cepl-context)
                          (:conc-name %cepl-context-))
+  (id (error "Context missing an ID") :type context-id)
   (gl-context nil :type (or null gl-context))
   (requested-gl-version nil :type t)
   (gl-version-float 0f0 :type single-float)
@@ -80,12 +98,15 @@
   (front-face :unknown :type symbol)
   (clear-color (v! 0 0 0 0) :type vec4))
 
+(defn-inline context-id ((context cepl-context)) context-id
+  (%cepl-context-id context))
+
 (defmethod print-object ((context cepl-context) stream)
   (format stream "#<CEPL-CONTEXT>"))
 
 (defmacro %with-cepl-context-slots (slots context &body body)
   (let ((context-slots
-         '(gl-context requested-gl-version gl-thread uninitialized-resources
+         '(id gl-context requested-gl-version gl-thread uninitialized-resources
            shared surfaces current-surface vao-binding-id current-viewport
            default-viewport current-scissor-viewports
            default-framebuffer read-fbo-binding draw-fbo-binding fbos

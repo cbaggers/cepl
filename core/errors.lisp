@@ -462,6 +462,18 @@ your code, you will get this error on the next compile unless it is fixed~]"
   alternatives
   (not (null env)))
 
+(deferror max-context-count-reached () (max)
+    "CEPL: Currently CEPL has a silly restriction on the number of contexts
+that can be active at once. The current maximum is max.
+
+It's silly in that GL itself doesnt have this restriction and it was only
+introduced in CEPL to make the implementation of multi-threading simpler.
+
+This restriction does need to be removed however so if you are hitting
+this then please report it at https://github.com/cbaggers/cepl. This lets us
+know that this is causing real issues for people and we can prioritize it
+accordingingly.")
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

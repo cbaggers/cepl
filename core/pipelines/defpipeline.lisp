@@ -28,7 +28,8 @@
   (assert-valid-gpipe-form name gpipe-args)
   (%defpipeline-gfuncs name gpipe-args context))
 
-(defun+ %defpipeline-gfuncs (name gpipe-args context &optional suppress-compile)
+(defun+ %defpipeline-gfuncs
+    (name gpipe-args context &optional suppress-compile)
   ;;
   ;; {todo} explain
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
@@ -86,7 +87,9 @@
                            (find :static context))
       `(progn
          ,cpr-macro
-         (let ((prog-id nil)
+         (let ((prog-ids (make-array cepl.context:+max-context-count+
+                                     :initial-element -1
+                                     :element-type cepl.context:context-id))
                ;; If there are no implicit-uniforms we need a no-op
                ;; function to call
                (implicit-uniform-upload-func #'fallback-iuniform-func)
@@ -96,7 +99,10 @@
                          (mapcat #'let-forms uniform-assigners)))
            ;;
            ;; To help the compiler we make sure it knows it's a function :)
-           (declare (type function implicit-uniform-upload-func))
+           (declare (type function implicit-uniform-upload-func)
+                    (type (simple-array cepl.context:context-id
+                                        (#.cepl.context:+max-context-count+))
+                          prog-ids))
            ;;
            ;; we upload the spec at compile time (using eval-when)
            ,(gen-update-spec name stage-pairs context)
@@ -172,12 +178,14 @@
          (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
     (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA"))
-    (let ((prog-id (request-program-id-for name)))
+    (multiple-value-bind (prog-ids prog-id)
+        (request-program-id-for (cepl-context) name)
+      ;; when compiling lambda pipelines prog-ids will be a number, not a vector
       (link-shaders stages-objects prog-id compiled-stages)
       (when (and name +cache-last-compile-result+)
         (add-compile-results-to-pipeline name compiled-stages))
       (mapcar #'%gl:delete-shader stages-objects)
-      (values compiled-stages prog-id))))
+      (values compiled-stages prog-id prog-ids))))
 
 (defun+ compute-glsl-version-from-stage-pairs (stage-pairs)
   ;; - If not specified & the context is not yet available then use
@@ -266,13 +274,13 @@
        (let (;; all image units will be >0 as 0 is used as scratch tex-unit
              (image-unit 0))
          (declare (ignorable image-unit))
-         (multiple-value-bind (compiled-stages new-prog-id)
+         (multiple-value-bind (compiled-stages new-prog-id new-prog-ids)
              (%compile-link-and-upload
               ',name ',primitive ,(serialize-stage-pairs stage-pairs))
            (declare (ignorable compiled-stages))
-           (setf prog-id new-prog-id)
-           (setf (slot-value (pipeline-spec ',name) 'prog-id) prog-id)
-           (use-program prog-id)
+           (setf prog-ids new-prog-ids)
+           (setf (slot-value (pipeline-spec ',name) 'prog-ids) prog-ids)
+           (use-program new-prog-id)
            (setf implicit-uniform-upload-func
                  (or (%create-implicit-uniform-uploader compiled-stages
                                                         ',uniform-names)
@@ -280,7 +288,7 @@
          ,@(let ((u-lets (mapcat #'let-forms uniform-assigners)))
                 (loop for u in u-lets collect (cons 'setf u)))
          (%post-init ,post)
-         prog-id))))
+         new-prog-ids))))
 
 (defun+ serialize-stage-pairs (stage-pairs)
   (cons 'list (mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
@@ -299,12 +307,12 @@
          (def (if static 'defn 'defun+))
          (signature (if static
                         `(((,ctx cepl-context)
-                            (stream (or null buffer-stream))
+                           (stream (or null buffer-stream))
                            ,@(when uniform-names `(&key ,@typed-uniforms)))
                           (values))
                         `((,ctx
-                            stream
-                            ,@(when uniform-names `(&key ,@uniform-names)))))))
+                           stream
+                           ,@(when uniform-names `(&key ,@uniform-names)))))))
     (values
      `(eval-when (:compile-toplevel :load-toplevel :execute)
         (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
@@ -315,19 +323,22 @@
      `(progn
         (defun+ ,(symb :%touch- name) (&key verbose)
           #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-          (unless prog-id
-            (setf prog-id (,init-func-name)))
-          (when verbose
-            (format t
-                    ,(escape-tildes
-                      (format nil
-                              "~%----------------------------------------
+          (let ((ctx-id (context-id (cepl-context)))
+                (prog-id (aref prog-ids ctx-id)))
+            (unless (> prog-id -1)
+              (setf prog-ids (,init-func-name))
+              (setf prog-id (aref prog-ids ctx-id)))
+            (when verbose
+              (format t
+                      ,(escape-tildes
+                        (format nil
+                                "~%----------------------------------------
 ~%name: ~s~%~%pipeline compile context: ~s~%~%uniform assigners:~%~s~%~%
 ~%----------------------------------------"
-                              name
-                              context
-                              (mapcar λ(list (let-forms _) _1)
-                                      uniform-assigners u-uploads)))))
+                                name
+                                context
+                                (mapcar λ(list (let-forms _) _1)
+                                        uniform-assigners u-uploads))))))
           t)
         (,def ,name ,@signature
           (declare (speed 3) (debug 1) (safety 1) (compilation-speed 0)
@@ -335,29 +346,32 @@
                    ,@(when static `((profile t))))
           #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
           ,@(unless (typep primitive 'varjo::dynamic)
-              `((when stream
-                  (assert
-                   (= ,(draw-mode-group-id primitive)
-                      (buffer-stream-primitive-group-id stream))
-                   ()
-                   'buffer-stream-has-invalid-primtive-for-stream
-                   :name ',name
-                   :pline-prim ',(varjo::lisp-name primitive)
-                   :stream-prim (buffer-stream-primitive stream)))))
-          (unless prog-id
-            (setf prog-id (,init-func-name))
-            (unless prog-id (return-from ,name)))
-          (use-program prog-id)
-          (profile-block (,name :uniforms)
-            ,@u-uploads
-            (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
-          (profile-block (,name :draw)
-            (when stream (draw-expander stream ,primitive)))
-          ;;(use-program 0)
-          ,@u-cleanup
-          (values))
-        (register-named-pipeline ',name #',name)
-        ',name))))
+                    `((when stream
+                        (assert
+                         (= ,(draw-mode-group-id primitive)
+                            (buffer-stream-primitive-group-id stream))
+                         ()
+                         'buffer-stream-has-invalid-primtive-for-stream
+                         :name ',name
+                         :pline-prim ',(varjo::lisp-name primitive)
+                         :stream-prim (buffer-stream-primitive stream)))))
+          (let* ((%ctx-id (context-id (cepl-context)))
+                 (prog-id (aref prog-ids %ctx-id)))
+            (when (= prog-id -1)
+              (setf prog-ids (,init-func-name))
+              (setf prog-id (aref prog-ids %ctx-id))
+              (when (= prog-id -1) (return-from ,name)))
+            (use-program prog-id)
+            (profile-block (,name :uniforms)
+              ,@u-uploads
+              (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
+            (profile-block (,name :draw)
+              (when stream (draw-expander stream ,primitive)))
+            ;;(use-program 0)
+            ,@u-cleanup
+            (values))
+          (register-named-pipeline ',name #',name)
+          ',name)))))
 
 (defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
@@ -486,22 +500,22 @@
 (defun+ load-shaders (&rest shader-paths)
   (mapcar #'load-shader shader-paths))
 
-(defun+ link-shaders (shaders program_id compiled-stages)
+(defun+ link-shaders (shaders prog-id compiled-stages)
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
-  (let ((program (or program_id (%gl:create-program))))
-    (release-unwind-protect
-         (progn (loop :for shader :in shaders :do
-                   (%gl:attach-shader program shader))
-                (%gl:link-program program)
-                ;;check for linking errors
-                (if (not (gl:get-program program :link-status))
-                    (error (format nil "Error Linking Program~%~a~%~%Compiled-stages:~{~%~% ~a~}"
-                                   (gl:get-program-info-log program)
-                                   (mapcar #'glsl-code compiled-stages)))))
-      (loop :for shader :in shaders :do
-         (gl:detach-shader program shader)))
-    program))
+  (assert prog-id)
+  (release-unwind-protect
+      (progn (loop :for shader :in shaders :do
+                (%gl:attach-shader prog-id shader))
+             (%gl:link-program prog-id)
+             ;;check for linking errors
+             (if (not (gl:get-program prog-id :link-status))
+                 (error (format nil "Error Linking Program~%~a~%~%Compiled-stages:~{~%~% ~a~}"
+                                (gl:get-program-info-log prog-id)
+                                (mapcar #'glsl-code compiled-stages)))))
+    (loop :for shader :in shaders :do
+       (gl:detach-shader prog-id shader)))
+  prog-id)
 
 (defmethod free ((pipeline-name symbol))
   (free-pipeline pipeline-name))
@@ -510,6 +524,7 @@
   (free-pipeline pipeline-func))
 
 (defun+ free-pipeline (pipeline)
-  (with-slots (prog-id) (pipeline-spec pipeline)
-    (gl:delete-program prog-id)
-    (setf prog-id nil)))
+  (with-slots (prog-ids) (pipeline-spec pipeline)
+    (let ((prog-id (aref prog-ids (context-id (cepl-context)))))
+      (gl:delete-program prog-id)
+      (setf prog-ids nil))))
