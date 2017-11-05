@@ -83,6 +83,7 @@
                (:file "core/pipelines/glsl-stages")
                (:file "core/pipelines/mapg-context")
                (:file "core/pipelines/uniform-assigners-generation")
+               (:file "core/pipelines/programs")
                (:file "core/pipelines/defpipeline")
                (:file "core/pipelines/gpu-lambda")
                (:file "core/pipelines/bake")
