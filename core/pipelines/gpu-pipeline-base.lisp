@@ -233,11 +233,12 @@
                  :name (name func-key)
                  :types (in-args func-key))))))
 
-(defmethod delete-func-spec (func-key)
-  (bt:with-lock-held (*gpu-func-specs-lock*)
-    (setf *gpu-func-specs*
-          (remove func-key *gpu-func-specs*
-                  :test #'func-key= :key #'car))))
+(defgeneric delete-func-spec (func-key)
+  (:method (func-key)
+    (bt:with-lock-held (*gpu-func-specs-lock*)
+      (setf *gpu-func-specs*
+            (remove func-key *gpu-func-specs*
+                    :test #'func-key= :key #'car)))))
 
 (defmethod (setf gpu-func-spec) (value key &optional error-if-missing)
   (setf (gpu-func-spec (func-key key) error-if-missing) value))
