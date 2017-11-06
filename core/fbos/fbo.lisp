@@ -87,7 +87,9 @@
   (setf (%fbo-draw-buffer-map fbo-obj)
         (or draw-buffer-map
             (foreign-alloc 'cl-opengl-bindings:enum :count
-                           (max-draw-buffers *gl-context*)
+                           (max-draw-buffers
+                            (cepl.context::%cepl-context-gl-context
+                             (cepl-context)))
                            :initial-element :none)))
   (setf (%fbo-clear-mask fbo-obj)
         (or clear-mask
@@ -339,21 +341,24 @@
       (signed-byte 32)
     (declare (optimize (speed 3) (safety 1) (debug 1))
              (profile t))
-    (unless (> max-draw-buffers 0)
-      (when cepl.context:*gl-context*
-        (setf max-draw-buffers (max-draw-buffers *gl-context*))))
-    (case x
-      (:d #.(gl-enum :depth-attachment))
-      (:s (if (att-array (%fbo-depth-array fbo))
-              #.(gl-enum  :depth-stencil-attachment)
-              #.(gl-enum :stencil-attachment)))
-      (otherwise
-       (if (<= x max-draw-buffers)
-           (color-attachment-enum x)
-           (if cepl.context:*gl-context*
-               (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
-                      x max-draw-buffers)
-               (color-attachment-enum x)))))))
+    (let ((gl-ctx (when (cepl-context)
+                    (cepl.context::%cepl-context-gl-context
+                     (cepl-context)))))
+      (unless (> max-draw-buffers 0)
+        (when gl-ctx
+          (setf max-draw-buffers (max-draw-buffers gl-ctx))))
+      (case x
+        (:d #.(gl-enum :depth-attachment))
+        (:s (if (att-array (%fbo-depth-array fbo))
+                #.(gl-enum  :depth-stencil-attachment)
+                #.(gl-enum :stencil-attachment)))
+        (otherwise
+         (if (<= x max-draw-buffers)
+             (color-attachment-enum x)
+             (if gl-ctx
+                 (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
+                        x max-draw-buffers)
+                 (color-attachment-enum x))))))))
 
 (define-compiler-macro get-gl-attachment-keyword (&whole whole fbo x)
   (declare (ignore fbo))

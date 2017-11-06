@@ -170,8 +170,6 @@
   (check-sampler-feature)
   (make-default-sampler-id-box))
 
-(push #'sampler-on-context *on-context*)
-
 ;;----------------------------------------------------------------------
 
 (defvar *fake-sampler-id* 0)

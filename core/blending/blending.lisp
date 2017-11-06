@@ -249,7 +249,11 @@
 
 (defn-inline check-version-for-per-attachment-params () (values)
   (unless (per-attachment-blending-available-p)
-    (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0" (version-float *gl-context*))))
+    (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0"
+           (when (cepl-context)
+             (version-float
+              (cepl.context::%cepl-context-gl-context
+               (cepl-context)))))))
 
 (defun+ (setf mode-rgb) (value fbo &optional attachment-name)
   (when attachment-name (check-version-for-per-attachment-params))

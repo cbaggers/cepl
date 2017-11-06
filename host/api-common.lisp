@@ -79,6 +79,15 @@
 
 ;;----------------------------------------------------------------------
 
+(defun make-gl-context-shared-with-current-context (&rest args &key &allow-other-keys)
+  ;; This api is more restrictive that I would like, however it is what is
+  ;; supported by SDL2 and is easy enough to implement in a more expressive
+  ;; host.
+  (assert *current-host* () "CEPL: make-gl-context cannot be called yet as CEPL has not been initialized")
+  (apply #'%make-gl-context-shared-with-current-context *current-host* args))
+
+;;----------------------------------------------------------------------
+
 (defun make-surface (&rest args &key &allow-other-keys)
   (assert *current-host* () "CEPL: make-gl-context cannot be called yet as CEPL has not been initialized")
   (apply #'%make-surface *current-host* args))

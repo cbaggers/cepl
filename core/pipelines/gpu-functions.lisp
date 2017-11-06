@@ -105,9 +105,9 @@
 
 (defun+ lowest-suitable-glsl-version (context)
   (let* ((versions (or (get-versions-from-context context)
-                       (list (cepl.context::get-best-glsl-version)))))
+                       (list (cepl.context::get-best-glsl-version context)))))
     (case= (length versions)
-      (0 (cepl.context::get-best-glsl-version))
+      (0 (cepl.context::get-best-glsl-version context))
       (otherwise (first versions)))))
 
 (defvar *warn-when-cant-test-compile* t)

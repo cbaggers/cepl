@@ -1,27 +1,25 @@
 (in-package :cepl.context)
 
 ;;----------------------------------------------------------------------
-
 ;;
+
 (defvar *contexts* nil)
 
-(defun+ make-context (&key (gl-version t) shared)
-  ;;
-  ;; We need to patch the hosts before we support this
-  (assert (not shared) () "CEPL: shared contexts are not yet supported")
+(defun assert-no-other-context-is-bound-to-thread (this-thread)
+  (loop :for context :in *contexts* :do
+     (%with-cepl-context-slots (bound-thread) context
+       (let ((existing-context-thread bound-thread))
+         (assert (not (eq this-thread existing-context-thread))
+                 (this-thread existing-context-thread)
+                 'tried-to-make-context-on-thread-that-already-has-one
+                 :context context
+                 :thread this-thread)))))
+
+(defun+ make-context (&key (gl-version t))
   ;;
   ;; Make sure there is only 1 cepl context per thread
   (let ((this-thread (bt:current-thread)))
-    (loop :for context :in *contexts* :do
-       (%with-cepl-context-slots (bound-thread) context
-         (let ((existing-context-thread bound-thread))
-           (assert (not (eq this-thread existing-context-thread))
-                   (this-thread existing-context-thread)
-                   'tried-to-make-context-on-thread-that-already-has-one
-                   :context context
-                   :thread this-thread))))
-    ;;
-    (assert (or (null shared) (typep shared 'cepl-context)))
+    (assert-no-other-context-is-bound-to-thread this-thread)
     ;;
     (let* ((gl-version (cond
                          ((and (eq gl-version t) *contexts*)
@@ -31,10 +29,7 @@
                                 (%cepl-context-requested-gl-version ctx))))
                          ((eq gl-version t) nil)
                          (t gl-version)))
-           ;; {TODO} UNCOMMENT WHEN SHARED CONTEXTS ARE IMPLEMENTED
-           (shared-arr (progn ;; if shared
-                           ;; (%cepl-context-shared shared)
-                           (make-array 0 :fill-pointer 0 :adjustable t)))
+           (shared-arr (make-array 0 :fill-pointer 0 :adjustable t))
            (result (%make-cepl-context
                     :id (get-free-context-id)
                     :bound-thread this-thread
@@ -43,25 +38,11 @@
                     :shared shared-arr
                     :surfaces nil)))
       (vector-push-extend result (%cepl-context-shared result))
-      ;; {TODO} UNCOMMENT WHEN SHARED CONTEXTS ARE IMPLEMENTED
-      ;; (when shared
-      ;;   (setf (%cepl-context-array-of-gpu-buffers result)
-      ;;         (%cepl-context-array-of-gpu-buffers shared))
-      ;;   (setf (%cepl-context-array-of-textures result)
-      ;;         (%cepl-context-array-of-textures shared)))
       (when cepl.host::*current-host*
         (on-host-initialized result))
       (push result *contexts*)
       ;; done!
       result)))
-
-(defmacro with-new-cepl-context ((var-name &key shared (gl-version t))
-                                 &body body)
-  (alexandria:with-gensyms (new-context)
-    `(let (,new-context (make-context :gl-version ,gl-version
-                                      :shared ,shared))
-       (unwind-protect (with-cepl-context (,var-name ,new-context) ,@body)
-         (free-context ,new-context)))))
 
 (defun+ free-context (cepl-context)
   (format t "free-context not yet implemented. Leaking ~a" cepl-context))
@@ -90,9 +71,14 @@
 (defun %with-context (var-name cepl-context forgo-let body ctx-var)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0)))
   (assert (constantp forgo-let))
-  (let ((forgo-let (or forgo-let (eq cepl-context '(cepl-context))))
-        (ctx (or ctx-var (gensym "CTX"))))
-    `(let* ((,ctx ,cepl-context)
+  (let* ((getting-current (eq cepl-context '(cepl-context)))
+         (forgo-let (or forgo-let getting-current))
+         (ctx (or ctx-var (gensym "CTX")))
+         (tmp (gensym "tmp-ctx")))
+    `(let* ((,tmp ,cepl-context)
+            (,ctx (etypecase ,tmp
+                    (cepl-context ,tmp)
+                    (unbound-cepl-context (complete-unbound-context ,tmp))))
             ,@(when var-name `((,var-name ,ctx)))
             ,@(unless forgo-let `((*cepl-context* ,ctx))))
        (declare (ignorable ,ctx))
@@ -116,6 +102,80 @@
 
 (define-compiler-macro cepl-context ()
   `(l-identity *cepl-context*))
+
+;;----------------------------------------------------------------------
+;; Shared Contexts
+
+(defn make-context-shared-with-current-context ()
+    unbound-cepl-context
+  (declare (profile t))
+  (let ((cepl-context (cepl-context)))
+    (assert cepl-context)
+    (%with-cepl-context-slots (gl-context
+                               requested-gl-version
+                               current-surface
+                               bound-thread
+                               surfaces)
+        cepl-context
+      (assert (eq bound-thread (bt:current-thread)) ()
+              'shared-context-created-from-incorrect-thread
+              :ctx-thread bound-thread
+              :init-thread (bt:current-thread))
+      (assert current-surface ()
+              "CEPL: The CEPL context you attempted to share with does not have a surface current")
+      (multiple-value-bind (new-raw-gl-context new-surface)
+          (cepl.host:make-gl-context-shared-with-current-context
+           :current-gl-context gl-context
+           :version (version-float gl-context)
+           :surface current-surface)
+        (cepl.host:make-gl-context-current-on-surface (handle gl-context)
+                                                      current-surface)
+        (let* ((wrapped-context
+                (make-instance
+                 'gl-context
+                 :handle new-raw-gl-context
+                 :version-major (major-version gl-context)
+                 :version-minor (minor-version gl-context)
+                 :version-float (version-float gl-context))))
+          (make-unbound-cepl-context
+           :requested-gl-version requested-gl-version
+           :shared cepl-context
+           :gl-context wrapped-context
+           :surface new-surface
+           :surfaces surfaces))))))
+
+(defun+ complete-unbound-context (unbound-context)
+  (let ((this-thread (bt:current-thread)))
+    (assert-no-other-context-is-bound-to-thread this-thread)
+    (assert (not (unbound-cepl-context-consumed unbound-context)))
+    (let* ((gl-context (unbound-cepl-context-gl-context unbound-context))
+           (shared (unbound-cepl-context-shared unbound-context))
+           (surface (unbound-cepl-context-surface unbound-context))
+           (surfaces (unbound-cepl-context-surfaces unbound-context))
+           (surfaces (if (find surface surfaces)
+                         surfaces
+                         (cons surface surfaces)))
+           (gl-version (unbound-cepl-context-requested-gl-version
+                        unbound-context))
+           (shared-arr (%cepl-context-shared shared))
+           (result (%make-cepl-context
+                    :id (get-free-context-id)
+                    :gl-context gl-context
+                    :bound-thread this-thread
+                    :requested-gl-version gl-version
+                    :current-surface nil
+                    :shared shared-arr
+                    :surfaces surfaces)))
+      (vector-push-extend result (%cepl-context-shared result))
+      (setf (%cepl-context-array-of-gpu-buffers result)
+            (%cepl-context-array-of-gpu-buffers shared))
+      (setf (%cepl-context-array-of-textures result)
+            (%cepl-context-array-of-textures shared))
+      (push result *contexts*)
+      (make-surface-current result surface)
+      (setf (unbound-cepl-context-consumed unbound-context) t)
+      ;; done!
+      result)))
 
 ;;----------------------------------------------------------------------
 ;; Define Functions for interacting with the current context
@@ -167,9 +227,6 @@
 
 ;;----------------------------------------------------------------------
 
-;; {TODO} move this to delayed-resource-init.lisp
-(defvar *on-context* nil)
-
 (defn init-gl-context ((cepl-context cepl-context) (surface t))
     cepl-context
   (declare (profile t))
@@ -186,6 +243,7 @@
               :init-thread this-thread))
     (let ((raw-context (cepl.host:make-gl-context :version requested-gl-version
                                                   :surface surface)))
+      (cepl.host:make-gl-context-current-on-surface raw-context surface)
       (ensure-cepl-compatible-setup)
       (let* ((maj (gl:major-version))
              (min (gl:minor-version))
@@ -198,14 +256,12 @@
               :version-minor min
               :version-float ver-f)))
         ;;
-        ;; hack until we support contexts properly
-        (setf *gl-context* wrapped-context)
-        ;;
         (setf gl-context wrapped-context)
         (setf gl-version-float ver-f)
         ;;
-        ;; {TODO} Hmm this feels wrong
-        (map nil #'funcall *on-context*)
+        ;; {TODO} this is ugly, find a better way
+        (funcall 'cepl.samplers::sampler-on-context)
+        (funcall 'cepl.textures::check-immutable-feature)
         ;;
         ;; Set the default
         (%set-default-fbo-and-viewport surface cepl-context)
@@ -634,5 +690,11 @@
   (when (not (%cepl-context-requested-gl-version cepl-context))
     (setf (%cepl-context-requested-gl-version cepl-context)
           requested-gl-version)))
+
+;;----------------------------------------------------------------------
+
+(defn gl-initialized-p (&optional (context cepl-context (cepl-context)))
+    boolean
+  (not (null (%cepl-context-gl-context context))))
 
 ;;----------------------------------------------------------------------

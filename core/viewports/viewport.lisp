@@ -39,10 +39,12 @@
            (profile t))
   (or (%current-viewport cepl-context)
       (error "No current viewport found ~a"
-             (if (and (boundp '*gl-context*)
-                      (symbol-value '*gl-context*))
+             (if (and (cepl-context)
+                      (cepl.context::%cepl-context-gl-context (cepl-context)))
                  "but we do have a gl context. This is a bug"
                  "because the GL context is not yet available"))))
+
+
 
 ;;------------------------------------------------------------
 

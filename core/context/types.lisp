@@ -29,6 +29,14 @@
 (defun discard-context-id (id)
   (push id *free-context-ids*))
 
+(defstruct unbound-cepl-context
+  (consumed nil :type boolean)
+  (gl-context nil :type gl-context)
+  (requested-gl-version nil :type t)
+  (shared nil :type cepl-context)
+  (surface nil :type t)
+  (surfaces nil :type list))
+
 (defstruct (cepl-context (:constructor %make-cepl-context)
                          (:conc-name %cepl-context-))
   (id (error "Context missing an ID") :type context-id)
@@ -37,7 +45,7 @@
   (gl-version-float 0f0 :type single-float)
   (bound-thread nil :type (or null bt:thread))
   (uninitialized-resources nil :type list)
-  (shared (error "Context must be in-package via #'make-context")
+  (shared (error "Context must be initialized via #'make-context")
           :type (array cepl-context (*)))
   (surfaces
    (error "Context must be initialized via #'make-context")

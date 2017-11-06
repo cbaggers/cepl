@@ -152,6 +152,5 @@
   (call-listeners)
   ;; do shutdown stuff
   (cepl.host:shutdown)
-  (setf cepl.context:*gl-context* nil)
   ;; go back to uninitialized
   (setf *lifecycle-state* :uninitialized))

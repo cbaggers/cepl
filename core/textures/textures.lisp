@@ -14,8 +14,6 @@
   (unless (has-feature "GL_ARB_texture_storage")
     (setf *immutable-available* nil)))
 
-(push #'check-immutable-feature *on-context*)
-
 ;;------------------------------------------------------------
 
 (defun+ texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
@@ -37,7 +35,9 @@
                                texture mipmap-level)
                   :image-format (texture-image-format texture))))
 
-            (when (not cepl.context:*gl-context*)
+            (when (or (null (cepl-context))
+                      (null (cepl.context::%cepl-context-gl-context
+                             (cepl-context))))
               (cepl.context::delay-initialization
                (cepl-context)
                (lambda () (reinit-on-context result))

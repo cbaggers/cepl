@@ -129,6 +129,7 @@
            :invalid-options-for-texture
            :gpu-func-symbol-name
            :gl-context-initialized-from-incorrect-thread
+           :shared-context-created-from-incorrect-thread
            :tried-to-make-context-on-thread-that-already-has-one
            :max-context-count-reached
            :nested-with-transform-feedback
@@ -149,6 +150,7 @@
    :register-host
    :initialize
    :make-gl-context
+   :make-gl-context-shared-with-current-context
    :make-surface
    :set-step-func
    :set-swap-func
@@ -188,7 +190,10 @@
    :surface-fullscreen-p-function
    :set-surface-fullscreen-function
    :surface-title-function
-   :set-surface-title-function))
+   :set-surface-title-function
+   ;; api-2
+   :api-2
+   :make-gl-context-shared-with-current-context-function))
 
 (uiop:define-package :cepl.lifecycle
     (:use :cl :cepl-utils :glsl-symbols :cepl.build)
@@ -564,8 +569,7 @@
            ;;---
            :populate
            :window-dimensions
-           :window-resolution
-           :*on-context*))
+           :window-resolution))
 
 (uiop:define-package :cepl.context
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
@@ -573,7 +577,6 @@
           :named-readtables :cepl.errors :cepl.internals
           :cepl.build)
   (:export :gl-context
-           :*gl-context*
            :has-feature
            :major-version
            :minor-version
@@ -583,11 +586,12 @@
 
            ;;----------------------------
            ;; CEPL.Context
+           :make-context
+           :make-context-shared-with-current-context
            :cepl-context
            :context-id
            :+max-context-count+
            :with-cepl-context
-           :with-new-cepl-context
            :gpu-buffer-bound
            :vao-bound
            :read-fbo-bound
@@ -611,7 +615,8 @@
            :surface-dimensions
            :surface-resolution
            :surface-title
-           :surface-fullscreen-p))
+           :surface-fullscreen-p
+           :gl-initialized-p))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
@@ -1053,7 +1058,8 @@
            :print-mem
            :shutting-down-p
            :q! :m! :v! :v!byte :v!ubyte :v!int :s~
-           :radians :degrees)
+           :radians :degrees
+           :gl-initialized-p)
   (:reexport :cepl.viewports
              :cepl.types
              :cepl.memory

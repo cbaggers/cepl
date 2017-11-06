@@ -79,6 +79,9 @@
   (declare (ignore host surface title))
   (warn "Setting the title of a surface is not supported when using the legacy host api"))
 
+(defmethod %make-gl-context-shared-with-current-context ((host api-0) &key &allow-other-keys)
+  (error "CEPL: Making a shared GL context is not supported when using the legacy host api"))
+
 ;; no longer used but legacy hosts still expect to find it
 (defun set-default-swap-arg (win-handle)
   win-handle)

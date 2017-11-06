@@ -370,7 +370,7 @@
              (let* ((versions (mapcar #'get-version-from-context contexts))
                     (trimmed (remove-duplicates (remove nil versions))))
                (case= (length trimmed)
-                 (0 (cepl.context::get-best-glsl-version))
+                 (0 (cepl.context::get-best-glsl-version (cepl-context)))
                  (1 (first trimmed))
                  (otherwise nil)))))
     (let ((contexts (mapcar #'get-context stage-pairs)))

@@ -471,6 +471,14 @@ A: ~a
 B: ~a"
   ctx-thread init-thread)
 
+(deferror shared-context-created-from-incorrect-thread ()
+    (ctx-thread init-thread)
+    "CEPL: This CEPL context is tied to thread A (below) however something tried
+to create a shared CEPL context using it from thread B:
+A: ~a
+B: ~a"
+  ctx-thread init-thread)
+
 (deferror tried-to-make-context-on-thread-that-already-has-one ()
     (context thread)
     "CEPL: An attempt was made to create a context on thread ~a however
