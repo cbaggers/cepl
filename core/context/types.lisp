@@ -43,6 +43,7 @@
    (error "Context must be initialized via #'make-context")
    :type list)
   (current-program +unknown-gl-id+ :type gl-id)
+  (current-tfs nil :type (or null transform-feedback-stream))
   (current-surface nil :type t)
   (vao-binding-id +unknown-gl-id+ :type vao-id)
   (current-viewport nil :type (or null viewport))
@@ -103,7 +104,7 @@
   (let ((context-slots
          '(id gl-context requested-gl-version bound-thread current-program
            uninitialized-resources shared surfaces current-surface
-           vao-binding-id current-viewport default-viewport
+           current-tfs vao-binding-id current-viewport default-viewport
            current-scissor-viewports default-framebuffer read-fbo-binding
            draw-fbo-binding fbos array-of-bound-gpu-buffers
            array-of-gpu-buffers array-of-ubo-bindings-buffer-ids

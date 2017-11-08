@@ -489,7 +489,7 @@
                       gl-id)
     (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
       (%gl:bind-buffer-range
-       :uniform-buffer tfb-binding-point bind-id offset size)
+       :transform-feedback-buffer tfb-binding-point bind-id offset size)
       (setf (aref array-of-transform-feedback-bindings-buffer-ids
                   tfb-binding-point)
             id)

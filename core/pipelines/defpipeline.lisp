@@ -98,7 +98,11 @@
                ;;
                ;; {todo} explain
                ,@(mapcar λ`(,(first _) -1)
-                         (mapcat #'let-forms uniform-assigners)))
+                         (mapcat #'let-forms uniform-assigners))
+               ;;
+               ;; The primitive used by transform feedback. When nil
+               ;; the primitive comes from the render-mode
+               (tfs-primitive nil))
            ;;
            ;; To help the compiler we make sure it knows it's a function :)
            (declare (type function implicit-uniform-upload-func)
@@ -146,6 +150,7 @@
        ',context))))
 
 (defun+ register-named-pipeline (name func)
+  (declare (profile t))
   (setf (function-keyed-pipeline func)
         name))
 
@@ -292,8 +297,25 @@
                    (declare (ignorable prog-id))
                    ,@(let ((u-lets (mapcat #'let-forms uniform-assigners)))
                        (loop for u in u-lets collect (cons 'setf u))))
+                 (setf tfs-primitive
+                       (get-transform-feedback-primitive compiled-stages))
                  new-prog-ids)))
          (%post-init ,post)))))
+
+(defun+ get-transform-feedback-primitive (stages)
+  (let* ((prims (loop :for stage :in stages :collect
+                   (typecase stage
+                     (compiled-tessellation-evaluation-stage
+                      (ecase (primitive-out stage)
+                        (:isolines :lines)
+                        (:triangles :triangles)))
+                     (compiled-geometry-stage
+                      (ecase (primitive-out stage)
+                        (:points :points)
+                        (:line-strip :lines)
+                        (:triangle-strip :triangles)))))))
+    ;; We want the primitive of the last applicable stage
+    (first (last prims))))
 
 (defun+ serialize-stage-pairs (stage-pairs)
   (cons 'list (mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
@@ -358,40 +380,67 @@
                          (= ,(draw-mode-group-id primitive)
                             (buffer-stream-primitive-group-id stream))
                          ()
-                         'buffer-stream-has-invalid-primtive-for-stream
+                         'buffer-stream-has-invalid-primitive-for-stream
                          :name ',name
                          :pline-prim ',(varjo::lisp-name primitive)
                          :stream-prim (buffer-stream-primitive stream)))))
           (let* ((%ctx-id (context-id ,ctx))
                  (prog-id (aref prog-ids %ctx-id)))
+
+            ;; ensure program-id available, otherwise bail
             (when (= prog-id +unknown-gl-id+)
               (setf prog-ids (,init-func-name))
               (setf prog-id (aref prog-ids %ctx-id))
               (when (= prog-id +unknown-gl-id+) (return-from ,name)))
+
+            ;;
             (use-program ,ctx prog-id)
+
+            ;; Upload uniforms
             (profile-block (,name :uniforms)
               ,@u-uploads
               (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
-            (profile-block (,name :draw)
-              (when stream (draw-expander stream ,primitive)))
-            ;;(use-program ,ctx 0)
+
+            ;; Start the draw
+            (when stream
+              (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
+                                    `(buffer-stream-draw-mode-val stream)
+                                    (varjo::lisp-name primitive))))
+                ;; if we are capturing transform feedback
+                (%with-cepl-context-slots (current-tfs) ,ctx
+                  (let ((tfs current-tfs))
+                    (when tfs
+                      (let ((tfs-prog-id (%tfs-current-prog-id tfs)))
+                        (if (= tfs-prog-id +unknown-gl-id+)
+                            (progn
+                              (%gl:begin-transform-feedback
+                               (or tfs-primitive draw-type))
+                              (setf (%tfs-current-prog-id tfs) prog-id))
+                            (assert (= tfs-prog-id prog-id) ()
+                                    "Different pipelines have been called within same tfs block"))))))
+                (profile-block (,name :draw)
+                  (draw-expander stream draw-type ,primitive))))
+
+            ;; uniform cleanup
             ,@u-cleanup
+
+            ;; map-g is responsible for returning the correct fbo
             (values)))
+
+        ;; top level run forms
         (register-named-pipeline ',name #',name)
         ',name))))
 
 (defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
 
-(defmacro draw-expander (stream primitive)
+(defmacro draw-expander (stream draw-type primitive)
   "This draws the single stream provided using the currently
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which
    is handling the binding."
   `(let* ((stream ,stream)
-          (draw-type ,(if (typep primitive 'varjo::dynamic)
-                          `(buffer-stream-draw-mode-val ,stream)
-                          (varjo::lisp-name primitive)))
+          (draw-type ,draw-type)
           (index-type (buffer-stream-index-type stream)))
      ,@(when (typep primitive 'varjo::patches)
              `((assert (= (buffer-stream-patch-length stream)
@@ -467,6 +516,62 @@
 (defun+ load-shaders (&rest shader-paths)
   (mapcar #'load-shader shader-paths))
 
+(defun get-feedback-out-vars (stages)
+  (flet ((get-em (stage)
+           (loop :for out-var :in (varjo:output-variables stage)
+              :for qualifiers := (varjo:qualifiers out-var)
+              :when (member :feedback qualifiers)
+              :collect out-var)))
+    (first (remove nil (mapcar #'get-em stages)))))
+
+;;  void glTransformFeedbackVaryings(GLuint program​, GLsizei count​,
+;;  const char **varyings​, GLenum bufferMode​);
+;;
+;; program
+;;     The name of the target program object.
+;; count
+;;     The number of varying variables used for transform feedback.
+;; varyings
+;;     An array of count​ null-terminated strings specifying the names
+;;     of the varying variables to use for transform feedback.
+;; bufferMode
+;;     Identifies the mode used to capture the varying variables when
+;;     transform feedback is active. bufferMode​ must be
+;;     GL_INTERLEAVED_ATTRIBS or GL_SEPARATE_ATTRIBS.
+
+(defun get-varyings (prog-id index)
+  (with-foreign-objects ((cstr :char 100)
+                         (length '%gl:sizei 1)
+                         (size '%gl:sizei 1)
+                         (type '%gl:enum 1))
+    (%gl:get-transform-feedback-varying
+     prog-id index 100 length size type cstr)
+    (let ((str (cffi:foreign-string-to-lisp
+                cstr :count (cffi:mem-aref length '%gl:sizei)))
+          (type-kwd (cffi:mem-aref type '%gl:enum)))
+      (list str type-kwd))))
+
+(defun set-transform-feedback (prog-id stages)
+  (let* ((feedback-vars (get-feedback-out-vars stages))
+         (names (mapcar λ(format nil "~a.~a"
+                                 (varjo:block-name-string _)
+                                 (varjo:glsl-name _))
+                        feedback-vars))
+         (len (length names))
+         (ptrs (map 'vector #'cffi:foreign-string-alloc names))
+         (arr-type `(:array :pointer ,len)))
+    (if names
+        (cffi:with-foreign-array (str-arr ptrs arr-type)
+          (release-unwind-protect
+              (%gl:transform-feedback-varyings prog-id len str-arr
+                                               :interleaved-attribs)
+            (map nil #'cffi:foreign-free ptrs)))
+        (when (/= 0 (gl:get-program prog-id :transform-feedback-varyings))
+          (print "disconnecting feedback varyings")
+          (%gl:transform-feedback-varyings prog-id 0 (cffi:null-pointer)
+                                           :interleaved-attribs))))
+  (values))
+
 (defun+ link-shaders (shaders prog-id compiled-stages)
   "Links all the shaders provided and returns an opengl program
    object. Will recompile an existing program if ID is provided"
@@ -474,6 +579,7 @@
   (release-unwind-protect
       (progn (loop :for shader :in shaders :do
                 (%gl:attach-shader prog-id shader))
+             (set-transform-feedback prog-id compiled-stages)
              (%gl:link-program prog-id)
              ;;check for linking errors
              (if (not (gl:get-program prog-id :link-status))

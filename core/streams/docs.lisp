@@ -96,7 +96,7 @@ what the gpu will draw this data as. It can be any one of:
 :triangle-strip-adjacency
 (:patch <patch-size>)
 
-By default the primtive-type is :triangles
+By default the primitive-type is :triangles
 
 It is also worth noting  that you can also use gpu-sub-arrays in here if you
 want to limit the data you are using, for example the following is perfectly

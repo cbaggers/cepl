@@ -121,12 +121,13 @@
            :invalid-inline-glsl-stage-arg-layout
            :adjust-gpu-array-mismatched-dimensions
            :adjust-gpu-array-shared-buffer
-           :buffer-stream-has-invalid-primtive-for-stream
+           :buffer-stream-has-invalid-primitive-for-stream
            :invalid-options-for-texture
            :gpu-func-symbol-name
            :gl-context-initialized-from-incorrect-thread
            :tried-to-make-context-on-thread-that-already-has-one
-           :max-context-count-reached))
+           :max-context-count-reached
+           :nested-with-transform-feedback))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -424,6 +425,12 @@
            :%viewport-resolution-y
            :%viewport-origin-x
            :%viewport-origin-y
+
+           :transform-feedback-stream
+           :%make-tfs
+           :%tfs-array
+           :%tfs-bound
+           :%tfs-current-prog-id
 
            ;;---
            :holds-gl-object-ref-p))
@@ -937,6 +944,16 @@
   (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
   (:export :scissor-viewport))
 
+(uiop:define-package :cepl.transform-feedback
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
+          :cepl.types :split-sequence :named-readtables
+          :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
+          :cepl.internals :cepl.fbos :cepl.build
+          :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays)
+  (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
+  (:export :make-transform-feedback-stream :with-transform-feedback
+           :transform-feedback-stream-array))
+
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables
           :cepl-utils :cepl.errors :%cepl.types :cepl.types
@@ -974,6 +991,8 @@
           :cepl-utils
           :cepl.blending
           :cepl.stencil
+          :cepl.scissor
+          :cepl.transform-feedback
           :cepl.c-arrays
           :cepl.context
           :cepl.errors
@@ -1038,7 +1057,9 @@
              :cepl.textures
              :cepl.fbos
              :cepl.blending
+             :cepl.transform-feedback
              :cepl.stencil
+             :cepl.scissor
              :cepl.pipelines
              :cepl.types.predefined
              :cepl.documentation-functions))

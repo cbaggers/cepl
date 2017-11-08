@@ -125,7 +125,7 @@
                            (= ,(draw-mode-group-id primitive)
                               (buffer-stream-primitive-group-id stream))
                            ()
-                           'buffer-stream-has-invalid-primtive-for-stream
+                           'buffer-stream-has-invalid-primitive-for-stream
                            :name "<lambda>"
                            :pline-prim ',(varjo::lisp-name primitive)
                            :stream-prim (buffer-stream-primitive stream)))))

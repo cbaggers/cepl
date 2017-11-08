@@ -526,6 +526,15 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (transform-feedback-stream
+             (:constructor %make-tfs)
+             (:conc-name %tfs-))
+  (array nil :type (or null gpu-array-bb))
+  (bound nil :type boolean)
+  (current-prog-id +unknown-gl-id+ :type gl-id))
+
+;;------------------------------------------------------------
+
 (defvar +null-gpu-buffer+
   (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
 

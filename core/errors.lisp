@@ -404,12 +404,12 @@ which is sharing a gpu-buffer with other gpu-arrays.
 Array: ~a is sharing a gpu buffer with ~a other gpu-arrays"
   array shared-count)
 
-(deferror buffer-stream-has-invalid-primtive-for-stream ()
+(deferror buffer-stream-has-invalid-primitive-for-stream ()
     (name pline-prim stream-prim)
     "CEPL: The buffer-stream passed to ~a contains ~s, however ~a
 was expecting ~s.
 
-You can either change the type of primtives the pipeline was expecting e.g:
+You can either change the type of primitives the pipeline was expecting e.g:
 
  (defpipeline-g ~s (~s)
    ..)
@@ -492,6 +492,11 @@ this then please report it at https://github.com/cbaggers/cepl. This lets us
 know that this is causing real issues for people and we can prioritize it
 accordingingly.")
 
+(deferror nested-with-transform-feedback () ()
+    "CEPL: Detected a nested with-transform-feedback form.
+
+Currently this is not supported however in future it may be possible
+to support on GLv4 and up.")
 
 ;; Please remember the following 2 things
 ;;
