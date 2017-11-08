@@ -132,8 +132,9 @@ internal texture format"
     "with-model-space: please dont try redefining the relationship between ~s and itself."
   space)
 
-(deferror make-buffer-stream-with-no-gpu-arrays () ()
-    "Cepl: Invalid attempt to make buffer-stream with no gpu-arrays")
+(deferror index-on-buffer-stream-with-no-gpu-arrays () ()
+    "Cepl: Invalid attempt to make buffer-stream with an index array even
+though there were no gpu-arrays.")
 
 (deferror invalid-context-for-def-glsl-stage () (name context)
     "CEPL: Invalid context supplied for glsl-stage ~a:

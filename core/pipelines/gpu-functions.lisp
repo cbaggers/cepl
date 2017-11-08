@@ -404,6 +404,13 @@
     (list (cons :vertex v-key)
           (cons :fragment f-key))))
 
+(defun complete-single-stage-pipeline (stage)
+  (ecase (first stage)
+    (:fragment
+     (list (cons :vertex (get-stage-key '(cepl.pipelines::stateless-quad-vertex-stage)))
+           (cons :geometry (get-stage-key '(cepl.pipelines::stateless-quad-geometry-stage)))
+           stage))))
+
 (defun+ parse-gpipe-args-explicit (args)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment) args
@@ -411,17 +418,23 @@
         (validate-stage-names (list vertex tessellation-control
                                     tessellation-evaluation
                                     geometry fragment))
-      (remove nil
-              (list (when vertex
-                      (cons :vertex v-key))
-                    (when tessellation-control
-                      (cons :tessellation-control tc-key))
-                    (when tessellation-evaluation
-                      (cons :tessellation-evaluation te-key))
-                    (when geometry
-                      (cons :geometry g-key))
-                    (when fragment
-                      (cons :fragment f-key)))))))
+      (let ((result
+             (remove nil
+                     (list (when vertex
+                             (cons :vertex v-key))
+                           (when tessellation-control
+                             (cons :tessellation-control tc-key))
+                           (when tessellation-evaluation
+                             (cons :tessellation-evaluation te-key))
+                           (when geometry
+                             (cons :geometry g-key))
+                           (when fragment
+                             (cons :fragment f-key))))))
+        ;;
+        ;; single fragment pipeline
+        (if (= 1 (length result))
+            (complete-single-stage-pipeline (first result))
+            result)))))
 
 (defun+ validate-stage-names (names)
   (let* (invalid

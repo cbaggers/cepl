@@ -31,8 +31,8 @@
 (defun+ make-buffer-stream (gpu-arrays
                            &key index-array (start 0) length
                              (retain-arrays t) (primitive :triangles))
-  (unless gpu-arrays
-    (error 'make-buffer-stream-with-no-gpu-arrays))
+  (when (not gpu-arrays)
+    (assert (not index-array) () 'index-on-buffer-stream-with-no-gpu-arrays))
   (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
     (cepl.context::if-gl-context
      (init-buffer-stream-from-id %pre% (make-vao gpu-arrays index-array)
@@ -44,8 +44,8 @@
 (defun+ make-buffer-stream-from-id (vao-gl-object gpu-arrays
                                    &key index-array (start 0) length
                                      retain-arrays (primitive :triangles))
-  (unless gpu-arrays
-    (error 'make-buffer-stream-with-no-gpu-arrays))
+  (when (not gpu-arrays)
+    (assert (not index-array) () 'index-on-buffer-stream-with-no-gpu-arrays))
   (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
     (init-buffer-stream-from-id
      (make-raw-buffer-stream :primitive primitive) vao-gl-object gpu-arrays
@@ -54,12 +54,15 @@
 (defun+ init-buffer-stream-from-id (stream-obj
                                     vao-gl-object gpu-arrays
                                     index-array start length retain-arrays)
-  (unless gpu-arrays
-    (error 'make-buffer-stream-with-no-gpu-arrays))
+  (when (not gpu-arrays)
+    (assert (not index-array) () 'index-on-buffer-stream-with-no-gpu-arrays))
   (let* ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays))
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
          ;; OF TRIANGLES
+         (length (if gpu-arrays
+                     length
+                     1))
          (length (or length
                      (when index-array (first (dimensions index-array)))
                      (apply #'min (mapcar #'(lambda (x)

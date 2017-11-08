@@ -91,7 +91,7 @@
            :invalid-shader-gpipe-form
            :invalid-shader-gpipe-stage-keys
            :lisp-type->image-format-failed
-           :make-buffer-stream-with-no-gpu-arrays
+           :index-on-buffer-stream-with-no-gpu-arrays
            :make-gpu-array-from-c-array-mismatched-dimensions
            :make-tex-array-not-match-type
            :make-tex-array-not-match-type2

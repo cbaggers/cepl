@@ -10,7 +10,7 @@
         (error 'invalid-keywords-for-shader-gpipe-args
                :pipeline-name pipeline-name :keys invalid))))
   (let ((without-keys (remove :post (remove-if #'keywordp gpipe-args))))
-    (if (< (length without-keys) 2)
+    (if (< (length without-keys) 1)
         (error 'not-enough-args-for-implicit-gpipe-stages
                :pipeline-name pipeline-name
                :clauses gpipe-args)

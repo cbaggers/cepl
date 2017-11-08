@@ -93,6 +93,7 @@
                (:file "core/textures/texture-samplers")
                (:file "core/samplers/context")
                (:file "core/pipelines/map-g")
+               (:file "core/pipelines/quad-stages")
                (:file "core/gpu-arrays/texture-backed")
                (:file "core/gpu-arrays/with-and-push")
                (:file "core/fbos/fbo")
