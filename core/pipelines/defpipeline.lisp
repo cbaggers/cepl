@@ -376,9 +376,9 @@
               (when stream (draw-expander stream ,primitive)))
             ;;(use-program ,ctx 0)
             ,@u-cleanup
-            (values))
-          (register-named-pipeline ',name #',name)
-          ',name)))))
+            (values)))
+        (register-named-pipeline ',name #',name)
+        ',name))))
 
 (defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
