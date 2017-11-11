@@ -132,9 +132,36 @@
             (use-program ,ctx prog-id)
             ,@u-uploads
             (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
-            (when stream (draw-expander stream ,primitive))
+            (when stream
+              (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
+                                    `(buffer-stream-draw-mode-val stream)
+                                    (varjo::lisp-name primitive))))
+                ;; if we are capturing transform feedback
+                (%with-cepl-context-slots (current-tfs) ,ctx
+                  (let ((tfs current-tfs))
+                    (when tfs
+                      (let ((tfs-alen (length (%tfs-arrays tfs))))
+                        (assert (= tfs-alen tfs-array-count)
+                                () 'incorrect-number-of-arrays-in-tfs
+                                :tfs tfs
+                                :tfs-count tfs-alen
+                                :count tfs-array-count))
+                      (let ((tfs-prog-id (%tfs-current-prog-id tfs)))
+                        (if (= tfs-prog-id +unknown-gl-id+)
+                            (progn
+                              (%gl:begin-transform-feedback
+                               (or tfs-primitive draw-type))
+                              (setf (%tfs-current-prog-id tfs) prog-id))
+                            (assert (= tfs-prog-id prog-id) ()
+                                    'mixed-pipelines-in-with-tb))))))
+
+                (when (not has-fragment-stage)
+                  (gl:enable :rasterizer-discard))
+                (draw-expander stream draw-type ,primitive)
+                (when (not has-fragment-stage)
+                  (gl:disable :rasterizer-discard))))
             ,@u-cleanup
-            stream))))))
+            (values)))))))
 
 (defun+ make-n-compile-lambda-pipeline (gpipe-args context)
   (let ((code (make-lambda-pipeline gpipe-args context)))
