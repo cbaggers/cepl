@@ -522,6 +522,21 @@ The stream in question was:~%~a"
   (if (= count 1) "array" "arrays")
   tfs)
 
+(deferror invalid-args-in-make-tfs () (args)
+    "CEPL: make-transform-feedback-stream was called with some arguments that
+are not buffer-backed gpu-arrays:~{~%~s~}" args)
+
+(deferror invalid-args-in-make-tfs () (args)
+    "CEPL: make-transform-feedback-stream was called with some arguments that
+are not buffer-backed gpu-arrays:~{~%~s~}" args)
+
+(defwarning tfs-setf-arrays-whilst-bound () ()
+    "CEPL: There was an attempt to setf the arrays attached to the
+transform-feedback-stream whilst it is bound inside with-transform-feedback.
+
+It is not possible to make these changes whilst in the block so we will apply
+them at the end of with-transform-feedback's scope")
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

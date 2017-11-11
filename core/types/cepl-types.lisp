@@ -530,6 +530,7 @@
              (:constructor %make-tfs)
              (:conc-name %tfs-))
   (arrays nil :type (or null (array gpu-array-bb (*))))
+  (pending-arrays nil :type (or null (array gpu-array-bb (*))))
   (bound nil :type boolean)
   (current-prog-id +unknown-gl-id+ :type gl-id))
 

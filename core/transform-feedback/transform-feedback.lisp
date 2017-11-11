@@ -3,8 +3,8 @@
 (defun make-transform-feedback-stream (&rest buffer-backed-gpu-arrays)
   (assert (every (lambda (arr) (typep arr 'gpu-array-bb))
                  buffer-backed-gpu-arrays)
-          (buffer-backed-gpu-arrays)
-          "{TODO} foo ~a" buffer-backed-gpu-arrays)
+          (buffer-backed-gpu-arrays) 'invalid-args-in-make-tfs
+          :args buffer-backed-gpu-arrays)
   (let ((arrs (make-array (length buffer-backed-gpu-arrays)
                           :element-type 'gpu-array-bb
                           :initial-contents buffer-backed-gpu-arrays)))
@@ -58,25 +58,30 @@
       index
       0
       0))
+  (when (%tfs-pending-arrays tfs)
+    (setf (%tfs-arrays tfs) (%tfs-pending-arrays tfs))
+    (setf (%tfs-pending-arrays tfs) nil))
   (values))
 
 (defn-inline transform-feedback-stream-arrays ((tfs transform-feedback-stream))
     list
   (coerce (%tfs-arrays tfs) 'list))
 
-(defn-inline (setf transform-feedback-stream-arrays)
+(defn (setf transform-feedback-stream-arrays)
     ((buffer-backed-gpu-arrays list) (tfs transform-feedback-stream))
     list
-  (assert (not (%tfs-bound tfs)) ()
-          "{TODO} bound n shit")
   (assert (every (lambda (arr) (typep arr 'gpu-array-bb))
                  buffer-backed-gpu-arrays)
-          (buffer-backed-gpu-arrays)
-          "{TODO} foo ~a" buffer-backed-gpu-arrays)
+          (buffer-backed-gpu-arrays) 'invalid-args-in-make-tfs
+          :args buffer-backed-gpu-arrays)
   (let ((arrs (make-array (length buffer-backed-gpu-arrays)
-                          :element-type 'gpu-array-bb
-                          :initial-contents buffer-backed-gpu-arrays)))
-    (setf (%tfs-arrays tfs) arrs)
+                              :element-type 'gpu-array-bb
+                              :initial-contents buffer-backed-gpu-arrays)))
+    (if (%tfs-bound tfs)
+        (progn
+          (warn 'tfs-setf-arrays-whilst-bound)
+          (setf (%tfs-pending-arrays tfs) arrs))
+        (setf (%tfs-arrays tfs) arrs))
     buffer-backed-gpu-arrays))
 
 (defmethod print-object ((tfs transform-feedback-stream) stream)

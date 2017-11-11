@@ -131,7 +131,9 @@
            :nested-with-transform-feedback
            :non-consecutive-feedback-groups
            :mixed-pipelines-in-with-tb
-           :incorrect-number-of-arrays-in-tfs))
+           :incorrect-number-of-arrays-in-tfs
+           :invalid-args-in-make-tfs
+           :tfs-setf-arrays-whilst-bound))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -435,6 +437,7 @@
            :%tfs-arrays
            :%tfs-bound
            :%tfs-current-prog-id
+           :%tfs-pending-arrays
 
            ;;---
            :holds-gl-object-ref-p))
