@@ -537,6 +537,20 @@ transform-feedback-stream whilst it is bound inside with-transform-feedback.
 It is not possible to make these changes whilst in the block so we will apply
 them at the end of with-transform-feedback's scope")
 
+(deferror one-stage-non-explicit () ()
+    "CEPL: When defining a pipeline with only 1 stage you need to explicitly
+mark what stage it is as CEPL is unable to infer this.
+
+For example:
+
+    (defpipeline-g some-pipeline ()
+      :vertex (some-stage :vec4))")
+
+(deferror invalid-stage-for-single-stage-pipeline () (kind)
+    "CEPL: We found a pipeline where the only stage was of type ~a.
+Single stage pipelines are valid in CEPL however only if the stage is
+a vertex or fragment stage" kind)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

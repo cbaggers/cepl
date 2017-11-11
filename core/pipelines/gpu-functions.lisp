@@ -392,11 +392,14 @@
    stage pairs are of the form (stage-name . gpu-function-name)"
   (let ((cut-pos (or (position :post args) (length args))))
     (destructuring-bind (&key post) (subseq args cut-pos)
-      (let ((args (subseq args 0 cut-pos)))
+      (let* ((args (subseq args 0 cut-pos))
+             (len (length args)))
         (list
-         (if (and (= (length args) 2) (not (some #'keywordp args)))
-             (parse-gpipe-args-implicit args)
-             (parse-gpipe-args-explicit args))
+         (cond
+           ((and (= len 2) (not (some #'keywordp args)))
+            (parse-gpipe-args-implicit args))
+           ((= len 1) (error 'one-stage-non-explicit))
+           (t (parse-gpipe-args-explicit args)))
          post)))))
 
 (defun+ parse-gpipe-args-implicit (args)
@@ -405,11 +408,14 @@
           (cons :fragment f-key))))
 
 (defun complete-single-stage-pipeline (stage)
-  (ecase (first stage)
+  (case (first stage)
     (:fragment
      (list (cons :vertex (get-stage-key '(cepl.pipelines::stateless-quad-vertex-stage)))
            (cons :geometry (get-stage-key '(cepl.pipelines::stateless-quad-geometry-stage)))
-           stage))))
+           stage))
+    (:vertex
+     (list stage))
+    (otherwise (error 'invalid-stage-for-single-stage-pipeline))))
 
 (defun+ parse-gpipe-args-explicit (args)
   (dbind (&key vertex tessellation-control tessellation-evaluation

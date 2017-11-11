@@ -133,7 +133,9 @@
            :mixed-pipelines-in-with-tb
            :incorrect-number-of-arrays-in-tfs
            :invalid-args-in-make-tfs
-           :tfs-setf-arrays-whilst-bound))
+           :tfs-setf-arrays-whilst-bound
+           :one-stage-non-explicit
+           :invalid-stage-for-single-stage-pipeline))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)

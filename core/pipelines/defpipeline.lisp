@@ -103,14 +103,18 @@
                ;; The primitive used by transform feedback. When nil
                ;; the primitive comes from the render-mode
                (tfs-primitive nil)
-               (tfs-array-count 0))
+               (tfs-array-count 0)
+               ;;
+               ;;
+               (has-fragment-stage t))
            ;;
            ;; To help the compiler we make sure it knows it's a function :)
            (declare (type function implicit-uniform-upload-func)
                     (type (simple-array gl-id (#.cepl.context:+max-context-count+))
                           prog-ids)
                     (type symbol tfs-primitive)
-                    (type (unsigned-byte 8) tfs-array-count))
+                    (type (unsigned-byte 8) tfs-array-count)
+                    (type boolean has-fragment-stage))
            ;;
            ;; we upload the spec at compile time (using eval-when)
            ,(gen-update-spec name stage-pairs context)
@@ -309,6 +313,9 @@
                    (setf tfs-primitive
                          (get-transform-feedback-primitive compiled-stages))
                    (setf tfs-array-count tfb-group-count))
+                 (let ((frag (find-if λ(typep _ 'compiled-fragment-stage)
+                                      compiled-stages)))
+                   (setf has-fragment-stage (not (null frag))))
                  new-prog-ids)))
          (%post-init ,post)))))
 
@@ -442,8 +449,13 @@
                               (setf (%tfs-current-prog-id tfs) prog-id))
                             (assert (= tfs-prog-id prog-id) ()
                                     'mixed-pipelines-in-with-tb))))))
+
+                (when (not has-fragment-stage)
+                  (gl:enable :rasterizer-discard))
                 (profile-block (,name :draw)
-                  (draw-expander stream draw-type ,primitive))))
+                  (draw-expander stream draw-type ,primitive))
+                (when (not has-fragment-stage)
+                  (gl:disable :rasterizer-discard))))
 
             ;; uniform cleanup
             ,@u-cleanup
