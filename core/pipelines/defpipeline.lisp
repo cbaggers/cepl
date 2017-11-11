@@ -72,60 +72,65 @@
        ',name)))
 
 (defun+ %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
-                               post context)
-  (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
-         ;; we generate the func that compiles & uploads the pipeline
-         ;; and also populates the pipeline's local-vars
-         (primitive (varjo.internals:primitive-name-to-instance
-                     (varjo.internals:get-primitive-type-from-context context)))
-         (init-func (gen-pipeline-init name primitive stage-pairs post
-                                       uniform-assigners stage-keys)))
-    ;;
-    ;; update the spec immediately (macro-expansion time)
-    (%update-spec name stage-pairs context)
-    (multiple-value-bind (cpr-macro dispatch)
-        (def-dispatch-func name (first init-func) stage-keys
-                           context primitive uniform-assigners
-                           (find :static context))
-      `(progn
-         ,cpr-macro
-         (let ((prog-ids (make-array +max-context-count+
-                                     :initial-element +unknown-gl-id+
-                                     :element-type 'gl-id))
-               ;; If there are no implicit-uniforms we need a no-op
-               ;; function to call
-               (implicit-uniform-upload-func #'fallback-iuniform-func)
+                                     post context)
+  (let* ((current-spec (pipeline-spec name))
+         (current-stage-tags (remove nil (slot-value current-spec 'diff-tags)))
+         (new-stage-tags (mapcar λ(slot-value (gpu-func-spec _) 'diff-tag)
+                                 stage-keys)))
+    (unless (equal current-stage-tags new-stage-tags)
+      (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
+             ;; we generate the func that compiles & uploads the pipeline
+             ;; and also populates the pipeline's local-vars
+             (primitive (varjo.internals:primitive-name-to-instance
+                         (varjo.internals:get-primitive-type-from-context context)))
+             (init-func (gen-pipeline-init name primitive stage-pairs post
+                                           uniform-assigners stage-keys)))
+        ;;
+        ;; update the spec immediately (macro-expansion time)
+        (%update-spec name stage-pairs context)
+        (multiple-value-bind (cpr-macro dispatch)
+            (def-dispatch-func name (first init-func) stage-keys
+                               context primitive uniform-assigners
+                               (find :static context))
+          `(progn
+             ,cpr-macro
+             (let ((prog-ids (make-array +max-context-count+
+                                         :initial-element +unknown-gl-id+
+                                         :element-type 'gl-id))
+                   ;; If there are no implicit-uniforms we need a no-op
+                   ;; function to call
+                   (implicit-uniform-upload-func #'fallback-iuniform-func)
+                   ;;
+                   ;; vars for the uniform locations
+                   ,@(mapcar λ`(,(first _) -1)
+                             (mapcat #'let-forms uniform-assigners))
+                   ;;
+                   ;; The primitive used by transform feedback. When nil
+                   ;; the primitive comes from the render-mode
+                   (tfs-primitive nil)
+                   (tfs-array-count 0)
+                   ;;
+                   ;;
+                   (has-fragment-stage t))
                ;;
-               ;; vars for the uniform locations
-               ,@(mapcar λ`(,(first _) -1)
-                         (mapcat #'let-forms uniform-assigners))
+               ;; To help the compiler we make sure it knows it's a function :)
+               (declare (type function implicit-uniform-upload-func)
+                        (type (simple-array gl-id (#.cepl.context:+max-context-count+))
+                              prog-ids)
+                        (type symbol tfs-primitive)
+                        (type (unsigned-byte 8) tfs-array-count)
+                        (type boolean has-fragment-stage))
                ;;
-               ;; The primitive used by transform feedback. When nil
-               ;; the primitive comes from the render-mode
-               (tfs-primitive nil)
-               (tfs-array-count 0)
+               ;; we upload the spec at compile time (using eval-when)
+               ,(gen-update-spec name stage-pairs context)
                ;;
-               ;;
-               (has-fragment-stage t))
-           ;;
-           ;; To help the compiler we make sure it knows it's a function :)
-           (declare (type function implicit-uniform-upload-func)
-                    (type (simple-array gl-id (#.cepl.context:+max-context-count+))
-                          prog-ids)
-                    (type symbol tfs-primitive)
-                    (type (unsigned-byte 8) tfs-array-count)
-                    (type boolean has-fragment-stage))
-           ;;
-           ;; we upload the spec at compile time (using eval-when)
-           ,(gen-update-spec name stage-pairs context)
-           ;;
-           (labels (,init-func)
+               (labels (,init-func)
+                 ;;
+                 ;; generate the code that actually renders
+                 ,dispatch))
              ;;
-             ;; generate the code that actually renders
-             ,dispatch))
-         ;;
-         ;; generate the function that recompiles this pipeline
-         ,(gen-recompile-func name stage-pairs post context)))))
+             ;; generate the function that recompiles this pipeline
+             ,(gen-recompile-func name stage-pairs post context)))))))
 
 (defun+ fallback-iuniform-func (prog-id &rest uniforms)
   (declare (ignore prog-id uniforms) (optimize (speed 3) (safety 1))))
