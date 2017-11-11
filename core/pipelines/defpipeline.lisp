@@ -597,7 +597,8 @@
                (format nil "~@[~a.~]~a"
                        (varjo:block-name-string v)
                        (varjo:glsl-name v)))))
-    (let ((groups (remove-duplicates (mapcar #'second varying-pairs))))
+    (let ((groups (sort (remove-duplicates (mapcar #'second varying-pairs))
+                        #'<)))
       (case= (length groups)
         (0 (values nil nil nil))
         (1 (values :interleaved-attribs
@@ -607,7 +608,7 @@
          (let ((pairs (sort (copy-list varying-pairs) #'< :key #'second)))
            (assert (and (consecutive-integers-p groups) (find 0 groups)) ()
                    'non-consecutive-feedback-groups
-                   :groups (sort groups #'<))
+                   :groups groups)
            (values :separate-attribs
                    (mapcar #'get-name pairs)
                    (length groups))))))))
