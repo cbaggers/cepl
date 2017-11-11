@@ -31,7 +31,7 @@
   (%defpipeline-gfuncs name gpipe-args context))
 
 (defun+ %defpipeline-gfuncs
-    (name gpipe-args context &optional suppress-compile)
+    (name gpipe-args context)
   ;;
   ;; {todo} explain
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
@@ -42,7 +42,7 @@
           (%def-partial-pipeline name stage-keys stage-pairs aggregate-uniforms
                                  context)
           (%def-complete-pipeline name stage-keys stage-pairs aggregate-uniforms
-                                  post context suppress-compile)))))
+                                  post context)))))
 
 (defun+ %def-partial-pipeline (name stage-keys stage-pairs aggregate-uniforms
                               context)
@@ -72,7 +72,7 @@
        ',name)))
 
 (defun+ %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
-                               post context &optional suppress-compile)
+                               post context)
   (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
@@ -96,7 +96,7 @@
                ;; function to call
                (implicit-uniform-upload-func #'fallback-iuniform-func)
                ;;
-               ;; {todo} explain
+               ;; vars for the uniform locations
                ,@(mapcar λ`(,(first _) -1)
                          (mapcat #'let-forms uniform-assigners))
                ;;
@@ -125,8 +125,7 @@
              ,dispatch))
          ;;
          ;; generate the function that recompiles this pipeline
-         ,(gen-recompile-func name stage-pairs post context)
-         ,(unless suppress-compile `(,(recompile-name name)))))))
+         ,(gen-recompile-func name stage-pairs post context)))))
 
 (defun+ fallback-iuniform-func (prog-id &rest uniforms)
   (declare (ignore prog-id uniforms) (optimize (speed 3) (safety 1))))
@@ -140,7 +139,7 @@
        (let ((*standard-output* (make-string-output-stream)))
          (handler-bind ((warning #'muffle-warning))
            (eval (%defpipeline-gfuncs
-                  ',name ',gpipe-args ',context t)))))))
+                  ',name ',gpipe-args ',context)))))))
 
 (defun+ %update-spec (name stage-pairs context)
   (update-pipeline-spec
