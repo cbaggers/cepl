@@ -553,7 +553,7 @@
 
 (defun set-transform-feedback (prog-id stages)
   (let* ((feedback-vars (get-feedback-out-vars stages))
-         (names (mapcar λ(format nil "~a.~a"
+         (names (mapcar λ(format nil "~@[~a.~]~a"
                                  (varjo:block-name-string _)
                                  (varjo:glsl-name _))
                         feedback-vars))
