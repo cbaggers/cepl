@@ -529,7 +529,7 @@
 (defstruct (transform-feedback-stream
              (:constructor %make-tfs)
              (:conc-name %tfs-))
-  (array nil :type (or null gpu-array-bb))
+  (arrays nil :type (or null (array gpu-array-bb (*))))
   (bound nil :type boolean)
   (current-prog-id +unknown-gl-id+ :type gl-id))
 

@@ -63,7 +63,8 @@
            :defn-inline
            :defn-inlinable
            :list-not-consp
-           :gl-enum))
+           :gl-enum
+           :consecutive-integers-p))
 
 (uiop:define-package :cepl.errors
     (:use :cl :cffi :cepl-utils :varjo :rtg-math :cepl.build)
@@ -127,7 +128,10 @@
            :gl-context-initialized-from-incorrect-thread
            :tried-to-make-context-on-thread-that-already-has-one
            :max-context-count-reached
-           :nested-with-transform-feedback))
+           :nested-with-transform-feedback
+           :non-consecutive-feedback-groups
+           :mixed-pipelines-in-with-tb
+           :incorrect-number-of-arrays-in-tfs))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -428,7 +432,7 @@
 
            :transform-feedback-stream
            :%make-tfs
-           :%tfs-array
+           :%tfs-arrays
            :%tfs-bound
            :%tfs-current-prog-id
 
@@ -952,7 +956,7 @@
           :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays)
   (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
   (:export :make-transform-feedback-stream :with-transform-feedback
-           :transform-feedback-stream-array))
+           :transform-feedback-stream-arrays))
 
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables

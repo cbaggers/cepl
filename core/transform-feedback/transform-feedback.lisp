@@ -1,10 +1,14 @@
 (in-package :cepl.transform-feedback)
 
-(defun make-transform-feedback-stream (buffer-backed-gpu-array)
-  (assert (typep buffer-backed-gpu-array 'gpu-array-bb)
-          (buffer-backed-gpu-array)
-          "{TODO} foo ~a" buffer-backed-gpu-array)
-  (%make-tfs :array buffer-backed-gpu-array))
+(defun make-transform-feedback-stream (&rest buffer-backed-gpu-arrays)
+  (assert (every (lambda (arr) (typep arr 'gpu-array-bb))
+                 buffer-backed-gpu-arrays)
+          (buffer-backed-gpu-arrays)
+          "{TODO} foo ~a" buffer-backed-gpu-arrays)
+  (let ((arrs (make-array (length buffer-backed-gpu-arrays)
+                          :element-type 'gpu-array-bb
+                          :initial-contents buffer-backed-gpu-arrays)))
+    (%make-tfs :arrays arrs)))
 
 (defmacro with-transform-feedback ((transform-feedback-stream) &body body)
   (alexandria:with-gensyms (ctx old-tfs new-tfs)
@@ -16,46 +20,71 @@
                (,old-tfs current-tfs))
            (setf current-tfs ,new-tfs)
            (setf (%tfs-bound ,new-tfs) t)
-           (%bind-tfs-array ,ctx ,new-tfs)
+           (%bind-tfs-arrays ,ctx ,new-tfs)
            (release-unwind-protect (progn ,@body)
              (when (/= (%tfs-current-prog-id ,new-tfs) +unknown-gl-id+)
                (setf (%tfs-current-prog-id ,new-tfs) +unknown-gl-id+)
                (%gl:end-transform-feedback))
-             (%unbind-tfs-array ,ctx)
+             (%unbind-tfs-arrays ,ctx ,new-tfs)
              (setf (%tfs-bound ,new-tfs) nil)
              (setf current-tfs ,old-tfs)))))))
 
-(defn %bind-tfs-array ((ctx cepl-context)
-                       (tfs transform-feedback-stream))
+(defn %bind-tfs-arrays ((ctx cepl-context)
+                        (tfs transform-feedback-stream))
     (values)
-  (let* ((data (%tfs-array tfs))
-         (type (gpu-array-bb-element-type data))
-         (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer data)
-                    (cepl.c-arrays::gl-calc-byte-size
-                     type 0)))
-         (size (gpu-array-bb-byte-size data))
-         (gpu-buffer (gpu-array-buffer data)))
-    (cepl.context::transform-feedback-bind-buffer-id-range
-     ctx
-     (gpu-buffer-id gpu-buffer)
-     0 ;; {TODO} big ol' todo, gotta research this
-     offset
-     size))
+  (loop :for array :across (%tfs-arrays tfs)
+     :for index :from 0 :do
+     (let* ((type (gpu-array-bb-element-type array))
+            (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer array)
+                       (cepl.c-arrays::gl-calc-byte-size
+                        type 0)))
+            (size (gpu-array-bb-byte-size array))
+            (gpu-buffer (gpu-array-buffer array)))
+       (cepl.context::transform-feedback-bind-buffer-id-range
+        ctx
+        (gpu-buffer-id gpu-buffer)
+        index
+        offset
+        size)))
   (values))
 
-(defn %unbind-tfs-array ((ctx cepl-context))
+(defn %unbind-tfs-arrays ((ctx cepl-context)
+                          (tfs transform-feedback-stream))
     (values)
-  (cepl.context::transform-feedback-bind-buffer-id-range
-   ctx
-   +unknown-gl-id+
-   0 ;; {TODO} big ol' todo, gotta research this
-   0
-   0)
+  (loop :for index :below (length (%tfs-arrays tfs)) :do
+     (cepl.context::transform-feedback-bind-buffer-id-range
+      ctx
+      +unknown-gl-id+
+      index
+      0
+      0))
   (values))
 
-(defn-inline transform-feedback-stream-array ((tfs transform-feedback-stream))
-    (or null gpu-array-bb)
-  (%tfs-array tfs))
+(defn-inline transform-feedback-stream-arrays ((tfs transform-feedback-stream))
+    list
+  (coerce (%tfs-arrays tfs) 'list))
+
+(defn-inline (setf transform-feedback-stream-arrays)
+    ((buffer-backed-gpu-arrays list) (tfs transform-feedback-stream))
+    list
+  (assert (not (%tfs-bound tfs)) ()
+          "{TODO} bound n shit")
+  (assert (every (lambda (arr) (typep arr 'gpu-array-bb))
+                 buffer-backed-gpu-arrays)
+          (buffer-backed-gpu-arrays)
+          "{TODO} foo ~a" buffer-backed-gpu-arrays)
+  (let ((arrs (make-array (length buffer-backed-gpu-arrays)
+                          :element-type 'gpu-array-bb
+                          :initial-contents buffer-backed-gpu-arrays)))
+    (setf (%tfs-arrays tfs) arrs)
+    buffer-backed-gpu-arrays))
 
 (defmethod print-object ((tfs transform-feedback-stream) stream)
-  (format stream "#<TRANSFORM-FEEDBACK-STREAM ~a>" (%tfs-array tfs)))
+  (format stream "#<TRANSFORM-FEEDBACK-STREAM~{ ~s~}>"
+          (loop :for arr :across (%tfs-arrays tfs) :collect
+             (let* ((dim (gpu-array-dimensions arr))
+                    (dim (if (= (length dim) 1)
+                             (first dim)
+                             dim)))
+               (list (gpu-array-bb-element-type arr)
+                     dim)))))

@@ -498,6 +498,30 @@ accordingingly.")
 Currently this is not supported however in future it may be possible
 to support on GLv4 and up.")
 
+(deferror non-consecutive-feedback-groups () (groups)
+    "CEPL: Currently when you specify transform-feedback groups their
+numbers must be consecutive and there must be at least one value being written
+to :feedback or (:feedback 0).
+
+We hope to be able to relax this in future when we support more recent
+GL features, however even then if you want maximum compatibility this
+will remain a good rule to follow.
+
+These were the groups in question: ~s" groups)
+
+(deferror mixed-pipelines-in-with-tb () ()
+    "CEPL: Different pipelines have been called within same tfs block")
+
+(deferror incorrect-number-of-arrays-in-tfs () (tfs tfs-count count)
+    "CEPL: The transform feedback stream currently bound has ~a arrays bound,
+however the current pipeline is expecting to write into ~a ~a.
+
+The stream in question was:~%~a"
+  tfs-count
+  count
+  (if (= count 1) "array" "arrays")
+  tfs)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

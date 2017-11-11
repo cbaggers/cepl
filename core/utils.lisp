@@ -739,3 +739,12 @@ source: ~s~%list-to-match: ~s" list list-to-match)
            ,@restores)))))
 
 ;;------------------------------------------------------------
+
+(defun consecutive-integers-p (integers)
+  (cond
+    ((rest integers) (loop :for (x y) :on integers :always
+                        (if y (= 1 (- y x)) t)))
+    ((first integers) (integerp (car integers)))
+    (t t)))
+
+;;------------------------------------------------------------

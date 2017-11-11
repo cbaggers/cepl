@@ -102,12 +102,15 @@
                ;;
                ;; The primitive used by transform feedback. When nil
                ;; the primitive comes from the render-mode
-               (tfs-primitive nil))
+               (tfs-primitive nil)
+               (tfs-array-count 0))
            ;;
            ;; To help the compiler we make sure it knows it's a function :)
            (declare (type function implicit-uniform-upload-func)
                     (type (simple-array gl-id (#.cepl.context:+max-context-count+))
-                          prog-ids))
+                          prog-ids)
+                    (type symbol tfs-primitive)
+                    (type (unsigned-byte 8) tfs-array-count))
            ;;
            ;; we upload the spec at compile time (using eval-when)
            ,(gen-update-spec name stage-pairs context)
@@ -184,14 +187,16 @@
          (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
     (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA"))
+    ;; when compiling lambda pipelines prog-ids will be a number, not a vector
     (multiple-value-bind (prog-ids prog-id)
         (request-program-id-for (cepl-context) name)
-      ;; when compiling lambda pipelines prog-ids will be a number, not a vector
-      (link-shaders stages-objects prog-id compiled-stages)
-      (when (and name +cache-last-compile-result+)
-        (add-compile-results-to-pipeline name compiled-stages))
-      (mapcar #'%gl:delete-shader stages-objects)
-      (values compiled-stages prog-id prog-ids))))
+      (multiple-value-bind (tfb-mode tfb-names tfb-group-count)
+          (calc-feedback-style-and-names (get-feedback-out-vars compiled-stages))
+        (link-shaders stages-objects prog-id compiled-stages tfb-mode tfb-names)
+        (when (and name +cache-last-compile-result+)
+          (add-compile-results-to-pipeline name compiled-stages))
+        (mapcar #'%gl:delete-shader stages-objects)
+        (values compiled-stages prog-id prog-ids tfb-group-count)))))
 
 (defun+ compute-glsl-version-from-stage-pairs (stage-pairs)
   ;; - If not specified & the context is not yet available then use
@@ -282,7 +287,10 @@
                  (image-unit 0))
              (declare (ignorable image-unit))
              (bt:with-lock-held (*init-pipeline-lock*)
-               (multiple-value-bind (compiled-stages new-prog-id new-prog-ids)
+               (multiple-value-bind (compiled-stages
+                                     new-prog-id
+                                     new-prog-ids
+                                     tfb-group-count)
                    (%compile-link-and-upload
                     ',name ',primitive ,(serialize-stage-pairs stage-pairs))
                  (declare (ignorable compiled-stages))
@@ -297,8 +305,10 @@
                    (declare (ignorable prog-id))
                    ,@(let ((u-lets (mapcat #'let-forms uniform-assigners)))
                        (loop for u in u-lets collect (cons 'setf u))))
-                 (setf tfs-primitive
-                       (get-transform-feedback-primitive compiled-stages))
+                 (when (> tfb-group-count 0)
+                   (setf tfs-primitive
+                         (get-transform-feedback-primitive compiled-stages))
+                   (setf tfs-array-count tfb-group-count))
                  new-prog-ids)))
          (%post-init ,post)))))
 
@@ -341,12 +351,17 @@
                            stream
                            ,@(when uniform-names `(&key ,@uniform-names)))))))
     (values
+     ;;
+     ;; eval-when so we dont get a 'use before compiled' warning
      `(eval-when (:compile-toplevel :load-toplevel :execute)
         (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
           (declare (ignore rest))
           (unless (mapg-context-p ,ctx)
             (error 'dispatch-called-outside-of-map-g :name ',name))
           whole))
+
+     ;;
+     ;; touch function
      `(progn
         (defun+ ,(symb :%touch- name) (&key verbose)
           #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
@@ -369,6 +384,9 @@
                                         uniform-assigners u-uploads)))
                       prog-id)))
           t)
+
+        ;;
+        ;; draw-function
         (,def ,name ,@signature
           (declare (speed 3) (debug 1) (safety 1) (compilation-speed 0)
                    (ignorable ,ctx ,@uniform-names)
@@ -410,6 +428,12 @@
                 (%with-cepl-context-slots (current-tfs) ,ctx
                   (let ((tfs current-tfs))
                     (when tfs
+                      (let ((tfs-alen (length (%tfs-arrays tfs))))
+                        (assert (= tfs-alen tfs-array-count)
+                                () 'incorrect-number-of-arrays-in-tfs
+                                :tfs tfs
+                                :tfs-count tfs-alen
+                                :count tfs-array-count))
                       (let ((tfs-prog-id (%tfs-current-prog-id tfs)))
                         (if (= tfs-prog-id +unknown-gl-id+)
                             (progn
@@ -417,7 +441,7 @@
                                (or tfs-primitive draw-type))
                               (setf (%tfs-current-prog-id tfs) prog-id))
                             (assert (= tfs-prog-id prog-id) ()
-                                    "Different pipelines have been called within same tfs block"))))))
+                                    'mixed-pipelines-in-with-tb))))))
                 (profile-block (,name :draw)
                   (draw-expander stream draw-type ,primitive))))
 
@@ -520,8 +544,11 @@
   (flet ((get-em (stage)
            (loop :for out-var :in (varjo:output-variables stage)
               :for qualifiers := (varjo:qualifiers out-var)
-              :when (member :feedback qualifiers)
-              :collect out-var)))
+              :for feedback := (find-if λ(typep _ 'varjo:feedback-qualifier)
+                                        qualifiers)
+              :when feedback
+              :collect (list out-var (feedback-group feedback)))))
+    ;; ↓↓- because only 1 stage can contain feedback vars
     (first (remove nil (mapcar #'get-em stages)))))
 
 ;;  void glTransformFeedbackVaryings(GLuint program​, GLsizei count​,
@@ -551,44 +578,71 @@
           (type-kwd (cffi:mem-aref type '%gl:enum)))
       (list str type-kwd))))
 
-(defun set-transform-feedback (prog-id stages)
-  (let* ((feedback-vars (get-feedback-out-vars stages))
-         (names (mapcar λ(format nil "~@[~a.~]~a"
-                                 (varjo:block-name-string _)
-                                 (varjo:glsl-name _))
-                        feedback-vars))
-         (len (length names))
-         (ptrs (map 'vector #'cffi:foreign-string-alloc names))
-         (arr-type `(:array :pointer ,len)))
-    (if names
+(defun calc-feedback-style-and-names (varying-pairs)
+  "returns the mode, the var names & the number of streams"
+  (labels ((get-name (pair)
+             (let ((v (first pair)))
+               (format nil "~@[~a.~]~a"
+                       (varjo:block-name-string v)
+                       (varjo:glsl-name v)))))
+    (let ((groups (remove-duplicates (mapcar #'second varying-pairs))))
+      (case= (length groups)
+        (0 (values nil nil nil))
+        (1 (values :interleaved-attribs
+                   (mapcar #'get-name varying-pairs)
+                   1))
+        (otherwise
+         (let ((pairs (sort (copy-list varying-pairs) #'< :key #'second)))
+           (assert (and (consecutive-integers-p groups) (find 0 groups)) ()
+                   'non-consecutive-feedback-groups
+                   :groups (sort groups #'<))
+           (values :separate-attribs
+                   (mapcar #'get-name pairs)
+                   (length groups))))))))
+
+
+(defun enable-transform-feedback (prog-id mode names)
+  "Returns the number of gpu-arrays that should be bound in the
+   transform-feedback-stream"
+  (let ((len (length names)))
+    (when (> len 0)
+      (let ((ptrs (map 'vector #'cffi:foreign-string-alloc names))
+            (arr-type `(:array :pointer ,len)))
         (cffi:with-foreign-array (str-arr ptrs arr-type)
           (release-unwind-protect
-              (%gl:transform-feedback-varyings prog-id len str-arr
-                                               :interleaved-attribs)
-            (map nil #'cffi:foreign-free ptrs)))
-        (when (/= 0 (gl:get-program prog-id :transform-feedback-varyings))
-          (print "disconnecting feedback varyings")
-          (%gl:transform-feedback-varyings prog-id 0 (cffi:null-pointer)
-                                           :interleaved-attribs))))
+              (%gl:transform-feedback-varyings prog-id len str-arr mode)
+            (map nil #'cffi:foreign-free ptrs))))))
   (values))
 
-(defun+ link-shaders (shaders prog-id compiled-stages)
-  "Links all the shaders provided and returns an opengl program
-   object. Will recompile an existing program if ID is provided"
+(defun+ link-shaders (shaders
+                      prog-id
+                      compiled-stages
+                      transform-feedback-mode
+                      transform-feedback-names)
+  "Links all the shaders into the program provided"
   (assert prog-id)
   (release-unwind-protect
-      (progn (loop :for shader :in shaders :do
-                (%gl:attach-shader prog-id shader))
-             (set-transform-feedback prog-id compiled-stages)
-             (%gl:link-program prog-id)
-             ;;check for linking errors
-             (if (not (gl:get-program prog-id :link-status))
-                 (error (format nil "Error Linking Program~%~a~%~%Compiled-stages:~{~%~% ~a~}"
-                                (gl:get-program-info-log prog-id)
-                                (mapcar #'glsl-code compiled-stages)))))
+      (progn
+        (loop :for shader :in shaders :do
+           (%gl:attach-shader prog-id shader))
+
+        ;;
+        ;; enable tranform feedback
+        (when transform-feedback-names
+          (enable-transform-feedback prog-id
+                                     transform-feedback-mode
+                                     transform-feedback-names))
+
+        (%gl:link-program prog-id)
+        ;;
+        ;;check for linking errors
+        (unless (gl:get-program prog-id :link-status)
+          (error (format nil "Error Linking Program~%~a~%~%Compiled-stages:~{~%~% ~a~}"
+                         (gl:get-program-info-log prog-id)
+                         (mapcar #'glsl-code compiled-stages)))))
     (loop :for shader :in shaders :do
        (gl:detach-shader prog-id shader)))
-  prog-id)
+  (values))
 
 (defmethod free ((pipeline-name symbol))
   (free-pipeline pipeline-name))
