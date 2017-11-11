@@ -255,7 +255,7 @@
                     u accum))))
       accum))
 
-(defun+ aggregate-uniforms (keys &optional accum interal-uniforms-p)
+(defun+ aggregate-uniforms (keys &optional accum actual-uniforms-p)
   "[0] Aggregates the uniforms from the named gpu-functions,
 
    The reason we need to aggregate uniforms is as follows:
@@ -266,13 +266,13 @@
   (if keys
       (aggregate-uniforms
        (rest keys)
-       (%aggregate-uniforms;;[0]
+       (%aggregate-uniforms ;;[0]
         (with-gpu-func-spec (gpu-func-spec (first keys))
-          (if interal-uniforms-p
+          (if actual-uniforms-p
               actual-uniforms
               uniforms))
         accum)
-       interal-uniforms-p)
+       actual-uniforms-p)
       accum))
 
 ;;--------------------------------------------------
