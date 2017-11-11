@@ -5,6 +5,7 @@
 
 (defvar *gpu-func-specs-lock* (bt:make-lock))
 (defvar *gpu-func-specs* nil)
+(defvar *gpu-func-diff-tag* 0)
 
 (defvar *dependent-gpu-functions-lock* (bt:make-lock))
 (defvar *dependent-gpu-functions* nil)
@@ -30,6 +31,8 @@
     :initarg :geometry-stage :initform nil)
    (fragment-stage
     :initarg :fragment-stage :initform nil)
+   (diff-tags
+    :initarg :diff-tags :initform nil)
    prog-ids))
 
 (defclass gpu-func-spec ()
@@ -45,7 +48,8 @@
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
    (missing-dependencies :initarg :missing-dependencies :initform nil)
-   (cached-compile-results :initarg :compiled :initform nil)))
+   (cached-compile-results :initarg :compiled :initform nil)
+   (diff-tag :initarg :diff-tag)))
 
 (defmethod pipeline-stages ((spec pipeline-spec))
   (with-slots (vertex-stage
@@ -77,6 +81,10 @@
 
 (defclass glsl-stage-spec (gpu-func-spec) ())
 
+(defun get-gpu-func-spec-tag ()
+  (bt:with-lock-held (*gpu-func-specs-lock*)
+    (incf *gpu-func-diff-tag*)))
+
 (defun+ %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
                             actual-uniforms
@@ -93,7 +101,8 @@
                  :actual-uniforms actual-uniforms
                  :doc-string doc-string
                  :declarations declarations
-                 :missing-dependencies missing-dependencies))
+                 :missing-dependencies missing-dependencies
+                 :diff-tag (get-gpu-func-spec-tag)))
 
 (defun+ %make-glsl-stage-spec (name in-args uniforms context body-string
                               compiled)
@@ -111,15 +120,17 @@
                    :actual-uniforms uniforms
                    :doc-string nil
                    :declarations nil
-                   :missing-dependencies nil)))
+                   :missing-dependencies nil
+                   :diff-tag (get-gpu-func-spec-tag))))
 
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms actual-uniforms context body instancing
                      equivalent-inargs equivalent-uniforms doc-string
-                     declarations missing-dependencies) ,func-spec
+                     declarations missing-dependencies diff-tag) ,func-spec
      (declare (ignorable name in-args uniforms actual-uniforms context body
                          instancing equivalent-inargs equivalent-uniforms
-                         doc-string declarations missing-dependencies))
+                         doc-string declarations missing-dependencies
+                         diff-tag))
      ,@body))
 
 (defmacro with-glsl-stage-spec (glsl-stage-spec &body body)
@@ -160,7 +171,8 @@
      :doc-string (or doc-string new-doc-string)
      :declarations (or declarations new-declarations)
      :missing-dependencies (or missing-dependencies
-                               new-missing-dependencies))))
+                               new-missing-dependencies)
+     :diff-tag (or diff-tag (error "CEPL BUG: Diff-tag missing")))))
 
 ;;--------------------------------------------------
 
@@ -414,14 +426,22 @@ names are depended on by the functions named later in the list"
 (defun+ make-pipeline-spec (name stages context)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment) (flatten stages)
-    (make-instance 'pipeline-spec
-                   :name name
-                   :vertex-stage vertex
-                   :tessellation-control-stage tessellation-control
-                   :tessellation-evaluation-stage tessellation-evaluation
-                   :geometry-stage geometry
-                   :fragment-stage fragment
-                   :context context)))
+    (let ((tags (mapcar λ(when _
+                           (slot-value (gpu-func-spec _) 'diff-tag))
+                        (list vertex
+                              tessellation-control
+                              tessellation-evaluation
+                              geometry
+                              fragment))))
+      (make-instance 'pipeline-spec
+                     :name name
+                     :vertex-stage vertex
+                     :tessellation-control-stage tessellation-control
+                     :tessellation-evaluation-stage tessellation-evaluation
+                     :geometry-stage geometry
+                     :fragment-stage fragment
+                     :diff-tags tags
+                     :context context))))
 
 (defun+ pipeline-spec (name)
   (bt:with-lock-held (*gpu-pipeline-specs-lock*)
