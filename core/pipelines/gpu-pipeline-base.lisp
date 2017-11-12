@@ -275,14 +275,15 @@
 (defmethod %unsubscibe-from-all ((func-key func-key))
   "As the name would suggest this removes one function's dependency on another
    It is used by #'%test-&-update-spec via #'%update-gpu-function-data"
-  (bt:with-lock-held (*dependent-gpu-functions-lock*)
-    (labels ((%remove-gpu-function-from-dependancy-table (pair)
-               (dbind (key . dependencies) pair
-                 (when (member func-key dependencies :test #'func-key=)
-                   (setf (funcs-that-use-this-func key)
-                         (remove func-key dependencies :test #'func-key=))))))
-      (map nil #'%remove-gpu-function-from-dependancy-table
-           *dependent-gpu-functions*))))
+  (labels ((%remove-gpu-function-from-dependancy-table (pair)
+             (dbind (key . dependencies) pair
+               (when (member func-key dependencies :test #'func-key=)
+                 (setf (funcs-that-use-this-func key)
+                       (remove func-key dependencies :test #'func-key=))))))
+    (let ((deps
+           (bt:with-lock-held (*dependent-gpu-functions-lock*)
+             (copy-list *dependent-gpu-functions*))))
+      (map nil #'%remove-gpu-function-from-dependancy-table deps))))
 
 (defmethod funcs-that-use-this-func (key)
   (funcs-that-use-this-func (func-key key)))
