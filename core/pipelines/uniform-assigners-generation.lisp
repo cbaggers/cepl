@@ -46,7 +46,7 @@
                    (dispatch-make-assigner indexes
                                            local-arg-name arg-name varjo-type~1
                                            glsl-name qualifiers)))))
-      (mapcar #'inner uniform-args))))
+      (remove nil (mapcar #'inner uniform-args)))))
 
 (defmethod gen-uploaders-block ((assigner assigner))
   (with-slots (arg-name local-arg-name) assigner
@@ -84,9 +84,12 @@
          (array-length (when (v-typep varjo-type 'v-array)
                          (apply #'* (v-dimensions varjo-type))))
          (sampler (cepl.samplers::sampler-typep varjo-type))
+         (ephemeral-p (varjo:ephemeral-p varjo-type))
          (ubo (member :ubo qualifiers))
          (assigner
           (cond
+            (ephemeral-p nil)
+            ;;
             (ubo (make-ubo-assigner indexes local-arg-name varjo-type glsl-name))
             ;;
             (array-length (make-array-assigners indexes local-arg-name varjo-type glsl-name))
@@ -96,9 +99,10 @@
             (sampler (make-sampler-assigner indexes local-arg-name varjo-type glsl-name))
             ;;
             (t (make-simple-assigner indexes local-arg-name varjo-type glsl-name nil)))))
-    (setf (arg-name assigner) arg-name
-          (local-arg-name assigner) local-arg-name)
-    assigner))
+    (when assigner
+      (setf (arg-name assigner) arg-name
+            (local-arg-name assigner) local-arg-name)
+      assigner)))
 
 ;; {TODO} Why does this not have a byte-offset? Very tired cant work it out :)
 (defun+ make-sampler-assigner (indexes arg-name type glsl-name-path)
