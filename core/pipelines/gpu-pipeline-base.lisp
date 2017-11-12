@@ -149,29 +149,24 @@
       ',actual-uniforms
       ,doc-string ',declarations ',missing-dependencies)))
 
-(defun+ clone-stage-spec (spec &key new-name new-in-args new-uniforms new-context
-                                new-body new-instancing new-equivalent-inargs
-                                new-equivalent-uniforms new-actual-uniforms
-                                new-doc-string new-declarations
-                                new-missing-dependencies)
+(defun+ clone-stage-spec (spec &key (new-context nil set-context))
   (with-gpu-func-spec spec
     (make-instance
      (etypecase spec
        (glsl-stage-spec 'glsl-stage-spec)
        (gpu-func-spec 'gpu-func-spec))
-     :name (or name new-name)
-     :in-args (or in-args new-in-args)
-     :uniforms (or uniforms new-uniforms)
-     :context (or context new-context)
-     :body (or body new-body)
-     :instancing (or instancing new-instancing)
-     :equivalent-inargs (or equivalent-inargs new-equivalent-inargs)
-     :equivalent-uniforms (or equivalent-uniforms new-equivalent-uniforms)
-     :actual-uniforms (or actual-uniforms new-actual-uniforms)
-     :doc-string (or doc-string new-doc-string)
-     :declarations (or declarations new-declarations)
-     :missing-dependencies (or missing-dependencies
-                               new-missing-dependencies)
+     :name name
+     :in-args in-args
+     :uniforms uniforms
+     :context (if set-context new-context context)
+     :body body
+     :instancing instancing
+     :equivalent-inargs equivalent-inargs
+     :equivalent-uniforms equivalent-uniforms
+     :actual-uniforms actual-uniforms
+     :doc-string doc-string
+     :declarations declarations
+     :missing-dependencies missing-dependencies
      :diff-tag (or diff-tag (error "CEPL BUG: Diff-tag missing")))))
 
 ;;--------------------------------------------------
