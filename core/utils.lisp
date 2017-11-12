@@ -748,3 +748,11 @@ source: ~s~%list-to-match: ~s" list list-to-match)
     (t t)))
 
 ;;------------------------------------------------------------
+
+(defun hidden-symb (symbol &optional sub-name)
+  (assert (symbolp sub-name))
+  (intern (format nil "~a.~a~@[.~a~]"
+                  (package-name (symbol-package symbol))
+                  (symbol-name symbol)
+                  sub-name)
+          :cepl.hidden))

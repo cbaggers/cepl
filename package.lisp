@@ -1,5 +1,7 @@
 ;;;; package.lisp
 
+(uiop:define-package :cepl.hidden)
+
 (uiop:define-package :cepl-utils
     (:use :cl :%rtg-math :cepl.build)
   (:export :array-index
@@ -64,7 +66,8 @@
            :defn-inlinable
            :list-not-consp
            :gl-enum
-           :consecutive-integers-p))
+           :consecutive-integers-p
+           :hidden-symb))
 
 (uiop:define-package :cepl.errors
     (:use :cl :cffi :cepl-utils :varjo :rtg-math :cepl.build)
