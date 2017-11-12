@@ -37,24 +37,35 @@
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     ;;
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
-           (aggregate-uniforms (aggregate-uniforms stage-keys nil t)))
+           (aggregate-actual-uniforms (aggregate-uniforms stage-keys t))
+           (aggregate-public-uniforms (aggregate-uniforms stage-keys)))
       (if (stages-require-partial-pipeline stage-keys)
-          (%def-partial-pipeline name stage-keys stage-pairs aggregate-uniforms
+          (%def-partial-pipeline name
+                                 stage-keys
+                                 stage-pairs
+                                 aggregate-actual-uniforms
                                  context)
-          (%def-complete-pipeline name stage-keys stage-pairs aggregate-uniforms
+          (%def-complete-pipeline name
+                                  stage-pairs
+                                  aggregate-actual-uniforms
+                                  aggregate-public-uniforms
                                   post context)))))
 
-(defun+ %def-partial-pipeline (name stage-keys stage-pairs aggregate-uniforms
-                              context)
+(defun+ %def-partial-pipeline (name
+                               stage-keys
+                               stage-pairs
+                               aggregate-actual-uniforms
+                               context)
   ;;
   ;; freak out if try and use funcs in stage args
   (when (has-func-type-in-args stage-keys)
     (error 'functions-in-non-uniform-args :name name))
   ;;
   ;; update the spec immediately (macro-expansion time)
-  (%update-spec name stage-pairs context)
+  (update-pipeline-spec
+   (make-pipeline-spec name stage-pairs context))
   ;;
-  (let ((uniform-names (mapcar #'first aggregate-uniforms)))
+  (let ((uniform-names (mapcar #'first aggregate-actual-uniforms)))
     `(progn
        ;;
        ;; we upload the spec at compile time (using eval-when)
@@ -71,69 +82,194 @@
        (register-named-pipeline ',name #',name)
        ',name)))
 
-(defun+ %def-complete-pipeline (name stage-keys stage-pairs aggregate-uniforms
-                                     post context)
-  (let* ((current-spec (pipeline-spec name))
-         (current-stage-tags (remove nil (slot-value current-spec 'diff-tags)))
-         (new-stage-tags (mapcar λ(slot-value (gpu-func-spec _) 'diff-tag)
-                                 stage-keys)))
-    (unless (equal current-stage-tags new-stage-tags)
-      (let* ((uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
-             ;; we generate the func that compiles & uploads the pipeline
-             ;; and also populates the pipeline's local-vars
-             (primitive (varjo.internals:primitive-name-to-instance
-                         (varjo.internals:get-primitive-type-from-context context)))
-             (init-func (gen-pipeline-init name primitive stage-pairs post
-                                           uniform-assigners stage-keys)))
-        ;;
-        ;; update the spec immediately (macro-expansion time)
-        (%update-spec name stage-pairs context)
-        (multiple-value-bind (cpr-macro dispatch)
-            (def-dispatch-func name (first init-func) stage-keys
-                               context primitive uniform-assigners
-                               (find :static context))
-          `(progn
-             ,cpr-macro
-             (let ((prog-ids (make-array +max-context-count+
-                                         :initial-element +unknown-gl-id+
-                                         :element-type 'gl-id))
-                   ;; If there are no implicit-uniforms we need a no-op
-                   ;; function to call
-                   (implicit-uniform-upload-func #'fallback-iuniform-func)
-                   ;;
-                   ;; vars for the uniform locations
-                   ,@(mapcar λ`(,(first _) -1)
-                             (mapcat #'let-forms uniform-assigners))
-                   ;;
-                   ;; The primitive used by transform feedback. When nil
-                   ;; the primitive comes from the render-mode
-                   (tfs-primitive nil)
-                   (tfs-array-count 0)
-                   ;;
-                   ;;
-                   (has-fragment-stage t))
-               ;;
-               ;; To help the compiler we make sure it knows it's a function :)
-               (declare (type function implicit-uniform-upload-func)
-                        (type (simple-array gl-id (#.cepl.context:+max-context-count+))
-                              prog-ids)
-                        (type symbol tfs-primitive)
-                        (type (unsigned-byte 8) tfs-array-count)
-                        (type boolean has-fragment-stage))
-               ;;
-               ;; we upload the spec at compile time (using eval-when)
-               ,(gen-update-spec name stage-pairs context)
-               ;;
-               (labels (,init-func)
-                 ;;
-                 ;; generate the code that actually renders
-                 ,dispatch))
-             ;;
-             ;; generate the function that recompiles this pipeline
-             ,(gen-recompile-func name stage-pairs post context)))))))
+(defstruct pipeline-state
+  (prog-ids
+   (make-array +max-context-count+
+               :initial-element +unknown-gl-id+
+               :element-type 'gl-id)
+   :type (simple-array gl-id (#.cepl.context:+max-context-count+)))
+  ;;
+  ;; If there are no implicit-uniforms we need a no-op
+  ;; function to call
+  (implicit-uniform-upload-func
+   #'fallback-iuniform-func :type function)
+  ;;
+  ;; The primitive used by transform feedback. When nil
+  ;; the primitive comes from the render-mode
+  (tfs-primitive nil :type symbol)
+  (tfs-array-count 0 :type (unsigned-byte 8))
+  ;;
+  ;; When nil we enable fragment-discard
+  (has-fragment-stage t :type boolean)
+  ;;
+  ;; Uniform IDs
+  (uniform-int-ids
+   (make-array 100 :element-type '(signed-byte 32)
+               :initial-element +unknown-uniform-int-id+)
+   :type (array (signed-byte 32) (*)))
+  (uniform-uint-ids
+   (make-array 100 :element-type '(unsigned-byte 32)
+               :initial-element +unknown-uniform-uint-id+)
+   :type (array (unsigned-byte 32) (*))))
 
-(defun+ fallback-iuniform-func (prog-id &rest uniforms)
-  (declare (ignore prog-id uniforms) (optimize (speed 3) (safety 1))))
+
+(defun+ %def-complete-pipeline (name
+                                stage-pairs
+                                aggregate-actual-uniforms
+                                aggregate-public-uniforms
+                                post
+                                context)
+  (let* ((ctx *pipeline-body-context-var*)
+         (state-var (hidden-symb name :pipeline-state))
+         (init-func-name (hidden-symb name :init))
+         (uniform-assigners (make-arg-assigners aggregate-actual-uniforms))
+         ;; we generate the func that compiles & uploads the pipeline
+         ;; and also populates the pipeline's local-vars
+         (primitive (varjo.internals:primitive-name-to-instance
+                     (varjo.internals:get-primitive-type-from-context context))))
+    ;;
+    ;; update the spec immediately (macro-expansion time)
+    (update-pipeline-spec
+     (make-pipeline-spec name stage-pairs context))
+    `(progn
+       ;;
+       ;; eval-when so we dont get a 'use before compiled' warning
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
+           (declare (ignore rest))
+           (unless (mapg-context-p ,ctx)
+             (error 'dispatch-called-outside-of-map-g :name ',name))
+           whole))
+       ;;
+       ;; The struct that holds the gl state for this pipeline
+       (declaim (type pipeline-state ,state-var))
+       (defparameter ,state-var (make-pipeline-state))
+       ;;
+       ;; If the prog-id isnt know this function will be called
+       (defun+ ,init-func-name (state)
+         ,(gen-pipeline-init name
+                             primitive
+                             stage-pairs
+                             post
+                             aggregate-public-uniforms
+                             uniform-assigners))
+       ;;
+       ;; generate the code that actually renders
+       ,(def-dispatch-func ctx name init-func-name
+                           primitive uniform-assigners
+                           aggregate-public-uniforms
+                           (find :static context)
+                           state-var)
+       ;;
+       ;; generate the function that recompiles this pipeline
+       ,(gen-recompile-func name stage-pairs post context)
+       ;;
+       ;; off to the races! Note that we upload the spec at compile
+       ;; time (using eval-when)
+       ,(gen-update-spec name stage-pairs context)
+       (register-named-pipeline ',name #',name)
+       ',name)))
+
+(defun+ def-dispatch-func (ctx
+                           name
+                           init-func-name
+                           primitive
+                           uniform-assigners
+                           aggregate-public-uniforms
+                           static
+                           state-var)
+  (let* ((uniform-names (mapcar #'first aggregate-public-uniforms))
+         (typed-uniforms (loop :for name :in uniform-names :collect
+                            `(,name t nil)))
+         (def (if static 'defn 'defun+))
+         (signature (if static
+                        `(((,ctx cepl-context)
+                           (stream (or null buffer-stream))
+                           ,@(when uniform-names `(&key ,@typed-uniforms)))
+                          (values))
+                        `((,ctx
+                           stream
+                           ,@(when uniform-names `(&key ,@uniform-names)))))))
+    ;;
+    ;; draw-function
+    `(,def ,name ,@signature
+       (declare (speed 3) (safety 1) (debug 1) (compilation-speed 0)
+                (ignorable ,ctx ,@uniform-names)
+                (inline pipeline-state-prog-ids
+                        pipeline-state-implicit-uniform-upload-func
+                        pipeline-state-tfs-primitive
+                        pipeline-state-tfs-array-count
+                        pipeline-state-has-fragment-stage)
+                ,@(when static `((profile t))))
+       #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+       ,@(unless (typep primitive 'varjo::dynamic)
+           `((when stream
+               (assert
+                (= ,(draw-mode-group-id primitive)
+                   (buffer-stream-primitive-group-id stream))
+                ()
+                'buffer-stream-has-invalid-primitive-for-stream
+                :name ',name
+                :pline-prim ',(varjo::lisp-name primitive)
+                :stream-prim (buffer-stream-primitive stream)))))
+       (let* ((%ctx-id (context-id ,ctx))
+              ;;
+              ;; unpack state from var
+              (state ,state-var)
+              (prog-id (aref (pipeline-state-prog-ids state)
+                             %ctx-id)))
+         ;;
+         ;; ensure program-id available, otherwise bail
+         (when (= prog-id +unknown-gl-id+)
+           (let ((new-prog-ids (,init-func-name state)))
+             (setf prog-id (aref new-prog-ids %ctx-id))
+             (when (= prog-id +unknown-gl-id+)
+               (return-from ,name))))
+
+         (let ((implicit-uniform-upload-func
+                (pipeline-state-implicit-uniform-upload-func state))
+               (tfs-primitive
+                (pipeline-state-tfs-primitive state))
+               (tfs-array-count
+                (pipeline-state-tfs-array-count state))
+               (has-fragment-stage
+                (pipeline-state-has-fragment-stage state))
+               ;; Uniforms vars
+               ,@(mapcan #'unpack-arrayd-assigner uniform-assigners))
+
+           ;;
+           (use-program ,ctx prog-id)
+
+           ;; Upload uniforms
+           (profile-block (,name :uniforms)
+             ,@(mapcar #'gen-uploaders-block uniform-assigners)
+             (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
+
+           ;; Start the draw
+           (when stream
+             (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
+                                   `(buffer-stream-draw-mode-val stream)
+                                   (varjo::lisp-name primitive))))
+               (handle-transform-feedback ,ctx draw-type prog-id tfs-primitive
+                                          tfs-array-count)
+
+               (when (not has-fragment-stage)
+                 (gl:enable :rasterizer-discard))
+               (profile-block (,name :draw)
+                 (draw-expander stream draw-type ,primitive))
+               (when (not has-fragment-stage)
+                 (gl:disable :rasterizer-discard)))))
+
+         ;; uniform cleanup
+         ,@(mapcar #'gen-cleanup-block (reverse uniform-assigners))
+
+         ;; map-g is responsible for returning the correct fbo
+         (values)))))
+
+(defn fallback-iuniform-func ((prog-id gl-id) &rest uniforms) (values)
+  (declare (ignore prog-id uniforms)
+           (optimize (speed 3) (safety 0) (debug 0)))
+  (values))
 
 (defun+ gen-recompile-func (name stage-pairs post context)
   (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
@@ -145,10 +281,6 @@
          (handler-bind ((warning #'muffle-warning))
            (eval (%defpipeline-gfuncs
                   ',name ',gpipe-args ',context)))))))
-
-(defun+ %update-spec (name stage-pairs context)
-  (update-pipeline-spec
-   (make-pipeline-spec name stage-pairs context)))
 
 (defun+ gen-update-spec (name stage-pairs context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
@@ -246,7 +378,7 @@
          (uniform-arg-forms (mapcar #'varjo.internals:to-arg-form varjo-implicit)))
     ;;
     (when uniform-arg-forms
-      (let* ((assigners (mapcar #'make-arg-assigners uniform-arg-forms))
+      (let* ((assigners (make-arg-assigners uniform-arg-forms))
              (u-lets (mapcat #'let-forms assigners))
              (uniform-transforms
               (remove-duplicates (mapcar λ(list (varjo:name _)
@@ -255,15 +387,20 @@
                                  :test #'equal)))
         (%compile-closure
          `(let ((initd nil)
-                ;; {todo} is this related to the 'todo' above?
-                ,@(mapcar (lambda (_) `(,(first _) -1)) u-lets))
+                ,@(mapcar λ`(,(assigner-name _) -1)
+                          u-lets))
             (lambda (prog-id ,@uniform-names)
-              (declare (ignorable ,@uniform-names))
+              (declare (optimize (speed 3) (safety 1) (debug 1))
+                       (ignorable ,@uniform-names)
+                       ,@(mapcar λ`(type ,(assigner-type _) ,(assigner-name _))
+                                 u-lets))
               (unless initd
-                ,@(mapcar (lambda (_) (cons 'setf _)) u-lets)
+                ,@(mapcar λ`(setf ,(assigner-name _) ,(assigner-body _))
+                          u-lets)
                 (setf initd t))
               (let ,uniform-transforms
-                ,@(mapcar #'gen-uploaders-block assigners)))))))))
+                ,@(mapcar #'gen-uploaders-block assigners))
+              (values))))))))
 
 (defun+ %implicit-uniforms-dont-have-type-mismatches (uniforms)
   (loop :for (name type . i) :in uniforms
@@ -284,15 +421,18 @@
   (when func (funcall func))
   (values))
 
-(defun+ gen-pipeline-init (name primitive stage-pairs post uniform-assigners
-                                stage-keys)
-  (let ((uniform-names
-         (mapcar #'first (aggregate-uniforms stage-keys))))
-    `(,(gensym "init")
-       ()
-       (prog1
-           (let (;; all image units will be >0 as 0 is used as scratch tex-unit
-                 (image-unit 0))
+(defun+ gen-pipeline-init (name
+                           primitive
+                           stage-pairs
+                           post
+                           aggregate-public-uniforms
+                           uniform-assigners)
+  (let ((uniform-names (mapcar #'first aggregate-public-uniforms)))
+    (multiple-value-bind (upload-forms int-arr-size uint-arr-size)
+        (generate-uniform-upload-forms uniform-assigners)
+      `(prog1
+           ;; all image units will be >0 as 0 is used as scratch tex-unit
+           (let ((image-unit 0))
              (declare (ignorable image-unit))
              (bt:with-lock-held (*init-pipeline-lock*)
                (multiple-value-bind (compiled-stages
@@ -302,26 +442,70 @@
                    (%compile-link-and-upload
                     ',name ',primitive ,(serialize-stage-pairs stage-pairs))
                  (declare (ignorable compiled-stages))
-                 (setf prog-ids new-prog-ids)
-                 (setf (slot-value (pipeline-spec ',name) 'prog-ids) prog-ids)
+
+
+                 (setf (pipeline-state-prog-ids state)
+                       new-prog-ids)
+                 (setf (slot-value (pipeline-spec ',name) 'prog-ids)
+                       new-prog-ids)
+
                  (use-program (cepl-context) new-prog-id)
-                 (setf implicit-uniform-upload-func
+
+
+                 (setf (pipeline-state-implicit-uniform-upload-func state)
                        (or (%create-implicit-uniform-uploader compiled-stages
                                                               ',uniform-names)
                            #'fallback-iuniform-func))
+
                  (let ((prog-id new-prog-id))
                    (declare (ignorable prog-id))
-                   ,@(let ((u-lets (mapcat #'let-forms uniform-assigners)))
-                       (loop for u in u-lets collect (cons 'setf u))))
+                   (setf (pipeline-state-uniform-int-ids state)
+                         (make-array ,int-arr-size
+                                     :element-type '(signed-byte 32)))
+
+                   (setf (pipeline-state-uniform-uint-ids state)
+                         (make-array ,uint-arr-size
+                                     :element-type '(unsigned-byte 32)))
+                   ,@upload-forms)
+
                  (when (> tfb-group-count 0)
-                   (setf tfs-primitive
+                   (setf (pipeline-state-tfs-primitive state)
                          (get-transform-feedback-primitive compiled-stages))
-                   (setf tfs-array-count tfb-group-count))
+                   (setf (pipeline-state-tfs-array-count state)
+                         tfb-group-count))
+
                  (let ((frag (find-if λ(typep _ 'compiled-fragment-stage)
                                       compiled-stages)))
-                   (setf has-fragment-stage (not (null frag))))
+                   (setf (pipeline-state-has-fragment-stage state)
+                         (not (null frag))))
                  new-prog-ids)))
          (%post-init ,post)))))
+
+(defun generate-uniform-upload-forms (uniform-assigners)
+  (let ((u-lets (mapcat #'let-forms uniform-assigners))
+        (int-count 0)
+        (uint-count 0))
+
+    (values
+     (loop :for u-let :in u-lets :collect
+        (cond
+          ;;
+          ((equal (assigner-type u-let) '(unsigned-byte 32))
+           (incf uint-count)
+           `(setf (aref (pipeline-state-uniform-uint-ids state)
+                        ,(assigner-index u-let))
+                  ,(assigner-body u-let)))
+          ;;
+          ((equal (assigner-type u-let) '(signed-byte 32))
+           (incf int-count)
+           `(setf (aref (pipeline-state-uniform-int-ids state)
+                        ,(assigner-index u-let))
+                  ,(assigner-body u-let)))
+          ;;
+          (t (error "CEPL: Invalid type ~a in uniform assigners"
+                    (assigner-type u-let)))))
+     int-count
+     uint-count)))
 
 (defun+ get-transform-feedback-primitive (stages)
   (let* ((prims (loop :for stage :in stages :collect
@@ -344,132 +528,27 @@
 
 
 
-(defun+ def-dispatch-func (name init-func-name stage-keys context
-                                primitive uniform-assigners static)
-  (let* ((ctx *pipeline-body-context-var*)
-         (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
-         (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
-         (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
-         (typed-uniforms (loop :for name :in uniform-names :collect
-                            `(,name t nil)))
-         (def (if static 'defn 'defun+))
-         (signature (if static
-                        `(((,ctx cepl-context)
-                           (stream (or null buffer-stream))
-                           ,@(when uniform-names `(&key ,@typed-uniforms)))
-                          (values))
-                        `((,ctx
-                           stream
-                           ,@(when uniform-names `(&key ,@uniform-names)))))))
-    (values
-     ;;
-     ;; eval-when so we dont get a 'use before compiled' warning
-     `(eval-when (:compile-toplevel :load-toplevel :execute)
-        (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
-          (declare (ignore rest))
-          (unless (mapg-context-p ,ctx)
-            (error 'dispatch-called-outside-of-map-g :name ',name))
-          whole))
-
-     ;;
-     ;; touch function
-     `(progn
-        (defun+ ,(symb :%touch- name) (&key verbose)
-          #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-          (let* ((ctx-id (context-id (cepl-context)))
-                 (prog-id (aref prog-ids ctx-id)))
-            (when (= prog-id +unknown-gl-id+)
-              (setf prog-ids (,init-func-name))
-              (setf prog-id (aref prog-ids ctx-id)))
-            (when verbose
-              (format t
-                      "~a~%~%prog-id: ~a"
-                      ,(escape-tildes
-                        (format nil
-                                "~%----------------------------------------
-~%name: ~s~%~%pipeline compile context: ~s~%~%uniform assigners:~%~s~%~%
-~%----------------------------------------"
-                                name
-                                context
-                                (mapcar λ(list (let-forms _) _1)
-                                        uniform-assigners u-uploads)))
-                      prog-id)))
-          t)
-
-        ;;
-        ;; draw-function
-        (,def ,name ,@signature
-          (declare (speed 3) (debug 1) (safety 1) (compilation-speed 0)
-                   (ignorable ,ctx ,@uniform-names)
-                   ,@(when static `((profile t))))
-          #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-          ,@(unless (typep primitive 'varjo::dynamic)
-                    `((when stream
-                        (assert
-                         (= ,(draw-mode-group-id primitive)
-                            (buffer-stream-primitive-group-id stream))
-                         ()
-                         'buffer-stream-has-invalid-primitive-for-stream
-                         :name ',name
-                         :pline-prim ',(varjo::lisp-name primitive)
-                         :stream-prim (buffer-stream-primitive stream)))))
-          (let* ((%ctx-id (context-id ,ctx))
-                 (prog-id (aref prog-ids %ctx-id)))
-
-            ;; ensure program-id available, otherwise bail
-            (when (= prog-id +unknown-gl-id+)
-              (setf prog-ids (,init-func-name))
-              (setf prog-id (aref prog-ids %ctx-id))
-              (when (= prog-id +unknown-gl-id+) (return-from ,name)))
-
-            ;;
-            (use-program ,ctx prog-id)
-
-            ;; Upload uniforms
-            (profile-block (,name :uniforms)
-              ,@u-uploads
-              (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
-
-            ;; Start the draw
-            (when stream
-              (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
-                                    `(buffer-stream-draw-mode-val stream)
-                                    (varjo::lisp-name primitive))))
-                ;; if we are capturing transform feedback
-                (%with-cepl-context-slots (current-tfs) ,ctx
-                  (let ((tfs current-tfs))
-                    (when tfs
-                      (let ((tfs-alen (length (%tfs-arrays tfs))))
-                        (assert (= tfs-alen tfs-array-count)
-                                () 'incorrect-number-of-arrays-in-tfs
-                                :tfs tfs
-                                :tfs-count tfs-alen
-                                :count tfs-array-count))
-                      (let ((tfs-prog-id (%tfs-current-prog-id tfs)))
-                        (if (= tfs-prog-id +unknown-gl-id+)
-                            (progn
-                              (%gl:begin-transform-feedback
-                               (or tfs-primitive draw-type))
-                              (setf (%tfs-current-prog-id tfs) prog-id))
-                            (assert (= tfs-prog-id prog-id) ()
-                                    'mixed-pipelines-in-with-tb))))))
-
-                (when (not has-fragment-stage)
-                  (gl:enable :rasterizer-discard))
-                (profile-block (,name :draw)
-                  (draw-expander stream draw-type ,primitive))
-                (when (not has-fragment-stage)
-                  (gl:disable :rasterizer-discard))))
-
-            ;; uniform cleanup
-            ,@u-cleanup
-
-            ;; map-g is responsible for returning the correct fbo
-            (values)))
-
-        ;; top level run forms
-        (register-named-pipeline ',name #',name)
-        ',name))))
+(defn-inline handle-transform-feedback
+    (ctx draw-type prog-id tfs-primitive tfs-array-count)
+    (values)
+  (%with-cepl-context-slots (current-tfs) ctx
+    (let ((tfs current-tfs))
+      (when tfs
+        (let ((tfs-alen (length (%tfs-arrays tfs))))
+          (assert (= tfs-alen tfs-array-count)
+                  () 'incorrect-number-of-arrays-in-tfs
+                  :tfs tfs
+                  :tfs-count tfs-alen
+                  :count tfs-array-count))
+        (let ((tfs-prog-id (%tfs-current-prog-id tfs)))
+          (if (= tfs-prog-id +unknown-gl-id+)
+              (progn
+                (%gl:begin-transform-feedback
+                 (or tfs-primitive draw-type))
+                (setf (%tfs-current-prog-id tfs) prog-id))
+              (assert (= tfs-prog-id prog-id) ()
+                      'mixed-pipelines-in-with-tb))))))
+  (values))
 
 (defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
@@ -604,7 +683,7 @@
     (let ((groups (sort (remove-duplicates (mapcar #'second varying-pairs))
                         #'<)))
       (case= (length groups)
-        (0 (values nil nil nil))
+        (0 (values nil nil 0))
         (1 (values :interleaved-attribs
                    (mapcar #'get-name varying-pairs)
                    1))

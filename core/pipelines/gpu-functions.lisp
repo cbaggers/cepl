@@ -65,7 +65,7 @@
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
-                                   nil nil nil doc-string nil
+                                   nil nil uniforms doc-string nil
                                    nil));;[0]
         (valid-glsl-versions (get-versions-from-context context)))
     ;; this gets the functions used in the body of this function
@@ -229,51 +229,42 @@
 
 ;;--------------------------------------------------
 
-(defun+ %aggregate-uniforms (uniforms &optional accum)
-  "The meat behind the uniform aggregation functions
-   The reason we need to aggregate uniforms is as follows:
+(defun+ aggregate-uniforms (keys &optional actual-uniforms-p)
+  "The reason we need to aggregate uniforms is as follows:
    - pipelines are made of composed gpu functions
    - each gpu function may introduce uniforms
    - to this end we need to make sure the different functions' uniforms are
      compatible and then return a final list of aggregated uniforms.
 
-   The criteria for a uniform being valid is that:
-   [0] there is no other uniform with matching name, hense no collision
-   [1] the uniform matches perfectly so no collision
-   [2] otherwise it's a clash"
-  (if uniforms
-      (let ((u (first uniforms)))
-        (cond
-          ;;[0]
-          ((not (find (first u) accum :test #'equal :key #'first))
-           (%aggregate-uniforms (rest uniforms) (cons u accum)))
-          ;;[1]
-          ((find u accum :test #'equal)
-           (%aggregate-uniforms (rest uniforms) accum))
-          ;;[2]
-          (t (error "Uniforms for the functions are incompatible: ~a ~a"
-                    u accum))))
-      accum))
-
-(defun+ aggregate-uniforms (keys &optional accum actual-uniforms-p)
-  "[0] Aggregates the uniforms from the named gpu-functions,
-
-   The reason we need to aggregate uniforms is as follows:
-   - pipelines are made of composed gpu functions
-   - each gpu function may introduce uniforms
-   - to this end we need to make sure the different functions' uniforms are
-     compatible and then return a final list of aggregated uniforms."
-  (if keys
-      (aggregate-uniforms
-       (rest keys)
-       (%aggregate-uniforms ;;[0]
-        (with-gpu-func-spec (gpu-func-spec (first keys))
-          (if actual-uniforms-p
-              actual-uniforms
-              uniforms))
-        accum)
-       actual-uniforms-p)
-      accum))
+   The way we do this is:
+   [0] Remove all duplicates, this handles all cases where the same uniform is
+       in different gpu-functions
+   [1] Now if there is any more than one instance of each uniform name then
+       there is a clash"
+  (labels ((get-uniforms (spec)
+             (with-gpu-func-spec spec
+               (copy-list
+                (if actual-uniforms-p
+                    actual-uniforms
+                    uniforms)))))
+    ;;
+    (let* ((func-specs (mapcar #'gpu-func-spec keys))
+           (uniforms (remove-duplicates (mapcan #'get-uniforms func-specs)
+                                        :test #'equal)) ;; [0]
+           (all-clashes
+            (loop :for uniform :in uniforms :collect
+               (let* ((name (first uniform))
+                      (clashes (remove-if-not λ(eq name (first _)) uniforms)))
+                 (when (> (length clashes) 1) ;; [1]
+                   (list (first uniform) clashes)))))
+           (all-clashes (remove-duplicates (remove nil all-clashes)
+                                           :key #'first)))
+      (when all-clashes
+        (error "CEPL: Uniforms found in pipeline with incompatible definitions:
+~{~%~a~}"
+               (mapcar λ(format nil "~s:~{~%~a~}~%" (first _) (second _))
+                       all-clashes)))
+      uniforms)))
 
 ;;--------------------------------------------------
 

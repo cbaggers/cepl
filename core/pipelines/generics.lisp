@@ -18,6 +18,7 @@
 (defgeneric delete-gpu-function (gfunc-description &optional error-if-missing))
 (defgeneric %gpu-function (name))
 (defgeneric gen-uploaders-block (assigners))
+(defgeneric unpack-arrayd-assigner (assigner))
 (defgeneric gen-cleanup-block (assigners))
 (defgeneric pipeline-stages (spec))
 (defgeneric pipeline-stage-pairs (spec))

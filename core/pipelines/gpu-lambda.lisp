@@ -70,7 +70,7 @@
 (defun+ make-lambda-pipeline (gpipe-args context)
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((stage-keys (mapcar #'cdr stage-pairs))
-           (aggregate-uniforms (aggregate-uniforms stage-keys nil t)))
+           (aggregate-uniforms (aggregate-uniforms stage-keys t)))
       (if (stages-require-partial-pipeline stage-keys)
           (make-partial-lambda-pipeline stage-keys)
           (make-complete-lambda-pipeline
@@ -86,7 +86,7 @@
 (defun+ make-complete-lambda-pipeline (stage-pairs stage-keys aggregate-uniforms
                                       context post)
   (let* ((ctx *pipeline-body-context-var*)
-         (uniform-assigners (mapcar #'make-arg-assigners aggregate-uniforms))
+         (uniform-assigners (make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
