@@ -64,10 +64,16 @@
        one of its missing dependencies and calls %test-&-update-spec on them.
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
-  (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
-                                   nil nil uniforms doc-string nil
-                                   nil));;[0]
-        (valid-glsl-versions (get-versions-from-context context)))
+  (let* ((spec (%make-gpu-func-spec name in-args uniforms context body
+                                    instancing nil nil uniforms doc-string
+                                    nil nil (get-gpu-func-spec-tag)));;[0]
+         (valid-glsl-versions (get-versions-from-context context))
+         (spec-key (spec->func-key spec))
+         (old-spec (gpu-func-spec spec-key nil))
+         (changedp (spec-changed-p spec old-spec))
+         (spec (if changedp
+                   spec
+                   old-spec)))
     ;; this gets the functions used in the body of this function
     ;; it is *not* recursive
     (%update-gpu-function-data spec nil nil)
@@ -76,9 +82,10 @@
     `(progn
        (varjo:add-external-function ',name ',in-args ',uniforms ',body
                                     ',valid-glsl-versions);;[1]
-       (%test-&-update-spec ,spec);;[2]
        ,(unless equiv (make-stand-in-lisp-func spec));;[3]
-       (%recompile-gpu-function-and-pipelines ,(spec->func-key spec));;[4]
+       (%test-&-update-spec ,spec);;[2]
+       ,(when changedp
+          `(%recompile-gpu-function-and-pipelines ,spec-key));;[4]
        (update-specs-with-missing-dependencies);;[5]
        ',name)))
 
@@ -171,6 +178,9 @@
   ;; recompile gpu-funcs that depends on name
   (mapcar #'%recompile-gpu-function-and-pipelines
           (funcs-that-use-this-func key));;[0]
+  ;; update diff-tag
+  (with-gpu-func-spec (gpu-func-spec key)
+    (setf diff-tag (get-gpu-func-spec-tag)))
   ;; and recompile pipelines that depend on name
   (recompile-pipelines-that-use-this-as-a-stage key))
 

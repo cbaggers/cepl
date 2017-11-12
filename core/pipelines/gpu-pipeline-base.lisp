@@ -88,7 +88,8 @@
 (defun+ %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
                             actual-uniforms
-                            doc-string declarations missing-dependencies)
+                            doc-string declarations missing-dependencies
+                            diff-tag)
   (make-instance 'gpu-func-spec
                  :name name
                  :in-args (mapcar #'listify in-args)
@@ -102,7 +103,7 @@
                  :doc-string doc-string
                  :declarations declarations
                  :missing-dependencies missing-dependencies
-                 :diff-tag (get-gpu-func-spec-tag)))
+                 :diff-tag diff-tag))
 
 (defun+ %make-glsl-stage-spec (name in-args uniforms context body-string
                               compiled)
@@ -147,7 +148,8 @@
       ',name ',in-args ',uniforms ',context ',body
       ',instancing ',equivalent-inargs ',equivalent-uniforms
       ',actual-uniforms
-      ,doc-string ',declarations ',missing-dependencies)))
+      ,doc-string ',declarations ',missing-dependencies
+      ',diff-tag)))
 
 (defun+ clone-stage-spec (spec &key (new-context nil set-context))
   (with-gpu-func-spec spec
@@ -168,6 +170,42 @@
      :declarations declarations
      :missing-dependencies missing-dependencies
      :diff-tag (or diff-tag (error "CEPL BUG: Diff-tag missing")))))
+
+(defun spec-changed-p (spec old-spec)
+  (or (not spec)
+      (not old-spec)
+      (with-slots ((name-a name)
+                   (in-args-a in-args)
+                   (uniforms-a uniforms)
+                   (actual-uniforms-a actual-uniforms)
+                   (context-a context)
+                   (body-a body)
+                   (instancing-a instancing)
+                   (equivalent-inargs-a equivalent-inargs)
+                   (equivalent-uniforms-a equivalent-uniforms)
+                   (doc-string-a doc-string)
+                   (declarations-a declarations)
+                   (missing-dependencies-a missing-dependencies)
+                   (diff-tag-a diff-tag)) spec
+        (with-slots ((name-b name)
+                     (in-args-b in-args)
+                     (uniforms-b uniforms)
+                     (actual-uniforms-b actual-uniforms)
+                     (context-b context)
+                     (body-b body)
+                     (instancing-b instancing)
+                     (equivalent-inargs-b equivalent-inargs)
+                     (equivalent-uniforms-b equivalent-uniforms)
+                     (doc-string-b doc-string)
+                     (declarations-b declarations)
+                     (missing-dependencies-b missing-dependencies)
+                     (diff-tag-b diff-tag)) old-spec
+          (not (and (equal body-a body-b)
+                    (equal context-a context-b)
+                    (equal declarations-a declarations-b)
+                    (equal in-args-a in-args-b)
+                    (equal uniforms-a uniforms-b)
+                    (equal name-a name-b)))))))
 
 ;;--------------------------------------------------
 

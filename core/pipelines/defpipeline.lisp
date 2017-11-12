@@ -123,6 +123,16 @@
          (state-var (hidden-symb name :pipeline-state))
          (init-func-name (hidden-symb name :init))
          (uniform-assigners (make-arg-assigners aggregate-actual-uniforms))
+         (current-spec (pipeline-spec name))
+         (current-stage-tags (when current-spec
+                               (remove nil (slot-value current-spec 'diff-tags))))
+         (new-stage-tags (mapcar λ(let ((spec (gpu-func-spec (cdr _))))
+                                    (when spec
+                                      (slot-value spec 'diff-tag)))
+                                 stage-pairs))
+         (structurally-unchanged-p (and (every #'identity current-stage-tags)
+                                        (every #'identity new-stage-tags)
+                                        (equal current-stage-tags new-stage-tags)))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (primitive (varjo.internals:primitive-name-to-instance
@@ -143,7 +153,10 @@
        ;;
        ;; The struct that holds the gl state for this pipeline
        (declaim (type pipeline-state ,state-var))
-       (defparameter ,state-var (make-pipeline-state))
+       (,(if structurally-unchanged-p
+             'defvar
+             'defparameter)
+           ,state-var (make-pipeline-state))
        ;;
        ;; If the prog-id isnt know this function will be called
        (defun+ ,init-func-name (state)

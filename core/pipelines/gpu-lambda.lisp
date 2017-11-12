@@ -27,7 +27,7 @@
           (%test-&-update-spec
            (%make-gpu-func-spec
             nil in-args uniforms context body instancing nil nil
-            nil doc-string declarations nil)))))
+            nil doc-string declarations nil (get-gpu-func-spec-tag))))))
 
 (defun+ %lambda-g (&rest args)
   (declare (ignore args))
