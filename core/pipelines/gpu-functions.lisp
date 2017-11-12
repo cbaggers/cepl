@@ -65,7 +65,7 @@
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
   (let ((spec (%make-gpu-func-spec name in-args uniforms context body instancing
-                                   nil nil nil doc-string nil
+                                   nil nil uniforms doc-string nil
                                    nil));;[0]
         (valid-glsl-versions (get-versions-from-context context)))
     ;; this gets the functions used in the body of this function

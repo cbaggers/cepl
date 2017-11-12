@@ -599,7 +599,7 @@
     (let ((groups (sort (remove-duplicates (mapcar #'second varying-pairs))
                         #'<)))
       (case= (length groups)
-        (0 (values nil nil nil))
+        (0 (values nil nil 0))
         (1 (values :interleaved-attribs
                    (mapcar #'get-name varying-pairs)
                    1))
