@@ -246,11 +246,18 @@
                (copy-list
                 (if actual-uniforms-p
                     actual-uniforms
-                    uniforms)))))
+                    uniforms))))
+           (normalize-type-names (uniform)
+             (dbind (name type &rest rest) uniform
+               (let ((type (varjo:type->type-spec
+                            (varjo:type-spec->type
+                             type))))
+                 `(,name ,type ,@rest)))))
     ;;
     (let* ((func-specs (mapcar #'gpu-func-spec keys))
-           (uniforms (remove-duplicates (mapcan #'get-uniforms func-specs)
-                                        :test #'equal)) ;; [0]
+           (uniforms (mapcan #'get-uniforms func-specs))
+           (uniforms (mapcar #'normalize-type-names uniforms))
+           (uniforms (remove-duplicates uniforms :test #'equal)) ;; [0]
            (all-clashes
             (loop :for uniform :in uniforms :collect
                (let* ((name (first uniform))
@@ -262,7 +269,7 @@
       (when all-clashes
         (error "CEPL: Uniforms found in pipeline with incompatible definitions:
 ~{~%~a~}"
-               (mapcar λ(format nil "~s:~{~%~a~}~%" (first _) (second _))
+               (mapcar λ(format nil "~s:~{~%~s~}~%" (first _) (second _))
                        all-clashes)))
       uniforms)))
 
