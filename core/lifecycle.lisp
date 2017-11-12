@@ -151,6 +151,6 @@
   (setf *lifecycle-state* :shutting-down)
   (call-listeners)
   ;; do shutdown stuff
-  (cepl.host:shutdown)
+  (cepl.host::%shutdown cepl.host::*current-host*)
   ;; go back to uninitialized
   (setf *lifecycle-state* :uninitialized))
