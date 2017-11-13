@@ -452,7 +452,9 @@
                ;; let's us know that the transform feedback has actually be
                ;; started in GL, not just that we are the scope of CEPL's
                ;; with-transform-feedback macro.
-               (when (/= (%tfs-current-prog-id current-tfs) +unknown-gl-id+)
+               (when (and current-tfs
+                          (/= (%tfs-current-prog-id current-tfs)
+                              +unknown-gl-id+))
                  (error 'pipeline-recompile-in-tfb-scope :name ',name)))
              (bt:with-lock-held (*init-pipeline-lock*)
                (multiple-value-bind (compiled-stages
