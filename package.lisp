@@ -138,7 +138,8 @@
            :invalid-args-in-make-tfs
            :tfs-setf-arrays-whilst-bound
            :one-stage-non-explicit
-           :invalid-stage-for-single-stage-pipeline))
+           :invalid-stage-for-single-stage-pipeline
+           :pipeline-recompile-in-tfb-scope))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
