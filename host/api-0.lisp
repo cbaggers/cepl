@@ -59,6 +59,10 @@
         (or *api-0-context-singleton*
             (error "CEPL Internal Bug: Must call make-window before make-context when using legacy host api")))))
 
+(defmethod %shutdown ((host api-0) &key &allow-other-keys)
+  (declare (ignore host))
+  (shutdown))
+
 (defmethod %set-surface-size ((host api-0) surface width height &key &allow-other-keys)
   (declare (ignore host surface width height))
   (warn "Setting the size of a surface is not supported when using the legacy host api"))

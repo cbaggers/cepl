@@ -186,6 +186,10 @@
              alpha-size depth-size stencil-size buffer-size
              red-size green-size blue-size)))
 
+(defmethod %shutdown ((host api-1) &key &allow-other-keys)
+  (with-slots (shutdown-function) host
+    (funcall shutdown-function)))
+
 (defmethod %set-surface-size ((host api-1) surface width height
                               &key &allow-other-keys)
   (assert surface)
