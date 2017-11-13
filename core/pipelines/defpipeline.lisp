@@ -447,6 +447,13 @@
            ;; all image units will be >0 as 0 is used as scratch tex-unit
            (let ((image-unit 0))
              (declare (ignorable image-unit))
+             (%with-cepl-context-slots (current-tfs) (cepl-context)
+               ;; we check %tfs-current-prog-id rather than %tfs-bound as this
+               ;; let's us know that the transform feedback has actually be
+               ;; started in GL, not just that we are the scope of CEPL's
+               ;; with-transform-feedback macro.
+               (when (/= (%tfs-current-prog-id current-tfs) +unknown-gl-id+)
+                 (error 'pipeline-recompile-in-tfb-scope :name ',name)))
              (bt:with-lock-held (*init-pipeline-lock*)
                (multiple-value-bind (compiled-stages
                                      new-prog-id

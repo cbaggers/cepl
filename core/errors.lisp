@@ -547,6 +547,11 @@ For example:
 Single stage pipelines are valid in CEPL however only if the stage is
 a vertex or fragment stage" kind)
 
+(deferror pipeline-recompile-in-tfb-scope () (name)
+    "CEPL: We were about to recompile the GL program behind ~a however we
+noticed that this is happening inside the scope of with-transform-feedback
+which GL does not allow. Sorry about that." name)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
