@@ -94,6 +94,13 @@
 ;;------------------------------------------------------------
 
 (defun+ make-lambda-pipeline (gpipe-args context)
+  ;; we have the body of the work in the *-inner function as
+  ;; make-complete-lambda-pipeline returns two values and whilst we
+  ;; do want both for funcall-g, we only want the first value to
+  ;; be returned to users who use lambda-g
+  (values (make-lambda-pipeline-inner gpipe-args context)))
+
+(defun+ make-lambda-pipeline-inner (gpipe-args context)
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((stage-keys (mapcar #'cdr stage-pairs)))
       (if (stages-require-partial-pipeline stage-keys)
@@ -165,23 +172,25 @@
              (stream-symb (if compute 'space 'stream))
              (stream-type (if compute 'compute-space 'buffer-stream)))
         ;;
-        (funcall (compile nil (gen-complete-lambda-pipeline-code
-                               ctx
-                               compute
-                               implicit-u-lets
-                               implicit-u-uploads
-                               implicit-uniform-transforms
-                               post
-                               primitive
-                               stream-symb
-                               stream-type
-                               u-cleanup
-                               u-lets
-                               u-uploads
-                               uniform-names))
-                 compiled-stages
-                 prog-id
-                 tfb-group-count)))))
+        (values
+         (funcall (compile nil (gen-complete-lambda-pipeline-code
+                                ctx
+                                compute
+                                implicit-u-lets
+                                implicit-u-uploads
+                                implicit-uniform-transforms
+                                post
+                                primitive
+                                stream-symb
+                                stream-type
+                                u-cleanup
+                                u-lets
+                                u-uploads
+                                uniform-names))
+                  compiled-stages
+                  prog-id
+                  tfb-group-count)
+         compiled-stages)))))
 
 (defun gen-complete-lambda-pipeline-code (ctx
                                           compute

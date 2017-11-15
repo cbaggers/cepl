@@ -234,8 +234,11 @@
              (lambda (,@arg-names
                       ,@(when uniforms (cons (symb :&key) uniform-names)))
                ,@(when doc-string (list doc-string))
-               (declare (ignore ,@arg-names ,@uniform-names))
-               (warn "GPU Functions cannot currently be used from the cpu"))))))
+               (funcall #'run-on-gpu ',name
+                        ,@arg-names
+                        ,@(mapcat (lambda (x)
+                                    (list (intern (symbol-name x) :keyword) x))
+                                  uniform-names)))))))
 
 ;;--------------------------------------------------
 
