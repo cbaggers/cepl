@@ -95,23 +95,35 @@
          (u-lets (mapcat #'let-forms uniform-assigners))
          (primitive (varjo.internals:primitive-name-to-instance
                      (varjo.internals:get-primitive-type-from-context context))))
-    `(multiple-value-bind (compiled-stages prog-id)
+    ;;compiled-stages prog-id prog-ids tfb-group-count
+    `(multiple-value-bind (compiled-stages prog-id prog-ids tfb-group-count)
          (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
+       (declare (ignore prog-ids))
        (register-lambda-pipeline
         compiled-stages
         (let* (;; all image units will be >0 as 0 is used as scratch tex-unit
                (image-unit 0)
+               ;; The primitive used by transform feedback. When nil
+               ;; the primitive comes from the render-mode
+               (tfs-primitive (when tfb-group-count
+                                (get-transform-feedback-primitive compiled-stages)))
+               (tfs-array-count tfb-group-count)
                ;; If there are no implicit-uniforms we need a no-op
                ;; function to call
                (implicit-uniform-upload-func
                 (or (%create-implicit-uniform-uploader compiled-stages
                                                        ',uniform-names)
                     #'fallback-iuniform-func))
+               (has-fragment-stage
+                (not (find-if λ(typep _ 'compiled-fragment-stage)
+                              compiled-stages)))
                ;;
                ;; {todo} explain
                ,@u-lets)
           (declare (ignorable image-unit)
-                   (type function implicit-uniform-upload-func))
+                   (type function implicit-uniform-upload-func)
+                   (type symbol tfs-primitive)
+                   (type (unsigned-byte 8) tfs-array-count))
           ;;
           ;; generate the code that actually renders
           (%post-init ,post)
@@ -136,25 +148,8 @@
               (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
                                     `(buffer-stream-draw-mode-val stream)
                                     (varjo::lisp-name primitive))))
-                ;; if we are capturing transform feedback
-                (%with-cepl-context-slots (current-tfs) ,ctx
-                  (let ((tfs current-tfs))
-                    (when tfs
-                      (let ((tfs-alen (length (%tfs-arrays tfs))))
-                        (assert (= tfs-alen tfs-array-count)
-                                () 'incorrect-number-of-arrays-in-tfs
-                                :tfs tfs
-                                :tfs-count tfs-alen
-                                :count tfs-array-count))
-                      (let ((tfs-prog-id (%tfs-current-prog-id tfs)))
-                        (if (= tfs-prog-id +unknown-gl-id+)
-                            (progn
-                              (%gl:begin-transform-feedback
-                               (or tfs-primitive draw-type))
-                              (setf (%tfs-current-prog-id tfs) prog-id))
-                            (assert (= tfs-prog-id prog-id) ()
-                                    'mixed-pipelines-in-with-tb))))))
-
+                (handle-transform-feedback ,ctx draw-type prog-id tfs-primitive
+                                           tfs-array-count)
                 (when (not has-fragment-stage)
                   (gl:enable :rasterizer-discard))
                 (draw-expander stream draw-type ,primitive)
