@@ -65,6 +65,13 @@
 (defmacro glambda (args &body body)
   `(lambda-g ,args ,@body))
 
+(defun compile-g (name &optional definition)
+  (assert (and (not name) (eq (first definition) 'lambda-g)) ()
+          'compile-g-missing-requested-feature :form (cons name definition))
+  (destructuring-bind (l args &body body) definition
+    (declare (ignore l))
+    (make-gpu-lambda args body)))
+
 ;;------------------------------------------------------------
 
 (defun+ make-lambda-pipeline (gpipe-args context)

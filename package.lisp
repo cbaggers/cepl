@@ -139,7 +139,8 @@
            :tfs-setf-arrays-whilst-bound
            :one-stage-non-explicit
            :invalid-stage-for-single-stage-pipeline
-           :pipeline-recompile-in-tfb-scope))
+           :pipeline-recompile-in-tfb-scope
+           :compile-g-missing-requested-feature))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -984,6 +985,7 @@
            :with-instances
            :glambda
            :lambda-g
+           :compile-g
            :defpipeline-g
            :def-g->
            :pipeline-g
