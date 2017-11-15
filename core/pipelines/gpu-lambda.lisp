@@ -83,8 +83,11 @@
     (error 'partial-lambda-pipeline
            :partial-stages stages)))
 
-(defun+ make-complete-lambda-pipeline (stage-pairs stage-keys aggregate-uniforms
-                                      context post)
+(defun+ make-complete-lambda-pipeline (stage-pairs
+                                       stage-keys
+                                       aggregate-uniforms
+                                       context
+                                       post)
   (let* ((ctx *pipeline-body-context-var*)
          (uniform-assigners (make-arg-assigners aggregate-uniforms))
          ;; we generate the func that compiles & uploads the pipeline
@@ -99,13 +102,14 @@
     `(multiple-value-bind (compiled-stages prog-id prog-ids tfb-group-count)
          (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
        (declare (ignore prog-ids))
+       (use-program (cepl-context) prog-id)
        (register-lambda-pipeline
         compiled-stages
         (let* (;; all image units will be >0 as 0 is used as scratch tex-unit
                (image-unit 0)
                ;; The primitive used by transform feedback. When nil
                ;; the primitive comes from the render-mode
-               (tfs-primitive (when tfb-group-count
+               (tfs-primitive (when (> tfb-group-count 0)
                                 (get-transform-feedback-primitive compiled-stages)))
                (tfs-array-count tfb-group-count)
                ;; If there are no implicit-uniforms we need a no-op
@@ -119,11 +123,13 @@
                               compiled-stages)))
                ;;
                ;; {todo} explain
-               ,@u-lets)
+               ,@(mapcar λ`(,(assigner-name _) ,(assigner-body _))
+                         u-lets))
           (declare (ignorable image-unit)
                    (type function implicit-uniform-upload-func)
                    (type symbol tfs-primitive)
                    (type (unsigned-byte 8) tfs-array-count))
+          (use-program (cepl-context) 0)
           ;;
           ;; generate the code that actually renders
           (%post-init ,post)
@@ -132,15 +138,15 @@
                      (ignorable ,ctx ,@uniform-names))
             #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
             ,@(unless (typep primitive 'varjo::dynamic)
-                      `((when stream
-                          (assert
-                           (= ,(draw-mode-group-id primitive)
-                              (buffer-stream-primitive-group-id stream))
-                           ()
-                           'buffer-stream-has-invalid-primitive-for-stream
-                           :name "<lambda>"
-                           :pline-prim ',(varjo::lisp-name primitive)
-                           :stream-prim (buffer-stream-primitive stream)))))
+                `((when stream
+                    (assert
+                     (= ,(draw-mode-group-id primitive)
+                        (buffer-stream-primitive-group-id stream))
+                     ()
+                     'buffer-stream-has-invalid-primitive-for-stream
+                     :name "<lambda>"
+                     :pline-prim ',(varjo::lisp-name primitive)
+                     :stream-prim (buffer-stream-primitive stream)))))
             (use-program ,ctx prog-id)
             ,@u-uploads
             (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
