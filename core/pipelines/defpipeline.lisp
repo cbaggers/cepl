@@ -530,6 +530,7 @@
      uint-count)))
 
 (defun+ get-transform-feedback-primitive (stages)
+  (break "foo ~a" stages)
   (let* ((prims (loop :for stage :in stages :collect
                    (typecase stage
                      (compiled-tessellation-evaluation-stage
