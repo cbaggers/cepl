@@ -80,6 +80,7 @@
                (:file "core/pipelines/gpu-macros")
                (:file "core/pipelines/gpu-pipeline-base")
                (:file "core/pipelines/pipeline-validation")
+               (:file "core/pipelines/run-gpu-func-interactively")
                (:file "core/pipelines/gpu-functions")
                (:file "core/pipelines/glsl-stages")
                (:file "core/pipelines/mapg-context")

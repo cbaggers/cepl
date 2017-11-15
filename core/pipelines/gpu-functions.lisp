@@ -228,17 +228,10 @@
   This means we get function arg hints, doc-string and also we have the
   opportunity to provide a cpu implementation one day we want to."
   (with-gpu-func-spec spec
-    (let ((arg-names (mapcar #'first in-args))
-          (uniform-names (mapcar #'first uniforms)))
-      `(setf (symbol-function ',name)
-             (lambda (,@arg-names
-                      ,@(when uniforms (cons (symb :&key) uniform-names)))
-               ,@(when doc-string (list doc-string))
-               (funcall #'run-on-gpu ',name
-                        ,@arg-names
-                        ,@(mapcat (lambda (x)
-                                    (list (intern (symbol-name x) :keyword) x))
-                                  uniform-names)))))))
+    `(setf (symbol-function ',name)
+           (lambda (&rest args)
+             ,@(when doc-string (list doc-string))
+             (funcall #'run-on-gpu ',name args)))))
 
 ;;--------------------------------------------------
 
