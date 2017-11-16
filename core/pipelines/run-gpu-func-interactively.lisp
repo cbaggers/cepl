@@ -1,6 +1,8 @@
 (in-package :cepl.pipelines)
 
-(defun run-on-gpu (name &rest args)
+;;------------------------------------------------------------
+
+(defun run-on-gpu (name args)
   (multiple-value-bind (in-vals uniform-keys-and-vals)
       (split-args-for-dyn-call args)
     (let* ((spec (find-gpu-func-spec-by-name-and-vals name in-vals))
@@ -15,10 +17,9 @@
            (gen-vertex-stage-code-calling-func
             spec))
         (unwind-protect
-             (let* ((ret-type (get-dyn-return-type-from-stage (first stages))))
-               (dispatch-dyn-gpu-call pline call-args ret-type))
-          1;;(free-pipeline pline)
-          )))))
+             (let* ((ret-types (get-dyn-return-types-from-stage (first stages))))
+               (dispatch-dyn-gpu-call pline call-args ret-types))
+          (free-pipeline pline))))))
 
 (defun split-args-for-dyn-call (args)
   (let* ((split (or (position-if #'keywordp args)
@@ -34,11 +35,10 @@
 
 (defun gen-vertex-stage-code-calling-func (spec)
   (with-gpu-func-spec spec
-    `(lambda-g (&uniform ,@(append in-args uniforms))
-       (labels ((,name ()
-                  ,@body))
-         (values (v! 0 0 0 0)
-                 (:feedback (,name)))))))
+    (let ((gname (gensym "foo")))
+      `(lambda-g (&uniform ,@(append in-args uniforms))
+         (labels ((,gname () ,@body))
+           (spliced-values ,gname (v! 0 0 0 0)))))))
 
 (defun dyn-code-to-pipeline-and-stages (code)
   (make-lambda-pipeline-inner (list :vertex (compile-g nil code))
@@ -55,22 +55,45 @@
         (cons (inner (first spec)) (rest spec))
         (values (inner spec)))))
 
-(defun get-dyn-return-type-from-stage (stage)
-  (to-cepl-type-spec
-   (varjo:type->type-spec
-    (v-type-of
-     (second
-      (varjo:output-variables stage))))))
+(defun get-dyn-return-types-from-stage (stage)
+  (labels ((inner (x)
+             (to-cepl-type-spec
+              (varjo:type->type-spec
+               (v-type-of x)))))
+    (mapcar #'inner (rest (varjo:output-variables stage)))))
 
-(defun dispatch-dyn-gpu-call (pline call-args ret-type)
+(defun dispatch-dyn-gpu-call (pline call-args ret-types)
   (let ((single-point-stream (cepl:make-buffer-stream nil :primitive :points))
-        (garray (make-gpu-array nil :element-type ret-type
-                                :dimensions 1)))
+        (garrays (mapcar (lambda (ret-type)
+                           (make-gpu-array nil :element-type ret-type
+                                           :dimensions 1))
+                         ret-types)))
     (unwind-protect
-         (let ((tfs (cepl:make-transform-feedback-stream garray)))
+         (let ((tfs (apply #'cepl:make-transform-feedback-stream garrays)))
            (cepl:with-transform-feedback (tfs)
              (apply pline (cepl-context) single-point-stream
                     call-args))
-           (first (pull-g garray)))
-      (free-gpu-array garray)
+           (values-list (mapcar (lambda (arr) (first (pull-g arr)))
+                                garrays)))
+      (map nil #'free-gpu-array garrays)
       (free-buffer-stream single-point-stream))))
+
+(varjo.internals:v-defspecial spliced-values (name form)
+  :args-valid t
+  :return
+  (let* ((scanned (varjo.internals::map-environments
+                   (lambda (e)
+                     (second (find name (varjo.internals:v-form-bindings e)
+                                   :key #'first)))
+                   env))
+         (trimmed (first (remove nil scanned))))
+    (assert trimmed)
+    (let* ((return-spec (varjo.internals:v-return-spec trimmed))
+           (feedback (loop :for i :below (length return-spec) :collect
+                        `((:feedback ,i) ,(gensym)))))
+      (varjo.internals:compile-form
+       `(multiple-value-bind ,(mapcar #'second feedback) (,name)
+          (values
+           ,form
+           ,@feedback))
+       env))))
