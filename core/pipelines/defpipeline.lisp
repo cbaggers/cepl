@@ -2,6 +2,7 @@
 (in-readtable :fn.reader)
 
 (defvar *init-pipeline-lock* (bt:make-lock))
+(defvar *suppress-upload-message* nil)
 
 (defun+ function-arg-p (arg)
   (typep (varjo:type-spec->type (second arg))
@@ -342,7 +343,8 @@
          (stage-pairs (swap-versions stage-pairs glsl-version))
          (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
-    (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA"))
+    (unless *suppress-upload-message*
+      (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA")))
     ;; when compiling lambda pipelines prog-ids will be a number, not a vector
     (multiple-value-bind (prog-ids prog-id)
         (request-program-id-for (cepl-context) name)

@@ -11,7 +11,8 @@
            (in-arg-keys (mapcar #'kwd in-arg-names))
            (in-arg-keys-and-vals (mapcan #'list in-arg-keys in-vals))
            (call-args (append in-arg-keys-and-vals
-                              uniform-keys-and-vals)))
+                              uniform-keys-and-vals))
+           (*suppress-upload-message* t))
       (multiple-value-bind (pline stages)
           (dyn-code-to-pipeline-and-stages
            (gen-vertex-stage-code-calling-func
