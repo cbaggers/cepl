@@ -20,6 +20,8 @@
 (defvar *map-of-pipeline-names-to-gl-ids*
   (make-hash-table :test #'eq))
 
+(defvar *suppress-upload-message* nil)
+
 ;;--------------------------------------------------
 
 (defclass lambda-pipeline-spec ()

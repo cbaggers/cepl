@@ -2,7 +2,6 @@
 (in-readtable :fn.reader)
 
 (defvar *init-pipeline-lock* (bt:make-lock))
-(defvar *suppress-upload-message* nil)
 
 (defun+ function-arg-p (arg)
   (typep (varjo:type-spec->type (second arg))
