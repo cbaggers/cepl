@@ -208,6 +208,7 @@
   `(lambda (compiled-stages prog-id tfb-group-count)
      (use-program (cepl-context) prog-id)
      (register-lambda-pipeline
+      prog-id
       compiled-stages
       (let* ( ;; all image units will be >0 as 0 is used as scratch tex-unit
              (image-unit 0)
@@ -266,9 +267,9 @@
 
 ;;------------------------------------------------------------
 
-(defun+ register-lambda-pipeline (compiled-stages closure)
+(defun+ register-lambda-pipeline (prog-id compiled-stages closure)
   (setf (function-keyed-pipeline closure)
-        (make-lambda-pipeline-spec compiled-stages))
+        (make-lambda-pipeline-spec prog-id compiled-stages))
   closure)
 
 ;;------------------------------------------------------------

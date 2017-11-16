@@ -23,7 +23,8 @@
 ;;--------------------------------------------------
 
 (defclass lambda-pipeline-spec ()
-  ((cached-compile-results :initarg :cached-compile-results :initform nil)))
+  ((cached-compile-results :initarg :cached-compile-results :initform nil)
+   (prog-ids :initarg :prog-ids)))
 
 (defclass pipeline-spec ()
   ((name :initarg :name)
@@ -465,9 +466,10 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defun+ make-lambda-pipeline-spec (compiled-stages)
+(defun+ make-lambda-pipeline-spec (prog-id compiled-stages)
   (make-instance 'lambda-pipeline-spec
-                 :cached-compile-results compiled-stages))
+                 :cached-compile-results compiled-stages
+                 :prog-ids prog-id))
 
 (defun+ make-pipeline-spec (name stages context)
   (dbind (&key vertex tessellation-control tessellation-evaluation

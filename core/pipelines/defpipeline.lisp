@@ -803,6 +803,8 @@
 
 (defun+ free-pipeline (pipeline)
   (with-slots (prog-ids) (pipeline-spec pipeline)
-    (let ((prog-id (aref prog-ids (context-id (cepl-context)))))
+    (let ((prog-id (etypecase prog-ids
+                     (array (aref prog-ids (context-id (cepl-context))))
+                     (integer prog-ids))))
       (gl:delete-program prog-id)
       (setf prog-ids nil))))
