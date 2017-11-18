@@ -605,3 +605,57 @@
   (:method ((object buffer-stream)) nil))
 
 ;;------------------------------------------------------------
+
+#+sbcl
+(declaim (sb-ext:freeze-type ubo))
+
+#+sbcl
+(declaim (sb-ext:freeze-type viewport))
+
+#+sbcl
+(declaim (sb-ext:freeze-type blending-params))
+
+#+sbcl
+(declaim (sb-ext:freeze-type stencil-params))
+
+#+sbcl
+(declaim (sb-ext:freeze-type att))
+
+#+sbcl
+(declaim (sb-ext:freeze-type fbo))
+
+#+sbcl
+(declaim (sb-ext:freeze-type pixel-format))
+
+#+sbcl
+(declaim (sb-ext:freeze-type buffer-stream))
+
+#+sbcl
+(declaim (sb-ext:freeze-type transform-feedback-stream))
+
+#+sbcl
+(declaim (sb-ext:freeze-type c-array))
+
+#+sbcl
+(declaim (sb-ext:freeze-type texture))
+
+#+sbcl
+(declaim (sb-ext:freeze-type gpu-buffer))
+
+#+sbcl
+(declaim (sb-ext:freeze-type gpu-array))
+
+#+sbcl
+(declaim (sb-ext:freeze-type gpu-array-bb))
+
+#+sbcl
+(declaim (sb-ext:freeze-type gpu-array-t))
+
+#+sbcl
+(declaim (sb-ext:freeze-type buffer-texture))
+
+#+sbcl
+(declaim (sb-ext:freeze-type sampler-id-box))
+
+#+sbcl
+(declaim (sb-ext:freeze-type sampler))

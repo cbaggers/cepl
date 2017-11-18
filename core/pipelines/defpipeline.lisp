@@ -112,6 +112,8 @@
                :initial-element +unknown-uniform-uint-id+)
    :type (array (unsigned-byte 32) (*))))
 
+#+sbcl
+(declaim (sb-ext:freeze-type pipeline-state))
 
 (defun+ %def-complete-pipeline (name
                                 stage-pairs
