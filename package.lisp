@@ -452,7 +452,8 @@
            :%tfs-pending-arrays
 
            ;;---
-           :holds-gl-object-ref-p))
+           :holds-gl-object-ref-p
+           :can-be-shared-between-contexts-p))
 
 (uiop:define-package :cepl.memory
     (:use :cl :cepl-utils :glsl-symbols :cffi :%cepl.types :cepl.build)
@@ -484,7 +485,9 @@
            :element-byte-size
            ;;---
            :get-typed-from-foreign
-           :get-typed-to-foreign))
+           :get-typed-to-foreign
+           ;;---
+           :can-be-shared-between-contexts-p))
 
 (uiop:define-package :cepl.types.predefined
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math

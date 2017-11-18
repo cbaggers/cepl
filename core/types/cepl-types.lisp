@@ -512,20 +512,6 @@
 
 ;;------------------------------------------------------------
 
-(defun+ holds-gl-object-ref-p (object)
-  (typecase object
-    (texture t)
-    (gpu-buffer t)
-    (gpu-array t)
-    (gpu-array-bb t)
-    (gpu-array-t t)
-    (buffer-texture t)
-    (sampler t)
-    (fbo t) ;; 20160402 - only one left to delay
-    (buffer-stream t)))
-
-;;------------------------------------------------------------
-
 (defstruct (transform-feedback-stream
              (:constructor %make-tfs)
              (:conc-name %tfs-))
@@ -591,3 +577,31 @@
 
 (defun+ make-uninitialized-gpu-buffer ()
   (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+))
+
+;;------------------------------------------------------------
+
+(defun+ holds-gl-object-ref-p (object)
+  (typecase object
+    (texture t)
+    (gpu-buffer t)
+    (gpu-array t)
+    (gpu-array-bb t)
+    (gpu-array-t t)
+    (buffer-texture t)
+    (sampler t)
+    (fbo t) ;; 20160402 - only one left to delay
+    (buffer-stream t)))
+
+(defgeneric can-be-shared-between-contexts-p (object)
+  (:method ((object gpu-buffer)) t)
+  (:method ((object gpu-array)) t)
+  ;; (:method (object query) t)
+  ;; (:method (object render-buffer) t)
+  (:method ((object sampler)) t)
+  (:method ((object texture)) t)
+  (:method ((object fbo)) nil)
+  ;;(:method (object pipeline) nil)
+  (:method ((object transform-feedback-stream)) nil)
+  (:method ((object buffer-stream)) nil))
+
+;;------------------------------------------------------------
