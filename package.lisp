@@ -27,7 +27,6 @@
            :make-keyword
            :kwd
            :group
-           :safe-read-from-string
            :sub-at-index
            :symb-package
            :lispify-name
@@ -58,7 +57,6 @@
            :just-ignore
            :read-integers
            :ensure-vec-index
-           :def-artificial-id
            :with-setf
            :with-setf*
            :defn
@@ -67,7 +65,8 @@
            :list-not-consp
            :gl-enum
            :consecutive-integers-p
-           :hidden-symb))
+           :hidden-symb
+           :define-const))
 
 (uiop:define-package :cepl.errors
     (:use :cl :cffi :cepl-utils :varjo :rtg-math :cepl.build)
@@ -333,7 +332,6 @@
            :sampler-p
            :%sampler-id
            :%sampler-id-box
-           :%sampler-context-id
            :%sampler-type
            :%sampler-texture
            :%sampler-lod-bias

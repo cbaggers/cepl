@@ -3,6 +3,7 @@
 ;;----------------------------------------------------------------------
 ;;
 
+(defvar *contexts-lock* (bt:make-lock))
 (defvar *contexts* nil)
 
 (defun assert-no-other-context-is-bound-to-thread (this-thread)
@@ -18,31 +19,32 @@
 (defun+ make-context (&key (gl-version t))
   ;;
   ;; Make sure there is only 1 cepl context per thread
-  (let ((this-thread (bt:current-thread)))
-    (assert-no-other-context-is-bound-to-thread this-thread)
-    ;;
-    (let* ((gl-version (cond
-                         ((and (eq gl-version t) *contexts*)
-                          (let ((ctx (first *contexts*)))
-                            (if (> (%cepl-context-gl-version-float ctx) 0.0)
-                                (%cepl-context-gl-version-float ctx)
-                                (%cepl-context-requested-gl-version ctx))))
-                         ((eq gl-version t) nil)
-                         (t gl-version)))
-           (shared-arr (make-array 0 :fill-pointer 0 :adjustable t))
-           (result (%make-cepl-context
-                    :id (get-free-context-id)
-                    :bound-thread this-thread
-                    :requested-gl-version gl-version
-                    :current-surface nil
-                    :shared shared-arr
-                    :surfaces nil)))
-      (vector-push-extend result (%cepl-context-shared result))
-      (when cepl.host::*current-host*
-        (on-host-initialized result))
-      (push result *contexts*)
-      ;; done!
-      result)))
+  (bt:with-lock-held (*contexts-lock*)
+    (let ((this-thread (bt:current-thread)))
+      (assert-no-other-context-is-bound-to-thread this-thread)
+      ;;
+      (let* ((gl-version (cond
+                           ((and (eq gl-version t) *contexts*)
+                            (let ((ctx (first *contexts*)))
+                              (if (> (%cepl-context-gl-version-float ctx) 0.0)
+                                  (%cepl-context-gl-version-float ctx)
+                                  (%cepl-context-requested-gl-version ctx))))
+                           ((eq gl-version t) nil)
+                           (t gl-version)))
+             (shared-arr (make-array 0 :fill-pointer 0 :adjustable t))
+             (result (%make-cepl-context
+                      :id (get-free-context-id)
+                      :bound-thread this-thread
+                      :requested-gl-version gl-version
+                      :current-surface nil
+                      :shared shared-arr
+                      :surfaces nil)))
+        (vector-push-extend result (%cepl-context-shared result))
+        (when cepl.host::*current-host*
+          (on-host-initialized result))
+        (push result *contexts*)
+        ;; done!
+        result))))
 
 (defun+ free-context (cepl-context)
   (format t "free-context not yet implemented. Leaking ~a" cepl-context))
@@ -145,37 +147,38 @@
            :surfaces surfaces))))))
 
 (defun+ complete-unbound-context (unbound-context)
-  (let ((this-thread (bt:current-thread)))
-    (assert-no-other-context-is-bound-to-thread this-thread)
-    (assert (not (unbound-cepl-context-consumed unbound-context)))
-    (let* ((gl-context (unbound-cepl-context-gl-context unbound-context))
-           (shared (unbound-cepl-context-shared unbound-context))
-           (surface (unbound-cepl-context-surface unbound-context))
-           (surfaces (unbound-cepl-context-surfaces unbound-context))
-           (surfaces (if (find surface surfaces)
-                         surfaces
-                         (cons surface surfaces)))
-           (gl-version (unbound-cepl-context-requested-gl-version
-                        unbound-context))
-           (shared-arr (%cepl-context-shared shared))
-           (result (%make-cepl-context
-                    :id (get-free-context-id)
-                    :gl-context gl-context
-                    :bound-thread this-thread
-                    :requested-gl-version gl-version
-                    :current-surface nil
-                    :shared shared-arr
-                    :surfaces surfaces)))
-      (vector-push-extend result (%cepl-context-shared result))
-      (setf (%cepl-context-array-of-gpu-buffers result)
-            (%cepl-context-array-of-gpu-buffers shared))
-      (setf (%cepl-context-array-of-textures result)
-            (%cepl-context-array-of-textures shared))
-      (push result *contexts*)
-      (make-surface-current result surface)
-      (setf (unbound-cepl-context-consumed unbound-context) t)
-      ;; done!
-      result)))
+  (bt:with-lock-held (*contexts-lock*)
+    (let ((this-thread (bt:current-thread)))
+      (assert-no-other-context-is-bound-to-thread this-thread)
+      (assert (not (unbound-cepl-context-consumed unbound-context)))
+      (let* ((gl-context (unbound-cepl-context-gl-context unbound-context))
+             (shared (unbound-cepl-context-shared unbound-context))
+             (surface (unbound-cepl-context-surface unbound-context))
+             (surfaces (unbound-cepl-context-surfaces unbound-context))
+             (surfaces (if (find surface surfaces)
+                           surfaces
+                           (cons surface surfaces)))
+             (gl-version (unbound-cepl-context-requested-gl-version
+                          unbound-context))
+             (shared-arr (%cepl-context-shared shared))
+             (result (%make-cepl-context
+                      :id (get-free-context-id)
+                      :gl-context gl-context
+                      :bound-thread this-thread
+                      :requested-gl-version gl-version
+                      :current-surface nil
+                      :shared shared-arr
+                      :surfaces surfaces)))
+        (vector-push-extend result (%cepl-context-shared result))
+        (setf (%cepl-context-array-of-gpu-buffers result)
+              (%cepl-context-array-of-gpu-buffers shared))
+        (setf (%cepl-context-array-of-textures result)
+              (%cepl-context-array-of-textures shared))
+        (push result *contexts*)
+        (make-surface-current result surface)
+        (setf (unbound-cepl-context-consumed unbound-context) t)
+        ;; done!
+        result))))
 
 ;;----------------------------------------------------------------------
 ;; Define Functions for interacting with the current context

@@ -18,16 +18,20 @@
 (deftype context-id ()
   `(integer -1 ,+max-context-count+))
 
+(defvar *free-context-ids-lock* (bt:make-lock))
+
 (defvar *free-context-ids*
   (loop :for i :below +max-context-count+ :collect i))
 
 (defun get-free-context-id ()
-  (or (pop *free-context-ids*)
-      (error 'max-context-count-reached
-             :max +max-context-count+)))
+  (bt:with-lock-held (*free-context-ids-lock*)
+    (or (pop *free-context-ids*)
+        (error 'max-context-count-reached
+               :max +max-context-count+))))
 
 (defun discard-context-id (id)
-  (push id *free-context-ids*))
+  (bt:with-lock-held (*free-context-ids-lock*)
+    (push id *free-context-ids*)))
 
 (defstruct unbound-cepl-context
   (consumed nil :type boolean)

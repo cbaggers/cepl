@@ -41,6 +41,7 @@
                (:file "core/measurements/measurements")
                (:file "core/memory/memory")
                (:file "core/types/cepl-types")
+               (:file "core/types/nulls-and-uninitialized")
                (:file "core/context/gl-context")
                (:file "core/context/types")
                (:file "core/context/cepl-context")

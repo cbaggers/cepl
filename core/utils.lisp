@@ -177,29 +177,6 @@
         (rec source nil)
         nil)))
 
-(defvar safe-read-from-string-blacklist
-  '(#\# #\: #\|))
-
-(let ((rt (copy-readtable nil)))
-  (defun safe-reader-error (stream closech)
-    (declare (ignore stream closech))
-    (error "safe-read-from-string failure"))
-
-  (dolist (c safe-read-from-string-blacklist)
-    (set-macro-character
-     c #'safe-reader-error nil rt))
-
-  (defun safe-read-from-string (s &optional fail)
-    (if (stringp s)
-        (let ((*readtable* rt) *read-eval*)
-          (handler-bind
-              ((error (lambda (condition)
-                        (declare (ignore condition))
-                        (return-from
-                         safe-read-from-string fail))))
-            (read-from-string s)))
-        fail)))
-
 (defun+ sub-at-index (seq index new-val)
   (append (subseq seq 0 index)
           (list new-val)
@@ -664,20 +641,6 @@ source: ~s~%list-to-match: ~s" list list-to-match)
                (setf (fill-pointer ,gvec) (1+ ,gindex)))
              ,gindex)))))
 
-(defmacro def-artificial-id (name)
-  (let ((lowest (symb :*lowest-unused- name :-id*))
-        (freed (symb :*freed- name :-ids*))
-        (get (symb :get-free- name :-id))
-        (release (symb :release- name :-id)))
-    `(progn
-       (defvar ,lowest 0)
-       (defvar ,freed nil)
-       (defun ,get ()
-         (or (pop ,freed)
-             (incf ,lowest)))
-       (defun ,release (id)
-         (push id ,freed)))))
-
 (defun list-not-consp (x)
   (and (listp x) (or (null (cdr x)) (consp (cdr x)))))
 
@@ -756,3 +719,27 @@ source: ~s~%list-to-match: ~s" list list-to-match)
                   (symbol-name symbol)
                   sub-name)
           :cepl.hidden))
+
+;;------------------------------------------------------------
+
+(defmacro define-const (name val &key type)
+  "Differs from alexandrias define-context in that it wont eval the val form at
+   all if the var is already bound. This was we are always eq."
+  (when (and (boundp name) type)
+    (assert (typep (symbol-value name) type) ()
+            "
+DEFINE-CONST
+
+The definition was modified to set the type to however the type
+does not match the type of the value already bound to ~a
+
+Value: ~s
+Proposed Type: ~s" name (symbol-value name) type))
+  `(progn
+     ,@(when type `((declaim (type ,type ,name))))
+     (defconstant ,name
+       (if (boundp ',name)
+           (symbol-value ',name)
+           ,val))))
+
+;;------------------------------------------------------------

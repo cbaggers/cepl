@@ -1,9 +1,10 @@
 (in-package :cepl.types)
 
-(defvar *cpu->gpu-vec-mappings*
-  '((:uint8-vec2 . :vec2)
-    (:uint8-vec3 . :vec3)
-    (:uint8-vec4 . :vec4)))
+(define-const +cpu->gpu-vec-mappings+
+    '((:uint8-vec2 . :vec2)
+      (:uint8-vec3 . :vec3)
+      (:uint8-vec4 . :vec4))
+  :type list)
 
 ;;------------------------------------------------------------
 
@@ -160,7 +161,7 @@
            ,@(when accessor `(:accessor ,accessor))))))
 
 (defun+ validate-varjo-type-spec (spec)
-  (let ((spec (or (cdr (assoc spec *cpu->gpu-vec-mappings*))
+  (let ((spec (or (cdr (assoc spec +cpu->gpu-vec-mappings+))
                   spec)))
     (type->spec (type-spec->type spec))))
 
@@ -302,7 +303,7 @@
 
 (defun+ buffer-stream-comptible-typep (slot)
   (let* ((type-spec (s-type slot)))
-    (or (not (null (cdr (assoc type-spec *cpu->gpu-vec-mappings*))))
+    (or (not (null (cdr (assoc type-spec +cpu->gpu-vec-mappings+))))
         (core-typep (type-spec->type type-spec)))))
 
 (defun+ make-struct-attrib-assigner (type-name slots)
@@ -340,10 +341,10 @@
                ,(length def-sets))))))))
 
 (defun+ expand-slot-to-layout (slot &optional type normalize)
-  ;; if it one of the types in *cpu->gpu-vec-mappings* then it is one
+  ;; if it one of the types in +cpu->gpu-vec-mappings+ then it is one
   ;; where the gpu side type will be different from the cpu-side one
   ;; this means we cant rely on the varjo type introspection
-  (if (and (not type) (assoc (s-type slot) *cpu->gpu-vec-mappings*))
+  (if (and (not type) (assoc (s-type slot) +cpu->gpu-vec-mappings+))
       (expand-unmappable-slot-to-layout slot type normalize)
       (expand-mappable-slot-to-layout slot type normalize)))
 

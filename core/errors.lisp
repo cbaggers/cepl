@@ -232,7 +232,7 @@ has not been cached yet"
 
 (deferror pull*-g-not-enabled () ()
     "CEPL has been set to not cache the results of pipeline compilation.
-See the +cache-last-compile-result+ constant for more details")
+See the *cache-last-compile-result* var for more details")
 
 (defwarning func-keyed-pipeline-not-found () (callee func)
     "CEPL: ~a was called with ~a.

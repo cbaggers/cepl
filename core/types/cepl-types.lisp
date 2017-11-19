@@ -91,10 +91,6 @@
   ;; on gl v<3.3
   (last-sampler-id 0 :type (signed-byte 32)))
 
-(defvar +null-texture+
-  (%%make-texture :type nil
-                  :image-format nil))
-
 (defn-inline active-texture-num ((num (unsigned-byte 16))) (values)
   (declare (profile t))
   (%gl:active-texture (+ #x84C0 num))
@@ -130,11 +126,6 @@
   (layer-num 0 :type (unsigned-byte 16))
   (face-num 0 :type (integer 0 5))
   (image-format nil :type symbol))
-
-;;------------------------------------------------------------
-
-(defvar +null-gpu-buffer+
-  (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
 
 ;;------------------------------------------------------------
 
@@ -249,39 +240,6 @@
   (owned-p nil :type boolean)
   (viewport nil :type (or null viewport)))
 
-(defvar +null-att+
-  (make-att))
-
-;;------------------------------------------------------------
-
-(defstruct (fbo (:constructor %%make-fbo)
-                (:conc-name %fbo-))
-  (id 0 :type gl-id)
-  ;;
-  (color-arrays (make-array 0 :element-type 'att
-                            :initial-element +null-att+ :adjustable t
-                            :fill-pointer 0)
-                :type (array att *))
-  (depth-array (make-att) :type att)
-  (stencil-array (make-att) :type att)
-  ;;
-  (draw-buffer-map
-   (error "draw-buffer array must be provided when initializing an fbo"))
-  (clear-mask (cffi:foreign-bitfield-value
-               '%gl::ClearBufferMask '(:color-buffer-bit))
-              :type fixnum)
-  (is-default nil :type boolean)
-  (blending-params (make-blending-params :mode-rgb :func-add
-                                         :mode-alpha :func-add
-                                         :source-rgb :one
-                                         :source-alpha :one
-                                         :destination-rgb :zero
-                                         :destination-alpha :zero)
-                   :type blending-params))
-
-(defvar +null-fbo+
-  (%%make-fbo :draw-buffer-map (cffi:null-pointer)))
-
 ;;------------------------------------------------------------
 
 (defstruct pixel-format
@@ -296,9 +254,6 @@
 
 (deftype vao-id ()
   '(unsigned-byte 32))
-
-(declaim (type vao-id +null-vao+))
-(defvar +null-vao+ 0)
 
 ;;------------------------------------------------------------
 
@@ -522,61 +477,31 @@
 
 ;;------------------------------------------------------------
 
-(defvar +null-gpu-buffer+
-  (%make-gpu-buffer :arrays (make-array 0 :element-type 'gpu-array-bb)))
-
-(defun+ make-uninitialized-texture (&optional buffer-backed-p)
-  (if buffer-backed-p
-      (%%make-buffer-texture
-       :type :uninitialized
-       :image-format :uninitialized
-       :backing-array (make-uninitialized-gpu-array-bb))
-      (%%make-texture
-       :type :uninitialized :image-format :uninitialized)))
-
-(defun+ make-uninitialized-gpu-array-bb (&optional buffer)
-  (%make-gpu-array-bb
-   :buffer (or buffer +null-gpu-buffer+)
-   :access-style :uninitialized))
-
-(defun+ make-uninitialized-gpu-array-t ()
-  (%make-gpu-array-t
-   :texture +null-texture+
-   :texture-type :uninitialized))
-
-(defun+ make-uninitialized-sampler (texture context-id)
-  (%make-sampler
-   :context-id context-id
-   :texture texture
-   :type :uninitialized))
-
-(defun+ make-uninitialized-fbo ()
-  (%%make-fbo
-   :draw-buffer-map nil
-   :clear-mask -13))
-
-(defun+ make-uninitialized-buffer-stream (primitive)
-  (make-raw-buffer-stream :index-type :uninitialized
-                          :primitive primitive))
-
-(defvar +null-texture-backed-gpu-array+
-  (%make-gpu-array-t
-   :texture +null-texture+
-   :texture-type nil))
-
-(defvar +null-buffer-backed-gpu-array+
-  (%make-gpu-array-bb :buffer +null-gpu-buffer+
-                      :access-style :invalid
-                      :element-type nil
-                      :byte-size 0
-                      :offset-in-bytes-into-buffer 0))
-
-(defvar +uninitialized-buffer-array+
-  (make-array 0 :element-type 'gpu-array-bb
-              :initial-element +null-buffer-backed-gpu-array+))
-
-(defun+ make-uninitialized-gpu-buffer ()
-  (%make-gpu-buffer :id 0 :arrays +uninitialized-buffer-array+))
+(defstruct (fbo (:constructor %%make-fbo)
+                (:conc-name %fbo-))
+  (id 0 :type gl-id)
+  ;;
+  (color-arrays (make-array 0 :element-type 'att
+                            :initial-element (symbol-value '+null-att+)
+                            :adjustable t
+                            :fill-pointer 0)
+                :type (array att *))
+  (depth-array (make-att) :type att)
+  (stencil-array (make-att) :type att)
+  ;;
+  (draw-buffer-map
+   (error "draw-buffer array must be provided when initializing an fbo"))
+  (clear-mask (cffi:foreign-bitfield-value
+               '%gl::ClearBufferMask '(:color-buffer-bit))
+              :type fixnum)
+  (is-default nil :type boolean)
+  (blending-params (make-blending-params :mode-rgb :func-add
+                                         :mode-alpha :func-add
+                                         :source-rgb :one
+                                         :source-alpha :one
+                                         :destination-rgb :zero
+                                         :destination-alpha :zero)
+                   :type blending-params))
 
 ;;------------------------------------------------------------
 
@@ -607,6 +532,9 @@
 ;;------------------------------------------------------------
 
 #+sbcl
+(declaim (sb-ext:freeze-type fbo))
+
+#+sbcl
 (declaim (sb-ext:freeze-type ubo))
 
 #+sbcl
@@ -620,9 +548,6 @@
 
 #+sbcl
 (declaim (sb-ext:freeze-type att))
-
-#+sbcl
-(declaim (sb-ext:freeze-type fbo))
 
 #+sbcl
 (declaim (sb-ext:freeze-type pixel-format))

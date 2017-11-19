@@ -348,7 +348,7 @@
       (multiple-value-bind (tfb-mode tfb-names tfb-group-count)
           (calc-feedback-style-and-names (get-feedback-out-vars compiled-stages))
         (link-shaders stages-objects prog-id compiled-stages tfb-mode tfb-names)
-        (when (and name +cache-last-compile-result+)
+        (when (and name *cache-last-compile-result*)
           (add-compile-results-to-pipeline name compiled-stages))
         (mapcar #'%gl:delete-shader stages-objects)
         (values compiled-stages prog-id prog-ids tfb-group-count)))))

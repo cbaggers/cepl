@@ -2,13 +2,15 @@
 
 ;;---------------------------------------------------
 
+(defvar *ubo-id-lock* (bt:make-lock))
 (defvar *lowest-unused-ubo-id* 0)
 (defvar *freed-ubo-id* nil)
 
 (defun+ get-free-ubo-id ()
-  (if *freed-ubo-id*
-      (pop *freed-ubo-id*)
-      (incf *lowest-unused-ubo-id*)))
+  (bt:with-lock-held (*ubo-id-lock*)
+    (if *freed-ubo-id*
+        (pop *freed-ubo-id*)
+        (incf *lowest-unused-ubo-id*))))
 
 ;;---------------------------------------------------
 

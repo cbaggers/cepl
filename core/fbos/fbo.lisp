@@ -1,14 +1,19 @@
 (in-package :cepl.fbos)
 (in-readtable fn:fn-reader)
 
+(define-const +valid-fbo-targets+
+    '(:read-framebuffer :draw-framebuffer :framebuffer)
+  :type list)
+
 ;; {TODO} what is the meaning of an attachment with no array, no attachment?
 ;;        in that case should attachment-viewport return nil or error?
 ;;        same goes for attachment-tex. Could we use the +null-att+ instead
 ;;        and force attr to be populated?
 
-(defvar %possible-texture-keys
+(define-const +possible-texture-keys+
   '(:dimensions :element-type :mipmap :layer-count :cubes-p :rectangle
-    :multisample :immutable :buffer-storage))
+    :multisample :immutable :buffer-storage)
+  :type list)
 
 ;; {TODO} A fragment shader can output different data to any of these by
 ;;        linking out variables to attachments with the glBindFragDataLocation
@@ -543,15 +548,11 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (%bind-fbo default-framebuffer :framebuffer)))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *valid-fbo-targets*
-    '(:read-framebuffer :draw-framebuffer :framebuffer)))
-
 (defmacro with-fbo-bound ((fbo &key (target :draw-framebuffer)
                                (with-viewport t) (attachment-for-size 0)
                                (with-blending t) (draw-buffers t))
                           &body body)
-  (assert (member target *valid-fbo-targets*) (target)
+  (assert (member target +valid-fbo-targets+) (target)
           'fbo-target-not-valid-constant
           :target target)
   (labels ((%write-draw-buffer-pattern-call (fbo body)
@@ -644,7 +645,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((or (keywordp pattern) (numberp pattern))
      (viewport-dimensions (current-viewport)))
     ;; pattern with args for make-texture
-    ((some (lambda (x) (member x %possible-texture-keys)) pattern)
+    ((some (lambda (x) (member x +possible-texture-keys+)) pattern)
      (destructuring-bind
            (&key (dimensions (viewport-dimensions (current-viewport)))
                  &allow-other-keys)
@@ -813,7 +814,9 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 ;;----------------------------------------------------------------------
 ;; Generating Textures from FBO Patterns
 
-(defvar %valid-texture-subset '(:dimensions :element-type :mipmap :immutable))
+(define-const +valid-texture-subset+
+    '(:dimensions :element-type :mipmap :immutable)
+  :type list)
 
 (defun+ process-fbo-init-pattern (pattern)
   (labels ((name (x) (if (listp x) (first x) x))
@@ -892,12 +895,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
              :element-type (%get-default-texture-format pattern)))
            t))
     ;; pattern with args for make-texture
-    ((some (lambda (x) (member x %possible-texture-keys)) pattern)
-     (when (some (lambda (x) (and (member x %possible-texture-keys)
-                                  (not (member x %valid-texture-subset))))
+    ((some (lambda (x) (member x +possible-texture-keys+)) pattern)
+     (when (some (lambda (x) (and (member x +possible-texture-keys+)
+                                  (not (member x +valid-texture-subset+))))
                  pattern)
        (error "Only the following args to make-texture are allowed inside a make-fbo ~s"
-              %valid-texture-subset))
+              +valid-texture-subset+))
      (destructuring-bind
            (&key (dimensions (viewport-dimensions (current-viewport)))
                  (element-type (%get-default-texture-format (first pattern)))

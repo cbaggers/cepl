@@ -3,12 +3,14 @@
 ;;------------------------------------------------------------
 
 (defvar *immutable-available* t)
-(defvar *cube-face-order* '(:texture-cube-map-positive-x
-                            :texture-cube-map-negative-x
-                            :texture-cube-map-positive-y
-                            :texture-cube-map-negative-y
-                            :texture-cube-map-positive-z
-                            :texture-cube-map-negative-z))
+(define-const +cube-face-order+
+    '(:texture-cube-map-positive-x
+      :texture-cube-map-negative-x
+      :texture-cube-map-positive-y
+      :texture-cube-map-negative-y
+      :texture-cube-map-positive-z
+      :texture-cube-map-negative-z)
+  :type list)
 
 (defun+ check-immutable-feature ()
   (unless (has-feature "GL_ARB_texture_storage")
@@ -152,7 +154,7 @@
                         (first dimensions) (second dimensions)
                         layer-num 0 pix-format pix-type pointer))
     (:texture-cube-map (gl:tex-image-2d
-                        (nth face-num *cube-face-order*)
+                        (nth face-num +cube-face-order+)
                         level-num (texture-image-format tex)
                         (first dimensions) (second dimensions) 0
                         pix-format pix-type pointer))
@@ -179,7 +181,7 @@
                                             (first dimensions)
                                             (second dimensions) layer-num
                                             pix-format pix-type pointer))
-    (:texture-cube-map (gl:tex-sub-image-2d (nth face-num *cube-face-order*)
+    (:texture-cube-map (gl:tex-sub-image-2d (nth face-num +cube-face-order+)
                                             level-num 0 0 (first dimensions)
                                             (second dimensions) pix-format
                                             pix-type pointer))
@@ -191,24 +193,24 @@
 
 ;;------------------------------------------------------------
 
-(defvar *mipmap-max-levels* 20)
-(defvar *valid-texture-storage-options*
-  ;; 0.mipmap 1.layers 2.cubes 3.dimensions 4.multisample 5.buffer 6.rectangle
-  ;;
-  ;;  0    1    2    3    4    5    6
-  '(((t    nil  nil  1    nil  nil  nil) :texture-1d)
-    ((t    nil  nil  2    nil  nil  nil) :texture-2d)
-    ((t    nil  nil  3    nil  nil  nil) :texture-3d)
-    ((t    t    nil  1    nil  nil  nil) :texture-1d-array)
-    ((t    t    nil  2    nil  nil  nil) :texture-2d-array)
-    ((t    nil  t    2    nil  nil  nil) :texture-cube-map)
-    ((t    t    t    2    nil  nil  nil) :texture-cube-map-array)
-    ((nil  nil  nil  2    nil  nil  t  ) :texture-rectangle)
-    ((nil  nil  nil  1    nil  t    nil) :texture-buffer)
-    ((nil  nil  nil  2    nil  t    nil) :texture-buffer)
-    ((nil  nil  nil  3    nil  t    nil) :texture-buffer)
-    ((nil  nil  nil  2    t    nil  nil) :texture-2d-multisample)
-    ((nil  t    nil  2    t    nil  nil) :texture-2d-multisample-array)))
+(define-const +valid-texture-storage-options+
+    ;; 0.mipmap 1.layers 2.cubes 3.dimensions 4.multisample 5.buffer 6.rectangle
+    ;;
+    ;;  0    1    2    3    4    5    6
+    '(((t    nil  nil  1    nil  nil  nil) :texture-1d)
+      ((t    nil  nil  2    nil  nil  nil) :texture-2d)
+      ((t    nil  nil  3    nil  nil  nil) :texture-3d)
+      ((t    t    nil  1    nil  nil  nil) :texture-1d-array)
+      ((t    t    nil  2    nil  nil  nil) :texture-2d-array)
+      ((t    nil  t    2    nil  nil  nil) :texture-cube-map)
+      ((t    t    t    2    nil  nil  nil) :texture-cube-map-array)
+      ((nil  nil  nil  2    nil  nil  t  ) :texture-rectangle)
+      ((nil  nil  nil  1    nil  t    nil) :texture-buffer)
+      ((nil  nil  nil  2    nil  t    nil) :texture-buffer)
+      ((nil  nil  nil  3    nil  t    nil) :texture-buffer)
+      ((nil  nil  nil  2    t    nil  nil) :texture-2d-multisample)
+      ((nil  t    nil  2    t    nil  nil) :texture-2d-multisample-array))
+  :type list)
 
 ;;------------------------------------------------------------
 
@@ -219,7 +221,7 @@
   (declare (ignore po2))
   (cadr (assoc
          (list mipmap layers cubes dimensions multisample buffer rectangle)
-         *valid-texture-storage-options*
+         +valid-texture-storage-options+
          :test #'(lambda (a b)
                    (destructuring-bind
                          (a1 a2 a3 a4 a5 a6 a7 b1 b2 b3 b4 b5 b6 b7)

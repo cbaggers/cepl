@@ -13,6 +13,13 @@
 (defvar *gpu-pipeline-specs-lock* (bt:make-lock))
 (defvar *gpu-pipeline-specs* (make-hash-table :test #'eq))
 
+(defvar *cache-last-compile-result* t)
+
+(defvar *map-of-pipeline-names-to-gl-ids-lock* (bt:make-lock))
+
+(defvar *map-of-pipeline-names-to-gl-ids*
+  (make-hash-table :test #'eq))
+
 ;;--------------------------------------------------
 
 (defclass lambda-pipeline-spec ()
@@ -451,8 +458,6 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defvar +cache-last-compile-result+ t)
-
 (defun+ make-lambda-pipeline-spec (compiled-stages)
   (make-instance 'lambda-pipeline-spec
                  :cached-compile-results compiled-stages))
@@ -522,7 +527,7 @@ names are depended on by the functions named later in the list"
              (handler-case (gpu-func-spec (%gpu-function x))
                (cepl.errors:gpu-func-spec-not-found ()
                  nil))))
-    (if +cache-last-compile-result+
+    (if *cache-last-compile-result*
         (let ((spec (or (pipeline-spec asset-name) (gfunc-spec asset-name))))
           (typecase spec
             (null (warn 'pull-g-not-cached :asset-name asset-name))
@@ -581,12 +586,6 @@ names are depended on by the functions named later in the list"
                  :callee 'pull1-g :func pipeline-func))))))
 
 ;;--------------------------------------------------
-
-(defvar *map-of-pipeline-names-to-gl-ids-lock*
-  (bt:make-lock))
-
-(defvar *map-of-pipeline-names-to-gl-ids*
-  (make-hash-table :test #'eq))
 
 (defun+ request-program-id-for (context name)
   (bt:with-lock-held (*map-of-pipeline-names-to-gl-ids-lock*)

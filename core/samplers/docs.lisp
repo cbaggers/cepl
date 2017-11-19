@@ -278,7 +278,7 @@ being sampled by the sampler.
 This function takes a `sampler` as its only argument and returns the kind
 of sampler it is.
 
-The result will be one of the kinds listed in cepl.samplers::*sampler-types*
+The result will be one of the kinds listed in cepl.samplers::+sampler-types+
 ")
 
   (defun compare

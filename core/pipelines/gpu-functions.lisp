@@ -193,7 +193,7 @@
        or the code with #'pull-g"
   (%unsubscibe-from-all spec);;[1]
   (map nil λ(%subscribe-to-gpu-func spec _) depends-on);;[1]
-  (when +cache-last-compile-result+
+  (when *cache-last-compile-result*
     (setf (slot-value spec 'cached-compile-results) compiled));;[2]
   (setf (gpu-func-spec spec) spec));;[0]
 

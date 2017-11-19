@@ -1,15 +1,9 @@
 (in-package :cepl.stencil)
 
-(defvar *valid-stencil-tests*
-  '(:never :always :less :lequal :greater :gequal :equal :notequal
-    #'never #'always #'< #'<= #'> #'>= #'= #'/=))
-
-(defvar *valid-operations*
-  '(:keep :invert :zero :replace :incr :incr-wrap :decr :decr-wrap
-    #'keep #'zero #'stencil-replace #'stencil-invert
-    #'stencil-incf #'stencil-incf-wrap
-    #'stencil-decf #'stencil-decf-wrap))
-
+(define-const +valid-stencil-tests+
+    '(:never :always :less :lequal :greater :gequal :equal :notequal
+      #'never #'always #'< #'<= #'> #'>= #'= #'/=)
+  :type list)
 
 (defn stencil-test-to-enum ((test (or function keyword)))
     (signed-byte 32)
@@ -33,7 +27,7 @@
     ((or (eq test :notequal) (eq test #'/=))
      #.(gl-enum :notequal))
     (t (error "CEPL: The stencil test must be one of the following:~{~%~a~}"
-              *valid-stencil-tests*))))
+              +valid-stencil-tests+))))
 
 
 (defn stencil-operation-to-enum ((operation (or function keyword)))
@@ -58,7 +52,7 @@
     ((or (eq operation :decr-wrap) (eq operation #'stencil-decf-wrap))
      #.(gl-enum :decr-wrap))
     (t (error "CEPL: The stencil operation must be one of the following:~{~%~a~}"
-              *valid-stencil-tests*))))
+              +valid-stencil-tests+))))
 
 
 ;;------------------------------------------------------------

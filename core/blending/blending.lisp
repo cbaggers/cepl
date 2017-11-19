@@ -22,7 +22,7 @@
             (destination-alpha (blending-params-destination-alpha ,g)))
          ,@body))))
 
-(defvar *blend-color* (v! 0 0 0 0))
+
 
 (defun+ blend-func-namep (keyword)
   (not (null (member keyword '(:zero
@@ -293,6 +293,8 @@
 ;; these (or if I should). I like the idea of cpu side debugging using this
 ;; but in issolation it doesnt really mean much. Probably only makes sense in
 ;; a software renderer.
+
+;; (defvar *blend-color* (v! 0 0 0 0))
 
 ;; (defun zero
 ;;     (source destination &key (target-rgb t) (blend-color *blend-color*))
