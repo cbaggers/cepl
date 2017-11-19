@@ -1161,7 +1161,8 @@
            :gpu-functions
            :delete-gpu-function
            :bake-uniforms
-           :free-pipeline))
+           :free-pipeline
+           :funcall-g))
 
 (uiop:define-package :cepl
     (:use :cl

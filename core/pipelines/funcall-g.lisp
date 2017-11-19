@@ -2,7 +2,7 @@
 
 ;;------------------------------------------------------------
 
-(defun run-on-gpu (name args)
+(defun funcall-g (name &rest args)
   (multiple-value-bind (in-vals uniform-keys-and-vals)
       (split-args-for-dyn-call args)
     (let* ((spec (find-gpu-func-spec-by-name-and-vals name in-vals))
