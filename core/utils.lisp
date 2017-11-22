@@ -408,9 +408,6 @@
     (cffi:foreign-pointer
      (%print-mem (cffi:inc-pointer thing offset)
                  size-in-bytes))
-    (autowrap:wrapper
-     (%print-mem (cffi:inc-pointer (autowrap:ptr thing) offset)
-                 size-in-bytes))
     (otherwise (format t "Error - Unsure how to print memory of object of type: ~a"
                        (type-of thing))))
   nil)

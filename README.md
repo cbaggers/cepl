@@ -33,7 +33,6 @@ I can also be reached by my email (techsnuffle [at] gmail · com) and sometimes 
 All of the following will be downloaded automatically by quicklisp
 
 - cffi
-- cl-autowrap
 - cl-fad
 - cl-opengl
 - cl-plus-c

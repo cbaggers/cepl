@@ -108,13 +108,12 @@ should be ~s" data element-type)
       (push-g arr destination))))
 
 (defmethod pull1-g ((object ubo))
-    (let* ((data (ubo-data object))
-           (x (cepl.gpu-arrays::gpu-array-pull-1
-               (subseq-g data 0 1)))
-           (r (aref-c x 0)))
-      (if (typep r 'autowrap:wrapper)
-          r
-          (progn (free-c-array x) r))))
+  (let* ((data (ubo-data object))
+         (x (cepl.gpu-arrays::gpu-array-pull-1
+             (subseq-g data 0 1)))
+         (r (aref-c x 0)))
+    (free-c-array x)
+    r))
 
 (defmethod pull-g ((object ubo))
   (elt (pull-g (subseq-g (ubo-data object) 0 1)) 0))

@@ -11,10 +11,8 @@
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :serial t
   :depends-on (#:cffi
-               #:cl-autowrap
                #:cl-fad
                #:cl-opengl
-               #:cl-plus-c
                #:cl-ppcre
                #:documentation-utils
                #:fn
@@ -122,4 +120,5 @@
                (:file "core/blending/docs")
                (:file "core/ubos/docs")
                (:file "core/vaos/docs")
-               (:file "core/pipelines/docs")))
+               (:file "core/pipelines/docs")
+               ))

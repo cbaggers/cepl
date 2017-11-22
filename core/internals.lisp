@@ -69,9 +69,7 @@
   (surface-resolution window))
 
 (defun+ gl-type-size (type)
-  (if (keywordp type)
-      (cffi:foreign-type-size type)
-      (autowrap:foreign-type-size type)))
+  (cffi:foreign-type-size type))
 
 (defun+ cffi-type->gl-type (type)
   (case type

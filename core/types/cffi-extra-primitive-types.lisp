@@ -1,7 +1,5 @@
 (in-package :cffi)
 
-(defconstant +allow-extra-keyword-type-names+ t)
-
 ;;----------------------------------------------------------------
 
 (define-foreign-type gl-half-float () ()
@@ -25,8 +23,6 @@
   (decode-half-float ptr))
 
 ;;----------------------------------------------------------------
-
-;; {TODO} need to add info for autowrap
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *extra-primitive-types*
@@ -73,61 +69,44 @@
                (:float 'single-float)
                (:half-float 'single-float)
                (t (error "How is there a cffi type with components of ~a" f-type)))))
-    (let* ((kwd-allowed +allow-extra-keyword-type-names+))
-      `(progn
-         ,@(loop :for (type len comp-type) :in *extra-primitive-types*
-              :collect
-              (let* ((name (cepl-utils:symb 'cepl- type))
-                     (type-name (cepl-utils:symb name '-type))
-                     (comp-bit-size (* 8 (cffi:foreign-type-size comp-type))))
-                `(progn
-                   (cffi:defcstruct ,name (components ,comp-type :count ,len))
-                   (define-foreign-type ,type-name ()
-                     ()
-                     (:actual-type :struct ,name)
-                     ,@(when kwd-allowed `((:simple-parser ,type))))
-                   (defmethod translate-from-foreign (ptr (type ,type-name))
-                     (make-array ,len :element-type ',(get-lisp-type comp-type)
-                                 :initial-contents
-                                 (list ,@(loop :for j :below len :collect
-                                            `(mem-aref ptr ,comp-type ,j)))))
-                   (defmethod translate-into-foreign-memory
-                       (value (type ,type-name) pointer)
-                     ,@(loop :for j :below len :collect
-                          `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))
-                   ,(when (< len 5)
-                          (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
-                            (when (cepl.pixel-formats::valid-pixel-format-p
-                                   components comp-type t nil)
-                              `(defmethod cepl.types:lisp-type->pixel-format ((comp-type (eql ,type)))
-                                 (cepl.pixel-formats::pixel-format!
-                                  ,components ',comp-type)))))
-                   (defmethod expand-into-foreign-memory
-                       (value (type ,type-name) ptr)
-                     (cons 'progn
-                           (loop :for j :below ,len :collect
-                              `(setf (mem-aref ,ptr ,,comp-type ,j)
-                                     (aref ,value ,j)))))
+    `(progn
+       ,@(loop :for (type len comp-type) :in *extra-primitive-types*
+            :collect
+            (let* ((name (cepl-utils:symb 'cepl- type))
+                   (type-name (cepl-utils:symb name '-type)))
+              `(progn
+                 (cffi:defcstruct ,name (components ,comp-type :count ,len))
+                 (define-foreign-type ,type-name ()
+                   ()
+                   (:actual-type :struct ,name)
+                   (:simple-parser ,type))
+                 (defmethod translate-from-foreign (ptr (type ,type-name))
+                   (make-array ,len :element-type ',(get-lisp-type comp-type)
+                               :initial-contents
+                               (list ,@(loop :for j :below len :collect
+                                          `(mem-aref ptr ,comp-type ,j)))))
+                 (defmethod translate-into-foreign-memory
+                     (value (type ,type-name) pointer)
+                   ,@(loop :for j :below len :collect
+                        `(setf (mem-aref pointer ,comp-type ,j) (aref value ,j))))
+                 ,(when (< len 5)
+                    (let ((components (cepl-utils:kwd (subseq "RGBA" 0 len))))
+                      (when (cepl.pixel-formats::valid-pixel-format-p
+                             components comp-type t nil)
+                        `(defmethod cepl.types:lisp-type->pixel-format ((comp-type (eql ,type)))
+                           (cepl.pixel-formats::pixel-format!
+                            ,components ',comp-type)))))
+                 (defmethod expand-into-foreign-memory
+                     (value (type ,type-name) ptr)
+                   (cons 'progn
+                         (loop :for j :below ,len :collect
+                            `(setf (mem-aref ,ptr ,,comp-type ,j)
+                                   (aref ,value ,j)))))
 
-                   (defmethod expand-from-foreign (ptr (type ,type-name))
-                     (list 'make-array ,len :element-type '',(get-lisp-type comp-type)
-                           :initial-contents
-                           (list 'list
-                                 ,@(loop :for j :below len :collect
-                                      `(list 'mem-aref ptr ',comp-type ,j)))))
-
-                   (autowrap:define-foreign-record
-                       ',name
-                       :struct
-                     ,(* comp-bit-size len)
-                     8
-                     ',(loop :for i :below len :with offset = 0 :collect
-                          `(,(if (<= len 4)
-                                 (nth i '(:x :y :z :w))
-                                 (cepl-utils:kwd 'slot- i))
-                             ,comp-type :bit-size ,comp-bit-size
-                             :bit-offset ,offset :bit-alignment 8)
-                          :do (incf offset comp-bit-size)))
-                   (autowrap:define-foreign-alias ',name
-                       '(:struct (,name))))))))))
+                 (defmethod expand-from-foreign (ptr (type ,type-name))
+                   (list 'make-array ,len :element-type '',(get-lisp-type comp-type)
+                         :initial-contents
+                         (list 'list
+                               ,@(loop :for j :below len :collect
+                                    `(list 'mem-aref ptr ',comp-type ,j)))))))))))
 (make-new-types)
