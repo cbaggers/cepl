@@ -505,6 +505,12 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (gpu-fence (:constructor %make-gpu-fence (obj))
+                      (:conc-name %gpu-fence-))
+  (obj (null-pointer) :type foreign-pointer))
+
+;;------------------------------------------------------------
+
 (defun+ holds-gl-object-ref-p (object)
   (typecase object
     (texture t)
@@ -528,12 +534,6 @@
   ;;(:method (object pipeline) nil)
   (:method ((object transform-feedback-stream)) nil)
   (:method ((object buffer-stream)) nil))
-
-;;------------------------------------------------------------
-
-(defstruct (gpu-fence (:constructor %make-gpu-fence (obj))
-                      (:conc-name %gpu-fence-))
-  (obj (null-pointer) :type foreign-pointer))
 
 ;;------------------------------------------------------------
 
@@ -590,3 +590,6 @@
 
 #+sbcl
 (declaim (sb-ext:freeze-type sampler))
+
+#+sbcl
+(declaim (sb-ext:freeze-type gpu-fence))

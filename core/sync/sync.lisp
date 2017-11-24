@@ -1,5 +1,7 @@
 (in-package :cepl.sync)
 
+;;------------------------------------------------------------
+
 ;; Whilst GL is open to there being many kinds of sync object currently there
 ;; is only fence, and it only has one condition, so we will hardcode this stuff
 
@@ -55,7 +57,7 @@
 
 (defn fence-signalled-p ((fence gpu-fence)) boolean
   (let* ((sync (%gpu-fence-obj fence))
-         (status (print (%gl:client-wait-sync sync 0 0))))
+         (status (%gl:client-wait-sync sync 0 0)))
     (or (eq status :already-signaled)
         (eq status :already-signaled-apple)
         (eq status :condition-satisfied)
