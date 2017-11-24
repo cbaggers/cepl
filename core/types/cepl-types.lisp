@@ -531,6 +531,12 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (gpu-fence (:constructor %make-gpu-fence (obj))
+                      (:conc-name %gpu-fence-))
+  (obj (null-pointer) :type foreign-pointer))
+
+;;------------------------------------------------------------
+
 #+sbcl
 (declaim (sb-ext:freeze-type fbo))
 

@@ -239,6 +239,10 @@
            :attachment-name
            :indexp
 
+           :gpu-fence
+           :%make-gpu-fence
+           :%gpu-fence-obj
+
            :stencil-params
            :%make-stencil-params
            :%stencil-params-test
@@ -974,6 +978,15 @@
   (:export :make-transform-feedback-stream :with-transform-feedback
            :transform-feedback-stream-arrays))
 
+(uiop:define-package :cepl.sync
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
+          :cepl.types :split-sequence :named-readtables
+          :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
+          :cepl.internals :cepl.fbos :cepl.build
+          :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays)
+  (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
+  (:export :make-gpu-fence :wait-on-fence :fence-signalled-p))
+
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables
           :cepl-utils :cepl.errors :%cepl.types :cepl.types
@@ -1032,6 +1045,7 @@
           :cepl.pixel-formats
           :cepl.samplers
           :cepl.streams
+          :cepl.sync
           :cepl.textures
           :cepl.types
           :cepl.types.predefined
@@ -1082,6 +1096,7 @@
              :cepl.transform-feedback
              :cepl.stencil
              :cepl.scissor
+             :cepl.sync
              :cepl.pipelines
              :cepl.types.predefined
              :cepl.documentation-functions))

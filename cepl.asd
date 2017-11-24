@@ -98,6 +98,7 @@
                (:file "core/gpu-arrays/with-and-push")
                (:file "core/fbos/fbo")
                (:file "core/ubos/ubo")
+               (:file "core/sync/sync")
                (:file "core/types/predefined/gpu-structs")
                (:file "core/context/make")
                (:file "core/repl")
