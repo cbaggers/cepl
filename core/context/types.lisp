@@ -95,6 +95,10 @@
    (make-array 0 :element-type '(or null sampler) :initial-element nil)
    :type (simple-array (or null sampler) (*)))
 
+  (array-of-bound-queries
+   (make-array 7 :element-type '(or null gpu-query) :initial-element nil)
+   :type (simple-array (or null gpu-query) (7)))
+
   (array-of-textures
    (make-array 0 :element-type 'texture :initial-element +null-texture+
                :adjustable t :fill-pointer 0)
@@ -121,7 +125,7 @@
            draw-fbo-binding fbos array-of-bound-gpu-buffers
            array-of-gpu-buffers array-of-ubo-bindings-buffer-ids
            current-blend-params array-of-transform-feedback-bindings-buffer-ids
-           array-of-bound-samplers array-of-textures
+           array-of-bound-samplers array-of-textures array-of-bound-queries
            depth-func color-masks depth-mask depth-range depth-clamp cull-face
            front-face current-stencil-params-front current-stencil-params-back
            current-stencil-mask-front current-stencil-mask-back

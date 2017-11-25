@@ -140,7 +140,11 @@
            :one-stage-non-explicit
            :invalid-stage-for-single-stage-pipeline
            :pipeline-recompile-in-tfb-scope
-           :compile-g-missing-requested-feature))
+           :compile-g-missing-requested-feature
+           :query-is-already-active
+           :query-is-active-bug
+           :another-query-is-active
+           :query-not-active))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -242,6 +246,28 @@
            :gpu-fence
            :%make-gpu-fence
            :%gpu-fence-obj
+
+           :gpu-query
+           :scoped-gpu-query
+           :timestamp-query
+           :samples-passed-query
+           :any-samples-passed-query
+           :any-samples-passed-conservative-query
+           :primitives-generated-query
+           :transform-feedback-primitives-written-query
+           :time-elapsed-query
+           :gpu-query-id
+           :gpu-query-enum
+           :gpu-query-cache-id
+           :scoped-gpu-query-active-p
+           :make-timestamp-query
+           :make-samples-passed-query
+           :make-any-samples-passed-query
+           :make-any-samples-passed-conservative-query
+           :make-primitives-generated-query
+           :make-transform-feedback-primitives-written-query
+           :make-time-elapsed-query
+           :+null-gpu-query+
 
            :stencil-params
            :%make-stencil-params
@@ -602,6 +628,9 @@
            :read-fbo-bound
            :draw-fbo-bound
            :fbo-bound
+           :can-bind-query-p
+           :force-bind-query
+           :force-unbind-query
            :default-framebuffer
            :clear-color
            :front-face
@@ -987,6 +1016,34 @@
   (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
   (:export :make-gpu-fence :wait-on-fence :fence-signalled-p))
 
+(uiop:define-package :cepl.queries
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
+          :cepl.types :split-sequence :named-readtables
+          :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
+          :cepl.internals :cepl.fbos :cepl.build
+          :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays)
+  (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
+  (:export :timestamp-query
+           :samples-passed-query
+           :any-samples-passed-query
+           :any-samples-passed-conservative-query
+           :primitives-generated-query
+           :transform-feedback-primitives-written-query
+           :time-elapsed-query
+           :make-timestamp-query
+           :make-samples-passed-query
+           :make-any-samples-passed-query
+           :make-any-samples-passed-conservative-query
+           :make-primitives-generated-query
+           :make-transform-feedback-primitives-written-query
+           :make-time-elapsed-query
+           :with-query-bound
+           :query-result-available-p
+           :push-query-result-to-gpu-array
+           :pull-query-result
+           :pull-all-commands-issued-time
+           :query-all-commands-completed-time))
+
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables
           :cepl-utils :cepl.errors :%cepl.types :cepl.types
@@ -1046,6 +1103,7 @@
           :cepl.samplers
           :cepl.streams
           :cepl.sync
+          :cepl.queries
           :cepl.textures
           :cepl.types
           :cepl.types.predefined
@@ -1097,6 +1155,7 @@
              :cepl.stencil
              :cepl.scissor
              :cepl.sync
+             :cepl.queries
              :cepl.pipelines
              :cepl.types.predefined
              :cepl.documentation-functions))

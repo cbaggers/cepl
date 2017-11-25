@@ -99,6 +99,7 @@
                (:file "core/fbos/fbo")
                (:file "core/ubos/ubo")
                (:file "core/sync/sync")
+               (:file "core/queries/query")
                (:file "core/types/predefined/gpu-structs")
                (:file "core/context/make")
                (:file "core/repl")

@@ -661,6 +661,33 @@
 
 ;;----------------------------------------------------------------------
 
+(defn-inline can-bind-query-p ((cepl-context cepl-context)
+                               (query gpu-query))
+    (values boolean (or null gpu-query))
+  (%with-cepl-context-slots (array-of-bound-queries) cepl-context
+    (let ((currently-bound (aref array-of-bound-queries
+                                 (gpu-query-cache-id query))))
+      (values (null currently-bound)
+              currently-bound))))
+
+(defn-inline force-bind-query ((cepl-context cepl-context)
+                               (query gpu-query))
+    gpu-query
+  (%with-cepl-context-slots (array-of-bound-queries) cepl-context
+    (setf (aref array-of-bound-queries (gpu-query-cache-id query)) query)
+    (setf (scoped-gpu-query-active-p query) t))
+  query)
+
+(defn-inline force-unbind-query ((cepl-context cepl-context)
+                                 (query gpu-query))
+    gpu-query
+  (%with-cepl-context-slots (array-of-bound-queries) cepl-context
+    (setf (aref array-of-bound-queries (gpu-query-cache-id query)) nil)
+    (setf (scoped-gpu-query-active-p query) nil))
+  query)
+
+;;----------------------------------------------------------------------
+
 ;; GL_VERTEX_ARRAY_BINDING (GLint, initially 0, see glBindVertexArray)
 ;; The name of the vertex array object currently bound to the context, or 0 if
 ;; none is bound.

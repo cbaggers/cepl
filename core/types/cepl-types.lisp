@@ -511,6 +511,89 @@
 
 ;;------------------------------------------------------------
 
+;; not normal to have the id generation here but then we can
+;; use boa-constructors
+
+(defn gen-query-id () gl-id
+  (with-foreign-object (id '%gl:uint)
+    (%gl:gen-queries 1 id)
+    (mem-aref id '%gl:uint)))
+
+(defstruct (gpu-query
+             (:constructor make-gpu-query ()))
+  (id (gen-query-id) :type gl-id :read-only t)
+  (enum 0 :type (signed-byte 32) :read-only t)
+  (cache-id 7 :type (integer 0 7) :read-only t))
+
+(defstruct (timestamp-query
+             (:constructor make-timestamp-query ())
+             (:include gpu-query
+                       (enum #.(gl-enum :timestamp)
+                             :type (signed-byte 32)
+                             :read-only t)
+                       (cache-id 0 :type (integer 0 7)
+                                 :read-only t))))
+
+(defstruct (scoped-gpu-query
+             (:include gpu-query))
+  (active-p nil :type boolean))
+
+(defstruct (samples-passed-query
+             (:constructor make-samples-passed-query ())
+             (:include scoped-gpu-query
+                       (enum #.(gl-enum :samples-passed)
+                             :type (signed-byte 32)
+                             :read-only t)
+                       (cache-id 1 :type (integer 0 7)
+                                 :read-only t))))
+
+(defstruct (any-samples-passed-query
+             (:constructor make-any-samples-passed-query ())
+             (:include scoped-gpu-query
+                       (enum #.(gl-enum :any-samples-passed)
+                             :type (signed-byte 32)
+                             :read-only t)
+                       (cache-id 2 :type (integer 0 7)
+                                 :read-only t))))
+
+(defstruct (any-samples-passed-conservative-query
+             (:constructor make-any-samples-passed-conservative-query ())
+             (:include scoped-gpu-query
+                       (enum #.(gl-enum :any-samples-passed-conservative)
+                             :type (signed-byte 32)
+                             :read-only t)
+                       (cache-id 3 :type (integer 0 7)
+                                 :read-only t))))
+
+(defstruct (primitives-generated-query
+             (:constructor make-primitives-generated-query ())
+             (:include scoped-gpu-query
+                       (enum #.(gl-enum :primitives-generated)
+                             :type (signed-byte 32)
+                             :read-only t)
+                       (cache-id 4 :type (integer 0 7)
+                                 :read-only t))))
+
+(defstruct (transform-feedback-primitives-written-query
+             (:constructor make-transform-feedback-primitives-written-query ())
+             (:include scoped-gpu-query
+                       (enum #.(gl-enum :transform-feedback-primitives-written)
+                             :type (signed-byte 32)
+                             :read-only t)
+                       (cache-id 5 :type (integer 0 7)
+                                 :read-only t))))
+
+(defstruct (time-elapsed-query
+             (:constructor make-time-elapsed-query ())
+             (:include scoped-gpu-query
+                       (enum #.(gl-enum :time-elapsed)
+                             :type (signed-byte 32)
+                             :read-only t)
+                       (cache-id 6 :type (integer 0 7)
+                                 :read-only t))))
+
+;;------------------------------------------------------------
+
 (defun+ holds-gl-object-ref-p (object)
   (typecase object
     (texture t)
@@ -593,3 +676,30 @@
 
 #+sbcl
 (declaim (sb-ext:freeze-type gpu-fence))
+
+#+sbcl
+(declaim (sb-ext:freeze-type gpu-query))
+
+#+sbcl
+(declaim (sb-ext:freeze-type timestamp-query))
+
+#+sbcl
+(declaim (sb-ext:freeze-type scoped-gpu-query))
+
+#+sbcl
+(declaim (sb-ext:freeze-type samples-passed-query))
+
+#+sbcl
+(declaim (sb-ext:freeze-type any-samples-passed-query))
+
+#+sbcl
+(declaim (sb-ext:freeze-type any-samples-passed-conservative-query))
+
+#+sbcl
+(declaim (sb-ext:freeze-type primitives-generated-query))
+
+#+sbcl
+(declaim (sb-ext:freeze-type transform-feedback-primitives-written-query))
+
+#+sbcl
+(declaim (sb-ext:freeze-type time-elapsed-query))

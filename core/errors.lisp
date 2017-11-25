@@ -571,6 +571,36 @@ We recieved:
 ~a
 " form)
 
+(deferror query-is-already-active () (query)
+    "CEPL: An attempt was made to start querying using the query object listed
+below, however that query object is currently in use.
+
+query: ~s" query)
+
+(deferror query-is-active-bug () (query)
+    "CEPL BUG: This error should never be hit as it should have
+been covered by another assert inside #'begin-gpu-query.
+
+we are sorry for the mistake. If you have the time please report the issue
+here: https://github.com/cbaggers/cepl/issues
+
+query: ~s" query)
+
+(deferror another-query-is-active () (query current)
+    "CEPL: An attempt was made to begin querying with query object 'A' listed
+below however query object 'B' of the same kind was already active on this
+context. GL only allows 1 query of this kind to be active at a given time.
+
+Query A: ~s
+Query B: ~s" query current)
+
+(deferror query-not-active () (query)
+    "CEPL: A call was made to #'end-gpu-query with the query object listed
+below. The issue is that the query object is not currently active so it is
+not valid to try and make it inactive.
+
+Query: ~s" query)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
