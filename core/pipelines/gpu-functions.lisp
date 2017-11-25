@@ -427,32 +427,46 @@
      (list stage))
     (otherwise (error 'invalid-stage-for-single-stage-pipeline))))
 
+(defun massage-compute-stage-name (name)
+  ;; we allow a little massaging here as compute stages have no in-args so
+  ;; there can be no overloading. In these cases it feels bit mean to be
+  ;; as harsh on signature
+  (cond
+    ((symbolp name) (list name))
+    ((and (listp name)
+          (eq (first name) 'function)
+          (symbolp (second name))
+          (second name))
+     `(function (,(second name))))
+    (t name)))
+
 (defun+ parse-gpipe-args-explicit (args)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment compute) args
-    (dbind (v-key tc-key te-key g-key f-key c-key)
-        (validate-stage-names (list vertex tessellation-control
-                                    tessellation-evaluation
-                                    geometry fragment compute))
-      (let ((result
-             (remove nil
-                     (list (when vertex
-                             (cons :vertex v-key))
-                           (when tessellation-control
-                             (cons :tessellation-control tc-key))
-                           (when tessellation-evaluation
-                             (cons :tessellation-evaluation te-key))
-                           (when geometry
-                             (cons :geometry g-key))
-                           (when fragment
-                             (cons :fragment f-key))
-                           (when compute
-                             (cons :compute c-key))))))
-        ;;
-        ;; single fragment pipeline
-        (if (= 1 (length result))
-            (complete-single-stage-pipeline (first result))
-            result)))))
+    (let ((compute (massage-compute-stage-name compute)))
+      (dbind (v-key tc-key te-key g-key f-key c-key)
+          (validate-stage-names (list vertex tessellation-control
+                                      tessellation-evaluation
+                                      geometry fragment compute))
+        (let ((result
+               (remove nil
+                       (list (when vertex
+                               (cons :vertex v-key))
+                             (when tessellation-control
+                               (cons :tessellation-control tc-key))
+                             (when tessellation-evaluation
+                               (cons :tessellation-evaluation te-key))
+                             (when geometry
+                               (cons :geometry g-key))
+                             (when fragment
+                               (cons :fragment f-key))
+                             (when compute
+                               (cons :compute c-key))))))
+          ;;
+          ;; single fragment pipeline
+          (if (= 1 (length result))
+              (complete-single-stage-pipeline (first result))
+              result))))))
 
 (defun+ validate-stage-names (names)
   (let* (invalid
