@@ -53,7 +53,8 @@
   (declare (optimize (speed 3) (safety 1) (debug 1)))
   (with-foreign-object (cbool '%gl:uint)
     (%gl:get-query-object-uiv (gpu-query-id query)
-                              :query-result-available)
+                              :query-result-available
+                              cbool)
     (/= (mem-aref cbool '%gl:uint) 0)))
 
 (defn calc-query-get-func-for-gpu-array ((arr gpu-array-bb))
