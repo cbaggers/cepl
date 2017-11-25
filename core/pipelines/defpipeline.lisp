@@ -200,11 +200,12 @@
                             `(,name t nil)))
          (stream-symb (if compute 'space 'stream))
          (stream-type (if compute 'compute-space 'buffer-stream))
+         (return-type (if compute 'null 'fbo))
          (signature (if static
                         `(((,ctx cepl-context)
                            (,stream-symb (or null ,stream-type))
                            ,@(when uniform-names `(&key ,@typed-uniforms)))
-                          (values))
+                          ,return-type)
                         `((,ctx
                            ,stream-symb
                            ,@(when uniform-names `(&key ,@uniform-names))))))
@@ -275,7 +276,9 @@
          ,@(mapcar #'gen-cleanup-block (reverse uniform-assigners))
 
          ;; map-g is responsible for returning the correct fbo
-         (values)))))
+         ,(if compute
+              nil
+              `(draw-fbo-bound ,ctx))))))
 
 (defn fallback-iuniform-func ((prog-id gl-id) &rest uniforms) (values)
   (declare (ignore prog-id uniforms)

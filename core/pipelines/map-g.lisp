@@ -19,8 +19,7 @@
     `(locally (declare (optimize (speed 3) (safety 1) (debug 0)
                                  (compilation-speed 0)))
        (with-cepl-context (,mapg-ctx)
-         (funcall ,pipeline-func ,mapg-ctx ,stream ,@uniforms)
-         (draw-fbo-bound ,mapg-ctx)))))
+         (funcall ,pipeline-func ,mapg-ctx ,stream ,@uniforms)))))
 
 (defmacro map-g-into (fbo pipeline-func stream &rest uniforms)
   `(with-fbo-bound (,fbo :target :draw-framebuffer)

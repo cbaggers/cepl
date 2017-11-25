@@ -166,7 +166,9 @@
                    (compute-expander nil stream-symb)
                    (draw-expander nil ctx stream-symb 'draw-type primitive)))
             ,@u-cleanup
-            (values)))))))
+            ,(if compute
+                 nil
+                 `(draw-fbo-bound ,ctx))))))))
 
 (defun+ make-n-compile-lambda-pipeline (gpipe-args context)
   (let ((code (make-lambda-pipeline gpipe-args context)))
