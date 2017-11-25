@@ -262,18 +262,7 @@
 
            ;; Start the draw
            (when stream
-             (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
-                                   `(buffer-stream-draw-mode-val stream)
-                                   (varjo::lisp-name primitive))))
-               (handle-transform-feedback ,ctx draw-type prog-id tfs-primitive
-                                          tfs-array-count)
-
-               (when (not has-fragment-stage)
-                 (gl:enable :rasterizer-discard))
-               (profile-block (,name :draw)
-                 ,(draw-expander 'stream 'draw-type primitive))
-               (when (not has-fragment-stage)
-                 (gl:disable :rasterizer-discard)))))
+             ,(draw-expander name ctx 'stream 'draw-type primitive)))
 
          ;; uniform cleanup
          ,@(mapcar #'gen-cleanup-block (reverse uniform-assigners))
@@ -577,45 +566,59 @@
 (defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
 
-(defun draw-expander (stream draw-type primitive)
+(defun draw-expander (profile-name ctx-symb stream-symb draw-type-symb
+                      primitive)
   "This draws the single stream provided using the currently
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which
    is handling the binding."
-  `(let* ((stream ,stream)
-          (draw-type ,draw-type)
-          (index-type (buffer-stream-index-type stream)))
-     ,@(when (typep primitive 'varjo::patches)
-             `((assert (= (buffer-stream-patch-length stream)
-                          ,(varjo::vertex-count primitive)))
-               (%gl:patch-parameter-i
-                :patch-vertices ,(varjo::vertex-count primitive))))
-     (with-vao-bound (buffer-stream-vao stream)
-       (if (= (the (unsigned-byte 16) |*instance-count*|) 0)
-           (if index-type
-               (locally (declare (optimize (speed 3) (safety 0))
-                                 #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                 (%gl:draw-elements draw-type
-                                    (buffer-stream-length stream)
-                                    (cffi-type->gl-type index-type)
-                                    (%cepl.types:buffer-stream-start-byte stream)))
-               (locally (declare (optimize (speed 3) (safety 0))
-                                 #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                 (%gl:draw-arrays draw-type
-                                  (buffer-stream-start stream)
-                                  (buffer-stream-length stream))))
-           (if index-type
-               (%gl:draw-elements-instanced
-                draw-type
-                (buffer-stream-length stream)
-                (cffi-type->gl-type index-type)
-                (%cepl.types:buffer-stream-start-byte stream)
-                |*instance-count*|)
-               (%gl:draw-arrays-instanced
-                draw-type
-                (buffer-stream-start stream)
-                (buffer-stream-length stream)
-                |*instance-count*|))))))
+  `(let ((draw-type ,(if (typep primitive 'varjo::dynamic)
+                         `(buffer-stream-draw-mode-val stream-symb)
+                         (varjo::lisp-name primitive))))
+     (handle-transform-feedback ,ctx-symb draw-type prog-id tfs-primitive
+                                tfs-array-count)
+
+     (when (not has-fragment-stage)
+       (gl:enable :rasterizer-discard))
+     (,@(if profile-name
+            `(profile-block (,profile-name :draw))
+            '(progn))
+        (let* ((stream ,stream-symb)
+               (draw-type ,draw-type-symb)
+               (index-type (buffer-stream-index-type stream)))
+          ,@(when (typep primitive 'varjo::patches)
+              `((assert (= (buffer-stream-patch-length stream)
+                           ,(varjo::vertex-count primitive)))
+                (%gl:patch-parameter-i
+                 :patch-vertices ,(varjo::vertex-count primitive))))
+          (with-vao-bound (buffer-stream-vao stream)
+            (if (= (the (unsigned-byte 16) |*instance-count*|) 0)
+                (if index-type
+                    (locally (declare (optimize (speed 3) (safety 0))
+                                      #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
+                      (%gl:draw-elements draw-type
+                                         (buffer-stream-length stream)
+                                         (cffi-type->gl-type index-type)
+                                         (%cepl.types:buffer-stream-start-byte stream)))
+                    (locally (declare (optimize (speed 3) (safety 0))
+                                      #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
+                      (%gl:draw-arrays draw-type
+                                       (buffer-stream-start stream)
+                                       (buffer-stream-length stream))))
+                (if index-type
+                    (%gl:draw-elements-instanced
+                     draw-type
+                     (buffer-stream-length stream)
+                     (cffi-type->gl-type index-type)
+                     (%cepl.types:buffer-stream-start-byte stream)
+                     |*instance-count*|)
+                    (%gl:draw-arrays-instanced
+                     draw-type
+                     (buffer-stream-start stream)
+                     (buffer-stream-length stream)
+                     |*instance-count*|))))))
+     (when (not has-fragment-stage)
+       (gl:disable :rasterizer-discard))))
 
 ;;;--------------------------------------------------------------
 ;;; GL HELPERS ;;;

@@ -158,16 +158,7 @@
             ,@u-uploads
             (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
             (when stream
-              (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
-                                    `(buffer-stream-draw-mode-val stream)
-                                    (varjo::lisp-name primitive))))
-                (handle-transform-feedback ,ctx draw-type prog-id tfs-primitive
-                                           tfs-array-count)
-                (when (not has-fragment-stage)
-                  (gl:enable :rasterizer-discard))
-                ,(draw-expander 'stream 'draw-type primitive)
-                (when (not has-fragment-stage)
-                  (gl:disable :rasterizer-discard))))
+              (draw-expander nil ctx 'stream 'draw-type primitive))
             ,@u-cleanup
             (values)))))))
 
