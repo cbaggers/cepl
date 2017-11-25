@@ -86,6 +86,10 @@
    (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
                :adjustable t :fill-pointer 0)
    :type (array gl-id (*)))
+  (array-of-ssbo-bindings-buffer-ids
+   (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
+               :adjustable t :fill-pointer 0)
+   :type (array gl-id (*)))
   (array-of-transform-feedback-bindings-buffer-ids
    (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
                :adjustable t :fill-pointer 0)
@@ -121,9 +125,9 @@
          '(id gl-context requested-gl-version bound-thread current-program
            uninitialized-resources shared surfaces current-surface
            current-tfs vao-binding-id current-viewport default-viewport
-           current-scissor-viewports default-framebuffer read-fbo-binding
-           draw-fbo-binding fbos array-of-bound-gpu-buffers
-           array-of-gpu-buffers array-of-ubo-bindings-buffer-ids
+           current-scissor-viewports default-framebuffer array-of-gpu-buffers
+           draw-fbo-binding fbos array-of-bound-gpu-buffers read-fbo-binding
+           array-of-ubo-bindings-buffer-ids array-of-ssbo-bindings-buffer-ids
            current-blend-params array-of-transform-feedback-bindings-buffer-ids
            array-of-bound-samplers array-of-textures array-of-bound-queries
            depth-func color-masks depth-mask depth-range depth-clamp cull-face

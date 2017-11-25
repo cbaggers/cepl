@@ -489,16 +489,23 @@
       whole))
 
 ;;----------------------------------------------------------------------
-;; Uniform Buffer Objects
+;; UBOS & SSBOS
 ;;
-;; UBOs don't exist as a true GLObjects. There are a number of bindings points
-;; which you can attach regions of a gpu-buffer to so that pipelines can read
-;; from them as uniforms.
+;; UBOs & SSBOs don't exist as a true GLObjects. There are a number of bindings
+;; points which you can attach regions of a gpu-buffer to so that pipelines
+;; can read from them as uniforms.
 ;;
 ;; Although this is really about gpu-buffers we choose to keep this seperate
 ;; from the gpu-buffer section above as the GL context has multiple ubo
 ;; binding-points trying to mix them in the cache above was more confusing than
 ;; helpful.
+
+(defn %register-ubo-id ((ctx cepl-context) (ubo-binding-point array-index))
+    (values)
+  (%with-cepl-context-slots (array-of-ubo-bindings-buffer-ids) ctx
+    (ensure-vec-index array-of-ubo-bindings-buffer-ids ubo-binding-point
+                      +null-gl-id+ gl-id))
+  (values))
 
 (defn ubo-bind-buffer-id-range ((ctx cepl-context)
                                 (id gl-id)
@@ -519,6 +526,34 @@
       (%gl:bind-buffer-range
        :uniform-buffer ubo-binding-point bind-id offset size)
       (setf (aref array-of-ubo-bindings-buffer-ids ubo-binding-point) id)
+      id)))
+
+(defn %register-ssbo-id ((ctx cepl-context) (ssbo-binding-point array-index))
+    (values)
+  (%with-cepl-context-slots (array-of-ssbo-bindings-buffer-ids) ctx
+    (ensure-vec-index array-of-ssbo-bindings-buffer-ids ssbo-binding-point
+                      +null-gl-id+ gl-id))
+  (values))
+
+(defn ssbo-bind-buffer-id-range ((ctx cepl-context)
+                                 (id gl-id)
+                                 (ssbo-binding-point array-index)
+                                 (offset (unsigned-byte 32))
+                                 (size (unsigned-byte 32)))
+    gl-id
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (inline unknown-gl-id-p)
+           (profile t))
+  (assert (and offset size))
+  ;; don't worry about checking cache for avoiding rebinding as we dont want to
+  ;; cache ranges (yet?)
+  (%with-cepl-context-slots (array-of-ssbo-bindings-buffer-ids) ctx
+    (ensure-vec-index array-of-ssbo-bindings-buffer-ids ssbo-binding-point
+                      +null-gl-id+ gl-id)
+    (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
+      (%gl:bind-buffer-range
+       :shader-storage-buffer ssbo-binding-point bind-id offset size)
+      (setf (aref array-of-ssbo-bindings-buffer-ids ssbo-binding-point) id)
       id)))
 
 ;;----------------------------------------------------------------------

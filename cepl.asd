@@ -98,6 +98,7 @@
                (:file "core/gpu-arrays/with-and-push")
                (:file "core/fbos/fbo")
                (:file "core/ubos/ubo")
+               (:file "core/ssbos/ssbos")
                (:file "core/sync/sync")
                (:file "core/queries/query")
                (:file "core/compute/compute")

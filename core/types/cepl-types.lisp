@@ -183,6 +183,15 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (ssbo (:constructor %make-ssbo))
+  (id 0 :type gl-id)
+  (data (error "gpu-array must be provided when making ssbo")
+        :type gpu-array-bb)
+  (index 0 :type c-array-index)
+  (owns-gpu-array nil :type boolean))
+
+;;------------------------------------------------------------
+
 ;;{NOTE} if optimization called for it this could easily be an
 ;;       array of 16bit ints (or whatever works)
 (defstruct (viewport (:conc-name %viewport-) (:constructor %make-viewport))
@@ -634,6 +643,9 @@
 
 #+sbcl
 (declaim (sb-ext:freeze-type ubo))
+
+#+sbcl
+(declaim (sb-ext:freeze-type ssbo))
 
 #+sbcl
 (declaim (sb-ext:freeze-type viewport))

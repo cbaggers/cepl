@@ -420,6 +420,14 @@
            :ubo-index
            :ubo-owns-gpu-array
 
+           :%make-ssbo
+           :ssbo
+           :ssbo-p
+           :ssbo-id
+           :ssbo-data
+           :ssbo-index
+           :ssbo-owns-gpu-array
+
            :make-pixel-format
            :pixel-format
            :pixel-format-p
@@ -831,6 +839,21 @@
            :ubo-index
            :ubo-owns-gpu-array))
 
+(uiop:define-package :cepl.ssbos
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
+          :cepl.types :%cepl.types :split-sequence :cepl.context
+          :named-readtables :cepl.errors :cepl.c-arrays :cepl.memory
+          :cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers
+          :cepl.build)
+  (:export :ssbo
+           :make-ssbo
+           :make-ssbo-from-array
+           :ssbo-id
+           :ssbo-data
+           :ssbo-data-type
+           :ssbo-index
+           :ssbo-owns-gpu-array))
+
 (uiop:define-package :cepl.textures
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :split-sequence :named-readtables
@@ -1068,13 +1091,14 @@
            :compute-space-as-uvec3))
 
 (uiop:define-package :cepl.pipelines
-    (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables
-          :cepl-utils :cepl.errors :%cepl.types :cepl.types
+    (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence
+          :named-readtables :cepl-utils :cepl.errors :%cepl.types :cepl.types
           :cepl.internals :cepl.viewports :cepl.context
-          :cepl.image-formats :cepl.pixel-formats :cepl.c-arrays :cepl.gpu-buffers
-          :cepl.gpu-arrays.buffer-backed :cepl.vaos :cepl.streams :cepl.ubos
-          :cepl.textures :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays
-          :cepl.samplers :cepl.fbos :cepl.blending :cepl.memory :cepl.build)
+          :cepl.image-formats :cepl.pixel-formats :cepl.c-arrays
+          :cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed :cepl.vaos
+          :cepl.streams :cepl.ubos :cepl.ssbos :cepl.textures
+          :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays :cepl.samplers
+          :cepl.fbos :cepl.blending :cepl.memory :cepl.build)
   (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :defun-g
            :defun-g-equiv
@@ -1131,6 +1155,7 @@
           :cepl.types
           :cepl.types.predefined
           :cepl.ubos
+          :cepl.ssbos
           :cepl.viewports
           :cepl.compute
           :rtg-math
@@ -1170,6 +1195,7 @@
              :cepl.gpu-arrays
              :cepl.streams
              :cepl.ubos
+             :cepl.ssbos
              :cepl.context
              :cepl.samplers
              :cepl.textures
