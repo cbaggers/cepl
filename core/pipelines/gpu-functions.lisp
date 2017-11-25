@@ -443,7 +443,8 @@
 (defun+ parse-gpipe-args-explicit (args)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment compute) args
-    (let ((compute (massage-compute-stage-name compute)))
+    (let ((compute (when compute
+                     (massage-compute-stage-name compute))))
       (dbind (v-key tc-key te-key g-key f-key c-key)
           (validate-stage-names (list vertex tessellation-control
                                       tessellation-evaluation
