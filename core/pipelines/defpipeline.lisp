@@ -271,7 +271,7 @@
                (when (not has-fragment-stage)
                  (gl:enable :rasterizer-discard))
                (profile-block (,name :draw)
-                 (draw-expander stream draw-type ,primitive))
+                 ,(draw-expander 'stream 'draw-type primitive))
                (when (not has-fragment-stage)
                  (gl:disable :rasterizer-discard)))))
 
@@ -577,7 +577,7 @@
 (defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
 
-(defmacro draw-expander (stream draw-type primitive)
+(defun draw-expander (stream draw-type primitive)
   "This draws the single stream provided using the currently
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which

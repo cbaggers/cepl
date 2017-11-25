@@ -165,7 +165,7 @@
                                            tfs-array-count)
                 (when (not has-fragment-stage)
                   (gl:enable :rasterizer-discard))
-                (draw-expander stream draw-type ,primitive)
+                ,(draw-expander 'stream 'draw-type primitive)
                 (when (not has-fragment-stage)
                   (gl:disable :rasterizer-discard))))
             ,@u-cleanup
