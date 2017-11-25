@@ -382,11 +382,15 @@
   `((defmethod pull-g ((object ,name))
       (list
        ,@(loop :for slot :in slots :for i :from 0 :collect
-            `(,(s-writer slot) object))))
+            (if (s-arrayp slot)
+                `(pull-g (,(s-reader slot) object))
+                `(,(s-reader slot) object)))))
     (defmethod pull1-g ((object ,name))
       (list
        ,@(loop :for slot :in slots :for i :from 0 :collect
-            `(,(s-writer slot) object))))
+            (if (s-arrayp slot)
+                `(pull-g (,(s-reader slot) object))
+                `(,(s-reader slot) object)))))
     (defmethod push-g ((object list) (destination ,name))
       (cepl.internals:populate destination object))))
 
