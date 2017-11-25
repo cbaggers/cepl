@@ -168,7 +168,7 @@
             :name id-name
             :type '(unsigned-byte 32)
             :index (incf (uidx-uint indexes))
-            :body `(get-uniform-block-index
+            :body `(get-shader-storage-block-index
                     prog-id ,(format nil "_SSBO_~a" glsl-name))))
      :uploaders
      `((when (and (< ,id-name +unknown-uniform-uint-id+)
@@ -176,13 +176,17 @@
          (if (and (typep ,arg-name 'ssbo)
                   (v-type-eq (varjo:type-spec->type ',type-spec)
                              (ssbo-data-type ,arg-name)))
-             (%gl:uniform-block-binding prog-id ,id-name (ssbo-id ,arg-name))
+             (%gl:shader-storage-block-binding prog-id ,id-name (ssbo-id ,arg-name))
              (error "Invalid type for ssbo argument:~%Required:~a~%Recieved:~a~%"
                     ',type-spec (ssbo-data-type ,arg-name))))))))
 
 (defun+ get-uniform-block-index (program name)
   (with-foreign-string (s name)
     (%gl:get-uniform-block-index program s)))
+
+(defun+ get-shader-storage-block-index (program name)
+  (with-foreign-string (s name)
+    (%gl:get-program-resource-index program :shader-storage-block s)))
 
 ;; NOTE: byte-offset can be nil, this is a legit value
 (defun+ make-simple-assigner (indexes arg-name type glsl-name-path
