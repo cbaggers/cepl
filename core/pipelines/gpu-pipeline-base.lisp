@@ -399,13 +399,14 @@ names are depended on by the functions named later in the list"
      :test #'eq)))
 
 (defun+ update-specs-with-missing-dependencies ()
-  (bt:with-lock-held (*gpu-func-specs-lock*)
+  (let ((specs (bt:with-lock-held (*gpu-func-specs-lock*)
+                 (copy-list *gpu-func-specs*))))
     (map 'nil λ(dbind (k . v) _
                  (with-gpu-func-spec v
                    (when missing-dependencies
                      (%test-&-update-spec v)
                      k)))
-         *gpu-func-specs*)))
+         specs)))
 
 (defmethod recompile-pipelines-that-use-this-as-a-stage ((key func-key))
   "Recompile all pipelines that depend on the named gpu function or any other
