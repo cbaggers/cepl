@@ -331,6 +331,14 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (compute-space
+             (:constructor make-compute-space (size-x size-y size-z)))
+  (size-x 1 :type (unsigned-byte 32) :read-only t)
+  (size-y 1 :type (unsigned-byte 32) :read-only t)
+  (size-z 1 :type (unsigned-byte 32) :read-only t))
+
+;;------------------------------------------------------------
+
 (defstruct (buffer-stream (:constructor %make-buffer-stream))
   (vao 0 :type gl-id)
   (%start 0 :type (unsigned-byte 64))

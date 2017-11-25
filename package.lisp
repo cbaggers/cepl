@@ -432,6 +432,12 @@
 
            :draw-mode-group-id
 
+           :compute-space
+           :make-compute-space
+           :compute-space-size-x
+           :compute-space-size-y
+           :compute-space-size-z
+
            :make-raw-buffer-stream
            :make-uninitialized-buffer-stream
            :buffer-stream
@@ -1073,7 +1079,13 @@
            :gpu-functions
            :delete-gpu-function
            :bake-uniforms
-           :free-pipeline))
+           :free-pipeline
+           ;;
+           :compute-space
+           :make-compute-space
+           :compute-space-size-x
+           :compute-space-size-y
+           :compute-space-size-z))
 
 (uiop:define-package :cepl
     (:use :cl

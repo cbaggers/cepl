@@ -104,7 +104,10 @@
          (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
          (u-lets (mapcat #'let-forms uniform-assigners))
          (primitive (varjo.internals:primitive-name-to-instance
-                     (varjo.internals:get-primitive-type-from-context context))))
+                     (varjo.internals:get-primitive-type-from-context context)))
+         (compute (find :compute stage-pairs :key #'car))
+         (stream-symb (if compute 'space 'stream))
+         (stream-type (if compute 'compute-space 'buffer-stream)))
     ;;compiled-stages prog-id prog-ids tfb-group-count
     `(multiple-value-bind (compiled-stages prog-id prog-ids tfb-group-count)
          (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
@@ -140,25 +143,28 @@
           ;;
           ;; generate the code that actually renders
           (%post-init ,post)
-          (lambda (,ctx stream ,@(when uniform-names `(&key ,@uniform-names)))
+          (lambda (,ctx ,stream-symb ,@(when uniform-names `(&key ,@uniform-names)))
             (declare (optimize (speed 3) (safety 1))
+                     (type (or null ,stream-type) ,stream-symb)
                      (ignorable ,ctx ,@uniform-names))
             #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-            ,@(unless (typep primitive 'varjo::dynamic)
-                `((when stream
+            ,@(unless (or compute (typep primitive 'varjo::dynamic))
+                `((when ,stream-symb
                     (assert
                      (= ,(draw-mode-group-id primitive)
-                        (buffer-stream-primitive-group-id stream))
+                        (buffer-stream-primitive-group-id ,stream-symb))
                      ()
                      'buffer-stream-has-invalid-primitive-for-stream
                      :name "<lambda>"
                      :pline-prim ',(varjo::lisp-name primitive)
-                     :stream-prim (buffer-stream-primitive stream)))))
+                     :stream-prim (buffer-stream-primitive ,stream-symb)))))
             (use-program ,ctx prog-id)
             ,@u-uploads
             (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
-            (when stream
-              (draw-expander nil ctx 'stream 'draw-type primitive))
+            (when ,stream-symb
+              ,(if compute
+                   (compute-expander nil stream-symb)
+                   (draw-expander nil ctx stream-symb 'draw-type primitive)))
             ,@u-cleanup
             (values)))))))
 

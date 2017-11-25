@@ -138,7 +138,8 @@
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (primitive (varjo.internals:primitive-name-to-instance
-                     (varjo.internals:get-primitive-type-from-context context))))
+                     (varjo.internals:get-primitive-type-from-context context)))
+         (is-compute (find :compute stage-pairs :key #'car)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (update-pipeline-spec
@@ -174,7 +175,7 @@
                            primitive uniform-assigners
                            aggregate-public-uniforms
                            (find :static context)
-                           state-var)
+                           state-var is-compute)
        ;;
        ;; generate the function that recompiles this pipeline
        ,(gen-recompile-func name stage-pairs post context)
@@ -192,19 +193,22 @@
                            uniform-assigners
                            aggregate-public-uniforms
                            static
-                           state-var)
+                           state-var
+                           compute)
   (let* ((uniform-names (mapcar #'first aggregate-public-uniforms))
          (typed-uniforms (loop :for name :in uniform-names :collect
                             `(,name t nil)))
-         (def (if static 'defn 'defun+))
+         (stream-symb (if compute 'space 'stream))
+         (stream-type (if compute 'compute-space 'buffer-stream))
          (signature (if static
                         `(((,ctx cepl-context)
-                           (stream (or null buffer-stream))
+                           (,stream-symb (or null ,stream-type))
                            ,@(when uniform-names `(&key ,@typed-uniforms)))
                           (values))
                         `((,ctx
-                           stream
-                           ,@(when uniform-names `(&key ,@uniform-names)))))))
+                           ,stream-symb
+                           ,@(when uniform-names `(&key ,@uniform-names))))))
+         (def (if static 'defn 'defun+)))
     ;;
     ;; draw-function
     `(,def ,name ,@signature
@@ -217,16 +221,16 @@
                         pipeline-state-has-fragment-stage)
                 ,@(when static `((profile t))))
        #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-       ,@(unless (typep primitive 'varjo::dynamic)
-           `((when stream
+       ,@(unless (or compute (typep primitive 'varjo::dynamic))
+           `((when ,stream-symb
                (assert
                 (= ,(draw-mode-group-id primitive)
-                   (buffer-stream-primitive-group-id stream))
+                   (buffer-stream-primitive-group-id ,stream-symb))
                 ()
                 'buffer-stream-has-invalid-primitive-for-stream
                 :name ',name
                 :pline-prim ',(varjo::lisp-name primitive)
-                :stream-prim (buffer-stream-primitive stream)))))
+                :stream-prim (buffer-stream-primitive ,stream-symb)))))
        (let* ((%ctx-id (context-id ,ctx))
               ;;
               ;; unpack state from var
@@ -243,12 +247,13 @@
 
          (let ((implicit-uniform-upload-func
                 (pipeline-state-implicit-uniform-upload-func state))
-               (tfs-primitive
-                (pipeline-state-tfs-primitive state))
-               (tfs-array-count
-                (pipeline-state-tfs-array-count state))
-               (has-fragment-stage
-                (pipeline-state-has-fragment-stage state))
+               ,@(unless compute
+                   '((tfs-primitive
+                      (pipeline-state-tfs-primitive state))
+                     (tfs-array-count
+                      (pipeline-state-tfs-array-count state))
+                     (has-fragment-stage
+                      (pipeline-state-has-fragment-stage state))))
                ;; Uniforms vars
                ,@(mapcan #'unpack-arrayd-assigner uniform-assigners))
 
@@ -261,8 +266,10 @@
              (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
 
            ;; Start the draw
-           (when stream
-             ,(draw-expander name ctx 'stream 'draw-type primitive)))
+           (when ,stream-symb
+             ,(if compute
+                  (compute-expander name stream-symb)
+                  (draw-expander name ctx stream-symb 'draw-type primitive))))
 
          ;; uniform cleanup
          ,@(mapcar #'gen-cleanup-block (reverse uniform-assigners))
@@ -619,6 +626,22 @@
                      |*instance-count*|))))))
      (when (not has-fragment-stage)
        (gl:disable :rasterizer-discard))))
+
+(defun compute-expander (profile-name space-symb)
+  "This runs the compute function over the provided space using the
+   currently bound program. Please note: It Does Not bind the program so
+   this function should only be used from another function which
+   is handling the binding."
+  `(progn
+     (,@(if profile-name
+            `(profile-block (,profile-name :draw))
+            '(progn))
+        (locally (declare (optimize (speed 3) (safety 0))
+                          #+sbcl
+                          (sb-ext:muffle-conditions sb-ext:compiler-note))
+          (%gl:dispatch-compute (compute-space-size-x ,space-symb)
+                                (compute-space-size-y ,space-symb)
+                                (compute-space-size-z ,space-symb))))))
 
 ;;;--------------------------------------------------------------
 ;;; GL HELPERS ;;;
