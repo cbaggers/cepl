@@ -511,11 +511,11 @@ names are depended on by the functions named later in the list"
 
 (defun+ function-keyed-pipeline (func)
   (assert (typep func 'function))
-  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
-    (let ((spec (gethash func *gpu-pipeline-specs*)))
-      (if (typep spec 'lambda-pipeline-spec)
-          spec
-          (pipeline-spec spec)))))
+  (let ((spec (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+                (gethash func *gpu-pipeline-specs*))))
+    (if (typep spec 'lambda-pipeline-spec)
+        spec
+        (pipeline-spec spec))))
 
 (defun+ (setf function-keyed-pipeline) (spec func)
   (assert (typep func 'function))
