@@ -332,10 +332,11 @@
 ;;------------------------------------------------------------
 
 (defstruct (compute-space
-             (:constructor make-compute-space (size-x size-y size-z)))
-  (size-x 1 :type (unsigned-byte 32) :read-only t)
-  (size-y 1 :type (unsigned-byte 32) :read-only t)
-  (size-z 1 :type (unsigned-byte 32) :read-only t))
+             (:constructor make-compute-space
+                           (&optional (size-x 1) (size-y 1) (size-z 1))))
+  (size-x 1 :type (unsigned-byte 32))
+  (size-y 1 :type (unsigned-byte 32))
+  (size-z 1 :type (unsigned-byte 32)))
 
 ;;------------------------------------------------------------
 
@@ -648,6 +649,9 @@
 
 #+sbcl
 (declaim (sb-ext:freeze-type pixel-format))
+
+#+sbcl
+(declaim (sb-ext:freeze-type compute-space))
 
 #+sbcl
 (declaim (sb-ext:freeze-type buffer-stream))

@@ -1051,6 +1051,22 @@
            :pull-all-commands-issued-time
            :query-all-commands-completed-time))
 
+(uiop:define-package :cepl.compute
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
+          :cepl.types :split-sequence :named-readtables
+          :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
+          :cepl.internals :cepl.fbos :cepl.build
+          :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays
+          :cepl.measurements)
+  (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
+  (:export :compute-space
+           :make-compute-space
+           :compute-space-size-x
+           :compute-space-size-y
+           :compute-space-size-z
+           :compute-space-dimensions
+           :compute-space-as-uvec3))
+
 (uiop:define-package :cepl.pipelines
     (:use :cl :glsl-symbols :cffi :varjo :rtg-math :split-sequence :named-readtables
           :cepl-utils :cepl.errors :%cepl.types :cepl.types
@@ -1079,13 +1095,7 @@
            :gpu-functions
            :delete-gpu-function
            :bake-uniforms
-           :free-pipeline
-           ;;
-           :compute-space
-           :make-compute-space
-           :compute-space-size-x
-           :compute-space-size-y
-           :compute-space-size-z))
+           :free-pipeline))
 
 (uiop:define-package :cepl
     (:use :cl
@@ -1122,6 +1132,7 @@
           :cepl.types.predefined
           :cepl.ubos
           :cepl.viewports
+          :cepl.compute
           :rtg-math
           :%rtg-math
           :rtg-math.base-maths
@@ -1169,6 +1180,7 @@
              :cepl.scissor
              :cepl.sync
              :cepl.queries
+             :cepl.compute
              :cepl.pipelines
              :cepl.types.predefined
              :cepl.documentation-functions))
