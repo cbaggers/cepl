@@ -38,6 +38,8 @@
     :initarg :geometry-stage :initform nil)
    (fragment-stage
     :initarg :fragment-stage :initform nil)
+   (compute-stage
+    :initarg :compute-stage :initform nil)
    (diff-tags
     :initarg :diff-tags :initform nil)
    prog-ids))
@@ -63,26 +65,30 @@
                tessellation-control-stage
                tessellation-evaluation-stage
                geometry-stage
-               fragment-stage) spec
+               fragment-stage
+               compute-stage) spec
     (list vertex-stage
           tessellation-control-stage
           tessellation-evaluation-stage
           geometry-stage
-          fragment-stage)))
+          fragment-stage
+          compute-stage)))
 
 (defmethod pipeline-stage-pairs ((spec pipeline-spec))
   (with-slots (vertex-stage
                tessellation-control-stage
                tessellation-evaluation-stage
                geometry-stage
-               fragment-stage) spec
+               fragment-stage
+               compute-stage) spec
     (remove-if-not
      #'cdr
      (list (cons :vertex vertex-stage)
            (cons :tessellation-control tessellation-control-stage)
            (cons :tessellation-evaluation tessellation-evaluation-stage)
            (cons :geometry geometry-stage)
-           (cons :fragment fragment-stage)))))
+           (cons :fragment fragment-stage)
+           (cons :compute compute-stage)))))
 
 ;;--------------------------------------------------
 
@@ -464,14 +470,15 @@ names are depended on by the functions named later in the list"
 
 (defun+ make-pipeline-spec (name stages context)
   (dbind (&key vertex tessellation-control tessellation-evaluation
-               geometry fragment) (flatten stages)
+               geometry fragment compute) (flatten stages)
     (let ((tags (mapcar λ(when _
                            (slot-value (gpu-func-spec _) 'diff-tag))
                         (list vertex
                               tessellation-control
                               tessellation-evaluation
                               geometry
-                              fragment))))
+                              fragment
+                              compute))))
       (make-instance 'pipeline-spec
                      :name name
                      :vertex-stage vertex
@@ -479,6 +486,7 @@ names are depended on by the functions named later in the list"
                      :tessellation-evaluation-stage tessellation-evaluation
                      :geometry-stage geometry
                      :fragment-stage fragment
+                     :compute-stage compute
                      :diff-tags tags
                      :context context))))
 
@@ -616,6 +624,7 @@ names are depended on by the functions named later in the list"
     (varjo::tessellation-control-stage :tess-control-shader)
     (varjo::geometry-stage :geometry-shader)
     (varjo::fragment-stage :fragment-shader)
+    (varjo::compute-stage :compute-shader)
     (t (error "CEPL: ~a is not a known type of shader stage"
               (type-of stage)))))
 

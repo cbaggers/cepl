@@ -553,7 +553,7 @@ For example:
 (deferror invalid-stage-for-single-stage-pipeline () (kind)
     "CEPL: We found a pipeline where the only stage was of type ~a.
 Single stage pipelines are valid in CEPL however only if the stage is
-a vertex or fragment stage" kind)
+a vertex, fragment or compute stage" kind)
 
 (deferror pipeline-recompile-in-tfb-scope () (name)
     "CEPL: We were about to recompile the GL program behind ~a however we
@@ -600,6 +600,15 @@ below. The issue is that the query object is not currently active so it is
 not valid to try and make it inactive.
 
 Query: ~s" query)
+
+(deferror compute-pipeline-must-be-single-stage () (name stages)
+    "CEPL: A attempt was made to compile ~a which contains the following
+stage kinds: ~a
+
+However if you include a compute stage it is the only stage allowed in the
+pipeline. Please either remove the compute stage or remove the other stages."
+  (if name name "a pipeline")
+  stages)
 
 ;; Please remember the following 2 things
 ;;

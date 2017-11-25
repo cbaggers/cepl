@@ -423,15 +423,17 @@
            stage))
     (:vertex
      (list stage))
+    (:compute
+     (list stage))
     (otherwise (error 'invalid-stage-for-single-stage-pipeline))))
 
 (defun+ parse-gpipe-args-explicit (args)
   (dbind (&key vertex tessellation-control tessellation-evaluation
-               geometry fragment) args
-    (dbind (v-key tc-key te-key g-key f-key)
+               geometry fragment compute) args
+    (dbind (v-key tc-key te-key g-key f-key c-key)
         (validate-stage-names (list vertex tessellation-control
                                     tessellation-evaluation
-                                    geometry fragment))
+                                    geometry fragment compute))
       (let ((result
              (remove nil
                      (list (when vertex
@@ -443,7 +445,9 @@
                            (when geometry
                              (cons :geometry g-key))
                            (when fragment
-                             (cons :fragment f-key))))))
+                             (cons :fragment f-key))
+                           (when compute
+                             (cons :compute c-key))))))
         ;;
         ;; single fragment pipeline
         (if (= 1 (length result))
