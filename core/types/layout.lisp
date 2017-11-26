@@ -2,64 +2,86 @@
 
 ;; In this file we have code to handle the standard glsl layouts
 
+;; {TODO} automatic handling of sampler types (for bindless textures support)
+
 ;;----------------------------------------------------------------------
 ;; Std140
-
+;;
 ;; - slots in memory will be in same order as in definition
-;; -
 
-(deftype gl-basic-machine-unit () '(unsigned-byte 8))
+(defun machine-unit-size (self)
+  (if (slot-boundp self 'machine-unit-size)
+      (slot-boundp self 'machine-unit-size)
+      (setf (slot-value self 'machine-unit-size)
+            (cffi:foreign-type-size (type self)))))
 
-(defun machine-unit-size (type)
-  (cffi:foreign-type-size type))
+;;
+;; Aligned Offset
 
-(defun aligned-offset (type)
+(defun aligned-offset (parent previous-sibling self)
+  (if (slot-boundp self 'aligned-offset)
+      (slot-value self 'aligned-offset)
+      (setf (slot-value self 'aligned-offset)
+            (calc-aligned-offset parent previous-sibling self))))
+
+(defun calc-aligned-offset (parent previous-sibling self)
   ;; A structure and each structure member have a base offset and a base
   ;; alignment, from which an aligned offset is computed by rounding the
   ;; base offset up to a multiple of the base alignment
-  (with-slots (base-offset base-alignment) type
-    (round-to-next-multiple base-offset base-alignment)))
+  (round-to-next-multiple (base-offset parent previous-sibling self)
+                          (base-alignment parent previous-sibling self)))
 
+;;
+;; Base Offset
 
-(defun base-offset-of-child (struct-type nth)
-  (if (= nth 0)
+(defun base-offset (parent previous-sibling self)
+  (if (slot-boundp self 'base-offset)
+      (slot-value self 'base-offset)
+      (setf (slot-value self 'base-offset)
+            (calc-base-offset parent previous-sibling self))))
+
+(defun calc-base-offset (parent previous-sibling self)
+  (if (not previous-sibling)
       ;; The base offset of the first member of a structure is taken from the
       ;; aligned offset of the structure itself
-      (aligned-offset struct-type)
+      (aligned-offset parent)
       ;; The base offset of all other structure members is derived by taking
       ;; the offset of the last basic machine unit consumed by the previous
       ;; member and adding one
       ;;
       ;; {TODO} see rule 4 second paragraph, sounds relevent
       ;; {TODO} see rule 9 second paragraph, sounds relevent
-      (+ (aligned-offset struct-type (- nth 1)) ;; which offset?
-         (machine-unit-size (child (- nth 1)))
+      (+ (aligned-offset parent :nope previous-sibling) ;; which offset?
+         (machine-unit-size previous-sibling)
          1)))
 
-(defun populate-type-tree-for-std140 (type)
-  ;; The members of a top-level uniform block are laid out in buffer
-  ;; storage by treating the uniform block as a structure with a base
-  ;; offset of zero.
-  (setf (base-offset node) 0)
-  (loop :for child :in (children type) :do
-     (blah .......))
-  node)
+;;
+;; Base Alignment
 
-(defun base-alignment (type)
+(defun base-alignment (parent previous-sibling self)
+  (if (slot-boundp self 'base-alignment)
+      (slot-value self 'base-alignment)
+      (setf (slot-value self 'base-alignment)
+            (calc-base-alignment parent previous-sibling self))))
+
+(defun calc-base-alignment (parent previous-sibling self)
   (cond
     ;; 1. If the member is a scalar consuming N basic machine units, the
     ;;    base alignment is N.
-    ((scalar-type-p type) (machine-unit-size type))
+    ((scalar-type-p self) (machine-unit-size self))
     ;; 2. If the member is a two or four-component vector with components
     ;;    consuming N basic machine units, the base alignment is 2N or 4N,
     ;;    respectively.
     ;; 3. If the member is a three-component vector with components
     ;;    consuming N basic machine units, the base alignment is 4N .
-    ((vector-type-p type)
-     (case= (component-length type)
-       (2 (* 2 (base-alignment (element-type type))))
-       (3 (* 4 (base-alignment (element-type type)))) ;; 4 is not a typo
-       (4 (* 4 (base-alignment (element-type type))))))
+    ((vector-type-p self)
+     (case= (component-length self)
+            (2 (* 2 (base-alignment
+                     parent previous-sibling (element-type self))))
+            (3 (* 4 (base-alignment ;; ← (* 4 …) is not a typo
+                     parent previous-sibling (element-type self))))
+            (4 (* 4 (base-alignment
+                     parent previous-sibling (element-type self))))))
     ;; 5. If the member is a column-major matrix with C columns and R
     ;; rows, the matrix is stored identically to an array of C column
     ;; vectors with R components each, according to rule (4).
@@ -71,9 +93,13 @@
     ;; The structure may have padding at the end; the base offset of
     ;; the member following the sub-structure is rounded up to the
     ;; next multiple of the base alignment of the structure.
-    ((struct-type-p type)
+    ((struct-type-p self)
      (round-to-next-multiple
-      (reduce max (mapcar #'base-alignment (children type)))
+      (reduce #'max (mapcar (lambda (child)
+                              ;; {TODO} need to main loop here, will fill
+                              ;;        in when I've worked it out
+                              (base-alignment self &&&&& child))
+                            (children self)))
       (base-alignment :vec4)))
     ;; 4. If the member is an array of scalars or vectors, the base
     ;;    alignment and array stride are set to match the base alignment of
@@ -82,11 +108,11 @@
     ;;    The array may have padding at the end; the base offset of the member
     ;;    following the array is rounded up to the next multiple of the base
     ;;    alignment.
-    ((and (array-type-p type)
-          (or (scalar-type-p (element-type type))
-              (vector-type-p (element-type type))))
-     (round-to-next-multiple (base-alignment (element-type type))
-                             (base-alignment :vec4)))
+    ((and (array-type-p self)
+          (or (scalar-type-p (element-type self))
+              (vector-type-p (element-type self))))
+     (round-to-next-multiple (base-alignment :nope :nope (element-type type))
+                             (base-alignment :nope :nope :vec4)))
     ;; 6. If the member is an array of S column-major matrices with C
     ;; columns and R rows, the matrix is stored identically to a row of
     ;; S × C column vectors with R components each, according to rule (4).
@@ -95,10 +121,23 @@
      todo)
     ;; 10. If the member is an array of S structures, the S elements of
     ;; the array are laid out in order, according to rule (9).
-    todo))
+    ((and (array-type-p type)
+          (struct-type-p (element-type type)))
+     todo)
+    ;;
+    (t (error "shiit"))))
 
-(defun array-stride (type)
+;;
+;; Array Stride
+
+(defun array-stride (parent previous-sibling self)
   (assert (array-type-p type))
+  (if (slot-boundp self 'array-stride)
+      (slot-value self 'array-stride)
+      (setf (slot-value self 'array-stride)
+            (calc-array-stride parent previous-sibling self))))
+
+(defun calc-array-stride (parent previous-sibling self)
   (if (or (scalar-type-p (element-type type))
           (vector-type-p (element-type type)))
       ;; 4. If the member is an array of scalars or vectors, the base
@@ -108,11 +147,11 @@
       ;;    The array may have padding at the end; the base offset of the member
       ;;    following the array is rounded up to the next multiple of the base
       ;;    alignment.
-      (round-to-next-multiple (base-alignment (element-type type))
-                              (base-alignment :vec4))))
+      (base-alignment parent previous-sibling self)
+      ;;
+      (machine-unit-size self)))
 
-
-;;- - - - - - -
+;;
 ;; Ignored
 
 ;; 7. If the member is a row-major matrix with C columns and R rows,
@@ -127,3 +166,14 @@
 
 (defun round-to-next-multiple (val multiple)
   (* (ceiling val multiple) multiple))
+
+;;----------------------------------------------------------------------
+
+(defclass layout-node ()
+  ((type :initarg :type)
+   (base-offset :initarg :base-offset)
+   (aligned-offset :initarg :aligned-offset)
+   (stride :initarg :stride)
+   (children :initarg :children)))
+
+;;----------------------------------------------------------------------
