@@ -1044,7 +1044,7 @@
           :cepl.internals :cepl.fbos :cepl.build
           :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays)
   (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
-  (:export :make-gpu-fence :wait-on-fence :fence-signalled-p))
+  (:export :make-gpu-fence :wait-on-gpu-fence :gpu-fence-signalled-p))
 
 (uiop:define-package :cepl.queries
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
@@ -1067,12 +1067,12 @@
            :make-primitives-generated-query
            :make-transform-feedback-primitives-written-query
            :make-time-elapsed-query
-           :with-query-bound
-           :query-result-available-p
-           :push-query-result-to-gpu-array
-           :pull-query-result
-           :pull-all-commands-issued-time
-           :query-all-commands-completed-time))
+           :with-gpu-query-bound
+           :gpu-query-result-available-p
+           :push-gpu-query-result-to-gpu-array
+           :pull-gpu-query-result
+           :pull-all-gpu-commands-issued-time
+           :query-all-gpu-commands-completed-time))
 
 (uiop:define-package :cepl.compute
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math

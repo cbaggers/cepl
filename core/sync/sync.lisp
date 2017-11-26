@@ -24,9 +24,9 @@
 ;;------------------------------------------------------------
 
 
-(defn wait-on-fence ((fence gpu-fence)
-                     &optional (timeout (signed-byte 64) 0)
-                     (flush boolean))
+(defn wait-on-gpu-fence ((fence gpu-fence)
+                         &optional (timeout (signed-byte 64) 0)
+                         (flush boolean))
     symbol
   (assert (>= timeout -1))
   (let ((sync (%gpu-fence-obj fence)))
@@ -55,7 +55,7 @@
           (with-timeout)))))
 
 
-(defn fence-signalled-p ((fence gpu-fence)) boolean
+(defn gpu-fence-signalled-p ((fence gpu-fence)) boolean
   (let* ((sync (%gpu-fence-obj fence))
          (status (%gl:client-wait-sync sync 0 0)))
     (or (eq status :already-signaled)

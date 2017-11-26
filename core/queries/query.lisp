@@ -40,7 +40,7 @@
     (gl:end-query (gpu-query-enum query))
     (force-unbind-query ctx query)))
 
-(defmacro with-query-bound ((query) &body body)
+(defmacro with-gpu-query-bound ((query) &body body)
   (let ((tmp (gensym "query")))
     `(let ((,tmp ,query))
        (begin-scoped-gpu-query ,tmp)
@@ -49,7 +49,7 @@
 
 ;;------------------------------------------------------------
 
-(defn query-result-available-p ((query scoped-gpu-query)) boolean
+(defn gpu-query-result-available-p ((query scoped-gpu-query)) boolean
   (declare (optimize (speed 3) (safety 1) (debug 1)))
   (with-foreign-object (cbool '%gl:uint)
     (%gl:get-query-object-uiv (gpu-query-id query)
@@ -66,7 +66,7 @@
       (t (error 'cannot-write-query-results-to-this-gpu-array
                 :array arr :elem-type elem-type)))))
 
-(defn push-query-result-to-gpu-array
+(defn push-gpu-query-result-to-gpu-array
     ((query scoped-gpu-query)
      (destination-gpu-array gpu-array-bb)
      &optional
@@ -86,8 +86,8 @@
       (funcall get-func (gpu-query-id query) :query-result byte-index)))
   query)
 
-(defn pull-query-result ((query gpu-query)
-                         &optional (wait boolean t))
+(defn pull-gpu-query-result ((query gpu-query)
+                             &optional (wait boolean t))
     (values (unsigned-byte 32) boolean)
   (with-cepl-context (ctx)
     (%with-cepl-context-slots (gl-version-float) ctx
@@ -108,7 +108,7 @@
              (let ((val (mem-aref c-count :uint32)))
                (values val (/= val 0))))
             ;; we fall back to querying if it's available
-            ((query-result-available-p query)
+            ((gpu-query-result-available-p query)
              (%gl:get-query-object-uiv (gpu-query-id query)
                                        :query-result
                                        c-count)
@@ -119,13 +119,13 @@
 ;;------------------------------------------------------------
 
 ;; when all previously issued commands will have completed (gpu is done)
-(defn query-all-commands-completed-time ((timestamp-query timestamp-query))
+(defn query-all-gpu-commands-completed-time ((timestamp-query timestamp-query))
     timestamp-query
   (%gl:query-counter (gpu-query-id timestamp-query) :timestamp)
   timestamp-query)
 
 ;; when all previously given commands have issued
-(defn pull-all-commands-issued-time () (signed-byte 64)
+(defn pull-all-gpu-commands-issued-time () (signed-byte 64)
   (with-foreign-object (c-time '%gl:int64)
     (%gl:get-integer-64-v :timestamp c-time)
     (mem-aref c-time '%gl:int64)))
