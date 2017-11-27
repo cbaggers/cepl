@@ -10,6 +10,7 @@
            :dbind
            :assoc-bind
            :case=
+           :ecase=
            :sn-equal
            :listify
            :replace-nth
