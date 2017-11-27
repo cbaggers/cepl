@@ -52,110 +52,6 @@
           :machine-unit-size :TODO
           :members members)))
 
-(defun calc-layout (parent-type-base-offset
-                    parent-type-aligned-offset
-                    last-slot-base-offset
-                    last-slot-aligned-offset
-                    last-slot-machine-size
-                    type)
-  (let ((base-offset (calc-base-offset parent-type-base-offset
-                                       last-slot-base-offset
-                                       last-slot-aligned-offset
-                                       last-slot-machine-size))
-        ;; {TODO} needs the aligned-offset
-        ;; (aligned-offset
-        ;;  (calc-aligned-offset slot-base-offset
-        ;;                       slot-aligned-offset))
-        (slot-machine-size &&&))
-    (cond
-      ;; 1. If the member is a scalar consuming N basic machine units, the
-      ;;    base alignment is N.
-      ((scalar-type-p type) (machine-unit-size type))
-      ;; 2. If the member is a two or four-component vector with components
-      ;;    consuming N basic machine units, the base alignment is 2N or 4N,
-      ;;    respectively.
-      ;; 3. If the member is a three-component vector with components
-      ;;    consuming N basic machine units, the base alignment is 4N .
-      ((v-typep type 'v-vector)
-       (ecase= (first (v-dimensions type))
-         (2 (* 2 (machine-unit-size type)))
-         (3 (* 4 (machine-unit-size type))) ;; ← (* 4 …) is not a typo
-         (4 (* 4 (machine-unit-size type)))))
-      ;; 5. If the member is a column-major matrix with C columns and R
-      ;; rows, the matrix is stored identically to an array of C column
-      ;; vectors with R components each, according to rule (4).
-      ((v-typep type 'v-matrix)
-       (let* ((array-type-spec
-               (or (assocr (type->type-spec type)
-                           '((v-mat2 . (v-vec2 2))
-                             (v-mat3 . (v-vec3 3))
-                             (v-mat4 . (v-vec4 4))
-                             (v-dmat2 . (v-dvec2 2))
-                             (v-dmat3 . (v-dvec3 3))
-                             (v-dmat4 . (v-dvec4 4))))
-                   (error "woops")))
-              (array-type (type-spec->type array-type-spec)))
-         (calc-base-alignment parent-type-base-offset
-                              parent-type-aligned-offset
-                              last-slot-base-offset
-                              last-slot-aligned-offset
-                              last-slot-machine-size
-                              array-type)))
-      ;; 9. If the member is a structure, the base alignment of the
-      ;; structure is N , where N is the largest base alignment value of any
-      ;; of its members, and rounded up to the base alignment of a vec4.
-      ;; The structure may have padding at the end; the base offset of
-      ;; the member following the sub-structure is rounded up to the
-      ;; next multiple of the base alignment of the structure.
-      ((v-typep type 'v-struct)
-       (let ((layout (calc-struct-layout :??????
-                                         base-offset
-                                         aligned-offset)))
-         (destructuring-bind (name
-                              &key base-offset aligned-offset machine-unit-size
-                              members)
-             layout
-           (declare (ignore name base-offset aligned-offset))
-           members))
-       (round-to-next-multiple
-        (reduce #'max (mapcar (lambda (child)
-                                ;; {TODO} need to main loop here, will fill
-                                ;;        in when I've worked it out
-                                (base-alignment self &&&&& child))
-                              (children self)))
-        (base-alignment :vec4)))
-      ;; 4. If the member is an array of scalars or vectors, the base
-      ;;    alignment and array stride are set to match the base alignment of
-      ;;    a single array element, according to rules (1), (2), and (3), and
-      ;;    rounded up to the base alignment of a vec4.
-      ;;    The array may have padding at the end; the base offset of the member
-      ;;    following the array is rounded up to the next multiple of the base
-      ;;    alignment.
-      ((and (array-type-p self)
-            (or (scalar-type-p (element-type self))
-                (vector-type-p (element-type self))))
-       (round-to-next-multiple (base-alignment :nope :nope (element-type type))
-                               (base-alignment :nope :nope :vec4)))
-      ;; 6. If the member is an array of S column-major matrices with C
-      ;; columns and R rows, the matrix is stored identically to a row of
-      ;; S × C column vectors with R components each, according to rule (4).
-      ((and (array-type-p type)
-            (matrix-type-p (element-type type)))
-       todo)
-      ;; 10. If the member is an array of S structures, the S elements of
-      ;; the array are laid out in order, according to rule (9).
-      ((and (array-type-p type)
-            (struct-type-p (element-type type)))
-       todo)
-      ;;
-      (t (error "shiit")))))
-
-(defun calc-aligned-offset (base-offset base-alignment)
-  ;; A structure and each structure member have a base offset and a base
-  ;; alignment, from which an aligned offset is computed by rounding the
-  ;; base offset up to a multiple of the base alignment
-  (round-to-next-multiple base-offset base-alignment))
-
 (defun calc-base-offset (parent-type-aligned-offset
                          last-slot-base-offset
                          last-slot-aligned-offset
@@ -173,6 +69,146 @@
       (+ last-slot-aligned-offset ;; which offset?
          last-slot-machine-size
          1)))
+
+(defun calc-scalar-layout (parent-type-aligned-offset
+                           last-slot-base-offset
+                           last-slot-aligned-offset
+                           last-slot-machine-size
+                           type)
+  ;; 1. If the member is a scalar consuming N basic machine units, the
+  ;;    base alignment is N.
+  (let ((n (machine-unit-size type))
+        (base-offset (calc-base-offset parent-type-aligned-offset
+                                       last-slot-base-offset
+                                       last-slot-aligned-offset
+                                       last-slot-machine-size)))
+    (list '???
+          :base-offset base-offset
+          :aligned-offset (calc-aligned-offset base-offset n)
+          :base-alignment n
+          :machine-unit-size n)))
+
+(defun calc-vector-layout (parent-type-aligned-offset
+                           last-slot-base-offset
+                           last-slot-aligned-offset
+                           last-slot-machine-size
+                           type)
+  ;; 2. If the member is a two or four-component vector with components
+  ;;    consuming N basic machine units, the base alignment is 2N or 4N,
+  ;;    respectively.
+  ;; 3. If the member is a three-component vector with components
+  ;;    consuming N basic machine units, the base alignment is 4N.
+  (let ((base-offset
+         (calc-base-offset parent-type-aligned-offset
+                           last-slot-base-offset
+                           last-slot-aligned-offset
+                           last-slot-machine-size))
+        (base-alignment
+         (ecase= (first (v-dimensions type))
+           (2 (* 2 (machine-unit-size type)))
+           (3 (* 4 (machine-unit-size type))) ;; ← (* 4 …) is not a typo
+           (4 (* 4 (machine-unit-size type))))))
+    (list '???
+          :base-offset base-offset
+          :base-alignment base-alignment
+          :aligned-offset (calc-aligned-offset base-offset base-alignment)
+          :machine-unit-size (machine-unit-size type))))
+
+(defun calc-layout (parent-type-base-offset
+                    parent-type-aligned-offset
+                    last-slot-base-offset
+                    last-slot-aligned-offset
+                    last-slot-machine-size
+                    type)
+  (cond
+    ((scalar-type-p type)
+     (calc-scalar-layout parent-type-aligned-offset
+                         last-slot-base-offset
+                         last-slot-aligned-offset
+                         last-slot-machine-size
+                         type))
+    ((v-typep type 'v-vector)
+     (calc-vector-layout parent-type-aligned-offset
+                         last-slot-base-offset
+                         last-slot-aligned-offset
+                         last-slot-machine-size
+                         type)       )
+    ;; 5. If the member is a column-major matrix with C columns and R
+    ;; rows, the matrix is stored identically to an array of C column
+    ;; vectors with R components each, according to rule (4).
+    ((v-typep type 'v-matrix)
+     (let* ((array-type-spec
+             (or (assocr (type->type-spec type)
+                         '((v-mat2 . (v-vec2 2))
+                           (v-mat3 . (v-vec3 3))
+                           (v-mat4 . (v-vec4 4))
+                           (v-dmat2 . (v-dvec2 2))
+                           (v-dmat3 . (v-dvec3 3))
+                           (v-dmat4 . (v-dvec4 4))))
+                 (error "woops")))
+            (array-type (type-spec->type array-type-spec)))
+       (calc-layout parent-type-base-offset
+                    parent-type-aligned-offset
+                    last-slot-base-offset
+                    last-slot-aligned-offset
+                    last-slot-machine-size
+                    array-type)))
+    ;; 9. If the member is a structure, the base alignment of the
+    ;; structure is N , where N is the largest base alignment value of any
+    ;; of its members, and rounded up to the base alignment of a vec4.
+    ;; The structure may have padding at the end; the base offset of
+    ;; the member following the sub-structure is rounded up to the
+    ;; next multiple of the base alignment of the structure.
+    ((v-typep type 'v-struct)
+     (let ((layout (calc-struct-layout :??????
+                                       base-offset
+                                       aligned-offset)))
+       (destructuring-bind (name
+                            &key base-offset aligned-offset machine-unit-size
+                            members)
+           layout
+         (declare (ignore name base-offset aligned-offset))
+         members))
+     (round-to-next-multiple
+      (reduce #'max (mapcar (lambda (child)
+                              ;; {TODO} need to main loop here, will fill
+                              ;;        in when I've worked it out
+                              (base-alignment self &&&&& child))
+                            (children self)))
+      (base-alignment :vec4)))
+    ;; 4. If the member is an array of scalars or vectors, the base
+    ;;    alignment and array stride are set to match the base alignment of
+    ;;    a single array element, according to rules (1), (2), and (3), and
+    ;;    rounded up to the base alignment of a vec4.
+    ;;    The array may have padding at the end; the base offset of the member
+    ;;    following the array is rounded up to the next multiple of the base
+    ;;    alignment.
+    ((and (array-type-p self)
+          (or (scalar-type-p (element-type self))
+              (vector-type-p (element-type self))))
+     (round-to-next-multiple (base-alignment :nope :nope (element-type type))
+                             (base-alignment :nope :nope :vec4)))
+    ;; 6. If the member is an array of S column-major matrices with C
+    ;; columns and R rows, the matrix is stored identically to a row of
+    ;; S × C column vectors with R components each, according to rule (4).
+    ((and (array-type-p type)
+          (matrix-type-p (element-type type)))
+     todo)
+    ;; 10. If the member is an array of S structures, the S elements of
+    ;; the array are laid out in order, according to rule (9).
+    ((and (array-type-p type)
+          (struct-type-p (element-type type)))
+     todo)
+    ;;
+    (t (error "shiit")))))
+
+(defun calc-aligned-offset (base-offset base-alignment)
+  ;; A structure and each structure member have a base offset and a base
+  ;; alignment, from which an aligned offset is computed by rounding the
+  ;; base offset up to a multiple of the base alignment
+  (round-to-next-multiple base-offset base-alignment))
+
+
 
 ;;----------------------------------------------------------------------
 ;; Common
