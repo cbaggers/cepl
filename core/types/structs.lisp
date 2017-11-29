@@ -261,7 +261,7 @@
   `(,(s-def slot) ,(s-reader slot)
      ,(s-slot-args slot `((wrapped-object ,type-name)))
      (cepl.c-arrays::make-c-array-from-pointer
-      ',(s-dimensions slot) ,(s-element-type slot)
+      ',(s-dimensions slot) ',(s-element-type slot)
       (foreign-slot-pointer (,get-ptr wrapped-object)
                             ',foreign-struct-name
                             ',(s-name slot)))))
