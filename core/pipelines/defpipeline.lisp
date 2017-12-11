@@ -143,7 +143,7 @@
        ;;
        ;; The struct that holds the gl state for this pipeline
        (declaim (type pipeline-state ,state-var))
-       (defparameter ,state-var (make-pipeline-state))
+       (defvar ,state-var (make-pipeline-state))
        ;;
        ;; If the prog-id isnt know this function will be called
        (defun+ ,init-func-name (state)
@@ -162,7 +162,7 @@
                            state-var)
        ;;
        ;; generate the function that recompiles this pipeline
-       ,(gen-recompile-func name stage-pairs post context)
+       ,(gen-recompile-func name stage-pairs post context state-var)
        ;;
        ;; off to the races! Note that we upload the spec at compile
        ;; time (using eval-when)
@@ -271,7 +271,7 @@
            (optimize (speed 3) (safety 0) (debug 0)))
   (values))
 
-(defun+ gen-recompile-func (name stage-pairs post context)
+(defun+ gen-recompile-func (name stage-pairs post context state-var)
   (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
          (gpipe-args (append stages (list :post post))))
     `(defun+ ,(recompile-name name) ()
@@ -280,7 +280,8 @@
        (let ((*standard-output* (make-string-output-stream)))
          (handler-bind ((warning #'muffle-warning))
            (eval (%defpipeline-gfuncs
-                  ',name ',gpipe-args ',context)))))))
+                  ',name ',gpipe-args ',context))
+           (setf ,state-var (make-pipeline-state)))))))
 
 (defun+ gen-update-spec (name stage-pairs context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
