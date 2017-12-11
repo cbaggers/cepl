@@ -144,47 +144,46 @@
     ;; update the spec immediately (macro-expansion time)
     (update-pipeline-spec
      (make-pipeline-spec name stage-pairs context))
-    `(progn
-       ;;
-       ;; eval-when so we dont get a 'use before compiled' warning
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
-           (declare (ignore rest))
-           (unless (mapg-context-p ,ctx)
-             (error 'dispatch-called-outside-of-map-g :name ',name))
-           whole))
-       ;;
-       ;; The struct that holds the gl state for this pipeline
-       (declaim (type pipeline-state ,state-var))
-       (,(if structurally-unchanged-p
-             'defvar
-             'defparameter)
-           ,state-var (make-pipeline-state))
-       ;;
-       ;; If the prog-id isnt know this function will be called
-       (defun+ ,init-func-name (state)
-         ,(gen-pipeline-init name
-                             primitive
-                             stage-pairs
-                             post
-                             aggregate-public-uniforms
-                             uniform-assigners))
-       ;;
-       ;; generate the code that actually renders
-       ,(def-dispatch-func ctx name init-func-name
-                           primitive uniform-assigners
-                           aggregate-public-uniforms
-                           (find :static context)
-                           state-var is-compute)
-       ;;
-       ;; generate the function that recompiles this pipeline
-       ,(gen-recompile-func name stage-pairs post context)
-       ;;
-       ;; off to the races! Note that we upload the spec at compile
-       ;; time (using eval-when)
-       ,(gen-update-spec name stage-pairs context)
-       (register-named-pipeline ',name #',name)
-       ',name)))
+    (values
+     `(progn
+        ;;
+        ;; eval-when so we dont get a 'use before compiled' warning
+        (eval-when (:compile-toplevel :load-toplevel :execute)
+          (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
+            (declare (ignore rest))
+            (unless (mapg-context-p ,ctx)
+              (error 'dispatch-called-outside-of-map-g :name ',name))
+            whole))
+        ;;
+        ;; The struct that holds the gl state for this pipeline
+        (declaim (type pipeline-state ,state-var))
+        (defvar ,state-var (make-pipeline-state))
+        ;;
+        ;; If the prog-id isnt know this function will be called
+        (defun+ ,init-func-name (state)
+          ,(gen-pipeline-init name
+                              primitive
+                              stage-pairs
+                              post
+                              aggregate-public-uniforms
+                              uniform-assigners))
+        ;;
+        ;; generate the code that actually renders
+        ,(def-dispatch-func ctx name init-func-name
+                            primitive uniform-assigners
+                            aggregate-public-uniforms
+                            (find :static context)
+                            state-var is-compute)
+        ;;
+        ;; generate the function that recompiles this pipeline
+        ,(gen-recompile-func name stage-pairs post context state-var)
+        ;;
+        ;; off to the races! Note that we upload the spec at compile
+        ;; time (using eval-when)
+        ,(gen-update-spec name stage-pairs context)
+        (register-named-pipeline ',name #',name)
+        ',name)
+     structurally-unchanged-p)))
 
 (defun+ def-dispatch-func (ctx
                            name
@@ -285,7 +284,7 @@
            (optimize (speed 3) (safety 0) (debug 0)))
   (values))
 
-(defun+ gen-recompile-func (name stage-pairs post context)
+(defun+ gen-recompile-func (name stage-pairs post context state-var)
   (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
          (gpipe-args (append stages (list :post post))))
     `(defun+ ,(recompile-name name) ()
@@ -293,8 +292,11 @@
        (force-output)
        (let ((*standard-output* (make-string-output-stream)))
          (handler-bind ((warning #'muffle-warning))
-           (eval (%defpipeline-gfuncs
-                  ',name ',gpipe-args ',context)))))))
+           (multiple-value-bind (src structurally-unchanged-p)
+               (%defpipeline-gfuncs ',name ',gpipe-args ',context)
+             (eval src)
+             (unless structurally-unchanged-p
+               (setf ,state-var (make-pipeline-state)))))))))
 
 (defun+ gen-update-spec (name stage-pairs context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
