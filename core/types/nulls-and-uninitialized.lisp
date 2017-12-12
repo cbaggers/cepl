@@ -57,6 +57,13 @@
       (%%make-texture
        :type :uninitialized :image-format :uninitialized)))
 
+(defun+ make-uninitialized-render-buffer (&optional
+                                          multisample)
+  (%make-render-buffer
+   :image-format :uninitialized
+   :resolution (v! 0 0)
+   :multisample-p multisample))
+
 (defun+ make-uninitialized-gpu-array-bb (&optional buffer)
   (%make-gpu-array-bb
    :buffer (or buffer +null-gpu-buffer+)

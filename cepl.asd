@@ -92,6 +92,7 @@
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")
                (:file "core/textures/texture-samplers")
+               (:file "core/render-buffers/render-buffer")
                (:file "core/samplers/context")
                (:file "core/pipelines/map-g")
                (:file "core/pipelines/quad-stages")

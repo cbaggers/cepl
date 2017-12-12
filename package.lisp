@@ -510,6 +510,15 @@
            :layout-members
            :layout-element-layout
 
+           :render-buffer
+           :render-buffer-p
+           :%make-render-buffer
+           :%render-buffer-id
+           :%render-buffer-image-format
+           :%render-buffer-resolution
+           :%render-buffer-multisample-p
+           :make-uninitialized-render-buffer
+
            ;;---
            :holds-gl-object-ref-p
            :can-be-shared-between-contexts-p))
@@ -972,6 +981,23 @@
            :free-sampler
            :with-temp-sampler))
 
+(uiop:define-package :cepl.render-buffers
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
+          :cepl.types :split-sequence :named-readtables
+          :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
+          :cepl.internals :cepl.image-formats :cepl.textures
+          :cepl.viewports :cepl.measurements :cepl.memory
+          :cepl.build)
+  (:import-from :cepl.context :%with-cepl-context-slots)
+  (:export :render-buffer
+           :render-buffer-p
+           :make-render-buffer
+           :make-render-buffer-now
+           :render-buffer-resolution
+           :render-buffer-multisample-p
+           :render-buffer-image-format
+           :render-buffer-dimensions))
+
 (uiop:define-package :cepl.fbos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo :rtg-math
           :cepl.types :split-sequence :named-readtables
@@ -1150,6 +1176,7 @@
           :cepl.c-arrays
           :cepl.context
           :cepl.errors
+          :cepl.render-buffers
           :cepl.fbos
           :cepl.gpu-arrays
           :cepl.gpu-arrays.buffer-backed
@@ -1215,6 +1242,7 @@
              :cepl.context
              :cepl.samplers
              :cepl.textures
+             :cepl.render-buffers
              :cepl.fbos
              :cepl.blending
              :cepl.transform-feedback

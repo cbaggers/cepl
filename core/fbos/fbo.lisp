@@ -326,7 +326,11 @@
       (when current-value
         (fbo-detach fbo attachment-name))
       (when value
-        (fbo-attach fbo value attachment-name))
+        (etypecase value
+          (gpu-array-t
+           (fbo-attach-array fbo value attachment-name))
+          (render-buffer
+           (fbo-attach-render-buffer fbo value attachment-name))))
       ;; update cached gl details
       (%update-fbo-state fbo)))
   ;;
@@ -660,6 +664,18 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; take the dimensions from some object
     (t (dimensions (second pattern)))))
 
+;;----------------------------------------------------------------------
+
+(defun fbo-attach-render-buffer (fbo render-buffer attachment-name)
+  (let ((attach-enum (get-gl-attachment-keyword fbo attachment-name)))
+    (with-fbo-bound (fbo :target :read-framebuffer :with-viewport nil :draw-buffers nil)
+      (%gl:framebuffer-renderbuffer :read-framebuffer
+                                    attach-enum
+                                    #.(gl-enum :renderbuffer)
+                                    (%render-buffer-id render-buffer)))))
+
+;;----------------------------------------------------------------------
+
 ;; Attaching Images
 
 ;; Remember that textures are a set of images. Textures can have mipmaps; thus,
@@ -667,7 +683,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;; {TODO} Ensure image formats are color-renderable for color attachments
 ;;
-(defun+ fbo-attach (fbo tex-array attachment-name)
+(defun+ fbo-attach-array (fbo tex-array attachment-name)
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target could be any of '(:framebuffer :read-framebuffer :draw-framebuffer)
   ;; but we just pick :read-framebuffer as in this case it makes no difference
@@ -699,6 +715,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       ;;
       ;; When attaching a non-cubemap, textarget should be the proper
       ;; texture-type: GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE, etc.
+      ;;----------------------------------------------------------------------
       (cepl.textures::with-gpu-array-t tex-array
         (assert (attachment-compatible attachment-name image-format t)
                 ()  "attachment is not compatible with this array~%~a~%~a"
