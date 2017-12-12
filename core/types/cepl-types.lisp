@@ -242,8 +242,17 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (render-buffer (:constructor %make-render-buffer)
+                          (:conc-name %render-buffer-))
+  (id 0 :type gl-id)
+  (image-format (error "bug") :type symbol)
+  (resolution (error "bug: render-buffer resolution not provided") :type vec2)
+  (multisample-p nil :type boolean))
+
+;;------------------------------------------------------------
+
 (defstruct att
-  (array nil :type (or null gpu-array-t))
+  (array nil :type (or null gpu-array-t render-buffer))
   (blend nil :type boolean)
   (bparams nil :type (or null blending-params))
   (owned-p nil :type boolean)
@@ -655,6 +664,9 @@
 
 #+sbcl
 (declaim (sb-ext:freeze-type stencil-params))
+
+#+sbcl
+(declaim (sb-ext:freeze-type render-buffer))
 
 #+sbcl
 (declaim (sb-ext:freeze-type att))
