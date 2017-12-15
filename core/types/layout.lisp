@@ -388,24 +388,27 @@
                                         last-slot-base-offset
                                         last-slot-aligned-offset
                                         last-slot-machine-size))
-         (dummy (calc-layout name
-                             parent-type-base-offset
-                             parent-type-aligned-offset
-                             last-slot-base-offset
-                             last-slot-aligned-offset
-                             last-slot-machine-size
-                             (v-element-type type)))
+         (elem-layout (calc-layout (list name '*)
+                                   parent-type-base-offset
+                                   parent-type-aligned-offset
+                                   last-slot-base-offset
+                                   last-slot-aligned-offset
+                                   last-slot-machine-size
+                                   (v-element-type type)))
          (base-alignment (round-to-next-multiple
-                          (layout-base-alignment dummy)
+                          (layout-base-alignment elem-layout)
                           (calc-vector-base-alignment
                            (type-spec->type :vec4))))
          (size (round-to-next-multiple
                 (machine-unit-size type base-alignment)
                 base-alignment)))
+    (setf (slot-value elem-layout 'machine-unit-size)
+          base-alignment)
     (make-instance
      'std-140
      :name name
      :type type
+     :element-layout elem-layout
      :base-offset base-offset
      :aligned-offset (calc-aligned-offset base-offset base-alignment)
      :base-alignment base-alignment
