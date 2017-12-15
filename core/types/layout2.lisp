@@ -13,6 +13,9 @@
   ((name :initarg :name
          :initform nil
          :reader layout-name)
+   (varjo-type :initarg :type
+               :initform nil
+               :reader layout-varjo-type)
    (base-offset :initarg :base-offset
                 :initform nil
                 :reader layout-base-offset)
@@ -31,6 +34,10 @@
 
 (defclass std-140 (gl-layout) ())
 (defclass std-430 (gl-layout) ())
+
+(defmethod print-object ((obj std-140) stream)
+  (print-unreadable-object ((v! 1 2 3) stream :identity t)
+    (format stream "STD-140 ~a" (type->type-spec (layout-varjo-type obj)))))
 
 (defun calc-block-layout (varjo-struct-type-name)
   (let ((type (type-spec->type varjo-struct-type-name))
@@ -94,6 +101,7 @@
     (make-instance
      'std-140
      :name name
+     :type type
      :base-offset base-offset
      :base-alignment base-alignment
      :aligned-offset (calc-aligned-offset base-offset base-alignment)
@@ -134,6 +142,7 @@
     (make-instance
      'std-140
      :name name
+     :type type
      :base-offset base-offset
      :aligned-offset (calc-aligned-offset base-offset n)
      :base-alignment n
@@ -165,6 +174,7 @@
     (make-instance
      'std-140
      :name name
+     :type type
      :base-offset base-offset
      :base-alignment base-alignment
      :aligned-offset (calc-aligned-offset base-offset base-alignment)
@@ -290,6 +300,7 @@
        (make-instance
         'std-140
         :name name
+        :type type
         :base-offset base-offset
         :aligned-offset (calc-aligned-offset base-offset base-alignment)
         :base-alignment base-alignment
