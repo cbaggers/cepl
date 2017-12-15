@@ -25,6 +25,9 @@
      (writer :initarg :writer :reader s-writer)
      (uses-method-p :initarg :uses-method-p :reader s-uses-method-p))))
 
+(defmethod v-type-of ((gss gl-struct-slot))
+  (type-spec->type (s-type gss)))
+
 (defmethod s-arrayp ((object gl-struct-slot))
   (eq (s-type object) :array))
 
@@ -84,7 +87,8 @@
 
 (defmacro defstruct-g (name-and-options &body slot-descriptions)
   (dbind (name &key (accesors t) (constructor (symb 'make- name))
-               (readers t) (writers t) (pull-push t) (attribs t) (populate t))
+               (readers t) (writers t) (pull-push t) (attribs t) (populate t)
+               (layout :default))
       (listify name-and-options)
     (let* ((slots (mapcar (lambda (_) (normalize-slot-description
                                        _ name (and readers accesors)
@@ -93,13 +97,22 @@
            (foreign-struct-name (hidden-symb name :foreign))
            (qualified-struct-name `(:struct ,foreign-struct-name))
            (get-ptr-name (hidden-symb name :ptr))
-           (typed-populate (symb :populate- name)))
+           (typed-populate (symb :populate- name))
+           (layout (cond
+                     ((string= layout :default) nil)
+                     ((string= layout :std140)
+                      (calc-struct-layout-from-name-type-pairs
+                       name (mapcar (lambda (x)
+                                      (list (s-name x) (s-type x)))
+                                    slots)))
+                     ((string= layout :std430)
+                      (error 'std430-not-yet-implemented)))) )
       (when (validate-defstruct-g-form name slots)
         `(progn
            (eval-when (:compile-toplevel :load-toplevel :execute)
              ,(make-varjo-struct-def name slots))
            ,@(make-instance-wrapper-def name foreign-struct-name get-ptr-name
-                                        slots typed-populate)
+                                        slots typed-populate layout)
            ,@(when (and readers accesors)
                (remove nil (mapcar (lambda (_)
                                      (make-slot-getter
@@ -178,7 +191,9 @@
                                    foreign-struct-name
                                    get-ptr
                                    slots
-                                   typed-populate)
+                                   typed-populate
+                                   layout)
+  (declare (ignore layout))
   (let* ((foreign-type-name (hidden-symb name :cffi-ct-type))
          (make-name (hidden-symb name :make))
          (slot-defs (mapcar #'format-slot-for-cstruct slots))
