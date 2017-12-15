@@ -456,15 +456,15 @@
                                    last-slot-aligned-offset
                                    last-slot-machine-size
                                    (v-element-type type)))
-         (base-alignment (round-to-next-multiple
-                          (layout-base-alignment elem-layout)
-                          (calc-vector-base-alignment
-                           (type-spec->type :vec4))))
-         (size (ecase layout-specifier
-                 (std-140 (round-to-next-multiple
-                           (machine-unit-size type base-alignment)
-                           base-alignment))
-                 (std-430 (machine-unit-size type base-alignment)))))
+         (base-alignment (ecase layout-specifier
+                           (std-140 (round-to-next-multiple
+                                     (layout-base-alignment elem-layout)
+                                     (calc-vector-base-alignment
+                                      (type-spec->type :vec4))))
+                           (std-430 (layout-base-alignment elem-layout))))
+         (size (round-to-next-multiple
+                (machine-unit-size type base-alignment)
+                base-alignment)))
     (setf (slot-value elem-layout 'machine-unit-size)
           base-alignment)
     (make-instance
