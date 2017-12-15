@@ -9,7 +9,8 @@
                                    element-type
                                    pointer
                                    &key
-                                   (free #'cffi:foreign-free))
+                                   (free #'cffi:foreign-free)
+                                   element-byte-size)
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
   (let ((dimensions (listify dimensions)))
@@ -19,7 +20,7 @@
            (element-type2 (if p-format
                               (pixel-format->lisp-type element-type)
                               element-type))
-           (elem-size (gl-type-size element-type2)))
+           (elem-size (or element-byte-size (gl-type-size element-type2))))
       (multiple-value-bind (byte-size row-byte-size)
           (%gl-calc-byte-size elem-size dimensions)
         (declare (ignore byte-size))
