@@ -499,6 +499,14 @@
 
            :calc-block-layout
            :calc-struct-layout-from-name-type-pairs
+           :layout-name
+           :layout-varjo-type
+           :layout-base-offset
+           :layout-base-alignment
+           :layout-aligned-offset
+           :layout-machine-unit-size
+           :layout-members
+           :layout-element-layout
 
            ;;---
            :holds-gl-object-ref-p
