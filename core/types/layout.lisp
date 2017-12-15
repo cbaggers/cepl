@@ -31,7 +31,10 @@
                       :reader layout-machine-unit-size)
    (members :initarg :members
             :initform nil
-            :reader layout-members)))
+            :reader layout-members)
+   (element-layout :initarg :element-layout
+                   :initform nil
+                   :reader layout-element-layout)))
 
 (defclass std-140 (gl-layout) ())
 (defclass std-430 (gl-layout) ())
@@ -319,17 +322,23 @@
                                      type)
   ;; 10. If the member is an array of S structures, the S elements of
   ;; the array are laid out in order, according to rule (9).
-  (let ((elem-layout (calc-layout name
+  (let ((elem-layout (calc-layout (list name '*)
                                   parent-type-base-offset
                                   parent-type-aligned-offset
                                   last-slot-base-offset
                                   last-slot-aligned-offset
                                   last-slot-machine-size
                                   (v-element-type type))))
-    (setf (slot-value elem-layout 'machine-unit-size)
-          (* (slot-value elem-layout 'machine-unit-size)
-             (first (v-dimensions type))))
-    elem-layout))
+    (make-instance
+     'std-140
+     :name name
+     :type type
+     :base-offset (layout-base-offset elem-layout)
+     :base-alignment (layout-base-alignment elem-layout)
+     :aligned-offset (layout-aligned-offset elem-layout)
+     :machine-unit-size (* (slot-value elem-layout 'machine-unit-size)
+                           (first (v-dimensions type)))
+     :element-layout elem-layout)))
 
 (defun calc-array-of-scalar-or-vectors-layout (name
                                                parent-type-base-offset
