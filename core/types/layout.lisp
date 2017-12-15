@@ -412,12 +412,8 @@
     ;; The base offset of all other structure members is derived by taking
     ;; the offset of the last basic machine unit consumed by the previous
     ;; member and adding one
-    ;;
-    ;; {TODO} see rule 4 second paragraph, sounds relevent
-    ;; {TODO} see rule 9 second paragraph, sounds relevent
-    (+ last-slot-aligned-offset ;; which offset?
-       last-slot-machine-size
-       1)))
+    (+ last-slot-aligned-offset
+       last-slot-machine-size)))
 
 (defun calc-vector-base-alignment (type)
   ;; 2. If the member is a two or four-component vector with components
