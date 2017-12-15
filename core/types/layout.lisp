@@ -5,9 +5,11 @@
 ;; {TODO} automatic handling of sampler types (for bindless textures support)
 
 ;;----------------------------------------------------------------------
-;; Std140
-;;
-;; - slots in memory will be in same order as in definition
+
+(defvar *valid-layout-specifiers*
+  '(std-140 std-430))
+
+;;----------------------------------------------------------------------
 
 (defclass gl-layout ()
   ((name :initarg :name
@@ -39,52 +41,67 @@
 (defclass std-140 (gl-layout) ())
 (defclass std-430 (gl-layout) ())
 
-(defmethod print-object ((obj std-140) stream)
-  (print-unreadable-object ((v! 1 2 3) stream :identity t)
-    (format stream "STD-140 ~a" (type->type-spec (layout-varjo-type obj)))))
+;;----------------------------------------------------------------------
 
-(defmethod print-object ((obj std-430) stream)
+(defmethod print-object ((obj gl-layout) stream)
   (print-unreadable-object ((v! 1 2 3) stream :identity t)
-    (format stream "STD-430 ~a" (type->type-spec (layout-varjo-type obj)))))
+    (format stream "~a ~a"
+            (symbol-name (class-name (class-of obj)))
+            (type->type-spec (layout-varjo-type obj)))))
 
 ;;----------------------------------------------------------------------
 
-(defun calc-block-layout (varjo-struct-type-name)
-  (let ((type (type-spec->type varjo-struct-type-name))
-        (parent-type-aligned-offset 0)
-        (last-slot-base-offset nil)
-        (last-slot-aligned-offset nil)
-        (last-slot-machine-size nil))
+(defun process-layout-specifier (layout-specifier)
+  (let ((specifier (find layout-specifier *valid-layout-specifiers*
+                         :test #'string=)))
+    (assert specifier ()
+            'invalid-data-layout-specifier
+            :specifier layout-specifier
+            :valid-specifiers *valid-layout-specifiers*)
+    specifier))
+
+(defun calc-block-layout (layout-specifier varjo-struct-type-name)
+  (let* ((layout-specifier (process-layout-specifier layout-specifier))
+         (type (type-spec->type varjo-struct-type-name))
+         (parent-type-aligned-offset 0)
+         (last-slot-base-offset nil)
+         (last-slot-aligned-offset nil)
+         (last-slot-machine-size nil))
     (assert (v-typep type 'v-struct))
-    (calc-struct-layout 'block
+    (calc-struct-layout layout-specifier
+                        'block
                         parent-type-aligned-offset
                         last-slot-base-offset
                         last-slot-aligned-offset
                         last-slot-machine-size
                         type)))
 
-(defun calc-struct-layout-from-name-type-pairs (name name-type-pairs)
-  (let ((parent-type-aligned-offset 0)
-        (last-slot-base-offset nil)
-        (last-slot-aligned-offset nil)
-        (last-slot-machine-size nil)
-        (pairs (loop :for (name type/spec) :in name-type-pairs :collect
-                  (let ((type (etypecase type/spec
-                                (v-type type/spec)
-                                (t (type-spec->type type/spec)))))
-                    (list name type)))))
+(defun calc-struct-layout-from-name-type-pairs (layout-specifier
+                                                name
+                                                name-type-pairs)
+  (let* ((layout-specifier (process-layout-specifier layout-specifier))
+         (parent-type-aligned-offset 0)
+         (last-slot-base-offset nil)
+         (last-slot-aligned-offset nil)
+         (last-slot-machine-size nil)
+         (pairs (loop :for (name type/spec) :in name-type-pairs :collect
+                   (let ((type (etypecase type/spec
+                                 (v-type type/spec)
+                                 (t (type-spec->type type/spec)))))
+                     (list name type)))))
     (multiple-value-bind (base-offset
                           base-alignment
                           aligned-offset
                           machine-unit-size
                           members)
-        (calc-struct-member-layout pairs
+        (calc-struct-member-layout layout-specifier
+                                   pairs
                                    parent-type-aligned-offset
                                    last-slot-base-offset
                                    last-slot-aligned-offset
                                    last-slot-machine-size)
       (make-instance
-       'std-140
+       layout-specifier
        :name name
        :type (type-spec->type t)
        :base-offset base-offset
@@ -93,7 +110,8 @@
        :machine-unit-size machine-unit-size
        :members members))))
 
-(defun calc-layout (name
+(defun calc-layout (layout-specifier
+                    name
                     parent-type-base-offset
                     parent-type-aligned-offset
                     last-slot-base-offset
@@ -102,21 +120,24 @@
                     type)
   (cond
     ((scalar-type-p type)
-     (calc-scalar-layout name
+     (calc-scalar-layout layout-specifier
+                         name
                          parent-type-aligned-offset
                          last-slot-base-offset
                          last-slot-aligned-offset
                          last-slot-machine-size
                          type))
     ((v-typep type 'v-vector)
-     (calc-vector-layout name
+     (calc-vector-layout layout-specifier
+                         name
                          parent-type-aligned-offset
                          last-slot-base-offset
                          last-slot-aligned-offset
                          last-slot-machine-size
                          type))
     ((v-typep type 'v-matrix)
-     (calc-col-mat-layout name
+     (calc-col-mat-layout layout-specifier
+                          name
                           parent-type-base-offset
                           parent-type-aligned-offset
                           last-slot-base-offset
@@ -124,7 +145,8 @@
                           last-slot-machine-size
                           type))
     ((v-typep type 'v-struct)
-     (calc-struct-layout name
+     (calc-struct-layout layout-specifier
+                         name
                          parent-type-aligned-offset
                          last-slot-base-offset
                          last-slot-aligned-offset
@@ -132,7 +154,8 @@
                          type))
     ((and (v-typep type 'v-array)
           (v-typep (v-element-type type) 'v-matrix))
-     (calc-array-of-col-mat-layout name
+     (calc-array-of-col-mat-layout layout-specifier
+                                   name
                                    parent-type-base-offset
                                    parent-type-aligned-offset
                                    last-slot-base-offset
@@ -141,7 +164,8 @@
                                    type))
     ((and (v-typep type 'v-array)
           (v-typep (v-element-type type) 'v-struct))
-     (calc-array-of-structs-layout name
+     (calc-array-of-structs-layout layout-specifier
+                                   name
                                    parent-type-base-offset
                                    parent-type-aligned-offset
                                    last-slot-base-offset
@@ -150,7 +174,8 @@
                                    type))
 
     ((v-typep type 'v-array)
-     (calc-array-of-scalar-or-vectors-layout name
+     (calc-array-of-scalar-or-vectors-layout layout-specifier
+                                             name
                                              parent-type-base-offset
                                              parent-type-aligned-offset
                                              last-slot-base-offset
@@ -160,7 +185,8 @@
     ;;
     (t (error 'could-not-layout-type :type type))))
 
-(defun calc-scalar-layout (name
+(defun calc-scalar-layout (layout-specifier
+                           name
                            parent-type-aligned-offset
                            last-slot-base-offset
                            last-slot-aligned-offset
@@ -174,7 +200,7 @@
                                        last-slot-aligned-offset
                                        last-slot-machine-size)))
     (make-instance
-     'std-140
+     layout-specifier
      :name name
      :type type
      :base-offset base-offset
@@ -182,7 +208,8 @@
      :base-alignment n
      :machine-unit-size n)))
 
-(defun calc-struct-layout (name
+(defun calc-struct-layout (layout-specifier
+                           name
                            parent-type-aligned-offset
                            last-slot-base-offset
                            last-slot-aligned-offset
@@ -193,13 +220,14 @@
                         aligned-offset
                         machine-unit-size
                         members)
-      (calc-struct-member-layout (varjo.internals:v-slots type)
+      (calc-struct-member-layout layout-specifier
+                                 (varjo.internals:v-slots type)
                                  parent-type-aligned-offset
                                  last-slot-base-offset
                                  last-slot-aligned-offset
                                  last-slot-machine-size)
     (make-instance
-     'std-140
+     layout-specifier
      :name name
      :type type
      :base-offset base-offset
@@ -208,7 +236,8 @@
      :machine-unit-size machine-unit-size
      :members members)))
 
-(defun calc-struct-member-layout (member-name-type-pairs
+(defun calc-struct-member-layout (layout-specifier
+                                  member-name-type-pairs
                                   parent-type-aligned-offset
                                   last-slot-base-offset
                                   last-slot-aligned-offset
@@ -220,13 +249,22 @@
   ;; The members of a top-level uniform block are laid out in buffer
   ;; storage by treating the uniform block as a structure with a base
   ;; offset of zero.
-  ;; --
+  ;;
+  ;; Slots in memory will be in same order as in definition.
+  ;;
   ;; 9. If the member is a structure, the base alignment of the
   ;; structure is N , where N is the largest base alignment value of any
   ;; of its members, and rounded up to the base alignment of a vec4.
   ;; The structure may have padding at the end; the base offset of
   ;; the member following the sub-structure is rounded up to the
   ;; next multiple of the base alignment of the structure.
+  ;;
+  ;; When using the std-430 storage layout, shader storage blocks will be
+  ;; laid out in buffer storage identically to uniform and shader
+  ;; storage blocks using the std-140 layout, except that the base
+  ;; alignment and stride of arrays of scalars and vectors in rule 4 and
+  ;; of structures in rule 9 are not rounded up a multiple of the base
+  ;; alignment of a vec4.
   (let* ((base-offset (calc-base-offset parent-type-aligned-offset
                                         last-slot-base-offset
                                         last-slot-aligned-offset
@@ -236,7 +274,8 @@
                         (last-slot-aligned-offset nil)
                         (last-slot-machine-size nil))
                     (loop :for (name stype) :in member-name-type-pairs :collect
-                       (let* ((layout (calc-layout name
+                       (let* ((layout (calc-layout layout-specifier
+                                                   name
                                                    base-offset
                                                    aligned-offset
                                                    last-slot-base-offset
@@ -251,10 +290,16 @@
                                  last-slot-aligned-offset aligned-offset
                                  last-slot-machine-size machine-unit-size))
                          layout))))
+         (max-member-base-alignment
+          (reduce #'max (mapcar #'layout-base-alignment members)))
          (base-alignment
-          (round-to-next-multiple
-           (reduce #'max (mapcar #'layout-base-alignment members))
-           (calc-vector-base-alignment (type-spec->type :vec4))))
+          (ecase layout-specifier
+            (std-140
+             (round-to-next-multiple
+              max-member-base-alignment
+              (calc-vector-base-alignment (type-spec->type :vec4))))
+            (std-430
+             max-member-base-alignment)))
          (size (round-to-next-multiple
                 (reduce #'+ (mapcar #'layout-machine-unit-size members))
                 base-alignment)))
@@ -264,7 +309,8 @@
             size
             members)))
 
-(defun calc-vector-layout (name
+(defun calc-vector-layout (layout-specifier
+                           name
                            parent-type-aligned-offset
                            last-slot-base-offset
                            last-slot-aligned-offset
@@ -277,7 +323,7 @@
                            last-slot-machine-size))
         (base-alignment (calc-vector-base-alignment type)))
     (make-instance
-     'std-140
+     layout-specifier
      :name name
      :type type
      :base-offset base-offset
@@ -285,7 +331,8 @@
      :aligned-offset (calc-aligned-offset base-offset base-alignment)
      :machine-unit-size (machine-unit-size type))))
 
-(defun calc-array-of-col-mat-layout (name
+(defun calc-array-of-col-mat-layout (layout-specifier
+                                     name
                                      parent-type-base-offset
                                      parent-type-aligned-offset
                                      last-slot-base-offset
@@ -304,7 +351,8 @@
                               (4 :vec4)))
              (equiv-array-type-spec (list new-elem-spec (* cols len)))
              (equiv-array-type (type-spec->type equiv-array-type-spec))
-             (equiv-layout (calc-layout name
+             (equiv-layout (calc-layout layout-specifier
+                                        name
                                         parent-type-base-offset
                                         parent-type-aligned-offset
                                         last-slot-base-offset
@@ -315,7 +363,8 @@
           (setf varjo-type type))
         equiv-layout))))
 
-(defun calc-col-mat-layout (name
+(defun calc-col-mat-layout (layout-specifier
+                            name
                             parent-type-base-offset
                             parent-type-aligned-offset
                             last-slot-base-offset
@@ -335,7 +384,8 @@
                         (v-dmat4 . (v-dvec4 4))))
               (error 'could-not-layout-type :type type)))
          (array-type (type-spec->type array-type-spec)))
-    (calc-layout name
+    (calc-layout layout-specifier
+                 name
                  parent-type-base-offset
                  parent-type-aligned-offset
                  last-slot-base-offset
@@ -343,7 +393,8 @@
                  last-slot-machine-size
                  array-type)))
 
-(defun calc-array-of-structs-layout (name
+(defun calc-array-of-structs-layout (layout-specifier
+                                     name
                                      parent-type-base-offset
                                      parent-type-aligned-offset
                                      last-slot-base-offset
@@ -352,7 +403,8 @@
                                      type)
   ;; 10. If the member is an array of S structures, the S elements of
   ;; the array are laid out in order, according to rule (9).
-  (let ((elem-layout (calc-layout (list name '*)
+  (let ((elem-layout (calc-layout layout-specifier
+                                  (list name '*)
                                   parent-type-base-offset
                                   parent-type-aligned-offset
                                   last-slot-base-offset
@@ -360,7 +412,7 @@
                                   last-slot-machine-size
                                   (v-element-type type))))
     (make-instance
-     'std-140
+     layout-specifier
      :name name
      :type type
      :base-offset (layout-base-offset elem-layout)
@@ -370,7 +422,8 @@
                            (first (v-dimensions type)))
      :element-layout elem-layout)))
 
-(defun calc-array-of-scalar-or-vectors-layout (name
+(defun calc-array-of-scalar-or-vectors-layout (layout-specifier
+                                               name
                                                parent-type-base-offset
                                                parent-type-aligned-offset
                                                last-slot-base-offset
@@ -384,11 +437,19 @@
   ;;    The array may have padding at the end; the base offset of the member
   ;;    following the array is rounded up to the next multiple of the base
   ;;    alignment.
+  ;;
+  ;; When using the std-430 storage layout, shader storage blocks will be
+  ;; laid out in buffer storage identically to uniform and shader
+  ;; storage blocks using the std-140 layout, except that the base
+  ;; alignment and stride of arrays of scalars and vectors in rule 4 and
+  ;; of structures in rule 9 are not rounded up a multiple of the base
+  ;; alignment of a vec4.
   (let* ((base-offset (calc-base-offset parent-type-aligned-offset
                                         last-slot-base-offset
                                         last-slot-aligned-offset
                                         last-slot-machine-size))
-         (elem-layout (calc-layout (list name '*)
+         (elem-layout (calc-layout layout-specifier
+                                   (list name '*)
                                    parent-type-base-offset
                                    parent-type-aligned-offset
                                    last-slot-base-offset
@@ -399,13 +460,15 @@
                           (layout-base-alignment elem-layout)
                           (calc-vector-base-alignment
                            (type-spec->type :vec4))))
-         (size (round-to-next-multiple
-                (machine-unit-size type base-alignment)
-                base-alignment)))
+         (size (ecase layout-specifier
+                 (std-140 (round-to-next-multiple
+                           (machine-unit-size type base-alignment)
+                           base-alignment))
+                 (std-430 (machine-unit-size type base-alignment)))))
     (setf (slot-value elem-layout 'machine-unit-size)
           base-alignment)
     (make-instance
-     'std-140
+     layout-specifier
      :name name
      :type type
      :element-layout elem-layout

@@ -100,15 +100,13 @@
            (qualified-struct-name `(:struct ,foreign-struct-name))
            (get-ptr-name (hidden-symb name :ptr))
            (typed-populate (symb :populate- name))
-           (layout (cond
-                     ((string= layout :default) nil)
-                     ((string= layout :std140)
-                      (calc-struct-layout-from-name-type-pairs
-                       name (mapcar (lambda (x)
-                                      (list (s-name x) (v-type-of x)))
-                                    slots)))
-                     ((string= layout :std430)
-                      (error 'std430-not-yet-implemented))))
+           (layout (unless (string= layout :default)
+                     (calc-struct-layout-from-name-type-pairs
+                      layout
+                      name
+                      (mapcar (lambda (x)
+                                (list (s-name x) (v-type-of x)))
+                              slots))))
            (slot-layouts (if layout
                            (layout-members layout)
                            (n-of nil (length slots))))
