@@ -619,6 +619,11 @@ here: https://github.com/cbaggers/cepl/issues
    (if you are able to include the definition of the type in the
     issue report that we be excedingly helpful)" type)
 
+(deferror std430-not-yet-implemented () ()
+    "CEPL: We have not yet added support for the std430 layout to gpu-structs.
+This should be trivial for us to add so if this is blocking you please do raise
+an issue on our repo here: https://github.com/cbaggers/cepl/issues")
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

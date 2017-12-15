@@ -63,6 +63,36 @@
                         last-slot-machine-size
                         type)))
 
+(defun calc-struct-layout-from-name-type-pairs (name name-type-pairs)
+  (let ((parent-type-aligned-offset 0)
+        (last-slot-base-offset nil)
+        (last-slot-aligned-offset nil)
+        (last-slot-machine-size nil)
+        (pairs (loop :for (name type/spec) :in name-type-pairs :collect
+                  (let ((type (etypecase type/spec
+                                (v-type type/spec)
+                                (t (type-spec->type type/spec)))))
+                    (list name type)))))
+    (multiple-value-bind (base-offset
+                          base-alignment
+                          aligned-offset
+                          machine-unit-size
+                          members)
+        (calc-struct-member-layout pairs
+                                   parent-type-aligned-offset
+                                   last-slot-base-offset
+                                   last-slot-aligned-offset
+                                   last-slot-machine-size)
+      (make-instance
+       'std-140
+       :name name
+       :type (type-spec->type t)
+       :base-offset base-offset
+       :base-alignment base-alignment
+       :aligned-offset aligned-offset
+       :machine-unit-size machine-unit-size
+       :members members))))
+
 (defun calc-layout (name
                     parent-type-base-offset
                     parent-type-aligned-offset
@@ -163,20 +193,20 @@
                         aligned-offset
                         machine-unit-size
                         members)
-        (calc-struct-member-layout (varjo.internals:v-slots type)
-                                   parent-type-aligned-offset
-                                   last-slot-base-offset
-                                   last-slot-aligned-offset
-                                   last-slot-machine-size)
-      (make-instance
-       'std-140
-       :name name
-       :type type
-       :base-offset base-offset
-       :base-alignment base-alignment
-       :aligned-offset aligned-offset
-       :machine-unit-size machine-unit-size
-       :members members)))
+      (calc-struct-member-layout (varjo.internals:v-slots type)
+                                 parent-type-aligned-offset
+                                 last-slot-base-offset
+                                 last-slot-aligned-offset
+                                 last-slot-machine-size)
+    (make-instance
+     'std-140
+     :name name
+     :type type
+     :base-offset base-offset
+     :base-alignment base-alignment
+     :aligned-offset aligned-offset
+     :machine-unit-size machine-unit-size
+     :members members)))
 
 (defun calc-struct-member-layout (member-name-type-pairs
                                   parent-type-aligned-offset
@@ -418,11 +448,11 @@
       ;; The base offset of the first member of a structure is taken from the
       ;; aligned offset of the structure itself
       parent-type-aligned-offset
-    ;; The base offset of all other structure members is derived by taking
-    ;; the offset of the last basic machine unit consumed by the previous
-    ;; member and adding one
-    (+ last-slot-aligned-offset
-       last-slot-machine-size)))
+      ;; The base offset of all other structure members is derived by taking
+      ;; the offset of the last basic machine unit consumed by the previous
+      ;; member and adding one
+      (+ last-slot-aligned-offset
+         last-slot-machine-size)))
 
 (defun calc-vector-base-alignment (type)
   ;; 2. If the member is a two or four-component vector with components

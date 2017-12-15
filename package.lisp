@@ -147,7 +147,8 @@
            :another-query-is-active
            :query-not-active
            :compute-pipeline-must-be-single-stage
-           :could-not-layout-type))
+           :could-not-layout-type
+           :std430-not-yet-implemented))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -495,6 +496,9 @@
            :%tfs-bound
            :%tfs-current-prog-id
            :%tfs-pending-arrays
+
+           :calc-block-layout
+           :calc-struct-layout-from-name-type-pairs
 
            ;;---
            :holds-gl-object-ref-p
