@@ -10,6 +10,7 @@
            :dbind
            :assoc-bind
            :case=
+           :ecase=
            :sn-equal
            :listify
            :replace-nth
@@ -145,7 +146,9 @@
            :query-is-active-bug
            :another-query-is-active
            :query-not-active
-           :compute-pipeline-must-be-single-stage))
+           :compute-pipeline-must-be-single-stage
+           :could-not-layout-type
+           :invalid-data-layout-specifier))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -493,6 +496,19 @@
            :%tfs-bound
            :%tfs-current-prog-id
            :%tfs-pending-arrays
+
+           :std-140
+           :std-430
+           :calc-block-layout
+           :calc-struct-layout-from-name-type-pairs
+           :layout-name
+           :layout-varjo-type
+           :layout-base-offset
+           :layout-base-alignment
+           :layout-aligned-offset
+           :layout-machine-unit-size
+           :layout-members
+           :layout-element-layout
 
            ;;---
            :holds-gl-object-ref-p

@@ -610,6 +610,20 @@ pipeline. Please either remove the compute stage or remove the other stages."
   (if name name "a pipeline")
   stages)
 
+(deferror could-not-layout-type () (type)
+    "CEPL BUG: We were unable to work out the layout for the type ~a
+
+We are sorry for the mistake. If you have the time please report the issue
+here: https://github.com/cbaggers/cepl/issues
+
+   (if you are able to include the definition of the type in the
+    issue report that we be excedingly helpful)" type)
+
+(deferror invalid-data-layout-specifier () (specifier valid-specifiers)
+    "CEPL: ~a is not a valid layout data specifier.
+Please use one of the following: ~{~a~^, ~}"
+  specifier valid-specifiers)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
