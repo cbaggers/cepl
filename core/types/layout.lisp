@@ -39,6 +39,10 @@
   (print-unreadable-object ((v! 1 2 3) stream :identity t)
     (format stream "STD-140 ~a" (type->type-spec (layout-varjo-type obj)))))
 
+(defmethod print-object ((obj std-430) stream)
+  (print-unreadable-object ((v! 1 2 3) stream :identity t)
+    (format stream "STD-430 ~a" (type->type-spec (layout-varjo-type obj)))))
+
 (defun calc-block-layout (varjo-struct-type-name)
   (let ((type (type-spec->type varjo-struct-type-name))
         (parent-type-aligned-offset 0)
@@ -97,7 +101,10 @@
          (base-alignment
           (round-to-next-multiple
            (reduce #'max (mapcar #'layout-base-alignment members))
-           (calc-vector-base-alignment (type-spec->type :vec4)))))
+           (calc-vector-base-alignment (type-spec->type :vec4))))
+         (size (round-to-next-multiple
+                (reduce #'+ (mapcar #'layout-machine-unit-size members))
+                base-alignment)))
     (make-instance
      'std-140
      :name name
@@ -105,7 +112,7 @@
      :base-offset base-offset
      :base-alignment base-alignment
      :aligned-offset (calc-aligned-offset base-offset base-alignment)
-     :machine-unit-size (machine-unit-size type)
+     :machine-unit-size size
      :members members)))
 
 (defun calc-base-offset (parent-type-aligned-offset
@@ -154,10 +161,11 @@
   ;;    respectively.
   ;; 3. If the member is a three-component vector with components
   ;;    consuming N basic machine units, the base alignment is 4N.
-  (ecase= (first (v-dimensions type))
-    (2 (* 2 (machine-unit-size type)))
-    (3 (* 4 (machine-unit-size type))) ;; ← (* 4 …) is not a typo
-    (4 (* 4 (machine-unit-size type)))))
+  (let ((elem-type (v-element-type type)))
+    (ecase= (first (v-dimensions type))
+      (2 (* 2 (machine-unit-size elem-type)))
+      (3 (* 4 (machine-unit-size elem-type))) ;; ← (* 4 …) is not a typo
+      (4 (* 4 (machine-unit-size elem-type))))))
 
 (defun calc-vector-layout (name
                            parent-type-aligned-offset
@@ -230,7 +238,6 @@
     ;; the member following the sub-structure is rounded up to the
     ;; next multiple of the base alignment of the structure.
     ((v-typep type 'v-struct)
-     'TODO-PADDING
      (calc-struct-layout name
                          parent-type-aligned-offset
                          last-slot-base-offset
@@ -304,7 +311,7 @@
         :base-offset base-offset
         :aligned-offset (calc-aligned-offset base-offset base-alignment)
         :base-alignment base-alignment
-        :machine-unit-size (machine-unit-size type))))
+        :machine-unit-size (machine-unit-size type base-alignment))))
     ;;
     (t (error "shiit"))))
 
@@ -319,15 +326,18 @@
 ;;----------------------------------------------------------------------
 ;; Common
 
-(defun machine-unit-size (type)
-  (let ((spec (type->type-spec type)))
-    (if (listp spec)
-        (* (machine-unit-size (first spec))
-           (reduce #'* (second spec)))
-        (let ((spec (or (first (find spec varjo.internals::*type-shorthand*
-                                     :key #'second))
-                        spec)))
-          (cffi:foreign-type-size spec)))))
+(defun machine-unit-size (type &optional stride)
+  (if (typep type 'v-container)
+      (progn
+        (assert stride)
+        (* (round-to-next-multiple (machine-unit-size (v-element-type type))
+                                   stride)
+           (reduce #'* (v-dimensions type))))
+      (let* ((spec (type->type-spec type))
+             (spec (or (first (find spec varjo.internals::*type-shorthand*
+                                    :key #'second))
+                       spec)))
+        (cffi:foreign-type-size spec))))
 
 (defun round-to-next-multiple (val multiple)
   (* (ceiling val multiple) multiple))
