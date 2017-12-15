@@ -155,6 +155,35 @@
                            last-slot-aligned-offset
                            last-slot-machine-size
                            type)
+  (multiple-value-bind (base-offset
+                        base-alignment
+                        aligned-offset
+                        machine-unit-size
+                        members)
+        (calc-struct-member-layout (varjo.internals:v-slots type)
+                                   parent-type-aligned-offset
+                                   last-slot-base-offset
+                                   last-slot-aligned-offset
+                                   last-slot-machine-size)
+      (make-instance
+       'std-140
+       :name name
+       :type type
+       :base-offset base-offset
+       :base-alignment base-alignment
+       :aligned-offset aligned-offset
+       :machine-unit-size machine-unit-size
+       :members members)))
+
+(defun calc-struct-member-layout (member-name-type-pairs
+                                  parent-type-aligned-offset
+                                  last-slot-base-offset
+                                  last-slot-aligned-offset
+                                  last-slot-machine-size)
+  ;; This is seperate from calc-struct-layout so that it can more
+  ;; easily be used by defstruct-g which has the names and types
+  ;; of the slots but has not yet got a type for the struct itself
+  ;;
   ;; The members of a top-level uniform block are laid out in buffer
   ;; storage by treating the uniform block as a structure with a base
   ;; offset of zero.
@@ -169,12 +198,11 @@
                                         last-slot-base-offset
                                         last-slot-aligned-offset
                                         last-slot-machine-size))
-         (slots (varjo.internals:v-slots type))
          (members (let ((aligned-offset parent-type-aligned-offset)
                         (last-slot-base-offset nil)
                         (last-slot-aligned-offset nil)
                         (last-slot-machine-size nil))
-                    (loop :for (name stype) :in slots :collect
+                    (loop :for (name stype) :in member-name-type-pairs :collect
                        (let* ((layout (calc-layout name
                                                    base-offset
                                                    aligned-offset
@@ -197,15 +225,11 @@
          (size (round-to-next-multiple
                 (reduce #'+ (mapcar #'layout-machine-unit-size members))
                 base-alignment)))
-    (make-instance
-     'std-140
-     :name name
-     :type type
-     :base-offset base-offset
-     :base-alignment base-alignment
-     :aligned-offset (calc-aligned-offset base-offset base-alignment)
-     :machine-unit-size size
-     :members members)))
+    (values base-offset
+            base-alignment
+            (calc-aligned-offset base-offset base-alignment)
+            size
+            members)))
 
 (defun calc-vector-layout (name
                            parent-type-aligned-offset
