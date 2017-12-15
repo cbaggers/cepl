@@ -25,6 +25,7 @@
    (aligned-offset :initarg :aligned-offset
                    :initform nil
                    :reader layout-aligned-offset)
+   ;; includes padding
    (machine-unit-size :initarg :machine-unit-size
                       :initform nil
                       :reader layout-machine-unit-size)
@@ -231,12 +232,6 @@
                     last-slot-aligned-offset
                     last-slot-machine-size
                     array-type)))
-    ;; 9. If the member is a structure, the base alignment of the
-    ;; structure is N , where N is the largest base alignment value of any
-    ;; of its members, and rounded up to the base alignment of a vec4.
-    ;; The structure may have padding at the end; the base offset of
-    ;; the member following the sub-structure is rounded up to the
-    ;; next multiple of the base alignment of the structure.
     ((v-typep type 'v-struct)
      (calc-struct-layout name
                          parent-type-aligned-offset
@@ -288,7 +283,6 @@
     ;;    following the array is rounded up to the next multiple of the base
     ;;    alignment.
     ((v-typep type 'v-array)
-     'TODO-PADDING
      (let* ((base-offset (calc-base-offset parent-type-aligned-offset
                                            last-slot-base-offset
                                            last-slot-aligned-offset
@@ -303,7 +297,10 @@
             (base-alignment (round-to-next-multiple
                              (layout-base-alignment dummy)
                              (calc-vector-base-alignment
-                              (type-spec->type :vec4)))))
+                              (type-spec->type :vec4))))
+            (size (round-to-next-multiple
+                   (machine-unit-size type base-alignment)
+                   base-alignment)))
        (make-instance
         'std-140
         :name name
@@ -311,7 +308,7 @@
         :base-offset base-offset
         :aligned-offset (calc-aligned-offset base-offset base-alignment)
         :base-alignment base-alignment
-        :machine-unit-size (machine-unit-size type base-alignment))))
+        :machine-unit-size size)))
     ;;
     (t (error "shiit"))))
 
@@ -327,7 +324,7 @@
 ;; Common
 
 (defun machine-unit-size (type &optional stride)
-  (if (typep type 'v-container)
+  (if (typep type 'v-array)
       (progn
         (assert stride)
         (* (round-to-next-multiple (machine-unit-size (v-element-type type))
