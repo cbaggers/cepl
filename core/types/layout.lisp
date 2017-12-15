@@ -125,7 +125,7 @@
                                              last-slot-machine-size
                                              type))
     ;;
-    (t (error "shiit"))))
+    (t (error 'could-not-layout-type :type type))))
 
 (defun calc-scalar-layout (name
                            parent-type-aligned-offset
@@ -276,7 +276,7 @@
                         (v-dmat2 . (v-dvec2 2))
                         (v-dmat3 . (v-dvec3 3))
                         (v-dmat4 . (v-dvec4 4))))
-              (error "woops")))
+              (error 'could-not-layout-type :type type)))
          (array-type (type-spec->type array-type-spec)))
     (calc-layout name
                  parent-type-base-offset

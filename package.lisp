@@ -146,7 +146,8 @@
            :query-is-active-bug
            :another-query-is-active
            :query-not-active
-           :compute-pipeline-must-be-single-stage))
+           :compute-pipeline-must-be-single-stage
+           :could-not-layout-type))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
