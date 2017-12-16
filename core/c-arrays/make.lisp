@@ -11,6 +11,7 @@
                                    &key
                                    (free #'cffi:foreign-free)
                                    element-byte-size)
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
   (let ((dimensions (listify dimensions)))
@@ -40,18 +41,18 @@
 
 ;; [TODO] extract error messages
 (defun+ make-c-array (initial-contents &key dimensions element-type)
+  (when initial-contents
+    (check-type initial-contents array))
   (let* ((dimensions (listify dimensions))
          (dimensions
           (if dimensions
               (if initial-contents
-                  (or (validate-dimensions initial-contents dimensions)
-                      (error "Dimensions are invalid for initial-contents~%~a~%~a"
-                             dimensions initial-contents))
+                  (assert (validate-dimensions initial-contents dimensions) ()
+                          "Dimensions are invalid for initial-contents~%~a~%~a"
+                          dimensions initial-contents)
                   dimensions)
               (if initial-contents
-                  (typecase initial-contents
-                    (sequence (list (length initial-contents)))
-                    (array (array-dimensions initial-contents)))
+                  (array-dimensions initial-contents)
                   (error "make-c-array must be given initial-elements or dimensions"))))
          (p-format (cepl.pixel-formats:pixel-format-p element-type))
          (pixel-format (when p-format element-type))
@@ -92,7 +93,7 @@
                         :element-to-foreign (get-typed-to-foreign
                                              element-type))))
         (when initial-contents
-          (c-populate new-array initial-contents nil))
+          (c-populate new-array initial-contents))
         new-array))))
 
 ;;------------------------------------------------------------

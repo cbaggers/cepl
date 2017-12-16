@@ -1,71 +1,33 @@
 (in-package :cepl.c-arrays)
 
-(defun+ c-populate (c-array data &optional (check-sizes t))
-  (labels ((walk-to-dpop (data dimensions &optional structp pos)
-             (let ((still-to-walk (rest dimensions)))
-               (map nil (lambda (sublist i)
-                          (if still-to-walk
-                              (walk-to-dpop sublist still-to-walk structp (cons i pos))
-                              (if structp
-                                  (populate (aref-c* c-array (reverse (cons i pos)))
-                                            sublist)
-                                  (setf (aref-c* c-array (reverse (cons i pos)))
-                                        sublist))))
-                    data (range (length data)))))
-           (dpop-with-array (data dimensions &optional structp)
-             (loop :for i :below (array-total-size data)
-                :for coords = (rm-index-to-coords i dimensions) :do
-                (if structp
-                    (populate (aref-c* c-array coords) (row-major-aref data i))
-                    (setf (aref-c* c-array coords) (row-major-aref data i))))))
-    (when check-sizes
-      (unless (validate-dimensions data (c-array-dimensions c-array))
-        (error "Dimensions of array differs from that of the data:~%~a~%~a"
-               c-array data)))
-    (typecase data
-      (sequence (walk-to-dpop data (c-array-dimensions c-array)
-                              (c-array-struct-element-typep c-array)))
-      (array (dpop-with-array data (c-array-dimensions c-array)
-                              (c-array-struct-element-typep c-array))))
-    c-array))
-
-(defun+ rm-index-to-coords (index subscripts)
-  (let ((cur index))
-    (nreverse
-     (loop :for s :in subscripts :collect
-        (multiple-value-bind (x rem) (floor cur s)
-          (setq cur x)
-          rem)))))
+(defun+ c-populate (c-array data)
+  (check-type data array)
+  (assert (validate-dimensions data (c-array-dimensions c-array)) ()
+          "Dimensions of array differs from that of the data:~%~a~%~a"
+          c-array data)
+  (let ((dimensions (c-array-dimensions c-array))
+        (to (get-typed-to-foreign (c-array-element-type c-array))))
+    (labels ((1d (ptr x)
+               (funcall to ptr (aref data x)))
+             (2d (ptr x y)
+               (funcall to ptr (aref data x y)))
+             (3d (ptr x y z)
+               (funcall to ptr (aref data x y z)))
+             (4d (ptr x y z w)
+               (funcall to ptr (aref data x y z w))))
+      (across-c-ptr (ecase= (length dimensions)
+                      (1 #'1d)
+                      (2 #'2d)
+                      (3 #'3d)
+                      (4 #'4d))
+                    c-array)
+      c-array)))
 
 (defun+ validate-dimensions (data dimensions)
+  (check-type data array)
   (let* ((dimensions (listify dimensions))
-         (r (typecase data
-              (sequence (validate-seq-dimensions data dimensions))
-              (array (validate-arr-dimensions data dimensions))
-              (otherwise nil))))
-    (when (and r (every #'identity r)) r)))
-
-(defun+ validate-arr-dimensions (data dimensions)
-  (let* ((actual-dims (array-dimensions data)))
-    (if (= (length actual-dims) (length dimensions))
-        (mapcar (lambda (d a) (if (eq d :?) a (when (= d a) d)))
-                dimensions
-                actual-dims)
-        nil)))
-
-(defun+ validate-seq-dimensions (data dimensions &optional (orig-dim dimensions) accum)
-  (if (null dimensions)
-      (reverse accum)
-      (typecase data
-        (sequence
-         (let* ((f (first dimensions))
-                (data-len (length data))
-                (d (if (eq :? f) data-len (when (= f data-len) f))))
-           (validate-seq-dimensions
-            (when (> data-len 0)
-              (elt data 0)) (rest dimensions) orig-dim
-              (cons d accum))))
-        (otherwise nil))))
+         (actual-dims (array-dimensions data)))
+    (equal dimensions actual-dims)))
 
 ;;------------------------------------------------------------
 

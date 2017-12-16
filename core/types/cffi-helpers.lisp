@@ -1,5 +1,52 @@
 (in-package :cepl.types)
 
+;;----------------------------------------------------------------
+
+(defvar *extra-cffi-type-equivalents*
+  '((:bool boolean)
+    (:int (signed-byte 32))
+    (:uint (unsigned-byte 32))
+    (:int8 (signed-byte 8))
+    (:uint8 (unsigned-byte 8))
+    (:half-float single-float)
+    (:float single-float)
+    (:double double-float)
+    (:vec2 (simple-array single-float (2)))
+    (:vec3 (simple-array single-float (3)))
+    (:vec4 (simple-array single-float (4)))
+    (:half-vec2 (simple-array single-float (2)))
+    (:half-vec3 (simple-array single-float (3)))
+    (:half-vec4 (simple-array single-float (4)))
+    (:ivec2 (simple-array (signed-byte 32) (2)))
+    (:ivec3 (simple-array (signed-byte 32) (3)))
+    (:ivec4 (simple-array (signed-byte 32) (4)))
+    (:uvec2 (simple-array (unsigned-byte 32) (2)))
+    (:uvec3 (simple-array (unsigned-byte 32) (3)))
+    (:uvec4 (simple-array (unsigned-byte 32) (4)))
+    (:mat2 (simple-array single-float (4)))
+    (:mat3 (simple-array single-float (9)))
+    (:mat4 (simple-array single-float (16)))
+    (:mat2x2 (simple-array single-float (4)))
+    (:mat2x3 (simple-array single-float (6)))
+    (:mat2x4 (simple-array single-float (8)))
+    (:mat3x2 (simple-array single-float (6)))
+    (:mat3x3 (simple-array single-float (9)))
+    (:mat3x4 (simple-array single-float (12)))
+    (:mat4x2 (simple-array single-float (8)))
+    (:mat4x3 (simple-array single-float (12)))
+    (:mat4x4 (simple-array single-float (16)))
+    (:uint8-vec2 (simple-array (unsigned-byte 8) (2)))
+    (:uint8-vec3 (simple-array (unsigned-byte 8) (3)))
+    (:uint8-vec4 (simple-array (unsigned-byte 8) (4)))
+    (:int8-vec2 (simple-array (signed-byte 8) (2)))
+    (:int8-vec3 (simple-array (signed-byte 8) (3)))
+    (:int8-vec4 (simple-array (signed-byte 8) (4)))))
+
+(defun lisp-equivalent-of-keyword-cffi-type (name)
+  (cadr (assoc name *extra-cffi-type-equivalents*)))
+
+;;----------------------------------------------------------------
+
 (defgeneric get-typed-from-foreign (type-name))
 (defgeneric get-typed-to-foreign (type-name))
 

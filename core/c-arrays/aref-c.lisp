@@ -101,6 +101,19 @@
         (y-set `(ptr-index-2d ,c-array ,x ,y))
         (t `(ptr-index-1d ,c-array ,x))))
 
+(defn ptr-index* ((c-array c-array) (subscripts list)) foreign-pointer
+  (case= (length subscripts)
+    (0 (error "aref-c: invalid number of subscripts: 0"))
+    (1 (ptr-index-1d c-array (first subscripts)))
+    (2 (ptr-index-2d c-array (first subscripts) (second subscripts)))
+    (3 (ptr-index-3d c-array (first subscripts) (second subscripts)
+                     (third subscripts)))
+    (4 (ptr-index-4d c-array (first subscripts) (second subscripts)
+                     (third subscripts) (fourth subscripts)))
+    (otherwise (error 'c-array-4d-limit-aref
+                      :c-arr c-array
+                      :indices subscripts))))
+
 ;;----------------------------------------------------------------------
 
 (defun aref-c (c-array &rest subscripts)
