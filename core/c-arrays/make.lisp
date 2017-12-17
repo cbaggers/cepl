@@ -59,16 +59,13 @@
          (element-type (if p-format
                            (pixel-format->lisp-type element-type)
                            element-type))
-         (inferred-lisp-type (cond (element-type nil)
-                                   (initial-contents (scan-for-type
-                                                      initial-contents))
-                                   (t (error "If element-type is not specified the initial-contents must be provided"))))
-         (element-type (if inferred-lisp-type
-                           (lisp->gl-type inferred-lisp-type)
+         (inferred-element-type (cond (element-type nil)
+                                      (initial-contents (scan-for-type
+                                                         initial-contents))
+                                      (t (error "If element-type is not specified the initial-contents must be provided"))))
+         (element-type (if inferred-element-type
+                           inferred-element-type
                            element-type))
-         (initial-contents (if inferred-lisp-type
-                               (update-data initial-contents inferred-lisp-type)
-                               initial-contents))
          (elem-size (gl-type-size element-type)))
     (assert (every #'indexp dimensions) ()
             "Invalid dimensions ~a" dimensions)
@@ -123,61 +120,20 @@
 
 ;;------------------------------------------------------------
 
-;; ideally we would use a generic reduce in this case to handle the different
-;; kinds of structures, but alas this is not available.
-(defun+ scan-for-type (data)
-  (typecase data
-    ((or array vector)
-     (let ((initial-type (first (find-suitable-type (row-major-aref data 0)))))
-       (loop for i below (array-total-size data)
-          :with x = initial-type :do
-            (setf x (find-compatible-c-array-type x (row-major-aref data i)))
-          :finally (return (values x (equal x initial-type))))))
-    (list (let* ((initial-type (first (find-suitable-type (first data))))
-                 (tmp (reduce #'find-compatible-c-array-type data :initial-value initial-type)))
-            (values tmp (equal tmp initial-type))))
-    (t (error "Can not infer the type the c-array should be unless it is a vector, array or flat list"))))
-
-(defun+ update-data (data type)
-  (if (or (eq type 'single-float) (eq type 'double-float))
-      (typecase data
-        ((or array vector)
-         (let ((new-data (make-array (array-dimensions data)
-                                     :element-type (array-element-type data))))
-           (loop :for i :below (array-total-size data) :do
-              (setf (row-major-aref new-data i)
-                    (coerce (row-major-aref data i) type))
-              :finally (return (values new-data t)))))
-        (list (values (mapcar (lambda (x) (coerce x type)) data) t))
-        (t (error "Can not infer the type the c-array should be unless it is a vector, array or flat list")))
-      (values data nil)))
-
-(let ((states `(((integer 0 256) :uint8
-                 ((integer -127 128) fixnum single-float double-float))
-                ((integer -127 128) :int8
-                 ((integer 0 256) fixnum single-float double-float))
-                (fixnum :int (single-float double-float))
-                (single-float :float (double-float))
-                (double-float :double nil))))
-  (defun find-compatible-c-array-type (current-type data)
-    (unless current-type
-      (error "Cannot unambiguously determine the type of the data. Please use the :element-type option"))
-    (if (typep data current-type)
-        current-type
-        (let ((c (find current-type states :key #'first :test #'equal)))
-          (if c
-              (destructuring-bind (type-spec gl-type casts) c
-                (declare (ignore type-spec gl-type))
-                (or (find-if (lambda (x) (typep data x)) casts)
-                    (let ((data-type (find-suitable-type data)))
-                      (destructuring-bind (type-spec gl-type casts) data-type
-                        (declare (ignore type-spec gl-type))
-                        (find current-type casts :test #'equal)))
-                    (error "Types in source data are inconsistent")))
-              (error "Types in source data are inconsistent")))))
-  (defun find-suitable-type (datum)
-    (if (typep datum 'structure-object)
-        (list (type-of datum) (type-of datum) nil)
-        (find-if (lambda (x) (typep datum x)) states :key #'first)))
-  (defun lisp->gl-type (x)
-    (second (find x states :key #'first :test #'equal))))
+(defun scan-for-type (data)
+  (when (> (array-rank data) 0)
+    (if (not (eq (array-element-type data) t))
+        (cepl.types::gl-type-for-lisp-data (array-element-type data))
+        (let* ((curr (row-major-aref data 0))
+               (type (type-of curr))
+               (gl-type (cepl.types::gl-type-for-lisp-data curr)))
+          (loop :for i :below (array-total-size data)
+             :for elem := (row-major-aref data i)
+             :do (unless (typep elem type)
+                   (let ((glwip (cepl.types::gl-type-for-lisp-data elem))
+                         (twip (type-of elem)))
+                     (if (typep curr twip)
+                         (setf type twip
+                               gl-type glwip)
+                         (error "Types in source data are inconsistent")))))
+          gl-type))))

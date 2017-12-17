@@ -377,9 +377,8 @@
     (null (error 'make-tex-no-content-no-type))
     (c-array (lisp-type->image-format
               (element-type initial-contents)))
-    (uploadable-lisp-seq (lisp-type->image-format
-                          (cepl.c-arrays::lisp->gl-type
-                           (cepl.c-arrays::scan-for-type initial-contents))))))
+    (array (lisp-type->image-format
+            (cepl.c-arrays::scan-for-type initial-contents)))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
