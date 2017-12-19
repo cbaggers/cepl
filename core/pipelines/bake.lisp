@@ -62,7 +62,7 @@
     ;;
 
     ;;
-    (make-n-compile-lambda-pipeline
+    (make-lambda-pipeline
      (mapcan (lambda (pair)
                (list (first pair)
                      (let* ((stage (parsed-gpipe-args->v-translate-args
