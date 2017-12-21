@@ -71,7 +71,7 @@ but are documented here for the sake of completeness.
   Setting this to nil means that you will get *no* setf functions to set the
   slots' data
 
-  :accesors
+  :accessors
   Setting this to nil means that you will get *neither* of the above.
 
   :pull-push

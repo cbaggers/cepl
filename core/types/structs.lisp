@@ -1,5 +1,7 @@
 (in-package :cepl.types)
 
+;;------------------------------------------------------------
+
 (define-const +cpu->gpu-vec-mappings+
     '((:uint8-vec2 . :vec2)
       (:uint8-vec3 . :vec3)
@@ -48,7 +50,6 @@
       'defmethod
       'defun))
 
-
 (defmethod s-slot-args ((slot gl-struct-slot) (args list))
     (labels ((fun-arg (x) (if (listp x) (first x) x)))
       (if (s-uses-method-p slot)
@@ -88,13 +89,13 @@
 ;;------------------------------------------------------------
 
 (defmacro defstruct-g (name-and-options &body slot-descriptions)
-  (dbind (name &key (accesors t) (constructor (symb 'make- name))
+  (dbind (name &key (accessors t) (constructor (symb 'make- name))
                (readers t) (writers t) (pull-push t) (attribs t) (populate t)
                (layout :default))
       (listify name-and-options)
     (let* ((slots (mapcar (lambda (_) (normalize-slot-description
-                                       _ name (and readers accesors)
-                                       (and writers accesors)))
+                                       _ name (and readers accessors)
+                                       (and writers accessors)))
                           slot-descriptions))
            (foreign-struct-name (hidden-symb name :foreign))
            (qualified-struct-name `(:struct ,foreign-struct-name))
@@ -121,14 +122,14 @@
                                         wrapper-constructor-name
                                         get-ptr-name
                                         slots typed-populate slot-layouts)
-           ,@(when (and readers accesors)
+           ,@(when (and readers accessors)
                (remove nil (mapcar (lambda (slot slot-layout)
                                      (make-slot-getter get-ptr-name slot name
                                                        qualified-struct-name
                                                        slot-layout))
                                    slots
                                    slot-layouts)))
-           ,@(when (and writers accesors)
+           ,@(when (and writers accessors)
                (remove nil (mapcar (lambda (slot slot-layout)
                                      (make-slot-setter get-ptr-name slot name
                                                        qualified-struct-name
@@ -483,3 +484,9 @@
              (cepl.pixel-formats::pixel-format! ,components ',type)))))))
 
 ;;------------------------------------------------------------
+
+;; (defmacro with-g-struct (type destructuring-form pointer &body body)
+;;   )
+
+;; (with-struct g-pnt (pos (norm x z))
+;;   (* pos x z))
