@@ -496,11 +496,11 @@ names are depended on by the functions named later in the list"
                      :context context))))
 
 (defun+ pipeline-spec (name)
-  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
-    (let ((res (gethash name *gpu-pipeline-specs*)))
-      (if (and res (symbolp res))
-          (pipeline-spec res)
-          res))))
+  (let ((res (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+               (gethash name *gpu-pipeline-specs*))))
+    (if (and res (symbolp res))
+        (pipeline-spec res)
+        res)))
 
 (defun+ (setf pipeline-spec) (value name)
   (bt:with-lock-held (*gpu-pipeline-specs-lock*)
