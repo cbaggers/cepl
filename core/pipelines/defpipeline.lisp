@@ -803,9 +803,17 @@
   (free-pipeline pipeline-func))
 
 (defun+ free-pipeline (pipeline)
-  (with-slots (prog-ids) (pipeline-spec pipeline)
-    (let ((prog-id (etypecase prog-ids
-                     (array (aref prog-ids (context-id (cepl-context))))
-                     (integer prog-ids))))
-      (gl:delete-program prog-id)
-      (setf prog-ids nil))))
+  (labels ((walking-delete (name)
+             (let ((next (gethash name *gpu-pipeline-specs*)))
+               (remhash name *gpu-pipeline-specs*)
+               (when next
+                 (walking-delete next)))))
+    (with-slots (prog-ids) (pipeline-spec pipeline)
+      (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+        (let ((prog-id (etypecase prog-ids
+                         (array (aref prog-ids (context-id (cepl-context))))
+                         (integer prog-ids))))
+          (gl:delete-program prog-id)
+          (setf prog-ids nil)
+          (walking-delete pipeline)
+          nil)))))
