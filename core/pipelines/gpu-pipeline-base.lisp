@@ -328,7 +328,7 @@
 
 (defmethod %unsubscibe-from-all ((func-key func-key))
   "As the name would suggest this removes one function's dependency on another
-   It is used by #'%test-&-update-spec via #'%update-gpu-function-data"
+   It is used by #'%test-&-process-spec via #'%update-gpu-function-data"
   (labels ((%remove-gpu-function-from-dependancy-table (pair)
              (dbind (key . dependencies) pair
                (when (member func-key dependencies :test #'func-key=)
@@ -407,7 +407,7 @@ names are depended on by the functions named later in the list"
     (map 'nil λ(dbind (k . v) _
                  (with-gpu-func-spec v
                    (when missing-dependencies
-                     (%test-&-update-spec v)
+                     (%test-&-process-spec v)
                      k)))
          specs)))
 

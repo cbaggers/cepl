@@ -44,7 +44,7 @@
    [1] Adds a external function definition to varjo also make sure it will be
        called on load
 
-   [2] %test-&-update-spec compiles the code to check for errors and log
+   [2] %test-&-process-spec compiles the code to check for errors and log
        dependencies. (this is called at runtime)
 
    [3] %make-gpu-func-spec is called at expand time to write a lisp function
@@ -61,7 +61,7 @@
        first too all affected pipelines.
 
    [5] At runtime this looks for any gpu function that listed this function as
-       one of its missing dependencies and calls %test-&-update-spec on them.
+       one of its missing dependencies and calls %test-&-process-spec on them.
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
   (let* ((spec (%make-gpu-func-spec name in-args uniforms context body
@@ -83,7 +83,7 @@
        (varjo:add-external-function ',name ',in-args ',uniforms ',body
                                     ',valid-glsl-versions);;[1]
        ,(unless equiv (make-stand-in-lisp-func spec));;[3]
-       (%test-&-update-spec ,spec);;[2]
+       (%test-&-process-spec ,spec);;[2]
        ,(when changedp
           `(%recompile-gpu-function-and-pipelines ,spec-key));;[4]
        (update-specs-with-missing-dependencies);;[5]
@@ -112,7 +112,7 @@
 
 (defvar *warn-when-cant-test-compile* t)
 
-(defun+ %test-&-update-spec (spec)
+(defun+ %test-&-process-spec (spec &key (cache-spec t))
   "Use varjo to compile the code.
    [0] If the compilation throws a could-not-find-function error, then record
    that missing function's name as a missing dependency.
@@ -146,18 +146,20 @@
                               (remove-if #'varjo:ephemeral-p
                                          (varjo.api:uniform-variables compiled))))
 
-                (%update-gpu-function-data
-                 spec
-                 (remove-if-not #'gpu-func-spec
-                                (varjo:used-external-functions compiled)) ;;[1]
-                 compiled)))))
+                (when cache-spec
+                  (%update-gpu-function-data
+                   spec
+                   (remove-if-not #'gpu-func-spec
+                                  (varjo:used-external-functions compiled)) ;;[1]
+                   compiled))))))
       ;; vv- called if failed
       (varjo-conditions:could-not-find-function (e) ;;[0]
         (setf missing-dependencies (list (slot-value e 'varjo.internals:name)))
         (when *warn-when-cant-test-compile*
           (format t "~% cepl: the function ~s was not found when compiling ~s"
                   (first missing-dependencies) name))
-        (%update-gpu-function-data spec nil nil)))
+        (when cache-spec
+          (%update-gpu-function-data spec nil nil))))
     spec))
 
 
@@ -205,7 +207,7 @@
 
 (defmethod %subscribe-to-gpu-func (func subscribe-to)
   "As the name would suggest this makes one function dependent on another
-   It is used by #'%test-&-update-spec via #'%update-gpu-function-data "
+   It is used by #'%test-&-process-spec via #'%update-gpu-function-data "
   (let ((func (func-key func))
         (subscribe-to (func-key subscribe-to)))
     (assert (not (func-key= func subscribe-to)))

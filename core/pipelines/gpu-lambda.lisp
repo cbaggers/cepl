@@ -24,10 +24,11 @@
   (with-slots (in-args uniforms body instancing doc-string
                        declarations context func-spec) lambda-g
     (setf func-spec
-          (%test-&-update-spec
+          (%test-&-process-spec
            (%make-gpu-func-spec
             nil in-args uniforms context body instancing nil nil
-            nil doc-string declarations nil (get-gpu-func-spec-tag))))))
+            nil doc-string declarations nil (get-gpu-func-spec-tag))
+           :cache-spec nil))))
 
 (defun+ %lambda-g (&rest args)
   (declare (ignore args))
