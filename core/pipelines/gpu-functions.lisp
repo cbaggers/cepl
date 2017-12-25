@@ -236,7 +236,7 @@
 
 ;;--------------------------------------------------
 
-(defun+ aggregate-uniforms (keys &optional actual-uniforms-p)
+(defun+ aggregate-uniforms (func-specs &optional actual-uniforms-p)
   "The reason we need to aggregate uniforms is as follows:
    - pipelines are made of composed gpu functions
    - each gpu function may introduce uniforms
@@ -248,6 +248,7 @@
        in different gpu-functions
    [1] Now if there is any more than one instance of each uniform name then
        there is a clash"
+  (assert (every λ(typep _ 'gpu-func-spec) func-specs))
   (labels ((get-uniforms (spec)
              (with-gpu-func-spec spec
                (copy-list
@@ -261,8 +262,7 @@
                              type))))
                  `(,name ,type ,@rest)))))
     ;;
-    (let* ((func-specs (mapcar #'gpu-func-spec keys))
-           (uniforms (mapcan #'get-uniforms func-specs))
+    (let* ((uniforms (mapcan #'get-uniforms func-specs))
            (uniforms (mapcar #'normalize-type-names uniforms))
            (uniforms (remove-duplicates uniforms :test #'equal)) ;; [0]
            (all-clashes
@@ -282,8 +282,8 @@
 
 ;;--------------------------------------------------
 
-(defun+ get-func-as-stage-code (stage)
-  (with-gpu-func-spec stage
+(defun+ get-func-as-stage-code (func-spec)
+  (with-gpu-func-spec func-spec
     (list in-args uniforms context body)))
 
 ;;--------------------------------------------------
@@ -297,11 +297,14 @@
   (varjo:with-constant-inject-hook #'try-injecting-a-constant
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
       (varjo:rolling-translate
-       (mapcar λ(parsed-gpipe-args->v-translate-args draw-mode _)
+       (mapcar λ(dbind (stage-type . func-spec) _
+                  (parsed-gpipe-args->v-translate-args draw-mode
+                                                       stage-type
+                                                       func-spec))
                parsed-gpipe-args)))))
 
 ;; {TODO} make the replacements related code more robust
-(defun+ parsed-gpipe-args->v-translate-args (draw-mode stage-pair
+(defun+ parsed-gpipe-args->v-translate-args (draw-mode stage-type func-spec
                                             &optional replacements)
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
    %compile-link-and-upload needs to call v-rolling-translate. To do this
@@ -315,43 +318,42 @@
        explicitly or that, if it did, that it matches the stage it is being used
        for now"
   (assert (every #'listp replacements))
-  (dbind (stage-type . stage) stage-pair
-    (if (typep (gpu-func-spec stage) 'glsl-stage-spec)
-        (with-glsl-stage-spec (gpu-func-spec stage)
-          compiled);;[0]
-        (dbind (in-args uniforms context code) (get-func-as-stage-code stage)
-          ;;[1]
-          (let ((n (count-if (lambda (_) (member _ varjo:*stage-names*))
-                             context)))
-            (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-          (let* ((final-uniforms (remove-if (lambda (u)
-                                              (member (first u) replacements
-                                                      :key #'first
-                                                      :test #'string=))
-                                            uniforms))
-                 (context (remove stage-type context))
-                 (primitive (when (eq stage-type :vertex)
-                              draw-mode))
-                 (replacements
-                  (loop :for (k v) :in replacements
-                     :for r = (let* ((u (find k uniforms :key #'first
-                                              :test #'string=)))
-                                (when (and u (typep (varjo:type-spec->type
-                                                     (second u))
-                                                    'varjo:v-function-type))
-                                  (list (first u) `(function ,v))))
-                     :when r :collect r))
-                 (body (if replacements
-                           `((let ,replacements
-                               ,@code))
-                           code)))
-            (varjo:make-stage stage-type
-                              in-args
-                              final-uniforms
-                              context
-                              body
-                              t
-                              primitive))))))
+  (if (and (typep func-spec 'glsl-stage-spec))
+      (with-glsl-stage-spec func-spec
+        compiled);;[0]
+      (dbind (in-args uniforms context code) (get-func-as-stage-code func-spec)
+        ;;[1]
+        (let ((n (count-if (lambda (_) (member _ varjo:*stage-names*))
+                           context)))
+          (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+        (let* ((final-uniforms (remove-if (lambda (u)
+                                            (member (first u) replacements
+                                                    :key #'first
+                                                    :test #'string=))
+                                          uniforms))
+               (context (remove stage-type context))
+               (primitive (when (eq stage-type :vertex)
+                            draw-mode))
+               (replacements
+                (loop :for (k v) :in replacements
+                   :for r = (let* ((u (find k uniforms :key #'first
+                                            :test #'string=)))
+                              (when (and u (typep (varjo:type-spec->type
+                                                   (second u))
+                                                  'varjo:v-function-type))
+                                (list (first u) `(function ,v))))
+                   :when r :collect r))
+               (body (if replacements
+                         `((let ,replacements
+                             ,@code))
+                         code)))
+          (varjo:make-stage stage-type
+                            in-args
+                            final-uniforms
+                            context
+                            body
+                            t
+                            primitive)))))
 
 ;;--------------------------------------------------
 
@@ -400,11 +402,12 @@
       (let* ((args (subseq args 0 cut-pos))
              (len (length args)))
         (list
-         (cond
-           ((and (= len 2) (not (some #'keywordp args)))
-            (parse-gpipe-args-implicit args))
-           ((= len 1) (error 'one-stage-non-explicit))
-           (t (parse-gpipe-args-explicit args)))
+         (pairs-key-to-stage
+          (cond
+            ((and (= len 2) (not (some #'keywordp args)))
+             (parse-gpipe-args-implicit args))
+            ((= len 1) (error 'one-stage-non-explicit))
+            (t (parse-gpipe-args-explicit args))))
          post)))))
 
 (defun+ parse-gpipe-args-implicit (args)

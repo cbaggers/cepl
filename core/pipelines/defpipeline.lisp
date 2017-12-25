@@ -7,21 +7,21 @@
   (typep (varjo:type-spec->type (second arg))
          'varjo:v-function-type))
 
-(defun+ stages-require-partial-pipeline (stage-keys)
-  (some λ(with-gpu-func-spec (gpu-func-spec _)
+(defun+ stages-require-partial-pipeline (func-specs)
+  (some λ(with-gpu-func-spec _
            (or (some #'function-arg-p in-args)
                (some #'function-arg-p uniforms)))
-        stage-keys))
+        func-specs))
 
-(defun+ has-func-type-in-args (stage-keys)
-  (some λ(with-gpu-func-spec (gpu-func-spec _)
+(defun+ has-func-type-in-args (func-specs)
+  (some λ(with-gpu-func-spec _
            (some #'function-arg-p in-args))
-        stage-keys))
+        func-specs))
 
-(defun+ function-uniforms (stage-keys)
-  (mapcat λ(with-gpu-func-spec (gpu-func-spec _)
+(defun+ function-uniforms (func-specs)
+  (mapcat λ(with-gpu-func-spec _
              (remove-if-not #'function-arg-p uniforms))
-          stage-keys))
+          func-specs))
 
 (defmacro def-g-> (name context &body gpipe-args)
   `(defpipeline-g ,name ,context ,@gpipe-args))
@@ -36,12 +36,12 @@
   ;; {todo} explain
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     ;;
-    (let* ((stage-keys (mapcar #'cdr stage-pairs))
-           (aggregate-actual-uniforms (aggregate-uniforms stage-keys t))
-           (aggregate-public-uniforms (aggregate-uniforms stage-keys)))
-      (if (stages-require-partial-pipeline stage-keys)
+    (let* ((func-specs (mapcar #'cdr stage-pairs))
+           (aggregate-actual-uniforms (aggregate-uniforms func-specs t))
+           (aggregate-public-uniforms (aggregate-uniforms func-specs)))
+      (if (stages-require-partial-pipeline func-specs)
           (%def-partial-pipeline name
-                                 stage-keys
+                                 func-specs
                                  stage-pairs
                                  aggregate-actual-uniforms
                                  context)
@@ -52,13 +52,13 @@
                                   post context)))))
 
 (defun+ %def-partial-pipeline (name
-                               stage-keys
+                               func-specs
                                stage-pairs
                                aggregate-actual-uniforms
                                context)
   ;;
   ;; freak out if try and use funcs in stage args
-  (when (has-func-type-in-args stage-keys)
+  (when (has-func-type-in-args func-specs)
     (error 'functions-in-non-uniform-args :name name))
   ;;
   ;; update the spec immediately (macro-expansion time)
@@ -77,7 +77,7 @@
          (use-program mapg-context 0)
          (error 'mapping-over-partial-pipeline
                 :name ',name
-                :args ',(function-uniforms stage-keys))
+                :args ',(function-uniforms func-specs))
          stream)
        (register-named-pipeline ',name #',name)
        ',name)))
@@ -128,7 +128,7 @@
          (current-spec (pipeline-spec name))
          (current-stage-tags (when current-spec
                                (remove nil (slot-value current-spec 'diff-tags))))
-         (new-stage-tags (mapcar λ(let ((spec (gpu-func-spec (cdr _))))
+         (new-stage-tags (mapcar λ(let ((spec (cdr _)))
                                     (when spec
                                       (slot-value spec 'diff-tag)))
                                  stage-pairs))
@@ -285,7 +285,8 @@
   (values))
 
 (defun+ gen-recompile-func (name stage-pairs post context state-var)
-  (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
+  (let* ((stages (mapcat λ(list (car _) (func-spec->name (cdr _)))
+                         stage-pairs))
          (gpipe-args (append stages (list :post post))))
     `(defun+ ,(recompile-name name) ()
        (format t "~&; recompile cpu side of (~a ...)~&" ',name)
@@ -302,10 +303,11 @@
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (update-pipeline-spec
       (make-pipeline-spec
-       ',name ,(cons 'list (mapcar (lambda (x)
-                                     (dbind (k . v) x
-                                       `(cons ,k ,(spec->func-key v))))
-                                   stage-pairs))
+       ',name (pairs-key-to-stage
+               ,(cons 'list (mapcar (lambda (x)
+                                      (dbind (k . v) x
+                                        `(cons ,k ,(spec->func-key v))))
+                                    stage-pairs)))
        ',context))))
 
 (defun+ register-named-pipeline (name func)
@@ -326,7 +328,10 @@
                (varjo:glsl-code compiled-stage)))
 
 (defun+ pairs-key-to-stage (stage-pairs)
-  (mapcar λ(dbind (name . key) _ (cons name (gpu-func-spec key)))
+  (mapcar λ(dbind (name . key) _
+             (typecase key
+               (gpu-func-spec _)
+               (otherwise (cons name (gpu-func-spec key)))))
           stage-pairs))
 
 (defun+ swap-versions (stage-pairs glsl-version)
@@ -337,8 +342,7 @@
           stage-pairs))
 
 (defun+ %compile-link-and-upload (name draw-mode stage-pairs)
-  (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
-         (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
+  (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version))
          (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
@@ -549,8 +553,9 @@
     (first (last prims))))
 
 (defun+ serialize-stage-pairs (stage-pairs)
-  (cons 'list (mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
-                      stage-pairs)))
+  `(pairs-key-to-stage
+    (list ,@(mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
+                    stage-pairs))))
 
 
 

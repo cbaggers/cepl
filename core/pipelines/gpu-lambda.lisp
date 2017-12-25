@@ -103,26 +103,26 @@
 
 (defun+ make-lambda-pipeline-inner (gpipe-args context)
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
-    (let* ((stage-keys (mapcar #'cdr stage-pairs)))
-      (if (stages-require-partial-pipeline stage-keys)
-          (make-partial-lambda-pipeline stage-keys)
+    (let* ((func-specs (mapcar #'cdr stage-pairs)))
+      (if (stages-require-partial-pipeline func-specs)
+          (make-partial-lambda-pipeline func-specs)
           (make-complete-lambda-pipeline context
                                          stage-pairs
-                                         stage-keys
+                                         func-specs
                                          post)))))
 
-(defun+ make-partial-lambda-pipeline (stage-keys)
-  (let ((stages (remove-if-not λ(with-gpu-func-spec (gpu-func-spec _)
+(defun+ make-partial-lambda-pipeline (func-specs)
+  (let ((stages (remove-if-not λ(with-gpu-func-spec _
                                   (some #'function-arg-p uniforms))
-                               stage-keys)))
+                               func-specs)))
     (error 'partial-lambda-pipeline
            :partial-stages stages)))
 
 (defun+ make-complete-lambda-pipeline (context
                                        stage-pairs
-                                       stage-keys
+                                       func-specs
                                        post)
-  (let* ((aggregate-uniforms (aggregate-uniforms stage-keys t))
+  (let* ((aggregate-uniforms (aggregate-uniforms func-specs t))
          (primitive (varjo.internals:primitive-name-to-instance
                      (varjo.internals:get-primitive-type-from-context
                       context))))
@@ -161,7 +161,7 @@
              ;; we generate the func that compiles & uploads the pipeline
              ;; and also populates the pipeline's local-vars
              (uniform-names
-              (mapcar #'first (aggregate-uniforms stage-keys)))
+              (mapcar #'first (aggregate-uniforms func-specs)))
              (u-uploads
               (mapcar #'gen-uploaders-block uniform-assigners))
              (u-cleanup

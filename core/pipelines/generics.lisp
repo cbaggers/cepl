@@ -24,3 +24,4 @@
 (defgeneric pipeline-stage-pairs (spec))
 (defgeneric func-key->name (key))
 (defgeneric lambda-g->func-spec (lambda-g))
+(defgeneric func-spec->name (spec))

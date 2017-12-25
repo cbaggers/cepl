@@ -223,6 +223,10 @@
                     (equal uniforms-a uniforms-b)
                     (equal name-a name-b)))))))
 
+(defmethod func-spec->name ((spec gpu-func-spec))
+  (with-gpu-func-spec spec
+    (cons name (mapcar #'second in-args))))
+
 ;;--------------------------------------------------
 
 (defclass func-key ()
@@ -285,6 +289,10 @@
 
 (defmethod gpu-func-spec (key &optional error-if-missing)
   (gpu-func-spec (func-key key) error-if-missing))
+
+(defmethod gpu-func-spec ((func-key gpu-func-spec) &optional error-if-missing)
+  (declare (ignore error-if-missing))
+  (error "Trying to get a func spec using a func spec as a key"))
 
 (defmethod gpu-func-spec ((func-key func-key) &optional error-if-missing)
   (bt:with-lock-held (*gpu-func-specs-lock*)
@@ -476,8 +484,7 @@ names are depended on by the functions named later in the list"
 (defun+ make-pipeline-spec (name stages context)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment compute) (flatten stages)
-    (let ((tags (mapcar λ(when _
-                           (slot-value (gpu-func-spec _) 'diff-tag))
+    (let ((tags (mapcar λ(when _ (slot-value _ 'diff-tag))
                         (list vertex
                               tessellation-control
                               tessellation-evaluation
