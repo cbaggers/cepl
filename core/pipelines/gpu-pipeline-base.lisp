@@ -143,11 +143,12 @@
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms actual-uniforms context body instancing
                      equivalent-inargs equivalent-uniforms doc-string
-                     declarations missing-dependencies diff-tag) ,func-spec
+                     declarations missing-dependencies diff-tag
+                     cached-compile-results) ,func-spec
      (declare (ignorable name in-args uniforms actual-uniforms context body
                          instancing equivalent-inargs equivalent-uniforms
                          doc-string declarations missing-dependencies
-                         diff-tag))
+                         diff-tag cached-compile-results))
      ,@body))
 
 (defmacro with-glsl-stage-spec (glsl-stage-spec &body body)
@@ -185,6 +186,7 @@
      :doc-string doc-string
      :declarations declarations
      :missing-dependencies missing-dependencies
+     :compiled cached-compile-results
      :diff-tag (or diff-tag (error "CEPL BUG: Diff-tag missing")))))
 
 (defun spec-changed-p (spec old-spec)
