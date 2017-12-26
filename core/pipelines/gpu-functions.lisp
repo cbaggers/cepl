@@ -230,9 +230,10 @@
   This means we get function arg hints, doc-string and also we have the
   opportunity to provide a cpu implementation one day we want to."
   (with-gpu-func-spec spec
-    `(defun ,name (&rest args)
-       ,@(when doc-string (list doc-string))
-       (apply #'funcall-g ',name args))))
+    `(setf (symbol-function ',name)
+           (lambda (&rest args)
+             ,@(when doc-string (list doc-string))
+             (apply #'funcall-g ',name args)))))
 
 ;;--------------------------------------------------
 
