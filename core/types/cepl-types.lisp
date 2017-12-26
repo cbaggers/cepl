@@ -677,8 +677,9 @@
 #+sbcl
 (declaim (sb-ext:freeze-type compute-space))
 
-#+sbcl
-(declaim (sb-ext:freeze-type buffer-stream))
+;; Cant yet as is subclassed in nineveh
+;; #+sbcl
+;; (declaim (sb-ext:freeze-type buffer-stream))
 
 #+sbcl
 (declaim (sb-ext:freeze-type transform-feedback-stream))
