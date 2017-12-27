@@ -322,6 +322,7 @@
   (when (s-writer slot)
     (cond
       ((or (member (s-type slot) cffi:*built-in-foreign-types*)
+           (member (s-type slot) '(:uint))
            (assoc (s-type slot) cffi::*extra-primitive-types*))
        (make-eprim-slot-setter get-ptr slot type-name foreign-struct-name layout))
       ((not (s-arrayp slot))
