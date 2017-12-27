@@ -83,6 +83,7 @@
        ',name)))
 
 (defstruct pipeline-state
+  (diff-tag 0 :type (unsigned-byte 16))
   (prog-ids
    (make-array +max-context-count+
                :initial-element +unknown-gl-id+
@@ -135,6 +136,8 @@
          (structurally-unchanged-p (and (every #'identity current-stage-tags)
                                         (every #'identity new-stage-tags)
                                         (equal current-stage-tags new-stage-tags)))
+         (state-tag (mod (reduce #'+ new-stage-tags)
+                         (expt 2 16)))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (primitive (varjo.internals:primitive-name-to-instance
@@ -166,17 +169,18 @@
                               stage-pairs
                               post
                               aggregate-public-uniforms
-                              uniform-assigners))
+                              uniform-assigners
+                              state-tag))
         ;;
         ;; generate the code that actually renders
         ,(def-dispatch-func ctx name init-func-name
                             primitive uniform-assigners
                             aggregate-public-uniforms
                             (find :static context)
-                            state-var is-compute)
+                            state-var state-tag is-compute)
         ;;
         ;; generate the function that recompiles this pipeline
-        ,(gen-recompile-func name stage-pairs post context state-var)
+        ,(gen-recompile-func name stage-pairs post context)
         ;;
         ;; off to the races! Note that we upload the spec at compile
         ;; time (using eval-when)
@@ -193,6 +197,7 @@
                            aggregate-public-uniforms
                            static
                            state-var
+                           state-tag
                            compute)
   (let* ((uniform-names (mapcar #'first aggregate-public-uniforms))
          (typed-uniforms (loop :for name :in uniform-names :collect
@@ -239,7 +244,9 @@
                              %ctx-id)))
          ;;
          ;; ensure program-id available, otherwise bail
-         (when (= prog-id +unknown-gl-id+)
+         (when (or (= prog-id +unknown-gl-id+)
+                   (/= (pipeline-state-diff-tag state)
+                       ,state-tag))
            (let ((new-prog-ids (,init-func-name state)))
              (setf prog-id (aref new-prog-ids %ctx-id))
              (when (= prog-id +unknown-gl-id+)
@@ -284,7 +291,7 @@
            (optimize (speed 3) (safety 0) (debug 0)))
   (values))
 
-(defun+ gen-recompile-func (name stage-pairs post context state-var)
+(defun+ gen-recompile-func (name stage-pairs post context)
   (let* ((stages (mapcat λ(list (car _) (func-spec->name (cdr _)))
                          stage-pairs))
          (gpipe-args (append stages (list :post post))))
@@ -295,9 +302,8 @@
          (handler-bind ((warning #'muffle-warning))
            (multiple-value-bind (src structurally-unchanged-p)
                (%defpipeline-gfuncs ',name ',gpipe-args ',context)
-             (eval src)
              (unless structurally-unchanged-p
-               (setf ,state-var (make-pipeline-state)))))))))
+               (eval src))))))))
 
 (defun+ gen-update-spec (name stage-pairs context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
@@ -447,7 +453,8 @@
                            stage-pairs
                            post
                            aggregate-public-uniforms
-                           uniform-assigners)
+                           uniform-assigners
+                           state-tag)
   (let ((uniform-names (mapcar #'first aggregate-public-uniforms)))
     (multiple-value-bind (upload-forms int-arr-size uint-arr-size)
         (generate-uniform-upload-forms uniform-assigners)
@@ -508,6 +515,8 @@
                                       compiled-stages)))
                    (setf (pipeline-state-has-fragment-stage state)
                          (not (null frag))))
+                 (setf (pipeline-state-diff-tag state)
+                       ,state-tag)
                  new-prog-ids)))
          (%post-init ,post)))))
 
