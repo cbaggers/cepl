@@ -11,7 +11,7 @@
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
    (context :initarg :context)
-   (func-spec :initform nil))
+   (func-spec :initarg :func-spec :initform nil))
   (:metaclass closer-mop:funcallable-standard-class))
 
 (defmethod lambda-g->func-spec ((lambda-g gpu-lambda))
@@ -61,7 +61,8 @@
                      :context context))))
 
 (defmacro lambda-g (args &body body)
-  (make-gpu-lambda args body))
+  (make-gpu-lambda args body)
+  `(make-gpu-lambda ',args ',body))
 
 (defmacro glambda (args &body body)
   `(lambda-g ,args ,@body))
@@ -81,7 +82,7 @@
                  `(quote ,(second x))
                  x)))
     (let ((args (mapcar #'unfunc gpipe-args)))
-      `(make-lambda-pipeline (list ,@args) ',context))))
+      `(the function (make-lambda-pipeline (list ,@args) ',context)))))
 
 (defmacro g-> (context &body gpipe-args)
   `(pipeline-g ,context ,@gpipe-args))
