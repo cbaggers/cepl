@@ -221,14 +221,28 @@
          (predicate-name (symb-package pkg name :-p))
          (slot-names (mapcar #'first slots))
          (accessor-names (mapcar (lambda (x) (symb-package pkg name :- x))
-                                 slot-names)))
+                                 slot-names))
+         (err-msgs (loop :for (a-name a-type) :in slots :collect
+                      (format nil "~s was called, however ~a was not populated"
+                              constructor-name a-name)))
+         (print `(defmethod print-object ((obj ,name) stream)
+                   (print-unreadable-object (obj stream :type t :identity t)
+                     (format stream ,(format nil "~{~~:@_:~a ~~a~^ ~}"
+                                             slot-names)
+                             ,@(loop :for a-name :in accessor-names :collect
+                                  `(,a-name  obj)))))))
     (if static
-        `(defstruct (,name (:include static-gstruct))
-           ,@(loop :for (a-name a-type) :in slots :collect
-                `(,a-name (error "") :type a-type)))
+        `(progn
+           (defstruct (,name (:include static-gstruct))
+             ,@(loop :for (a-name a-type) :in slots
+                  :for err-msg :in err-msgs
+                  :collect `(,a-name (error ,err-msg) :type ,a-type)))
+           #+sbcl
+           (declaim (sb-ext:freeze-type ,name))
+           ,print)
         `(progn
            (defclass ,name (redefinable-gstruct) ,slot-names)
-
+           ,print
            ,@(loop :for (a-name a-type) :in slots
                 :for accessor-name :in accessor-names
                 :append
@@ -297,9 +311,6 @@
 
         (defmethod expand-from-foreign (ptr (type ,foreign-type-name))
           (list ',from ptr)))
-
-      (defmethod print-object ((obj ,name) stream)
-        (print-unreadable-object (obj stream :type t :identity t)))
 
       ,@(loop :for slot :in slots
            :for accessor :in accessor-names
