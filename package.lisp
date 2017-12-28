@@ -570,6 +570,13 @@
            :g-pntc
            :g-pt
            ;;---
+           :make-g-pc
+           :make-g-pn
+           :make-g-pnc
+           :make-g-pnt
+           :make-g-pntc
+           :make-g-pt
+           ;;---
            :bi-tangent
            :position
            :normal
