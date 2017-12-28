@@ -189,6 +189,9 @@ c-array with the same element-type and dimensions as the original c-array.
 
 You may also pass in an optional foreign type that will be used as the element
 type of the new array.
+
+If, rather than making a new c-array, you wish to modify the given c-array you
+should use `map-c-into` instead.
 ")
 
   (defun ptr-index
