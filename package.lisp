@@ -782,6 +782,7 @@
            :pointer
            :aref-c
            :aref-c*
+           :row-major-aref-c
            :c-array
            :c-array-p
            :c-array-pointer
