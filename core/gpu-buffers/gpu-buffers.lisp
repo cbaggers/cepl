@@ -9,7 +9,7 @@
 (defmethod print-object ((object gpu-buffer) stream)
   (if (initialized-p object)
       (call-next-method object stream)
-      (format stream "#<GPU-BUFFER :UNITIALIZED>")))
+      (format stream "#<GPU-BUFFER :UNINITIALIZED>")))
 
 (defmethod free ((object gpu-buffer))
   (free-buffer object))
