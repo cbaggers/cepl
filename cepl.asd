@@ -67,6 +67,7 @@
                (:file "core/c-arrays/populate")
                (:file "core/c-arrays/make")
                (:file "core/c-arrays/map")
+               (:file "core/c-arrays/through-c")
                (:file "core/c-arrays/rest")
                (:file "core/types/layout")
                (:file "core/types/structs")

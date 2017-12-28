@@ -41,6 +41,27 @@
 (defclass std-140 (gl-layout) ())
 (defclass std-430 (gl-layout) ())
 
+(defmethod make-load-form ((layout gl-layout) &optional environment)
+  (declare (ignore environment))
+  (with-slots (name
+               varjo-type
+               base-offset
+               base-alignment
+               aligned-offset
+               machine-unit-size
+               members
+               element-layout)
+      layout
+    `(make-instance ,(class-name (class-of layout))
+                    :name ',name
+                    :type ',varjo-type
+                    :base-offset base-offset
+                    :base-alignment base-alignment
+                    :aligned-offset aligned-offset
+                    :machine-unit-size machine-unit-size
+                    :members ',members
+                    :element-layout ,element-layout)))
+
 ;;----------------------------------------------------------------------
 
 (defmethod print-object ((obj gl-layout) stream)

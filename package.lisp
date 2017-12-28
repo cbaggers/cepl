@@ -148,7 +148,8 @@
            :query-not-active
            :compute-pipeline-must-be-single-stage
            :could-not-layout-type
-           :invalid-data-layout-specifier))
+           :invalid-data-layout-specifier
+           :c-array-total-size-type-error))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -479,6 +480,7 @@
            :c-array-element-pixel-format
            :c-array-element-from-foreign
            :c-array-element-to-foreign
+           :c-array-total-size
 
            :%make-viewport
            :make-viewport
@@ -569,10 +571,15 @@
            :g-pt
            ;;---
            :bi-tangent
+           :position
+           :normal
+           :color
+           :texture
+           :tangent
+           :bi-tangent
            :col
            :norm
            :pos
-           :tangent
            :tex
            ;;---
            :g-pn-position
@@ -779,6 +786,7 @@
            :make-c-array-from-pointer
            :subseq-c
            :across-c-ptr
+           :through-c
            :map-c-into
            :map-c
            :ptr-index

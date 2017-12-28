@@ -70,7 +70,10 @@
    (error "cepl: c-array must be created with a to-foreign function")
    :type (function (foreign-pointer t) t))
   (free #'cffi:foreign-free
-   :type function))
+        :type function)
+  (total-size
+   (error "cepl bug: c-array wasnt created with a valid total-size")
+   :type c-array-index))
 
 ;;------------------------------------------------------------
 

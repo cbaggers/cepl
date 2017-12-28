@@ -39,6 +39,7 @@
      :pointer (cffi:inc-pointer (c-array-pointer array)
                                 (* elem-size start))
      :dimensions (c-array-dimensions array)
+     :total-size (c-array-total-size array)
      :element-byte-size (c-array-element-byte-size array)
      :element-type (c-array-element-type array)
      :struct-element-typep (c-array-struct-element-typep array)

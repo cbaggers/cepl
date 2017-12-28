@@ -2,8 +2,17 @@
 
 ;;------------------------------------------------------------
 
-(defun+ valid-c-array-dimension-p (x)
-  (>= x 0))
+(defun+ check-c-array-dimensions (dimensions total-size)
+  (labels ((valid-c-array-dimension-p (x)
+             (typep x 'c-array-index)))
+    (assert (and (> (length dimensions) 0) (<= (length dimensions) 4)) ()
+            "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
+            (length dimensions))
+    (assert (every #'valid-c-array-dimension-p dimensions) ()
+            "Invalid dimensions for c-array ~a" dimensions)
+    (assert (valid-c-array-dimension-p total-size) ()
+            'c-array-total-size-type-error
+            :size total-size :required-type 'c-array-index)))
 
 (defun+ make-c-array-from-pointer (dimensions
                                    element-type
@@ -14,9 +23,9 @@
   #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
-  (let ((dimensions (listify dimensions)))
-    (assert (every #'valid-c-array-dimension-p dimensions) ()
-            "Invalid dimensions for c-array ~a" dimensions)
+  (let ((dimensions (listify dimensions))
+        (total-size (reduce #'* dimensions)))
+    (check-c-array-dimensions dimensions total-size)
     (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
            (element-type2 (if p-format
                               (pixel-format->lisp-type element-type)
@@ -28,6 +37,7 @@
         (%make-c-array
          :pointer pointer
          :dimensions dimensions
+         :total-size total-size
          :element-type element-type2
          :element-byte-size elem-size
          :struct-element-typep (symbol-names-cepl-structp element-type2)
@@ -66,19 +76,15 @@
          (element-type (if inferred-element-type
                            inferred-element-type
                            element-type))
-         (elem-size (gl-type-size element-type)))
-    (assert (every #'indexp dimensions) ()
-            "Invalid dimensions ~a" dimensions)
-    (when (> (length dimensions) 4)
-      (error "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
-             (length dimensions)))
-    (when (not (loop for i in dimensions always (> i 0)))
-      (error "all dimensions must be >=1 in length"))
+         (elem-size (gl-type-size element-type))
+         (total-size (reduce #'* dimensions)))
+    (check-c-array-dimensions dimensions total-size)
     (multiple-value-bind (byte-size row-byte-size)
         (%gl-calc-byte-size elem-size dimensions)
       (let ((new-array (%make-c-array
                         :pointer (cffi::%foreign-alloc byte-size)
                         :dimensions dimensions
+                        :total-size total-size
                         :element-byte-size elem-size
                         :element-type element-type
                         :struct-element-typep (symbol-names-cepl-structp
@@ -102,6 +108,7 @@
     (%make-c-array
      :pointer new-pointer
      :dimensions (c-array-dimensions c-array)
+     :total-size (c-array-total-size c-array)
      :element-byte-size (c-array-element-byte-size c-array)
      :element-type (c-array-element-type c-array)
      :struct-element-typep (c-array-struct-element-typep c-array)
