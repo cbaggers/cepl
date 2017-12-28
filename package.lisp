@@ -760,6 +760,7 @@
           :named-readtables :cepl.errors :cepl.internals :cepl.image-formats
           :cepl.pixel-formats :cepl.memory :cepl.measurements
           :cepl.build)
+  (:import-from :alexandria :with-gensyms)
   (:export :with-c-array-freed
            :with-c-arrays-freed
            :element-byte-size

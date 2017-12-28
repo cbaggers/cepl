@@ -10,6 +10,17 @@
 
 ;;------------------------------------------------------------
 
+(defvar *struct-slot-defs* (make-hash-table))
+
+(defun g-struct-slots (name)
+  (gethash name *struct-slot-defs*))
+
+(defun (setf g-struct-slots) (slots name)
+  (setf (gethash name *struct-slot-defs*)
+        slots))
+
+;;------------------------------------------------------------
+
 (defgeneric s-arrayp (object))
 (defgeneric s-prim-p (object))
 (defgeneric s-extra-prim-p (object))
@@ -108,6 +119,7 @@
                                 (n-of nil (length slots)))))
            (assert (= (length slot-layouts) (length slots)))
            (when (validate-defstruct-g-form name slots)
+             (setf (g-struct-slots name) slots)
              `(progn
                 (eval-when (:compile-toplevel :load-toplevel :execute)
                   ,(make-varjo-struct-def name slots))
