@@ -20,7 +20,26 @@ least we dont have to track the element type so strictly... dont we? .. hmm.
 one possibility is to have map-c take a pattern and, before iterating, fetch
 the accessors.
 
-
-
 There is also the question of array or c-array when accessing a slot
+
+||#
+
+#|| Ok, more tests done
+
+The new major issue is with aref-c. If it returns a lisp struct then the
+following doesnt work:
+
+    (setf (g-pnt-pos (aref-c foo 0)) bar)
+
+as you just modify the new struct. This means we would need to make aref-c
+return a reference instead of a lisp struct...and then we are back in the
+original damn situation we were before.
+
+We could have a two wrapper types, one which has the pointer and the second
+which inherits from the first but doesnt use the pointer... Nope, then you need
+multiple versions of the accessor functions.
+
+I think the answer is that this experiment has hit a dead end. We need to stick
+with roughly what we have already and see how we can make it better.
+
 ||#
