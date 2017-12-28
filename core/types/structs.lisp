@@ -260,7 +260,6 @@ surprising behaviour in through-c"
            ,print)
         `(progn
            (defclass ,name (redefinable-gstruct) ,slot-names)
-           ,print
            ,@(loop :for (a-name a-type) :in slots
                 :for accessor-name :in accessor-names
                 :append
@@ -268,7 +267,6 @@ surprising behaviour in through-c"
                     (slot-value x ',a-name))
                   (defn-inline (setf ,accessor-name) ((val t) (x ,name)) t
                     (setf (slot-value x ',a-name) val))))
-
            (defn ,constructor-name (&key ,@slot-names) ,name
              #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
              ,@(loop :for (s-name s-type) :in slots
@@ -280,6 +278,8 @@ surprising behaviour in through-c"
                     :for a-name :in accessor-names
                     :collect `(setf (,a-name res) ,s-name))
                res))
+
+           ,print
 
            (defn ,copy-name ((instance ,name)) ,name
              (let ((res (make-instance ',name)))
