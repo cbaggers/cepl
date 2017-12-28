@@ -115,6 +115,7 @@
 
 (defmacro defstruct-g (name-and-options &body slot-descriptions)
   (dbind (name &key accesors constructor readers writers populate pull-push
+               static
                (attribs t) (layout :default))
       (listify name-and-options)
     (declare (ignore constructor readers writers accesors populate pull-push))
@@ -134,6 +135,7 @@
            (eval-when (:compile-toplevel :load-toplevel :execute)
              ,(make-varjo-struct-def name slots))
            ,@(make-instance-wrapper-def name
+                                        static
                                         foreign-struct-name
                                         slots
                                         typed-populate)
@@ -254,6 +256,8 @@
            (defn ,constructor-name (&key ,@slot-names) ,name
              #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
              ,@(loop :for (s-name s-type) :in slots
+                  :for err-msg :in err-msgs
+                  :collect `(assert ,s-name () ,err-msg)
                   :collect `(check-type ,s-name ,s-type))
              (let ((res (make-instance ',name)))
                ,@(loop :for s-name :in slot-names
@@ -272,6 +276,7 @@
              (typep x ',name))))))
 
 (defun+ make-instance-wrapper-def (name
+                                   static
                                    foreign-struct-name
                                    slots
                                    typed-populate)
@@ -293,7 +298,7 @@
                              (:actual-type :struct ,foreign-struct-name)
                              (:simple-parser ,name))
 
-        (define-gstruct-lisp-equiv (,name :static nil)
+        (define-gstruct-lisp-equiv (,name :static ,static)
           ,@(loop :for slot :in slots :collect
                `(,(s-name slot) ,(s-lisp-type slot))))
 

@@ -14,55 +14,55 @@
 (defgeneric (setf tangent) (val object))
 (defgeneric (setf bi-tangent) (val object))
 
-(defstruct-g g-pn
+(defstruct-g (g-pn :static t)
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm))
 
-(defstruct-g g-pc
+(defstruct-g (g-pc :static t)
   (position :vec3 :accessor pos)
   (color :vec4 :accessor col))
 
-(defstruct-g g-pt
+(defstruct-g (g-pt :static t)
   (position :vec3 :accessor pos)
   (texture :vec2 :accessor tex))
 
-(defstruct-g g-pnc
+(defstruct-g (g-pnc :static t)
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (color :vec4 :accessor col))
 
-(defstruct-g g-pnt
+(defstruct-g (g-pnt :static t)
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (texture :vec2 :accessor tex))
 
-(defstruct-g g-pntc
+(defstruct-g (g-pntc :static t)
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (texture :vec2 :accessor tex)
   (color :vec4 :accessor col))
 
-(defstruct-g g-pnb
+(defstruct-g (g-pnb :static t)
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (tangent :vec3 :accessor tangent)
   (bi-tangent :vec3 :accessor bi-tangent))
 
-(defstruct-g g-pncb
+(defstruct-g (g-pncb :static t)
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (tangent :vec3 :accessor tangent)
   (bi-tangent :vec3 :accessor bi-tangent)
   (color :vec4 :accessor col))
 
-(defstruct-g g-pntb
+(defstruct-g (g-pntb :static t)
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (tangent :vec3 :accessor tangent)
   (bi-tangent :vec3 :accessor bi-tangent)
   (texture :vec2 :accessor tex))
 
-(defstruct-g g-pntcb
+(defstruct-g (g-pntcb :static t)
   (position :vec3 :accessor pos)
   (normal :vec3 :accessor norm)
   (tangent :vec3 :accessor tangent)
