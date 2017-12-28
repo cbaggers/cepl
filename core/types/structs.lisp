@@ -176,6 +176,22 @@
 (defun+ validate-defstruct-g-form (name slots)
   (when (keywordp name) (error "glstruct names cannot be keywords"))
   (when (null slots) (error "glstruct must have at least 1 slot"))
+  (let ((odd-accessors
+         (loop :for slot :in slots
+            :for match := (find (s-accessor slot) slots :key #'s-name)
+            :when (and match (not (eq match slot)))
+            :collect (s-accessor slot))))
+    (when odd-accessors
+      (warn "Whilst compiling ~a we found ~a where the accessor
+matched the name of a different slot:
+ ~{~%~a~}~%
+whilst not illegal it is not recommended as it can result in
+surprising behaviour in through-c"
+            name
+            (if (> (length odd-accessors) 1)
+                "some slots"
+                "a slot")
+            odd-accessors)))
   t)
 
 ;;------------------------------------------------------------

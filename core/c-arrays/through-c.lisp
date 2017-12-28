@@ -39,6 +39,7 @@
          (slot-defs (cepl.types::g-struct-slots elem-type)))
     (labels ((def (x)
                (or (find x slot-defs :key #'cepl.types::s-name)
+                   (find x slot-defs :key #'cepl.types::s-accessor)
                    (error "through-c: could not find slot ~a in struct ~a ~a"
                           x elem-type slot-defs)))
              (getter (acc slot-name)
