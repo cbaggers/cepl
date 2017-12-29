@@ -12,7 +12,7 @@ with the in-arg types ~s"
     "Looks like you tried to call the pipeline ~s without using map-g.~%" name)
 
 (deferror invalid-keywords-for-shader-gpipe-args () (pipeline-name keys)
-    "Found some invalid keys in the g-> for for the pipeline called ~a:~%~s"
+    "Found some invalid keys in the pipeline called ~a:~%~s"
   pipeline-name keys)
 
 (deferror invalid-context-for-assert-gpipe () (context)
@@ -24,7 +24,7 @@ with the in-arg types ~s"
   context)
 
 (deferror invalid-shader-gpipe-form () (pipeline-name valid-forms invalid-forms)
-    "When using defpipeline-g to compose GPU functions, the valid arguments to g-> are function literals~%(optionally with keyword stage names).~%~%In the defpipeline-g for ~a ~athese forms were not valid:~%~{~s~%~}~%"
+    "When using defpipeline-g to compose GPU functions, the valid stage specifiers are function literals~%(optionally with keyword stage names).~%~%In the defpipeline-g for ~a ~athese forms were not valid:~%~{~s~%~}~%"
   pipeline-name
   (if valid-forms
       (format nil "these forms were valid:~%~{~s~%~}~%However"
@@ -33,7 +33,7 @@ with the in-arg types ~s"
   invalid-forms)
 
 (deferror not-enough-args-for-implicit-gpipe-stages () (pipeline-name clauses)
-    "Tried to compile the g-> form for the ~a pipeline; however, there are not enough functions here for a valid pipeline:~%~s"
+    "Tried to compile the pipeline ~a; however, there are not enough functions here for a valid pipeline:~%~s"
   pipeline-name clauses)
 
 (deferror invalid-shader-gpipe-stage-keys () (pipeline-name keys)
@@ -351,7 +351,7 @@ Might you have meant to specify a gpu function?"
   invalid)
 
 (deferror partial-lambda-pipeline (:print-circle nil) (partial-stages)
-    "CEPL: G-> was called with at least one stage taking functions as uniform
+    "CEPL: pipeline-g was called with at least one stage taking functions as uniform
 arguments.
 
 If this were defpipeline-g we would make a partial pipeline however we don't

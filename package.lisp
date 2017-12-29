@@ -1148,13 +1148,10 @@
            :defmacro-g
            :define-compiler-macro-g
            :with-instances
-           :glambda
            :lambda-g
            :compile-g
            :defpipeline-g
-           :def-g->
            :pipeline-g
-           :g->
            :map-g
            :map-g-into
            :gpu-function

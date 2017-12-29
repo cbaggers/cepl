@@ -23,9 +23,6 @@
              (remove-if-not #'function-arg-p uniforms))
           func-specs))
 
-(defmacro def-g-> (name context &body gpipe-args)
-  `(defpipeline-g ,name ,context ,@gpipe-args))
-
 (defmacro defpipeline-g (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
   (%defpipeline-gfuncs name gpipe-args context))

@@ -64,9 +64,6 @@
   (make-gpu-lambda args body)
   `(make-gpu-lambda ',args ',body))
 
-(defmacro glambda (args &body body)
-  `(lambda-g ,args ,@body))
-
 (defun compile-g (name &optional definition)
   (assert (and (not name) (eq (first definition) 'lambda-g)) ()
           'compile-g-missing-requested-feature :form (cons name definition))
@@ -83,9 +80,6 @@
                  x)))
     (let ((args (mapcar #'unfunc gpipe-args)))
       `(the function (make-lambda-pipeline (list ,@args) ',context)))))
-
-(defmacro g-> (context &body gpipe-args)
-  `(pipeline-g ,context ,@gpipe-args))
 
 #+nil
 (defun+ example ()
