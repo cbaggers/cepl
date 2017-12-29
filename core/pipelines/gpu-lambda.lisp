@@ -224,7 +224,10 @@
                        u-lets)
              ,@(mapcar λ`(,(assigner-name _) ,(assigner-body _))
                        implicit-u-lets))
-        (declare (ignorable image-unit)
+        (declare (ignorable image-unit
+                            tfs-primitive
+                            tfs-array-count
+                            has-fragment-stage)
                  (type symbol tfs-primitive)
                  (type (unsigned-byte 8) tfs-array-count)
                  ,@(mapcar λ`(type ,(assigner-type _) ,(assigner-name _))
