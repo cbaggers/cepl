@@ -624,22 +624,6 @@ here: https://github.com/cbaggers/cepl/issues
 Please use one of the following: ~{~a~^, ~}"
   specifier valid-specifiers)
 
-(deferror pipeline-recompile-in-tfb-scope () (name)
-    "CEPL: We were about to recompile the GL program behind ~a however we
-noticed that this is happening inside the scope of with-transform-feedback
-which GL does not allow. Sorry about that." name)
-
-(deferror compile-g-missing-requested-feature () (form)
-    "CEPL: Sorry currently compile-g can only be used to make gpu lambdas
-by passing nil as the name and the source for the lambda like this:
-
-    (lambda-g ((vert :vec4) &uniform (factor :float))
-      (* vert factor))
-
-We recieved:
-~a
-" form)
-
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
