@@ -11,7 +11,7 @@
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
    (context :initarg :context)
-   (func-spec :initform nil))
+   (func-spec :initarg :func-spec :initform nil))
   (:metaclass closer-mop:funcallable-standard-class))
 
 (defmethod lambda-g->func-spec ((lambda-g gpu-lambda))
@@ -24,10 +24,11 @@
   (with-slots (in-args uniforms body instancing doc-string
                        declarations context func-spec) lambda-g
     (setf func-spec
-          (%test-&-update-spec
+          (%test-&-process-spec
            (%make-gpu-func-spec
             nil in-args uniforms context body instancing nil nil
-            nil doc-string declarations nil)))))
+            nil doc-string declarations nil (get-gpu-func-spec-tag))
+           :cache-spec nil))))
 
 (defun+ %lambda-g (&rest args)
   (declare (ignore args))
@@ -60,10 +61,8 @@
                      :context context))))
 
 (defmacro lambda-g (args &body body)
-  (make-gpu-lambda args body))
-
-(defmacro glambda (args &body body)
-  `(lambda-g ,args ,@body))
+  (make-gpu-lambda args body)
+  `(make-gpu-lambda ',args ',body))
 
 (defun compile-g (name &optional definition)
   (assert (and (not name) (eq (first definition) 'lambda-g)) ()
@@ -74,133 +73,202 @@
 
 ;;------------------------------------------------------------
 
-(defun+ make-lambda-pipeline (gpipe-args context)
-  (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
-    (let* ((stage-keys (mapcar #'cdr stage-pairs))
-           (aggregate-uniforms (aggregate-uniforms stage-keys t)))
-      (if (stages-require-partial-pipeline stage-keys)
-          (make-partial-lambda-pipeline stage-keys)
-          (make-complete-lambda-pipeline
-           stage-pairs stage-keys aggregate-uniforms context post)))))
-
-(defun+ make-partial-lambda-pipeline (stage-keys)
-  (let ((stages (remove-if-not λ(with-gpu-func-spec (gpu-func-spec _)
-                                  (some #'function-arg-p uniforms))
-                               stage-keys)))
-    (error 'partial-lambda-pipeline
-           :partial-stages stages)))
-
-(defun+ make-complete-lambda-pipeline (stage-pairs
-                                       stage-keys
-                                       aggregate-uniforms
-                                       context
-                                       post)
-  (let* ((ctx *pipeline-body-context-var*)
-         (uniform-assigners (make-arg-assigners aggregate-uniforms))
-         ;; we generate the func that compiles & uploads the pipeline
-         ;; and also populates the pipeline's local-vars
-         (uniform-names (mapcar #'first (aggregate-uniforms stage-keys)))
-         (u-uploads (mapcar #'gen-uploaders-block uniform-assigners))
-         (u-cleanup (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
-         (u-lets (mapcat #'let-forms uniform-assigners))
-         (primitive (varjo.internals:primitive-name-to-instance
-                     (varjo.internals:get-primitive-type-from-context context))))
-    ;;compiled-stages prog-id prog-ids tfb-group-count
-    `(multiple-value-bind (compiled-stages prog-id prog-ids tfb-group-count)
-         (%compile-link-and-upload nil ,primitive ,(serialize-stage-pairs stage-pairs))
-       (declare (ignore prog-ids))
-       (use-program (cepl-context) prog-id)
-       (register-lambda-pipeline
-        compiled-stages
-        (let* (;; all image units will be >0 as 0 is used as scratch tex-unit
-               (image-unit 0)
-               ;; The primitive used by transform feedback. When nil
-               ;; the primitive comes from the render-mode
-               (tfs-primitive (when (> tfb-group-count 0)
-                                (get-transform-feedback-primitive compiled-stages)))
-               (tfs-array-count tfb-group-count)
-               ;; If there are no implicit-uniforms we need a no-op
-               ;; function to call
-               (implicit-uniform-upload-func
-                (or (%create-implicit-uniform-uploader compiled-stages
-                                                       ',uniform-names)
-                    #'fallback-iuniform-func))
-               (has-fragment-stage
-                (not (find-if λ(typep _ 'compiled-fragment-stage)
-                              compiled-stages)))
-               ;;
-               ;; {todo} explain
-               ,@(mapcar λ`(,(assigner-name _) ,(assigner-body _))
-                         u-lets))
-          (declare (ignorable image-unit)
-                   (type function implicit-uniform-upload-func)
-                   (type symbol tfs-primitive)
-                   (type (unsigned-byte 8) tfs-array-count))
-          (use-program (cepl-context) 0)
-          ;;
-          ;; generate the code that actually renders
-          (%post-init ,post)
-          (lambda (,ctx stream ,@(when uniform-names `(&key ,@uniform-names)))
-            (declare (optimize (speed 3) (safety 1))
-                     (ignorable ,ctx ,@uniform-names))
-            #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-            ,@(unless (typep primitive 'varjo::dynamic)
-                `((when stream
-                    (assert
-                     (= ,(draw-mode-group-id primitive)
-                        (buffer-stream-primitive-group-id stream))
-                     ()
-                     'buffer-stream-has-invalid-primitive-for-stream
-                     :name "<lambda>"
-                     :pline-prim ',(varjo::lisp-name primitive)
-                     :stream-prim (buffer-stream-primitive stream)))))
-            (use-program ,ctx prog-id)
-            ,@u-uploads
-            (funcall implicit-uniform-upload-func prog-id ,@uniform-names)
-            (when stream
-              (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
-                                    `(buffer-stream-draw-mode-val stream)
-                                    (varjo::lisp-name primitive))))
-                (handle-transform-feedback ,ctx draw-type prog-id tfs-primitive
-                                           tfs-array-count)
-                (when (not has-fragment-stage)
-                  (gl:enable :rasterizer-discard))
-                (draw-expander stream draw-type ,primitive)
-                (when (not has-fragment-stage)
-                  (gl:disable :rasterizer-discard))))
-            ,@u-cleanup
-            (values)))))))
-
-(defun+ make-n-compile-lambda-pipeline (gpipe-args context)
-  (let ((code (make-lambda-pipeline gpipe-args context)))
-    (funcall (compile nil `(lambda () ,code)))))
-
-;;------------------------------------------------------------
-
 (defmacro pipeline-g (context &body gpipe-args)
   (labels ((unfunc (x)
              (if (and (listp x) (eq (first x) 'function))
                  `(quote ,(second x))
                  x)))
     (let ((args (mapcar #'unfunc gpipe-args)))
-      (if (every #'constantp args)
-          (make-lambda-pipeline gpipe-args context)
-          `(make-n-compile-lambda-pipeline (list ,@args) ',context)))))
-
-(defmacro g-> (context &body gpipe-args)
-  `(pipeline-g ,context ,@gpipe-args))
+      `(the function (make-lambda-pipeline (list ,@args) ',context)))))
 
 #+nil
 (defun+ example ()
-  (g-> nil
-    #'cepl.misc::draw-texture-vert
-    #'cepl.misc::draw-texture-frag))
+  (pipeline-g nil
+    '(cepl.misc::draw-texture-vert :vec4)
+    '(cepl.misc::draw-texture-frag :vec2)))
 
 ;;------------------------------------------------------------
 
-(defun+ register-lambda-pipeline (compiled-stages closure)
+(defun+ make-lambda-pipeline (gpipe-args context)
+  ;; we have the body of the work in the *-inner function as
+  ;; make-complete-lambda-pipeline returns two values and whilst we
+  ;; do want both for funcall-g, we only want the first value to
+  ;; be returned to users who use lambda-g
+  (values (make-lambda-pipeline-inner gpipe-args context)))
+
+(defun+ make-lambda-pipeline-inner (gpipe-args context)
+  (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
+    (let* ((func-specs (mapcar #'cdr stage-pairs)))
+      (if (stages-require-partial-pipeline func-specs)
+          (make-partial-lambda-pipeline func-specs)
+          (make-complete-lambda-pipeline context
+                                         stage-pairs
+                                         func-specs
+                                         post)))))
+
+(defun+ make-partial-lambda-pipeline (func-specs)
+  (let ((stages (remove-if-not λ(with-gpu-func-spec _
+                                  (some #'function-arg-p uniforms))
+                               func-specs)))
+    (error 'partial-lambda-pipeline
+           :partial-stages stages)))
+
+(defun+ make-complete-lambda-pipeline (context
+                                       stage-pairs
+                                       func-specs
+                                       post)
+  (let* ((aggregate-uniforms (aggregate-uniforms func-specs t))
+         (primitive (varjo.internals:primitive-name-to-instance
+                     (varjo.internals:get-primitive-type-from-context
+                      context))))
+    (multiple-value-bind (compiled-stages
+                          prog-id
+                          prog-ids
+                          tfb-group-count)
+        (%compile-link-and-upload nil
+                                  primitive
+                                  stage-pairs)
+      (declare (ignore prog-ids))
+      ;;
+      (let* ((ctx *pipeline-body-context-var*)
+             ;; handle implicit uniforms here so we dont need to have an
+             ;; 'implicit uniform uploader'
+             (varjo-implicit
+              (remove-if #'varjo:ephemeral-p
+                         (mapcat #'varjo:implicit-uniforms compiled-stages)))
+             (implicit-uniform-arg-forms
+              (mapcar #'varjo.internals:to-arg-form varjo-implicit))
+             (implicit-uniform-assigners
+              (make-arg-assigners implicit-uniform-arg-forms))
+             (implicit-uniform-transforms
+              (remove-duplicates
+               (mapcar λ(list (varjo:name _)
+                              (varjo.internals:cpu-side-transform _))
+                       varjo-implicit)
+               :test #'equal))
+             (implicit-u-uploads
+              (mapcar #'gen-uploaders-block implicit-uniform-assigners))
+             (implicit-u-lets
+              (mapcat #'let-forms implicit-uniform-assigners))
+             ;;
+             (uniform-assigners
+              (make-arg-assigners aggregate-uniforms))
+             ;; we generate the func that compiles & uploads the pipeline
+             ;; and also populates the pipeline's local-vars
+             (uniform-names
+              (mapcar #'first (aggregate-uniforms func-specs)))
+             (u-uploads
+              (mapcar #'gen-uploaders-block uniform-assigners))
+             (u-cleanup
+              (mapcar #'gen-cleanup-block (reverse uniform-assigners)))
+             (u-lets
+              (mapcat #'let-forms uniform-assigners))
+             ;;
+             (compute (find :compute stage-pairs :key #'car))
+             (stream-symb (if compute 'space 'stream))
+             (stream-type (if compute 'compute-space 'buffer-stream)))
+        ;;
+        (values
+         (funcall (compile nil (gen-complete-lambda-pipeline-code
+                                ctx
+                                compute
+                                implicit-u-lets
+                                implicit-u-uploads
+                                implicit-uniform-transforms
+                                post
+                                primitive
+                                stream-symb
+                                stream-type
+                                u-cleanup
+                                u-lets
+                                u-uploads
+                                uniform-names))
+                  compiled-stages
+                  prog-id
+                  tfb-group-count)
+         compiled-stages)))))
+
+(defun gen-complete-lambda-pipeline-code (ctx
+                                          compute
+                                          implicit-u-lets
+                                          implicit-u-uploads
+                                          implicit-uniform-transforms
+                                          post
+                                          primitive
+                                          stream-symb
+                                          stream-type
+                                          u-cleanup
+                                          u-lets
+                                          u-uploads
+                                          uniform-names)
+  `(lambda (compiled-stages prog-id tfb-group-count)
+     (use-program (cepl-context) prog-id)
+     (register-lambda-pipeline
+      prog-id
+      compiled-stages
+      (let* ( ;; all image units will be >0 as 0 is used as scratch tex-unit
+             (image-unit 0)
+             ;; The primitive used by transform feedback. When nil
+             ;; the primitive comes from the render-mode
+             (tfs-primitive (when (> tfb-group-count 0)
+                              (get-transform-feedback-primitive compiled-stages)))
+             (tfs-array-count tfb-group-count)
+             ;; If there are no implicit-uniforms we need a no-op
+             ;; function to call
+             (has-fragment-stage
+              (not (null (find-if λ(typep _ 'compiled-fragment-stage)
+                                  compiled-stages))))
+             ;;
+             ;; {todo} explain
+             ,@(mapcar λ`(,(assigner-name _) ,(assigner-body _))
+                       u-lets)
+             ,@(mapcar λ`(,(assigner-name _) ,(assigner-body _))
+                       implicit-u-lets))
+        (declare (ignorable image-unit
+                            tfs-primitive
+                            tfs-array-count
+                            has-fragment-stage)
+                 (type symbol tfs-primitive)
+                 (type (unsigned-byte 8) tfs-array-count)
+                 ,@(mapcar λ`(type ,(assigner-type _) ,(assigner-name _))
+                           implicit-u-lets))
+        (use-program (cepl-context) 0)
+        ;;
+        ;; generate the code that actually renders
+        (%post-init ,post)
+        (lambda (,ctx ,stream-symb ,@(when uniform-names `(&key ,@uniform-names)))
+          (declare (optimize (speed 3) (safety 1))
+                   (type (or null ,stream-type) ,stream-symb)
+                   (ignorable ,ctx ,@uniform-names))
+          #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+          ,@(unless (or compute (typep primitive 'varjo::dynamic))
+                    `((when ,stream-symb
+                        (assert
+                         (= ,(draw-mode-group-id primitive)
+                            (buffer-stream-primitive-group-id ,stream-symb))
+                         ()
+                         'buffer-stream-has-invalid-primitive-for-stream
+                         :name "<lambda>"
+                         :pline-prim ',(varjo::lisp-name primitive)
+                         :stream-prim (buffer-stream-primitive ,stream-symb)))))
+          (let ,implicit-uniform-transforms
+            (use-program ,ctx prog-id)
+            ,@u-uploads
+            ,@implicit-u-uploads)
+          (when ,stream-symb
+            ,(if compute
+                 (compute-expander nil stream-symb)
+                 (draw-expander nil ctx stream-symb 'draw-type primitive)))
+          ,@u-cleanup
+          ,(if compute
+               nil
+               `(draw-fbo-bound ,ctx)))))))
+
+;;------------------------------------------------------------
+
+(defun+ register-lambda-pipeline (prog-id compiled-stages closure)
   (setf (function-keyed-pipeline closure)
-        (make-lambda-pipeline-spec compiled-stages))
+        (make-lambda-pipeline-spec prog-id compiled-stages))
   closure)
 
 ;;------------------------------------------------------------

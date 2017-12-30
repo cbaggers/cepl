@@ -12,7 +12,7 @@ with the in-arg types ~s"
     "Looks like you tried to call the pipeline ~s without using map-g.~%" name)
 
 (deferror invalid-keywords-for-shader-gpipe-args () (pipeline-name keys)
-    "Found some invalid keys in the g-> for for the pipeline called ~a:~%~s"
+    "Found some invalid keys in the pipeline called ~a:~%~s"
   pipeline-name keys)
 
 (deferror invalid-context-for-assert-gpipe () (context)
@@ -24,7 +24,7 @@ with the in-arg types ~s"
   context)
 
 (deferror invalid-shader-gpipe-form () (pipeline-name valid-forms invalid-forms)
-    "When using defpipeline-g to compose GPU functions, the valid arguments to g-> are function literals~%(optionally with keyword stage names).~%~%In the defpipeline-g for ~a ~athese forms were not valid:~%~{~s~%~}~%"
+    "When using defpipeline-g to compose GPU functions, the valid stage specifiers are function literals~%(optionally with keyword stage names).~%~%In the defpipeline-g for ~a ~athese forms were not valid:~%~{~s~%~}~%"
   pipeline-name
   (if valid-forms
       (format nil "these forms were valid:~%~{~s~%~}~%However"
@@ -33,7 +33,7 @@ with the in-arg types ~s"
   invalid-forms)
 
 (deferror not-enough-args-for-implicit-gpipe-stages () (pipeline-name clauses)
-    "Tried to compile the g-> form for the ~a pipeline; however, there are not enough functions here for a valid pipeline:~%~s"
+    "Tried to compile the pipeline ~a; however, there are not enough functions here for a valid pipeline:~%~s"
   pipeline-name clauses)
 
 (deferror invalid-shader-gpipe-stage-keys () (pipeline-name keys)
@@ -232,7 +232,7 @@ has not been cached yet"
 
 (deferror pull*-g-not-enabled () ()
     "CEPL has been set to not cache the results of pipeline compilation.
-See the +cache-last-compile-result+ constant for more details")
+See the *cache-last-compile-result* var for more details")
 
 (defwarning func-keyed-pipeline-not-found () (callee func)
     "CEPL: ~a was called with ~a.
@@ -351,7 +351,7 @@ Might you have meant to specify a gpu function?"
   invalid)
 
 (deferror partial-lambda-pipeline (:print-circle nil) (partial-stages)
-    "CEPL: G-> was called with at least one stage taking functions as uniform
+    "CEPL: pipeline-g was called with at least one stage taking functions as uniform
 arguments.
 
 If this were defpipeline-g we would make a partial pipeline however we don't
@@ -471,6 +471,14 @@ A: ~a
 B: ~a"
   ctx-thread init-thread)
 
+(deferror shared-context-created-from-incorrect-thread ()
+    (ctx-thread init-thread)
+    "CEPL: This CEPL context is tied to thread A (below) however something tried
+to create a shared CEPL context using it from thread B:
+A: ~a
+B: ~a"
+  ctx-thread init-thread)
+
 (deferror tried-to-make-context-on-thread-that-already-has-one ()
     (context thread)
     "CEPL: An attempt was made to create a context on thread ~a however
@@ -545,7 +553,76 @@ For example:
 (deferror invalid-stage-for-single-stage-pipeline () (kind)
     "CEPL: We found a pipeline where the only stage was of type ~a.
 Single stage pipelines are valid in CEPL however only if the stage is
-a vertex or fragment stage" kind)
+a vertex, fragment or compute stage" kind)
+
+(deferror pipeline-recompile-in-tfb-scope () (name)
+    "CEPL: We were about to recompile the GL program behind ~a however we
+noticed that this is happening inside the scope of with-transform-feedback
+which GL does not allow. Sorry about that." name)
+
+(deferror compile-g-missing-requested-feature () (form)
+    "CEPL: Sorry currently compile-g can only be used to make gpu lambdas
+by passing nil as the name and the source for the lambda like this:
+
+    (lambda-g ((vert :vec4) &uniform (factor :float))
+      (* vert factor))
+
+We recieved:
+~a
+" form)
+
+(deferror query-is-already-active () (query)
+    "CEPL: An attempt was made to start querying using the query object listed
+below, however that query object is currently in use.
+
+query: ~s" query)
+
+(deferror query-is-active-bug () (query)
+    "CEPL BUG: This error should never be hit as it should have
+been covered by another assert inside #'begin-gpu-query.
+
+we are sorry for the mistake. If you have the time please report the issue
+here: https://github.com/cbaggers/cepl/issues
+
+query: ~s" query)
+
+(deferror another-query-is-active () (query current)
+    "CEPL: An attempt was made to begin querying with query object 'A' listed
+below however query object 'B' of the same kind was already active on this
+context. GL only allows 1 query of this kind to be active at a given time.
+
+Query A: ~s
+Query B: ~s" query current)
+
+(deferror query-not-active () (query)
+    "CEPL: A call was made to #'end-gpu-query with the query object listed
+below. The issue is that the query object is not currently active so it is
+not valid to try and make it inactive.
+
+Query: ~s" query)
+
+(deferror compute-pipeline-must-be-single-stage () (name stages)
+    "CEPL: A attempt was made to compile ~a which contains the following
+stage kinds: ~a
+
+However if you include a compute stage it is the only stage allowed in the
+pipeline. Please either remove the compute stage or remove the other stages."
+  (if name name "a pipeline")
+  stages)
+
+(deferror could-not-layout-type () (type)
+    "CEPL BUG: We were unable to work out the layout for the type ~a
+
+We are sorry for the mistake. If you have the time please report the issue
+here: https://github.com/cbaggers/cepl/issues
+
+   (if you are able to include the definition of the type in the
+    issue report that we be excedingly helpful)" type)
+
+(deferror invalid-data-layout-specifier () (specifier valid-specifiers)
+    "CEPL: ~a is not a valid layout data specifier.
+Please use one of the following: ~{~a~^, ~}"
+  specifier valid-specifiers)
 
 (deferror pipeline-recompile-in-tfb-scope () (name)
     "CEPL: We were about to recompile the GL program behind ~a however we

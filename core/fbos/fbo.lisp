@@ -1,14 +1,19 @@
 (in-package :cepl.fbos)
 (in-readtable fn:fn-reader)
 
+(define-const +valid-fbo-targets+
+    '(:read-framebuffer :draw-framebuffer :framebuffer)
+  :type list)
+
 ;; {TODO} what is the meaning of an attachment with no array, no attachment?
 ;;        in that case should attachment-viewport return nil or error?
 ;;        same goes for attachment-tex. Could we use the +null-att+ instead
 ;;        and force attr to be populated?
 
-(defvar %possible-texture-keys
+(define-const +possible-texture-keys+
   '(:dimensions :element-type :mipmap :layer-count :cubes-p :rectangle
-    :multisample :immutable :buffer-storage))
+    :multisample :immutable :buffer-storage)
+  :type list)
 
 ;; {TODO} A fragment shader can output different data to any of these by
 ;;        linking out variables to attachments with the glBindFragDataLocation
@@ -87,7 +92,9 @@
   (setf (%fbo-draw-buffer-map fbo-obj)
         (or draw-buffer-map
             (foreign-alloc 'cl-opengl-bindings:enum :count
-                           (max-draw-buffers *gl-context*)
+                           (max-draw-buffers
+                            (cepl.context::%cepl-context-gl-context
+                             (cepl-context)))
                            :initial-element :none)))
   (setf (%fbo-clear-mask fbo-obj)
         (or clear-mask
@@ -319,7 +326,11 @@
       (when current-value
         (fbo-detach fbo attachment-name))
       (when value
-        (fbo-attach fbo value attachment-name))
+        (etypecase value
+          (gpu-array-t
+           (fbo-attach-array fbo value attachment-name))
+          (render-buffer
+           (fbo-attach-render-buffer fbo value attachment-name))))
       ;; update cached gl details
       (%update-fbo-state fbo)))
   ;;
@@ -339,21 +350,24 @@
       (signed-byte 32)
     (declare (optimize (speed 3) (safety 1) (debug 1))
              (profile t))
-    (unless (> max-draw-buffers 0)
-      (when cepl.context:*gl-context*
-        (setf max-draw-buffers (max-draw-buffers *gl-context*))))
-    (case x
-      (:d #.(gl-enum :depth-attachment))
-      (:s (if (att-array (%fbo-depth-array fbo))
-              #.(gl-enum  :depth-stencil-attachment)
-              #.(gl-enum :stencil-attachment)))
-      (otherwise
-       (if (<= x max-draw-buffers)
-           (color-attachment-enum x)
-           (if cepl.context:*gl-context*
-               (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
-                      x max-draw-buffers)
-               (color-attachment-enum x)))))))
+    (let ((gl-ctx (when (cepl-context)
+                    (cepl.context::%cepl-context-gl-context
+                     (cepl-context)))))
+      (unless (> max-draw-buffers 0)
+        (when gl-ctx
+          (setf max-draw-buffers (max-draw-buffers gl-ctx))))
+      (case x
+        (:d #.(gl-enum :depth-attachment))
+        (:s (if (att-array (%fbo-depth-array fbo))
+                #.(gl-enum  :depth-stencil-attachment)
+                #.(gl-enum :stencil-attachment)))
+        (otherwise
+         (if (<= x max-draw-buffers)
+             (color-attachment-enum x)
+             (if gl-ctx
+                 (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
+                        x max-draw-buffers)
+                 (color-attachment-enum x))))))))
 
 (define-compiler-macro get-gl-attachment-keyword (&whole whole fbo x)
   (declare (ignore fbo))
@@ -538,15 +552,11 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (%bind-fbo default-framebuffer :framebuffer)))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *valid-fbo-targets*
-    '(:read-framebuffer :draw-framebuffer :framebuffer)))
-
 (defmacro with-fbo-bound ((fbo &key (target :draw-framebuffer)
                                (with-viewport t) (attachment-for-size 0)
                                (with-blending t) (draw-buffers t))
                           &body body)
-  (assert (member target *valid-fbo-targets*) (target)
+  (assert (member target +valid-fbo-targets+) (target)
           'fbo-target-not-valid-constant
           :target target)
   (labels ((%write-draw-buffer-pattern-call (fbo body)
@@ -639,7 +649,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((or (keywordp pattern) (numberp pattern))
      (viewport-dimensions (current-viewport)))
     ;; pattern with args for make-texture
-    ((some (lambda (x) (member x %possible-texture-keys)) pattern)
+    ((some (lambda (x) (member x +possible-texture-keys+)) pattern)
      (destructuring-bind
            (&key (dimensions (viewport-dimensions (current-viewport)))
                  &allow-other-keys)
@@ -654,6 +664,18 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; take the dimensions from some object
     (t (dimensions (second pattern)))))
 
+;;----------------------------------------------------------------------
+
+(defun fbo-attach-render-buffer (fbo render-buffer attachment-name)
+  (let ((attach-enum (get-gl-attachment-keyword fbo attachment-name)))
+    (with-fbo-bound (fbo :target :read-framebuffer :with-viewport nil :draw-buffers nil)
+      (%gl:framebuffer-renderbuffer :read-framebuffer
+                                    attach-enum
+                                    #.(gl-enum :renderbuffer)
+                                    (%render-buffer-id render-buffer)))))
+
+;;----------------------------------------------------------------------
+
 ;; Attaching Images
 
 ;; Remember that textures are a set of images. Textures can have mipmaps; thus,
@@ -661,7 +683,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;; {TODO} Ensure image formats are color-renderable for color attachments
 ;;
-(defun+ fbo-attach (fbo tex-array attachment-name)
+(defun+ fbo-attach-array (fbo tex-array attachment-name)
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target could be any of '(:framebuffer :read-framebuffer :draw-framebuffer)
   ;; but we just pick :read-framebuffer as in this case it makes no difference
@@ -693,6 +715,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       ;;
       ;; When attaching a non-cubemap, textarget should be the proper
       ;; texture-type: GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE, etc.
+      ;;----------------------------------------------------------------------
       (cepl.textures::with-gpu-array-t tex-array
         (assert (attachment-compatible attachment-name image-format t)
                 ()  "attachment is not compatible with this array~%~a~%~a"
@@ -808,7 +831,9 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 ;;----------------------------------------------------------------------
 ;; Generating Textures from FBO Patterns
 
-(defvar %valid-texture-subset '(:dimensions :element-type :mipmap :immutable))
+(define-const +valid-texture-subset+
+    '(:dimensions :element-type :mipmap :immutable)
+  :type list)
 
 (defun+ process-fbo-init-pattern (pattern)
   (labels ((name (x) (if (listp x) (first x) x))
@@ -887,12 +912,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
              :element-type (%get-default-texture-format pattern)))
            t))
     ;; pattern with args for make-texture
-    ((some (lambda (x) (member x %possible-texture-keys)) pattern)
-     (when (some (lambda (x) (and (member x %possible-texture-keys)
-                                  (not (member x %valid-texture-subset))))
+    ((some (lambda (x) (member x +possible-texture-keys+)) pattern)
+     (when (some (lambda (x) (and (member x +possible-texture-keys+)
+                                  (not (member x +valid-texture-subset+))))
                  pattern)
        (error "Only the following args to make-texture are allowed inside a make-fbo ~s"
-              %valid-texture-subset))
+              +valid-texture-subset+))
      (destructuring-bind
            (&key (dimensions (viewport-dimensions (current-viewport)))
                  (element-type (%get-default-texture-format (first pattern)))

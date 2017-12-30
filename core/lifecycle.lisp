@@ -10,7 +10,7 @@
 
 (defvar *lifecycle-state* :uninitialized)
 
-(defvar *lifecycle-states*
+(define-const +lifecycle-states+
   '(:uninitialized
     :suspended
     :active
@@ -44,9 +44,9 @@
       shutting-down)
   ;;
   (defun+ listen-to-lifecycle-changes (func &rest states-to-subscribe-to)
-    (assert (every (lambda (x) (member x *lifecycle-states*))
+    (assert (every (lambda (x) (member x +lifecycle-states+))
                    states-to-subscribe-to))
-    (let ((stst (or states-to-subscribe-to *lifecycle-states*)))
+    (let ((stst (or states-to-subscribe-to +lifecycle-states+)))
       (when (and (member :suspended stst)
                  (not (member func suspended)))
         (push func suspended))
@@ -151,7 +151,6 @@
   (setf *lifecycle-state* :shutting-down)
   (call-listeners)
   ;; do shutdown stuff
-  (cepl.host:shutdown)
-  (setf cepl.context:*gl-context* nil)
+  (cepl.host::%shutdown cepl.host::*current-host*)
   ;; go back to uninitialized
   (setf *lifecycle-state* :uninitialized))

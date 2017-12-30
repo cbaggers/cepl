@@ -2,10 +2,6 @@
 
 ;;----------------------------------------------------------------------
 
-(def-artificial-id fake-sampler)
-
-;;----------------------------------------------------------------------
-
 (defun+ sampler-texture (sampler)
   (%sampler-texture sampler))
 
@@ -147,7 +143,7 @@
   (cepl.context::if-gl-context
    (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
                      magnify-filter wrap compare)
-   (make-uninitialized-sampler texture (get-free-fake-sampler-id))
+   (make-uninitialized-sampler texture)
    (list texture)))
 
 ;;----------------------------------------------------------------------
@@ -170,16 +166,16 @@
   (check-sampler-feature)
   (make-default-sampler-id-box))
 
-(push #'sampler-on-context *on-context*)
-
 ;;----------------------------------------------------------------------
 
+(defvar *fake-sampler-id-lock* (bt:make-lock))
 (defvar *fake-sampler-id* 0)
 
 (defun+ %get-id ()
   (if *samplers-available*
       (first (gl:gen-samplers 1))
-      (decf *fake-sampler-id*)))
+      (bt:with-lock-held (*fake-sampler-id-lock*)
+        (decf *fake-sampler-id*))))
 
 (defun+ wrap-eq (wrap-a wrap-b)
   (loop :for a :across wrap-a
@@ -243,7 +239,6 @@
   (unless (sampler-shared-p sampler)
     ;; Be sure to add this back in when you implement freeing
     ;; samplers.
-    ;; (release-fake-sampler-id (%sampler-context-id sampler))
     (warn "CEPL: free-sampler not yet implemented~%leaking ~s"
           sampler)))
 
@@ -431,7 +426,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defvar *sampler-types*
+(define-const +sampler-types+
   '(:isampler-1d :isampler-1d-array :isampler-2d :isampler-2d-array
     :isampler-2d-ms :isampler-2d-ms-array :isampler-2d-rect
     :isampler-3d :isampler-buffer :isampler-cube
@@ -461,7 +456,7 @@
     :usampler-buffer-arb :usampler-cube-arb :usampler-cube-array-arb))
 
 (defun+ sampler-typep (type)
-  (or (member type *sampler-types*)
+  (or (member type +sampler-types+)
       (varjo:v-typep type 'v-sampler)))
 
 (defun+ sampler-type (sampler)

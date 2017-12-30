@@ -11,10 +11,8 @@
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :serial t
   :depends-on (#:cffi
-               #:cl-autowrap
                #:cl-fad
                #:cl-opengl
-               #:cl-plus-c
                #:cl-ppcre
                #:documentation-utils
                #:fn
@@ -31,16 +29,17 @@
                (:file "host/api-generics")
                (:file "host/api-0")
                (:file "host/api-1")
+               (:file "host/api-2")
                (:file "host/api-common")
                (:file "core/ffi")
                (:file "core/utils")
                (:file "project")
-               (:file "core/context/vars")
                (:file "core/context/documentation-functions")
                (:file "core/lifecycle")
                (:file "core/measurements/measurements")
                (:file "core/memory/memory")
                (:file "core/types/cepl-types")
+               (:file "core/types/nulls-and-uninitialized")
                (:file "core/context/gl-context")
                (:file "core/context/types")
                (:file "core/context/cepl-context")
@@ -69,6 +68,7 @@
                (:file "core/c-arrays/make")
                (:file "core/c-arrays/map")
                (:file "core/c-arrays/rest")
+               (:file "core/types/layout")
                (:file "core/types/structs")
                (:file "core/gpu-buffers/gpu-buffers")
                (:file "core/gpu-arrays/buffer-backed")
@@ -80,6 +80,7 @@
                (:file "core/pipelines/gpu-macros")
                (:file "core/pipelines/gpu-pipeline-base")
                (:file "core/pipelines/pipeline-validation")
+               (:file "core/pipelines/funcall-g")
                (:file "core/pipelines/gpu-functions")
                (:file "core/pipelines/glsl-stages")
                (:file "core/pipelines/mapg-context")
@@ -92,6 +93,7 @@
                (:file "core/samplers/samplers")
                (:file "core/textures/textures")
                (:file "core/textures/texture-samplers")
+               (:file "core/render-buffers/render-buffer")
                (:file "core/samplers/context")
                (:file "core/pipelines/map-g")
                (:file "core/pipelines/quad-stages")
@@ -99,6 +101,10 @@
                (:file "core/gpu-arrays/with-and-push")
                (:file "core/fbos/fbo")
                (:file "core/ubos/ubo")
+               (:file "core/ssbos/ssbos")
+               (:file "core/sync/sync")
+               (:file "core/queries/query")
+               (:file "core/compute/compute")
                (:file "core/types/predefined/gpu-structs")
                (:file "core/context/make")
                (:file "core/repl")

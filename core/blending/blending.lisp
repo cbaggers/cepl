@@ -22,7 +22,7 @@
             (destination-alpha (blending-params-destination-alpha ,g)))
          ,@body))))
 
-(defvar *blend-color* (v! 0 0 0 0))
+
 
 (defun+ blend-func-namep (keyword)
   (not (null (member keyword '(:zero
@@ -249,7 +249,11 @@
 
 (defn-inline check-version-for-per-attachment-params () (values)
   (unless (per-attachment-blending-available-p)
-    (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0" (version-float *gl-context*))))
+    (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0"
+           (when (cepl-context)
+             (version-float
+              (cepl.context::%cepl-context-gl-context
+               (cepl-context)))))))
 
 (defun+ (setf mode-rgb) (value fbo &optional attachment-name)
   (when attachment-name (check-version-for-per-attachment-params))
@@ -289,6 +293,8 @@
 ;; these (or if I should). I like the idea of cpu side debugging using this
 ;; but in issolation it doesnt really mean much. Probably only makes sense in
 ;; a software renderer.
+
+;; (defvar *blend-color* (v! 0 0 0 0))
 
 ;; (defun zero
 ;;     (source destination &key (target-rgb t) (blend-color *blend-color*))

@@ -59,6 +59,10 @@
         (or *api-0-context-singleton*
             (error "CEPL Internal Bug: Must call make-window before make-context when using legacy host api")))))
 
+(defmethod %shutdown ((host api-0) &key &allow-other-keys)
+  (declare (ignore host))
+  (shutdown))
+
 (defmethod %set-surface-size ((host api-0) surface width height &key &allow-other-keys)
   (declare (ignore host surface width height))
   (warn "Setting the size of a surface is not supported when using the legacy host api"))
@@ -78,6 +82,9 @@
 (defmethod %set-surface-title ((host api-0) surface title &key &allow-other-keys)
   (declare (ignore host surface title))
   (warn "Setting the title of a surface is not supported when using the legacy host api"))
+
+(defmethod %make-gl-context-shared-with-current-context ((host api-0) &key &allow-other-keys)
+  (error "CEPL: Making a shared GL context is not supported when using the legacy host api"))
 
 ;; no longer used but legacy hosts still expect to find it
 (defun set-default-swap-arg (win-handle)

@@ -20,8 +20,8 @@
          ;;
          ;; get pipeline details
          (stage-pairs (pairs-key-to-stage (pipeline-stage-pairs pipeline)))
-         (stages (mapcar #'cdr stage-pairs))
-         (pipeline-uniforms (cepl.pipelines::aggregate-uniforms stages))
+         (func-specs (mapcar #'cdr stage-pairs))
+         (pipeline-uniforms (cepl.pipelines::aggregate-uniforms func-specs))
          (context (slot-value pipeline 'context))
          (draw-mode (varjo.internals:get-primitive-type-from-context context))
          ;;
@@ -56,25 +56,27 @@
 
 
 (defun+ bake-and-g-> (draw-mode stage-pairs uniforms-to-bake)
-  (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
-         (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
+  (assert (every λ(typep (second _) 'gpu-func-spec) stage-pairs))
+  (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version)))
     ;;
 
     ;;
-    (make-n-compile-lambda-pipeline
+    (make-lambda-pipeline
      (mapcan (lambda (pair)
-               (list (first pair)
-                     (let* ((stage (parsed-gpipe-args->v-translate-args
-                                    draw-mode pair uniforms-to-bake))
-                            (in-args (mapcar #'varjo.internals:to-arg-form
-                                             (varjo:input-variables stage)))
-                            (uniforms (mapcar #'varjo.internals:to-arg-form
-                                              (varjo:uniform-variables stage)))
-                            (body (varjo.internals:lisp-code stage))
-                            (args (append in-args
-                                          (when uniforms
-                                            (cons '&uniforms uniforms)))))
-                       (make-gpu-lambda args body))))
+               (dbind (stage-type . func-spec) pair
+                 (list stage-type
+                       (let* ((stage (parsed-gpipe-args->v-translate-args
+                                      draw-mode stage-type func-spec
+                                      uniforms-to-bake))
+                              (in-args (mapcar #'varjo.internals:to-arg-form
+                                               (varjo:input-variables stage)))
+                              (uniforms (mapcar #'varjo.internals:to-arg-form
+                                                (varjo:uniform-variables stage)))
+                              (body (varjo.internals:lisp-code stage))
+                              (args (append in-args
+                                            (when uniforms
+                                              (cons '&uniforms uniforms)))))
+                         (make-gpu-lambda args body)))))
              stage-pairs)
      nil)))

@@ -11,7 +11,7 @@ Laying out GPU data in memory is one of the really tricky parts of working with 
        (val :int :accessor val))
 ```
 
-This should seem familiar if you have used Common Lisp's structs.  You provide a name, options (if you need them), and the definitions for the slots. The slots are mostly what we are interested in, so let's look at them.  
+This should seem familiar if you have used Common Lisp's structs.  You provide a name, options (if you need them), and the definitions for the slots. The slots are mostly what we are interested in, so let's look at them.
 
 The format for a slot is:
 ```lisp
@@ -78,7 +78,7 @@ This time the name is inside a list along with one or more options. This much li
 
  - nil means that you will get *no* setf functions to set the slots data
 
-**:accesors**
+**:accessors**
 
  - nil means that you will get *neither* of the above.
 
@@ -87,7 +87,7 @@ This time the name is inside a list along with one or more options. This much li
  - nil means that you will get *no* `push-g` or `pull-g` methods defined for your type
 
 **:attribs**
- 
+
  - nil means that `defstruct-g` will not be able to make `gpu streams` from arrays of this type. This may not mean much until after the `gpu streams` chapter.
 
 **:populate**

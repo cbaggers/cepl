@@ -2,7 +2,9 @@
 
 (defgeneric %init (host args))
 (defgeneric %make-gl-context (host &key &allow-other-keys))
+(defgeneric %make-gl-context-shared-with-current-context (host &key &allow-other-keys))
 (defgeneric %make-surface (host &rest args &key &allow-other-keys))
+(defgeneric %shutdown (host &key &allow-other-keys))
 (defgeneric %supports-multiple-surfaces-p (host &key &allow-other-keys))
 (defgeneric %supports-multiple-contexts-p (host &key &allow-other-keys))
 (defgeneric %set-surface-size (host surface width height &key &allow-other-keys))

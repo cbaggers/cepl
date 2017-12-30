@@ -7,24 +7,21 @@
   (typep (varjo:type-spec->type (second arg))
          'varjo:v-function-type))
 
-(defun+ stages-require-partial-pipeline (stage-keys)
-  (some λ(with-gpu-func-spec (gpu-func-spec _)
+(defun+ stages-require-partial-pipeline (func-specs)
+  (some λ(with-gpu-func-spec _
            (or (some #'function-arg-p in-args)
                (some #'function-arg-p uniforms)))
-        stage-keys))
+        func-specs))
 
-(defun+ has-func-type-in-args (stage-keys)
-  (some λ(with-gpu-func-spec (gpu-func-spec _)
+(defun+ has-func-type-in-args (func-specs)
+  (some λ(with-gpu-func-spec _
            (some #'function-arg-p in-args))
-        stage-keys))
+        func-specs))
 
-(defun+ function-uniforms (stage-keys)
-  (mapcat λ(with-gpu-func-spec (gpu-func-spec _)
+(defun+ function-uniforms (func-specs)
+  (mapcat λ(with-gpu-func-spec _
              (remove-if-not #'function-arg-p uniforms))
-          stage-keys))
-
-(defmacro def-g-> (name context &body gpipe-args)
-  `(defpipeline-g ,name ,context ,@gpipe-args))
+          func-specs))
 
 (defmacro defpipeline-g (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
@@ -36,12 +33,12 @@
   ;; {todo} explain
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     ;;
-    (let* ((stage-keys (mapcar #'cdr stage-pairs))
-           (aggregate-actual-uniforms (aggregate-uniforms stage-keys t))
-           (aggregate-public-uniforms (aggregate-uniforms stage-keys)))
-      (if (stages-require-partial-pipeline stage-keys)
+    (let* ((func-specs (mapcar #'cdr stage-pairs))
+           (aggregate-actual-uniforms (aggregate-uniforms func-specs t))
+           (aggregate-public-uniforms (aggregate-uniforms func-specs)))
+      (if (stages-require-partial-pipeline func-specs)
           (%def-partial-pipeline name
-                                 stage-keys
+                                 func-specs
                                  stage-pairs
                                  aggregate-actual-uniforms
                                  context)
@@ -52,13 +49,13 @@
                                   post context)))))
 
 (defun+ %def-partial-pipeline (name
-                               stage-keys
+                               func-specs
                                stage-pairs
                                aggregate-actual-uniforms
                                context)
   ;;
   ;; freak out if try and use funcs in stage args
-  (when (has-func-type-in-args stage-keys)
+  (when (has-func-type-in-args func-specs)
     (error 'functions-in-non-uniform-args :name name))
   ;;
   ;; update the spec immediately (macro-expansion time)
@@ -77,12 +74,13 @@
          (use-program mapg-context 0)
          (error 'mapping-over-partial-pipeline
                 :name ',name
-                :args ',(function-uniforms stage-keys))
+                :args ',(function-uniforms func-specs))
          stream)
        (register-named-pipeline ',name #',name)
        ',name)))
 
 (defstruct pipeline-state
+  (diff-tag 0 :type (unsigned-byte 16))
   (prog-ids
    (make-array +max-context-count+
                :initial-element +unknown-gl-id+
@@ -112,6 +110,8 @@
                :initial-element +unknown-uniform-uint-id+)
    :type (array (unsigned-byte 32) (*))))
 
+#+sbcl
+(declaim (sb-ext:freeze-type pipeline-state))
 
 (defun+ %def-complete-pipeline (name
                                 stage-pairs
@@ -123,52 +123,68 @@
          (state-var (hidden-symb name :pipeline-state))
          (init-func-name (hidden-symb name :init))
          (uniform-assigners (make-arg-assigners aggregate-actual-uniforms))
+         (current-spec (pipeline-spec name))
+         (current-stage-tags (when current-spec
+                               (remove nil (slot-value current-spec 'diff-tags))))
+         (new-stage-tags (mapcar λ(let ((spec (cdr _)))
+                                    (when spec
+                                      (slot-value spec 'diff-tag)))
+                                 stage-pairs))
+         (structurally-unchanged-p (and (every #'identity current-stage-tags)
+                                        (every #'identity new-stage-tags)
+                                        (equal current-stage-tags new-stage-tags)))
+         (state-tag (mod (reduce #'+ new-stage-tags)
+                         (expt 2 16)))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (primitive (varjo.internals:primitive-name-to-instance
-                     (varjo.internals:get-primitive-type-from-context context))))
+                     (varjo.internals:get-primitive-type-from-context context)))
+         (is-compute (find :compute stage-pairs :key #'car)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (update-pipeline-spec
      (make-pipeline-spec name stage-pairs context))
-    `(progn
-       ;;
-       ;; eval-when so we dont get a 'use before compiled' warning
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
-           (declare (ignore rest))
-           (unless (mapg-context-p ,ctx)
-             (error 'dispatch-called-outside-of-map-g :name ',name))
-           whole))
-       ;;
-       ;; The struct that holds the gl state for this pipeline
-       (declaim (type pipeline-state ,state-var))
-       (defvar ,state-var (make-pipeline-state))
-       ;;
-       ;; If the prog-id isnt know this function will be called
-       (defun+ ,init-func-name (state)
-         ,(gen-pipeline-init name
-                             primitive
-                             stage-pairs
-                             post
-                             aggregate-public-uniforms
-                             uniform-assigners))
-       ;;
-       ;; generate the code that actually renders
-       ,(def-dispatch-func ctx name init-func-name
-                           primitive uniform-assigners
-                           aggregate-public-uniforms
-                           (find :static context)
-                           state-var)
-       ;;
-       ;; generate the function that recompiles this pipeline
-       ,(gen-recompile-func name stage-pairs post context state-var)
-       ;;
-       ;; off to the races! Note that we upload the spec at compile
-       ;; time (using eval-when)
-       ,(gen-update-spec name stage-pairs context)
-       (register-named-pipeline ',name #',name)
-       ',name)))
+    (values
+     `(progn
+        ;;
+        ;; eval-when so we dont get a 'use before compiled' warning
+        (eval-when (:compile-toplevel :load-toplevel :execute)
+          (define-compiler-macro ,name (&whole whole ,ctx &rest rest)
+            (declare (ignore rest))
+            (unless (mapg-context-p ,ctx)
+              (error 'dispatch-called-outside-of-map-g :name ',name))
+            whole))
+        ;;
+        ;; The struct that holds the gl state for this pipeline
+        (declaim (type pipeline-state ,state-var))
+        (defvar ,state-var (make-pipeline-state))
+        ;;
+        ;; If the prog-id isnt know this function will be called
+        (defun+ ,init-func-name (state)
+          ,(gen-pipeline-init name
+                              primitive
+                              stage-pairs
+                              post
+                              aggregate-public-uniforms
+                              uniform-assigners
+                              state-tag))
+        ;;
+        ;; generate the code that actually renders
+        ,(def-dispatch-func ctx name init-func-name
+                            primitive uniform-assigners
+                            aggregate-public-uniforms
+                            (find :static context)
+                            state-var state-tag is-compute)
+        ;;
+        ;; generate the function that recompiles this pipeline
+        ,(gen-recompile-func name stage-pairs post context)
+        ;;
+        ;; off to the races! Note that we upload the spec at compile
+        ;; time (using eval-when)
+        ,(gen-update-spec name stage-pairs context)
+        (register-named-pipeline ',name #',name)
+        ',name)
+     structurally-unchanged-p)))
 
 (defun+ def-dispatch-func (ctx
                            name
@@ -177,19 +193,24 @@
                            uniform-assigners
                            aggregate-public-uniforms
                            static
-                           state-var)
+                           state-var
+                           state-tag
+                           compute)
   (let* ((uniform-names (mapcar #'first aggregate-public-uniforms))
          (typed-uniforms (loop :for name :in uniform-names :collect
                             `(,name t nil)))
-         (def (if static 'defn 'defun+))
+         (stream-symb (if compute 'space 'stream))
+         (stream-type (if compute 'compute-space 'buffer-stream))
+         (return-type (if compute 'null 'fbo))
          (signature (if static
                         `(((,ctx cepl-context)
-                           (stream (or null buffer-stream))
+                           (,stream-symb (or null ,stream-type))
                            ,@(when uniform-names `(&key ,@typed-uniforms)))
-                          (values))
+                          ,return-type)
                         `((,ctx
-                           stream
-                           ,@(when uniform-names `(&key ,@uniform-names)))))))
+                           ,stream-symb
+                           ,@(when uniform-names `(&key ,@uniform-names))))))
+         (def (if static 'defn 'defun+)))
     ;;
     ;; draw-function
     `(,def ,name ,@signature
@@ -202,16 +223,16 @@
                         pipeline-state-has-fragment-stage)
                 ,@(when static `((profile t))))
        #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-       ,@(unless (typep primitive 'varjo::dynamic)
-           `((when stream
+       ,@(unless (or compute (typep primitive 'varjo::dynamic))
+           `((when ,stream-symb
                (assert
                 (= ,(draw-mode-group-id primitive)
-                   (buffer-stream-primitive-group-id stream))
+                   (buffer-stream-primitive-group-id ,stream-symb))
                 ()
                 'buffer-stream-has-invalid-primitive-for-stream
                 :name ',name
                 :pline-prim ',(varjo::lisp-name primitive)
-                :stream-prim (buffer-stream-primitive stream)))))
+                :stream-prim (buffer-stream-primitive ,stream-symb)))))
        (let* ((%ctx-id (context-id ,ctx))
               ;;
               ;; unpack state from var
@@ -220,7 +241,9 @@
                              %ctx-id)))
          ;;
          ;; ensure program-id available, otherwise bail
-         (when (= prog-id +unknown-gl-id+)
+         (when (or (= prog-id +unknown-gl-id+)
+                   (/= (pipeline-state-diff-tag state)
+                       ,state-tag))
            (let ((new-prog-ids (,init-func-name state)))
              (setf prog-id (aref new-prog-ids %ctx-id))
              (when (= prog-id +unknown-gl-id+)
@@ -228,12 +251,13 @@
 
          (let ((implicit-uniform-upload-func
                 (pipeline-state-implicit-uniform-upload-func state))
-               (tfs-primitive
-                (pipeline-state-tfs-primitive state))
-               (tfs-array-count
-                (pipeline-state-tfs-array-count state))
-               (has-fragment-stage
-                (pipeline-state-has-fragment-stage state))
+               ,@(unless compute
+                   '((tfs-primitive
+                      (pipeline-state-tfs-primitive state))
+                     (tfs-array-count
+                      (pipeline-state-tfs-array-count state))
+                     (has-fragment-stage
+                      (pipeline-state-has-fragment-stage state))))
                ;; Uniforms vars
                ,@(mapcan #'unpack-arrayd-assigner uniform-assigners))
 
@@ -246,51 +270,48 @@
              (funcall implicit-uniform-upload-func prog-id ,@uniform-names))
 
            ;; Start the draw
-           (when stream
-             (let ((draw-type ,(if (typep primitive 'varjo::dynamic)
-                                   `(buffer-stream-draw-mode-val stream)
-                                   (varjo::lisp-name primitive))))
-               (handle-transform-feedback ,ctx draw-type prog-id tfs-primitive
-                                          tfs-array-count)
-
-               (when (not has-fragment-stage)
-                 (gl:enable :rasterizer-discard))
-               (profile-block (,name :draw)
-                 (draw-expander stream draw-type ,primitive))
-               (when (not has-fragment-stage)
-                 (gl:disable :rasterizer-discard)))))
+           (when ,stream-symb
+             ,(if compute
+                  (compute-expander name stream-symb)
+                  (draw-expander name ctx stream-symb 'draw-type primitive))))
 
          ;; uniform cleanup
          ,@(mapcar #'gen-cleanup-block (reverse uniform-assigners))
 
          ;; map-g is responsible for returning the correct fbo
-         (values)))))
+         ,(if compute
+              nil
+              `(draw-fbo-bound ,ctx))))))
 
 (defn fallback-iuniform-func ((prog-id gl-id) &rest uniforms) (values)
   (declare (ignore prog-id uniforms)
            (optimize (speed 3) (safety 0) (debug 0)))
   (values))
 
-(defun+ gen-recompile-func (name stage-pairs post context state-var)
-  (let* ((stages (mapcat λ(list (car _) (func-key->name (cdr _))) stage-pairs))
+
+(defun+ gen-recompile-func (name stage-pairs post context)
+  (let* ((stages (mapcat λ(list (car _) (func-spec->name (cdr _)))
+                         stage-pairs))
          (gpipe-args (append stages (list :post post))))
     `(defun+ ,(recompile-name name) ()
        (format t "~&; recompile cpu side of (~a ...)~&" ',name)
        (force-output)
        (let ((*standard-output* (make-string-output-stream)))
          (handler-bind ((warning #'muffle-warning))
-           (eval (%defpipeline-gfuncs
-                  ',name ',gpipe-args ',context))
-           (setf ,state-var (make-pipeline-state)))))))
+           (multiple-value-bind (src structurally-unchanged-p)
+               (%defpipeline-gfuncs ',name ',gpipe-args ',context)
+             (unless structurally-unchanged-p
+               (eval src))))))))
 
 (defun+ gen-update-spec (name stage-pairs context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (update-pipeline-spec
       (make-pipeline-spec
-       ',name ,(cons 'list (mapcar (lambda (x)
-                                     (dbind (k . v) x
-                                       `(cons ,k ,(spec->func-key v))))
-                                   stage-pairs))
+       ',name (pairs-key-to-stage
+               ,(cons 'list (mapcar (lambda (x)
+                                      (dbind (k . v) x
+                                        `(cons ,k ,(spec->func-key v))))
+                                    stage-pairs)))
        ',context))))
 
 (defun+ register-named-pipeline (name func)
@@ -311,7 +332,10 @@
                (varjo:glsl-code compiled-stage)))
 
 (defun+ pairs-key-to-stage (stage-pairs)
-  (mapcar λ(dbind (name . key) _ (cons name (gpu-func-spec key)))
+  (mapcar λ(dbind (name . key) _
+             (typecase key
+               (gpu-func-spec _)
+               (otherwise (cons name (gpu-func-spec key)))))
           stage-pairs))
 
 (defun+ swap-versions (stage-pairs glsl-version)
@@ -322,19 +346,19 @@
           stage-pairs))
 
 (defun+ %compile-link-and-upload (name draw-mode stage-pairs)
-  (let* ((stage-pairs (pairs-key-to-stage stage-pairs))
-         (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
+  (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version))
          (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
-    (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA"))
+    (unless *suppress-upload-message*
+      (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA")))
     ;; when compiling lambda pipelines prog-ids will be a number, not a vector
     (multiple-value-bind (prog-ids prog-id)
         (request-program-id-for (cepl-context) name)
       (multiple-value-bind (tfb-mode tfb-names tfb-group-count)
           (calc-feedback-style-and-names (get-feedback-out-vars compiled-stages))
         (link-shaders stages-objects prog-id compiled-stages tfb-mode tfb-names)
-        (when (and name +cache-last-compile-result+)
+        (when (and name *cache-last-compile-result*)
           (add-compile-results-to-pipeline name compiled-stages))
         (mapcar #'%gl:delete-shader stages-objects)
         (values compiled-stages prog-id prog-ids tfb-group-count)))))
@@ -358,7 +382,7 @@
              (let* ((versions (mapcar #'get-version-from-context contexts))
                     (trimmed (remove-duplicates (remove nil versions))))
                (case= (length trimmed)
-                 (0 (cepl.context::get-best-glsl-version))
+                 (0 (cepl.context::get-best-glsl-version (cepl-context)))
                  (1 (first trimmed))
                  (otherwise nil)))))
     (let ((contexts (mapcar #'get-context stage-pairs)))
@@ -427,7 +451,8 @@
                            stage-pairs
                            post
                            aggregate-public-uniforms
-                           uniform-assigners)
+                           uniform-assigners
+                           state-tag)
   (let ((uniform-names (mapcar #'first aggregate-public-uniforms)))
     (multiple-value-bind (upload-forms int-arr-size uint-arr-size)
         (generate-uniform-upload-forms uniform-assigners)
@@ -488,6 +513,8 @@
                                       compiled-stages)))
                    (setf (pipeline-state-has-fragment-stage state)
                          (not (null frag))))
+                 (setf (pipeline-state-diff-tag state)
+                       ,state-tag)
                  new-prog-ids)))
          (%post-init ,post)))))
 
@@ -533,8 +560,9 @@
     (first (last prims))))
 
 (defun+ serialize-stage-pairs (stage-pairs)
-  (cons 'list (mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
-                      stage-pairs)))
+  `(pairs-key-to-stage
+    (list ,@(mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
+                    stage-pairs))))
 
 
 
@@ -563,45 +591,75 @@
 (defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
 
-(defmacro draw-expander (stream draw-type primitive)
+(defun draw-expander (profile-name ctx-symb stream-symb draw-type-symb
+                      primitive)
   "This draws the single stream provided using the currently
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which
    is handling the binding."
-  `(let* ((stream ,stream)
-          (draw-type ,draw-type)
-          (index-type (buffer-stream-index-type stream)))
-     ,@(when (typep primitive 'varjo::patches)
-             `((assert (= (buffer-stream-patch-length stream)
-                          ,(varjo::vertex-count primitive)))
-               (%gl:patch-parameter-i
-                :patch-vertices ,(varjo::vertex-count primitive))))
-     (with-vao-bound (buffer-stream-vao stream)
-       (if (= (the (unsigned-byte 16) |*instance-count*|) 0)
-           (if index-type
-               (locally (declare (optimize (speed 3) (safety 0))
-                                 #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                 (%gl:draw-elements draw-type
-                                    (buffer-stream-length stream)
-                                    (cffi-type->gl-type index-type)
-                                    (%cepl.types:buffer-stream-start-byte stream)))
-               (locally (declare (optimize (speed 3) (safety 0))
-                                 #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                 (%gl:draw-arrays draw-type
-                                  (buffer-stream-start stream)
-                                  (buffer-stream-length stream))))
-           (if index-type
-               (%gl:draw-elements-instanced
-                draw-type
-                (buffer-stream-length stream)
-                (cffi-type->gl-type index-type)
-                (%cepl.types:buffer-stream-start-byte stream)
-                |*instance-count*|)
-               (%gl:draw-arrays-instanced
-                draw-type
-                (buffer-stream-start stream)
-                (buffer-stream-length stream)
-                |*instance-count*|))))))
+  `(let ((draw-type ,(if (typep primitive 'varjo::dynamic)
+                         `(buffer-stream-draw-mode-val stream-symb)
+                         (varjo::lisp-name primitive))))
+     (handle-transform-feedback ,ctx-symb draw-type prog-id tfs-primitive
+                                tfs-array-count)
+
+     (when (not has-fragment-stage)
+       (gl:enable :rasterizer-discard))
+     (,@(if profile-name
+            `(profile-block (,profile-name :draw))
+            '(progn))
+        (let* ((stream ,stream-symb)
+               (draw-type ,draw-type-symb)
+               (index-type (buffer-stream-index-type stream)))
+          ,@(when (typep primitive 'varjo::patches)
+              `((assert (= (buffer-stream-patch-length stream)
+                           ,(varjo::vertex-count primitive)))
+                (%gl:patch-parameter-i
+                 :patch-vertices ,(varjo::vertex-count primitive))))
+          (with-vao-bound (buffer-stream-vao stream)
+            (if (= (the (unsigned-byte 16) |*instance-count*|) 0)
+                (if index-type
+                    (locally (declare (optimize (speed 3) (safety 0))
+                                      #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
+                      (%gl:draw-elements draw-type
+                                         (buffer-stream-length stream)
+                                         (cffi-type->gl-type index-type)
+                                         (%cepl.types:buffer-stream-start-byte stream)))
+                    (locally (declare (optimize (speed 3) (safety 0))
+                                      #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
+                      (%gl:draw-arrays draw-type
+                                       (buffer-stream-start stream)
+                                       (buffer-stream-length stream))))
+                (if index-type
+                    (%gl:draw-elements-instanced
+                     draw-type
+                     (buffer-stream-length stream)
+                     (cffi-type->gl-type index-type)
+                     (%cepl.types:buffer-stream-start-byte stream)
+                     |*instance-count*|)
+                    (%gl:draw-arrays-instanced
+                     draw-type
+                     (buffer-stream-start stream)
+                     (buffer-stream-length stream)
+                     |*instance-count*|))))))
+     (when (not has-fragment-stage)
+       (gl:disable :rasterizer-discard))))
+
+(defun compute-expander (profile-name space-symb)
+  "This runs the compute function over the provided space using the
+   currently bound program. Please note: It Does Not bind the program so
+   this function should only be used from another function which
+   is handling the binding."
+  `(progn
+     (,@(if profile-name
+            `(profile-block (,profile-name :draw))
+            '(progn))
+        (locally (declare (optimize (speed 3) (safety 0))
+                          #+sbcl
+                          (sb-ext:muffle-conditions sb-ext:compiler-note))
+          (%gl:dispatch-compute (compute-space-size-x ,space-symb)
+                                (compute-space-size-y ,space-symb)
+                                (compute-space-size-z ,space-symb))))))
 
 ;;;--------------------------------------------------------------
 ;;; GL HELPERS ;;;
@@ -757,7 +815,17 @@
   (free-pipeline pipeline-func))
 
 (defun+ free-pipeline (pipeline)
-  (with-slots (prog-ids) (pipeline-spec pipeline)
-    (let ((prog-id (aref prog-ids (context-id (cepl-context)))))
-      (gl:delete-program prog-id)
-      (setf prog-ids nil))))
+  (labels ((walking-delete (name)
+             (let ((next (gethash name *gpu-pipeline-specs*)))
+               (remhash name *gpu-pipeline-specs*)
+               (when next
+                 (walking-delete next)))))
+    (with-slots (prog-ids) (pipeline-spec pipeline)
+      (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+        (let ((prog-id (etypecase prog-ids
+                         (array (aref prog-ids (context-id (cepl-context))))
+                         (integer prog-ids))))
+          (gl:delete-program prog-id)
+          (setf prog-ids nil)
+          (walking-delete pipeline)
+          nil)))))

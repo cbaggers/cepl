@@ -18,16 +18,28 @@
 (deftype context-id ()
   `(integer -1 ,+max-context-count+))
 
+(defvar *free-context-ids-lock* (bt:make-lock))
+
 (defvar *free-context-ids*
   (loop :for i :below +max-context-count+ :collect i))
 
 (defun get-free-context-id ()
-  (or (pop *free-context-ids*)
-      (error 'max-context-count-reached
-             :max +max-context-count+)))
+  (bt:with-lock-held (*free-context-ids-lock*)
+    (or (pop *free-context-ids*)
+        (error 'max-context-count-reached
+               :max +max-context-count+))))
 
 (defun discard-context-id (id)
-  (push id *free-context-ids*))
+  (bt:with-lock-held (*free-context-ids-lock*)
+    (push id *free-context-ids*)))
+
+(defstruct unbound-cepl-context
+  (consumed nil :type boolean)
+  (gl-context nil :type gl-context)
+  (requested-gl-version nil :type t)
+  (shared nil :type cepl-context)
+  (surface nil :type t)
+  (surfaces nil :type list))
 
 (defstruct (cepl-context (:constructor %make-cepl-context)
                          (:conc-name %cepl-context-))
@@ -37,7 +49,7 @@
   (gl-version-float 0f0 :type single-float)
   (bound-thread nil :type (or null bt:thread))
   (uninitialized-resources nil :type list)
-  (shared (error "Context must be in-package via #'make-context")
+  (shared (error "Context must be initialized via #'make-context")
           :type (array cepl-context (*)))
   (surfaces
    (error "Context must be initialized via #'make-context")
@@ -74,6 +86,10 @@
    (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
                :adjustable t :fill-pointer 0)
    :type (array gl-id (*)))
+  (array-of-ssbo-bindings-buffer-ids
+   (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
+               :adjustable t :fill-pointer 0)
+   :type (array gl-id (*)))
   (array-of-transform-feedback-bindings-buffer-ids
    (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
                :adjustable t :fill-pointer 0)
@@ -82,6 +98,10 @@
   (array-of-bound-samplers
    (make-array 0 :element-type '(or null sampler) :initial-element nil)
    :type (simple-array (or null sampler) (*)))
+
+  (array-of-bound-queries
+   (make-array 7 :element-type '(or null gpu-query) :initial-element nil)
+   :type (simple-array (or null gpu-query) (7)))
 
   (array-of-textures
    (make-array 0 :element-type 'texture :initial-element +null-texture+
@@ -105,11 +125,11 @@
          '(id gl-context requested-gl-version bound-thread current-program
            uninitialized-resources shared surfaces current-surface
            current-tfs vao-binding-id current-viewport default-viewport
-           current-scissor-viewports default-framebuffer read-fbo-binding
-           draw-fbo-binding fbos array-of-bound-gpu-buffers
-           array-of-gpu-buffers array-of-ubo-bindings-buffer-ids
+           current-scissor-viewports default-framebuffer array-of-gpu-buffers
+           draw-fbo-binding fbos array-of-bound-gpu-buffers read-fbo-binding
+           array-of-ubo-bindings-buffer-ids array-of-ssbo-bindings-buffer-ids
            current-blend-params array-of-transform-feedback-bindings-buffer-ids
-           array-of-bound-samplers array-of-textures
+           array-of-bound-samplers array-of-textures array-of-bound-queries
            depth-func color-masks depth-mask depth-range depth-clamp cull-face
            front-face current-stencil-params-front current-stencil-params-back
            current-stencil-mask-front current-stencil-mask-back
@@ -136,5 +156,10 @@
 
 (defn current-surface ((cepl-context cepl-context)) t
   (%cepl-context-current-surface cepl-context))
+
+;;----------------------------------------------------------------------
+
+#+sbcl
+(declaim (sb-ext:freeze-type cepl-context))
 
 ;;----------------------------------------------------------------------

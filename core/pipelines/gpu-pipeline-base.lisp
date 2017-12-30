@@ -13,10 +13,20 @@
 (defvar *gpu-pipeline-specs-lock* (bt:make-lock))
 (defvar *gpu-pipeline-specs* (make-hash-table :test #'eq))
 
+(defvar *cache-last-compile-result* t)
+
+(defvar *map-of-pipeline-names-to-gl-ids-lock* (bt:make-lock))
+
+(defvar *map-of-pipeline-names-to-gl-ids*
+  (make-hash-table :test #'eq))
+
+(defvar *suppress-upload-message* nil)
+
 ;;--------------------------------------------------
 
 (defclass lambda-pipeline-spec ()
-  ((cached-compile-results :initarg :cached-compile-results :initform nil)))
+  ((cached-compile-results :initarg :cached-compile-results :initform nil)
+   (prog-ids :initarg :prog-ids)))
 
 (defclass pipeline-spec ()
   ((name :initarg :name)
@@ -31,6 +41,8 @@
     :initarg :geometry-stage :initform nil)
    (fragment-stage
     :initarg :fragment-stage :initform nil)
+   (compute-stage
+    :initarg :compute-stage :initform nil)
    (diff-tags
     :initarg :diff-tags :initform nil)
    prog-ids))
@@ -56,26 +68,30 @@
                tessellation-control-stage
                tessellation-evaluation-stage
                geometry-stage
-               fragment-stage) spec
+               fragment-stage
+               compute-stage) spec
     (list vertex-stage
           tessellation-control-stage
           tessellation-evaluation-stage
           geometry-stage
-          fragment-stage)))
+          fragment-stage
+          compute-stage)))
 
 (defmethod pipeline-stage-pairs ((spec pipeline-spec))
   (with-slots (vertex-stage
                tessellation-control-stage
                tessellation-evaluation-stage
                geometry-stage
-               fragment-stage) spec
+               fragment-stage
+               compute-stage) spec
     (remove-if-not
      #'cdr
      (list (cons :vertex vertex-stage)
            (cons :tessellation-control tessellation-control-stage)
            (cons :tessellation-evaluation tessellation-evaluation-stage)
            (cons :geometry geometry-stage)
-           (cons :fragment fragment-stage)))))
+           (cons :fragment fragment-stage)
+           (cons :compute compute-stage)))))
 
 ;;--------------------------------------------------
 
@@ -88,7 +104,8 @@
 (defun+ %make-gpu-func-spec (name in-args uniforms context body instancing
                             equivalent-inargs equivalent-uniforms
                             actual-uniforms
-                            doc-string declarations missing-dependencies)
+                            doc-string declarations missing-dependencies
+                            diff-tag)
   (make-instance 'gpu-func-spec
                  :name name
                  :in-args (mapcar #'listify in-args)
@@ -102,7 +119,7 @@
                  :doc-string doc-string
                  :declarations declarations
                  :missing-dependencies missing-dependencies
-                 :diff-tag (get-gpu-func-spec-tag)))
+                 :diff-tag diff-tag))
 
 (defun+ %make-glsl-stage-spec (name in-args uniforms context body-string
                               compiled)
@@ -126,11 +143,12 @@
 (defmacro with-gpu-func-spec (func-spec &body body)
   `(with-slots (name in-args uniforms actual-uniforms context body instancing
                      equivalent-inargs equivalent-uniforms doc-string
-                     declarations missing-dependencies diff-tag) ,func-spec
+                     declarations missing-dependencies diff-tag
+                     cached-compile-results) ,func-spec
      (declare (ignorable name in-args uniforms actual-uniforms context body
                          instancing equivalent-inargs equivalent-uniforms
                          doc-string declarations missing-dependencies
-                         diff-tag))
+                         diff-tag cached-compile-results))
      ,@body))
 
 (defmacro with-glsl-stage-spec (glsl-stage-spec &body body)
@@ -147,7 +165,8 @@
       ',name ',in-args ',uniforms ',context ',body
       ',instancing ',equivalent-inargs ',equivalent-uniforms
       ',actual-uniforms
-      ,doc-string ',declarations ',missing-dependencies)))
+      ,doc-string ',declarations ',missing-dependencies
+      ',diff-tag)))
 
 (defun+ clone-stage-spec (spec &key (new-context nil set-context))
   (with-gpu-func-spec spec
@@ -167,7 +186,48 @@
      :doc-string doc-string
      :declarations declarations
      :missing-dependencies missing-dependencies
+     :compiled cached-compile-results
      :diff-tag (or diff-tag (error "CEPL BUG: Diff-tag missing")))))
+
+(defun spec-changed-p (spec old-spec)
+  (or (not spec)
+      (not old-spec)
+      (with-slots ((name-a name)
+                   (in-args-a in-args)
+                   (uniforms-a uniforms)
+                   (actual-uniforms-a actual-uniforms)
+                   (context-a context)
+                   (body-a body)
+                   (instancing-a instancing)
+                   (equivalent-inargs-a equivalent-inargs)
+                   (equivalent-uniforms-a equivalent-uniforms)
+                   (doc-string-a doc-string)
+                   (declarations-a declarations)
+                   (missing-dependencies-a missing-dependencies)
+                   (diff-tag-a diff-tag)) spec
+        (with-slots ((name-b name)
+                     (in-args-b in-args)
+                     (uniforms-b uniforms)
+                     (actual-uniforms-b actual-uniforms)
+                     (context-b context)
+                     (body-b body)
+                     (instancing-b instancing)
+                     (equivalent-inargs-b equivalent-inargs)
+                     (equivalent-uniforms-b equivalent-uniforms)
+                     (doc-string-b doc-string)
+                     (declarations-b declarations)
+                     (missing-dependencies-b missing-dependencies)
+                     (diff-tag-b diff-tag)) old-spec
+          (not (and (equal body-a body-b)
+                    (equal context-a context-b)
+                    (equal declarations-a declarations-b)
+                    (equal in-args-a in-args-b)
+                    (equal uniforms-a uniforms-b)
+                    (equal name-a name-b)))))))
+
+(defmethod func-spec->name ((spec gpu-func-spec))
+  (with-gpu-func-spec spec
+    (cons name (mapcar #'second in-args))))
 
 ;;--------------------------------------------------
 
@@ -232,6 +292,10 @@
 (defmethod gpu-func-spec (key &optional error-if-missing)
   (gpu-func-spec (func-key key) error-if-missing))
 
+(defmethod gpu-func-spec ((func-key gpu-func-spec) &optional error-if-missing)
+  (declare (ignore error-if-missing))
+  (error "Trying to get a func spec using a func spec as a key"))
+
 (defmethod gpu-func-spec ((func-key func-key) &optional error-if-missing)
   (bt:with-lock-held (*gpu-func-specs-lock*)
     (or (assocr func-key *gpu-func-specs* :test #'func-key=)
@@ -274,7 +338,7 @@
 
 (defmethod %unsubscibe-from-all ((func-key func-key))
   "As the name would suggest this removes one function's dependency on another
-   It is used by #'%test-&-update-spec via #'%update-gpu-function-data"
+   It is used by #'%test-&-process-spec via #'%update-gpu-function-data"
   (labels ((%remove-gpu-function-from-dependancy-table (pair)
              (dbind (key . dependencies) pair
                (when (member func-key dependencies :test #'func-key=)
@@ -348,13 +412,14 @@ names are depended on by the functions named later in the list"
      :test #'eq)))
 
 (defun+ update-specs-with-missing-dependencies ()
-  (bt:with-lock-held (*gpu-func-specs-lock*)
+  (let ((specs (bt:with-lock-held (*gpu-func-specs-lock*)
+                 (copy-list *gpu-func-specs*))))
     (map 'nil λ(dbind (k . v) _
                  (with-gpu-func-spec v
                    (when missing-dependencies
-                     (%test-&-update-spec v)
+                     (%test-&-process-spec v)
                      k)))
-         *gpu-func-specs*)))
+         specs)))
 
 (defmethod recompile-pipelines-that-use-this-as-a-stage ((key func-key))
   "Recompile all pipelines that depend on the named gpu function or any other
@@ -413,22 +478,21 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defvar +cache-last-compile-result+ t)
-
-(defun+ make-lambda-pipeline-spec (compiled-stages)
+(defun+ make-lambda-pipeline-spec (prog-id compiled-stages)
   (make-instance 'lambda-pipeline-spec
-                 :cached-compile-results compiled-stages))
+                 :cached-compile-results compiled-stages
+                 :prog-ids prog-id))
 
 (defun+ make-pipeline-spec (name stages context)
   (dbind (&key vertex tessellation-control tessellation-evaluation
-               geometry fragment) (flatten stages)
-    (let ((tags (mapcar λ(when _
-                           (slot-value (gpu-func-spec _) 'diff-tag))
+               geometry fragment compute) (flatten stages)
+    (let ((tags (mapcar λ(when _ (slot-value _ 'diff-tag))
                         (list vertex
                               tessellation-control
                               tessellation-evaluation
                               geometry
-                              fragment))))
+                              fragment
+                              compute))))
       (make-instance 'pipeline-spec
                      :name name
                      :vertex-stage vertex
@@ -436,15 +500,16 @@ names are depended on by the functions named later in the list"
                      :tessellation-evaluation-stage tessellation-evaluation
                      :geometry-stage geometry
                      :fragment-stage fragment
+                     :compute-stage compute
                      :diff-tags tags
                      :context context))))
 
 (defun+ pipeline-spec (name)
-  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
-    (let ((res (gethash name *gpu-pipeline-specs*)))
-      (if (and res (symbolp res))
-          (pipeline-spec res)
-          res))))
+  (let ((res (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+               (gethash name *gpu-pipeline-specs*))))
+    (if (and res (symbolp res))
+        (pipeline-spec res)
+        res)))
 
 (defun+ (setf pipeline-spec) (value name)
   (bt:with-lock-held (*gpu-pipeline-specs-lock*)
@@ -459,11 +524,11 @@ names are depended on by the functions named later in the list"
 
 (defun+ function-keyed-pipeline (func)
   (assert (typep func 'function))
-  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
-    (let ((spec (gethash func *gpu-pipeline-specs*)))
-      (if (typep spec 'lambda-pipeline-spec)
-          spec
-          (pipeline-spec spec)))))
+  (let ((spec (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+                (gethash func *gpu-pipeline-specs*))))
+    (if (typep spec 'lambda-pipeline-spec)
+        spec
+        (pipeline-spec spec))))
 
 (defun+ (setf function-keyed-pipeline) (spec func)
   (assert (typep func 'function))
@@ -484,7 +549,7 @@ names are depended on by the functions named later in the list"
              (handler-case (gpu-func-spec (%gpu-function x))
                (cepl.errors:gpu-func-spec-not-found ()
                  nil))))
-    (if +cache-last-compile-result+
+    (if *cache-last-compile-result*
         (let ((spec (or (pipeline-spec asset-name) (gfunc-spec asset-name))))
           (typecase spec
             (null (warn 'pull-g-not-cached :asset-name asset-name))
@@ -544,12 +609,6 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(defvar *map-of-pipeline-names-to-gl-ids-lock*
-  (bt:make-lock))
-
-(defvar *map-of-pipeline-names-to-gl-ids*
-  (make-hash-table :test #'eq))
-
 (defun+ request-program-id-for (context name)
   (bt:with-lock-held (*map-of-pipeline-names-to-gl-ids-lock*)
     (%with-cepl-context-slots (id) context
@@ -579,6 +638,7 @@ names are depended on by the functions named later in the list"
     (varjo::tessellation-control-stage :tess-control-shader)
     (varjo::geometry-stage :geometry-shader)
     (varjo::fragment-stage :fragment-shader)
+    (varjo::compute-stage :compute-shader)
     (t (error "CEPL: ~a is not a known type of shader stage"
               (type-of stage)))))
 

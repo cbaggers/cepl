@@ -186,6 +186,10 @@
              alpha-size depth-size stencil-size buffer-size
              red-size green-size blue-size)))
 
+(defmethod %shutdown ((host api-1) &key &allow-other-keys)
+  (with-slots (shutdown-function) host
+    (funcall shutdown-function)))
+
 (defmethod %set-surface-size ((host api-1) surface width height
                               &key &allow-other-keys)
   (assert surface)
@@ -208,3 +212,6 @@
 (defmethod %set-surface-title ((host api-1) surface title &key &allow-other-keys)
   (with-slots (set-surface-title-function) host
     (funcall set-surface-title-function surface title)))
+
+(defmethod %make-gl-context-shared-with-current-context ((host api-1) &key &allow-other-keys)
+  (error "CEPL: Cannot make shared contexts in host api v1"))

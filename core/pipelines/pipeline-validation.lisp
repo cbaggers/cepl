@@ -5,10 +5,14 @@
 
 (defun+ assert-valid-gpipe-form (pipeline-name gpipe-args)
   (labels ((check (x) (member x (cons :post varjo:*stage-names*))))
-    (let ((invalid (remove-if #'check (remove-if-not #'keywordp gpipe-args))))
+    (let* ((kwds (remove-if-not #'keywordp gpipe-args))
+           (invalid (remove-if #'check kwds)))
       (when invalid
         (error 'invalid-keywords-for-shader-gpipe-args
-               :pipeline-name pipeline-name :keys invalid))))
+               :pipeline-name pipeline-name :keys invalid))
+      (when (and (find :compute kwds) (> (length kwds) 1))
+        (error 'compute-pipeline-must-be-single-stage
+               :name pipeline-name :stages kwds))))
   (let ((without-keys (remove :post (remove-if #'keywordp gpipe-args))))
     (if (< (length without-keys) 1)
         (error 'not-enough-args-for-implicit-gpipe-stages
