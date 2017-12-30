@@ -51,10 +51,10 @@
       'defun))
 
 (defmethod s-slot-args ((slot gl-struct-slot) (args list))
-    (labels ((fun-arg (x) (if (listp x) (first x) x)))
-      (if (s-uses-method-p slot)
-          args
-          (mapcar #'fun-arg args))))
+  (labels ((fun-arg (x) (if (listp x) (first x) x)))
+    (if (s-uses-method-p slot)
+        args
+        (mapcar #'fun-arg args))))
 
 ;;------------------------------------------------------------
 
@@ -109,8 +109,8 @@
                                 (list (s-name x) (v-type-of x)))
                               slots))))
            (slot-layouts (if layout
-                           (layout-members layout)
-                           (n-of nil (length slots))))
+                             (layout-members layout)
+                             (n-of nil (length slots))))
            (wrapper-constructor-name (hidden-symb name :make)))
       (assert (= (length slot-layouts) (length slots)))
       (when (validate-defstruct-g-form name slots)
