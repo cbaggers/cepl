@@ -133,7 +133,7 @@
                   (< ,i-unit +unknown-uniform-int-id+)
                   (>= ,i-unit 0))
          (unless (eq (%sampler-type ,arg-name)
-                     ,(cepl.types::type->spec type))
+                     ,(type->type-spec type))
            (error "incorrect type of sampler passed to shader"))
          (cepl.context::set-sampler-bound
           ,*pipeline-body-context-var* ,arg-name ,i-unit))))))
@@ -207,9 +207,9 @@
          ;; foreign data to upload (think structs) so we need to use
          ;; #'get-foreign-uniform-function-name.
          ,(if byte-offset
-              `(,(get-foreign-uniform-function-name (cepl.types::type->spec type))
+              `(,(get-foreign-uniform-function-name (type->type-spec type))
                  ,id-name 1 (cffi:inc-pointer ,arg-name ,byte-offset))
-              `(,(get-uniform-function-name (cepl.types::type->spec type)) ,id-name ,arg-name)))))))
+              `(,(get-uniform-function-name (type->type-spec type)) ,id-name ,arg-name)))))))
 
 (defun+ make-array-assigners (indexes arg-name type glsl-name-path &optional (byte-offset 0))
   (let ((element-type (varjo:v-element-type type))
@@ -225,7 +225,7 @@
         (make-simple-assigner indexes arg-name element-type
                               (format nil "~a[~a]" glsl-name-path i)
                               byte-offset)
-        :do (incf byte-offset (gl-type-size (cepl.types::type->spec element-type)))))))
+        :do (incf byte-offset (gl-type-size (type->type-spec element-type)))))))
 
 
 (defun+ make-struct-assigners (indexes arg-name type glsl-name-path

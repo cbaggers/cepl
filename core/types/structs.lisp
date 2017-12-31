@@ -10,40 +10,79 @@
 
 ;;------------------------------------------------------------
 
+(defvar *struct-slot-defs* (make-hash-table))
+
+(defun g-struct-info (name)
+  (values (gethash name *struct-slot-defs*)))
+
+(defun (setf g-struct-info) (slots name)
+  (setf (gethash name *struct-slot-defs*)
+        slots))
+
+;;------------------------------------------------------------
+
+(defclass cepl-struct-definition ()
+  ((name :initarg :name :reader s-name)
+   (layout :initarg :layout :reader s-layout)
+   (slots :initarg :slots :reader s-slots)))
+
+(defmethod make-load-form ((obj cepl-struct-definition) &optional environment)
+  (declare (ignore environment))
+  (with-slots (name layout slots) obj
+    `(make-instance 'cepl-struct-definition
+                    :name ',name
+                    :layout ',layout
+                    :slots ',slots)))
+
+;;------------------------------------------------------------
+
 (defgeneric s-arrayp (object))
-(defgeneric s-prim-p (object))
-(defgeneric s-extra-prim-p (object))
 (defgeneric s-def (object))
 (defgeneric s-slot-args (slot args))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defclass gl-struct-slot ()
-    ((name :initarg :name :reader s-name)
-     (type :initarg :type :reader s-type)
-     (element-type :initarg :element-type :reader s-element-type)
-     (dimensions :initarg :dimensions :initform 1 :reader s-dimensions)
-     (normalized :initarg :normalized :reader s-normalizedp)
-     (reader :initarg :reader :reader s-reader)
-     (writer :initarg :writer :reader s-writer)
-     (uses-method-p :initarg :uses-method-p :reader s-uses-method-p))))
+(defclass gl-struct-slot ()
+  ((name :initarg :name :reader s-name)
+   (type :initarg :type :reader s-type)
+   (element-type :initarg :element-type :reader s-element-type)
+   (dimensions :initarg :dimensions :initform 1 :reader s-dimensions)
+   (normalized :initarg :normalized :reader s-normalizedp)
+   (reader :initarg :reader :reader s-reader)
+   (writer :initarg :writer :reader s-writer)
+   (uses-method-p :initarg :uses-method-p :reader s-uses-method-p)
+   (layout :initarg :layout :reader s-layout)
+   (parent-ffi-name :initarg :parent-ffi-name :reader s-parent-ffi-name)))
 
-(defmethod v-type-of ((gss gl-struct-slot))
-  (if (eq (s-type gss) :array)
-      (type-spec->type (list (s-element-type gss) (s-dimensions gss)))
-      (type-spec->type (s-type gss))))
+(defmethod make-load-form ((slot gl-struct-slot) &optional environment)
+  (declare (ignore environment))
+  (with-slots (name
+               type
+               element-type
+               dimensions
+               normalized
+               reader
+               writer
+               uses-method-p
+               layout
+               parent-ffi-name)
+      slot
+    `(make-instance 'gl-struct-slot
+                    :name ',name
+                    :type ',type
+                    :normalized ',normalized
+                    :reader ',reader
+                    :writer ',writer
+                    :element-type ',element-type
+                    :dimensions ',dimensions
+                    :layout ',layout
+                    :parent-ffi-name ',parent-ffi-name)))
 
 (defmethod s-arrayp ((object gl-struct-slot))
   (eq (s-type object) :array))
 
-(defmethod s-prim-p ((spec t))
-  (not (null (member spec cffi::*built-in-foreign-types*))))
-(defmethod s-extra-prim-p ((spec t))
-  (not (null (assoc spec cffi::*extra-primitive-types*))))
-
-(defmethod s-prim-p ((object gl-struct-slot))
-  (s-prim-p (s-type object)))
-(defmethod s-extra-prim-p ((object gl-struct-slot))
-  (s-extra-prim-p (s-type object)))
+(defmethod v-type-of ((gss gl-struct-slot))
+  (if (s-arrayp gss)
+      (type-spec->type (list (s-element-type gss) (s-dimensions gss)))
+      (type-spec->type (s-type gss))))
 
 (defmethod s-def ((object gl-struct-slot))
   (if (s-uses-method-p object)
@@ -68,49 +107,56 @@
                         loop-op))))
     (inner (reverse dimensions) (reverse index-vars) body loop-op)))
 
-(defun+ type->spec (type)
-  ;; Well this is janky, I guess this'll break at some point if we don't sort
-  ;; it before then.. what is odd is that it seems this is really just for
-  ;; getting a spec using the keyword names where it makes sense.
-  (let ((spec (type->type-spec type)))
-    (if (listp spec)
-        `(,(first spec)
-           ;; When would this ↓↓↓↓-----↓↓↓↓ happen?
-           ,(if (and (listp (second spec))
-                     (= (length (second spec)) 1))
-                (first (second spec))
-                (second spec)))
-        spec)))
-
 ;;------------------------------------------------------------
+
+(defun potential-struct-layout (name layout-specifier slot-descriptions)
+  (unless (string= layout-specifier :default)
+    (calc-struct-layout-from-name-type-pairs
+     layout-specifier
+     name
+     (mapcar (lambda (x)
+               (dbind (name type &rest rest) x
+                 (declare (ignore rest))
+                 (list name (type-spec->type type))))
+             slot-descriptions))))
 
 (defmacro defstruct-g (name-and-options &body slot-descriptions)
   (dbind (name &key (accessors t) (constructor (symb 'make- name))
                (readers t) (writers t) (pull-push t) (attribs t) (populate t)
                (layout :default))
       (listify name-and-options)
-    (let* ((slots (mapcar (lambda (_) (normalize-slot-description
-                                       _ name (and readers accessors)
-                                       (and writers accessors)))
-                          slot-descriptions))
+    (let* (;; names
            (foreign-struct-name (hidden-symb name :foreign))
            (qualified-struct-name `(:struct ,foreign-struct-name))
            (get-ptr-name (hidden-symb name :ptr))
            (typed-populate (symb :populate- name))
-           (layout (unless (string= layout :default)
-                     (calc-struct-layout-from-name-type-pairs
-                      layout
-                      name
-                      (mapcar (lambda (x)
-                                (list (s-name x) (v-type-of x)))
-                              slots))))
+           (wrapper-constructor-name (hidden-symb name :make))
+           ;; slots
+           (layout-specifier layout)
+           (layout (potential-struct-layout name
+                                            layout-specifier
+                                            slot-descriptions))
            (slot-layouts (if layout
                              (layout-members layout)
-                             (n-of nil (length slots))))
-           (wrapper-constructor-name (hidden-symb name :make)))
+                             (n-of nil (length slot-descriptions))))
+           (slots (mapcar (lambda (desc layout)
+                            (normalize-slot-description qualified-struct-name
+                                                        desc
+                                                        layout
+                                                        name
+                                                        (and readers accessors)
+                             (and writers accessors)))
+                          slot-descriptions
+                          slot-layouts))
+           (struct-info (make-instance 'cepl-struct-definition
+                                       :name name
+                                       :layout layout
+                                       :slots slots)))
       (assert (= (length slot-layouts) (length slots)))
       (when (validate-defstruct-g-form name slots)
+        (setf (g-struct-info name) struct-info)
         `(progn
+           (setf (g-struct-info ',name) ',struct-info)
            (eval-when (:compile-toplevel :load-toplevel :execute)
              ,(make-varjo-struct-def name slots))
            ,@(make-instance-wrapper-def name
@@ -143,20 +189,31 @@
            ,(make-varjo-struct-lookup name)
            ',name)))))
 
-(defun+ normalize-slot-description (slot-description type-name readers writers)
+(defun+ normalize-slot-description (qualified-struct-name
+                                    slot-description
+                                    slot-layout
+                                    type-name
+                                    readers
+                                    writers)
   (destructuring-bind (name type &key normalized accessor) slot-description
     (let* ((type (listify type))
            (dimensions (listify (or (second type) 1)))
            (arrayp (> (first dimensions) 1))
            (element-type (when arrayp (first type)))
            (type (if arrayp :array (first type))))
-      (make-instance 'gl-struct-slot :name name :type type :normalized normalized
+      (make-instance 'gl-struct-slot
+                     :name name
+                     :type type
+                     :normalized normalized
                      :reader (when readers
                                (or accessor (symb type-name '- name)))
                      :writer (when writers
                                (or accessor (symb type-name '- name)))
                      :uses-method-p (not (null accessor))
-                     :element-type element-type :dimensions dimensions))))
+                     :element-type element-type
+                     :dimensions dimensions
+                     :layout slot-layout
+                     :parent-ffi-name qualified-struct-name))))
 
 ;; put all cepl's errors definitions in one place (like varjo)
 (defun+ validate-defstruct-g-form (name slots)
@@ -189,7 +246,7 @@
 (defun+ validate-varjo-type-spec (spec)
   (let ((spec (or (cdr (assoc spec +cpu->gpu-vec-mappings+))
                   spec)))
-    (type->spec (type-spec->type spec))))
+    (type->type-spec (type-spec->type spec))))
 
 ;;------------------------------------------------------------
 
@@ -425,7 +482,7 @@
           ;;
           ((v-typep type 'v-vector)
            (list (list (apply #'* (v-dimensions type))
-                       (type->spec (v-element-type type))
+                       (type->type-spec (v-element-type type))
                        normalize)))
           ;;
           ((v-typep type 'v-array)
@@ -433,25 +490,20 @@
               :append (expand-mappable-slot-to-layout
                        nil (v-element-type type) normalize)))
           ;;
-          (t `((1 ,(type->spec type) ,normalize))))))
+          (t `((1 ,(type->type-spec type) ,normalize))))))
 
 ;;------------------------------------------------------------
 
 (defun+ make-pull-push (name slots)
-  `((defmethod pull-g ((object ,name))
-      (list
-       ,@(loop :for slot :in slots :for i :from 0 :collect
-            (if (s-arrayp slot)
-                `(pull-g (,(s-reader slot) object))
-                `(,(s-reader slot) object)))))
-    (defmethod pull1-g ((object ,name))
-      (list
-       ,@(loop :for slot :in slots :for i :from 0 :collect
-            (if (s-arrayp slot)
-                `(pull-g (,(s-reader slot) object))
-                `(,(s-reader slot) object)))))
-    (defmethod push-g ((object list) (destination ,name))
-      (cepl.internals:populate destination object))))
+  (let ((pull-body `(list
+                     ,@(loop :for slot :in slots :for i :from 0 :collect
+                          (if (s-arrayp slot)
+                              `(pull-g (,(s-reader slot) object))
+                              `(,(s-reader slot) object))))))
+    `((defmethod pull-g ((object ,name)) ,pull-body)
+      (defmethod pull1-g ((object ,name)) ,pull-body)
+      (defmethod push-g ((object list) (destination ,name))
+        (cepl.internals:populate destination object)))))
 
 ;;------------------------------------------------------------
 

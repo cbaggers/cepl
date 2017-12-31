@@ -39,10 +39,6 @@
         (error "Type ~a is not known to cepl" type))))
 
 (defgeneric clear-gl-context-cache (object))
-(defgeneric s-arrayp (object))
-(defgeneric s-prim-p (spec))
-(defgeneric s-extra-prim-p (spec))
-(defgeneric s-def (spec))
 
 (defgeneric symbol-names-cepl-structp (sym))
 (defmethod symbol-names-cepl-structp ((sym t))
