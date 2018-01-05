@@ -74,17 +74,13 @@
   ;; getting a spec using the keyword names where it makes sense.
   (let ((spec (type->type-spec type)))
     (if (listp spec)
-        `(,(if (core-typep (type-spec->type (first spec)))
-               (kwd (subseq (symbol-name (first spec)) 2))
-               (first spec))
+        `(,(first spec)
            ;; When would this ↓↓↓↓-----↓↓↓↓ happen?
            ,(if (and (listp (second spec))
                      (= (length (second spec)) 1))
                 (first (second spec))
                 (second spec)))
-        (if (core-typep type)
-            (kwd (subseq (symbol-name spec) 2))
-            spec))))
+        spec)))
 
 ;;------------------------------------------------------------
 
@@ -360,9 +356,10 @@
 ;;------------------------------------------------------------
 
 (defun+ buffer-stream-comptible-typep (slot)
-  (let* ((type-spec (s-type slot)))
-    (or (not (null (cdr (assoc type-spec +cpu->gpu-vec-mappings+))))
-        (core-typep (type-spec->type type-spec)))))
+  (when (not (s-arrayp slot))
+    (let* ((type-spec (s-type slot)))
+      (or (not (null (cdr (assoc type-spec +cpu->gpu-vec-mappings+))))
+          (core-typep (type-spec->type type-spec))))))
 
 (defun+ make-struct-attrib-assigner (type-name slots)
   (when (every #'buffer-stream-comptible-typep slots)

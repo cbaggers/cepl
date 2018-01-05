@@ -489,7 +489,7 @@
            (reduce #'* (v-dimensions type))))
       (let* ((spec (type->type-spec type))
              (spec (or (first (find spec varjo.internals::*type-shorthand*
-                                    :key #'second))
+                                    :key #'cdr))
                        spec)))
         (cffi:foreign-type-size spec))))
 
