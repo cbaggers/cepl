@@ -237,8 +237,7 @@
       :for (pslot-type array-length . rest) := (listify v-slot-type)
       :do (just-ignore rest)
       :append
-      (let* ((pslot-type (type-spec->type pslot-type))
-             (glsl-name (varjo.internals:safe-glsl-name-string l-slot-name))
+      (let* ((glsl-name (varjo.internals:safe-glsl-name-string l-slot-name))
              (glsl-name-path (format nil "~a.~a" glsl-name-path glsl-name)))
         (cond
           ;;
@@ -252,7 +251,7 @@
           (t (list (make-simple-assigner indexes arg-name pslot-type glsl-name-path
                                          byte-offset)))))
       :do (when byte-offset
-            (incf byte-offset (* (gl-type-size pslot-type)
+            (incf byte-offset (* (gl-type-size (type->type-spec pslot-type))
                                  (or array-length 1)))))))
 
 

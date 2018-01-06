@@ -327,12 +327,13 @@
                   (struct-info (cepl.types::g-struct-info type-spec :error-if-not-found nil)))
              (if struct-info
                  (let ((layout (cepl.types::s-layout struct-info)))
-                   (assert (or (find :ssbo arg) (find :ubo arg))
-                           ()
-                           'invalid-layout-for-inargs
-                           :name name
-                           :type-name type-spec
-                           :layout (class-name (class-of layout)))
+                   (when layout
+                     (assert (or (find :ssbo arg) (find :ubo arg))
+                             ()
+                             'invalid-layout-for-uniform
+                             :name name
+                             :type-name type-spec
+                             :layout (class-name (class-of layout))))
                    (etypecase layout
                      (null arg)
                      (std-140 (append arg (list :std-140)))
@@ -352,8 +353,7 @@
                     (struct-info (cepl.types::g-struct-info type-spec :error-if-not-found nil)))
                (when struct-info
                  (let ((layout (cepl.types::s-layout struct-info)))
-                   (assert (null (cepl.types::s-layout struct-info))
-                           ()
+                   (assert (null layout) ()
                            'invalid-layout-for-inargs
                            :name name
                            :type-name type-spec

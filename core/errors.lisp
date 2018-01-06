@@ -626,11 +626,13 @@ Please use one of the following: ~{~a~^, ~}"
 
 (deferror invalid-layout-for-inargs () (name type-name layout)
     "CEPL: ~a is not a valid type for ~a's input arguments as it has
-the layout ~a. std-140 & std-430 layouts are only valid for ubo & ssbo
-uniforms."
+the layout ~a.
+
+~a can only be used for uniforms marked as :ubo or :ssbo."
   type-name
   (or name "this lambda pipeline")
-  layout)
+  layout
+  type-name)
 
 (deferror invalid-layout-for-uniform () (name type-name layout)
     "CEPL: ~a is not a valid type for ~a's uniform argument as it has
