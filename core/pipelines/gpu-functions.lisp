@@ -129,13 +129,9 @@
     (handler-case
         (varjo:with-constant-inject-hook #'try-injecting-a-constant
           (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
-            (handler-bind
-                ((varjo-conditions:cannot-establish-exact-function
-                  (lambda (c)
-                    (declare (ignore c))
-                    (invoke-restart
-                     'varjo-conditions:allow-call-function-signature))))
-              (let* ((context (swap-version (lowest-suitable-glsl-version context)
+            (varjo:with-unknown-first-class-functions-allowed
+              (let* ((varjo.internals::*allow-call-function-signature* t)
+                     (context (swap-version (lowest-suitable-glsl-version context)
                                             context))
                      (compiled
                       (first

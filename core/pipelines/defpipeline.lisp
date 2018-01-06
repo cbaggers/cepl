@@ -319,14 +319,6 @@
   (setf (function-keyed-pipeline func)
         name))
 
-(defvar *all-quiet* nil)
-
-(defun+ quiet-warning-handler (c)
-  (when *all-quiet*
-    (let ((r (find-restart 'muffle-warning c)))
-      (when r
-        (invoke-restart r)))))
-
 (defun+ %gl-make-shader-from-varjo (compiled-stage)
   (make-shader (varjo->gl-stage-names compiled-stage)
                (varjo:glsl-code compiled-stage)))
