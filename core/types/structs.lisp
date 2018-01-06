@@ -132,7 +132,6 @@
     (let* (;; names
            (foreign-struct-name (hidden-symb name :foreign))
            (qualified-struct-name `(:struct ,foreign-struct-name))
-           (get-ptr-name (hidden-symb name :ptr))
            (typed-populate (symb :populate- name))
            (wrapper-constructor-name (hidden-symb name :make))
            ;; slots
@@ -166,18 +165,17 @@
            ,@(make-instance-wrapper-def name
                                         foreign-struct-name
                                         wrapper-constructor-name
-                                        get-ptr-name
                                         slots typed-populate slot-layouts)
            ,@(when (and readers accessors)
                (remove nil (mapcar (lambda (slot slot-layout)
-                                     (make-slot-getter get-ptr-name slot name
+                                     (make-slot-getter slot name
                                                        qualified-struct-name
                                                        slot-layout))
                                    slots
                                    slot-layouts)))
            ,@(when (and writers accessors)
                (remove nil (mapcar (lambda (slot slot-layout)
-                                     (make-slot-setter get-ptr-name slot name
+                                     (make-slot-setter slot name
                                                        qualified-struct-name
                                                        slot-layout))
                                    slots
@@ -260,11 +258,19 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (base-gstruct-wrapper (:copier nil))
+  (pointer (null-pointer) :type foreign-pointer :read-only t))
+
+(defmethod cepl.c-arrays:pointer ((wrapper base-gstruct-wrapper))
+  (base-gstruct-wrapper-pointer wrapper))
+
+(defmethod free ((wrapper base-gstruct-wrapper))
+  (foreign-free (base-gstruct-wrapper-pointer wrapper)))
+
 (defun+ make-instance-wrapper-def (name
                                    foreign-struct-name
                                    wrapper-constructor-name
-                                   get-ptr
-                                   slots
+                                    slots
                                    typed-populate
                                    slot-layouts)
   (let* ((foreign-type-name (hidden-symb name :cffi-ct-type))
@@ -288,15 +294,15 @@
         (defmethod expand-from-foreign (ptr (type ,foreign-type-name))
           (list ',wrapper-constructor-name ptr)))
 
-      (defstruct (,name (:conc-name nil)
-                        (:constructor ,wrapper-constructor-name (,get-ptr))
-                        (:copier nil))
-        (,get-ptr (null-pointer) :type foreign-pointer :read-only t))
+      (defstruct (,name (:include base-gstruct-wrapper)
+                        (:constructor ,wrapper-constructor-name (pointer))
+                        (:copier nil)))
 
       (defmethod print-object ((obj ,name) stream)
         (format stream "#<~a {~x}>"
                 ',name
-                (cffi:pointer-address (,get-ptr obj))))
+                (cffi:pointer-address
+                 (base-gstruct-wrapper-pointer obj))))
 
       (defn-inline ,from ((ptr foreign-pointer)) ,name
         (declare (optimize (speed 3) (safety 0) (debug 0)))
@@ -346,57 +352,57 @@
 
 ;;------------------------------------------------------------
 
-(defun+ make-slot-getter (get-ptr slot type-name foreign-struct-name layout)
+(defun+ make-slot-getter (slot type-name foreign-struct-name layout)
   (when (s-reader slot)
     (cond
       ((not (s-arrayp slot)) (make-t-slot-getter
-                              get-ptr slot type-name foreign-struct-name))
+                              slot type-name foreign-struct-name))
       ((s-arrayp slot) (make-array-slot-getter
-                        get-ptr slot type-name foreign-struct-name layout))
+                        slot type-name foreign-struct-name layout))
       (t (error "Dont know what to do with slot ~a" slot)))))
 
-(defun+ make-t-slot-getter (get-ptr slot type-name foreign-struct-name)
+(defun+ make-t-slot-getter (slot type-name foreign-struct-name)
   `(,(s-def slot) ,(s-reader slot)
      ,(s-slot-args slot `((wrapped-object ,type-name)))
-     (foreign-slot-value (,get-ptr wrapped-object)
+     (foreign-slot-value (base-gstruct-wrapper-pointer wrapped-object)
                          ',foreign-struct-name
                          ',(s-name slot))))
 
-(defun+ make-array-slot-getter (get-ptr slot type-name foreign-struct-name
-                                        layout)
+(defun+ make-array-slot-getter (slot type-name foreign-struct-name layout)
   `(,(s-def slot) ,(s-reader slot)
      ,(s-slot-args slot `((wrapped-object ,type-name)))
      (cepl.c-arrays::make-c-array-from-pointer
       ',(s-dimensions slot) ',(s-element-type slot)
-      (foreign-slot-pointer (,get-ptr wrapped-object)
+      (foreign-slot-pointer (base-gstruct-wrapper-pointer
+                             wrapped-object)
                             ',foreign-struct-name
                             ',(s-name slot))
       ,@(when layout `(:element-byte-size
                        ,(layout-machine-unit-size
                          (layout-element-layout layout)))))))
 
-(defun+ make-slot-setter (get-ptr slot type-name foreign-struct-name layout)
+(defun+ make-slot-setter (slot type-name foreign-struct-name layout)
   (when (s-writer slot)
     (cond
       ((or (member (s-type slot) cffi:*built-in-foreign-types*)
            (member (s-type slot) '(:uint))
            (assoc (s-type slot) cffi::*extra-primitive-types*))
-       (make-eprim-slot-setter get-ptr slot type-name foreign-struct-name layout))
+       (make-eprim-slot-setter slot type-name foreign-struct-name layout))
       ((not (s-arrayp slot))
        (make-t-slot-setter slot type-name layout))
       ((s-arrayp slot)
        (make-array-slot-setter slot type-name layout))
       (t (error "Dont know what to do with slot ~a" slot)))))
 
-(defun+ make-eprim-slot-setter (get-ptr
-                                slot
+(defun+ make-eprim-slot-setter (slot
                                 type-name
                                 foreign-struct-name
                                 layout)
   (declare (ignore layout))
   `(,(s-def slot) (setf ,(s-writer slot))
      ,(s-slot-args slot `(value (wrapped-object ,type-name)))
-     (setf (mem-ref (foreign-slot-pointer (,get-ptr wrapped-object)
+     (setf (mem-ref (foreign-slot-pointer (base-gstruct-wrapper-pointer
+                                           wrapped-object)
                                           ',foreign-struct-name
                                           ',(s-name slot))
                     ,(s-type slot))
