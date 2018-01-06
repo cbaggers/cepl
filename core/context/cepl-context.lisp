@@ -763,3 +763,8 @@
   (not (null (%cepl-context-gl-context context))))
 
 ;;----------------------------------------------------------------------
+
+(defmethod version-float ((ctx cepl-context))
+  (%cepl-context-gl-version-float ctx))
+
+;;----------------------------------------------------------------------
