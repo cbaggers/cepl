@@ -1,16 +1,9 @@
 (in-package :cepl.pipelines)
 (in-readtable :fn.reader)
 
-;; (bake-uniforms 'foo :jam #'(ham :int))
+;; (bake-uniforms 'foo :jam (gpu-function (ham :int)))
 
-(defmacro bake-uniforms (pipeline &rest uniforms &key &allow-other-keys)
-  (labels ((expand-literal-func (x)
-             (if (and (listp x) (eq (first x) 'function))
-                 `(gpu-function ,(second x))
-                 x)))
-    `(%bake ,pipeline ,@(mapcar #'expand-literal-func uniforms))))
-
-(defun+ %bake (pipeline &rest uniforms &key &allow-other-keys)
+(defun+ bake-uniforms (pipeline &rest uniforms &key &allow-other-keys)
   (let* ((pipeline (typecase pipeline
                      ((or list symbol) (pipeline-spec pipeline))
                      (function (cepl.pipelines::function-keyed-pipeline
@@ -43,6 +36,7 @@
       (assert (not symbol/list-values) ()
               'bake-uniform-invalid-values
               :proposed uniforms :invalid symbol/list-values))
+
     (let* ((vals-with-func-identifiers
             (mapcar λ(if (typep _ 'func-key)
                          (func-key->name _)
@@ -56,27 +50,29 @@
 
 
 (defun+ bake-and-g-> (draw-mode stage-pairs uniforms-to-bake)
-  (assert (every λ(typep (second _) 'gpu-func-spec) stage-pairs))
+  (assert (every λ(typep (cdr _) 'gpu-func-spec) stage-pairs))
   (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version)))
     ;;
-
-    ;;
-    (make-lambda-pipeline
-     (mapcan (lambda (pair)
-               (dbind (stage-type . func-spec) pair
-                 (list stage-type
-                       (let* ((stage (parsed-gpipe-args->v-translate-args
-                                      draw-mode stage-type func-spec
-                                      uniforms-to-bake))
-                              (in-args (mapcar #'varjo.internals:to-arg-form
-                                               (varjo:input-variables stage)))
-                              (uniforms (mapcar #'varjo.internals:to-arg-form
-                                                (varjo:uniform-variables stage)))
-                              (body (varjo.internals:lisp-code stage))
-                              (args (append in-args
-                                            (when uniforms
-                                              (cons '&uniforms uniforms)))))
-                         (make-gpu-lambda args body)))))
-             stage-pairs)
-     nil)))
+    (flet ((tidy-arg-form (x)
+             (remove-if #'stringp (varjo.internals:to-arg-form x))))
+      ;;
+      (make-lambda-pipeline
+       (mapcan
+        (lambda (pair)
+          (dbind (stage-type . func-spec) pair
+            (list stage-type
+                  (let* ((stage (parsed-gpipe-args->v-translate-args
+                                 nil draw-mode stage-type func-spec
+                                 uniforms-to-bake))
+                         (in-args (mapcar #'tidy-arg-form
+                                          (varjo:input-variables stage)))
+                         (uniforms (mapcar #'tidy-arg-form
+                                           (varjo:uniform-variables stage)))
+                         (body (varjo.internals:lisp-code stage))
+                         (args (append in-args
+                                       (when uniforms
+                                         (cons '&uniforms uniforms)))))
+                    (make-gpu-lambda args body)))))
+        stage-pairs)
+       nil))))

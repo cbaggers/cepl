@@ -71,7 +71,6 @@
        ;; generate the dummy dispatch func
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (ignore mapg-context) (ignorable ,@uniform-names))
-         (use-program mapg-context 0)
          (error 'mapping-over-partial-pipeline
                 :name ',name
                 :args ',(function-uniforms func-specs))
