@@ -148,7 +148,9 @@
            :query-not-active
            :compute-pipeline-must-be-single-stage
            :could-not-layout-type
-           :invalid-data-layout-specifier))
+           :invalid-data-layout-specifier
+           :invalid-layout-for-inargs
+           :invalid-layout-for-uniform))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)

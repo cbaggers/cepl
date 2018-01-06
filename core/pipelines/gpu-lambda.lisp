@@ -37,11 +37,6 @@
 ;;------------------------------------------------------------
 
 (defun+ make-gpu-lambda  (args body)
-  "Define a function that runs on the gpu."
-  ;; The code here splits and validates the arguments but the meat
-  ;; of gpu function definition happens in the %def-gpu-function call
-  ;; at the tail
-  ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
   ;; seperate any doc-string or declarations from the body
   (let ((doc-string (when (stringp (first body)) (pop body))))
     ;; split the argument list into the categoried we care aboutn

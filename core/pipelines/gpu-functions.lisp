@@ -289,7 +289,7 @@
 
 ;;--------------------------------------------------
 
-(defun+ %varjo-compile-as-pipeline (draw-mode parsed-gpipe-args)
+(defun+ %varjo-compile-as-pipeline (name draw-mode parsed-gpipe-args)
   "Compile the gpu functions for a pipeline
    The argument to this function is a list of pairs.
    Each pair contains:
@@ -299,14 +299,18 @@
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
       (varjo:rolling-translate
        (mapcar λ(dbind (stage-type . func-spec) _
-                  (parsed-gpipe-args->v-translate-args draw-mode
+                  (parsed-gpipe-args->v-translate-args name
+                                                       draw-mode
                                                        stage-type
                                                        func-spec))
                parsed-gpipe-args)))))
 
 ;; {TODO} make the replacements related code more robust
-(defun+ parsed-gpipe-args->v-translate-args (draw-mode stage-type func-spec
-                                            &optional replacements)
+(defun+ parsed-gpipe-args->v-translate-args (name
+                                             draw-mode
+                                             stage-type
+                                             func-spec
+                                             &optional replacements)
   "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
    %compile-link-and-upload needs to call v-rolling-translate. To do this
    we need to look up the gpu function spec and turn them into valid arguments
@@ -318,43 +322,71 @@
    [1] validate that either the gpu-function's context didnt specify a stage
        explicitly or that, if it did, that it matches the stage it is being used
        for now"
-  (assert (every #'listp replacements))
-  (if (and (typep func-spec 'glsl-stage-spec))
-      (with-glsl-stage-spec func-spec
-        compiled);;[0]
-      (dbind (in-args uniforms context code) (get-func-as-stage-code func-spec)
-        ;;[1]
-        (let ((n (count-if (lambda (_) (member _ varjo:*stage-names*))
-                           context)))
-          (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
-        (let* ((final-uniforms (remove-if (lambda (u)
-                                            (member (first u) replacements
-                                                    :key #'first
-                                                    :test #'string=))
-                                          uniforms))
-               (context (remove stage-type context))
-               (primitive (when (eq stage-type :vertex)
-                            draw-mode))
-               (replacements
-                (loop :for (k v) :in replacements
-                   :for r = (let* ((u (find k uniforms :key #'first
-                                            :test #'string=)))
-                              (when (and u (typep (varjo:type-spec->type
-                                                   (second u))
-                                                  'varjo:v-function-type))
-                                (list (first u) `(function ,v))))
-                   :when r :collect r))
-               (body (if replacements
-                         `((let ,replacements
-                             ,@code))
-                         code)))
-          (varjo:make-stage stage-type
-                            in-args
-                            final-uniforms
-                            context
-                            body
-                            t
-                            primitive)))))
+  (flet ((add-layout-to-structs (arg)
+           (let* ((type-spec (second arg))
+                  (struct-info (cepl.types::g-struct-info type-spec :error-if-not-found nil)))
+             (if struct-info
+                 (let ((layout (cepl.types::s-layout struct-info)))
+                   (assert (or (find :ssbo arg) (find :ubo arg))
+                           ()
+                           'invalid-layout-for-inargs
+                           :name name
+                           :type-name type-spec
+                           :layout (class-name (class-of layout)))
+                   (etypecase layout
+                     (null arg)
+                     (std-140 (append arg (list :std-140)))
+                     (std-430 (append arg (list :std-430)))))
+                 arg))))
+    (assert (every #'listp replacements))
+    (if (and (typep func-spec 'glsl-stage-spec))
+        (with-glsl-stage-spec func-spec
+          compiled);;[0]
+        (dbind (in-args uniforms context code) (get-func-as-stage-code func-spec)
+          ;;[1]
+          (let ((n (count-if (lambda (_) (member _ varjo:*stage-names*))
+                             context)))
+            (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+          (loop :for arg :in in-args :do
+             (let* ((type-spec (second arg))
+                    (struct-info (cepl.types::g-struct-info type-spec :error-if-not-found nil)))
+               (when struct-info
+                 (let ((layout (cepl.types::s-layout struct-info)))
+                   (assert (null (cepl.types::s-layout struct-info))
+                           ()
+                           'invalid-layout-for-inargs
+                           :name name
+                           :type-name type-spec
+                           :layout (class-name (class-of layout)))))))
+          (let* ((uniforms (mapcar #'add-layout-to-structs uniforms))
+                 (final-uniforms (remove-if (lambda (u)
+                                              (member (first u) replacements
+                                                      :key #'first
+                                                      :test #'string=))
+                                            uniforms))
+                 (context (remove stage-type context))
+                 (primitive (when (eq stage-type :vertex)
+                              draw-mode))
+                 (replacements
+                  (loop :for (k v) :in replacements
+                     :for r = (let* ((u (find k uniforms :key #'first
+                                              :test #'string=)))
+                                (when (and u (typep (varjo:type-spec->type
+                                                     (second u))
+                                                    'varjo:v-function-type))
+                                  (list (first u) `(function ,v))))
+                     :when r :collect r))
+                 (body (if replacements
+                           `((let ,replacements
+                               ,@code))
+                           code)))
+            (varjo:make-stage stage-type
+                              in-args
+                              final-uniforms
+                              context
+                              body
+                              t
+                              primitive))))))
 
 ;;--------------------------------------------------
 

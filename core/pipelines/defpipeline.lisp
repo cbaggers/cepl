@@ -348,7 +348,7 @@
 (defun+ %compile-link-and-upload (name draw-mode stage-pairs)
   (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version))
-         (compiled-stages (%varjo-compile-as-pipeline draw-mode stage-pairs))
+         (compiled-stages (%varjo-compile-as-pipeline name draw-mode stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
     (unless *suppress-upload-message*
       (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA")))

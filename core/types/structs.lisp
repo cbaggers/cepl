@@ -12,8 +12,12 @@
 
 (defvar *struct-slot-defs* (make-hash-table))
 
-(defun g-struct-info (name)
-  (values (gethash name *struct-slot-defs*)))
+(defun g-struct-info (name &key (error-if-not-found t))
+  (let ((res (gethash name *struct-slot-defs*)))
+    (when (and error-if-not-found (not res))
+      (error "CEPL BUG: Struct info for type-spec ~a not found"
+             name))
+    res))
 
 (defun (setf g-struct-info) (slots name)
   (setf (gethash name *struct-slot-defs*)

@@ -624,6 +624,22 @@ here: https://github.com/cbaggers/cepl/issues
 Please use one of the following: ~{~a~^, ~}"
   specifier valid-specifiers)
 
+(deferror invalid-layout-for-inargs () (name type-name layout)
+    "CEPL: ~a is not a valid type for ~a's input arguments as it has
+the layout ~a. std-140 & std-430 layouts are only valid for ubo & ssbo
+uniforms."
+  type-name
+  (or name "this lambda pipeline")
+  layout)
+
+(deferror invalid-layout-for-uniform () (name type-name layout)
+    "CEPL: ~a is not a valid type for ~a's uniform argument as it has
+the layout ~a. std-140 & std-430 layouts are only valid for ubo & ssbo
+uniforms."
+  type-name
+  (or name "this lambda pipeline")
+  layout)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
