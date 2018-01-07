@@ -225,10 +225,6 @@
                     (equal uniforms-a uniforms-b)
                     (equal name-a name-b)))))))
 
-(defmethod func-spec->name ((spec gpu-func-spec))
-  (with-gpu-func-spec spec
-    (cons name (mapcar #'second in-args))))
-
 ;;--------------------------------------------------
 
 (defclass func-key ()

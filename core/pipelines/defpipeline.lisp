@@ -333,11 +333,7 @@
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (update-pipeline-spec
       (make-pipeline-spec
-       ',name (pairs-key-to-stage
-               ,(cons 'list (mapcar (lambda (x)
-                                      (dbind (k . v) x
-                                        `(cons ,k ,(spec->func-key v))))
-                                    stage-pairs)))
+       ',name ,(serialize-stage-pairs stage-pairs)
        ',context))))
 
 (defun+ register-named-pipeline (name func)
@@ -351,9 +347,9 @@
 
 (defun+ pairs-key-to-stage (stage-pairs)
   (mapcar λ(dbind (name . key) _
-             (typecase key
-               (gpu-func-spec _)
-               (otherwise (cons name (gpu-func-spec key)))))
+             (etypecase key
+               (func-key (cons name (gpu-func-spec key)))
+               (gpu-func-spec _))) ;; return cons unchanged
           stage-pairs))
 
 (defun+ swap-versions (stage-pairs glsl-version)
@@ -579,10 +575,8 @@
 
 (defun+ serialize-stage-pairs (stage-pairs)
   `(pairs-key-to-stage
-    (list ,@(mapcar λ`(cons ,(car _) ,(spec->func-key (cdr _)))
-                    stage-pairs))))
-
-
+    (list ,@(loop :for (k . v) :in stage-pairs :collect
+               `(cons ,k ,(spec->func-key v))))))
 
 (defn-inline handle-transform-feedback
     (ctx draw-type prog-id tfs-primitive tfs-array-count)
