@@ -23,9 +23,37 @@
              (remove-if-not #'function-arg-p uniforms))
           func-specs))
 
+(defun lambda-arg-p (x)
+  (and (listp x) (eq (first x) 'lambda-g)))
+
 (defmacro defpipeline-g (name context &body gpipe-args)
   (assert-valid-gpipe-form name gpipe-args)
-  (%defpipeline-gfuncs name gpipe-args context))
+  (if (some #'lambda-arg-p gpipe-args)
+      (expand-lambda-defpipeline name context gpipe-args)
+      (%defpipeline-gfuncs name gpipe-args context)))
+
+(defun+ expand-lambda-defpipeline (name context gpipe-args)
+  (let* (funcs
+         new-args)
+    (loop :for arg :in gpipe-args
+       :for i :from 0 :do
+       (if (lambda-arg-p arg)
+           (dbind (args &rest body) (rest arg)
+             (flet ((sym= (x y)
+                      (when (and (symbolp x) (symbolp y))
+                        (string= x y))))
+               (let* ((l-name (hidden-symb name (format nil "LAMBDA-~a" i)))
+                      (uniform-pos (or (position '&uniform args :test #'sym=)
+                                       (length args)))
+                      (in-args (subseq args 0 uniform-pos))
+                      (in-types (mapcar #'second in-args))
+                      (l-spec (cons l-name in-types)))
+                 (push `(defun-g ,l-name ,args ,@body) funcs)
+                 (push l-spec new-args))))
+           (push arg new-args)))
+    `(progn
+       ,@(reverse funcs)
+       (defpipeline-g ,name ,context ,@(reverse new-args)))))
 
 (defun+ %defpipeline-gfuncs (name gpipe-args context)
   ;;
