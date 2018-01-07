@@ -346,10 +346,11 @@
                (varjo:glsl-code compiled-stage)))
 
 (defun+ pairs-key-to-stage (stage-pairs)
-  (mapcar λ(dbind (name . key) _
-             (etypecase key
-               (func-key (cons name (gpu-func-spec key)))
-               (gpu-func-spec _))) ;; return cons unchanged
+  (mapcar (lambda (pair)
+            (dbind (name . key) pair
+              (etypecase key
+                (func-key (cons name (gpu-func-spec key)))
+                (gpu-func-spec pair))))
           stage-pairs))
 
 (defun+ swap-versions (stage-pairs glsl-version)
@@ -705,8 +706,8 @@
   shader-id)
 
 (defun+ load-shader (file-path
-                    &optional (shader-type
-                               (shader-type-from-path file-path)))
+                     &optional (shader-type
+                                (shader-type-from-path file-path)))
   (restart-case
       (make-shader (cepl-utils:file-to-string file-path) shader-type)
     (reload-recompile-shader () (load-shader file-path
