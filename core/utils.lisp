@@ -710,7 +710,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 ;;------------------------------------------------------------
 
 (defun hidden-symb (symbol &optional sub-name)
-  (assert (symbolp sub-name))
+  (assert (symbolp symbol))
   (intern (format nil "~a.~a~@[.~a~]"
                   (package-name (symbol-package symbol))
                   (symbol-name symbol)
