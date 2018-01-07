@@ -27,10 +27,11 @@
   (assert-valid-gpipe-form name gpipe-args)
   (%defpipeline-gfuncs name gpipe-args context))
 
-(defun+ %defpipeline-gfuncs
-    (name gpipe-args context)
+(defun+ %defpipeline-gfuncs (name gpipe-args context)
   ;;
-  ;; {todo} explain
+  ;; The heart of defpipeline-g. It is seperate from defpipeline-g so that
+  ;; it can be used from the recompile func with having to deal with the
+  ;; outer macro
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     ;;
     (let* ((func-specs (mapcar #'cdr stage-pairs))
@@ -43,6 +44,7 @@
                                  aggregate-actual-uniforms
                                  context)
           (%def-complete-pipeline name
+                                  gpipe-args
                                   stage-pairs
                                   aggregate-actual-uniforms
                                   aggregate-public-uniforms
@@ -113,6 +115,7 @@
 (declaim (sb-ext:freeze-type pipeline-state))
 
 (defun+ %def-complete-pipeline (name
+                                original-gpipe-args
                                 stage-pairs
                                 aggregate-actual-uniforms
                                 aggregate-public-uniforms
@@ -176,7 +179,7 @@
                             state-var state-tag is-compute)
         ;;
         ;; generate the function that recompiles this pipeline
-        ,(gen-recompile-func name stage-pairs post context)
+        ,(gen-recompile-func name original-gpipe-args context)
         ;;
         ;; off to the races! Note that we upload the spec at compile
         ;; time (using eval-when)
@@ -287,20 +290,16 @@
            (optimize (speed 3) (safety 0) (debug 0)))
   (values))
 
-
-(defun+ gen-recompile-func (name stage-pairs post context)
-  (let* ((stages (mapcat λ(list (car _) (func-spec->name (cdr _)))
-                         stage-pairs))
-         (gpipe-args (append stages (list :post post))))
-    `(defun+ ,(recompile-name name) ()
-       (format t "~&; recompile cpu side of (~a ...)~&" ',name)
-       (force-output)
-       (let ((*standard-output* (make-string-output-stream)))
-         (handler-bind ((warning #'muffle-warning))
-           (multiple-value-bind (src structurally-unchanged-p)
-               (%defpipeline-gfuncs ',name ',gpipe-args ',context)
-             (unless structurally-unchanged-p
-               (eval src))))))))
+(defun+ gen-recompile-func (name original-gpipe-args context)
+  `(defun+ ,(recompile-name name) ()
+     (format t "~&; recompile cpu side of (~a ...)~&" ',name)
+     (force-output)
+     (let ((*standard-output* (make-string-output-stream)))
+       (handler-bind ((warning #'muffle-warning))
+         (multiple-value-bind (src structurally-unchanged-p)
+             (%defpipeline-gfuncs ',name ',original-gpipe-args ',context)
+           (unless structurally-unchanged-p
+             (eval src)))))))
 
 (defun+ gen-update-spec (name stage-pairs context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
