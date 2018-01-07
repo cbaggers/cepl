@@ -66,6 +66,11 @@
     (declare (ignore l))
     (make-gpu-lambda args body)))
 
+(defun lambda-g->varjo-lambda-code (glambda)
+  (with-slots (in-args uniforms body) glambda
+    `(lambda (,@in-args ,@(when uniforms (cons '&uniform uniforms)))
+       ,@body)))
+
 ;;------------------------------------------------------------
 
 (defmacro pipeline-g (context &body gpipe-args)

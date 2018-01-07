@@ -38,18 +38,19 @@
               :proposed uniforms :invalid symbol/list-values))
 
     (let* ((vals-with-func-identifiers
-            (mapcar λ(if (typep _ 'func-key)
-                         (func-key->name _)
-                         _)
+            (mapcar λ(typecase _
+                       (func-key (func-key->name _))
+                       (gpu-lambda (lambda-g->varjo-lambda-code _))
+                       (otherwise _))
                     uniform-vals-to-bake))
            (final-uniform-pairs
             (mapcar #'list uniform-names-to-bake vals-with-func-identifiers)))
       ;;
       ;; Go for it
-      (bake-and-g-> draw-mode stage-pairs final-uniform-pairs))))
+      (bake-and-g-> context draw-mode stage-pairs final-uniform-pairs))))
 
 
-(defun+ bake-and-g-> (draw-mode stage-pairs uniforms-to-bake)
+(defun+ bake-and-g-> (context draw-mode stage-pairs uniforms-to-bake)
   (assert (every λ(typep (cdr _) 'gpu-func-spec) stage-pairs))
   (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version)))
@@ -75,4 +76,4 @@
                                          (cons '&uniforms uniforms)))))
                     (make-gpu-lambda args body)))))
         stage-pairs)
-       nil))))
+       context))))
