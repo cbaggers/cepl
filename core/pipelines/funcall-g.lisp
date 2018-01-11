@@ -82,12 +82,8 @@
 (varjo.internals:v-defspecial spliced-values (name form)
   :args-valid t
   :return
-  (let* ((scanned (varjo.internals::map-environments
-                   (lambda (e)
-                     (second (find name (varjo.internals:v-form-bindings e)
-                                   :key #'first)))
-                   env))
-         (trimmed (first (remove nil scanned))))
+  (let* ((func-set (varjo.internals::get-form-binding name env))
+         (trimmed (first (varjo.internals::functions func-set))))
     (assert trimmed)
     (let* ((return-spec (varjo.internals:v-return-spec trimmed))
            (feedback (loop :for i :below (length return-spec) :collect
