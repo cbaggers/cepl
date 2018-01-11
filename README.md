@@ -94,6 +94,77 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 ## CHANGELOG
 
+This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
+
+### 2018-01-11
+
+*I am terrible at changelogs. I am retroactively making the updates for everything between june 2017 and jan 2018
+
+- Added support for using gpu-lambdas inline in `defpipeline-g` forms
+- Lots of work on the `cepl.tests` project resulting in fixes for:
+ - gpu-lambdas
+ - lambda-pipelines
+ - struct uniforms
+ - uniform baking
+
+### 2017-12-??
+- Add render-buffer support
+- Fix struct layout bugs. SSBOS work correctly now
+- Add funcall-g (limited support for calling gpu-functions from cpu directly)
+- Remove the deprecated `g->`, `def-g->` & `glambda` macros
+
+### 2017-11-??
+- Add compute support
+- Add SSBO support (though currently hobbled by struct layout bug)
+- Add single stage pipeline support
+- Add transform feedback support
+- Add shared context support
+- Add gpu-fence support
+- Add gl query support
+- Complete rewrite of pipeline state cache (now faster and safer)
+- Avoid recompilation of pipelines where dependencies have not changed
+- Rewrite struct code to get away from some dependencies
+
+### 2017-10-??
+- Multiple (non-shared) context support
+
+### 2017-09-??
+- Add border-color support
+
+### 2017-08-??
+- Mostly bugfixes
+
+### 2017-07-??
+
+- Add instance array support (per instance data in pipelines)
+- Add stencil support
+- Add scissor support
+- Add color-mask support
+- Add multisample support
+- renaming macros with confusing/inconsistent naming
+- blending param caching on context (not optimized yet)
+- Make #'free work with pipelines
+
+### 2017-06-??
+
+- You can now modify a buffer-stream's primitive type after creation
+
+- experimental profiler
+
+- Huge improvements to per-frame performance through:
+ - typing of functions & inlining where it made sense
+ - fixing bug where uniforms ids queried too often
+ - macros to reduce frequency of fetching the context object
+ - much better state caching in context object
+ - avoiding cffi enum conversion when lookup functions are faster
+ - precompute & cache more size info in wrapper types
+ - attachments have their own viewports, no more computing of viewport during draw
+ - dont set viewport on every map-g (this was unnecessary)
+ - remove some of the 'with-*' macros whos contract forced us to do more state changes/caching that we would otherwise like.
+ - pipelines can be declared static. This tells cepl to type the generated functions.
+ - a huge pile of other small changes
+
+
 ### 2017-06-04
 
 - pipelines can take `:dynamic` as their draw mode. This means they will take the draw-mode from the `buffer-stream` they are mapped over. This only works for pipelines with `vertex` & `fragment` stages.
