@@ -11,7 +11,7 @@
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :serial t
   :depends-on (#:cffi
-               #:cl-fad
+               #:uiop
                #:cl-opengl
                #:cl-ppcre
                #:documentation-utils

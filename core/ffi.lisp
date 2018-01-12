@@ -15,5 +15,5 @@
                  (to-path (string-trim '(#\newline) res))))))
     (let ((ports-paths (mapcar #'to-path '("/opt/local/lib/" "/opt/local/"))))
       (loop :for path :in (cons (brew-prefix) ports-paths) :do
-         (when (and path (cl-fad:directory-exists-p path))
+         (when (and path (uiop:directory-exists-p path))
            (pushnew path cffi:*foreign-library-directories* :test #'equal))))))

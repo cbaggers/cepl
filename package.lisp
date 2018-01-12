@@ -1176,7 +1176,6 @@
 
 (uiop:define-package :cepl
     (:use :cl
-          :cl-fad
           :glsl-symbols
           :named-readtables
           :cepl-utils
