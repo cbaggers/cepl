@@ -630,7 +630,7 @@
                 (%gl:patch-parameter-i
                  :patch-vertices ,(varjo::vertex-count primitive))))
           (with-vao-bound (buffer-stream-vao stream)
-            (if (= (the (unsigned-byte 16) |*instance-count*|) 0)
+            (if (= (the c-array-index |*instance-count*|) 0)
                 (if index-type
                     (locally (declare (optimize (speed 3) (safety 0))
                                       #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
