@@ -69,7 +69,7 @@ quickproject and then run this again.")
       (error 'make-project-missing-default-implementation))
     (unless qp
       (error 'make-project-needs-quickproject))
-    (let* ((pathname (pathname-as-directory pathname))
+    (let* ((pathname (uiop:pathname-directory-pathname pathname))
            (name (or name (cepl-utils:ni-call
                            :quickproject :pathname-project-name
                            pathname)))
