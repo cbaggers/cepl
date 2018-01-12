@@ -40,8 +40,6 @@ All of the following will be downloaded automatically by quicklisp
 - ieee-floats
 - named-readtables
 - varjo
-- rtg-math
-- rtg-math.vari
 - closer-mop
 - bordeaux-threads
 
@@ -93,6 +91,18 @@ If you are having issues getting the C libraries to load and just need to rule o
 ## CHANGELOG
 
 This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
+
+### 2018-02-17
+
+__BREAKING CHANGES__
+
+Due to the changes listed below you will now want to change your current asd's to require :rtg-math.vari and to change your packages to :use :rtg-math.
+
+Some folks were asking for the ability to use their own math libraries rather than rtg-math which CEPL has depended on up until now. I have made this change but this means that this is something users will have to add themselves from now on.
+
+For those picking a library cepl expects vectors & matrices to be sized simple-arrays of single-floats e.g. `(make-array 3 :element-type 'single-float)` for 3 component vectors.
+
+We have also removed the dependency on fn & cl-fad.
 
 ### 2018-01-11
 

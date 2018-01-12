@@ -89,6 +89,7 @@ quickproject and then run this again.")
        :quickproject :make-project
        pathname
        :depends-on `(:cepl
+                     :rtg-math.vari
                      ,host
                      ,@(when swank-p `(:swank))
                      ,@(when slynk-p `(:slynk))

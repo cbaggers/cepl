@@ -61,7 +61,7 @@
                                           multisample)
   (%make-render-buffer
    :image-format :uninitialized
-   :resolution (v! 0 0)
+   :resolution (vec2 0f0 0f0)
    :multisample-p multisample))
 
 (defun+ make-uninitialized-gpu-array-bb (&optional buffer)

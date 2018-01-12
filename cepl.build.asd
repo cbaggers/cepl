@@ -6,4 +6,6 @@
   :license "BSD 2 Clause"
   :serial t
   :components ((:file "build/package")
-               (:file "build/build")))
+               (:file "build/build")
+               (:file "defn/package")
+               (:file "defn/defn")))

@@ -30,7 +30,7 @@
   (setf (depth-mask cepl-context) t)
   ;; Set the default depth range
   (setf (depth-range-vec2 cepl-context)
-        (v! 0 1))
+        (vec2 0f0 1f0))
   ;; Enable the depth clamp
   (setf (depth-clamp cepl-context)
         t)
@@ -42,7 +42,7 @@
         :ccw)
   ;; Default clear color
   (setf (clear-color cepl-context)
-        (v! 0 0 0 0)))
+        (vec4 0f0 0f0 0f0 0f0)))
 
 ;;----------------------------------------------------------------------
 

@@ -66,7 +66,7 @@
 ;;----------------------------------------------------------------------
 
 (defmethod print-object ((obj gl-layout) stream)
-  (print-unreadable-object ((v! 1 2 3) stream :identity t)
+  (print-unreadable-object ((vec3 1f0 2f0 3f0) stream :identity t)
     (format stream "~a ~a"
             (symbol-name (class-name (class-of obj)))
             (type->type-spec (layout-varjo-type obj)))))

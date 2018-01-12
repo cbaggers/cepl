@@ -39,7 +39,7 @@
     (let ((gname (gensym "foo")))
       `(lambda-g (&uniform ,@(append in-args uniforms))
          (labels ((,gname () ,@body))
-           (spliced-values ,gname (v! 0 0 0 0)))))))
+           (spliced-values ,gname (vec4 0f0 0f0 0f0 0f0)))))))
 
 (defun dyn-code-to-pipeline-and-stages (code)
   (make-lambda-pipeline-inner (list :vertex (compile-g nil code))

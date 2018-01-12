@@ -17,8 +17,6 @@
                #:documentation-utils
                #:ieee-floats
                #:varjo
-               #:rtg-math
-               #:rtg-math.vari
                #:closer-mop
                #:bordeaux-threads
                #:cepl.build)
@@ -36,6 +34,7 @@
                (:file "core/lifecycle")
                (:file "core/measurements/measurements")
                (:file "core/memory/memory")
+               (:file "core/types/math")
                (:file "core/types/cepl-types")
                (:file "core/types/nulls-and-uninitialized")
                (:file "core/context/gl-context")

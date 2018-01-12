@@ -82,7 +82,9 @@
   (cepl.host:window-size surface))
 
 (defun+ surface-resolution (surface)
-  (v! (cepl.host:window-size surface)))
+  (let ((data (cepl.host:window-size surface)))
+    (make-array (length data) :element-type 'single-float
+                :initial-contents data)))
 
 (defun+ (setf surface-dimensions) (value surface)
   (destructuring-bind (width height) value
@@ -90,8 +92,8 @@
 
 (defun+ (setf surface-resolution) (value surface)
   (cepl.host:set-surface-size surface
-                              (ceiling (v:x value))
-                              (ceiling (v:y value))))
+                              (ceiling (aref value 0))
+                              (ceiling (aref value 1))))
 
 (defun+ surface-title (surface)
   (cepl.host:surface-title surface))

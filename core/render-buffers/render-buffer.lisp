@@ -20,7 +20,8 @@
                                 image-format
                                 multisample)
   (let ((id (gl:gen-renderbuffer))
-        (res (v! dimensions)))
+        (res (make-array (length dimensions) :element-type 'single-float
+                         :initial-contents dimensions)))
     (setf (%render-buffer-id render-buffer) id
           (%render-buffer-resolution render-buffer) res
           (%render-buffer-multisample-p render-buffer) multisample
