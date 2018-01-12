@@ -15,9 +15,7 @@
                #:cl-opengl
                #:cl-ppcre
                #:documentation-utils
-               #:fn
                #:ieee-floats
-               #:named-readtables
                #:varjo
                #:rtg-math
                #:rtg-math.vari

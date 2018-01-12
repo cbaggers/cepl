@@ -1,5 +1,4 @@
 (in-package :cepl.context)
-(in-readtable fn:fn-reader)
 
 ;;------------------------------------------------------------
 

@@ -1,5 +1,4 @@
 (in-package :cepl.context)
-(in-readtable :fn.reader)
 
 ;;----------------------------------------------------------------------
 
@@ -57,9 +56,10 @@
 (defun+ init-pending-surfaces (context)
   (%with-cepl-context-slots (surfaces) context
     (setf surfaces
-          (mapcar λ(typecase _
-                     (pending-surface (make-surface-from-pending _))
-                     (t _))
+          (mapcar (lambda (x)
+                    (typecase x
+                      (pending-surface (make-surface-from-pending x))
+                      (t x)))
                   surfaces))))
 
 (defun+ make-surface-from-pending (pending-surface)

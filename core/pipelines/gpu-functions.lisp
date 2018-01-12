@@ -1,5 +1,4 @@
 (in-package :cepl.pipelines)
-(in-readtable fn:fn-reader)
 
 ;; extract details from args and delegate to %def-gpu-function
 ;; for the main logic
@@ -91,17 +90,20 @@
 
 (defun+ get-versions-from-context (context)
   (%sort-versions
-   (remove-if-not λ(member _ varjo:*supported-versions*)
+   (remove-if-not (lambda (x) (member x varjo:*supported-versions*))
                   context)))
 
 (defun+ %sort-versions (versions)
   (mapcar #'first
-          (sort (mapcar λ(list _ (parse-integer (symbol-name _)))
+          (sort (mapcar (lambda (x) (list x (parse-integer (symbol-name x))))
                         versions)
                 #'< :key #'second)))
 
 (defun+ swap-version (glsl-version context)
-  (cons glsl-version (remove-if λ(find _ varjo:*supported-versions*) context)))
+  (cons glsl-version
+        (remove-if (lambda (x)
+                     (find x varjo:*supported-versions*))
+                   context)))
 
 (defun+ lowest-suitable-glsl-version (context)
   (let* ((versions (or (get-versions-from-context context)
@@ -190,7 +192,7 @@
    [2] cache the compile result so we can retrieve it with #'pull1-g
        or the code with #'pull-g"
   (%unsubscibe-from-all spec);;[1]
-  (map nil λ(%subscribe-to-gpu-func spec _) depends-on);;[1]
+  (map nil (lambda (x) (%subscribe-to-gpu-func spec x)) depends-on) ;;[1]
   (when *cache-last-compile-result*
     (setf (slot-value spec 'cached-compile-results) compiled));;[2]
   (setf (gpu-func-spec spec) spec));;[0]
@@ -245,7 +247,8 @@
        in different gpu-functions
    [1] Now if there is any more than one instance of each uniform name then
        there is a clash"
-  (assert (every λ(typep _ 'gpu-func-spec) func-specs))
+  (assert (every (lambda (x) (typep x 'gpu-func-spec))
+                 func-specs))
   (labels ((get-uniforms (spec)
              (with-gpu-func-spec spec
                (copy-list
@@ -265,7 +268,8 @@
            (all-clashes
             (loop :for uniform :in uniforms :collect
                (let* ((name (first uniform))
-                      (clashes (remove-if-not λ(eq name (first _)) uniforms)))
+                      (clashes (remove-if-not (lambda (x) (eq name (first x)))
+                                              uniforms)))
                  (when (> (length clashes) 1) ;; [1]
                    (list (first uniform) clashes)))))
            (all-clashes (remove-duplicates (remove nil all-clashes)
@@ -273,7 +277,8 @@
       (when all-clashes
         (error "CEPL: Uniforms found in pipeline with incompatible definitions:
 ~{~%~a~}"
-               (mapcar λ(format nil "~s:~{~%~s~}~%" (first _) (second _))
+               (mapcar (lambda (x)
+                         (format nil "~s:~{~%~s~}~%" (first x) (second x)))
                        all-clashes)))
       uniforms)))
 
@@ -294,11 +299,12 @@
   (varjo:with-constant-inject-hook #'try-injecting-a-constant
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
       (varjo:rolling-translate
-       (mapcar λ(dbind (stage-type . func-spec) _
-                  (parsed-gpipe-args->v-translate-args name
-                                                       draw-mode
-                                                       stage-type
-                                                       func-spec))
+       (mapcar (lambda (x)
+                 (dbind (stage-type . func-spec) x
+                   (parsed-gpipe-args->v-translate-args name
+                                                        draw-mode
+                                                        stage-type
+                                                        func-spec)))
                parsed-gpipe-args)))))
 
 ;; {TODO} make the replacements related code more robust
@@ -387,8 +393,9 @@
 ;;--------------------------------------------------
 
 (defun+ get-possible-designators-for-name (name)
-  (mapcar λ(with-gpu-func-spec _
-             (cons name (mapcar #'second in-args)))
+  (mapcar (lambda (x)
+            (with-gpu-func-spec x
+              (cons name (mapcar #'second in-args))))
           (gpu-func-specs name)))
 
 (defun+ get-stage-key (stage-designator &optional options-on-error)
@@ -404,9 +411,10 @@
          (error 'stage-not-found :designator name)
          (error 'gpu-func-symbol-name
                 :name stage-designator
-                :alternatives (mapcar λ(with-gpu-func-spec _
-                                         (cons stage-designator
-                                               (mapcar #'second in-args)))
+                :alternatives (mapcar (lambda (x)
+                                        (with-gpu-func-spec x
+                                          (cons stage-designator
+                                                (mapcar #'second in-args))))
                                       funcs)
                 :env options-on-error))))
     ((listp stage-designator)

@@ -1,5 +1,4 @@
 (in-package :cepl.pipelines)
-(in-readtable fn:fn-reader)
 
 ;;;--------------------------------------------------------------
 

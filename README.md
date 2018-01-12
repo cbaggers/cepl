@@ -38,7 +38,6 @@ All of the following will be downloaded automatically by quicklisp
 - cl-plus-c
 - cl-ppcre
 - documentation-utils
-- fn
 - ieee-floats
 - named-readtables
 - varjo
