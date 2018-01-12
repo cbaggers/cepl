@@ -1,5 +1,4 @@
 (in-package :cepl.pipelines)
-(in-readtable :fn.reader)
 
 ;;------------------------------------------------------------
 
@@ -107,8 +106,9 @@
                                          post)))))
 
 (defun+ make-partial-lambda-pipeline (func-specs)
-  (let ((stages (remove-if-not λ(with-gpu-func-spec _
-                                  (some #'function-arg-p uniforms))
+  (let ((stages (remove-if-not (lambda (x)
+                                 (with-gpu-func-spec x
+                                   (some #'function-arg-p uniforms)))
                                func-specs)))
     (error 'partial-lambda-pipeline
            :partial-stages stages)))
@@ -142,8 +142,9 @@
               (make-arg-assigners implicit-uniform-arg-forms))
              (implicit-uniform-transforms
               (remove-duplicates
-               (mapcar λ(list (varjo:name _)
-                              (varjo.internals:cpu-side-transform _))
+               (mapcar (lambda (x)
+                         (list (varjo:name x)
+                               (varjo.internals:cpu-side-transform x)))
                        varjo-implicit)
                :test #'equal))
              (implicit-u-uploads
@@ -216,13 +217,16 @@
              ;; If there are no implicit-uniforms we need a no-op
              ;; function to call
              (has-fragment-stage
-              (not (null (find-if λ(typep _ 'compiled-fragment-stage)
+              (not (null (find-if (lambda (x)
+                                    (typep x 'compiled-fragment-stage))
                                   compiled-stages))))
              ;;
              ;; {todo} explain
-             ,@(mapcar λ`(,(assigner-name _) ,(assigner-body _))
+             ,@(mapcar (lambda (x)
+                         `(,(assigner-name x) ,(assigner-body x)))
                        u-lets)
-             ,@(mapcar λ`(,(assigner-name _) ,(assigner-body _))
+             ,@(mapcar (lambda (x)
+                         `(,(assigner-name x) ,(assigner-body x)))
                        implicit-u-lets))
         (declare (ignorable image-unit
                             tfs-primitive
@@ -230,7 +234,8 @@
                             has-fragment-stage)
                  (type symbol tfs-primitive)
                  (type (unsigned-byte 8) tfs-array-count)
-                 ,@(mapcar λ`(type ,(assigner-type _) ,(assigner-name _))
+                 ,@(mapcar (lambda (x)
+                             `(type ,(assigner-type x) ,(assigner-name x)))
                            implicit-u-lets))
         (use-program (cepl-context) 0)
         ;;

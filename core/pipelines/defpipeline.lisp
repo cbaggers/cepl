@@ -1,5 +1,4 @@
 (in-package :cepl.pipelines)
-(in-readtable :fn.reader)
 
 (defvar *init-pipeline-lock* (bt:make-lock))
 
@@ -8,19 +7,22 @@
          'varjo:v-function-type))
 
 (defun+ stages-require-partial-pipeline (func-specs)
-  (some λ(with-gpu-func-spec _
-           (or (some #'function-arg-p in-args)
-               (some #'function-arg-p uniforms)))
+  (some (lambda (x)
+          (with-gpu-func-spec x
+            (or (some #'function-arg-p in-args)
+                (some #'function-arg-p uniforms))))
         func-specs))
 
 (defun+ has-func-type-in-args (func-specs)
-  (some λ(with-gpu-func-spec _
-           (some #'function-arg-p in-args))
+  (some (lambda (x)
+          (with-gpu-func-spec x
+            (some #'function-arg-p in-args)))
         func-specs))
 
 (defun+ function-uniforms (func-specs)
-  (mapcat λ(with-gpu-func-spec _
-             (remove-if-not #'function-arg-p uniforms))
+  (mapcat (lambda (x)
+            (with-gpu-func-spec x
+              (remove-if-not #'function-arg-p uniforms)))
           func-specs))
 
 (defun lambda-arg-p (x)
@@ -156,9 +158,10 @@
          (current-spec (pipeline-spec name))
          (current-stage-tags (when current-spec
                                (remove nil (slot-value current-spec 'diff-tags))))
-         (new-stage-tags (mapcar λ(let ((spec (cdr _)))
-                                    (when spec
-                                      (slot-value spec 'diff-tag)))
+         (new-stage-tags (mapcar (lambda (x)
+                                   (let ((spec (cdr x)))
+                                     (when spec
+                                       (slot-value spec 'diff-tag))))
                                  stage-pairs))
          (structurally-unchanged-p (and (every #'identity current-stage-tags)
                                         (every #'identity new-stage-tags)
@@ -354,10 +357,11 @@
           stage-pairs))
 
 (defun+ swap-versions (stage-pairs glsl-version)
-  (mapcar λ(dbind (x . s) _
-             (let ((new-context
-                    (swap-version glsl-version (with-gpu-func-spec s context))))
-               (cons x (clone-stage-spec s :new-context new-context))))
+  (mapcar (lambda (z)
+            (dbind (x . s) z
+              (let ((new-context
+                     (swap-version glsl-version (with-gpu-func-spec s context))))
+                (cons x (clone-stage-spec s :new-context new-context)))))
           stage-pairs))
 
 (defun+ %compile-link-and-upload (name draw-mode stage-pairs)
@@ -391,7 +395,8 @@
              (with-gpu-func-spec (cdr pair)
                context))
            (get-version-from-context (context)
-             (first (remove-if-not λ(member _ varjo:*supported-versions*)
+             (first (remove-if-not (lambda (x)
+                                     (member x varjo:*supported-versions*))
                                    context)))
            (get-glsl-version (&rest contexts)
              (let* ((versions (mapcar #'get-version-from-context contexts))
@@ -407,7 +412,7 @@
 
 (defun+ throw-version-error (pairs versions)
   (let ((issue (remove-if-not #'second
-                              (mapcar λ(list (car _) _1)
+                              (mapcar (lambda (x y) (list (car x) y))
                                       pairs versions))))
     (error 'glsl-version-conflict :pairs issue)))
 
@@ -421,21 +426,26 @@
       (let* ((assigners (make-arg-assigners uniform-arg-forms))
              (u-lets (mapcat #'let-forms assigners))
              (uniform-transforms
-              (remove-duplicates (mapcar λ(list (varjo:name _)
-                                                (varjo.internals:cpu-side-transform _))
+              (remove-duplicates (mapcar (lambda (x)
+                                           (list (varjo:name x)
+                                                 (varjo.internals:cpu-side-transform x)))
                                          varjo-implicit)
                                  :test #'equal)))
         (%compile-closure
          `(let ((initd nil)
-                ,@(mapcar λ`(,(assigner-name _) -1)
+                ,@(mapcar (lambda (x) `(,(assigner-name x) -1))
                           u-lets))
             (lambda (prog-id ,@uniform-names)
               (declare (optimize (speed 3) (safety 1) (debug 1))
                        (ignorable ,@uniform-names)
-                       ,@(mapcar λ`(type ,(assigner-type _) ,(assigner-name _))
+                       ,@(mapcar (lambda (x)
+                                   `(type ,(assigner-type x)
+                                          ,(assigner-name x)))
                                  u-lets))
               (unless initd
-                ,@(mapcar λ`(setf ,(assigner-name _) ,(assigner-body _))
+                ,@(mapcar (lambda (x)
+                            `(setf ,(assigner-name x)
+                                   ,(assigner-body x)))
                           u-lets)
                 (setf initd t))
               (let ,uniform-transforms
@@ -524,7 +534,8 @@
                    (setf (pipeline-state-tfs-array-count state)
                          tfb-group-count))
 
-                 (let ((frag (find-if λ(typep _ 'compiled-fragment-stage)
+                 (let ((frag (find-if (lambda (x)
+                                        (typep _ 'compiled-fragment-stage))
                                       compiled-stages)))
                    (setf (pipeline-state-has-fragment-stage state)
                          (not (null frag))))
@@ -720,7 +731,8 @@
   (flet ((get-em (stage)
            (loop :for out-var :in (varjo:output-variables stage)
               :for qualifiers := (varjo:qualifiers out-var)
-              :for feedback := (find-if λ(typep _ 'varjo:feedback-qualifier)
+              :for feedback := (find-if (lambda (x)
+                                          (typep x 'varjo:feedback-qualifier))
                                         qualifiers)
               :when feedback
               :collect (list out-var (feedback-group feedback)))))

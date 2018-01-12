@@ -1,5 +1,4 @@
 (in-package :cepl.fbos)
-(in-readtable fn:fn-reader)
 
 (define-const +valid-fbo-targets+
     '(:read-framebuffer :draw-framebuffer :framebuffer)
@@ -439,7 +438,8 @@
 
 (defun+ cube->fbo-arrays (fbo-obj fuzzy-args)
   (let ((depth (listify
-                (find-if λ(or (eq _ :d) (and (listp _) (eq (first _) :d)))
+                (find-if (lambda (x)
+                           (or (eq x :d) (and (listp x) (eq (first x) :d))))
                          fuzzy-args))))
     (dbind (cube-tex . rest) fuzzy-args
       (if (not (or (null rest) (and depth (= 1 (length rest)))))
@@ -631,7 +631,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                          and attaches it to attachment named by keyword"
   (when check-dimensions-matchp
     (let ((dims (mapcar #'extract-dimension-from-make-fbo-pattern args)))
-      (unless (every λ(equal (first dims) _) (rest dims))
+      (unless (every (lambda (x) (equal (first dims) x))
+                     (rest dims))
         (error 'attachments-with-different-sizes
                :args args
                :sizes dims))))

@@ -1,5 +1,4 @@
 (in-package :cepl.pipelines)
-(in-readtable fn:fn-reader)
 
 ;;--------------------------------------------------
 
@@ -322,9 +321,10 @@
 (defun+ gpu-func-specs (name &optional error-if-missing)
   (bt:with-lock-held (*gpu-func-specs-lock*)
     (or (remove nil
-                (mapcar λ(dbind (k . v) _
-                           (when (eq (name k) name)
-                             v))
+                (mapcar (lambda (x)
+                          (dbind (k . v) x
+                            (when (eq (name k) name)
+                              v)))
                         *gpu-func-specs*))
         (when error-if-missing
           (error 'gpu-func-spec-not-found :spec-name name)))))
@@ -385,13 +385,15 @@ names are depended on by the functions named later in the list"
   (bt:with-lock-held (*dependent-gpu-functions-lock*)
     (let ((this-func-calls
            (remove nil (mapcar
-                        λ(dbind (k . v) _
-                           (when (member key v)
-                             (cons k depth)))
+                        (lambda (x)
+                          (dbind (k . v) x
+                            (when (member key v)
+                              (cons k depth))))
                         *dependent-gpu-functions*))))
       (append this-func-calls
               (apply #'append
-                     (mapcar λ(%funcs-this-func-uses (car _) (1+ depth))
+                     (mapcar (lambda (x)
+                               (%funcs-this-func-uses (car x) (1+ depth)))
                              this-func-calls))))))
 
 (defmethod pipelines-that-use-this-as-a-stage ((func-key func-key))
@@ -410,20 +412,22 @@ names are depended on by the functions named later in the list"
 (defun+ update-specs-with-missing-dependencies ()
   (let ((specs (bt:with-lock-held (*gpu-func-specs-lock*)
                  (copy-list *gpu-func-specs*))))
-    (map 'nil λ(dbind (k . v) _
-                 (with-gpu-func-spec v
-                   (when missing-dependencies
-                     (%test-&-process-spec v)
-                     k)))
+    (map 'nil (lambda (x)
+                (dbind (k . v) x
+                  (with-gpu-func-spec v
+                    (when missing-dependencies
+                      (%test-&-process-spec v)
+                      k))))
          specs)))
 
 (defmethod recompile-pipelines-that-use-this-as-a-stage ((key func-key))
   "Recompile all pipelines that depend on the named gpu function or any other
    gpu function that depends on the named gpu function. It does this by
    triggering a recompile on all pipelines that depend on this glsl-stage"
-  (mapcar λ(let ((recompile-pipeline-name (recompile-name _)))
-             (when (fboundp recompile-pipeline-name)
-               (funcall (symbol-function recompile-pipeline-name))))
+  (mapcar (lambda (x)
+            (let ((recompile-pipeline-name (recompile-name x)))
+              (when (fboundp recompile-pipeline-name)
+                (funcall (symbol-function recompile-pipeline-name)))))
           (pipelines-that-use-this-as-a-stage key)))
 
 (defmethod %gpu-function ((name symbol))
@@ -452,8 +456,9 @@ names are depended on by the functions named later in the list"
   (%gpu-function name))
 
 (defun+ gpu-functions (name)
-  (mapcar λ(cons (slot-value _ 'name)
-                 (mapcar #'second (slot-value _ 'in-args)))
+  (mapcar (lambda (x)
+            (cons (slot-value x 'name)
+                  (mapcar #'second (slot-value x 'in-args))))
           (gpu-func-specs name)))
 
 (defun+ read-gpu-function-choice (intro-text gfunc-name)
@@ -482,7 +487,8 @@ names are depended on by the functions named later in the list"
 (defun+ make-pipeline-spec (name stages context)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment compute) (flatten stages)
-    (let ((tags (mapcar λ(when _ (slot-value _ 'diff-tag))
+    (let ((tags (mapcar (lambda (x)
+                          (when x (slot-value x 'diff-tag)))
                         (list vertex
                               tessellation-control
                               tessellation-evaluation

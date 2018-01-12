@@ -1,5 +1,4 @@
 (in-package :cepl.pipelines)
-(in-readtable :fn.reader)
 
 ;; (bake-uniforms 'foo :jam (gpu-function (ham :int)))
 
@@ -24,24 +23,27 @@
          (uniform-vals-to-bake (mapcar #'second uniform-pairs-to-bake)))
     ;;
     ;; check for proposed uniforms that arent in the pipeline
-    (let ((invalid (remove-if λ(find _ pipeline-uniforms :key #'first
-                                     :test #'string=)
+    (let ((invalid (remove-if (lambda (x)
+                                (find x pipeline-uniforms :key #'first
+                                      :test #'string=))
                               uniform-names-to-bake)))
       (assert (not invalid) () 'bake-invalid-uniform-name
               :proposed uniforms :invalid invalid))
     ;;
     ;; check in case user passed symbol instead of a gpu-func
-    (let ((symbol/list-values (remove-if-not λ(or (symbolp _) (listp _))
+    (let ((symbol/list-values (remove-if-not (lambda (x)
+                                               (or (symbolp x) (listp x)))
                                              uniform-vals-to-bake)))
       (assert (not symbol/list-values) ()
               'bake-uniform-invalid-values
               :proposed uniforms :invalid symbol/list-values))
 
     (let* ((vals-with-func-identifiers
-            (mapcar λ(typecase _
-                       (func-key (func-key->name _))
-                       (gpu-lambda (lambda-g->varjo-lambda-code _))
-                       (otherwise _))
+            (mapcar (lambda (x)
+                      (typecase x
+                        (func-key (func-key->name x))
+                        (gpu-lambda (lambda-g->varjo-lambda-code x))
+                        (otherwise x)))
                     uniform-vals-to-bake))
            (final-uniform-pairs
             (mapcar #'list uniform-names-to-bake vals-with-func-identifiers)))
@@ -51,7 +53,8 @@
 
 
 (defun+ bake-and-g-> (context draw-mode stage-pairs uniforms-to-bake)
-  (assert (every λ(typep (cdr _) 'gpu-func-spec) stage-pairs))
+  (assert (every (lambda (x) (typep (cdr x) 'gpu-func-spec))
+                 stage-pairs))
   (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version)))
     ;;
