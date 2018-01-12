@@ -13,7 +13,7 @@
   (let* ((quad-verts (list (v! -1.0 -1.0) (v! 1.0 -1.0)
                            (v! 1.0 1.0) (v! -1.0 1.0)))
          (data (make-array (* 4 size-x size-y)
-                           :element-type 'rtg-math.types:vec4
+                           :element-type 'vec4
                            :initial-element (v! 0 0 0 0)))
          (verts (loop :for y :below size-y :do
                    (loop :for x :below size-x :do

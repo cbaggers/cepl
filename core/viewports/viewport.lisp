@@ -21,8 +21,8 @@
   (%with-cepl-context-slots (current-viewport) cepl-context
     (unless (eq current-viewport viewport)
       (%gl:viewport
-        (%viewport-origin-x viewport) (%viewport-origin-y viewport)
-        (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
+       (%viewport-origin-x viewport) (%viewport-origin-y viewport)
+       (%viewport-resolution-x viewport) (%viewport-resolution-y viewport))
       (setf current-viewport viewport)
       t)))
 
@@ -73,13 +73,15 @@
 (defmethod (setf resolution) (value (viewport viewport))
   (setf (viewport-resolution viewport) value))
 
-(defn viewport-resolution ((viewport viewport)) rtg-math.types:vec2
+(defn viewport-resolution ((viewport viewport)) vec2
   (declare (profile t))
-  (v2:make (float (%viewport-resolution-x viewport))
-           (float (%viewport-resolution-y viewport))))
+  (vec2 (float (%viewport-resolution-x viewport) 0f0)
+        (float (%viewport-resolution-y viewport) 0f0)))
 
 (defn (setf viewport-resolution) ((value vec2) (viewport viewport)) vec2
-  (%set-resolution viewport (floor (v:x value)) (floor (v:y value)))
+  (%set-resolution viewport
+                   (floor (aref value 0))
+                   (floor (aref value 1)))
   (when (eq viewport (current-viewport))
     (%gl:viewport
      (%viewport-origin-x viewport) (%viewport-origin-y viewport)
@@ -106,16 +108,16 @@
   (declare (optimize (speed 3) (debug 1) (safety 1))
            (inline %current-viewport)
            (profile t))
-  (v2:make (float (%viewport-origin-x viewport) 0f0)
-           (float (%viewport-origin-y viewport) 0f0)))
+  (vec2 (float (%viewport-origin-x viewport) 0f0)
+        (float (%viewport-origin-y viewport) 0f0)))
 
 (defn (setf viewport-origin) ((value (or vec2 uvec2)) (viewport viewport))
     (or vec2 uvec2)
   (declare (optimize (speed 3) (debug 1) (safety 1))
            (inline %current-viewport)
            (profile t))
-  (setf (%viewport-origin-x viewport) (floor (v:x value))
-        (%viewport-origin-y viewport) (floor (v:y value)))
+  (setf (%viewport-origin-x viewport) (floor (aref value 0))
+        (%viewport-origin-y viewport) (floor (aref value 1)))
   value)
 
 (defmethod origin ((viewport viewport))
@@ -155,7 +157,7 @@
 (defn viewport-params-to-vec4 (&optional (viewport viewport (current-viewport)))
     vec4
   (declare (profile t))
-  (v4:make (float (%viewport-origin-x viewport) 0f0)
-           (float (%viewport-origin-y viewport) 0f0)
-           (float (%viewport-resolution-x viewport) 0f0)
-           (float (%viewport-resolution-y viewport) 0f0)))
+  (vec4 (float (%viewport-origin-x viewport) 0f0)
+        (float (%viewport-origin-y viewport) 0f0)
+        (float (%viewport-resolution-x viewport) 0f0)
+        (float (%viewport-resolution-y viewport) 0f0)))

@@ -25,7 +25,7 @@
   (values))
 
 (defn-inline uniform-2i ((location (signed-byte 32))
-                         (value rtg-math.types:ivec2))
+                         (value ivec2))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
@@ -36,7 +36,7 @@
   (values))
 
 (defn-inline uniform-3i ((location (signed-byte 32))
-                         (value rtg-math.types:ivec3))
+                         (value ivec3))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
@@ -47,7 +47,7 @@
   (values))
 
 (defn-inline uniform-4i ((location (signed-byte 32))
-                         (value rtg-math.types:ivec4))
+                         (value ivec4))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
@@ -69,7 +69,7 @@
   (values))
 
 (defn-inline uniform-2f ((location (signed-byte 32))
-                         (value rtg-math.types:vec2))
+                         (value vec2))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
@@ -80,7 +80,7 @@
   (values))
 
 (defn-inline uniform-3f ((location (signed-byte 32))
-                         (value rtg-math.types:vec3))
+                         (value vec3))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
@@ -91,7 +91,7 @@
   (values))
 
 (defn-inline uniform-4f ((location (signed-byte 32))
-                         (value rtg-math.types:vec4))
+                         (value vec4))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
@@ -113,7 +113,7 @@
   (values))
 
 (defn-inline uniform-matrix-3ft ((location (signed-byte 32))
-                                 (value rtg-math.types:mat3))
+                                 (value mat3))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))
@@ -124,7 +124,7 @@
   (values))
 
 (defn-inline uniform-matrix-4ft ((location (signed-byte 32))
-                                 (value rtg-math.types:mat4))
+                                 (value mat4))
     (values)
   (declare (optimize (speed 3) (safety 1) (debug 0)
                      (compilation-speed 0))

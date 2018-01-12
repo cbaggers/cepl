@@ -9,8 +9,9 @@
 
 (define-context-func (setf depth-range-vec2) ((vec2-range vec2)) vec2
     (depth-range)
-  (assert (typep vec2-range 'rtg-math.types:vec2))
-  (%gl:depth-range (v:x vec2-range) (v:y vec2-range))
+  (assert (typep vec2-range 'vec2))
+  (%gl:depth-range (aref vec2-range 0)
+                   (aref vec2-range 1))
   (setf depth-range vec2-range))
 
 ;;------------------------------------------------------------

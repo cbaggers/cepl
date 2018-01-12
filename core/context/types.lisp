@@ -111,11 +111,11 @@
   (depth-mask nil :type boolean)
   (color-masks (make-array 0 :element-type '(simple-array boolean (4)))
                :type (simple-array (simple-array boolean (4)) (*)))
-  (depth-range (v! 0 1) :type vec2)
+  (depth-range (vec2 0f0 1f0) :type vec2)
   (depth-clamp nil :type boolean)
   (cull-face :unknown :type (or symbol function))
   (front-face :unknown :type symbol)
-  (clear-color (v! 0 0 0 0) :type vec4))
+  (clear-color (vec4 0f0 0f0 0f0 0f0) :type vec4))
 
 (defmethod print-object ((context cepl-context) stream)
   (format stream "#<CEPL-CONTEXT ~a>" (slot-value context 'bound-thread)))

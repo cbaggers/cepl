@@ -8,19 +8,6 @@
 (deftype array-index ()
   '(integer 0 #.array-dimension-limit))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmacro defun+ (name args &body body)
-    `(defun ,name ,args
-       ,@(parse-body+ name body '((profile t)))))
-
-  (defmacro defmethod+ (name &rest args)
-    (let* ((arg-pos (position-if #'listp args))
-           (qual (subseq args 0 arg-pos))
-           (body (subseq args (1+ arg-pos)))
-           (args (elt args arg-pos)))
-      `(defmethod ,name ,@qual ,args
-                  ,@(parse-body+ name body '((profile t)))))))
-
 (defun+ listify (x) (if (listp x) x (list x)))
 
 (defun+ n-of (thing count)
@@ -738,5 +725,27 @@ Proposed Type: ~s" name (symbol-value name) type))
        (if (boundp ',name)
            (symbol-value ',name)
            ,val))))
+
+;;------------------------------------------------------------
+
+(defmacro case= (form &body cases)
+  (let ((g (gensym "val")))
+    (labels ((wrap-case (c) `((= ,g ,(first c)) ,@(rest c))))
+      (let* ((cases-but1 (mapcar #'wrap-case (butlast cases)))
+             (last-case (car (last cases)))
+             (last-case (if (eq (car last-case) 'otherwise)
+                            `(t ,@(rest last-case))
+                            (wrap-case last-case)))
+             (cases (append cases-but1 (list last-case))))
+        `(let ((,g ,form))
+           (cond ,@cases))))))
+
+(defmacro ecase= (form &body cases)
+  (let ((gform (gensym "form")))
+    `(let ((,gform ,form))
+       (case= ,gform
+         ,@cases
+         (otherwise (error "~a fell through ecase=. Expected one of:~%~a"
+                           ',form ',(mapcar #'first cases)))))))
 
 ;;------------------------------------------------------------

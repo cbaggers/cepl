@@ -54,7 +54,8 @@
 
 (defun+ surface-resolution (surface)
   (dbind (x y) (window-dimensions surface)
-    (v! x y)))
+    (vec2 (coerce x 'single-float)
+          (coerce y 'single-float))))
 
 (defun+ window-dimensions (window)
   (warn "CEPL: window-dimensions is deprecated, please use surface-dimensions instead")

@@ -40,8 +40,6 @@ All of the following will be downloaded automatically by quicklisp
 - ieee-floats
 - named-readtables
 - varjo
-- rtg-math
-- rtg-math.vari
 - closer-mop
 - bordeaux-threads
 

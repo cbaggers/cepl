@@ -27,7 +27,7 @@
 
 (defn viewport-for-array ((arr (or null gpu-array))) (or null viewport)
   (when arr
-    (make-viewport (gpu-array-dimensions arr) (v! 0 0))))
+    (make-viewport (gpu-array-dimensions arr) (vec2 0f0 0f0))))
 
 ;;----------------------------------------------------------------------
 
