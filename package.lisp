@@ -150,7 +150,8 @@
            :could-not-layout-type
            :invalid-data-layout-specifier
            :invalid-layout-for-inargs
-           :invalid-layout-for-uniform))
+           :invalid-layout-for-uniform
+           :c-array-total-size-type-error))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :%rtg-math)
@@ -472,6 +473,7 @@
            :c-array-p
            :c-array-pointer
            :c-array-dimensions
+           :c-array-total-size
            :c-array-element-type
            :c-array-element-type
            :c-array-element-byte-size
@@ -781,6 +783,7 @@
            :c-array-p
            :c-array-pointer
            :c-array-dimensions
+           :c-array-total-size
            :c-array-element-type
            :clone-c-array
            :free-c-array

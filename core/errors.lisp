@@ -642,6 +642,12 @@ uniforms."
   (or name "this lambda pipeline")
   layout)
 
+(deferror c-array-total-size-type-error () (size required-type)
+    "CEPL: c-array's total size must be of type c-array-index,
+also known as ~a. Total size found was ~a"
+  (upgraded-array-element-type required-type)
+  size)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
