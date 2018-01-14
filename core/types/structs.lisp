@@ -27,14 +27,16 @@
 
 (defclass cepl-struct-definition ()
   ((name :initarg :name :reader s-name)
+   (foreign-name :initarg :foreign-name :reader s-foreign-name)
    (layout :initarg :layout :reader s-layout)
    (slots :initarg :slots :reader s-slots)))
 
 (defmethod make-load-form ((obj cepl-struct-definition) &optional environment)
   (declare (ignore environment))
-  (with-slots (name layout slots) obj
+  (with-slots (name foreign-name layout slots) obj
     `(make-instance 'cepl-struct-definition
                     :name ',name
+                    :foreign-name ',foreign-name
                     :layout ',layout
                     :slots ',slots)))
 
@@ -153,6 +155,7 @@
                           slot-layouts))
            (struct-info (make-instance 'cepl-struct-definition
                                        :name name
+                                       :foreign-name foreign-struct-name
                                        :layout layout
                                        :slots slots)))
       (assert (= (length slot-layouts) (length slots)))
