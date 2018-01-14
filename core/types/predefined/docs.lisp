@@ -87,6 +87,31 @@ g-pntcb is a CEPL gpu struct with the following slots:
   texture: of type vec2 with an accessor method: tex
   color: of type vec4 with an accessor method: col")
 
+  (defun MAKE-G-PC
+      "
+This function returns a new instance of the gpu struct of type G-PC
+")
+  (defun MAKE-G-PN
+      "
+This function returns a new instance of the gpu struct of type G-PN
+")
+  (defun MAKE-G-PNC
+      "
+This function returns a new instance of the gpu struct of type G-PNC
+")
+  (defun MAKE-G-PNT
+      "
+This function returns a new instance of the gpu struct of type G-PNT
+")
+  (defun MAKE-G-PNTC
+      "
+This function returns a new instance of the gpu struct of type G-PNTC
+")
+  (defun MAKE-G-PT
+      "
+This function returns a new instance of the gpu struct of type G-PT
+")
+
   (defun pos
       "
 This function, returns a :vec3 which is the position of the instance.

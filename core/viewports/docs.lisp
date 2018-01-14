@@ -119,4 +119,9 @@ It will remain as the `current-viewport` until the end of the scope.
   (defun viewport (obj)
     "This is a placeholder generic function for future apis.
 Feel free to implement this in your own programs when yo want to get a `viewport`
-from some container"))
+from some container")
+
+  (defun viewport-eql
+      "
+This function returns t if the two viewports have the same resolution and origin.
+"))

@@ -83,18 +83,18 @@ The element-type of the index-array must be of the following:
 As well as an element type you also can specify the primitive-type. This says
 what the gpu will draw this data as. It can be any one of:
 
-:points
-:lines
-:line-loop
-:line-strip
-:lines-adjacency
-:line-strip-adjacency
-:triangles
-:triangle-fan
-:triangle-strip
-:triangles-adjacency
-:triangle-strip-adjacency
-(:patch <patch-size>)
+ :points
+ :lines
+ :line-loop
+ :line-strip
+ :lines-adjacency
+ :line-strip-adjacency
+ :triangles
+ :triangle-fan
+ :triangle-strip
+ :triangles-adjacency
+ :triangle-strip-adjacency
+ (:patch <patch-size>)
 
 By default the primitive-type is :triangles
 
@@ -112,4 +112,26 @@ legal code:
     doing this work in parallel, however it makes the explanation clearer so
     that is why it is there. If you have a clearer way of explaining the
     behaviour please file it as an issue on github.
+")
+  (defun buffer-stream-primitive
+      "
+This function returns the primitive that the data pulled from buffer stream
+represents.
+
+The primitive says what the gpu will draw this data as. It can be any one of:
+
+ :points
+ :lines
+ :line-loop
+ :line-strip
+ :lines-adjacency
+ :line-strip-adjacency
+ :triangles
+ :triangle-fan
+ :triangle-strip
+ :triangles-adjacency
+ :triangle-strip-adjacency
+ (:patch <patch-size>)
+
+By default the primitive-type is :triangles
 "))

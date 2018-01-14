@@ -167,4 +167,10 @@ For example:
 
 returns a function that when given a pointer and a lisp vec3 will write the
  value into foreign memory.
+")
+  (defun can-be-shared-between-contexts-p
+      "
+This function returns t if the object you pass it can be safely used from
+two shared contexts. As this function cannot detect which contexts you are
+refering to you must ensure yourself that the contexts are shared.
 "))

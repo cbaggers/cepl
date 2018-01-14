@@ -9,14 +9,16 @@ Commonly refered to in CEPL as a 'gpu function' or 'gfunc'
 Gpu functions try to feel similar to regular CL functions however naturally
 there are some differences.
 
-The first and most obvious one is that whilst gpu function can be called
-from other gpu functions, they cannot be called from lisp functions directly.
-They first must be composed into a pipeline using `defpipeline-g`.
+The first and most obvious one is that gpu function should only be called
+from other gpu functions and/or composed into a pipeline using `defpipeline-g`.
 
-When a gfunc is composed into a pipeline then that function takes on the role of
-one of the 'shader stages' of the pipeline. For a proper breakdown of pipelines
-see the docstring for defpipeline-g.
+Whilst it is actually possible to call on from a lisp function this is provided
+solely for making interactive development and debugging easier. Please see the
+`EXPERIMENTAL` section below for more info
 
+When a gfunc is composed into a pipeline then that function takes on the role
+of one of the 'shader stages' of the pipeline. For a proper breakdown of
+pipelines see the docstring for defpipeline-g.
 
 Let's see a simple example of a gpu function we can then break down
 
@@ -53,6 +55,33 @@ Let's see a simple example of a gpu function we can then break down
 
 That's the basics of gpu-functions. For more details on how they can be used
 in pipelines please see the documentation for defpipeline-g.
+
+*EXPRERIMENTAL*
+
+CEPL has a highly experimental feature to allow you to call gpu-functions directly
+What it aims to allow you to do is to generate and run a pipeline which runs your
+function once with the given arguments on the GPU.
+
+By doing this it gives you a way to try out your gpu-functions from the REPL
+without having to make a pipeline map-g over it whilst use ssbos or
+transform-feedback to capture the result.
+
+Currently this only works with functions that would work within a vertex
+shader (so things like gl-frag-pos will not work) however we want to expand on
+this in the future.
+
+This is not intended to be used *anywhere* where performance matters, it was
+made solely as a debugging/development aid. Every time it is run it must:
+
+- generate a pipeline
+- compile it
+- map-g over it
+- marshal the results back to lisp
+- free the pipeline
+
+This is *extremly* expensive, however as long as it takes less that 20ms or so
+it is fast enough for use from the repl.
+
 ")
 
   (defmacro defun-g-equiv
@@ -729,4 +758,53 @@ Let's see a simple example of a gpu function we can then break down
 
 That's the basics of gpu-functions. For more details on how they can be used
 in pipelines please see the documentation for defpipeline-g.
+")
+
+  (defun compile-g
+      "
+This function takes a lambda-g form and compiles it to a gpu-lambda object.
+
+This is used for similar reasons to `compile` in Common Lisp, you have a
+lambda definition as lists and you want a compiled lambda.
+
+The result of this function is suitable for passing to pipeline-g which lets
+you define a map-g'able pipeline at runtime.
+
+Whilst this shares the same signature as CL's #'compile in our version the
+'name' argument must be nil.
+")
+
+  (defun free-pipeline
+      "
+This function takes a pipeline designator[0] and frees it, this releases
+frees the gl-program object.
+
+[0] either a lambda-pipeline or a symbol naming a pipeline
+")
+
+  (defun funcall-g
+      "
+funcall-g is an experimental function. What it aims to allow you to do is to
+generate and run a pipeline which runs the requested function once with the
+given arguments on the GPU.
+
+By doing this it gives you a way to try out your gpu-functions from the REPL
+without having to make a pipeline map-g over it whilst use ssbos or
+transform-feedback to capture the result.
+
+Currently this only works with functions that would work within a vertex
+shader  (so things like gl-frag-pos will not work) however we want to expand on
+this in the future.
+
+This is not intended to be used *anywhere* where performance matters, it was
+made solely as a debugging/development aid. Every time it is run it must:
+
+- generate a pipeline
+- compile it
+- map-g over it
+- marshal the results back to lisp
+- free the pipeline
+
+This is *extremly* expensive, however as long as it takes less that 20ms or so
+it is fast enough for use from the repl.
 "))
