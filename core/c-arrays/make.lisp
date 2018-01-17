@@ -22,8 +22,8 @@
                                    element-byte-size)
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
-  (let ((dimensions (listify dimensions))
-        (total-size (reduce #'* dimensions)))
+  (let* ((dimensions (listify dimensions))
+         (total-size (reduce #'* dimensions)))
     (check-c-array-dimensions dimensions total-size)
     (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
            (element-type2 (if p-format
