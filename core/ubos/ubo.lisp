@@ -81,6 +81,10 @@ should be ~s" data element-type)
 ;; {TODO} using the id as the binding point is crazy town as it doesnt
 ;;        take :max-uniform-buffer-bindings into account.
 ;;        (For example it's only 84 on my desktop)
+;;
+;;        Ok, not quite as drastic as assumed, ubo-id is artificial and
+;;        we always make it as low as possible. However we should get
+;;        the max on cepl init, and check on ubo construction.
 (defun+ %bind-ubo (ubo)
   (let* ((data (ubo-data ubo))
          (type (ubo-data-type ubo))
