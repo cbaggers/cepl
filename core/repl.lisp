@@ -27,7 +27,7 @@
          (cepl.context::on-host-initialized context))
       ;;
       ;; Inform the world that CEPL is live
-      (cepl.lifecycle::change-state :interactive)
+      (cepl.lifecycle::change-state :active)
       t)))
 
 (defun+ quit () (cepl.lifecycle::change-state :shutting-down))

@@ -108,6 +108,7 @@ We have also removed the dependency on fn & cl-fad.
 Other Changes:
 - added the remove-surface function
 - closing primary window no longer quits cepl
+- removed interactive from lifecycle events (will add surface lifecycle events in future release)
 
 ### 2018-01-11
 
