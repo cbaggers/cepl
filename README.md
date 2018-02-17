@@ -40,7 +40,6 @@ All of the following will be downloaded automatically by quicklisp
 - ieee-floats
 - named-readtables
 - varjo
-- closer-mop
 - bordeaux-threads
 
 #### C Library dependency

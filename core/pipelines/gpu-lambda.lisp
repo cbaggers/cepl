@@ -2,6 +2,8 @@
 
 ;;------------------------------------------------------------
 
+(defvar *request-gpu-lambda-spec* nil)
+
 (defclass gpu-lambda ()
   ((in-args :initarg :in-args)
    (uniforms :initarg :uniforms)
@@ -10,30 +12,36 @@
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
    (context :initarg :context)
-   (func-spec :initarg :func-spec :initform nil))
-  (:metaclass closer-mop:funcallable-standard-class))
+   (func-spec :initarg :func-spec :initform nil)))
 
-(defmethod lambda-g->func-spec ((lambda-g gpu-lambda))
-  (slot-value lambda-g 'func-spec))
+(defmethod lambda-g->func-spec ((lambda-g function))
+  (let ((*request-gpu-lambda-spec* t))
+    (slot-value (funcall lambda-g) 'func-spec)))
 
-(defmethod initialize-instance :after ((lambda-g gpu-lambda) &key)
-  ;; need to emit warning if called
-  (closer-mop:set-funcallable-instance-function lambda-g #'%lambda-g)
-  ;; need to make the func-spec so can be used in pipelines
-  (with-slots (in-args uniforms body instancing doc-string
-                       declarations context func-spec) lambda-g
-    (setf func-spec
-          (%test-&-process-spec
-           (%make-gpu-func-spec
-            nil in-args uniforms context body instancing nil nil
-            nil doc-string declarations nil (get-gpu-func-spec-tag))
-           :cache-spec nil))))
+(defun make-gpu-lambda-info (&key in-args uniforms body instancing
+                             doc-string declarations context)
+  (let ((spec (%test-&-process-spec
+               (%make-gpu-func-spec
+                nil in-args uniforms context body instancing nil nil
+                nil doc-string declarations nil (get-gpu-func-spec-tag))
+               :cache-spec nil)))
+    (make-instance 'gpu-lambda
+                   :in-args in-args
+                   :uniforms uniforms
+                   :body body
+                   :instancing instancing
+                   :doc-string doc-string
+                   :declarations nil
+                   :context context
+                   :func-spec spec)))
 
 (defun+ %lambda-g (&rest args)
   (declare (ignore args))
   (warn "GPU Functions cannot currently be used from the cpu"))
 
 ;;------------------------------------------------------------
+
+
 
 (defun+ make-gpu-lambda  (args body)
   ;; seperate any doc-string or declarations from the body
@@ -45,14 +53,19 @@
       ;; check the arguments are sanely formatted
       (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
-      (make-instance 'gpu-lambda
-                     :in-args in-args
-                     :uniforms uniforms
-                     :body body
-                     :instancing instancing
-                     :doc-string doc-string
-                     :declarations nil
-                     :context context))))
+      (let ((spec (make-gpu-lambda-info
+                   :in-args in-args
+                   :uniforms uniforms
+                   :body body
+                   :instancing instancing
+                   :doc-string doc-string
+                   :declarations nil
+                   :context context)))
+        (lambda (&rest args)
+          (declare (ignore args))
+          (if *request-gpu-lambda-spec*
+              spec
+              (warn "GPU Functions cannot currently be used from the cpu")))))))
 
 (defmacro lambda-g (args &body body)
   (make-gpu-lambda args body)
