@@ -10,7 +10,11 @@
                                         depth-test-function
                                         depth-mask
                                         depth-range
-                                        depth-clamp)
+                                        depth-clamp
+                                        clear-color
+                                        cull-face
+                                        front-face
+                                        viewport)
                                        &body body)
   (assert (member program '(t nil)))
   (assert (member stencil '(t nil)))
@@ -20,6 +24,10 @@
   (assert (member depth-mask '(t nil)))
   (assert (member depth-range '(t nil)))
   (assert (member depth-clamp '(t nil)))
+  (assert (member clear-color '(t nil)))
+  (assert (member cull-face '(t nil)))
+  (assert (member front-face '(t nil)))
+  (assert (member viewport '(t nil)))
   (let ((ctx (gensym "ctx")))
     `(with-cepl-context (,ctx)
        (unwind-protect (progn ,@body)
@@ -32,6 +40,10 @@
                         ,depth-mask
                         ,depth-range
                         ,depth-clamp
+                        ,clear-color
+                        ,cull-face
+                        ,front-face
+                        ,viewport
                         nil
                         nil
                         nil
@@ -46,6 +58,10 @@
                      (depth-mask boolean)
                      (depth-range boolean)
                      (depth-clamp boolean)
+                     (clear-color boolean)
+                     (cull-face boolean)
+                     (front-face boolean)
+                     (viewport boolean)
                      (color-mask-indices list)
                      (tex-unit-ids list)
                      (buffer-targets list)
@@ -98,16 +114,20 @@
       (setf (depth-clamp context) (depth-clamp context)))
 
     ;; cull-face
-    (setf (cull-face context) (cull-face context))
+    (when cull-face
+      (setf (cull-face context) (cull-face context)))
 
     ;; front-face
-    (setf (front-face context) (front-face context))
+    (when front-face
+      (setf (front-face context) (front-face context)))
 
     ;; clear-color
-    (setf (clear-color context) (clear-color context))
+    (when clear-color
+      (setf (clear-color context) (clear-color context)))
 
     ;; viewport
-    (cepl.viewports::%set-current-viewport context current-viewport)
+    (when viewport
+      (cepl.viewports::%set-current-viewport context current-viewport))
 
     ;; color-masks
     (loop :for index :in color-mask-indices
