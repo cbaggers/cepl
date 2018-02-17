@@ -1076,7 +1076,7 @@
   (:import-from :cepl.context :%with-cepl-context-slots)
   (:export :stencil-params
            :make-stencil-params
-           :apply-stencil-params
+           :current-stencil-params
            :stencil-params-test
            :stencil-params-value
            :stencil-params-mask
