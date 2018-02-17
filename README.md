@@ -104,6 +104,11 @@ For those picking a library cepl expects vectors & matrices to be sized simple-a
 
 We have also removed the dependency on fn & cl-fad.
 
+
+Other Changes:
+- added the remove-surface function
+- closing primary window no longer quits cepl
+
 ### 2018-01-11
 
 *I am terrible at changelogs. I am retroactively making the updates for everything between june 2017 and jan 2018
