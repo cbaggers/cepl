@@ -764,6 +764,14 @@
 
 ;;----------------------------------------------------------------------
 
+(defn surfaces (&optional (cepl-context cepl-context (cepl-context))) list
+  (%cepl-context-surfaces cepl-context))
+
+(defn current-surface (&optional (cepl-context cepl-context (cepl-context))) t
+  (%cepl-context-current-surface cepl-context))
+
+;;----------------------------------------------------------------------
+
 (defmethod version-float ((ctx cepl-context))
   (%cepl-context-gl-version-float ctx))
 

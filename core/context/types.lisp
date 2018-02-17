@@ -151,12 +151,6 @@
 (defn-inline context-id ((context cepl-context)) context-id
   (%cepl-context-id context))
 
-(defn surfaces ((cepl-context cepl-context)) list
-  (%cepl-context-surfaces cepl-context))
-
-(defn current-surface ((cepl-context cepl-context)) t
-  (%cepl-context-current-surface cepl-context))
-
 ;;----------------------------------------------------------------------
 
 #+sbcl

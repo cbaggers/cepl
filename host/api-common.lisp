@@ -56,7 +56,7 @@
     (funcall make-current-func gl-context surface))
 
   (defun register-event-listener (function)
-    "not external"
+    "Register a function to be called on each event from the host"
     (if reg-event-callback-func
         (funcall reg-event-callback-func function)
         (push function event-callbacks-cache))))
