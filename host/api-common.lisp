@@ -159,3 +159,13 @@
   (apply #'%set-surface-title *current-host* surface title args))
 
 ;;----------------------------------------------------------------------
+
+(defmethod %destroy-surface (host surface &key &allow-other-keys)
+  (declare (ignore host surface))
+  nil)
+
+(defun destroy-surface (surface &rest args &key &allow-other-keys)
+  (assert *current-host* () "CEPL: destroy-surface cannot be called yet as CEPL has not been initialized")
+  (apply #'%destroy-surface *current-host* surface args))
+
+;;----------------------------------------------------------------------

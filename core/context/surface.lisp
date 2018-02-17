@@ -36,6 +36,14 @@
 
 ;;----------------------------------------------------------------------
 
+(defun remove-surface (context surface)
+  (%with-cepl-context-slots (surfaces) context
+    (assert (find surface surfaces))
+    (setf surfaces (remove surface surfaces))
+    (cepl.host:destroy-surface surface)))
+
+;;----------------------------------------------------------------------
+
 (defun+ make-surface-current (cepl-context surface)
   (assert cepl-context)
   (assert surface)

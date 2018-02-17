@@ -12,3 +12,4 @@
 (defgeneric %set-surface-fullscreen (host surface state &key &allow-other-keys))
 (defgeneric %surface-title (host surface &key &allow-other-keys))
 (defgeneric %set-surface-title (host surface title &key &allow-other-keys))
+(defgeneric %destroy-surface (host surface &key &allow-other-keys))

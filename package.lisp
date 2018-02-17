@@ -170,6 +170,7 @@
    :host-swap
    :window-size
    :set-surface-size
+   :destroy-surface
    :surface-title
    :set-surface-title
    :surface-fullscreen-p
@@ -705,6 +706,7 @@
            :stencil-mask
            :depth-test-function
            :add-surface
+           :remove-surface
            :surfaces
            :current-surface
            :make-surface-current
