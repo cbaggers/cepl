@@ -745,6 +745,13 @@
       (setf vao-binding-id vao)))
   vao)
 
+(defn force-bind-vao ((vao gl-id) (cepl-context cepl-context)) gl-id
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (profile t))
+  (%with-cepl-context-slots (vao-binding-id) cepl-context
+    (%gl:bind-vertex-array vao)
+    (setf vao-binding-id vao)))
+
 ;;----------------------------------------------------------------------
 
 (defn patch-uninitialized-context-with-version ((cepl-context cepl-context)

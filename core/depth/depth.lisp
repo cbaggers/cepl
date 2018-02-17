@@ -53,47 +53,93 @@
     (or symbol function)
     (depth-func)
   (if function
-        (progn
-          (gl:enable :depth-test)
-          (cond
-            ;;
-            ((eq function depth-func) depth-func)
-            ((or (eq function ':never) (eq function #'never)) nil
-             (%gl:depth-func :never)
-             (setf depth-func #'never))
-            ;;
-            ((or (eq function ':less) (eq function #'<)) nil
-             (%gl:depth-func :less)
-             (setf depth-func #'<))
-            ;;
-            ((or (eq function ':equal) (eq function #'=)) nil
-             (%gl:depth-func :equal)
-             (setf depth-func #'=))
-            ;;
-            ((or (eq function ':lequal) (eq function #'<=)) nil
-             (%gl:depth-func :lequal)
-             (setf depth-func #'<=))
-            ;;
-            ((or (eq function ':greater) (eq function #'>)) nil
-             (%gl:depth-func :greater)
-             (setf depth-func #'>))
-            ;;
-            ((or (eq function ':notequal) (eq function #'/=)) nil
-             (%gl:depth-func :notequal)
-             (setf depth-func #'/=))
-            ;;
-            ((or (eq function ':gequal) (eq function #'>=)) nil
-             (%gl:depth-func :gequal)
-             (setf depth-func #'>=))
-            ;;
-            ((or (eq function ':always) (eq function #'always)) nil
-             (%gl:depth-func :always)
-             (setf depth-func #'always))
-            (t (error "CEPL: Invalid function for depth-test-function: ~a"
-                      function))))
-        ;; function was nil
-        (progn
-          (gl:disable :depth-test)
-          (setf depth-func nil))))
+      (progn
+        (gl:enable :depth-test)
+        (cond
+          ;;
+          ((eq function depth-func) depth-func)
+          ((or (eq function ':never) (eq function #'never))
+           (%gl:depth-func :never)
+           (setf depth-func #'never))
+          ;;
+          ((or (eq function ':less) (eq function #'<))
+           (%gl:depth-func :less)
+           (setf depth-func #'<))
+          ;;
+          ((or (eq function ':equal) (eq function #'=))
+           (%gl:depth-func :equal)
+           (setf depth-func #'=))
+          ;;
+          ((or (eq function ':lequal) (eq function #'<=))
+           (%gl:depth-func :lequal)
+           (setf depth-func #'<=))
+          ;;
+          ((or (eq function ':greater) (eq function #'>))
+           (%gl:depth-func :greater)
+           (setf depth-func #'>))
+          ;;
+          ((or (eq function ':notequal) (eq function #'/=))
+           (%gl:depth-func :notequal)
+           (setf depth-func #'/=))
+          ;;
+          ((or (eq function ':gequal) (eq function #'>=))
+           (%gl:depth-func :gequal)
+           (setf depth-func #'>=))
+          ;;
+          ((or (eq function ':always) (eq function #'always))
+           (%gl:depth-func :always)
+           (setf depth-func #'always))
+          (t (error "CEPL: Invalid function for depth-test-function: ~a"
+                    function))))
+      ;; function was nil
+      (progn
+        (gl:disable :depth-test)
+        (setf depth-func nil))))
+
+(define-context-func force-depth-test-function ((function (or null function)))
+    (or symbol function)
+    (depth-func)
+  (if function
+      (progn
+        (gl:enable :depth-test)
+        (cond
+          ;;
+          ((eq function #'never)
+           (%gl:depth-func :never)
+           (setf depth-func #'never))
+          ;;
+          ((eq function #'<)
+           (%gl:depth-func :less)
+           (setf depth-func #'<))
+          ;;
+          ((eq function #'=)
+           (%gl:depth-func :equal)
+           (setf depth-func #'=))
+          ;;
+          ((eq function #'<=)
+           (%gl:depth-func :lequal)
+           (setf depth-func #'<=))
+          ;;
+          ((eq function #'>)
+           (%gl:depth-func :greater)
+           (setf depth-func #'>))
+          ;;
+          ((eq function #'/=)
+           (%gl:depth-func :notequal)
+           (setf depth-func #'/=))
+          ;;
+          ((eq function #'>=)
+           (%gl:depth-func :gequal)
+           (setf depth-func #'>=))
+          ;;
+          ((eq function #'always)
+           (%gl:depth-func :always)
+           (setf depth-func #'always))
+          (t (error "CEPL: Invalid function for depth-test-function: ~a"
+                    function))))
+      ;; function was nil
+      (progn
+        (gl:disable :depth-test)
+        (setf depth-func nil))))
 
 ;;------------------------------------------------------------
