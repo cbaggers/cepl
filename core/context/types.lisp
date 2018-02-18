@@ -86,10 +86,18 @@
    (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
                :adjustable t :fill-pointer 0)
    :type (array gl-id (*)))
+  (array-of-ubo-binding-ranges
+   (make-array 0 :element-type '(unsigned-byte 32)
+               :initial-element 0 :adjustable t :fill-pointer 0)
+   :type (array (unsigned-byte 32) (*)))
   (array-of-ssbo-bindings-buffer-ids
    (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
                :adjustable t :fill-pointer 0)
    :type (array gl-id (*)))
+  (array-of-ssbo-binding-ranges
+   (make-array 0 :element-type '(unsigned-byte 32)
+               :initial-element 0 :adjustable t :fill-pointer 0)
+   :type (array (unsigned-byte 32) (*)))
   (array-of-transform-feedback-bindings-buffer-ids
    (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
                :adjustable t :fill-pointer 0)
@@ -133,7 +141,8 @@
            depth-func color-masks depth-mask depth-range depth-clamp cull-face
            front-face current-stencil-params-front current-stencil-params-back
            current-stencil-mask-front current-stencil-mask-back
-           clear-color gl-version-float)))
+           clear-color gl-version-float
+           array-of-ubo-binding-ranges array-of-ssbo-binding-ranges)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))
           (accessors (loop :for slot :in slots :collect

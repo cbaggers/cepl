@@ -519,13 +519,20 @@
   (assert (and offset size))
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
-  (%with-cepl-context-slots (array-of-ubo-bindings-buffer-ids) ctx
-    (ensure-vec-index array-of-ubo-bindings-buffer-ids ubo-binding-point
-                      +null-gl-id+ gl-id)
-    (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
+  (%with-cepl-context-slots (array-of-ubo-bindings-buffer-ids
+                             array-of-ubo-binding-ranges)
+      ctx
+    (let ((bind-id (if (unknown-gl-id-p id) 0 id))
+          (range-index (the array-index (+ (* id 2) 1))))
+      (ensure-vec-index array-of-ubo-bindings-buffer-ids ubo-binding-point
+                        +null-gl-id+ gl-id)
+      (ensure-vec-index array-of-ubo-binding-ranges range-index
+                        0 (unsigned-byte 32))
       (%gl:bind-buffer-range
        :uniform-buffer ubo-binding-point bind-id offset size)
       (setf (aref array-of-ubo-bindings-buffer-ids ubo-binding-point) id)
+      (setf (aref array-of-ubo-binding-ranges (- range-index 1)) offset)
+      (setf (aref array-of-ubo-binding-ranges range-index) size)
       id)))
 
 (defn %register-ssbo-id ((ctx cepl-context) (ssbo-binding-point array-index))
@@ -547,13 +554,20 @@
   (assert (and offset size))
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
-  (%with-cepl-context-slots (array-of-ssbo-bindings-buffer-ids) ctx
-    (ensure-vec-index array-of-ssbo-bindings-buffer-ids ssbo-binding-point
-                      +null-gl-id+ gl-id)
-    (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
+  (%with-cepl-context-slots (array-of-ssbo-bindings-buffer-ids
+                             array-of-ssbo-binding-ranges)
+      ctx
+    (let ((bind-id (if (unknown-gl-id-p id) 0 id))
+          (range-index (the array-index (+ (* id 2) 1))))
+      (ensure-vec-index array-of-ssbo-bindings-buffer-ids ssbo-binding-point
+                        +null-gl-id+ gl-id)
+      (ensure-vec-index array-of-ssbo-binding-ranges range-index
+                        0 (unsigned-byte 32))
       (%gl:bind-buffer-range
        :shader-storage-buffer ssbo-binding-point bind-id offset size)
       (setf (aref array-of-ssbo-bindings-buffer-ids ssbo-binding-point) id)
+      (setf (aref array-of-ssbo-binding-ranges (- range-index 1)) offset)
+      (setf (aref array-of-ssbo-binding-ranges range-index) size)
       id)))
 
 ;;----------------------------------------------------------------------
