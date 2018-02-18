@@ -14,7 +14,12 @@
                                         clear-color
                                         cull-face
                                         front-face
-                                        viewport)
+                                        viewport
+                                        ;;
+                                        color-mask-indices
+                                        tex-unit-ids
+                                        buffer-targets
+                                        scissor-viewport-indices)
                                        &body body)
   (assert (member program '(t nil)))
   (assert (member stencil '(t nil)))
@@ -28,26 +33,34 @@
   (assert (member cull-face '(t nil)))
   (assert (member front-face '(t nil)))
   (assert (member viewport '(t nil)))
-  (let ((ctx (gensym "ctx")))
-    `(with-cepl-context (,ctx)
-       (unwind-protect (progn ,@body)
-         (restore-state ,ctx
-                        ,program
-                        ,stencil
-                        ,vao
-                        ,fbos-bound
-                        ,depth-test-function
-                        ,depth-mask
-                        ,depth-range
-                        ,depth-clamp
-                        ,clear-color
-                        ,cull-face
-                        ,front-face
-                        ,viewport
-                        nil
-                        nil
-                        nil
-                        nil)))))
+  (let ((color-mask-indices (uiop:ensure-list color-mask-indices))
+        (tex-unit-ids (uiop:ensure-list tex-unit-ids))
+        (buffer-targets (uiop:ensure-list buffer-targets))
+        (scissor-viewport-indices (uiop:ensure-list scissor-viewport-indices)))
+    (assert (not (eq (first color-mask-indices) 'quote)))
+    (assert (not (eq (first tex-unit-ids) 'quote)))
+    (assert (not (eq (first buffer-targets) 'quote)))
+    (assert (not (eq (first scissor-viewport-indices) 'quote)))
+    (let ((ctx (gensym "ctx")))
+      `(with-cepl-context (,ctx)
+         (unwind-protect (progn ,@body)
+           (restore-state ,ctx
+                          ,program
+                          ,stencil
+                          ,vao
+                          ,fbos-bound
+                          ,depth-test-function
+                          ,depth-mask
+                          ,depth-range
+                          ,depth-clamp
+                          ,clear-color
+                          ,cull-face
+                          ,front-face
+                          ,viewport
+                          ',color-mask-indices
+                          ',tex-unit-ids
+                          ',buffer-targets
+                          ',scissor-viewport-indices))))))
 
 (defn restore-state ((context cepl-context)
                      (program boolean)
@@ -86,7 +99,12 @@
             (cepl.stencil:current-stencil-params :front context))
 
       (setf (cepl.stencil:current-stencil-params :back context)
-            (cepl.stencil:current-stencil-params :back context)))
+            (cepl.stencil:current-stencil-params :back context))
+
+      (multiple-value-bind (front back)
+          (cepl:stencil-mask :front-and-back context)
+        (setf (cepl:stencil-mask :front context) front
+              (cepl:stencil-mask :back context) back)))
 
     ;; vao-binding-id
     (when vao
@@ -153,14 +171,6 @@
        :for buffer := (aref array-of-bound-gpu-buffers index)
        :when buffer
        :do (setf (gpu-buffer-bound context target) buffer))
-
-
-    ;; current-stencil-mask-front
-    ;; current-stencil-mask-back
-    (multiple-value-bind (front back)
-        (cepl:stencil-mask :front-and-back context)
-      (setf (cepl:stencil-mask :front context) front
-            (cepl:stencil-mask :back context) back))
 
     ;; need, but dont know how to handle yet
     ;;

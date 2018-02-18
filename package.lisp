@@ -714,7 +714,8 @@
            :surface-resolution
            :surface-title
            :surface-fullscreen-p
-           :gl-initialized-p))
+           :gl-initialized-p
+           :with-context-state-restored))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
