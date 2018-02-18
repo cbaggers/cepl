@@ -66,6 +66,8 @@
 ;;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ;; {TODO} ugh, a copy? why?
+;; I guess because otherwise someone could mutate the values without them
+;; being reflected in the gl state.
 (define-context-func current-blend-params () (or null blending-params)
     (default-framebuffer current-blend-params)
   (copy-blending-params
