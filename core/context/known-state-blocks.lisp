@@ -19,7 +19,9 @@
                                         color-mask-indices
                                         tex-unit-ids
                                         buffer-targets
-                                        scissor-viewport-indices)
+                                        scissor-viewport-indices
+                                        ubo-indices
+                                        ssbo-indices)
                                        &body body)
   (assert (member program '(t nil)))
   (assert (member stencil '(t nil)))
@@ -36,11 +38,15 @@
   (let ((color-mask-indices (uiop:ensure-list color-mask-indices))
         (tex-unit-ids (uiop:ensure-list tex-unit-ids))
         (buffer-targets (uiop:ensure-list buffer-targets))
-        (scissor-viewport-indices (uiop:ensure-list scissor-viewport-indices)))
+        (scissor-viewport-indices (uiop:ensure-list scissor-viewport-indices))
+        (ubo-indices (uiop:ensure-list ubo-indices))
+        (ssbo-indices (uiop:ensure-list ssbo-indices)))
     (assert (not (eq (first color-mask-indices) 'quote)))
     (assert (not (eq (first tex-unit-ids) 'quote)))
     (assert (not (eq (first buffer-targets) 'quote)))
     (assert (not (eq (first scissor-viewport-indices) 'quote)))
+    (assert (not (eq (first ubo-indices) 'quote)))
+    (assert (not (eq (first ssbo-indices) 'quote)))
     (let ((ctx (gensym "ctx")))
       `(with-cepl-context (,ctx)
          (unwind-protect (progn ,@body)
@@ -60,7 +66,9 @@
                           ',color-mask-indices
                           ',tex-unit-ids
                           ',buffer-targets
-                          ',scissor-viewport-indices))))))
+                          ',scissor-viewport-indices
+                          ',ubo-indices
+                          ',ssbo-indices))))))
 
 (defn restore-state ((context cepl-context)
                      (program boolean)
@@ -78,13 +86,19 @@
                      (color-mask-indices list)
                      (tex-unit-ids list)
                      (buffer-targets list)
-                     (scissor-viewport-indices list))
+                     (scissor-viewport-indices list)
+                     (ubo-indices list)
+                     (ssbo-indices list))
     null
   (%with-cepl-context-slots (current-tfs
                              current-viewport
                              array-of-bound-gpu-buffers
                              array-of-bound-queries
                              array-of-bound-samplers
+                             array-of-ubo-binding-ranges
+                             array-of-ubo-bindings-buffer-ids
+                             array-of-ssbo-binding-ranges
+                             array-of-ssbo-bindings-buffer-ids
                              current-scissor-viewports)
       context
     ;; current-tfs
@@ -172,14 +186,32 @@
        :when buffer
        :do (setf (gpu-buffer-bound context target) buffer))
 
+    ;; array-of-ubo-bindings-buffer-ids
+    (loop :for ubo-binding-point :in ubo-indices
+       :for ubo-id := (aref array-of-ubo-bindings-buffer-ids ubo-binding-point)
+       :do
+       (unless (unknown-gl-id-p ubo-id)
+         (let* ((range-index (the array-index (* ubo-id 2)))
+                (offset (aref array-of-ubo-binding-ranges range-index))
+                (size (aref array-of-ubo-binding-ranges (+ range-index 1))))
+           (%gl:bind-buffer-range
+            :uniform-buffer ubo-binding-point ubo-id offset size))))
+
+    ;; array-of-ssbo-bindings-buffer-ids
+    (loop :for ssbo-binding-point :in ssbo-indices
+       :for ssbo-id := (aref array-of-ssbo-bindings-buffer-ids ssbo-binding-point)
+       :do
+       (unless (unknown-gl-id-p ssbo-id)
+         (let* ((range-index (the array-index (* ssbo-id 2)))
+                (offset (aref array-of-ssbo-binding-ranges range-index))
+                (size (aref array-of-ssbo-binding-ranges (+ range-index 1))))
+           (%gl:bind-buffer-range
+            :uniform-buffer ssbo-binding-point ssbo-id offset size))))
+
     ;; need, but dont know how to handle yet
     ;;
-    ;; Problem with these two are ranges
-    ;; array-of-ubo-bindings-buffer-ids
-    ;; array-of-ssbo-bindings-buffer-ids
-    ;;
-    ;; these are per fbo (usually)
     ;; current-blend-params
+    ;; these are per fbo (usually)
     ;;
     ;; I dont think this can be done
     ;; array-of-transform-feedback-bindings-buffer-ids
