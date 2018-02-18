@@ -214,6 +214,9 @@
                 (size (aref array-of-ssbo-binding-ranges (+ range-index 1))))
            (%gl:bind-buffer-range
             :uniform-buffer ssbo-binding-point ssbo-id offset size))))
+
+    ;; ensure blending changes havent leaked
+    (cepl.blending::set-current-blend-params nil)
     nil))
 
 ;;----------------------------------------------------------------------
