@@ -104,6 +104,7 @@
                (:file "core/compute/compute")
                (:file "core/types/predefined/gpu-structs")
                (:file "core/context/make")
+               (:file "core/context/known-state-blocks")
                (:file "core/repl")
                ;;---
                (:file "docs/api/package")
