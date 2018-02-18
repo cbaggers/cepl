@@ -92,8 +92,8 @@
     null
   (%with-cepl-context-slots (current-tfs
                              current-viewport
+                             current-blend-params
                              array-of-bound-gpu-buffers
-                             array-of-bound-queries
                              array-of-bound-samplers
                              array-of-ubo-binding-ranges
                              array-of-ubo-bindings-buffer-ids
@@ -101,8 +101,15 @@
                              array-of-ssbo-bindings-buffer-ids
                              current-scissor-viewports)
       context
-    ;; current-tfs
-    (assert (not current-tfs))
+    ;; I'd like to handle this ↓↓ but Im not sure how to handle it yet
+    (assert (not current-blend-params) ()
+            'state-restore-limitation-blending)
+    (assert (not current-tfs) ()
+            'state-restore-limitation-transform-feedback)
+
+    ;; I dont think this can be done:
+    ;; - array-of-transform-feedback-bindings-buffer-ids
+    ;; - array-of-bound-queries. If these are rebound then they are broken
 
     ;; current-program
     (when program
@@ -207,15 +214,6 @@
                 (size (aref array-of-ssbo-binding-ranges (+ range-index 1))))
            (%gl:bind-buffer-range
             :uniform-buffer ssbo-binding-point ssbo-id offset size))))
-
-    ;; need, but dont know how to handle yet
-    ;;
-    ;; current-blend-params
-    ;; these are per fbo (usually)
-    ;;
-    ;; I dont think this can be done
-    ;; array-of-transform-feedback-bindings-buffer-ids
-    ;; queries. If these are rebound then they are broken
     nil))
 
 ;;----------------------------------------------------------------------

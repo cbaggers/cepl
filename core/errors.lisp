@@ -648,6 +648,18 @@ also known as ~a. Total size found was ~a"
   (upgraded-array-element-type required-type)
   size)
 
+(deferror state-restore-limitation-transform-feedback () ()
+    "CEPL: State restoring currently cannot be used from within the dynamic
+scope of a transform feedback")
+
+(deferror state-restore-limitation-blending () ()
+    "CEPL: State restoring currently cannot be used from within the dynamic
+scope of with-blending (may have been introduced by with-fbo-bound)")
+
+(deferror state-restore-limitation-queries () ()
+    "CEPL: State restoring currently cannot be used from within the dynamic
+scope of with-blending (may have been introduced by with-fbo-bound)")
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
