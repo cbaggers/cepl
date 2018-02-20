@@ -380,7 +380,7 @@
 ;; Raw Cache indexed part
 
 (defn-inline buffer-bound-static ((ctx cepl-context) (index (integer 0 11)))
-    gpu-buffer
+    (or gpu-buffer null)
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
            (profile t))
   (%with-cepl-context-slots (array-of-bound-gpu-buffers) ctx
@@ -390,8 +390,8 @@
                                       (buffer (or null gpu-buffer))
                                       (index (integer 0 11))
                                       (enum (signed-byte 32)))
-    gpu-buffer
-  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+    (or null gpu-buffer)
+  (declare (optimize (speed 3) (safety 1) (debug 0) (compilation-speed 0))
            (profile t))
   (%with-cepl-context-slots (array-of-bound-gpu-buffers) ctx
     (when (not (eq buffer (aref array-of-bound-gpu-buffers index)))
@@ -452,7 +452,8 @@
     (:texture-buffer
      #.(gl-enum :texture-buffer))))
 
-(defn gpu-buffer-bound ((cepl-context cepl-context) (target symbol)) gpu-buffer
+(defn gpu-buffer-bound ((cepl-context cepl-context) (target symbol))
+    (or null gpu-buffer)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (inline buffer-bound-static)
            (profile t))
@@ -469,7 +470,7 @@
 (defn (setf gpu-buffer-bound) ((val (or null gpu-buffer))
                                (ctx cepl-context)
                                (target symbol))
-    gpu-buffer
+    (or null gpu-buffer)
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (inline set-buffer-bound-static
                    buffer-kind->cache-index
