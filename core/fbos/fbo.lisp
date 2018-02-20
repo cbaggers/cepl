@@ -90,7 +90,7 @@
   (setf (%fbo-id fbo-obj) (or id (first (gl::gen-framebuffers 1))))
   (setf (%fbo-draw-buffer-map fbo-obj)
         (or draw-buffer-map
-            (foreign-alloc 'cl-opengl-bindings:enum :count
+            (foreign-alloc '%gl:enum :count
                            (max-draw-buffers
                             (cepl.context::%cepl-context-gl-context
                              (cepl-context)))
@@ -215,7 +215,7 @@
         (default-fbo (%fbo-is-default fbo)))
     (loop :for i :from 0 :for att :across (%fbo-color-arrays fbo) :do
        (let ((arr (att-array att)))
-         (setf (mem-aref ptr 'cl-opengl-bindings:enum i)
+         (setf (mem-aref ptr '%gl:enum i)
                (if arr
                    (if default-fbo
                        (default-fbo-attachment-enum i)
@@ -581,7 +581,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                          (%gl:draw-buffers ,len ,pointer)
                          (%with-blending ,fbo ,attachments nil ,@body)
                          (cffi:incf-pointer
-                          ,pointer ,(* len (foreign-type-size 'cl-opengl-bindings:enum)))))))))
+                          ,pointer ,(* len (foreign-type-size '%gl:enum)))))))))
     (if (eq target :framebuffer)
         (alexandria:with-gensyms (old-read-fbo old-draw-fbo new-fbo ctx)
           `(with-cepl-context (,ctx)

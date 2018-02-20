@@ -628,8 +628,11 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 (defun list-not-consp (x)
   (and (listp x) (or (null (cdr x)) (consp (cdr x)))))
 
-(defn gl-enum ((kwd symbol)) (signed-byte 32)
-  (the (signed-byte 32)
+(defconstant +gl-enum-size+
+  (* 8 (cffi:foreign-type-size '%gl::enum )))
+
+(defn gl-enum ((kwd symbol)) (unsigned-byte #.+gl-enum-size+)
+  (the (unsigned-byte #.+gl-enum-size+)
        (cffi:foreign-enum-value '%gl:enum kwd)))
 
 (defun symb-name= (a b)

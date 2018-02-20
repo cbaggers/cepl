@@ -15,10 +15,10 @@
     (unless available-extensions
       (let* ((exts (if (>= (gl:major-version) 3)
                        (loop :for i :below (gl:get-integer :num-extensions)
-                          :collect (%gl:get-string-i :extensions i))
+                          :collect (%gl:get-string-i #.(gl-enum :extensions) i))
                        ;; OpenGL version < 3
                        (cepl-utils:split-string
-                        #\space (%gl:get-string :extensions))))
+                        #\space (%gl:get-string #.(gl-enum :extensions)))))
              (exts (append exts
                            (mapcar (lambda (x)
                                      (cepl-utils:kwd (string-upcase (subseq x 3))))

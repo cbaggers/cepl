@@ -202,7 +202,7 @@
                 (offset (aref array-of-ubo-binding-ranges range-index))
                 (size (aref array-of-ubo-binding-ranges (+ range-index 1))))
            (%gl:bind-buffer-range
-            :uniform-buffer ubo-binding-point ubo-id offset size))))
+            #.(gl-enum :uniform-buffer) ubo-binding-point ubo-id offset size))))
 
     ;; array-of-ssbo-bindings-buffer-ids
     (loop :for ssbo-binding-point :in ssbo-indices
@@ -213,7 +213,7 @@
                 (offset (aref array-of-ssbo-binding-ranges range-index))
                 (size (aref array-of-ssbo-binding-ranges (+ range-index 1))))
            (%gl:bind-buffer-range
-            :uniform-buffer ssbo-binding-point ssbo-id offset size))))
+            #.(gl-enum :uniform-buffer) ssbo-binding-point ssbo-id offset size))))
 
     ;; ensure blending changes havent leaked
     (cepl.blending::set-current-blend-params nil)

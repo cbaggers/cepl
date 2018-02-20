@@ -23,14 +23,14 @@
           (if viewport
               (progn
                 (unless current
-                  (%gl:enable-i :scissor-test index))
+                  (%gl:enable-i #.(gl-enum :scissor-test) index))
                 (%gl:scissor-indexed index
                                      (%viewport-origin-x viewport)
                                      (%viewport-origin-y viewport)
                                      (%viewport-resolution-x viewport)
                                      (%viewport-resolution-y viewport)))
               (when current
-                (%gl:disable-i :scissor-test index)))
+                (%gl:disable-i #.(gl-enum :scissor-test) index)))
 
           ;; If gl-version < 4.1
           (progn
@@ -38,13 +38,13 @@
             (if viewport
                 (progn
                   (unless current
-                    (%gl:enable :scissor-test))
+                    (%gl:enable #.(gl-enum :scissor-test)))
                   (gl:scissor (%viewport-origin-x viewport)
                               (%viewport-origin-y viewport)
                               (%viewport-resolution-x viewport)
                               (%viewport-resolution-y viewport)))
                 (when current
-                  (%gl:disable :scissor-test)))))
+                  (%gl:disable #.(gl-enum :scissor-test))))))
       (setf (aref current-scissor-viewports index) viewport)))
   viewport)
 
@@ -62,30 +62,30 @@
             (if viewport
                 (progn
                   (unless current
-                    (cl-opengl-bindings:enable-i :scissor-test index))
-                  (cl-opengl-bindings:scissor-indexed index
-                                                      (%viewport-origin-x
-                                                       viewport)
-                                                      (%viewport-origin-y
-                                                       viewport)
-                                                      (%viewport-resolution-x
-                                                       viewport)
-                                                      (%viewport-resolution-y
-                                                       viewport)))
+                    (%gl:enable-i :scissor-test index))
+                  (%gl:scissor-indexed index
+                                       (%viewport-origin-x
+                                        viewport)
+                                       (%viewport-origin-y
+                                        viewport)
+                                       (%viewport-resolution-x
+                                        viewport)
+                                       (%viewport-resolution-y
+                                        viewport)))
                 (when current
-                  (cl-opengl-bindings:disable-i :scissor-test index)))
+                  (%gl:disable-i :scissor-test index)))
             (progn
               (assert (= index 0))
               (if viewport
                   (progn
-                    (unless current (cl-opengl-bindings:enable :scissor-test))
-                    (cl-opengl-bindings:scissor (%viewport-origin-x viewport)
-                                                (%viewport-origin-y viewport)
-                                                (%viewport-resolution-x
-                                                 viewport)
-                                                (%viewport-resolution-y
-                                                 viewport)))
-                  (when current (cl-opengl-bindings:disable :scissor-test)))))
+                    (unless current (%gl:enable #.(gl-enum :scissor-test)))
+                    (%gl:scissor (%viewport-origin-x viewport)
+                                 (%viewport-origin-y viewport)
+                                 (%viewport-resolution-x
+                                  viewport)
+                                 (%viewport-resolution-y
+                                  viewport)))
+                  (when current (%gl:disable #.(gl-enum :scissor-test))))))
         (setf (aref current-scissor-viewports index) viewport))
       viewport)))
 

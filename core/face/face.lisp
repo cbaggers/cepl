@@ -13,7 +13,7 @@
   (if face
       (progn
         (gl:enable :cull-face)
-        (%gl:cull-face face))
+        (%gl:cull-face (gl-enum face)))
       (gl:disable :cull-face))
   (setf cull-face face))
 
@@ -29,7 +29,7 @@
     (front-face)
   (assert (or (eq winding-direction :ccw)
               (eq winding-direction :cw)))
-  (%gl:front-face winding-direction)
+  (%gl:front-face (gl-enum winding-direction))
   (setf front-face winding-direction))
 
 ;;------------------------------------------------------------

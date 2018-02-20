@@ -389,7 +389,7 @@
 (defn-inline set-buffer-bound-static ((ctx cepl-context)
                                       (buffer (or null gpu-buffer))
                                       (index (integer 0 11))
-                                      (enum (signed-byte 32)))
+                                      (enum (unsigned-byte 32)))
     (or null gpu-buffer)
   (declare (optimize (speed 3) (safety 1) (debug 0) (compilation-speed 0))
            (profile t))
@@ -530,7 +530,11 @@
       (ensure-vec-index array-of-ubo-binding-ranges range-index
                         0 (unsigned-byte 32))
       (%gl:bind-buffer-range
-       :uniform-buffer ubo-binding-point bind-id offset size)
+       #.(gl-enum :uniform-buffer)
+       ubo-binding-point
+       bind-id
+       offset
+       size)
       (setf (aref array-of-ubo-bindings-buffer-ids ubo-binding-point) id)
       (setf (aref array-of-ubo-binding-ranges (- range-index 1)) offset)
       (setf (aref array-of-ubo-binding-ranges range-index) size)
@@ -565,7 +569,11 @@
       (ensure-vec-index array-of-ssbo-binding-ranges range-index
                         0 (unsigned-byte 32))
       (%gl:bind-buffer-range
-       :shader-storage-buffer ssbo-binding-point bind-id offset size)
+       #.(gl-enum :shader-storage-buffer)
+       ssbo-binding-point
+       bind-id
+       offset
+       size)
       (setf (aref array-of-ssbo-bindings-buffer-ids ssbo-binding-point) id)
       (setf (aref array-of-ssbo-binding-ranges (- range-index 1)) offset)
       (setf (aref array-of-ssbo-binding-ranges range-index) size)
@@ -598,7 +606,8 @@
                       gl-id)
     (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
       (%gl:bind-buffer-range
-       :transform-feedback-buffer tfb-binding-point bind-id offset size)
+       #.(gl-enum :transform-feedback-buffer)
+       tfb-binding-point bind-id offset size)
       (setf (aref array-of-transform-feedback-bindings-buffer-ids
                   tfb-binding-point)
             id)
@@ -617,7 +626,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
   (%with-cepl-context-slots (read-fbo-binding) cepl-context
-    (%gl:bind-framebuffer :read-framebuffer (%fbo-id fbo))
+    (%gl:bind-framebuffer #.(gl-enum :read-framebuffer) (%fbo-id fbo))
     (setf read-fbo-binding fbo)
     (values)))
 
@@ -627,14 +636,14 @@
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
   (%with-cepl-context-slots (draw-fbo-binding) cepl-context
-    (%gl:bind-framebuffer :draw-framebuffer (%fbo-id fbo))
+    (%gl:bind-framebuffer #.(gl-enum :draw-framebuffer) (%fbo-id fbo))
     (setf draw-fbo-binding fbo)
     (values)))
 
 (defn-inline %set-fbo-no-check ((cepl-context cepl-context) (fbo fbo)) (values)
   (%with-cepl-context-slots (read-fbo-binding draw-fbo-binding)
       cepl-context
-    (%gl:bind-framebuffer :framebuffer (%fbo-id fbo))
+    (%gl:bind-framebuffer #.(gl-enum :framebuffer) (%fbo-id fbo))
     (setf read-fbo-binding fbo)
     (setf draw-fbo-binding fbo))
   (values))
@@ -652,7 +661,7 @@
            (profile t))
   (%with-cepl-context-slots (read-fbo-binding) cepl-context
     (unless (eq fbo read-fbo-binding)
-      (%gl:bind-framebuffer :read-framebuffer (%fbo-id fbo))
+      (%gl:bind-framebuffer #.(gl-enum :read-framebuffer) (%fbo-id fbo))
       (setf read-fbo-binding fbo))
     fbo))
 
@@ -669,7 +678,7 @@
            (profile t))
   (%with-cepl-context-slots (draw-fbo-binding) cepl-context
     (unless (eq fbo draw-fbo-binding)
-      (%gl:bind-framebuffer :draw-framebuffer (%fbo-id fbo))
+      (%gl:bind-framebuffer #.(gl-enum :draw-framebuffer) (%fbo-id fbo))
       (setf draw-fbo-binding fbo))
     fbo))
 
@@ -690,14 +699,14 @@
            (id (%fbo-id fbo)))
       (if r-eq
           (unless d-eq
-            (%gl:bind-framebuffer :draw-framebuffer id)
+            (%gl:bind-framebuffer #.(gl-enum :draw-framebuffer) id)
             (setf draw-fbo-binding fbo))
           (if d-eq
               (progn
-                (%gl:bind-framebuffer :read-framebuffer id)
+                (%gl:bind-framebuffer #.(gl-enum :read-framebuffer) id)
                 (setf read-fbo-binding fbo))
               (progn
-                (%gl:bind-framebuffer :framebuffer id)
+                (%gl:bind-framebuffer #.(gl-enum :framebuffer) id)
                 (setf read-fbo-binding fbo)
                 (setf draw-fbo-binding fbo))))
       (values r-eq d-eq))))

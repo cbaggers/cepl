@@ -109,9 +109,9 @@
   ;; The user wants blending to be set by a blending params struct
   (if params
       (progn
-        (%gl:enable :blend)
+        (%gl:enable #.(gl-enum :blend))
         (%blend-using-params params))
-      (%gl:disable :blend))
+      (%gl:disable #.(gl-enum :blend)))
   (setf current-blend-params params)
   (values))
 
@@ -173,26 +173,26 @@
                ,@(loop :for b :in blendp-syms :for o :in override-syms
                     :for i :from 0 :collect
                     `(when ,b
-                       (%gl:enable-i :blend ,i)
+                       (%gl:enable-i #.(gl-enum :blend) ,i)
                        (if ,o
                            (%blend-i ,o ,i)
                            (%blend-i (blending-params ,fbo) ,i)))))
              (progn
                ,@(loop :for b :in blendp-syms :for i :from 0 :collect
-                    `(when ,b (%gl:enable-i :blend ,i))))))
+                    `(when ,b (%gl:enable-i #.(gl-enum :blend) ,i))))))
        ;; The meat
        ,@body
        ;; go disable all the attachments that were enabled
        ,@(loop :for b :in blendp-syms :for i :from 0 :collect
-            `(when ,b (%gl:disable-i :blend ,i))))))
+            `(when ,b (%gl:disable-i #.(gl-enum :blend) ,i))))))
 
 (defun+ loop-enabling-attachments (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
-     (when (att-blend a) (%gl:enable-i :blend i))))
+     (when (att-blend a) (%gl:enable-i #.(gl-enum :blend) i))))
 
 (defun+ loop-disabling-attachments (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
-     (when (att-blend a) (%gl:disable-i :blend i))))
+     (when (att-blend a) (%gl:disable-i #.(gl-enum :blend) i))))
 
 (defun+ %loop-setting-per-attachment-blend-params (fbo)
   (loop :for a :across (%fbo-color-arrays fbo) :for i :from 0 :do
@@ -203,20 +203,27 @@
 
 (defun+ %blend-i (params i)
   (with-blending-param-slots params
-    (%gl:blend-equation-separate-i i mode-rgb mode-alpha)
-    (%gl:blend-func-separate-i
-     i source-rgb destination-rgb source-alpha destination-alpha)))
+    (%gl:blend-equation-separate-i i
+                                   (gl-enum mode-rgb)
+                                   (gl-enum mode-alpha))
+    (%gl:blend-func-separate-i i
+                               (gl-enum source-rgb)
+                               (gl-enum destination-rgb)
+                               (gl-enum source-alpha)
+                               (gl-enum destination-alpha))))
 
 (defun+ %blend-fbo (fbo)
   (%blend-using-params (%fbo-blending-params fbo)))
 
 (defun+ %blend-using-params (params)
-  (%gl:blend-equation-separate (blending-params-mode-rgb params)
-                               (blending-params-mode-alpha params))
-  (%gl:blend-func-separate (blending-params-source-rgb params)
-                           (blending-params-destination-rgb params)
-                           (blending-params-source-alpha params)
-                           (blending-params-destination-alpha params)))
+  (%gl:blend-equation-separate
+   (gl-enum (blending-params-mode-rgb params))
+   (gl-enum (blending-params-mode-alpha params)))
+  (%gl:blend-func-separate
+   (gl-enum (blending-params-source-rgb params))
+   (gl-enum (blending-params-destination-rgb params))
+   (gl-enum (blending-params-source-alpha params))
+   (gl-enum (blending-params-destination-alpha params))))
 
 
 ;;----------------------------------------------------------------------

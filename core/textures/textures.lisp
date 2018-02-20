@@ -490,7 +490,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
              :for width = (gl:get-tex-level-parameter tex-type i :texture-width)
              :do (setf count i)
              :when (= width 0) :return nil)
-        (cl-opengl-bindings:opengl-error () nil))
+        (%gl:opengl-error () nil))
       count)))
 
 (defn tex-kind->cache-index ((kind symbol)) (signed-byte 32)
