@@ -90,7 +90,7 @@
   (cepl.host:window-size surface))
 
 (defun+ surface-resolution (surface)
-  (let ((data (cepl.host:window-size surface)))
+  (let ((data (mapcar #'float (cepl.host:window-size surface))))
     (make-array (length data) :element-type 'single-float
                 :initial-contents data)))
 
