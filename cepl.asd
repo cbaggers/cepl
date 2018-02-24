@@ -19,7 +19,8 @@
                #:varjo
                #:closer-mop
                #:bordeaux-threads
-               #:cepl.build)
+               #:cepl.build
+               #:alexandria)
   :components ((:file "package")
                (:file "host/api-api")
                (:file "host/api-generics")
