@@ -20,6 +20,14 @@
                          :cepl.ubos
                          :cepl.gpu-buffers
                          :cepl.vaos
+                         :cepl.compute
+                         :cepl.queries
+                         :cepl.render-buffers
+                         :cepl.scissor
+                         :cepl.ssbos
+                         :cepl.stencil
+                         :cepl.sync
+                         :cepl.transform-feedback
                          :cepl.types
                          :cepl.types.predefined)
        :template (@ #p"docs/api/cepl-template.ctml")
