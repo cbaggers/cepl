@@ -42,8 +42,11 @@ You create a ubo using this type as follows:
 
     (make-ubo '(1.2 10) 'test)
 
-If you wish to make a ubo from an element of a `c-array` or `gpu-array` please
-see the #'make-ubo-from-array function
+You can also pass in a c-array or gpu-array and omit the optional type
+specifier.
+
+If you wish to make a ubo from a specific element of a `c-array` or
+`gpu-array` please see the #'make-ubo-from-array function.
 ")
 
   (defun make-ubo-from-array
