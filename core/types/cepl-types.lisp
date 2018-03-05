@@ -20,7 +20,7 @@
   '(unsigned-byte 32))
 
 (deftype elem-byte-size ()
-  '(unsigned-byte 16))
+  '(unsigned-byte 32))
 
 (deftype row-byte-size ()
   '(unsigned-byte 32))
