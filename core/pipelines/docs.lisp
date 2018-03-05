@@ -236,7 +236,7 @@ the version the user is using.
 
 The value can be one of:
 
-    :140 :150 :330 :400 :410 :420 :430 :440 :450
+    :140 :150 :330 :400 :410 :420 :430 :440 :450 :460
 
 **-- Stage Names --**
 
@@ -599,7 +599,7 @@ the version the user is using.
 
 The value can be one of:
 
-    :140 :150 :330 :400 :410 :420 :430 :440 :450
+    :140 :150 :330 :400 :410 :420 :430 :440 :450 :460
 
 **-- Stage Names --**
 
