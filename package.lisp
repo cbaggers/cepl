@@ -1021,7 +1021,6 @@
   (:export :render-buffer
            :render-buffer-p
            :make-render-buffer
-           :make-render-buffer-now
            :render-buffer-resolution
            :render-buffer-multisample-p
            :render-buffer-image-format
