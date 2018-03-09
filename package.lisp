@@ -1112,9 +1112,11 @@
           :cepl.types :split-sequence :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.build
-          :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays)
+          :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays
+          :cepl.memory)
   (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
-  (:export :make-gpu-fence :wait-on-gpu-fence :gpu-fence-signalled-p))
+  (:export :make-gpu-fence :wait-on-gpu-fence :gpu-fence-signalled-p
+           :free-gpu-fence))
 
 (uiop:define-package :cepl.queries
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo

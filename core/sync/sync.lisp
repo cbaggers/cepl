@@ -63,6 +63,14 @@
         (eq status :condition-satisfied)
         (eq status :condition-satisfied-apple))))
 
+(defn free-gpu-fence ((fence gpu-fence)) null
+  (%gl:delete-sync (%gpu-fence-obj fence))
+  (setf (%gpu-fence-obj fence) (null-pointer))
+  nil)
+
+(defmethod free ((obj gpu-fence))
+  (free-gpu-fence obj))
+
 ;;------------------------------------------------------------
 
 ;; :already-signaled indicates that sync​ was signaled at the time that
