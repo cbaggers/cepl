@@ -519,7 +519,7 @@
   (* (ceiling val multiple) multiple))
 
 (defun scalar-type-p (type)
-  (or (v-typep type 'v-number)
+  (or (v-typep type 'v-real)
       (v-typep type 'v-bool)))
 
 (defun calc-aligned-offset (base-offset base-alignment)
