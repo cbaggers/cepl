@@ -730,7 +730,7 @@
 (defun get-feedback-out-vars (stages)
   (flet ((get-em (stage)
            (loop :for out-var :in (varjo:output-variables stage)
-              :for qualifiers := (varjo:qualifiers out-var)
+              :for qualifiers := (varjo:qualifiers (varjo:v-type-of out-var))
               :for feedback := (find-if (lambda (x)
                                           (typep x 'varjo:feedback-qualifier))
                                         qualifiers)
