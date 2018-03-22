@@ -38,7 +38,7 @@
     (%make-c-array
      :pointer (cffi:inc-pointer (c-array-pointer array)
                                 (* elem-size start))
-     :dimensions (c-array-dimensions array)
+     :dimensions (list (- end start))
      :total-size (c-array-total-size array)
      :element-byte-size (c-array-element-byte-size array)
      :element-type (c-array-element-type array)
