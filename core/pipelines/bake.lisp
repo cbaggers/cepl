@@ -14,8 +14,8 @@
          (stage-pairs (pairs-key-to-stage (pipeline-stage-pairs pipeline)))
          (func-specs (mapcar #'cdr stage-pairs))
          (pipeline-uniforms (cepl.pipelines::aggregate-uniforms func-specs))
-         (context (slot-value pipeline 'context))
-         (draw-mode (varjo.internals:get-primitive-type-from-context context))
+         (context-with-primitive (slot-value pipeline 'context))
+         (primitive (get-primitive-type-from-context context-with-primitive))
          ;;
          ;; get uniform details
          (uniform-pairs-to-bake (group uniforms 2))
@@ -49,10 +49,16 @@
             (mapcar #'list uniform-names-to-bake vals-with-func-identifiers)))
       ;;
       ;; Go for it
-      (bake-and-g-> context draw-mode stage-pairs final-uniform-pairs))))
+      (bake-and-g-> context-with-primitive
+                    primitive
+                    stage-pairs
+                    final-uniform-pairs))))
 
 
-(defun+ bake-and-g-> (context draw-mode stage-pairs uniforms-to-bake)
+(defun+ bake-and-g-> (context-with-primitive
+                      primitive
+                      stage-pairs
+                      uniforms-to-bake)
   (assert (every (lambda (x) (typep (cdr x) 'gpu-func-spec))
                  stage-pairs))
   (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
@@ -67,7 +73,7 @@
           (dbind (stage-type . func-spec) pair
             (list stage-type
                   (let* ((stage (parsed-gpipe-args->v-translate-args
-                                 nil draw-mode stage-type func-spec
+                                 nil primitive stage-type func-spec
                                  uniforms-to-bake))
                          (in-args (mapcar #'tidy-arg-form
                                           (varjo:input-variables stage)))
@@ -79,4 +85,4 @@
                                          (cons '&uniforms uniforms)))))
                     (make-gpu-lambda args body)))))
         stage-pairs)
-       context))))
+       context-with-primitive))))

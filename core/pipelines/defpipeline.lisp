@@ -171,7 +171,8 @@
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
          (primitive (varjo.internals:primitive-name-to-instance
-                     (varjo.internals:get-primitive-type-from-context context)))
+                     (get-primitive-type-from-context context)))
+         (context (remove-if #'varjo:valid-primitive-name-p context))
          (is-compute (find :compute stage-pairs :key #'car)))
     ;;
     ;; update the spec immediately (macro-expansion time)
@@ -306,7 +307,7 @@
            (when ,stream-symb
              ,(if compute
                   (compute-expander name stream-symb)
-                  (draw-expander name ctx stream-symb 'draw-type primitive))))
+                  (draw-expander name ctx stream-symb 'draw-mode primitive))))
 
          ;; uniform cleanup
          ,@(mapcar #'gen-cleanup-block (reverse uniform-assigners))
@@ -364,10 +365,10 @@
                 (cons x (clone-stage-spec s :new-context new-context)))))
           stage-pairs))
 
-(defun+ %compile-link-and-upload (name draw-mode stage-pairs)
+(defun+ %compile-link-and-upload (name primitive stage-pairs)
   (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version))
-         (compiled-stages (%varjo-compile-as-pipeline name draw-mode stage-pairs))
+         (compiled-stages (%varjo-compile-as-pipeline name primitive stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
     (unless *suppress-upload-message*
       (format t "~&; uploading (~a ...)~&" (or name "GPU-LAMBDA")))
@@ -591,7 +592,7 @@
                `(cons ,k ,(spec->func-key v))))))
 
 (defn-inline handle-transform-feedback
-    (ctx draw-type prog-id tfs-primitive tfs-array-count)
+    (ctx draw-mode prog-id tfs-primitive tfs-array-count)
     (values)
   (%with-cepl-context-slots (current-tfs) ctx
     (let ((tfs current-tfs))
@@ -606,7 +607,7 @@
           (if (= tfs-prog-id +unknown-gl-id+)
               (progn
                 (%gl:begin-transform-feedback
-                 (or tfs-primitive draw-type))
+                 (or tfs-primitive draw-mode))
                 (setf (%tfs-current-prog-id tfs) prog-id))
               (assert (= tfs-prog-id prog-id) ()
                       'mixed-pipelines-in-with-tb))))))
@@ -615,16 +616,16 @@
 (defun+ escape-tildes (str)
   (cl-ppcre:regex-replace-all "~" str "~~"))
 
-(defun draw-expander (profile-name ctx-symb stream-symb draw-type-symb
+(defun draw-expander (profile-name ctx-symb stream-symb draw-mode-symb
                       primitive)
   "This draws the single stream provided using the currently
    bound program. Please note: It Does Not bind the program so
    this function should only be used from another function which
    is handling the binding."
-  `(let ((draw-type ,(if (typep primitive 'varjo::dynamic)
+  `(let ((draw-mode ,(if (typep primitive 'varjo::dynamic)
                          `(buffer-stream-draw-mode-val stream-symb)
                          (varjo::lisp-name primitive))))
-     (handle-transform-feedback ,ctx-symb draw-type prog-id tfs-primitive
+     (handle-transform-feedback ,ctx-symb draw-mode prog-id tfs-primitive
                                 tfs-array-count)
 
      (when (not has-fragment-stage)
@@ -633,7 +634,7 @@
             `(profile-block (,profile-name :draw))
             '(progn))
         (let* ((stream ,stream-symb)
-               (draw-type ,draw-type-symb)
+               (draw-mode ,draw-mode-symb)
                (index-type (buffer-stream-index-type stream)))
           ,@(when (typep primitive 'varjo::patches)
               `((assert (= (buffer-stream-patch-length stream)
@@ -645,24 +646,24 @@
                 (if index-type
                     (locally (declare (optimize (speed 3) (safety 0))
                                       #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                      (%gl:draw-elements draw-type
+                      (%gl:draw-elements draw-mode
                                          (buffer-stream-length stream)
                                          (cffi-type->gl-type index-type)
                                          (%cepl.types:buffer-stream-start-byte stream)))
                     (locally (declare (optimize (speed 3) (safety 0))
                                       #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                      (%gl:draw-arrays draw-type
+                      (%gl:draw-arrays draw-mode
                                        (buffer-stream-start stream)
                                        (buffer-stream-length stream))))
                 (if index-type
                     (%gl:draw-elements-instanced
-                     draw-type
+                     draw-mode
                      (buffer-stream-length stream)
                      (cffi-type->gl-type index-type)
                      (%cepl.types:buffer-stream-start-byte stream)
                      |*instance-count*|)
                     (%gl:draw-arrays-instanced
-                     draw-type
+                     draw-mode
                      (buffer-stream-start stream)
                      (buffer-stream-length stream)
                      |*instance-count*|))))))

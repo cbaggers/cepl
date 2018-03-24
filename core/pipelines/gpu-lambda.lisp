@@ -88,19 +88,19 @@
 
 ;;------------------------------------------------------------
 
-(defun+ make-lambda-pipeline (gpipe-args context)
+(defun+ make-lambda-pipeline (gpipe-args context-with-primitive)
   ;; we have the body of the work in the *-inner function as
   ;; make-complete-lambda-pipeline returns two values and whilst we
   ;; do want both for funcall-g, we only want the first value to
   ;; be returned to users who use lambda-g
-  (values (make-lambda-pipeline-inner gpipe-args context)))
+  (values (make-lambda-pipeline-inner gpipe-args context-with-primitive)))
 
-(defun+ make-lambda-pipeline-inner (gpipe-args context)
+(defun+ make-lambda-pipeline-inner (gpipe-args context-with-primitive)
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((func-specs (mapcar #'cdr stage-pairs)))
       (if (stages-require-partial-pipeline func-specs)
           (make-partial-lambda-pipeline func-specs)
-          (make-complete-lambda-pipeline context
+          (make-complete-lambda-pipeline context-with-primitive
                                          stage-pairs
                                          func-specs
                                          post)))))
@@ -113,14 +113,19 @@
     (error 'partial-lambda-pipeline
            :partial-stages stages)))
 
-(defun+ make-complete-lambda-pipeline (context
+(defun get-primitive-type-from-context (context)
+  (or (find-if #'varjo:valid-primitive-name-p
+               context)
+      :triangles))
+
+(defun+ make-complete-lambda-pipeline (context-with-primitive
                                        stage-pairs
                                        func-specs
                                        post)
   (let* ((aggregate-uniforms (aggregate-uniforms func-specs t))
          (primitive (varjo.internals:primitive-name-to-instance
-                     (varjo.internals:get-primitive-type-from-context
-                      context))))
+                     (get-primitive-type-from-context
+                      context-with-primitive))))
     (multiple-value-bind (compiled-stages
                           prog-id
                           prog-ids
@@ -263,7 +268,7 @@
           (when ,stream-symb
             ,(if compute
                  (compute-expander nil stream-symb)
-                 (draw-expander nil ctx stream-symb 'draw-type primitive)))
+                 (draw-expander nil ctx stream-symb 'draw-mode primitive)))
           ,@u-cleanup
           ,(if compute
                nil

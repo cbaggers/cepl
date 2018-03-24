@@ -28,6 +28,11 @@
        (alexandria:read-file-into-string fspec)))
     (t (error "def-glsl-stage: Invalid shader body ~a" body))))
 
+(defun get-stage-kind-from-context (context)
+  (find-if (lambda (x)
+             (member x varjo:*stage-names*))
+           context))
+
 ;; extract details from args and delegate to %def-gpu-function
 ;; for the main logic
 (defmacro def-glsl-stage (name args body-form outputs)
@@ -54,12 +59,15 @@
     (let* ((cepl-in-args (mapcar #'process-glsl-arg in-args))
            (cepl-uniforms (mapcar #'process-glsl-arg uniforms))
            (body-string (get-body-string body-form))
-           (stage-kind (varjo.internals:get-stage-kind-from-context context))
+           (stage-kind (get-stage-kind-from-context context))
            (context (remove stage-kind context))
+           (primitive (get-primitive-type-from-context context))
+           (context (remove-if #'varjo:valid-primitive-name-p context))
            (spec (%make-glsl-stage-spec ;;[0]
                   name cepl-in-args cepl-uniforms context body-string
                   (varjo.internals:glsl-to-compile-result ;;[1]
-                   stage-kind in-args uniforms outputs context body-string))))
+                   stage-kind in-args uniforms outputs context body-string
+                   primitive))))
       (%update-glsl-stage-data spec)
       `(progn
          ,(%make-stand-in-lisp-func-for-glsl-stage spec);;[2]

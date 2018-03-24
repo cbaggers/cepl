@@ -290,7 +290,7 @@
 
 ;;--------------------------------------------------
 
-(defun+ %varjo-compile-as-pipeline (name draw-mode parsed-gpipe-args)
+(defun+ %varjo-compile-as-pipeline (name primitive parsed-gpipe-args)
   "Compile the gpu functions for a pipeline
    The argument to this function is a list of pairs.
    Each pair contains:
@@ -302,14 +302,14 @@
        (mapcar (lambda (x)
                  (dbind (stage-type . func-spec) x
                    (parsed-gpipe-args->v-translate-args name
-                                                        draw-mode
+                                                        primitive
                                                         stage-type
                                                         func-spec)))
                parsed-gpipe-args)))))
 
 ;; {TODO} make the replacements related code more robust
 (defun+ parsed-gpipe-args->v-translate-args (name
-                                             draw-mode
+                                             primitive
                                              stage-type
                                              func-spec
                                              &optional replacements)
@@ -368,7 +368,7 @@
                                             uniforms))
                  (context (remove stage-type context))
                  (primitive (when (eq stage-type :vertex)
-                              draw-mode))
+                              primitive))
                  (replacements
                   (loop :for (k v) :in replacements
                      :for r = (let* ((u (find k uniforms :key #'first
