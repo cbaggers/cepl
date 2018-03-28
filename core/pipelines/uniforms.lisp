@@ -173,7 +173,7 @@
   "Used when uploading from a foreign data source (like a c-array)
    This lets your uploading from an offset the source"
   (case type
-    ((:int :int-arb :bool :bool-arb) '%gl:uniform-1iv)
+    ((:int :int32 :int-arb :bool :bool-arb) '%gl:uniform-1iv)
     ((:float :float-arb) '%gl:uniform-1fv)
     ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) '%gl:uniform-2iv)
     ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) '%gl:uniform-3iv)
@@ -185,12 +185,13 @@
     ((:mat3 :float-mat3 :float-mat3-arb) 'uniform-matrix-3fvt)
     ((:mat4 :float-mat4 :float-mat4-arb) 'uniform-matrix-4fvt)
     (t (if (cepl.samplers::sampler-typep (type-spec->type type)) nil
-           (error "Sorry cepl doesnt handle that type yet")))))
+           (error "Sorry cepl doesnt handle that type yet: ~a"
+                  type)))))
 
 (defun+ get-uniform-function-name (type)
   "Used when uploading lisp data"
   (case type
-    ((:int :int-arb :bool :bool-arb) 'uniform-1i)
+    ((:int :int32 :int-arb :bool :bool-arb) 'uniform-1i)
     ((:float :float-arb) 'uniform-1f)
     ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) 'uniform-2i)
     ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) 'uniform-3i)
@@ -202,4 +203,5 @@
     ((:mat3 :float-mat3 :float-mat3-arb) 'uniform-matrix-3ft)
     ((:mat4 :float-mat4 :float-mat4-arb) 'uniform-matrix-4ft)
     (t (if (cepl.samplers::sampler-typep (type-spec->type type)) 'uniform-sampler
-           (error "Sorry cepl doesnt handle that type yet")))))
+           (error "Sorry cepl doesnt handle that type yet: ~a"
+                  type)))))
