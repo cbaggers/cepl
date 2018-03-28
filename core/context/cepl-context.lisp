@@ -17,12 +17,18 @@
                  :thread this-thread)))))
 
 (defun+ make-context (&key (gl-version t))
+  (make-context-internals nil gl-version))
+
+(defun+ make-context-internals (is-implicit-context-p &optional (gl-version t))
   ;;
   ;; Make sure there is only 1 cepl context per thread
   (bt:with-lock-held (*contexts-lock*)
-    (let ((this-thread (bt:current-thread)))
-      (assert-no-other-context-is-bound-to-thread this-thread)
-      ;;
+    ;; we delay thread bindings for the implicit cepl-context
+    (let ((this-thread (if is-implicit-context-p
+                           nil
+                           (bt:current-thread))))
+      (when this-thread
+        (assert-no-other-context-is-bound-to-thread this-thread))
       (let* ((gl-version (cond
                            ((and (eq gl-version t) *contexts*)
                             (let ((ctx (first *contexts*)))
@@ -51,7 +57,14 @@
 ;; Implicit Context & Inlining Logic
 
 (declaim (type cepl-context *cepl-context*))
-(defvar *cepl-context* (make-context))
+(defvar *cepl-context* (make-context-internals t))
+(defvar *primary-context* *cepl-context*)
+
+(defn primary-context () cepl-context
+  *primary-context*)
+
+(defn primary-thread () (or null bt:thread)
+  (%cepl-context-bound-thread (primary-context)))
 
 (defmacro l-identity (context)
   "An identity macro. Exists so it can be shadowed in certain contexts"
@@ -238,6 +251,9 @@
       cepl-context
     (assert (not gl-context))
     (let ((this-thread (bt:current-thread)))
+      (when (and (eq cepl-context (primary-context))
+                 (null bound-thread))
+        (setf bound-thread (bt:current-thread)))
       (assert (eq bound-thread this-thread) (bound-thread this-thread)
               'gl-context-initialized-from-incorrect-thread
               :ctx-thread bound-thread
