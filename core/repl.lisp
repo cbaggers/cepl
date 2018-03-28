@@ -23,8 +23,7 @@
       ;;
       ;; Initalized the already created CEPL contexts
       (loop :for context :in contexts :do
-         (cepl.context::patch-uninitialized-context-with-version context gl-version)
-         (cepl.context::on-host-initialized context))
+         (cepl.context::patch-uninitialized-context-with-version context gl-version))
       ;;
       ;; Inform the world that CEPL is live
       (cepl.lifecycle::change-state :active)

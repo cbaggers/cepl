@@ -40,8 +40,6 @@
                       :shared shared-arr
                       :surfaces nil)))
         (vector-push-extend result (%cepl-context-shared result))
-        (when cepl.host::*current-host*
-          (on-host-initialized result))
         (push result *contexts*)
         ;; done!
         result))))

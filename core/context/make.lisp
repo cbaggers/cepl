@@ -45,17 +45,3 @@
         (vec4 0f0 0f0 0f0 0f0)))
 
 ;;----------------------------------------------------------------------
-
-(defgeneric on-host-initialized (context)
-  (:method ((context cepl-context))
-    (unless (initialized-p context)
-      (when (remove context *contexts*)
-        (assert (cepl.host:supports-multiple-contexts-p) ()
-                "CEPL: Sorry your current CEPL host does not currently support multiple contexts"))
-      ;; make the surfaces
-      (init-pending-surfaces context)
-      ;;
-      (when (surfaces context)
-        (make-surface-current context (first (surfaces context))))
-      ;;
-      context)))
