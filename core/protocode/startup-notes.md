@@ -38,10 +38,10 @@ Ok so this simply kicks off `initialize-cepl` and then, once that is complete, c
 First it makes sure that cepl is not already initialized, then it:
 
 - grabs a copy of the contexts
-- calls cepl.host::initialize
+- calls `cepl.host::initialize`
 - loop over the contexts calling:
- - patch-uninitialized-context-with-version (as we know the version now apparently)
- - on-host-initialized..which we already know is shit
+ - `patch-uninitialized-context-with-version` (as we know the version now apparently)
+ - `on-host-initialized`..which we already know is shit
 - finally change the lifecycle state to active.
 
 Well, this is all slightly fucked then :D
@@ -57,3 +57,51 @@ after checking for multiple surface support in the host this function makes a pe
 Then if there is already has a host it calls `make-surface-from-pending` which, usually, will create a window. For system like glfw this may also be when the gl-context is created. but for some it wont be GAH hosts.
 
 Finally the surface is made current. At this point we NEED a GL context and so this is where init-gl-context is called if it hasnt already been set. Then the context is made current on the surface.
+
+## UNBOUND-CEPL-CONTEXT
+
+huh, seems we have this already, we use it when making shared contexts. You make it from the bound context (and thus thread) that you want to share with and then use the `with-cepl-context` macro on the thread you want to bind it to.
+
+# Stuff Done
+
+- removed `on-host-initialized`. It's not been used so we need to re-evaluate what is needed in there, and when.
+- removed the following from make-context:
+
+        (let ((this-thread (bt:current-thread)))
+          (assert-no-other-context-is-bound-to-thread this-thread)
+          this-thread)
+
+  gotta find this a new home.
+
+- added `primary-context` & `primary-thread`
+- the `primary-context` has special rules. It doesnt start with a thread bound.
+
+# Misc
+
+## idea for no bound thread
+
+This works with structs. Could be used for non-default context.. tbh though just have a seperate constructor :/
+
+    (defstruct blap
+      (thread nil
+              :type (or null bt:thread)))
+
+    (defstruct (blaping (:include blap (thread
+                                        (error "WAHHH must have a thread WAHHH")
+                                        :type bt:thread))))
+
+
+## lifecycle stuff
+- state: `hibernating`
+- function to enter: `hibernate`
+- function to leave: `reactivate` or `revitalize`
+
+## Good to know
+
+Killing the slime repl kills the repl thread. The new repl with have a new thread. This has been the cause of various issues in the past.
+
+Do we want to have the idea of a repl context? the primary context is tricksy when called from another thread..egh
+
+## INITIALIZED-P
+
+We have to restrict this stupid thing. Get rid of the definition that works on anything
