@@ -32,7 +32,7 @@
                 (list surface))))
     (when make-current
       (make-surface-current context surface))
-    context))
+    surface))
 
 ;;----------------------------------------------------------------------
 
