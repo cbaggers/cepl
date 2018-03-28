@@ -660,6 +660,14 @@ scope of with-blending (may have been introduced by with-fbo-bound)")
     "CEPL: State restoring currently cannot be used from within the dynamic
 scope of with-blending (may have been introduced by with-fbo-bound)")
 
+(deferror fbo-binding-missing () (kind current-surface)
+    "CEPL: FBO ~a bindings missing from context.
+~a"
+  (string-downcase (string kind))
+  (if current-surface
+      ""
+      "This is probably due to there being no surface current on this context"))
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

@@ -152,7 +152,8 @@
            :invalid-layout-for-uniform
            :c-array-total-size-type-error
            :state-restore-limitation-transform-feedback
-           :state-restore-limitation-blending))
+           :state-restore-limitation-blending
+           :fbo-binding-missing))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

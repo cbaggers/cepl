@@ -651,9 +651,11 @@
 (defn-inline read-fbo-bound ((cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context-slots (read-fbo-binding) cepl-context
+  (%with-cepl-context-slots (read-fbo-binding current-surface) cepl-context
     (let ((read-fbo read-fbo-binding))
-      (assert read-fbo)
+      (assert read-fbo () 'fbo-binding-missing
+              :kind "read"
+              :current-surface current-surface)
       read-fbo)))
 
 (defn (setf read-fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
@@ -668,9 +670,11 @@
 (defn-inline draw-fbo-bound ((cepl-context cepl-context)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
-  (%with-cepl-context-slots (draw-fbo-binding) cepl-context
+  (%with-cepl-context-slots (draw-fbo-binding current-surface) cepl-context
     (let ((draw-fbo draw-fbo-binding))
-      (assert draw-fbo)
+      (assert draw-fbo () 'fbo-binding-missing
+              :kind "draw"
+              :current-surface current-surface)
       draw-fbo)))
 
 (defn (setf draw-fbo-bound) ((fbo fbo) (cepl-context cepl-context)) fbo
