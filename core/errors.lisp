@@ -465,16 +465,16 @@ your code, you will get this error on the next compile unless it is fixed~]"
 
 (deferror gl-context-initialized-from-incorrect-thread ()
     (ctx-thread init-thread)
-    "CEPL: This CEPL context is tied to thread A (below) however something tried
-to create the gl-context from thread B:
+    "CEPL: This CEPL context is tied to thread A (shown below) however something
+tried to create the gl-context from thread B:
 A: ~a
 B: ~a"
   ctx-thread init-thread)
 
 (deferror shared-context-created-from-incorrect-thread ()
     (ctx-thread init-thread)
-    "CEPL: This CEPL context is tied to thread A (below) however something tried
-to create a shared CEPL context using it from thread B:
+    "CEPL: This CEPL context is tied to thread A (shown below) however something
+tried to create a shared CEPL context using it from thread B:
 A: ~a
 B: ~a"
   ctx-thread init-thread)
