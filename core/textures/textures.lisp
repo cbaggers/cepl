@@ -263,7 +263,7 @@
                  (dimensions initial-contents))
              (if dimensions dimensions (error "must specify dimensions if no initial-contents provided")))))
     ;; Early checks, move to own function if gets more extensive
-    (assert (every (lambda (x) (> x 0)) dimensions) ()
+    (assert (every (lambda (x) (> x 0)) dims) ()
             'texture-dimensions-lequal-zero
             :dimensions dims)
     dims))
