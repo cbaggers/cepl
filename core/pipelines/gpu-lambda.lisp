@@ -90,7 +90,8 @@
 
 (defstruct glambda-state
   (pipeline (error "BUG") :type function)
-  (recompiler nil :type (or null function)))
+  (recompiler nil :type (or null function))
+  (spec nil :type (or null lambda-pipeline-spec)))
 
 (defun wrap-allowing-recompilation (pipeline
                                     lambda-pipeline-spec
@@ -98,40 +99,118 @@
                                     context-with-primitive)
   (assert lambda-pipeline-spec ()
           "Lambda pipeline did not recieve the spec object so cannot make recompilable")
-  (let* ((state (make-glambda-state :pipeline pipeline)))
-    (flet ((recompiler ()
-             (setf (glambda-state-pipeline state)
-                   (make-lambda-pipeline-inner gpipe-args
-                                               context-with-primitive))))
+  (flet ((transplant-data-to-our-spec (our-spec new-spec)
+           (with-slots ((new-res cached-compile-results)
+                        (new-prog-ids prog-ids))
+               new-spec
+             (with-slots (cached-compile-results
+                          prog-ids)
+                 our-spec
+               (let ((old-prog-ids prog-ids))
+                 (setf cached-compile-results new-res
+                       prog-ids new-prog-ids)
+                 (map nil #'gl:delete-program (listify old-prog-ids))
+                 (values))))))
+    (let* (;; This is the state. it is the indirection that allows
+           ;; lambda-pipeline recompilation to work. If you are reading this
+           ;; to remind yourself how this all works I recommend taking a quick
+           ;; peek at lambda the end of this function, just to see what this is
+           ;; all for.
+           (state (make-glambda-state :pipeline pipeline)))
+      ;;
+      ;; To be able to be recompiled we need to store the functions we use as
+      ;; stages, we parse those out here so they can be stored on the spec
+      ;; object
       (dbind (stage-pairs post) (parse-gpipe-args gpipe-args)
         (declare (ignore post))
-        (dbind (&key vertex
-                     tessellation-control
-                     tessellation-evaluation
-                     geometry
-                     fragment
-                     compute)
-            (flatten stage-pairs)
-          (with-slots (vertex-stage
-                       tessellation-control-stage
-                       tessellation-evaluation-stage
-                       geometry-stage
-                       fragment-stage
-                       compute-stage
-                       recompile-func)
-              lambda-pipeline-spec
-            (setf vertex-stage vertex
-                  tessellation-control-stage tessellation-control
-                  tessellation-evaluation-stage tessellation-evaluation
-                  geometry-stage geometry
-                  fragment-stage fragment
-                  compute-stage compute
-                  recompile-func #'recompiler
-                  (glambda-state-recompiler state) #'recompiler))
-          (lambda (stream &rest uniforms)
-            (apply (glambda-state-pipeline state)
-                   stream
-                   uniforms)))))))
+        (labels (;; When CEPL wants to recompile the 'recompiler' function is
+                 ;; called. It is store on the spec object so it can be
+                 ;; reached.
+                 ;; We can't just recompile straight away though as we dont
+                 ;; know what thread we are on. So we hijack the 'pipeline'
+                 ;; function in the state. That way we get called the next
+                 ;; time someone tries to render with this pipeline.
+                 ;; We then compile a new pipeline func (being sure not to
+                 ;; register the spec), update our spec object & fix up
+                 ;; the hijacked 'pipeline' function on the state.
+                 ;; Lastly we call the new pipeline as the user is expecting
+                 ;; rendering to have happened, not just some recompile
+                 ;; nonsence (this also ensures pipeline has the correct
+                 ;; result [usually an fbo])
+                 (recompiler ()
+                   (setf
+                    (glambda-state-pipeline state)
+                    (lambda (stream &rest uniforms)
+                      (format t "~&; recompiling gpu-lambda~&")
+                      (let ((our-spec (glambda-state-spec state)))
+                        (multiple-value-bind (new-pipeline-func
+                                              new-stages
+                                              new-spec)
+                            (make-lambda-pipeline-inner
+                             gpipe-args
+                             context-with-primitive
+                             :register-lambda-pipeline nil)
+                          (declare (ignore new-stages))
+                          (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+                            (transplant-data-to-our-spec our-spec new-spec)
+                            (setf (glambda-state-pipeline state)
+                                  new-pipeline-func))
+                          (apply new-pipeline-func
+                                 stream
+                                 uniforms)))))))
+          ;;
+          ;; For the existing recompilation methods to work we need to set
+          ;; our spec up correctly. We only need to do this once as the
+          ;; stages can't change.
+          ;;
+          ;; Note: We dont need the recompile-state in the spec but it is
+          ;;       nice for debugging purposes.
+          (dbind (&key vertex
+                       tessellation-control
+                       tessellation-evaluation
+                       geometry
+                       fragment
+                       compute)
+              (flatten stage-pairs)
+            (with-slots (vertex-stage
+                         tessellation-control-stage
+                         tessellation-evaluation-stage
+                         geometry-stage
+                         fragment-stage
+                         compute-stage
+                         recompile-func
+                         recompile-state)
+                lambda-pipeline-spec
+              (setf vertex-stage vertex
+                    tessellation-control-stage tessellation-control
+                    tessellation-evaluation-stage tessellation-evaluation
+                    geometry-stage geometry
+                    fragment-stage fragment
+                    compute-stage compute
+                    recompile-func #'recompiler
+                    recompile-state state)
+              lambda-pipeline-spec))
+          ;;
+          ;; We can now populate the state with the other things that
+          ;; the recompiler will need.
+          (setf (glambda-state-recompiler state) #'recompiler
+                (glambda-state-spec state) lambda-pipeline-spec)
+          ;;
+          ;; At last, the point of all this. Make a lambda that
+          ;; wraps the state and calls the pipeline it holds.
+          ;; The above magic will swap out that function whenever
+          ;; it needs to handle change.
+          (let ((wrapper (lambda (ctx stream &rest uniforms)
+                           (declare (optimize (speed 3) (safety 1) (debug 1)))
+                           (apply (glambda-state-pipeline state)
+                                  ctx
+                                  stream
+                                  uniforms))))
+            ;; Note that we register the wrapper as the key as this
+            ;; is what the user will have access to. When they call
+            ;; free it's the wrapper that they will pass.
+            (register-lambda-pipeline lambda-pipeline-spec wrapper)
+            wrapper))))))
 
 ;;------------------------------------------------------------
 
@@ -140,17 +219,23 @@
   ;; make-complete-lambda-pipeline returns two values and whilst we
   ;; do want both for funcall-g, we only want the first value to
   ;; be returned to users who use lambda-g
-  (multiple-value-bind (pipeline stages lambda-pipeline-spec)
-      (make-lambda-pipeline-inner gpipe-args context-with-primitive)
-    (declare (ignore stages))
-    (if (find :static context-with-primitive)
-        pipeline
+  (if (find :static context-with-primitive)
+      ;;
+      ;; No live recompilation
+      (values (make-lambda-pipeline-inner gpipe-args context-with-primitive))
+      ;;
+      ;; Live recompilation
+      (multiple-value-bind (pipeline stages lambda-pipeline-spec)
+          (make-lambda-pipeline-inner gpipe-args context-with-primitive
+                                      :register-lambda-pipeline nil)
+        (declare (ignore stages))
         (wrap-allowing-recompilation pipeline
                                      lambda-pipeline-spec
                                      gpipe-args
                                      context-with-primitive))))
 
-(defun+ make-lambda-pipeline-inner (gpipe-args context-with-primitive)
+(defun+ make-lambda-pipeline-inner
+    (gpipe-args context-with-primitive &key (register-lambda-pipeline t))
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     (let* ((func-specs (mapcar #'cdr stage-pairs)))
       (if (stages-require-partial-pipeline func-specs)
@@ -158,7 +243,8 @@
           (make-complete-lambda-pipeline context-with-primitive
                                          stage-pairs
                                          func-specs
-                                         post)))))
+                                         post
+                                         register-lambda-pipeline)))))
 
 (defun+ make-partial-lambda-pipeline (func-specs)
   (let ((stages (remove-if-not (lambda (x)
@@ -176,7 +262,8 @@
 (defun+ make-complete-lambda-pipeline (context-with-primitive
                                        stage-pairs
                                        func-specs
-                                       post)
+                                       post
+                                       register-spec)
   (let* ((aggregate-uniforms (aggregate-uniforms func-specs t))
          (primitive (varjo.internals:primitive-name-to-instance
                      (get-primitive-type-from-context
@@ -229,28 +316,40 @@
              (stream-symb (if compute 'space 'stream))
              (stream-type (if compute 'compute-space 'buffer-stream)))
         ;;
-        (multiple-value-bind (pipeline-lambda-func pipeline-spec)
-            (funcall (compile nil (gen-complete-lambda-pipeline-code
-                                   ctx
-                                   compute
-                                   implicit-u-lets
-                                   implicit-u-uploads
-                                   implicit-uniform-transforms
-                                   post
-                                   primitive
-                                   stream-symb
-                                   stream-type
-                                   u-cleanup
-                                   u-lets
-                                   u-uploads
-                                   uniform-names))
-                     compiled-stages
-                     prog-id
-                     tfb-group-count)
+        (let* ((pipeline-lambda-func
+                (funcall (compile nil (gen-complete-lambda-pipeline-code
+                                       ctx
+                                       compute
+                                       implicit-u-lets
+                                       implicit-u-uploads
+                                       implicit-uniform-transforms
+                                       post
+                                       primitive
+                                       stream-symb
+                                       stream-type
+                                       u-cleanup
+                                       u-lets
+                                       u-uploads
+                                       uniform-names))
+                         compiled-stages
+                         prog-id
+                         tfb-group-count))
+               (pipeline-spec (make-lambda-pipeline-spec prog-id
+                                                         compiled-stages)))
+          (when register-spec
+            (register-lambda-pipeline
+             pipeline-spec
+             pipeline-lambda-func))
+
           (values
            pipeline-lambda-func
            compiled-stages
            pipeline-spec))))))
+
+(defun+ register-lambda-pipeline (spec closure)
+  (check-type spec lambda-pipeline-spec)
+  (setf (function-keyed-pipeline closure) spec)
+  (values closure spec))
 
 (defun gen-complete-lambda-pipeline-code (ctx
                                           compute
@@ -267,77 +366,67 @@
                                           uniform-names)
   `(lambda (compiled-stages prog-id tfb-group-count)
      (use-program (cepl-context) prog-id)
-     (register-lambda-pipeline
-      prog-id
-      compiled-stages
-      (let* ( ;; all image units will be >0 as 0 is used as scratch tex-unit
-             (image-unit 0)
-             ;; The primitive used by transform feedback. When nil
-             ;; the primitive comes from the render-mode
-             (tfs-primitive (when (> tfb-group-count 0)
-                              (get-transform-feedback-primitive compiled-stages)))
-             (tfs-array-count tfb-group-count)
-             ;; If there are no implicit-uniforms we need a no-op
-             ;; function to call
-             (has-fragment-stage
-              (not (null (find-if (lambda (x)
-                                    (typep x 'compiled-fragment-stage))
-                                  compiled-stages))))
-             ;;
-             ;; {todo} explain
-             ,@(mapcar (lambda (x)
-                         `(,(assigner-name x) ,(assigner-body x)))
-                       u-lets)
-             ,@(mapcar (lambda (x)
-                         `(,(assigner-name x) ,(assigner-body x)))
-                       implicit-u-lets))
-        (declare (ignorable image-unit
-                            tfs-primitive
-                            tfs-array-count
-                            has-fragment-stage)
-                 (type symbol tfs-primitive)
-                 (type (unsigned-byte 8) tfs-array-count)
-                 ,@(mapcar (lambda (x)
-                             `(type ,(assigner-type x) ,(assigner-name x)))
-                           implicit-u-lets))
-        (use-program (cepl-context) 0)
-        ;;
-        ;; generate the code that actually renders
-        (%post-init ,post)
-        (lambda (,ctx ,stream-symb ,@(when uniform-names `(&key ,@uniform-names)))
-          (declare (optimize (speed 3) (safety 1))
-                   (type (or null ,stream-type) ,stream-symb)
-                   (ignorable ,ctx ,@uniform-names))
-          #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-          ,@(unless (or compute (typep primitive 'varjo::dynamic))
-                    `((when ,stream-symb
-                        (assert
-                         (= ,(draw-mode-group-id primitive)
-                            (buffer-stream-primitive-group-id ,stream-symb))
-                         ()
-                         'buffer-stream-has-invalid-primitive-for-stream
-                         :name "<lambda>"
-                         :pline-prim ',(varjo::lisp-name primitive)
-                         :stream-prim (buffer-stream-primitive ,stream-symb)))))
-          (let ,implicit-uniform-transforms
-            (use-program ,ctx prog-id)
-            ,@u-uploads
-            ,@implicit-u-uploads)
-          (when ,stream-symb
-            ,(if compute
-                 (compute-expander nil stream-symb)
-                 (draw-expander nil ctx stream-symb 'draw-mode primitive)))
-          ,@u-cleanup
-          ,(if compute
-               nil
-               `(draw-fbo-bound ,ctx)))))))
-
-;;------------------------------------------------------------
-
-(defun+ register-lambda-pipeline (prog-id compiled-stages closure)
-  (let ((spec (make-lambda-pipeline-spec prog-id compiled-stages)))
-    (setf (function-keyed-pipeline closure) spec)
-    (values closure spec)))
+     (let* ( ;; all image units will be >0 as 0 is used as scratch tex-unit
+            (image-unit 0)
+            ;; The primitive used by transform feedback. When nil
+            ;; the primitive comes from the render-mode
+            (tfs-primitive (when (> tfb-group-count 0)
+                             (get-transform-feedback-primitive compiled-stages)))
+            (tfs-array-count tfb-group-count)
+            ;; If there are no implicit-uniforms we need a no-op
+            ;; function to call
+            (has-fragment-stage
+             (not (null (find-if (lambda (x)
+                                   (typep x 'compiled-fragment-stage))
+                                 compiled-stages))))
+            ;;
+            ;; {todo} explain
+            ,@(mapcar (lambda (x)
+                        `(,(assigner-name x) ,(assigner-body x)))
+                      u-lets)
+            ,@(mapcar (lambda (x)
+                        `(,(assigner-name x) ,(assigner-body x)))
+                      implicit-u-lets))
+       (declare (ignorable image-unit
+                           tfs-primitive
+                           tfs-array-count
+                           has-fragment-stage)
+                (type symbol tfs-primitive)
+                (type (unsigned-byte 8) tfs-array-count)
+                ,@(mapcar (lambda (x)
+                            `(type ,(assigner-type x) ,(assigner-name x)))
+                          implicit-u-lets))
+       (use-program (cepl-context) 0)
+       ;;
+       ;; generate the code that actually renders
+       (%post-init ,post)
+       (lambda (,ctx ,stream-symb ,@(when uniform-names `(&key ,@uniform-names)))
+         (declare (optimize (speed 3) (safety 1))
+                  (type (or null ,stream-type) ,stream-symb)
+                  (ignorable ,ctx ,@uniform-names))
+         #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+         ,@(unless (or compute (typep primitive 'varjo::dynamic))
+             `((when ,stream-symb
+                 (assert
+                  (= ,(draw-mode-group-id primitive)
+                     (buffer-stream-primitive-group-id ,stream-symb))
+                  ()
+                  'buffer-stream-has-invalid-primitive-for-stream
+                  :name "<lambda>"
+                  :pline-prim ',(varjo::lisp-name primitive)
+                  :stream-prim (buffer-stream-primitive ,stream-symb)))))
+         (let ,implicit-uniform-transforms
+           (use-program ,ctx prog-id)
+           ,@u-uploads
+           ,@implicit-u-uploads)
+         (when ,stream-symb
+           ,(if compute
+                (compute-expander nil stream-symb)
+                (draw-expander nil ctx stream-symb 'draw-mode primitive)))
+         ,@u-cleanup
+         ,(if compute
+              nil
+              `(draw-fbo-bound ,ctx))))))
 
 ;;------------------------------------------------------------
 

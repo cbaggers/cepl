@@ -42,7 +42,10 @@
     :initarg :compute-stage :initform nil)))
 
 (defclass lambda-pipeline-spec (pipeline-spec-base)
-  ((recompile-func :initform nil :initarg :recompile-func)))
+  ((vertex-stage :initarg :vertex-stage :initform nil)
+   (recompile-func :initform nil :initarg :recompile-func)
+   ;; ↓ used for debugging purposes
+   (recompile-state :initform nil :initarg :recompile-state)))
 
 (defclass pipeline-spec (pipeline-spec-base)
   ((name :initarg :name)
