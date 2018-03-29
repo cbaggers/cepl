@@ -88,12 +88,67 @@
 
 ;;------------------------------------------------------------
 
+(defstruct glambda-state
+  (pipeline (error "BUG") :type function)
+  (recompiler nil :type (or null function)))
+
+(defun wrap-allowing-recompilation (pipeline
+                                    lambda-pipeline-spec
+                                    gpipe-args
+                                    context-with-primitive)
+  (assert lambda-pipeline-spec ()
+          "Lambda pipeline did not recieve the spec object so cannot make recompilable")
+  (let* ((state (make-glambda-state :pipeline pipeline)))
+    (flet ((recompiler ()
+             (setf (glambda-state-pipeline state)
+                   (make-lambda-pipeline-inner gpipe-args
+                                               context-with-primitive))))
+      (dbind (stage-pairs post) (parse-gpipe-args gpipe-args)
+        (declare (ignore post))
+        (dbind (&key vertex
+                     tessellation-control
+                     tessellation-evaluation
+                     geometry
+                     fragment
+                     compute)
+            (flatten stage-pairs)
+          (with-slots (vertex-stage
+                       tessellation-control-stage
+                       tessellation-evaluation-stage
+                       geometry-stage
+                       fragment-stage
+                       compute-stage
+                       recompile-func)
+              lambda-pipeline-spec
+            (setf vertex-stage vertex
+                  tessellation-control-stage tessellation-control
+                  tessellation-evaluation-stage tessellation-evaluation
+                  geometry-stage geometry
+                  fragment-stage fragment
+                  compute-stage compute
+                  recompile-func #'recompiler
+                  (glambda-state-recompiler state) #'recompiler))
+          (lambda (stream &rest uniforms)
+            (apply (glambda-state-pipeline state)
+                   stream
+                   uniforms)))))))
+
+;;------------------------------------------------------------
+
 (defun+ make-lambda-pipeline (gpipe-args context-with-primitive)
   ;; we have the body of the work in the *-inner function as
   ;; make-complete-lambda-pipeline returns two values and whilst we
   ;; do want both for funcall-g, we only want the first value to
   ;; be returned to users who use lambda-g
-  (values (make-lambda-pipeline-inner gpipe-args context-with-primitive)))
+  (multiple-value-bind (pipeline stages lambda-pipeline-spec)
+      (make-lambda-pipeline-inner gpipe-args context-with-primitive)
+    (declare (ignore stages))
+    (if (find :static context-with-primitive)
+        pipeline
+        (wrap-allowing-recompilation pipeline
+                                     lambda-pipeline-spec
+                                     gpipe-args
+                                     context-with-primitive))))
 
 (defun+ make-lambda-pipeline-inner (gpipe-args context-with-primitive)
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
@@ -174,25 +229,28 @@
              (stream-symb (if compute 'space 'stream))
              (stream-type (if compute 'compute-space 'buffer-stream)))
         ;;
-        (values
-         (funcall (compile nil (gen-complete-lambda-pipeline-code
-                                ctx
-                                compute
-                                implicit-u-lets
-                                implicit-u-uploads
-                                implicit-uniform-transforms
-                                post
-                                primitive
-                                stream-symb
-                                stream-type
-                                u-cleanup
-                                u-lets
-                                u-uploads
-                                uniform-names))
-                  compiled-stages
-                  prog-id
-                  tfb-group-count)
-         compiled-stages)))))
+        (multiple-value-bind (pipeline-lambda-func pipeline-spec)
+            (funcall (compile nil (gen-complete-lambda-pipeline-code
+                                   ctx
+                                   compute
+                                   implicit-u-lets
+                                   implicit-u-uploads
+                                   implicit-uniform-transforms
+                                   post
+                                   primitive
+                                   stream-symb
+                                   stream-type
+                                   u-cleanup
+                                   u-lets
+                                   u-uploads
+                                   uniform-names))
+                     compiled-stages
+                     prog-id
+                     tfb-group-count)
+          (values
+           pipeline-lambda-func
+           compiled-stages
+           pipeline-spec))))))
 
 (defun gen-complete-lambda-pipeline-code (ctx
                                           compute
@@ -277,9 +335,9 @@
 ;;------------------------------------------------------------
 
 (defun+ register-lambda-pipeline (prog-id compiled-stages closure)
-  (setf (function-keyed-pipeline closure)
-        (make-lambda-pipeline-spec prog-id compiled-stages))
-  closure)
+  (let ((spec (make-lambda-pipeline-spec prog-id compiled-stages)))
+    (setf (function-keyed-pipeline closure) spec)
+    (values closure spec)))
 
 ;;------------------------------------------------------------
 

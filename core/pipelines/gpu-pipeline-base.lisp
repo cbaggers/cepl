@@ -23,15 +23,13 @@
 
 ;;--------------------------------------------------
 
-(defclass lambda-pipeline-spec ()
-  ((cached-compile-results :initarg :cached-compile-results :initform nil)
-   (prog-ids :initarg :prog-ids)))
-
-(defclass pipeline-spec ()
-  ((name :initarg :name)
-   (context :initarg :context)
-   (cached-compile-results :initform nil)
-   (vertex-stage :initarg :vertex-stage)
+(defclass pipeline-spec-base ()
+  ((prog-ids
+    :initarg :prog-ids)
+   (cached-compile-results
+    :initarg :cached-compile-results :initform nil)
+   (vertex-stage
+    :initarg :vertex-stage)
    (tessellation-control-stage
     :initarg :tessellation-control-stage :initform nil)
    (tessellation-evaluation-stage
@@ -41,10 +39,47 @@
    (fragment-stage
     :initarg :fragment-stage :initform nil)
    (compute-stage
-    :initarg :compute-stage :initform nil)
-   (diff-tags
-    :initarg :diff-tags :initform nil)
-   prog-ids))
+    :initarg :compute-stage :initform nil)))
+
+(defclass lambda-pipeline-spec (pipeline-spec-base)
+  ((recompile-func :initform nil :initarg :recompile-func)))
+
+(defclass pipeline-spec (pipeline-spec-base)
+  ((name :initarg :name)
+   (context :initarg :context)
+   (diff-tags :initarg :diff-tags :initform nil)))
+
+(defmethod pipeline-stages ((spec pipeline-spec-base))
+  (with-slots (vertex-stage
+               tessellation-control-stage
+               tessellation-evaluation-stage
+               geometry-stage
+               fragment-stage
+               compute-stage) spec
+    (list vertex-stage
+          tessellation-control-stage
+          tessellation-evaluation-stage
+          geometry-stage
+          fragment-stage
+          compute-stage)))
+
+(defmethod pipeline-stage-pairs ((spec pipeline-spec-base))
+  (with-slots (vertex-stage
+               tessellation-control-stage
+               tessellation-evaluation-stage
+               geometry-stage
+               fragment-stage
+               compute-stage) spec
+    (remove-if-not
+     #'cdr
+     (list (cons :vertex vertex-stage)
+           (cons :tessellation-control tessellation-control-stage)
+           (cons :tessellation-evaluation tessellation-evaluation-stage)
+           (cons :geometry geometry-stage)
+           (cons :fragment fragment-stage)
+           (cons :compute compute-stage)))))
+
+;;--------------------------------------------------
 
 (defclass gpu-func-spec ()
   ((name :initarg :name)
@@ -61,36 +96,6 @@
    (missing-dependencies :initarg :missing-dependencies :initform nil)
    (cached-compile-results :initarg :compiled :initform nil)
    (diff-tag :initarg :diff-tag)))
-
-(defmethod pipeline-stages ((spec pipeline-spec))
-  (with-slots (vertex-stage
-               tessellation-control-stage
-               tessellation-evaluation-stage
-               geometry-stage
-               fragment-stage
-               compute-stage) spec
-    (list vertex-stage
-          tessellation-control-stage
-          tessellation-evaluation-stage
-          geometry-stage
-          fragment-stage
-          compute-stage)))
-
-(defmethod pipeline-stage-pairs ((spec pipeline-spec))
-  (with-slots (vertex-stage
-               tessellation-control-stage
-               tessellation-evaluation-stage
-               geometry-stage
-               fragment-stage
-               compute-stage) spec
-    (remove-if-not
-     #'cdr
-     (list (cons :vertex vertex-stage)
-           (cons :tessellation-control tessellation-control-stage)
-           (cons :tessellation-evaluation tessellation-evaluation-stage)
-           (cons :geometry geometry-stage)
-           (cons :fragment fragment-stage)
-           (cons :compute compute-stage)))))
 
 ;;--------------------------------------------------
 
@@ -396,19 +401,6 @@ names are depended on by the functions named later in the list"
                                (%funcs-this-func-uses (car x) (1+ depth)))
                              this-func-calls))))))
 
-(defmethod pipelines-that-use-this-as-a-stage ((func-key func-key))
-  (bt:with-lock-held (*gpu-pipeline-specs-lock*)
-    (remove-duplicates
-     (remove nil
-             (map-hash
-              (lambda (k v)
-                (when (and (symbolp k)
-                           (typep v 'pipeline-spec)
-                           (member func-key (pipeline-stages v) :test #'func-key=))
-                  k))
-              *gpu-pipeline-specs*))
-     :test #'eq)))
-
 (defun+ update-specs-with-missing-dependencies ()
   (let ((specs (bt:with-lock-held (*gpu-func-specs-lock*)
                  (copy-list *gpu-func-specs*))))
@@ -424,11 +416,26 @@ names are depended on by the functions named later in the list"
   "Recompile all pipelines that depend on the named gpu function or any other
    gpu function that depends on the named gpu function. It does this by
    triggering a recompile on all pipelines that depend on this glsl-stage"
-  (mapcar (lambda (x)
-            (let ((recompile-pipeline-name (recompile-name x)))
-              (when (fboundp recompile-pipeline-name)
-                (funcall (symbol-function recompile-pipeline-name)))))
-          (pipelines-that-use-this-as-a-stage key)))
+  (let ((funcs nil))
+    (bt:with-lock-held (*gpu-pipeline-specs-lock*)
+      (maphash
+       (lambda (k v)
+         (cond
+           (;; top level pipelines
+            (and (symbolp k)
+                 (typep v 'pipeline-spec)
+                 (member key (pipeline-stages v) :test #'func-key=))
+            (let ((name (recompile-name k)))
+              (when (and name (fboundp name))
+                (push name funcs))))
+           (;; lambda pipelines
+            (and (typep v 'lambda-pipeline-spec)
+                 (member key (pipeline-stages v) :test #'func-key=))
+            (with-slots (recompile-func) v
+              (when recompile-func
+                (push recompile-func funcs))))))
+       *gpu-pipeline-specs*))
+    (map nil #'funcall funcs)))
 
 (defmethod %gpu-function ((name symbol))
   (let ((choices (gpu-functions name)))
@@ -478,6 +485,9 @@ names are depended on by the functions named later in the list"
    name))
 
 ;;--------------------------------------------------
+
+(defun+ recompile-name (name)
+  (hidden-symb name :recompile-pipeline))
 
 (defun+ make-lambda-pipeline-spec (prog-id compiled-stages)
   (make-instance 'lambda-pipeline-spec
@@ -654,11 +664,6 @@ names are depended on by the functions named later in the list"
      (unless (> |*instance-count*| 0)
        (error "Instance count must be greater than 0"))
      ,@body))
-
-;;--------------------------------------------------
-
-(defun+ recompile-name (name)
-  (hidden-symb name :recompile-pipeline))
 
 ;;--------------------------------------------------
 

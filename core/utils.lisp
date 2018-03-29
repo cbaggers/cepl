@@ -443,15 +443,6 @@
                     keys var-key-pairs)
          ,@body))))
 
-(defun+ map-hash (function hash-table)
-  "map through a hash and actually return something"
-  (let* ((head (list nil))
-         (tail head))
-    (labels ((do-it (k v)
-               (rplacd tail (setq tail (list (funcall function k v))))))
-      (maphash #'do-it hash-table))
-    (cdr head)))
-
 (defun+ filter-hash (function hash-table)
   "map through a hash and actually return something"
   (let* ((head (list nil))
