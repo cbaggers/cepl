@@ -82,7 +82,7 @@
                          (body (varjo.internals:lisp-code stage))
                          (args (append in-args
                                        (when uniforms
-                                         (cons '&uniforms uniforms)))))
+                                         (cons '&uniform uniforms)))))
                     (make-gpu-lambda args body)))))
         stage-pairs)
        context-with-primitive))))
