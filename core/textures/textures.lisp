@@ -256,11 +256,17 @@
 ;; [TODO] what is the max layercount?
 ;; [TODO] should fail on layer-count=0?
 (defun+ %texture-dimensions (initial-contents dimensions)
-  (if initial-contents
-      (if dimensions
-          (error "Cannot specify dimensions and initial-contents")
-          (dimensions initial-contents))
-      (if dimensions dimensions (error "must specify dimensions if no initial-contents provided"))))
+  (let ((dims
+         (if initial-contents
+             (if dimensions
+                 (error "Cannot specify dimensions and initial-contents")
+                 (dimensions initial-contents))
+             (if dimensions dimensions (error "must specify dimensions if no initial-contents provided")))))
+    ;; Early checks, move to own function if gets more extensive
+    (assert (every (lambda (x) (> x 0)) dimensions) ()
+            'texture-dimensions-lequal-zero
+            :dimensions dims)
+    dims))
 
 (defun+ make-texture-from-id (gl-object &key base-dimensions texture-type
                                          element-type mipmap-levels

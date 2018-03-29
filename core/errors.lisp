@@ -660,6 +660,7 @@ scope of with-blending (may have been introduced by with-fbo-bound)")
     "CEPL: State restoring currently cannot be used from within the dynamic
 scope of with-blending (may have been introduced by with-fbo-bound)")
 
+
 (deferror fbo-binding-missing () (kind current-surface)
     "CEPL: FBO ~a bindings missing from context.
 ~a"
@@ -667,6 +668,14 @@ scope of with-blending (may have been introduced by with-fbo-bound)")
   (if current-surface
       ""
       "This is probably due to there being no surface current on this context"))
+
+(deferror texture-dimensions-lequal-zero () (dimensions)
+    "CEPL: Found an request to make a texture where at least one of the
+dimensions were less than or equal to zero.
+
+Dimensions: ~a"
+  dimensions)
+
 
 ;; Please remember the following 2 things
 ;;

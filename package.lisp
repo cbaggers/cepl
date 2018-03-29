@@ -153,7 +153,8 @@
            :c-array-total-size-type-error
            :state-restore-limitation-transform-feedback
            :state-restore-limitation-blending
-           :fbo-binding-missing))
+           :fbo-binding-missing
+           :texture-dimensions-lequal-zero))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
