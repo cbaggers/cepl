@@ -313,20 +313,24 @@
                                              stage-type
                                              func-spec
                                              &optional replacements)
-  "%varjo-compile-as-pipeline simply takes (stage . gfunc-name) pairs from
-   %compile-link-and-upload needs to call v-rolling-translate. To do this
-   we need to look up the gpu function spec and turn them into valid arguments
-   for the rolling-translate function.
-   That is what this function does.
+  "parsed-gpipe-args->v-translate-args processed the (stage . gfunc-name) pairs
+   that %compile-link-and-upload want to call v-rolling-translate on.
+   To do this we need to look up the gpu function spec and turn them into valid
+   arguments for the rolling-translate function.
    It also:
-   [0] if it's a glsl-stage then it is already compiled. Pass the compile result
-       and let varjo handle it
+   [0] if it's a glsl-stage then it is already compiled. Pass the
+       compile-result and let varjo handle it
    [1] validate that either the gpu-function's context didnt specify a stage
-       explicitly or that, if it did, that it matches the stage it is being used
-       for now"
+       explicitly or that, if it did, that it matches the stage it is being
+       used for now
+   [2] is what handles the transformation of func (including gpu-lambdas)
+   [3] 'replacements' specifies uniforms to replace in the stage. "
   (flet ((add-layout-to-structs (arg)
-           (let* ((type-spec (second arg))
-                  (struct-info (cepl.types::g-struct-info type-spec :error-if-not-found nil)))
+           (let* ((type-spec
+                   (second arg))
+                  (struct-info
+                   (cepl.types::g-struct-info type-spec
+                                              :error-if-not-found nil)))
              (if struct-info
                  (let ((layout (cepl.types::s-layout struct-info)))
                    (when layout
@@ -345,14 +349,17 @@
     (if (and (typep func-spec 'glsl-stage-spec))
         (with-glsl-stage-spec func-spec
           compiled);;[0]
-        (dbind (in-args uniforms context code) (get-func-as-stage-code func-spec)
+        (dbind (in-args uniforms context code)
+            (get-func-as-stage-code func-spec) ;;[2]
           ;;[1]
           (let ((n (count-if (lambda (_) (member _ varjo:*stage-names*))
                              context)))
             (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
           (loop :for arg :in in-args :do
              (let* ((type-spec (second arg))
-                    (struct-info (cepl.types::g-struct-info type-spec :error-if-not-found nil)))
+                    (struct-info
+                     (cepl.types::g-struct-info type-spec
+                                                :error-if-not-found nil)))
                (when struct-info
                  (let ((layout (cepl.types::s-layout struct-info)))
                    (assert (null layout) ()
@@ -369,14 +376,15 @@
                  (context (remove stage-type context))
                  (primitive (when (eq stage-type :vertex)
                               primitive))
-                 (replacements
+                 (replacements ;; [3]
                   (loop :for (k v) :in replacements
                      :for r = (let* ((u (find k uniforms :key #'first
                                               :test #'string=)))
                                 (when (and u (typep (varjo:type-spec->type
                                                      (second u))
                                                     'varjo:v-function-type))
-                                  (list (first u) `(function ,v))))
+                                  (list (first u) `(the ,(second u)
+                                                        (function ,v)))))
                      :when r :collect r))
                  (body (if replacements
                            `((let ,replacements
