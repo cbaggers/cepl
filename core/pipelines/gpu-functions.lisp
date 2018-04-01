@@ -15,7 +15,10 @@
   ;; at the tail
   ;; -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
   ;; seperate any doc-string or declarations from the body
-  (let ((doc-string (when (stringp (first body)) (pop body))))
+  (multiple-value-bind (code decls doc-string)
+      (varjo.internals::extract-declares-and-doc-string
+       body `(define-vari-function ,name ,args ,@body))
+    (declare (ignore code decls))
     ;; split the argument list into the categoried we care aboutn
     (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
                  (instancing :&instancing))
