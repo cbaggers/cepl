@@ -57,6 +57,8 @@
       (clear) (swap))
     default-framebuffer))
 
+(defun cepl-describe (name &optional (stream *standard-output*))
+  (vari:vari-describe name stream))
 
 (in-package :cepl)
 

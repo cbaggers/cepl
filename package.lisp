@@ -1248,7 +1248,8 @@
            :swap
            :print-mem
            :shutting-down-p
-           :gl-initialized-p)
+           :gl-initialized-p
+           :cepl-describe)
   (:reexport :cepl.viewports
              :cepl.types
              :cepl.memory
