@@ -73,10 +73,23 @@
 (defmethod (setf resolution) (value (viewport viewport))
   (setf (viewport-resolution viewport) value))
 
+
+(defn-inline viewport-resolution-x ((viewport viewport)) single-float
+  (float (%viewport-resolution-x viewport) 0f0))
+
+(defn-inline viewport-resolution-y ((viewport viewport)) single-float
+  (float (%viewport-resolution-y viewport) 0f0))
+
+(defn-inline viewport-origin-x ((viewport viewport)) single-float
+  (float (%viewport-origin-x viewport) 0f0))
+
+(defn-inline viewport-origin-y ((viewport viewport)) single-float
+  (float (%viewport-origin-y viewport) 0f0))
+
 (defn viewport-resolution ((viewport viewport)) vec2
   (declare (profile t))
-  (vec2 (float (%viewport-resolution-x viewport) 0f0)
-        (float (%viewport-resolution-y viewport) 0f0)))
+  (vec2 (viewport-resolution-x viewport)
+        (viewport-resolution-y viewport)))
 
 (defn (setf viewport-resolution) ((value vec2) (viewport viewport)) vec2
   (%set-resolution viewport
@@ -95,12 +108,6 @@
     (when (eq viewport default-viewport)
       (cepl.fbos::%update-default-framebuffer-dimensions x y)))
   (values))
-
-(defun+ viewport-resolution-x (viewport)
-  (%viewport-resolution-x viewport))
-
-(defun+ viewport-resolution-y (viewport)
-  (%viewport-resolution-y viewport))
 
 ;;------------------------------------------------------------
 

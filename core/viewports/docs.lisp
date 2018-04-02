@@ -37,7 +37,19 @@ This function returns the x component of the resolution of the `viewport` as
 a float.
 ")
 
-    (defun viewport-resolution-y
+  (defun viewport-resolution-y
+      "
+This function returns the y component of the resolution of the `viewport` as
+a float.
+")
+
+  (defun viewport-origin-x
+      "
+This function returns the x component of the resolution of the `viewport` as
+a float.
+")
+
+  (defun viewport-origin-y
       "
 This function returns the y component of the resolution of the `viewport` as
 a float.

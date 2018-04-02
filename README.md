@@ -92,6 +92,17 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
 
+### 2018-04-17
+
+Headlines:
+
+The most important change this release is that lambda pipelines now recompile when the functions they use as stages are recompiled. This change comes with a performance cost of course so if you wish to opt out of this (recommended for when you ship your project) then pass `:static` in the context argument to `pipeline-g`
+
+Other important changes:
+
+- `viewport-resolution-x` & `viewport-resolution-y` had been documented as returning
+  `single-float`s but were returning unsigned ints, this now fixed.
+
 ### 2018-02-17
 
 __BREAKING CHANGES__
