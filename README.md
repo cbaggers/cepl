@@ -55,7 +55,7 @@ CEPL abstracts working with OpenGL but is not responsible for creating a window 
 
 ### Getting Started
 
-_Note:_ On `OSX`, `slime` users may want to add the code specifed in `docs/single-thread-swank.md` to their Emacs config file, and use the command `slime-style` which will start `slime` in a more OpenGL friendly mode. Then follow the rest of this as usual.
+_Note:_ On `macOS`, `slime` users may want to add the code specifed in `docs/single-thread-swank.md` to their Emacs config file, and use the command `slime-style` which will start `slime` in a more OpenGL friendly mode. Then follow the rest of this as usual.
 
 To load CEPL and the default host (`sdl2`) do the following:
 
@@ -100,8 +100,8 @@ The most important change this release is that lambda pipelines now recompile wh
 
 Other important changes:
 
-- `viewport-resolution-x` & `viewport-resolution-y` had been documented as returning
-  `single-float`s but were returning unsigned ints, this now fixed.
+- `viewport-resolution-x` & `viewport-resolution-y` had been documented as returning `single-float`s but were returning unsigned ints, this now fixed.
+- I'm an idiot that didn't know about `~/.swank.lisp`, please see the new 'single-thread-swank' advice above if running on macOS.
 
 ### 2018-02-17
 
