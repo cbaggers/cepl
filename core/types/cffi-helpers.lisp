@@ -64,6 +64,8 @@
                          (:ushort 0 nil nil)
                          (:int 0 nil nil)
                          (:uint 0 nil nil)
+                         (:int32 0 nil nil)
+                         (:uint32 0 nil nil)
                          (:float 0 nil nil)
                          (:double 0 nil nil)
                          (:half-float 0 nil nil))
