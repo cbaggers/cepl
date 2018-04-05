@@ -6,6 +6,7 @@
   ((in-args :initarg :in-args)
    (uniforms :initarg :uniforms)
    (body :initarg :body)
+   (shared :initarg :shared)
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
    (context :initarg :context)
@@ -19,12 +20,12 @@
   ;; need to emit warning if called
   (closer-mop:set-funcallable-instance-function lambda-g #'%lambda-g)
   ;; need to make the func-spec so can be used in pipelines
-  (with-slots (in-args uniforms body doc-string
+  (with-slots (in-args uniforms body shared doc-string
                        declarations context func-spec) lambda-g
     (setf func-spec
           (%test-&-process-spec
            (%make-gpu-func-spec
-            nil in-args uniforms context body nil nil
+            nil in-args uniforms context body shared nil nil
             nil doc-string declarations nil (get-gpu-func-spec-tag))
            :cache-spec nil))))
 
@@ -38,8 +39,9 @@
   ;; seperate any doc-string or declarations from the body
   (let ((doc-string (when (stringp (first body)) (pop body))))
     ;; split the argument list into the categoried we care aboutn
-    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context))
-        (varjo.utils:lambda-list-split '(:&uniform :&context) args)
+    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
+                 (shared :&shared))
+        (varjo.utils:lambda-list-split '(:&uniform :&context :&shared) args)
       ;; check the arguments are sanely formatted
       (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
@@ -47,6 +49,7 @@
                      :in-args in-args
                      :uniforms uniforms
                      :body body
+                     :shared shared
                      :doc-string doc-string
                      :declarations nil
                      :context context))))

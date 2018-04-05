@@ -20,13 +20,14 @@
        body `(define-vari-function ,name ,args ,@body))
     (declare (ignore code decls))
     ;; split the argument list into the categoried we care aboutn
-    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context))
-        (varjo.utils:lambda-list-split '(:&uniform :&context) args)
+    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
+                 (shared :&shared))
+        (varjo.utils:lambda-list-split '(:&uniform :&context :&shared) args)
       ;; check the arguments are sanely formatted
       (mapcar #'(lambda (x) (assert-arg-format name x)) in-args)
       (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
       ;; now the meat
-      (%def-gpu-function name in-args uniforms body
+      (%def-gpu-function name in-args uniforms body shared
                          doc-string equiv context))))
 
 (defun+ assert-arg-format (gfunc-name x)
@@ -36,8 +37,8 @@
 
 ;;--------------------------------------------------
 
-(defun+ %def-gpu-function (name in-args uniforms body
-                                doc-string equiv context)
+(defun+ %def-gpu-function (name in-args uniforms body shared
+                          doc-string equiv context)
   "This is the meat of defun-g. it is broken down as follows:
 
    [0] makes a gpu-func-spec that will be populated a stored later.
@@ -66,7 +67,7 @@
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
   (let* ((spec (%make-gpu-func-spec name in-args uniforms context body
-                                    nil nil uniforms doc-string
+                                    shared nil nil uniforms doc-string
                                     nil nil (get-gpu-func-spec-tag)));;[0]
          (valid-glsl-versions (get-versions-from-context context))
          (spec-key (spec->func-key spec))

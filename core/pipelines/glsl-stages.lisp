@@ -46,11 +46,14 @@
   ;;     calling it cpu side.
   ;;
   ;; split the argument list into the categoried we care about
-  (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context))
-      (varjo.utils:lambda-list-split '(:&uniform :&context) args)
+  (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
+               (shared :&shared))
+      (varjo.utils:lambda-list-split '(:&uniform :&context :&shared) args)
     ;; check the arguments are sanely formatted
     (mapcar #'(lambda (x) (assert-glsl-arg-format name x)) in-args)
     (mapcar #'(lambda (x) (assert-glsl-arg-format name x)) uniforms)
+    (assert (not shared) ()
+            "CEPL: Shared variables are not yet supported in GLSL stages")
     ;; check we can use the type from glsl cleanly
     (assert-glsl-stage-types in-args uniforms)
     ;; now the meat

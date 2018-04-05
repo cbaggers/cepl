@@ -91,6 +91,7 @@
    (actual-uniforms :initarg :actual-uniforms)
    (context :initarg :context)
    (body :initarg :body)
+   (shared :initarg :shared)
    (equivalent-inargs :initarg :equivalent-inargs)
    (equivalent-uniforms :initarg :equivalent-uniforms)
    (doc-string :initarg :doc-string)
@@ -107,7 +108,7 @@
   (bt:with-lock-held (*gpu-func-specs-lock*)
     (incf *gpu-func-diff-tag*)))
 
-(defun+ %make-gpu-func-spec (name in-args uniforms context body
+(defun+ %make-gpu-func-spec (name in-args uniforms context body shared
                             equivalent-inargs equivalent-uniforms
                             actual-uniforms
                             doc-string declarations missing-dependencies
@@ -118,6 +119,7 @@
                  :uniforms (mapcar #'listify uniforms)
                  :context context
                  :body body
+                 :shared shared
                  :equivalent-inargs equivalent-inargs
                  :equivalent-uniforms equivalent-uniforms
                  :actual-uniforms actual-uniforms
@@ -136,6 +138,7 @@
                    :context context
                    :body body-string
                    :compiled compiled
+                   :shared nil
                    :equivalent-inargs nil
                    :equivalent-uniforms nil
                    :actual-uniforms uniforms
@@ -145,12 +148,12 @@
                    :diff-tag (get-gpu-func-spec-tag))))
 
 (defmacro with-gpu-func-spec (func-spec &body body)
-  `(with-slots (name in-args uniforms actual-uniforms context body
+  `(with-slots (name in-args uniforms actual-uniforms context body shared
                      equivalent-inargs equivalent-uniforms doc-string
                      declarations missing-dependencies diff-tag
                      cached-compile-results) ,func-spec
      (declare (ignorable name in-args uniforms actual-uniforms context body
-                         equivalent-inargs equivalent-uniforms
+                         shared equivalent-inargs equivalent-uniforms
                          doc-string declarations missing-dependencies
                          diff-tag cached-compile-results))
      ,@body))
@@ -167,7 +170,7 @@
   (with-gpu-func-spec spec
     `(%make-gpu-func-spec
       ',name ',in-args ',uniforms ',context ',body
-      ',equivalent-inargs ',equivalent-uniforms
+      ',shared ',equivalent-inargs ',equivalent-uniforms
       ',actual-uniforms
       ,doc-string ',declarations ',missing-dependencies
       ',diff-tag)))
@@ -183,6 +186,7 @@
      :uniforms uniforms
      :context (if set-context new-context context)
      :body body
+     :shared shared
      :equivalent-inargs equivalent-inargs
      :equivalent-uniforms equivalent-uniforms
      :actual-uniforms actual-uniforms
@@ -201,6 +205,7 @@
                    (actual-uniforms-a actual-uniforms)
                    (context-a context)
                    (body-a body)
+                   (shared-a shared)
                    (equivalent-inargs-a equivalent-inargs)
                    (equivalent-uniforms-a equivalent-uniforms)
                    (doc-string-a doc-string)
@@ -213,6 +218,7 @@
                      (actual-uniforms-b actual-uniforms)
                      (context-b context)
                      (body-b body)
+                     (shared-b shared)
                      (equivalent-inargs-b equivalent-inargs)
                      (equivalent-uniforms-b equivalent-uniforms)
                      (doc-string-b doc-string)
@@ -224,6 +230,7 @@
                     (equal declarations-a declarations-b)
                     (equal in-args-a in-args-b)
                     (equal uniforms-a uniforms-b)
+                    (equal shared-a shared-b)
                     (equal name-a name-b)))))))
 
 ;;--------------------------------------------------
