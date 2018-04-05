@@ -289,7 +289,7 @@
 
 (defun+ get-func-as-stage-code (func-spec)
   (with-gpu-func-spec func-spec
-    (list in-args uniforms context body)))
+    (list in-args uniforms shared context body)))
 
 ;;--------------------------------------------------
 
@@ -352,7 +352,7 @@
     (if (and (typep func-spec 'glsl-stage-spec))
         (with-glsl-stage-spec func-spec
           compiled);;[0]
-        (dbind (in-args uniforms context code)
+        (dbind (in-args uniforms shared context code)
             (get-func-as-stage-code func-spec) ;;[2]
           ;;[1]
           (let ((n (count-if (lambda (_) (member _ varjo:*stage-names*))
@@ -393,13 +393,14 @@
                            `((let ,replacements
                                ,@code))
                            code)))
-            (varjo:make-stage stage-type
-                              in-args
-                              final-uniforms
-                              context
-                              body
-                              t
-                              primitive))))))
+            (varjo:create-stage stage-type
+                                context
+                                :input-variables in-args
+                                :uniform-variables final-uniforms
+                                :shared-variables shared
+                                :code body
+                                :stemcells-allowed t
+                                :primitive primitive))))))
 
 ;;--------------------------------------------------
 
