@@ -92,7 +92,7 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
 
-### 2018-04-17
+### 2018-04-02
 
 Headlines:
 
