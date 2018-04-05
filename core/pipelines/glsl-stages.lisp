@@ -46,9 +46,8 @@
   ;;     calling it cpu side.
   ;;
   ;; split the argument list into the categoried we care about
-  (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
-               (instancing :&instancing))
-      (varjo.utils:lambda-list-split '(:&uniform :&context :&instancing) args)
+  (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context))
+      (varjo.utils:lambda-list-split '(:&uniform :&context) args)
     ;; check the arguments are sanely formatted
     (mapcar #'(lambda (x) (assert-glsl-arg-format name x)) in-args)
     (mapcar #'(lambda (x) (assert-glsl-arg-format name x)) uniforms)
