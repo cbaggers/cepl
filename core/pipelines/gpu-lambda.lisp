@@ -219,20 +219,22 @@
   ;; make-complete-lambda-pipeline returns two values and whilst we
   ;; do want both for funcall-g, we only want the first value to
   ;; be returned to users who use lambda-g
-  (if (find :static context-with-primitive)
-      ;;
-      ;; No live recompilation
-      (values (make-lambda-pipeline-inner gpipe-args context-with-primitive))
-      ;;
-      ;; Live recompilation
-      (multiple-value-bind (pipeline stages lambda-pipeline-spec)
-          (make-lambda-pipeline-inner gpipe-args context-with-primitive
-                                      :register-lambda-pipeline nil)
-        (declare (ignore stages))
-        (wrap-allowing-recompilation pipeline
-                                     lambda-pipeline-spec
-                                     gpipe-args
-                                     context-with-primitive))))
+  (let* ((static-p (find :static context-with-primitive))
+         (context-with-primitive (remove :static context-with-primitive)))
+    (if static-p
+        ;;
+        ;; No live recompilation
+        (values (make-lambda-pipeline-inner gpipe-args context-with-primitive))
+        ;;
+        ;; Live recompilation
+        (multiple-value-bind (pipeline stages lambda-pipeline-spec)
+            (make-lambda-pipeline-inner gpipe-args context-with-primitive
+                                        :register-lambda-pipeline nil)
+          (declare (ignore stages))
+          (wrap-allowing-recompilation pipeline
+                                       lambda-pipeline-spec
+                                       gpipe-args
+                                       context-with-primitive)))))
 
 (defun+ make-lambda-pipeline-inner
     (gpipe-args context-with-primitive &key (register-lambda-pipeline t))

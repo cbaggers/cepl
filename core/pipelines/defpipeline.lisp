@@ -173,7 +173,8 @@
          (primitive (varjo.internals:primitive-name-to-instance
                      (get-primitive-type-from-context context)))
          (context (remove-if #'varjo:valid-primitive-name-p context))
-         (is-compute (find :compute stage-pairs :key #'car)))
+         (is-compute (find :compute stage-pairs :key #'car))
+         (static-p (find :static context)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (update-pipeline-spec
@@ -207,11 +208,11 @@
         ,(def-dispatch-func ctx name init-func-name
                             primitive uniform-assigners
                             aggregate-public-uniforms
-                            (find :static context)
-                            state-var state-tag is-compute)
+                            static-p state-var state-tag is-compute)
         ;;
         ;; generate the function that recompiles this pipeline
-        ,(gen-recompile-func name original-gpipe-args context)
+        ,(unless static-p
+                 (gen-recompile-func name original-gpipe-args context))
         ;;
         ;; off to the races! Note that we upload the spec at compile
         ;; time (using eval-when)
