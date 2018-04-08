@@ -84,7 +84,7 @@
                                func-specs
                                stage-pairs
                                aggregate-actual-uniforms
-                               context)
+                               raw-context)
   ;;
   ;; freak out if try and use funcs in stage args
   (when (has-func-type-in-args func-specs)
@@ -92,13 +92,13 @@
   ;;
   ;; update the spec immediately (macro-expansion time)
   (update-pipeline-spec
-   (make-pipeline-spec name stage-pairs context))
+   (make-pipeline-spec name stage-pairs raw-context))
   ;;
   (let ((uniform-names (mapcar #'first aggregate-actual-uniforms)))
     `(progn
        ;;
        ;; we upload the spec at compile time (using eval-when)
-       ,(gen-update-spec name stage-pairs context)
+       ,(gen-update-spec name stage-pairs raw-context)
        ;;
        ;; generate the dummy dispatch func
        (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
@@ -150,7 +150,7 @@
                                 aggregate-actual-uniforms
                                 aggregate-public-uniforms
                                 post
-                                context)
+                                raw-context)
   (let* ((ctx *pipeline-body-context-var*)
          (state-var (hidden-symb name :pipeline-state))
          (init-func-name (hidden-symb name :init))
@@ -170,15 +170,13 @@
                          (expt 2 16)))
          ;; we generate the func that compiles & uploads the pipeline
          ;; and also populates the pipeline's local-vars
-         (primitive (varjo.internals:primitive-name-to-instance
-                     (get-primitive-type-from-context context)))
-         (context (remove-if #'varjo:valid-primitive-name-p context))
-         (is-compute (find :compute stage-pairs :key #'car))
-         (static-p (find :static context)))
+         (compile-context (parse-compile-context name raw-context :pipeline))
+         (primitive (compile-context-primitive compile-context))
+         (is-compute (find :compute stage-pairs :key #'car)))
     ;;
     ;; update the spec immediately (macro-expansion time)
     (update-pipeline-spec
-     (make-pipeline-spec name stage-pairs context))
+     (make-pipeline-spec name stage-pairs raw-context))
     (values
      `(progn
         ;;
@@ -205,33 +203,33 @@
                               state-tag))
         ;;
         ;; generate the code that actually renders
-        ,(def-dispatch-func ctx name init-func-name
-                            primitive uniform-assigners
-                            aggregate-public-uniforms
-                            static-p state-var state-tag is-compute)
+        ,(def-dispatch-func ctx compile-context name init-func-name
+                            uniform-assigners aggregate-public-uniforms
+                            state-var state-tag is-compute)
         ;;
         ;; generate the function that recompiles this pipeline
-        ,(unless static-p
-                 (gen-recompile-func name original-gpipe-args context))
+        ,(unless (compile-context-static-p compile-context)
+                 (gen-recompile-func name original-gpipe-args raw-context))
         ;;
         ;; off to the races! Note that we upload the spec at compile
         ;; time (using eval-when)
-        ,(gen-update-spec name stage-pairs context)
+        ,(gen-update-spec name stage-pairs raw-context)
         (register-named-pipeline ',name #',name)
         ',name)
      structurally-unchanged-p)))
 
 (defun+ def-dispatch-func (ctx
+                           compile-context
                            name
                            init-func-name
-                           primitive
                            uniform-assigners
                            aggregate-public-uniforms
-                           static
                            state-var
                            state-tag
                            compute)
-  (let* ((uniform-names (mapcar #'first aggregate-public-uniforms))
+  (let* ((static (compile-context-static-p compile-context))
+         (primitive (compile-context-primitive compile-context))
+         (uniform-names (mapcar #'first aggregate-public-uniforms))
          (typed-uniforms (loop :for name :in uniform-names :collect
                             `(,name t nil)))
          (stream-symb (if compute 'space 'stream))
@@ -267,7 +265,7 @@
                 'buffer-stream-has-invalid-primitive-for-stream
                 :name ',name
                 :pline-prim ',(varjo::lisp-name primitive)
-                :stream-prim (buffer-stream-primitive ,stream-symb)))))
+                :srteam-prim (buffer-stream-primitive ,stream-symb)))))
        (let* ((%ctx-id (context-id ,ctx))
               ;;
               ;; unpack state from var
@@ -323,23 +321,23 @@
            (optimize (speed 3) (safety 0) (debug 0)))
   (values))
 
-(defun+ gen-recompile-func (name original-gpipe-args context)
+(defun+ gen-recompile-func (name original-gpipe-args raw-context)
   `(defun+ ,(recompile-name name) ()
      (format t "~&; recompile cpu side of (~a ...)~&" ',name)
      (force-output)
      (let ((*standard-output* (make-string-output-stream)))
        (handler-bind ((warning #'muffle-warning))
          (multiple-value-bind (src structurally-unchanged-p)
-             (%defpipeline-gfuncs ',name ',original-gpipe-args ',context)
+             (%defpipeline-gfuncs ',name ',original-gpipe-args ',raw-context)
            (unless structurally-unchanged-p
              (eval src)))))))
 
-(defun+ gen-update-spec (name stage-pairs context)
+(defun+ gen-update-spec (name stage-pairs raw-context)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (update-pipeline-spec
       (make-pipeline-spec
        ',name ,(serialize-stage-pairs stage-pairs)
-       ',context))))
+       ',raw-context))))
 
 (defun+ register-named-pipeline (name func)
   (declare (profile t))
@@ -359,12 +357,11 @@
           stage-pairs))
 
 (defun+ swap-versions (stage-pairs glsl-version)
-  (mapcar (lambda (z)
-            (dbind (x . s) z
-              (let ((new-context
-                     (swap-version glsl-version (with-gpu-func-spec s context))))
-                (cons x (clone-stage-spec s :new-context new-context)))))
-          stage-pairs))
+  (loop :for (stage-name . spec) :in stage-pairs :collect
+     (let ((new-context
+            (with-gpu-func-spec spec
+              (copy-compile-context context :versions glsl-version))))
+       (cons stage-name (clone-stage-spec spec :new-context new-context)))))
 
 (defun+ %compile-link-and-upload (name primitive stage-pairs)
   (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
@@ -396,27 +393,25 @@
   (labels ((get-context (pair)
              (with-gpu-func-spec (cdr pair)
                context))
-           (get-version-from-context (context)
-             (first (remove-if-not (lambda (x)
-                                     (member x varjo:*supported-versions*))
-                                   context)))
            (get-glsl-version (&rest contexts)
-             (let* ((versions (mapcar #'get-version-from-context contexts))
-                    (trimmed (remove-duplicates (remove nil versions))))
-               (case= (length trimmed)
+             (let ((versions (remove-duplicates
+                              (loop
+                                 :for context :in contexts
+                                 :append (compile-context-versions context)))))
+               (case= (length versions)
                  (0 (cepl.context::get-best-glsl-version (cepl-context)))
-                 (1 (first trimmed))
+                 (1 (first versions))
                  (otherwise nil)))))
     (let ((contexts (mapcar #'get-context stage-pairs)))
       (or (apply #'get-glsl-version contexts)
-          (throw-version-error
-           stage-pairs (mapcar #'get-version-from-context contexts))))))
+          (error 'glsl-version-conflict
+                 :pairs (loop
+                           :for (name stage) :in stage-pairs
+                           :for context :in contexts
+                           :for versions := (compile-context-versions context)
+                           :when versions
+                           :collect (cons name versions)))))))
 
-(defun+ throw-version-error (pairs versions)
-  (let ((issue (remove-if-not #'second
-                              (mapcar (lambda (x y) (list (car x) y))
-                                      pairs versions))))
-    (error 'glsl-version-conflict :pairs issue)))
 
 (defun+ %create-implicit-uniform-uploader (compiled-stages uniform-names)
   (let* ((varjo-implicit (remove-if #'varjo:ephemeral-p

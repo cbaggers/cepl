@@ -154,7 +154,11 @@
            :state-restore-limitation-transform-feedback
            :state-restore-limitation-blending
            :fbo-binding-missing
-           :texture-dimensions-lequal-zero))
+           :texture-dimensions-lequal-zero
+           :unknown-symbols-in-pipeline-context
+           :stage-in-context-only-valid-for-glsl-stages
+           :unknown-stage-kind
+           :stage-not-valid-for-function-restriction))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -1174,7 +1178,8 @@
           :cepl.gpu-arrays.texture-backed :cepl.gpu-arrays :cepl.samplers
           :cepl.fbos :cepl.blending :cepl.memory :cepl.build)
   (:import-from :cepl.context :%with-cepl-context-slots)
-  (:export :defun-g
+  (:export :compile-context
+           :defun-g
            :defun-g-equiv
            :def-glsl-stage
            :defmacro-g

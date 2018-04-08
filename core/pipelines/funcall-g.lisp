@@ -42,8 +42,9 @@
            (spliced-values ,gname (vec4 0f0 0f0 0f0 0f0)))))))
 
 (defun dyn-code-to-pipeline-and-stages (code)
-  (make-lambda-pipeline-inner (list :vertex (compile-g nil code))
-                                  '(:points)))
+  (make-lambda-pipeline-inner
+   (list :vertex (compile-g nil code))
+   (parse-compile-context nil '(:points) :pipeline)))
 
 (defun to-cepl-type-spec (spec)
   (labels ((inner (spec)

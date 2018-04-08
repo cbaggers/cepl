@@ -20,7 +20,7 @@
        body `(define-vari-function ,name ,args ,@body))
     (declare (ignore code decls))
     ;; split the argument list into the categoried we care aboutn
-    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
+    (assoc-bind ((in-args nil) (uniforms :&uniform) (raw-context :&context)
                  (shared :&shared))
         (varjo.utils:lambda-list-split '(:&uniform :&context :&shared) args)
       ;; check the arguments are sanely formatted
@@ -28,7 +28,7 @@
       (mapcar #'(lambda (x) (assert-arg-format name x)) uniforms)
       ;; now the meat
       (%def-gpu-function name in-args uniforms body shared
-                         doc-string equiv context))))
+                         doc-string equiv raw-context))))
 
 (defun+ assert-arg-format (gfunc-name x)
   (unless (listp x)
@@ -38,7 +38,7 @@
 ;;--------------------------------------------------
 
 (defun+ %def-gpu-function (name in-args uniforms body shared
-                          doc-string equiv context)
+                          doc-string equiv raw-context)
   "This is the meat of defun-g. it is broken down as follows:
 
    [0] makes a gpu-func-spec that will be populated a stored later.
@@ -66,10 +66,11 @@
        one of its missing dependencies and calls %test-&-process-spec on them.
        Note that this will (possibly) update the spec but will not trigger a
        recompile in the pipelines."
-  (let* ((spec (%make-gpu-func-spec name in-args uniforms context body
-                                    shared nil nil uniforms doc-string
-                                    nil nil (get-gpu-func-spec-tag)));;[0]
-         (valid-glsl-versions (get-versions-from-context context))
+  (let* ((compile-context (parse-compile-context name raw-context :function))
+         (spec (%make-gpu-func-spec name in-args uniforms compile-context
+                                    body shared nil nil uniforms doc-string
+                nil nil (get-gpu-func-spec-tag)));;[0]
+         (valid-glsl-versions (compile-context-versions compile-context))
          (spec-key (spec->func-key spec))
          (old-spec (gpu-func-spec spec-key nil))
          (changedp (spec-changed-p spec old-spec))
@@ -91,28 +92,12 @@
        (update-specs-with-missing-dependencies);;[5]
        ',name)))
 
-(defun+ get-versions-from-context (context)
-  (%sort-versions
-   (remove-if-not (lambda (x) (member x varjo:*supported-versions*))
-                  context)))
 
-(defun+ %sort-versions (versions)
-  (mapcar #'first
-          (sort (mapcar (lambda (x) (list x (parse-integer (symbol-name x))))
-                        versions)
-                #'< :key #'second)))
 
-(defun+ swap-version (glsl-version context)
-  (cons glsl-version
-        (remove-if (lambda (x)
-                     (find x varjo:*supported-versions*))
-                   context)))
-
-(defun+ lowest-suitable-glsl-version (context)
-  (let* ((versions (or (get-versions-from-context context)
-                       (list (cepl.context::get-best-glsl-version context)))))
+(defun+ lowest-suitable-glsl-version (compile-context)
+  (let* ((versions (compile-context-versions compile-context)))
     (case= (length versions)
-      (0 (cepl.context::get-best-glsl-version context))
+      (0 (cepl.context::get-best-glsl-version versions))
       (otherwise (first versions)))))
 
 (defvar *warn-when-cant-test-compile* t)
@@ -136,12 +121,11 @@
           (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
             (varjo:with-unknown-first-class-functions-allowed
               (let* ((varjo.internals::*allow-call-function-signature* t)
-                     (context (swap-version (lowest-suitable-glsl-version context)
-                                            context))
+                     (versions (list (lowest-suitable-glsl-version context)))
                      (compiled
                       (first
                        (varjo.internals::test-translate-function-split-details
-                        name in-args uniforms context body varjo:*stage-names* t))))
+                        name in-args uniforms versions body varjo:*stage-names* t))))
                 (setf actual-uniforms ;;[2]
                       (mapcar #'varjo.internals:to-arg-form
                               (remove-if #'varjo:ephemeral-p
@@ -302,18 +286,17 @@
   (varjo:with-constant-inject-hook #'try-injecting-a-constant
     (varjo:with-stemcell-infer-hook #'try-guessing-a-varjo-type-for-symbol
       (varjo:rolling-translate
-       (mapcar (lambda (x)
-                 (dbind (stage-type . func-spec) x
-                   (parsed-gpipe-args->v-translate-args name
+       (loop
+          :for (stage-type . func-spec) :in parsed-gpipe-args
+          :collect (parsed-gpipe-args->v-translate-args name
                                                         primitive
                                                         stage-type
-                                                        func-spec)))
-               parsed-gpipe-args)))))
+                                                        func-spec))))))
 
 ;; {TODO} make the replacements related code more robust
 (defun+ parsed-gpipe-args->v-translate-args (name
-                                             primitive
-                                             stage-type
+                                             pipeline-primitive
+                                             stage-kind
                                              func-spec
                                              &optional replacements)
   "parsed-gpipe-args->v-translate-args processed the (stage . gfunc-name) pairs
@@ -323,11 +306,8 @@
    It also:
    [0] if it's a glsl-stage then it is already compiled. Pass the
        compile-result and let varjo handle it
-   [1] validate that either the gpu-function's context didnt specify a stage
-       explicitly or that, if it did, that it matches the stage it is being
-       used for now
-   [2] is what handles the transformation of func (including gpu-lambdas)
-   [3] 'replacements' specifies uniforms to replace in the stage. "
+   [1] is what handles the transformation of func (including gpu-lambdas)
+   [2] 'replacements' specifies uniforms to replace in the stage. "
   (flet ((add-layout-to-structs (arg)
            (let* ((type-spec
                    (second arg))
@@ -349,15 +329,11 @@
                      (std-430 (append arg (list :std-430)))))
                  arg))))
     (assert (every #'listp replacements))
-    (if (and (typep func-spec 'glsl-stage-spec))
+    (if (typep func-spec 'glsl-stage-spec)
         (with-glsl-stage-spec func-spec
           compiled);;[0]
-        (dbind (in-args uniforms shared context code)
-            (get-func-as-stage-code func-spec) ;;[2]
-          ;;[1]
-          (let ((n (count-if (lambda (_) (member _ varjo:*stage-names*))
-                             context)))
-            (assert (and (<= n 1) (if (= n 1) (member stage-type context) t))))
+        (dbind (in-args uniforms shared compile-context code)
+            (get-func-as-stage-code func-spec) ;;[1]
           (loop :for arg :in in-args :do
              (let* ((type-spec (second arg))
                     (struct-info
@@ -376,10 +352,7 @@
                                                       :key #'first
                                                       :test #'string=))
                                             uniforms))
-                 (context (remove stage-type context))
-                 (primitive (when (eq stage-type :vertex)
-                              primitive))
-                 (replacements ;; [3]
+                 (replacements ;; [2]
                   (loop :for (k v) :in replacements
                      :for r = (let* ((u (find k uniforms :key #'first
                                               :test #'string=)))
@@ -392,15 +365,25 @@
                  (body (if replacements
                            `((let ,replacements
                                ,@code))
-                           code)))
-            (varjo:create-stage stage-type
-                                context
+                           code))
+                 (versions (compile-context-versions compile-context))
+                 (func-stage (compile-context-stage compile-context)))
+            (when func-stage
+              (assert (eq stage-kind func-stage) ()
+                      'stage-not-valid-for-function-restriction
+                      :name name
+                      :stage stage-kind
+                      :func-stage func-stage))
+            ;; {TODO} we need to use the function's primitive
+            (varjo:create-stage stage-kind
+                                versions
                                 :input-variables in-args
                                 :uniform-variables final-uniforms
                                 :shared-variables shared
                                 :code body
                                 :stemcells-allowed t
-                                :primitive primitive))))))
+                                :primitive (when (eq stage-kind :vertex)
+                                             pipeline-primitive)))))))
 
 ;;--------------------------------------------------
 

@@ -56,6 +56,21 @@ Let's see a simple example of a gpu function we can then break down
 That's the basics of gpu-functions. For more details on how they can be used
 in pipelines please see the documentation for defpipeline-g.
 
+*More Argument Kinds*
+
+Along with `&uniform` there are also `&shared` & `&context`.
+
+`&context` specifies restrictions on how & where the gpu-function can be used. You
+can specify what versions of GLSL this function is valid for, what primtive kind it
+operates on, what pipeline stage it can be used for, and how CEPL compiles the cpu
+side representation.
+
+For more info please see the documentation on `compile-context`
+
+`&shared` is only valid for gpu-functions which will be used as compute stages
+It lets you specify variables whos data will be shared within the 'local group'
+You can use any non opaque type for the shared variable.
+
 *EXPRERIMENTAL*
 
 CEPL has a highly experimental feature to allow you to call gpu-functions directly
@@ -146,6 +161,21 @@ Let's see a simple example of a gpu function we can then break down
 
 That's the basics of gpu-functions. For more details on how they can be used
 in pipelines please see the documentation for defpipeline-g.
+
+*More Argument Kinds*
+
+Along with `&uniform` there are also `&shared` & `&context`.
+
+`&context` specifies restrictions on how & where the gpu-function can be used. You
+can specify what versions of GLSL this function is valid for, what primtive kind it
+operates on, what pipeline stage it can be used for, and how CEPL compiles the cpu
+side representation.
+
+For more info please see the documentation on `compile-context`
+
+`&shared` is only valid for gpu-functions which will be used as compute stages
+It lets you specify variables whos data will be shared within the 'local group'
+You can use any non opaque type for the shared variable.
 ")
 
   (defmacro defpipeline-g
@@ -201,10 +231,10 @@ It is also possible to specify the name of the stages
 But this is not neccesary unless you need to distinguish between tessellation
 or geometry stages.
 
-**-- Context --**
+**-- Compile Context --**
 
 The second argument to defpipeline-g is the a list of additional information that
-is confusingly called the 'pipeline's context'. We need to change this name.
+is confusingly called the 'pipeline's compile-context'.
 
 Valid things that can be in this list are:
 
@@ -237,6 +267,17 @@ the version the user is using.
 The value can be one of:
 
     :140 :150 :330 :400 :410 :420 :430 :440 :450 :460
+
+*The recompilation restriction*:
+
+By adding the symbol `:static` to the list you tell CEPL that this pipeline
+will not be recompiled again this session. This means CEPL will not automatically
+recompile it if one of the gpu-functions that make up it's stages are recompiled.
+
+It also allows CEPL to perform optimizations on the generated code that it couldnt
+usually due to expecting signature/type changes.
+
+For a dryer version of the above please see the documentation for `compile-context`.
 
 **-- Stage Names --**
 
@@ -807,4 +848,144 @@ made solely as a debugging/development aid. Every time it is run it must:
 
 This is *extremly* expensive, however as long as it takes less that 20ms or so
 it is fast enough for use from the repl.
+")
+  (defstruct compile-context
+    "
+In the `lambda-list` for a `gpu-function`, glsl-stage or gpu lambda you can
+include the `&context` symbol which indicates that the remaining forms in the
+lambda-list are information about the context for the gpu-function to be
+compiled in.
+
+In pipelines (either defiend by `defpipeline-g` or `pipeline-g`) there is a
+context parameter which is a list of forms which represent information about
+the context for the pipeline to be compiled in.
+
+### The Data
+
+The `compile-context` holds a few pieces of information:
+
+- GLSL Versions
+ - in the case of `gpu-function`s and glsl stages this is used to specify what
+   GLSL versions this is valid for.
+ - in the case of pipelines this is used to specify what version of GLSL will
+   be used to compile this pipeline.
+- Primitive
+ - in the case of gpu-functions and glsl-stages this is used to specify what
+   primitive is valid. This can be used to ensure that a specific
+   `gpu-function` or glsl-stage that works on `:lines` is never used in a
+   `pipeline` processing `:triangles`.
+ - in the case of pipelines this is used to specify what primitive this
+   pipeline takes. Any `buffer-stream` passed to this pipeline will be checked
+   to ensure it contains the correct primitive. To specify this please refer
+   to the  :primitive argument in `make-buffer-stream` or the
+   `buffer-stream-primitive` function.
+- Stage Restrictive
+ - Not valid for pipelines. This lets the you declare what stage the
+   gpu-function or glsl stage is valid for.
+- Static
+ - For all targets this tells CEPL that the function, glsl stage or
+   pipeline is never going to be modified again. This allows CEPL to statically
+   define some types and also elide the code that would usually cause
+   recompilation when a gpu-function this is used by this
+   pipeline/stage/function is recompiled.
+
+Most compile-context information is optional and the following defaults are used
+if the data is not provided:
+
+- GLSL Versions
+ - gpu-function/glsl-stage: When checking for errors CEPL will allow
+   functions/types/etc from any glsl version to be used.
+ - pipeline: CEPL will look at the GL version of the context to determine the
+   most recent version of GLSL that it can used.
+- Primitive
+ - gpu-function/glsl-stage: By default there is no restriction applied
+ - pipeline: By default :triangles are assumed
+- Stage
+ - pipelines/gpu-functions: Always NIL by default
+ - glsl-stages: Mandatory
+- Static
+ - Always NIL by default
+
+### How it is specified
+
+The context designations are:
+
+Static:
+
+The symbol :static can appear at most once in the context list
+
+Versions:
+
+0 or more of the following can appear in the context list
+
+- :140
+- :150
+- :330
+- :400
+- :410
+- :420
+- :430
+- :440
+- :450
+- :460
+
+Stage:
+
+At most 1 of the following:
+- :vertex
+- :tessellation-control
+- :tessellation-evaluation
+- :geometry
+- :fragment
+- :compute
+
+Primitive:
+
+At most 1 of the following can appear in the context list
+- :dynamic
+- :points
+- :lines
+- :iso-lines
+- :line-loop
+- :line-strip
+- :lines-adjacency
+- :line-strip-adjacency
+- :triangles
+- :triangle-fan
+- :triangle-strip
+- :triangles-adjacency
+- :triangle-strip-adjacency
+- (:patch <patch length>)
+
+Note: :dynamic is special. It means that the pipeline will take the primitive
+kind from the buffer-stream being mapped over. This won't work for with
+pipelines with geometry or tessellation stages, but it otherwise can be useful.
+
+### Example
+
+    (defpipeline-g draw-sphere ((:patch 3) :440 :static)
+      :vertex (sphere-vert g-pnt)
+      :tessellation-control (sphere-tess-con (:vec3 3))
+      :tessellation-evaluation (sphere-tess-eval (:vec3 3))
+      :geometry (sphere-geom (:vec3 3) (:vec3 3))
+      :fragment (sphere-frag :vec3 :vec3 :vec3))
+
+This pipeline takes 3 component patches, requires at least GLSL 440 and has
+declared that it will not be recompiled (and as such will not take part in
+live recompilation).
+
+    (defun-g saturate ((val :dvec4) &context :410 :420 :430 :440 :450 :460)
+      (clamp val 0d0 1d0))
+
+This gpu-function is restricted to only work on version of GLSL between
+410 & 460
+
+    (def-glsl-stage frag-glsl ((\"color_in\" :vec4) &context :330 :fragment)
+      \"void main() {
+           color_out = v_in.color_in;
+       }\"
+      ((\"color_out\" :vec4)))
+
+This glsl-stage has stated it is to be used as a fragment stage as it only
+valid for GLSL version 330.
 "))

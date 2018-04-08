@@ -501,7 +501,8 @@ names are depended on by the functions named later in the list"
 (defun+ make-pipeline-spec (name stages context)
   (dbind (&key vertex tessellation-control tessellation-evaluation
                geometry fragment compute) (flatten stages)
-    (let ((tags (mapcar (lambda (x)
+    (let ((context (parse-compile-context name context :pipeline))
+          (tags (mapcar (lambda (x)
                           (when x (slot-value x 'diff-tag)))
                         (list vertex
                               tessellation-control

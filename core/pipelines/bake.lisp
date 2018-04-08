@@ -15,7 +15,7 @@
          (func-specs (mapcar #'cdr stage-pairs))
          (pipeline-uniforms (cepl.pipelines::aggregate-uniforms func-specs))
          (context-with-primitive (slot-value pipeline 'context))
-         (primitive (get-primitive-type-from-context context-with-primitive))
+         (primitive (compile-context-primitive context-with-primitive))
          ;;
          ;; get uniform details
          (uniform-pairs-to-bake (group uniforms 2))

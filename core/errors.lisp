@@ -136,15 +136,6 @@ internal texture format"
     "Cepl: Invalid attempt to make buffer-stream with an index array even
 though there were no gpu-arrays.")
 
-(deferror invalid-context-for-def-glsl-stage () (name context)
-    "CEPL: Invalid context supplied for glsl-stage ~a:
-The context must, at least, contain:
-- One of the following versions: ~a
-- One of the following stage names: ~a
-
-Instead recieved: ~a"
-  name varjo:*supported-versions* varjo:*stage-names* context)
-
 (deferror struct-in-glsl-stage-args () (arg-names)
     "Found arguments to def-glsl-stage which have struct types.
 Arg names: ~s
@@ -204,10 +195,10 @@ uploading data to a buffer-backed texture.
 Pixel-format: ~s"
   pixel-format)
 
-(deferror glsl-version-conflict () (pairs)
+(deferror glsl-version-conflict () (issue)
     "CEPL: When trying to compile the pipeline we found some stages which have
 conflicting glsl version requirements:
-~{~s~%~}" pairs)
+~{~s~%~}" issue)
 
 (deferror glsl-version-conflict-in-gpu-func () (name context)
     "CEPL: When trying to compile ~a we found multiple glsl versions.
@@ -676,6 +667,77 @@ dimensions were less than or equal to zero.
 Dimensions: ~a"
   dimensions)
 
+(deferror unknown-symbols-in-pipeline-context () (name full issue for)
+    "
+CEPL: Found something we didnt recognise in the context of ~a
+
+Problematic symbol/s: ~{~s~^, ~}
+Full context: ~s
+
+The pipeline context must contain:
+
+The symbol :static at most once and..
+
+..0 or more of the following glsl versions:~{~%- :~a~}
+
+and at most 1 primitive from:
+- :dynamic
+- :points
+- :lines
+- :iso-lines
+- :line-loop
+- :line-strip
+- :lines-adjacency
+- :line-strip-adjacency
+- :triangles
+- :triangle-fan
+- :triangle-strip
+- :triangles-adjacency
+- :triangle-strip-adjacency
+- (:patch <patch length>)
+"
+  (ecase for
+    (:function
+     (if name
+         (format nil "the gpu-function named ~a." name)
+         (format nil "a gpu-lambda.")))
+    (:pipeline
+     (if name
+         (format nil "the pipeline named ~a." name)
+         (format nil "a lambda pipeline.")))
+    (:glsl-stage
+     (if name
+         (format nil "the glsl stage named ~a." name)
+         (format nil "a glsl stage.")))) ;; this one should never happend
+  issue
+  full
+  varjo:*supported-versions*)
+
+(deferror stage-in-context-only-valid-for-glsl-stages () (name)
+    "
+~a had a stage declaration in it's `compile-context` list
+this is only valid for gpu-functions & glsl stages.
+"
+  (if name
+      (format nil "The pipeline named ~a" name)
+      "A lambda pipeline"))
+
+(deferror unknown-stage-kind () (stage)
+    "
+Unknown stage kind '~a'
+
+Valid stage kinds are:~{~%- ~s~}"
+  stage
+  varjo:*stage-names*)
+
+(deferror stage-not-valid-for-function-restriction () (name stage func-stage)
+    "
+When compiling ~a we found that the function being used as the ~a stage has
+a restriction that means it is only valid to be used as a ~a stage.
+"
+  (or name "a lambda pipeline")
+  stage
+  func-stage)
 
 ;; Please remember the following 2 things
 ;;

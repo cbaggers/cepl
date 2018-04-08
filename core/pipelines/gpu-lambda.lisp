@@ -39,7 +39,7 @@
   ;; seperate any doc-string or declarations from the body
   (let ((doc-string (when (stringp (first body)) (pop body))))
     ;; split the argument list into the categoried we care aboutn
-    (assoc-bind ((in-args nil) (uniforms :&uniform) (context :&context)
+    (assoc-bind ((in-args nil) (uniforms :&uniform) (raw-context :&context)
                  (shared :&shared))
         (varjo.utils:lambda-list-split '(:&uniform :&context :&shared) args)
       ;; check the arguments are sanely formatted
@@ -52,7 +52,8 @@
                      :shared shared
                      :doc-string doc-string
                      :declarations nil
-                     :context context))))
+                     :context (parse-compile-context nil raw-context
+                                                     :pipeline)))))
 
 (defmacro lambda-g (args &body body)
   (make-gpu-lambda args body)
@@ -96,7 +97,7 @@
 (defun wrap-allowing-recompilation (pipeline
                                     lambda-pipeline-spec
                                     gpipe-args
-                                    context-with-primitive)
+                                    compile-context)
   (assert lambda-pipeline-spec ()
           "Lambda pipeline did not recieve the spec object so cannot make recompilable")
   (flet ((transplant-data-to-our-spec (our-spec new-spec)
@@ -148,7 +149,7 @@
                                               new-spec)
                             (make-lambda-pipeline-inner
                              gpipe-args
-                             context-with-primitive
+                             compile-context
                              :register-lambda-pipeline nil)
                           (declare (ignore new-stages))
                           (bt:with-lock-held (*gpu-pipeline-specs-lock*)
@@ -214,35 +215,39 @@
 
 ;;------------------------------------------------------------
 
-(defun+ make-lambda-pipeline (gpipe-args context-with-primitive)
+(defun+ make-lambda-pipeline (gpipe-args raw/compiled-context)
   ;; we have the body of the work in the *-inner function as
   ;; make-complete-lambda-pipeline returns two values and whilst we
   ;; do want both for funcall-g, we only want the first value to
   ;; be returned to users who use lambda-g
-  (let* ((static-p (find :static context-with-primitive))
-         (context-with-primitive (remove :static context-with-primitive)))
-    (if static-p
+  (let* ((compile-context
+          (etypecase raw/compiled-context
+            (compile-context raw/compiled-context)
+            (list (parse-compile-context nil raw/compiled-context
+                                         :pipeline)))))
+    (if (compile-context-static-p compile-context)
         ;;
         ;; No live recompilation
-        (values (make-lambda-pipeline-inner gpipe-args context-with-primitive))
+        (values (make-lambda-pipeline-inner gpipe-args compile-context))
         ;;
         ;; Live recompilation
         (multiple-value-bind (pipeline stages lambda-pipeline-spec)
-            (make-lambda-pipeline-inner gpipe-args context-with-primitive
+            (make-lambda-pipeline-inner gpipe-args compile-context
                                         :register-lambda-pipeline nil)
           (declare (ignore stages))
           (wrap-allowing-recompilation pipeline
                                        lambda-pipeline-spec
                                        gpipe-args
-                                       context-with-primitive)))))
+                                       compile-context)))))
 
 (defun+ make-lambda-pipeline-inner
-    (gpipe-args context-with-primitive &key (register-lambda-pipeline t))
+    (gpipe-args compile-context &key (register-lambda-pipeline t))
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
-    (let* ((func-specs (mapcar #'cdr stage-pairs)))
+    (let* ((func-specs
+            (mapcar #'cdr stage-pairs)))
       (if (stages-require-partial-pipeline func-specs)
           (make-partial-lambda-pipeline func-specs)
-          (make-complete-lambda-pipeline context-with-primitive
+          (make-complete-lambda-pipeline compile-context
                                          stage-pairs
                                          func-specs
                                          post
@@ -256,20 +261,13 @@
     (error 'partial-lambda-pipeline
            :partial-stages stages)))
 
-(defun get-primitive-type-from-context (context)
-  (or (find-if #'varjo:valid-primitive-name-p
-               context)
-      :triangles))
-
-(defun+ make-complete-lambda-pipeline (context-with-primitive
+(defun+ make-complete-lambda-pipeline (compile-context
                                        stage-pairs
                                        func-specs
                                        post
                                        register-spec)
   (let* ((aggregate-uniforms (aggregate-uniforms func-specs t))
-         (primitive (varjo.internals:primitive-name-to-instance
-                     (get-primitive-type-from-context
-                      context-with-primitive))))
+         (primitive (compile-context-primitive compile-context)))
     (multiple-value-bind (compiled-stages
                           prog-id
                           prog-ids

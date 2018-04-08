@@ -73,6 +73,7 @@
                (:file "core/vaos/vaos")
                (:file "core/streams/buffer-streams")
                (:file "core/transform-feedback/transform-feedback")
+               (:file "core/pipelines/compile-context")
                (:file "core/pipelines/generics")
                (:file "core/pipelines/uniforms")
                (:file "core/pipelines/gpu-macros")
