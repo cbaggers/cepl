@@ -65,7 +65,8 @@
            :gl-enum
            :consecutive-integers-p
            :hidden-symb
-           :define-const)
+           :define-const
+           :assert-lambda-list)
   (:reexport :cepl.defn))
 
 (uiop:define-package :cepl.errors

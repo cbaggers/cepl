@@ -743,3 +743,15 @@ Proposed Type: ~s" name (symbol-value name) type))
                            ',form ',(mapcar #'first cases)))))))
 
 ;;------------------------------------------------------------
+
+(defmacro assert-lambda-list (lambda-list expression datum &rest arguments)
+  (let ((hacky-vars
+         (set-difference (remove-duplicates (flatten lambda-list))
+                         '(&optional &rest &body &key &allow-other-keys
+                           &aux &environment &whole nil t)
+                         :test #'string=)))
+    `(handler-case
+         (destructuring-bind ,lambda-list ,expression
+           (declare (ignore ,@hacky-vars))
+           nil)
+       (error () ,datum ,@arguments))))
