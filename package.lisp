@@ -162,7 +162,8 @@
            :stage-not-valid-for-function-restriction
            :invalid-attachments-for-empty-fbo
            :invalid-empty-fbo-declaration
-           :quote-symbol-found-in-fbo-dimensions))
+           :quote-symbol-found-in-fbo-dimensions
+           :attachment-viewport-empty-fbo))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -434,6 +435,7 @@
            :empty-fbo-info-dimensions
            :empty-fbo-info-layer-count
            :empty-fbo-info-samples
+           :empty-fbo-info-viewport
            :empty-fbo-info-fixed-sample-locations-p
 
            :%make-ubo

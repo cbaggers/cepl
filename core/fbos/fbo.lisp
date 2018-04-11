@@ -164,14 +164,25 @@
     viewport
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
-  (case attachment-name
-    (:d (att-viewport (%fbo-depth-array fbo)))
-    (:s (att-viewport (%fbo-stencil-array fbo)))
-    (otherwise
-     (let ((arr (%fbo-color-arrays fbo)))
-       (if (< attachment-name (length arr))
-           (att-viewport (aref arr attachment-name))
-           (error "No attachment at ~a" attachment-name))))))
+  (let ((empty-info (%fbo-empty-info fbo)))
+    (if empty-info
+        (progn
+          (assert (eql attachment-name t) ()
+                  'attachment-viewport-empty-fbo
+                  :fbo fbo
+                  :attachment attachment-name)
+          (empty-fbo-info-viewport empty-info))
+        (case attachment-name
+          ((t) (error 'attachment-viewport-empty-fbo
+                       :fbo fbo
+                       :attachment attachment-name))
+          (:d (att-viewport (%fbo-depth-array fbo)))
+          (:s (att-viewport (%fbo-stencil-array fbo)))
+          (otherwise
+           (let ((arr (%fbo-color-arrays fbo)))
+             (if (< attachment-name (length arr))
+                 (att-viewport (aref arr attachment-name))
+                 (error "No attachment at ~a" attachment-name))))))))
 
 ;;----------------------------------------------------------------------
 
@@ -314,13 +325,14 @@
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
 (defn-inline attachment ((fbo fbo) (attachment-name attachment-name))
     (or null gpu-array-t)
-  (unless (%fbo-empty-info fbo)
-    (%attachment fbo attachment-name)))
+  (assert (not (%fbo-empty-info fbo)) ()
+          "Empty FBOs have no attachments: ~a" fbo)
+  (%attachment fbo attachment-name))
 
 (defun+ (setf attachment) (value fbo attachment-name)
   (assert (not (%fbo-is-default fbo)) ()
           "Cannot modify attachments of default-framebuffer")
-  (assert (%fbo-empty-info fbo) () "Illegal to set attachment on empty fbo")
+  (assert (not (%fbo-empty-info fbo)) () "Illegal to set attachment on empty fbo")
   (let ((current-value (%attachment fbo attachment-name))
         (initialized (initialized-p fbo)))
     ;; update the fbo
@@ -343,6 +355,8 @@
 ;;----------------------------------------------------------------------
 
 (defun+ attachment-tex (fbo attachment-name)
+  (assert (not (%fbo-empty-info fbo)) ()
+          "Empty FBOs have no attachments: ~a" fbo)
   (gpu-array-t-texture (%attachment fbo attachment-name)))
 
 ;;----------------------------------------------------------------------
@@ -467,6 +481,7 @@
              :dimensions dimensions
              :layer-count (or layer-count 0)
              :samples (or samples 0)
+             :viewport (make-viewport dimensions)
              :fixed-sample-locations-p (not (null fixed-sample-locations))))
       ;; return nil as we have nothing that needs to be initialized
       ;; before the fbo can be initialized (no dependancies).
@@ -506,57 +521,6 @@
   (%update-fbo-state fbo-obj)
   (check-framebuffer-status fbo-obj)
   fbo-obj)
-
-(defun+ initialize-empty-fbo (fbo)
-  (assert (>= (version-float (cepl-context)) 4.3) ()
-          'gl-version-too-low-for-empty-fbos
-          :version (version-float (cepl-context)))
-  (let ((info (%fbo-empty-info fbo)))
-    (with-fbo-bound (fbo :target :read-framebuffer
-                         :with-viewport nil
-                         :draw-buffers nil)
-      ;;
-      ;; Dimensions
-      (let ((dims (empty-fbo-info-dimensions info)))
-        (%gl:framebuffer-parameter-i
-         :read-framebuffer
-         :framebuffer-default-width (first dims))
-        (%gl:framebuffer-parameter-i
-         :read-framebuffer
-         :framebuffer-default-height (or (second dims) 1)))
-      ;;
-      ;; Layers
-      (let ((lcount (empty-fbo-info-layer-count info)))
-        (when (> lcount 0)
-          (%gl:framebuffer-parameter-i
-           :read-framebuffer
-           :framebuffer-default-layers lcount)))
-      ;;
-      ;; Samples
-      (let ((samples (empty-fbo-info-samples info)))
-        (when (> samples 0)
-          (%gl:framebuffer-parameter-i
-           :read-framebuffer
-           :framebuffer-default-samples samples)))
-      ;;
-      ;; Fixed Sample Locations
-      (let ((fix (if (empty-fbo-info-fixed-sample-locations-p info)
-                     1
-                     0)))
-        (when (> fix 0)
-          (%gl:framebuffer-parameter-i
-           :read-framebuffer
-           :framebuffer-default-fixed-sample-locations fix)))
-      fbo)))
-
-(defun+ initialize-regular-fbo (fbo-obj)
-  (loop :for a :across (%fbo-color-arrays fbo-obj)
-     :for i :from 0 :do
-     (when a (setf (attachment fbo-obj i) (att-array a))))
-  (when (attachment fbo-obj :d)
-    (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
-  (when (attachment fbo-obj :s)
-    (setf (attachment fbo-obj :s) (attachment fbo-obj :s))))
 
 (defun+ check-framebuffer-status (fbo)
   (%bind-fbo fbo :framebuffer)
@@ -747,6 +711,59 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
      (gpu-array-dimensions (texref (second pattern))))
     ;; take the dimensions from some object
     (t (dimensions (second pattern)))))
+
+;;----------------------------------------------------------------------
+
+(defun+ initialize-empty-fbo (fbo)
+  (assert (>= (version-float (cepl-context)) 4.3) ()
+          'gl-version-too-low-for-empty-fbos
+          :version (version-float (cepl-context)))
+  (let ((info (%fbo-empty-info fbo)))
+    (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :draw-buffers nil)
+      ;;
+      ;; Dimensions
+      (let ((dims (empty-fbo-info-dimensions info)))
+        (%gl:framebuffer-parameter-i
+         :read-framebuffer
+         :framebuffer-default-width (first dims))
+        (%gl:framebuffer-parameter-i
+         :read-framebuffer
+         :framebuffer-default-height (or (second dims) 1)))
+      ;;
+      ;; Layers
+      (let ((lcount (empty-fbo-info-layer-count info)))
+        (when (> lcount 0)
+          (%gl:framebuffer-parameter-i
+           :read-framebuffer
+           :framebuffer-default-layers lcount)))
+      ;;
+      ;; Samples
+      (let ((samples (empty-fbo-info-samples info)))
+        (when (> samples 0)
+          (%gl:framebuffer-parameter-i
+           :read-framebuffer
+           :framebuffer-default-samples samples)))
+      ;;
+      ;; Fixed Sample Locations
+      (let ((fix (if (empty-fbo-info-fixed-sample-locations-p info)
+                     1
+                     0)))
+        (when (> fix 0)
+          (%gl:framebuffer-parameter-i
+           :read-framebuffer
+           :framebuffer-default-fixed-sample-locations fix)))
+      fbo)))
+
+(defun+ initialize-regular-fbo (fbo-obj)
+  (loop :for a :across (%fbo-color-arrays fbo-obj)
+     :for i :from 0 :do
+     (when a (setf (attachment fbo-obj i) (att-array a))))
+  (when (attachment fbo-obj :d)
+    (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
+  (when (attachment fbo-obj :s)
+    (setf (attachment fbo-obj :s) (attachment fbo-obj :s))))
 
 ;;----------------------------------------------------------------------
 

@@ -511,6 +511,9 @@
   (dimensions
    (error "BUG: empty-fbo-info without dimensions")
    :type list)
+  (viewport
+   (error "BUG: empty-fbo-info without viewport")
+   :type viewport)
   (layer-count 0 :type unsigned-byte)
   (samples 0 :type unsigned-byte)
   (fixed-sample-locations-p nil :type boolean))

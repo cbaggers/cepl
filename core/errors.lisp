@@ -795,6 +795,19 @@ As the attachment form was already quoted this is unnecessary.
 Form: ~s
 " form)
 
+(deferror attachment-viewport-empty-fbo () (fbo attachment)
+    "
+When using attachment-viewport, with-fbo-bound or with-fbo-viewport the
+only time the 'attachment-name', 'attachment' or 'attachment-for-size'
+arguments can be set to the literal 'T' is when the fbo in question is empty.
+
+Likewise, when trying to use the above (and only the above) on an empty fbo,
+the attachment name *must* be 'T'.
+
+FBO Found: ~a
+Attachment: ~a
+" fbo attachment)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
