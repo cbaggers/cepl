@@ -1098,12 +1098,13 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 (defmethod print-object ((object fbo) stream)
   (if (initialized-p object)
-      (format stream "#<~a~@[ COLOR-ATTRS ~a~]~@[ DEPTH-ATTR ~a~]~@[ STENCIL-ATTR ~a~]>"
-              (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
-              (loop :for i :from 0 :for j :in (fbo-color-arrays object)
-                 :when j :collect i)
-              (when (attachment object :d) t)
-              (when (attachment object :s) t))
+      (let ((empty (%fbo-empty-info object)))
+        (format stream "#<~a~@[ COLOR-ATTRS ~a~]~@[ DEPTH-ATTR ~a~]~@[ STENCIL-ATTR ~a~]>"
+                (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
+                (loop :for i :from 0 :for j :in (fbo-color-arrays object)
+                   :when j :collect i)
+                (when (and (not empty) (attachment object :d)) t)
+                (when (and (not empty) (attachment object :s)) t)))
       (format stream "#<FBO :UNINITIALIZED>")))
 
 ;;----------------------------------------------------------------------
