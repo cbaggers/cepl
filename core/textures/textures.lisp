@@ -272,21 +272,22 @@
                                          element-type mipmap-levels
                                          layer-count cubes allocated mutable-p
                                          samples fixed-sample-locations)
-  (assert (typep gl-object 'gl-id))
-  (cepl.context::register-texture
-   (cepl-context)
-   (%%make-texture
-    :id gl-object
-    :base-dimensions base-dimensions
-    :type texture-type
-    :image-format element-type
-    :mipmap-levels mipmap-levels
-    :layer-count layer-count
-    :cubes-p cubes
-    :allocated-p allocated
-    :mutable-p mutable-p
-    :samples samples
-    :fixed-sample-locations-p fixed-sample-locations)))
+  (let ((fixed-sample-locations (not (null fixed-sample-locations))))
+    (assert (typep gl-object 'gl-id))
+    (cepl.context::register-texture
+     (cepl-context)
+     (%%make-texture
+      :id gl-object
+      :base-dimensions base-dimensions
+      :type texture-type
+      :image-format element-type
+      :mipmap-levels mipmap-levels
+      :layer-count layer-count
+      :cubes-p cubes
+      :allocated-p allocated
+      :mutable-p mutable-p
+      :samples samples
+      :fixed-sample-locations-p fixed-sample-locations))))
 
 
 (defun+ make-texture (initial-contents
@@ -311,7 +312,8 @@
                          samples fixed-sample-locations)
   ;;
   (let ((element-type (cffi-type->gl-type element-type))
-        (image-format (calc-image-format element-type initial-contents)))
+        (image-format (calc-image-format element-type initial-contents))
+        (fixed-sample-locations (not (null fixed-sample-locations))))
     (cond
       ;; cube textures
       ((and initial-contents cubes)
