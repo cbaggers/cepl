@@ -739,6 +739,62 @@ a restriction that means it is only valid to be used as a ~a stage.
   stage
   func-stage)
 
+(deferror gl-version-too-low-for-empty-fbos () (version)
+    "
+We found a valid attempt to create an empty fbo, however these are only
+supported in GL versions 4.3 and above.
+
+Current version: ~a
+" version)
+
+(deferror invalid-attachments-for-empty-fbo () (args)
+    "
+When defining an empty fbo there can only be 1 attachment declaration,
+it's name must be NIL, and dimensions must be specified.
+
+For example: `(make-fbo '(nil :dimensions (1024 1024))`
+
+Dimensions can be 1 or 2 dimensional
+
+You may also optionally specify the following parameters as you would
+in `make-texture`:
+
+- :layer-count
+- :samples
+- :fixed-sample-locations
+
+In this case we were passed the following declarations:~{~%- ~s~}
+" args)
+
+(deferror invalid-empty-fbo-declaration () (decl)
+    "
+When defining an empty fbo there can only be 1 attachment declaration,
+it's name must be NIL, and dimensions must be specified.
+
+For example: `(make-fbo '(nil :dimensions (1024 1024))`
+
+Dimensions can be 1 or 2 dimensional
+
+You may also optionally specify the following parameters as you would
+in `make-texture`:
+
+- :layer-count
+- :samples
+- :fixed-sample-locations
+
+In this case we were passed the following declaration:~%- ~s
+" decl)
+
+(deferror quote-symbol-found-in-fbo-dimensions () (form)
+    "
+During creation of an fbo we found the quote symbol in the 'dimensions'
+portion of the attachment form.
+
+As the attachment form was already quoted this is unnecessary.
+
+Form: ~s
+" form)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

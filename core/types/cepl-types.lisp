@@ -507,10 +507,19 @@
 
 ;;------------------------------------------------------------
 
+(defstruct empty-fbo-info
+  (dimensions
+   (error "BUG: empty-fbo-info without dimensions")
+   :type list)
+  (layer-count 0 :type unsigned-byte)
+  (samples 0 :type unsigned-byte)
+  (fixed-sample-locations-p nil :type boolean))
+
 (defstruct (fbo (:constructor %%make-fbo)
                 (:conc-name %fbo-))
   (id 0 :type gl-id)
   ;;
+  (empty-info nil :type (or null empty-fbo-info))
   (color-arrays (make-array 0 :element-type 'att
                             :initial-element (symbol-value '+null-att+)
                             :adjustable t

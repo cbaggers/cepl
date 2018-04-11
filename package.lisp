@@ -159,7 +159,10 @@
            :unknown-symbols-in-pipeline-context
            :stage-in-context-only-valid-for-glsl-stages
            :unknown-stage-kind
-           :stage-not-valid-for-function-restriction))
+           :stage-not-valid-for-function-restriction
+           :invalid-attachments-for-empty-fbo
+           :invalid-empty-fbo-declaration
+           :quote-symbol-found-in-fbo-dimensions))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -411,6 +414,7 @@
            :fbo
            :fbo-p
            :%fbo-id
+           :%fbo-empty-info
            :%fbo-color-arrays
            :%fbo-depth-array
            :%fbo-stencil-array
@@ -426,6 +430,11 @@
            :att-bparams
            :att-owned-p
            :att-viewport
+           :make-empty-fbo-info
+           :empty-fbo-info-dimensions
+           :empty-fbo-info-layer-count
+           :empty-fbo-info-samples
+           :empty-fbo-info-fixed-sample-locations-p
 
            :%make-ubo
            :ubo

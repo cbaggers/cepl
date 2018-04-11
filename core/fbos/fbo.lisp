@@ -244,20 +244,23 @@
 ;;----------------------------------------------------------------------
 
 (defun+ attachment-blending (fbo attachment-name)
-  (case attachment-name
-    (:d (let ((att (%fbo-depth-array fbo)))
-          (or (att-bparams att) (att-blend att))))
-    (:s nil)
-    (otherwise
-     (let ((arr (%fbo-color-arrays fbo))
-           (index attachment-name))
-       (if (< index (length arr))
-           (let ((att (aref arr index)))
-             (or (att-bparams att)
-                 (att-blend att)))
-           nil)))))
+  (unless (%fbo-empty-info fbo)
+    (case attachment-name
+      (:d (let ((att (%fbo-depth-array fbo)))
+            (or (att-bparams att) (att-blend att))))
+      (:s nil)
+      (otherwise
+       (let ((arr (%fbo-color-arrays fbo))
+             (index attachment-name))
+         (if (< index (length arr))
+             (let ((att (aref arr index)))
+               (or (att-bparams att)
+                   (att-blend att)))
+             nil))))))
 
 (defun+ (setf attachment-blending) (value fbo attachment-name)
+  (assert (not (%fbo-empty-info fbo)) ()
+          "Cannot set blending information on empty fbo")
   (let ((att (case attachment-name
                (:d (%fbo-depth-array fbo))
                (:s (error "Cannot specifiy blending params for the stencil attachment"))
@@ -311,11 +314,13 @@
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
 (defn-inline attachment ((fbo fbo) (attachment-name attachment-name))
     (or null gpu-array-t)
-  (%attachment fbo attachment-name))
+  (unless (%fbo-empty-info fbo)
+    (%attachment fbo attachment-name)))
 
 (defun+ (setf attachment) (value fbo attachment-name)
-  (when (%fbo-is-default fbo)
-    (error "Cannot modify attachments of default-framebuffer"))
+  (assert (not (%fbo-is-default fbo)) ()
+          "Cannot modify attachments of default-framebuffer")
+  (assert (%fbo-empty-info fbo) () "Illegal to set attachment on empty fbo")
   (let ((current-value (%attachment fbo attachment-name))
         (initialized (initialized-p fbo)))
     ;; update the fbo
@@ -429,12 +434,43 @@
   (multiple-value-bind (check-dimensions-matchp fuzzy-args)
       (extract-matching-dimension-value fuzzy-args)
     (cond
+      ((find-if (lambda (x) (and (listp x) (> (length x) 0) (null (first x))))
+                fuzzy-args)
+       (handle-empty-framebuffer fbo-obj fuzzy-args))
       ((and (texture-p (first fuzzy-args))
             (eq (texture-type (first fuzzy-args)) :texture-cube-map))
        (cube->fbo-arrays fbo-obj fuzzy-args))
       (fuzzy-args (apply #'fbo-gen-attach fbo-obj check-dimensions-matchp
                          fuzzy-args))
       (t (error "CEPL: FBOs must have at least one attachment")))))
+
+(defun+ handle-empty-framebuffer (fbo-obj args)
+  (assert (= (length args) 1) ()
+          'invalid-attachments-for-empty-fbo
+          :args args)
+  (assert-lambda-list
+   (name &key dimensions layer-count samples fixed-sample-locations)
+   (first args) 'invalid-attachments-for-empty-fbo :args (first args))
+  (dbind (name &key dimensions layer-count samples fixed-sample-locations)
+      (first args)
+    (let ((dimensions (listify dimensions)))
+      (assert (not (eq (first dimensions) 'quote)) ()
+              'quote-symbol-found-in-fbo-dimensions
+              :form (first args))
+      (assert (and (null name)
+                   dimensions
+                   (<= (length dimensions) 2)
+                   (every #'numberp dimensions))
+              () 'invalid-attachments-for-empty-fbo :args args)
+      (setf (%fbo-empty-info fbo-obj)
+            (make-empty-fbo-info
+             :dimensions dimensions
+             :layer-count (or layer-count 0)
+             :samples (or samples 0)
+             :fixed-sample-locations-p (not (null fixed-sample-locations))))
+      ;; return nil as we have nothing that needs to be initialized
+      ;; before the fbo can be initialized (no dependancies).
+      nil)))
 
 (defun+ cube->fbo-arrays (fbo-obj fuzzy-args)
   (let ((depth (listify
@@ -464,16 +500,63 @@
 
 (defun+ make-fbo-now (fbo-obj)
   (post-gl-init fbo-obj)
+  (if (%fbo-empty-info fbo-obj)
+      (initialize-empty-fbo fbo-obj)
+      (initialize-regular-fbo fbo-obj))
+  (%update-fbo-state fbo-obj)
+  (check-framebuffer-status fbo-obj)
+  fbo-obj)
+
+(defun+ initialize-empty-fbo (fbo)
+  (assert (>= (version-float (cepl-context)) 4.3) ()
+          'gl-version-too-low-for-empty-fbos
+          :version (version-float (cepl-context)))
+  (let ((info (%fbo-empty-info fbo)))
+    (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :draw-buffers nil)
+      ;;
+      ;; Dimensions
+      (let ((dims (empty-fbo-info-dimensions info)))
+        (%gl:framebuffer-parameter-i
+         :read-framebuffer
+         :framebuffer-default-width (first dims))
+        (%gl:framebuffer-parameter-i
+         :read-framebuffer
+         :framebuffer-default-height (or (second dims) 1)))
+      ;;
+      ;; Layers
+      (let ((lcount (empty-fbo-info-layer-count info)))
+        (when (> lcount 0)
+          (%gl:framebuffer-parameter-i
+           :read-framebuffer
+           :framebuffer-default-layers lcount)))
+      ;;
+      ;; Samples
+      (let ((samples (empty-fbo-info-samples info)))
+        (when (> samples 0)
+          (%gl:framebuffer-parameter-i
+           :read-framebuffer
+           :framebuffer-default-samples samples)))
+      ;;
+      ;; Fixed Sample Locations
+      (let ((fix (if (empty-fbo-info-fixed-sample-locations-p info)
+                     1
+                     0)))
+        (when (> fix 0)
+          (%gl:framebuffer-parameter-i
+           :read-framebuffer
+           :framebuffer-default-fixed-sample-locations fix)))
+      fbo)))
+
+(defun+ initialize-regular-fbo (fbo-obj)
   (loop :for a :across (%fbo-color-arrays fbo-obj)
      :for i :from 0 :do
      (when a (setf (attachment fbo-obj i) (att-array a))))
   (when (attachment fbo-obj :d)
     (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
   (when (attachment fbo-obj :s)
-    (setf (attachment fbo-obj :s) (attachment fbo-obj :s)))
-  (%update-fbo-state fbo-obj)
-  (check-framebuffer-status fbo-obj)
-  fbo-obj)
+    (setf (attachment fbo-obj :s) (attachment fbo-obj :s))))
 
 (defun+ check-framebuffer-status (fbo)
   (%bind-fbo fbo :framebuffer)
@@ -621,7 +704,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 
 (defun+ fbo-gen-attach (fbo check-dimensions-matchp &rest args)
-  "The are 3 kinds of valid argument:
+  "The are 4 kinds of valid argument:
    - keyword naming an attachment: This makes a new texture
      with size of (current-viewport) and attaches
    - (keyword texarray): attaches the tex-array
