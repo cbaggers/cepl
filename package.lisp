@@ -414,6 +414,7 @@
            :make-uninitialized-fbo
            :fbo
            :fbo-p
+           :fbo-empty-p
            :%fbo-id
            :%fbo-empty-info
            :%fbo-color-arrays
@@ -423,6 +424,7 @@
            :%fbo-clear-mask
            :%fbo-is-default
            :%fbo-blending-params
+           :%fbo-attachment-count
            :+null-fbo+
            :make-att
            :att

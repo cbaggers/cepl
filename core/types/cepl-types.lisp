@@ -521,7 +521,8 @@
 (defstruct (fbo (:constructor %%make-fbo)
                 (:conc-name %fbo-))
   (id 0 :type gl-id)
-  ;;
+  ;; Once empty info is set we never remove it, we track emptiness with the
+  ;; attachment-count slot
   (empty-info nil :type (or null empty-fbo-info))
   (color-arrays (make-array 0 :element-type 'att
                             :initial-element (symbol-value '+null-att+)
@@ -537,6 +538,7 @@
                '%gl::ClearBufferMask '(:color-buffer-bit))
               :type fixnum)
   (is-default nil :type boolean)
+  (attachment-count 0 :type (unsigned-byte 8))
   (blending-params (make-blending-params :mode-rgb :func-add
                                          :mode-alpha :func-add
                                          :source-rgb :one
@@ -544,6 +546,10 @@
                                          :destination-rgb :zero
                                          :destination-alpha :zero)
                    :type blending-params))
+
+(defn-inline fbo-empty-p ((fbo fbo)) boolean
+  (declare (speed 3) (debug 0) (safety 1))
+  (= (%fbo-attachment-count fbo) 0))
 
 ;;------------------------------------------------------------
 
