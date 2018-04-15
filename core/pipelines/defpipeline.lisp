@@ -406,7 +406,7 @@
       (or (apply #'get-glsl-version contexts)
           (error 'glsl-version-conflict
                  :pairs (loop
-                           :for (name stage) :in stage-pairs
+                           :for (name nil) :in stage-pairs
                            :for context :in contexts
                            :for versions := (compile-context-versions context)
                            :when versions

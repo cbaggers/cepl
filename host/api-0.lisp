@@ -87,6 +87,7 @@
   (error "CEPL: Making a shared GL context is not supported when using the legacy host api"))
 
 (defmethod %destroy-surface ((host api-0) surface &key &allow-other-keys)
+  (declare (ignore surface))
   (warn "Destorying a surface is not supported when using the legacy host api"))
 
 ;; no longer used but legacy hosts still expect to find it
