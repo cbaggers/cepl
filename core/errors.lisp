@@ -749,19 +749,23 @@ Current version: ~a
 
 (deferror invalid-attachments-for-empty-fbo () (args)
     "
-When defining an empty fbo there can only be 1 attachment declaration,
-it's name must be NIL, and dimensions must be specified.
+When defining an empty fbo there can be 0 or 1 attachment
+declarations. When present it's name must be NIL.
 
-For example: `(make-fbo '(nil :dimensions (1024 1024))`
-
-Dimensions can be 1 or 2 dimensional
+For example:
+- `(make-fbo '(nil :dimensions (1024 1024)))`
+- `(make-fbo '(nil))`
+- `(make-fbo)`
 
 You may also optionally specify the following parameters as you would
 in `make-texture`:
 
+- :dimensions
 - :layer-count
 - :samples
 - :fixed-sample-locations
+
+The empty fbo can be 1 or 2 dimensional
 
 In this case we were passed the following declarations:~{~%- ~s~}
 " args)
@@ -797,9 +801,9 @@ Form: ~s
 
 (deferror attachment-viewport-empty-fbo () (fbo attachment)
     "
-When using attachment-viewport, with-fbo-bound or with-fbo-viewport the
-only time the 'attachment-name', 'attachment' or 'attachment-for-size'
-arguments can be set to the literal 'T' is when the fbo in question is empty.
+`T` cannot be used as a attachment-name. It is only allowed in
+`with-fbo-viewport` & `with-fbo-bound`'s 'attachment-for-size' parameter
+and only if the fbo being bound is empty.
 
 Likewise, when trying to use the above (and only the above) on an empty fbo,
 the attachment name *must* be 'T'.
@@ -807,6 +811,10 @@ the attachment name *must* be 'T'.
 FBO Found: ~a
 Attachment: ~a
 " fbo attachment)
+
+(deferror invalid-fbo-args () (args)
+    "
+")
 
 ;; Please remember the following 2 things
 ;;

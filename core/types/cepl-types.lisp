@@ -507,13 +507,13 @@
 
 ;;------------------------------------------------------------
 
-(defstruct empty-fbo-info
-  (dimensions
-   (error "BUG: empty-fbo-info without dimensions")
-   :type list)
-  (viewport
-   (error "BUG: empty-fbo-info without viewport")
-   :type viewport)
+(defstruct (empty-fbo-params
+             (:conc-name %empty-fbo-params-))
+  ;; setting dummy values here knowing that only internal code
+  ;; should be creating this
+  (fbo nil :type (or null fbo))
+  (dimensions nil :type list)
+  (viewport (%make-viewport) :type viewport)
   (layer-count 0 :type unsigned-byte)
   (samples 0 :type unsigned-byte)
   (fixed-sample-locations-p nil :type boolean))
@@ -523,7 +523,7 @@
   (id 0 :type gl-id)
   ;; Once empty info is set we never remove it, we track emptiness with the
   ;; attachment-count slot
-  (empty-info nil :type (or null empty-fbo-info))
+  (empty-params nil :type (or null empty-fbo-params))
   (color-arrays (make-array 0 :element-type 'att
                             :initial-element (symbol-value '+null-att+)
                             :adjustable t

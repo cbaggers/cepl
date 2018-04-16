@@ -416,7 +416,7 @@
            :fbo-p
            :fbo-empty-p
            :%fbo-id
-           :%fbo-empty-info
+           :%fbo-empty-params
            :%fbo-color-arrays
            :%fbo-depth-array
            :%fbo-stencil-array
@@ -433,12 +433,14 @@
            :att-bparams
            :att-owned-p
            :att-viewport
-           :make-empty-fbo-info
-           :empty-fbo-info-dimensions
-           :empty-fbo-info-layer-count
-           :empty-fbo-info-samples
-           :empty-fbo-info-viewport
-           :empty-fbo-info-fixed-sample-locations-p
+           :empty-fbo-params
+           :make-empty-fbo-params
+           :%empty-fbo-params-fbo
+           :%empty-fbo-params-dimensions
+           :%empty-fbo-params-layer-count
+           :%empty-fbo-params-samples
+           :%empty-fbo-params-viewport
+           :%empty-fbo-params-fixed-sample-locations-p
 
            :%make-ubo
            :ubo
@@ -1068,7 +1070,13 @@
            :with-fbo-bound
            :clear
            :clear-fbo
-           :clear-attachment))
+           :clear-attachment
+           :empty-fbo-params
+           :empty-fbo-params-dimensions
+           :empty-fbo-params-layer-count
+           :empty-fbo-params-samples
+           :empty-fbo-params-viewport
+           :empty-fbo-params-fixed-sample-locations-p))
 
 (uiop:define-package :cepl.blending
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
