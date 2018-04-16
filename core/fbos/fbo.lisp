@@ -159,12 +159,36 @@
         (cepl.textures::with-gpu-array-t (att-array d)
           (setf dimensions new-dimensions))))))
 
+(defn attachment-viewport-allowing-t
+    ((fbo fbo) (attachment-name attachment-name))
+    viewport
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (case attachment-name
+    ((t)
+     (assert (fbo-empty-p fbo) ()
+             'attachment-viewport-empty-fbo
+             :fbo fbo
+             :attachment attachment-name)
+     (empty-fbo-params-viewport
+      (%fbo-empty-params fbo)))
+    (:d (att-viewport (%fbo-depth-array fbo)))
+    (:s (att-viewport (%fbo-stencil-array fbo)))
+    (otherwise
+     (let ((arr (%fbo-color-arrays fbo)))
+       (if (< attachment-name (length arr))
+           (att-viewport (aref arr attachment-name))
+           (error "No attachment at ~a" attachment-name))))))
+
 (defn attachment-viewport ((fbo fbo)
                            (attachment-name attachment-name))
     viewport
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
   (case attachment-name
+    ((t) (error 'attachment-viewport-empty-fbo
+                :fbo fbo
+                :attachment attachment-name))
     (:d (att-viewport (%fbo-depth-array fbo)))
     (:s (att-viewport (%fbo-stencil-array fbo)))
     (otherwise
@@ -243,8 +267,12 @@
 
 ;;----------------------------------------------------------------------
 
-(defun+ attachment-blending (fbo attachment-name)
+(defn attachment-blending ((fbo fbo) (attachment-name attachment-name))
+    (or null blending-params)
   (case attachment-name
+    ((t) (error 'attachment-viewport-empty-fbo
+                :fbo fbo
+                :attachment attachment-name))
     (:d (let ((att (%fbo-depth-array fbo)))
           (or (att-bparams att) (att-blend att))))
     (:s nil)
@@ -258,6 +286,10 @@
            nil)))))
 
 (defun+ (setf attachment-blending) (value fbo attachment-name)
+  (assert (not (fbo-empty-p fbo)) ()
+          'attachment-viewport-empty-fbo
+          :fbo fbo
+          :attachment attachment-name)
   (let ((att (case attachment-name
                (:d (%fbo-depth-array fbo))
                (:s (error "Cannot specifiy blending params for the stencil attachment"))
@@ -284,38 +316,71 @@
            (att-array (aref arr attachment-name))
            nil)))))
 
-(defun+ (setf %attachment) (value fbo attachment-name)
-  (case attachment-name
-    (:d
-     (when (not value)
-       (setf (att-blend (%fbo-depth-array fbo)) nil
-             (att-bparams (%fbo-depth-array fbo)) nil))
-     (setf (att-viewport (%fbo-depth-array fbo))
-           (viewport-for-array value))
-     (setf (att-array (%fbo-depth-array fbo)) value))
-    (:s
-     (setf (att-viewport (%fbo-stencil-array fbo))
-           (viewport-for-array value))
-     (setf (att-array (%fbo-stencil-array fbo)) value))
-    (otherwise
-     (let ((arr (%fbo-color-arrays fbo)))
-       (ensure-fbo-array-size fbo (1+ attachment-name))
-       (let ((att (aref arr attachment-name)))
-         (when (not value)
-           (setf (att-blend att) nil)
-           (setf (att-bparams att) nil))
-         (setf (att-viewport att) (viewport-for-array value))
-         (setf (att-array att) value))))))
+(defn (setf %attachment) ((value (or null gpu-array-t render-buffer))
+                          (fbo fbo)
+                          (attachment-name attachment-name))
+    (or null gpu-array-t)
+  (declare (optimize (speed 3) (debug 1) (safety 1)))
+  ;; we dont remove the empty-info if an empty fbo has something
+  ;; attached to it. emptiness is tracked using attachment-count
+  (flet ((incf-att-count ()
+           (when (= (incf (%fbo-attachment-count fbo)) 1)
+             (make-fbo-non-empty fbo)))
+         (decf-att-count ()
+           (when (= (decf (%fbo-attachment-count fbo)) 0)
+             (make-existing-fbo-empty fbo (%fbo-depth-array fbo)))))
+    (declare (inline incf-att-count decf-att-count))
+    (case attachment-name
+      (:d
+       (let ((current (att-array (%fbo-depth-array fbo))))
+         (if value
+             (unless current
+               (incf-att-count)
+               (setf (att-viewport (%fbo-depth-array fbo))
+                     (viewport-for-array value))
+               (setf (att-array (%fbo-depth-array fbo)) value))
+             (when current
+               (decf-att-count)
+               (setf (att-blend (%fbo-depth-array fbo)) nil
+                     (att-bparams (%fbo-depth-array fbo)) nil
+                     (att-viewport (%fbo-depth-array fbo)) nil
+                     (att-array (%fbo-depth-array fbo)) nil)))))
+      (:s
+       (let ((current (att-array (%fbo-depth-array fbo))))
+         (if value
+             (unless current
+               (incf-att-count))
+             (when current
+               (decf-att-count)))
+         (setf (att-viewport (%fbo-stencil-array fbo))
+               (viewport-for-array value))
+         (setf (att-array (%fbo-stencil-array fbo)) value)))
+      (otherwise
+       (let ((arr (%fbo-color-arrays fbo)))
+         (ensure-fbo-array-size fbo (1+ attachment-name))
+         (let* ((att (aref arr attachment-name))
+                (current (att-array att)))
+           (if value
+               (unless current
+                 (incf-att-count))
+               (when current
+                 (decf-att-count)
+                 (setf (att-blend att) nil)
+                 (setf (att-bparams att) nil)))
+           (setf (att-viewport att) (viewport-for-array value))
+           (setf (att-array att) value)))))))
 
 
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
 (defn-inline attachment ((fbo fbo) (attachment-name attachment-name))
     (or null gpu-array-t)
+  (assert (not (fbo-empty-p fbo)) ()
+          "Empty FBOs have no attachments: ~a" fbo)
   (%attachment fbo attachment-name))
 
 (defun+ (setf attachment) (value fbo attachment-name)
-  (when (%fbo-is-default fbo)
-    (error "Cannot modify attachments of default-framebuffer"))
+  (assert (not (%fbo-is-default fbo)) ()
+          "Cannot modify attachments of default-framebuffer")
   (let ((current-value (%attachment fbo attachment-name))
         (initialized (initialized-p fbo)))
     ;; update the fbo
@@ -425,16 +490,59 @@
                      (cepl-utils:flatten fuzzy-attach-args))
       arrays))))
 
+(defun+ empty-fbo-args-p (fuzzy-args)
+  (or (null fuzzy-args)
+      (equal fuzzy-args '(nil))
+      (find-if (lambda (x) (and (listp x) (> (length x) 0) (null (first x))))
+               fuzzy-args)))
+
 (defun+ fuzzy-args->arrays (fbo-obj fuzzy-args)
   (multiple-value-bind (check-dimensions-matchp fuzzy-args)
       (extract-matching-dimension-value fuzzy-args)
     (cond
+      ((empty-fbo-args-p fuzzy-args)
+       (handle-empty-framebuffer fbo-obj fuzzy-args))
       ((and (texture-p (first fuzzy-args))
             (eq (texture-type (first fuzzy-args)) :texture-cube-map))
        (cube->fbo-arrays fbo-obj fuzzy-args))
       (fuzzy-args (apply #'fbo-gen-attach fbo-obj check-dimensions-matchp
                          fuzzy-args))
       (t (error "CEPL: FBOs must have at least one attachment")))))
+
+(defun+ handle-empty-framebuffer (fbo-obj args)
+  (assert (<= (length args) 1) ()
+          'invalid-attachments-for-empty-fbo
+          :args args)
+  (assert-lambda-list
+   (name &key dimensions layer-count samples fixed-sample-locations)
+   (first args) 'invalid-attachments-for-empty-fbo :args (first args))
+  (dbind (name
+          &key
+          dimensions
+          (layer-count 0)
+          (samples 0)
+          (fixed-sample-locations nil))
+      (or (first args) '(nil))
+    (let ((dimensions (or (listify dimensions)
+                          (viewport-dimensions (current-viewport)))))
+      (assert (not (eq (first dimensions) 'quote)) ()
+              'quote-symbol-found-in-fbo-dimensions
+              :form (first args))
+      (assert (and (null name)
+                   dimensions
+                   (<= (length dimensions) 2)
+                   (every #'numberp dimensions))
+              () 'invalid-attachments-for-empty-fbo :args args)
+      (setf (%fbo-empty-params fbo-obj)
+            (make-empty-fbo-params
+             :dimensions dimensions
+             :layer-count layer-count
+             :samples samples
+             :viewport (make-viewport dimensions)
+             :fixed-sample-locations-p (not (null fixed-sample-locations))))
+      ;; return nil as we have nothing that needs to be initialized
+      ;; before the fbo can be initialized (no dependancies).
+      nil)))
 
 (defun+ cube->fbo-arrays (fbo-obj fuzzy-args)
   (let ((depth (listify
@@ -464,13 +572,9 @@
 
 (defun+ make-fbo-now (fbo-obj)
   (post-gl-init fbo-obj)
-  (loop :for a :across (%fbo-color-arrays fbo-obj)
-     :for i :from 0 :do
-     (when a (setf (attachment fbo-obj i) (att-array a))))
-  (when (attachment fbo-obj :d)
-    (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
-  (when (attachment fbo-obj :s)
-    (setf (attachment fbo-obj :s) (attachment fbo-obj :s)))
+  (if (%fbo-empty-params fbo-obj)
+      (initialize-as-empty-fbo fbo-obj)
+      (initialize-regular-fbo fbo-obj))
   (%update-fbo-state fbo-obj)
   (check-framebuffer-status fbo-obj)
   fbo-obj)
@@ -621,7 +725,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 
 (defun+ fbo-gen-attach (fbo check-dimensions-matchp &rest args)
-  "The are 3 kinds of valid argument:
+  "The are 4 kinds of valid argument:
    - keyword naming an attachment: This makes a new texture
      with size of (current-viewport) and attaches
    - (keyword texarray): attaches the tex-array
@@ -664,6 +768,177 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
      (gpu-array-dimensions (texref (second pattern))))
     ;; take the dimensions from some object
     (t (dimensions (second pattern)))))
+
+;;----------------------------------------------------------------------
+
+(defun make-fbo-non-empty (fbo)
+  (let ((params (%fbo-empty-params fbo)))
+    (when params
+      (setf (%empty-fbo-params-fbo params) nil)))
+  fbo)
+
+(defn empty-fbo-params ((fbo fbo)) empty-fbo-params
+  (assert (fbo-empty-p fbo) ()
+          "Cannot get the empty-fbo-params of a non-empty fbo: ~a"
+          fbo)
+  (%fbo-empty-params fbo))
+
+(defn empty-fbo-params-dimensions ((params empty-fbo-params))
+    list
+  (%empty-fbo-params-dimensions params))
+
+(defn (setf empty-fbo-params-dimensions)
+    ((value list) (params empty-fbo-params))
+    list
+  (let ((fbo (%empty-fbo-params-fbo params)))
+    (assert fbo () 'modify-non-empty-fbo-params)
+    (assert (and (= (length value) 2)
+                 (every (lambda (x) (typep x 'unsigned-byte))
+                        value)))
+    (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :draw-buffers nil)
+      (%gl:framebuffer-parameter-i
+       :read-framebuffer
+       :framebuffer-default-width (or (first value) 1))
+      (%gl:framebuffer-parameter-i
+       :read-framebuffer
+       :framebuffer-default-height (or (second value) 1))
+      (let ((vp (%empty-fbo-params-viewport params)))
+        (setf (viewport-dimensions vp) value
+              (%empty-fbo-params-dimensions params) value)))))
+
+(defn empty-fbo-params-layer-count ((params empty-fbo-params))
+    unsigned-byte
+  (%empty-fbo-params-layer-count params))
+
+(defn (setf empty-fbo-params-layer-count)
+    ((value unsigned-byte) (params empty-fbo-params))
+    unsigned-byte
+  (let ((fbo (%empty-fbo-params-fbo params)))
+    (assert fbo () 'modify-non-empty-fbo-params)
+    (assert (and (integerp value) (>= value 0)))
+    (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :draw-buffers nil)
+      (%gl:framebuffer-parameter-i
+       :read-framebuffer
+       :framebuffer-default-layers value)
+      (setf (%empty-fbo-params-layer-count params) value))))
+
+(defn empty-fbo-params-samples ((params empty-fbo-params))
+    unsigned-byte
+  (%empty-fbo-params-samples params))
+
+(defn (setf empty-fbo-params-samples)
+    ((value unsigned-byte) (params empty-fbo-params))
+    unsigned-byte
+  (let ((fbo (%empty-fbo-params-fbo params)))
+    (assert fbo () 'modify-non-empty-fbo-params)
+    (assert (and (integerp value) (>= value 0)))
+    (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :draw-buffers nil)
+      (%gl:framebuffer-parameter-i
+       :read-framebuffer
+       :framebuffer-default-samples value)
+      (setf (%empty-fbo-params-samples params) value))))
+
+(defn empty-fbo-params-fixed-sample-locations-p ((params empty-fbo-params))
+    boolean
+  (%empty-fbo-params-fixed-sample-locations-p params))
+
+(defn (setf empty-fbo-params-fixed-sample-locations-p)
+    ((value boolean) (params empty-fbo-params))
+    boolean
+  (let ((fbo (%empty-fbo-params-fbo params)))
+    (assert fbo () 'modify-non-empty-fbo-params)
+    (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :draw-buffers nil)
+      (%gl:framebuffer-parameter-i
+       :read-framebuffer
+       :framebuffer-default-fixed-sample-locations (if value 1 0))
+      (setf (%empty-fbo-params-fixed-sample-locations-p params)
+            value))))
+
+(defn empty-fbo-params-viewport ((params empty-fbo-params))
+    viewport
+  (%empty-fbo-params-viewport params))
+
+
+(defun+ make-existing-fbo-empty (fbo last-attachment)
+  (assert (>= (version-float (cepl-context)) 4.3) ()
+          'gl-version-too-low-for-empty-fbos
+          :version (version-float (cepl-context)))
+  (let* ((att last-attachment)
+         (arr (when att (att-array att)))
+         (tex (when arr (gpu-array-t-texture arr)))
+         (dimensions (if arr
+                         (dimensions arr)
+                         '(1 1)))
+         (layer-count (if tex
+                          (texture-layer-count tex)
+                          0))
+         (samples (if tex
+                      (texture-samples tex)
+                      0))
+         (fsl-p (when tex
+                  (texture-fixed-sample-locations-p tex)))
+         (curr (%fbo-empty-params fbo))
+         (params
+          (if curr
+              (progn
+                (assert
+                 (null (%empty-fbo-params-fbo curr)) ()
+                 "CEPL BUG: empty fbo hadnt had info cleared correctly: ~s"
+                 fbo)
+                (setf (%empty-fbo-params-fbo curr) fbo)
+                curr)
+              (setf (%fbo-empty-params fbo)
+                    (make-empty-fbo-params :fbo fbo)))))
+    (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :draw-buffers nil)
+      ;; we rely on the state tracking to ensure we dont bind & unbind a tonne
+      ;; of times during this block
+      (setf (empty-fbo-params-dimensions params) dimensions
+            (empty-fbo-params-layer-count params) layer-count
+            (empty-fbo-params-samples params) samples
+            (empty-fbo-params-fixed-sample-locations-p params) fsl-p))
+    fbo))
+
+(defun+ initialize-as-empty-fbo (fbo)
+  (assert (>= (version-float (cepl-context)) 4.3) ()
+          'gl-version-too-low-for-empty-fbos
+          :version (version-float (cepl-context)))
+  (with-fbo-bound (fbo :target :read-framebuffer
+                         :with-viewport nil
+                         :draw-buffers nil)
+    ;; This is the one place where an empty info object can
+    ;; exist without the params having been applied. By
+    ;; reappplying them we force the gl change to be made.
+    (let ((info (%fbo-empty-params fbo)))
+      (setf (%empty-fbo-params-fbo info)
+            fbo)
+      (setf (empty-fbo-params-dimensions info)
+            (empty-fbo-params-dimensions info))
+      (setf (empty-fbo-params-layer-count info)
+            (empty-fbo-params-layer-count info))
+      (setf (empty-fbo-params-samples info)
+            (empty-fbo-params-samples info))
+      (setf (empty-fbo-params-fixed-sample-locations-p info)
+            (empty-fbo-params-fixed-sample-locations-p info))
+      fbo)))
+
+(defun+ initialize-regular-fbo (fbo-obj)
+  (loop :for a :across (%fbo-color-arrays fbo-obj)
+     :for i :from 0 :do
+     (when a (setf (attachment fbo-obj i) (att-array a))))
+  (when (attachment fbo-obj :d)
+    (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
+  (when (attachment fbo-obj :s)
+    (setf (attachment fbo-obj :s) (attachment fbo-obj :s))))
 
 ;;----------------------------------------------------------------------
 
@@ -998,12 +1273,27 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 (defmethod print-object ((object fbo) stream)
   (if (initialized-p object)
-      (format stream "#<~a~@[ COLOR-ATTRS ~a~]~@[ DEPTH-ATTR ~a~]~@[ STENCIL-ATTR ~a~]>"
-              (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
-              (loop :for i :from 0 :for j :in (fbo-color-arrays object)
-                 :when j :collect i)
-              (when (attachment object :d) t)
-              (when (attachment object :s) t))
+      (let ((empty (fbo-empty-p object)))
+        (format stream "#<~a~@[ COLOR-ATTRS ~a~]~@[ DEPTH-ATTR ~a~]~@[ STENCIL-ATTR ~a~]>"
+                (if (%fbo-is-default object) "DEFAULT-FBO" "FBO")
+                (loop :for i :from 0 :for j :in (fbo-color-arrays object)
+                   :when j :collect i)
+                (when (and (not empty) (attachment object :d)) t)
+                (when (and (not empty) (attachment object :s)) t)))
       (format stream "#<FBO :UNINITIALIZED>")))
+
+(defmethod print-object ((object empty-fbo-params) stream)
+  (if (%empty-fbo-params-fbo object)
+      (format
+       stream
+       "#<EMTPY-FBO-PARAMS :DIMENSIONS ~a :LAYERS ~a :SAMPLES ~a :FIXED-LOCATIONS ~a>"
+       (empty-fbo-params-dimensions object)
+       (empty-fbo-params-layer-count object)
+       (empty-fbo-params-samples object)
+       (empty-fbo-params-fixed-sample-locations-p object))
+      (format
+       stream
+       "#<EMTPY-FBO-PARAMS :STATUS DETACHED>"))
+  object)
 
 ;;----------------------------------------------------------------------

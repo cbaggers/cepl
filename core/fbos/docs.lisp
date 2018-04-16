@@ -216,7 +216,8 @@ Lets look at the behaviour when given different arguments
 
 **-- (make-fbo) --**
 
-It is not valid is have an `fbo` with no `attachment`s so this will fail
+Empty FBOs are possible in CEPL, however they wernt added in GL until v4.3 so
+please see the empty FBO section below.
 
 **-- (make-fbo 0) --**
 
@@ -258,6 +259,29 @@ texture created by taking the arguments after 0 and applying them to
 `make-texture`
 
 **-- Any combination of the above --**
+
+**-- Empty FBOs --**
+
+Empty FBOs are interesting in that you have a none of the pipeline outputs will
+be written to anywhere, but rendering can otherwise proceed as normal. They were
+only added in GL 4.3 so `make-fbo` will error if the current GL version is too low.
+
+When defining an empty fbo there can be at most 1 attachment declaration.
+When present the name must be NIL. You may also optionally specify the following
+parameters as you would in `make-texture`:
+
+- :dimensions
+- :layer-count
+- :samples
+- :fixed-sample-locations
+
+So the following are legal:
+
+- `(make-fbo '(nil :dimensions (1024 1024)))`
+- `(make-fbo '(nil))`
+- `(make-fbo)`
+
+**-- Cube Texture Initialization --**
 
 One last variant is allowed. You are allowed to pass a cube-map texture along
 with and optional depth option. This will result in each face of the cube being

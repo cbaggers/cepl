@@ -150,15 +150,12 @@
 ;;       you can however create other viewports and with with-viewport
 ;;       to make them current, then rendering with render to that viewport
 
-(defmacro with-fbo-viewport ((fbo &optional (attachment 0)) &body body)
-  `(with-viewport (cepl.fbos:attachment-viewport ,fbo ,attachment)
+(defmacro with-fbo-viewport ((fbo &optional (attachment-for-size 0))
+                             &body body)
+  `(with-viewport (cepl.fbos::attachment-viewport-allowing-t
+                   ,fbo
+                   ,attachment-for-size)
      ,@body))
-
-(defmacro %with-fbo-viewport ((fbo &optional (attachment 0)) &body body)
-  "To be used by code than is managing the viewport state itself.
-   composed dispatch would be an example"
-  `(%with-viewport (cepl.fbos:attachment-viewport ,fbo ,attachment)
-                   ,@body))
 
 
 (defn viewport-params-to-vec4 (&optional (viewport viewport (current-viewport)))

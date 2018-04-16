@@ -159,7 +159,11 @@
            :unknown-symbols-in-pipeline-context
            :stage-in-context-only-valid-for-glsl-stages
            :unknown-stage-kind
-           :stage-not-valid-for-function-restriction))
+           :stage-not-valid-for-function-restriction
+           :invalid-attachments-for-empty-fbo
+           :invalid-empty-fbo-declaration
+           :quote-symbol-found-in-fbo-dimensions
+           :attachment-viewport-empty-fbo))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -410,7 +414,9 @@
            :make-uninitialized-fbo
            :fbo
            :fbo-p
+           :fbo-empty-p
            :%fbo-id
+           :%fbo-empty-params
            :%fbo-color-arrays
            :%fbo-depth-array
            :%fbo-stencil-array
@@ -418,6 +424,7 @@
            :%fbo-clear-mask
            :%fbo-is-default
            :%fbo-blending-params
+           :%fbo-attachment-count
            :+null-fbo+
            :make-att
            :att
@@ -426,6 +433,14 @@
            :att-bparams
            :att-owned-p
            :att-viewport
+           :empty-fbo-params
+           :make-empty-fbo-params
+           :%empty-fbo-params-fbo
+           :%empty-fbo-params-dimensions
+           :%empty-fbo-params-layer-count
+           :%empty-fbo-params-samples
+           :%empty-fbo-params-viewport
+           :%empty-fbo-params-fixed-sample-locations-p
 
            :%make-ubo
            :ubo
@@ -1055,7 +1070,13 @@
            :with-fbo-bound
            :clear
            :clear-fbo
-           :clear-attachment))
+           :clear-attachment
+           :empty-fbo-params
+           :empty-fbo-params-dimensions
+           :empty-fbo-params-layer-count
+           :empty-fbo-params-samples
+           :empty-fbo-params-viewport
+           :empty-fbo-params-fixed-sample-locations-p))
 
 (uiop:define-package :cepl.blending
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
