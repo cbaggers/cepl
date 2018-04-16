@@ -98,6 +98,8 @@ Headlines:
 
 The most important change this release is that lambda pipelines now recompile when the functions they use as stages are recompiled. This change comes with a performance cost of course so if you wish to opt out of this (recommended for when you ship your project) then pass `:static` in the context argument to `pipeline-g`
 
+Also if you are using GL>=4.3 you can now create empty fbos, which are handy if you want to use the fragment stage without writing data to bound textures (compute-type fun to be had here)
+
 Other important changes:
 
 - `viewport-resolution-x` & `viewport-resolution-y` had been documented as returning `single-float`s but were returning unsigned ints, this now fixed.
