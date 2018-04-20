@@ -266,7 +266,10 @@
                                        func-specs
                                        post
                                        register-spec)
-  (let* ((aggregate-uniforms (aggregate-uniforms func-specs t))
+  (let* ((aggregate-uniforms (aggregate-uniforms nil
+                                                 :pipeline
+                                                 func-specs
+                                                 t))
          (primitive (compile-context-primitive compile-context)))
     (multiple-value-bind (compiled-stages
                           prog-id
@@ -304,7 +307,9 @@
              ;; we generate the func that compiles & uploads the pipeline
              ;; and also populates the pipeline's local-vars
              (uniform-names
-              (mapcar #'first (aggregate-uniforms func-specs)))
+              (mapcar #'first (aggregate-uniforms nil
+                                                  :pipeline
+                                                  func-specs)))
              (u-uploads
               (mapcar #'gen-uploaders-block uniform-assigners))
              (u-cleanup

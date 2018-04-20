@@ -69,7 +69,7 @@
   (let* ((compile-context (parse-compile-context name raw-context :function))
          (spec (%make-gpu-func-spec name in-args uniforms compile-context
                                     body shared nil nil uniforms doc-string
-                nil nil (get-gpu-func-spec-tag)));;[0]
+                                    nil nil (get-gpu-func-spec-tag))) ;;[0]
          (valid-glsl-versions (compile-context-versions compile-context))
          (spec-key (spec->func-key spec))
          (old-spec (gpu-func-spec spec-key nil))
@@ -114,7 +114,12 @@
    [2] We also record the uniforms in the compiled result. The uniforms in the
    definition are the public interface, but the compiler may have removed or
    modified the uniforms. To this end we store the final uniforms and the forms
-   that transform between the public uniform arguments and the internal ones."
+   that transform between the public uniform arguments and the internal ones.
+
+   [3] We call 'add-layout-to-structs' here to ensure that the ubo/ssbo
+   arguments have the correct layout information. This is not important for
+   the test compilation, but instead for the uniform information that is
+   gathered from this test compile (actual-uniforms)."
   (with-gpu-func-spec spec
     (handler-case
         (varjo:with-constant-inject-hook #'try-injecting-a-constant
@@ -122,6 +127,9 @@
             (varjo:with-unknown-first-class-functions-allowed
               (let* ((varjo.internals::*allow-call-function-signature* t)
                      (versions (list (lowest-suitable-glsl-version context)))
+                     (uniforms (add-layout-to-struct-uniforms name
+                                                              :function
+                                                              uniforms));;[3]
                      (compiled
                       (first
                        (varjo.internals::test-translate-function-split-details
@@ -222,7 +230,10 @@
 
 ;;--------------------------------------------------
 
-(defun+ aggregate-uniforms (func-specs &optional actual-uniforms-p)
+(defun+ aggregate-uniforms (name
+                            target-kind
+                            func-specs
+                            &optional actual-uniforms-p)
   "The reason we need to aggregate uniforms is as follows:
    - pipelines are made of composed gpu functions
    - each gpu function may introduce uniforms
@@ -233,15 +244,24 @@
    [0] Remove all duplicates, this handles all cases where the same uniform is
        in different gpu-functions
    [1] Now if there is any more than one instance of each uniform name then
-       there is a clash"
+       there is a clash
+
+   Sidenote:
+   [X] We call 'add-layout-to-structs' here to ensure that the ubo/ssbo
+       arguments have the correct layout information. This is not important for
+       the test compilation, but instead for the uniform information that is
+       gathered from this test compile (actual-uniforms)."
   (assert (every (lambda (x) (typep x 'gpu-func-spec))
                  func-specs))
   (labels ((get-uniforms (spec)
-             (with-gpu-func-spec spec
-               (copy-list
-                (if actual-uniforms-p
-                    actual-uniforms
-                    uniforms))))
+             (add-layout-to-struct-uniforms
+              name
+              target-kind
+              (with-gpu-func-spec spec
+                (copy-list
+                 (if actual-uniforms-p
+                     actual-uniforms
+                     uniforms)))))
            (normalize-type-names (uniform)
              (dbind (name type &rest rest) uniform
                (let ((type (varjo:type->type-spec
@@ -293,6 +313,36 @@
                                                         stage-type
                                                         func-spec))))))
 
+(defun+ add-layout-to-struct-uniforms (name target-kind uniforms)
+  (assert (member target-kind '(:pipeline :function)))
+  (flet ((add-layout-to-struct-uniform (name arg)
+           (let* ((type-spec
+                   (second arg))
+                  (struct-info
+                   (cepl.types::g-struct-info type-spec
+                                              :error-if-not-found nil)))
+             (if struct-info
+                 (let ((layout (cepl.types::s-layout struct-info)))
+                   (when layout
+                     (assert (or (find :ssbo arg) (find :ubo arg))
+                             ()
+                             'invalid-layout-for-uniform
+                             :name name
+                             :func-p (eq target-kind :function)
+                             :type-name type-spec
+                             :layout (class-name (class-of layout))))
+                   (etypecase layout
+                     (null arg)
+                     (std-140 (if (find :std-140 arg)
+                                  arg
+                                  (append arg (list :std-140))))
+                     (std-430 (if (find :std-430 arg)
+                                  arg
+                                  (append arg (list :std-430))))))
+                 arg))))
+    (mapcar (lambda (arg) (add-layout-to-struct-uniform name arg))
+            uniforms)))
+
 ;; {TODO} make the replacements related code more robust
 (defun+ parsed-gpipe-args->v-translate-args (name
                                              pipeline-primitive
@@ -308,82 +358,64 @@
        compile-result and let varjo handle it
    [1] is what handles the transformation of func (including gpu-lambdas)
    [2] 'replacements' specifies uniforms to replace in the stage. "
-  (flet ((add-layout-to-structs (arg)
-           (let* ((type-spec
-                   (second arg))
+  (assert (every #'listp replacements))
+  (if (typep func-spec 'glsl-stage-spec)
+      (with-glsl-stage-spec func-spec
+        compiled);;[0]
+      (dbind (in-args uniforms shared compile-context code)
+          (get-func-as-stage-code func-spec) ;;[1]
+        (loop :for arg :in in-args :do
+           (let* ((type-spec (second arg))
                   (struct-info
                    (cepl.types::g-struct-info type-spec
                                               :error-if-not-found nil)))
-             (if struct-info
-                 (let ((layout (cepl.types::s-layout struct-info)))
-                   (when layout
-                     (assert (or (find :ssbo arg) (find :ubo arg))
-                             ()
-                             'invalid-layout-for-uniform
-                             :name name
-                             :type-name type-spec
-                             :layout (class-name (class-of layout))))
-                   (etypecase layout
-                     (null arg)
-                     (std-140 (append arg (list :std-140)))
-                     (std-430 (append arg (list :std-430)))))
-                 arg))))
-    (assert (every #'listp replacements))
-    (if (typep func-spec 'glsl-stage-spec)
-        (with-glsl-stage-spec func-spec
-          compiled);;[0]
-        (dbind (in-args uniforms shared compile-context code)
-            (get-func-as-stage-code func-spec) ;;[1]
-          (loop :for arg :in in-args :do
-             (let* ((type-spec (second arg))
-                    (struct-info
-                     (cepl.types::g-struct-info type-spec
-                                                :error-if-not-found nil)))
-               (when struct-info
-                 (let ((layout (cepl.types::s-layout struct-info)))
-                   (assert (null layout) ()
-                           'invalid-layout-for-inargs
-                           :name name
-                           :type-name type-spec
-                           :layout (class-name (class-of layout)))))))
-          (let* ((uniforms (mapcar #'add-layout-to-structs uniforms))
-                 (final-uniforms (remove-if (lambda (u)
-                                              (member (first u) replacements
-                                                      :key #'first
-                                                      :test #'string=))
-                                            uniforms))
-                 (replacements ;; [2]
-                  (loop :for (k v) :in replacements
-                     :for r = (let* ((u (find k uniforms :key #'first
-                                              :test #'string=)))
-                                (when (and u (typep (varjo:type-spec->type
-                                                     (second u))
-                                                    'varjo:v-function-type))
-                                  (list (first u) `(the ,(second u)
-                                                        (function ,v)))))
-                     :when r :collect r))
-                 (body (if replacements
-                           `((let ,replacements
-                               ,@code))
-                           code))
-                 (versions (compile-context-versions compile-context))
-                 (func-stage (compile-context-stage compile-context)))
-            (when func-stage
-              (assert (eq stage-kind func-stage) ()
-                      'stage-not-valid-for-function-restriction
-                      :name name
-                      :stage stage-kind
-                      :func-stage func-stage))
-            ;; {TODO} we need to use the function's primitive
-            (varjo:create-stage stage-kind
-                                versions
-                                :input-variables in-args
-                                :uniform-variables final-uniforms
-                                :shared-variables shared
-                                :code body
-                                :stemcells-allowed t
-                                :primitive (when (eq stage-kind :vertex)
-                                             pipeline-primitive)))))))
+             (when struct-info
+               (let ((layout (cepl.types::s-layout struct-info)))
+                 (assert (null layout) ()
+                         'invalid-layout-for-inargs
+                         :name name
+                         :type-name type-spec
+                         :layout (class-name (class-of layout)))))))
+        (let* ((uniforms (add-layout-to-struct-uniforms name
+                                                        :pipeline
+                                                        uniforms))
+               (final-uniforms (remove-if (lambda (u)
+                                            (member (first u) replacements
+                                                    :key #'first
+                                                    :test #'string=))
+                                          uniforms))
+               (replacements ;; [2]
+                (loop :for (k v) :in replacements
+                   :for r = (let* ((u (find k uniforms :key #'first
+                                            :test #'string=)))
+                              (when (and u (typep (varjo:type-spec->type
+                                                   (second u))
+                                                  'varjo:v-function-type))
+                                (list (first u) `(the ,(second u)
+                                                      (function ,v)))))
+                   :when r :collect r))
+               (body (if replacements
+                         `((let ,replacements
+                             ,@code))
+                         code))
+               (versions (compile-context-versions compile-context))
+               (func-stage (compile-context-stage compile-context)))
+          (when func-stage
+            (assert (eq stage-kind func-stage) ()
+                    'stage-not-valid-for-function-restriction
+                    :name name
+                    :stage stage-kind
+                    :func-stage func-stage))
+          ;; {TODO} we need to use the function's primitive
+          (varjo:create-stage stage-kind
+                              versions
+                              :input-variables in-args
+                              :uniform-variables final-uniforms
+                              :shared-variables shared
+                              :code body
+                              :stemcells-allowed t
+                              :primitive (when (eq stage-kind :vertex)
+                                           pipeline-primitive))))))
 
 ;;--------------------------------------------------
 

@@ -65,8 +65,13 @@
   (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
     ;;
     (let* ((func-specs (mapcar #'cdr stage-pairs))
-           (aggregate-actual-uniforms (aggregate-uniforms func-specs t))
-           (aggregate-public-uniforms (aggregate-uniforms func-specs)))
+           (aggregate-actual-uniforms (aggregate-uniforms name
+                                                          :pipeline
+                                                          func-specs
+                                                          t))
+           (aggregate-public-uniforms (aggregate-uniforms name
+                                                          :pipeline
+                                                          func-specs)))
       (if (stages-require-partial-pipeline func-specs)
           (%def-partial-pipeline name
                                  func-specs

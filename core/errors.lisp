@@ -625,12 +625,15 @@ the layout ~a.
   layout
   type-name)
 
-(deferror invalid-layout-for-uniform () (name type-name layout)
+(deferror invalid-layout-for-uniform () (name type-name layout func-p)
     "CEPL: ~a is not a valid type for ~a's uniform argument as it has
 the layout ~a. std-140 & std-430 layouts are only valid for ubo & ssbo
 uniforms."
   type-name
-  (or name "this lambda pipeline")
+  (or name
+      (if func-p
+          "this gpu-lambda"
+          "this lambda pipeline"))
   layout)
 
 (deferror c-array-total-size-type-error () (size required-type)

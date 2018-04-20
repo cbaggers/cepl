@@ -13,7 +13,9 @@
          ;; get pipeline details
          (stage-pairs (pairs-key-to-stage (pipeline-stage-pairs pipeline)))
          (func-specs (mapcar #'cdr stage-pairs))
-         (pipeline-uniforms (cepl.pipelines::aggregate-uniforms func-specs))
+         (pipeline-uniforms (cepl.pipelines::aggregate-uniforms nil
+                                                                :pipeline
+                                                                func-specs))
          (context-with-primitive (slot-value pipeline 'context))
          (primitive (compile-context-primitive context-with-primitive))
          ;;
