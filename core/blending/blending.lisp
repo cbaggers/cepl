@@ -45,6 +45,75 @@
                                :src1-alpha
                                :one-minus-src1-alpha)))))
 
+;;----------------------------------------------------------------------
+
+(defun+ mode-rgb (fbo &optional attachment-name)
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    mode-rgb))
+
+(defun+ mode-alpha (fbo &optional attachment-name)
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    mode-alpha))
+
+(defun+ source-rgb (fbo &optional attachment-name)
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    source-rgb))
+
+(defun+ source-alpha (fbo &optional attachment-name)
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    source-alpha))
+
+(defun+ destination-rgb (fbo &optional attachment-name)
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    destination-rgb))
+
+(defun+ destination-alpha (fbo &optional attachment-name)
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    destination-alpha))
+
+(define-context-func per-attachment-blending-available-p () boolean
+    (gl-version-float)
+  (>= gl-version-float 4f0))
+
+(defn-inline check-version-for-per-attachment-params () (values)
+  (unless (per-attachment-blending-available-p)
+    (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0"
+           (when (cepl-context)
+             (version-float
+              (cepl.context::%cepl-context-gl-context
+               (cepl-context)))))))
+
+(defun+ (setf mode-rgb) (value fbo &optional attachment-name)
+  (when attachment-name (check-version-for-per-attachment-params))
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    (setf mode-rgb value)))
+
+(defun+ (setf mode-alpha) (value fbo &optional attachment-name)
+  (when attachment-name (check-version-for-per-attachment-params))
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    (setf mode-alpha value)))
+
+(defun+ (setf source-rgb) (value fbo &optional attachment-name)
+  (when attachment-name (check-version-for-per-attachment-params))
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    (setf source-rgb value)))
+
+(defun+ (setf source-alpha) (value fbo &optional attachment-name)
+  (when attachment-name (check-version-for-per-attachment-params))
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    (setf source-alpha value)))
+
+(defun+ (setf destination-rgb) (value fbo &optional attachment-name)
+  (when attachment-name (check-version-for-per-attachment-params))
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    (setf destination-rgb value)))
+
+(defun+ (setf destination-alpha) (value fbo &optional attachment-name)
+  (when attachment-name (check-version-for-per-attachment-params))
+  (with-blending-param-slots (blending-params fbo attachment-name)
+    (setf destination-alpha value)))
+
+;;----------------------------------------------------------------------
 
 ;; We have another case to deal with. Per buffer blending params
 ;; is a >v4.0 feature, before that we could only enable for disable
@@ -86,16 +155,16 @@
         (progn
           ;; We cant, at compile time, tell which attachments will be used so
           ;; loop through the attachment list and set everything up
-          `(let ((per-attachment-blendingp
-                  (per-attachment-blending-available-p)))
-             ;; if we dont support per attachemnt blend params then we use the
-             ;; params from the fbo
-             (when (not per-attachment-blendingp) (%blend-fbo ,fbo))
-             ;; enable all the attachment that have requested blending
-             (loop-enabling-attachments ,fbo)
-             ;; if we support per attachment blending then we go set their params
-             (when per-attachment-blendingp
-               (%loop-setting-per-attachment-blend-params ,fbo))))
+          (let ((per-attachment-blendingp
+                 (per-attachment-blending-available-p)))
+            ;; if we dont support per attachemnt blend params then we use the
+            ;; params from the fbo
+            (when (not per-attachment-blendingp) (%blend-fbo fbo))
+            ;; enable all the attachment that have requested blending
+            (loop-enabling-attachments fbo)
+            ;; if we support per attachment blending then we go set their params
+            (when per-attachment-blendingp
+              (%loop-setting-per-attachment-blend-params fbo))))
         ;; go disable all the attachments that were enabled
         (loop-disabling-attachments fbo))
     (setf current-blend-params params))
@@ -224,75 +293,6 @@
    (gl-enum (blending-params-destination-rgb params))
    (gl-enum (blending-params-source-alpha params))
    (gl-enum (blending-params-destination-alpha params))))
-
-
-;;----------------------------------------------------------------------
-
-(defun+ mode-rgb (fbo &optional attachment-name)
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    mode-rgb))
-
-(defun+ mode-alpha (fbo &optional attachment-name)
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    mode-alpha))
-
-(defun+ source-rgb (fbo &optional attachment-name)
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    source-rgb))
-
-(defun+ source-alpha (fbo &optional attachment-name)
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    source-alpha))
-
-(defun+ destination-rgb (fbo &optional attachment-name)
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    destination-rgb))
-
-(defun+ destination-alpha (fbo &optional attachment-name)
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    destination-alpha))
-
-(define-context-func per-attachment-blending-available-p () boolean
-    (gl-version-float)
-  (>= gl-version-float 4f0))
-
-(defn-inline check-version-for-per-attachment-params () (values)
-  (unless (per-attachment-blending-available-p)
-    (error "You are currently using a v~s gl context, this doesn't support per attachment blend mode settings. You will only be able to change blend params on the first attachment. You can however enable blending on any number of attachments and they will inherit their params from attachment 0"
-           (when (cepl-context)
-             (version-float
-              (cepl.context::%cepl-context-gl-context
-               (cepl-context)))))))
-
-(defun+ (setf mode-rgb) (value fbo &optional attachment-name)
-  (when attachment-name (check-version-for-per-attachment-params))
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    (setf mode-rgb value)))
-
-(defun+ (setf mode-alpha) (value fbo &optional attachment-name)
-  (when attachment-name (check-version-for-per-attachment-params))
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    (setf mode-alpha value)))
-
-(defun+ (setf source-rgb) (value fbo &optional attachment-name)
-  (when attachment-name (check-version-for-per-attachment-params))
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    (setf source-rgb value)))
-
-(defun+ (setf source-alpha) (value fbo &optional attachment-name)
-  (when attachment-name (check-version-for-per-attachment-params))
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    (setf source-alpha value)))
-
-(defun+ (setf destination-rgb) (value fbo &optional attachment-name)
-  (when attachment-name (check-version-for-per-attachment-params))
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    (setf destination-rgb value)))
-
-(defun+ (setf destination-alpha) (value fbo &optional attachment-name)
-  (when attachment-name (check-version-for-per-attachment-params))
-  (with-blending-param-slots (blending-params fbo attachment-name)
-    (setf destination-alpha value)))
 
 
 ;;----------------------------------------------------------------------
