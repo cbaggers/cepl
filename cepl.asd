@@ -29,6 +29,7 @@
                (:file "host/api-2")
                (:file "host/api-common")
                (:file "core/ffi")
+               (:file "core/early")
                (:file "core/utils")
                (:file "project")
                (:file "core/context/documentation-functions")
