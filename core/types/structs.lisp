@@ -262,7 +262,7 @@
 ;;------------------------------------------------------------
 
 (defstruct (base-gstruct-wrapper (:copier nil))
-  (pointer (null-pointer) :type foreign-pointer :read-only t))
+  (pointer (null-pointer) :type foreign-pointer))
 
 (defmethod cepl.c-arrays:pointer ((wrapper base-gstruct-wrapper))
   (base-gstruct-wrapper-pointer wrapper))
