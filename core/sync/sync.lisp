@@ -32,7 +32,7 @@
   (let ((sync (%gpu-fence-obj fence)))
     (flet ((no-timeout ()
              (when flush (gl:flush))
-             (%gl:wait-sync sync 0 :timeout-ignored)
+             (%gl:wait-sync sync 0 #.(gl-enum :timeout-ignored))
              :condition-satisfied)
            (with-timeout ()
              (let* ((flags (if flush
