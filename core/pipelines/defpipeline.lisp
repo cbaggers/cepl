@@ -270,7 +270,7 @@
                 'buffer-stream-has-invalid-primitive-for-stream
                 :name ',name
                 :pline-prim ',(varjo::lisp-name primitive)
-                :srteam-prim (buffer-stream-primitive ,stream-symb)))))
+                :stream-prim (buffer-stream-primitive ,stream-symb)))))
        (let* ((%ctx-id (context-id ,ctx))
               ;;
               ;; unpack state from var
