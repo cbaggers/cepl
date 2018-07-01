@@ -188,8 +188,11 @@
   (let ((wrap (if (keywordp wrap)
                   (vector wrap wrap wrap)
                   wrap)))
-    (if (and (= lod-bias 0.0) (= min-lod -1000.0) (= max-lod 1000.0)
-             (eq minify-filter :linear) (eq magnify-filter :linear)
+    (if (and (= lod-bias 0.0)
+             (= min-lod -1000.0)
+             (= max-lod 1000.0)
+             (eq minify-filter :linear)
+             (eq magnify-filter :linear)
              (wrap-eq wrap #(:repeat :repeat :repeat))
              (eq compare :none))
         *default-sampler-id-box*
@@ -201,7 +204,7 @@
     ;; change box
     ;; (in future we can look up based on some hash)
     (setf (%sampler-id-box sampler)
-          (make-sampler-id-box :id (%get-id))))
+          (make-sampler-id-box :id (%get-id) :shared-p nil)))
   sampler)
 
 
@@ -236,11 +239,10 @@
       (format stream "#<SAMPLER :UNINITIALIZED>")))
 
 (defun+ free-sampler (sampler)
+  ;; currently only shared sampler is the default one so not further
+  ;; checks neccessary.
   (unless (sampler-shared-p sampler)
-    ;; Be sure to add this back in when you implement freeing
-    ;; samplers.
-    (warn "CEPL: free-sampler not yet implemented~%leaking ~s"
-          sampler)))
+    (%delete-sampler sampler)))
 
 (defmethod free ((sampler sampler))
   (free-sampler sampler))
