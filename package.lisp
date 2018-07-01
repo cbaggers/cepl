@@ -163,7 +163,8 @@
            :invalid-attachments-for-empty-fbo
            :invalid-empty-fbo-declaration
            :quote-symbol-found-in-fbo-dimensions
-           :attachment-viewport-empty-fbo))
+           :attachment-viewport-empty-fbo
+           :invalid-sampler-wrap-value))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

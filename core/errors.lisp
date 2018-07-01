@@ -819,6 +819,23 @@ Attachment: ~a
     "
 ")
 
+(deferror invalid-sampler-wrap-value () (sampler value)
+    "
+CEPL: Invalid value provided for 'wrap' of sampler:
+
+Sampler: ~a
+Value: ~s
+
+The value must be one of the following
+- :repeat
+- :mirrored-repeat
+- :clamp-to-edge
+- :clamp-to-border
+- :mirror-clamp-to-edge
+
+or a vector of 3 of the above keywords.
+" sampler value)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

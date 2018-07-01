@@ -383,20 +383,31 @@
 
 (defun+ %set-wrap (sampler value)
   (let ((options '(:repeat :mirrored-repeat :clamp-to-edge :clamp-to-border
-                   :mirror-clamp-to-edge))
-        (value (if (keywordp value)
-                   (vector value value value)
-                   value)))
-    (assert (and (vectorp value)
-                 (= (length value) 3)
-                 (every (lambda (x) (member x options)) value)))
-    (setf (%sampler-wrap sampler) value)
-    (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-s
-                              (%gl::foreign-enum-value '%gl:enum (aref value 0)))
-    (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-t
-                              (%gl::foreign-enum-value '%gl:enum (aref value 1)))
-    (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-r
-                              (%gl::foreign-enum-value '%gl:enum (aref value 2))))
+                   :mirror-clamp-to-edge)))
+    (let ((value (if (keywordp value)
+                     (progn
+                       (assert (find value options) ()
+                               'invalid-sampler-wrap-value
+                               :sampler sampler
+                               :value value)
+                       (vector value value value))
+                     (progn
+                       (assert (and (vectorp value)
+                                    (= (length value) 3)
+                                    (every (lambda (x) (member x options))
+                                           value))
+                               ()
+                               'invalid-sampler-wrap-value
+                               :sampler sampler
+                               :value value)
+                       value))))
+      (setf (%sampler-wrap sampler) value)
+      (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-s
+                                (%gl::foreign-enum-value '%gl:enum (aref value 0)))
+      (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-t
+                                (%gl::foreign-enum-value '%gl:enum (aref value 1)))
+      (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-r
+                                (%gl::foreign-enum-value '%gl:enum (aref value 2)))))
   sampler)
 
 (defun+ %set-compare (sampler value)
