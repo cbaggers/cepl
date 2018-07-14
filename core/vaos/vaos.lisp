@@ -30,7 +30,7 @@
              (,vao-id ,vao))
          (release-unwind-protect
               (progn (setf (vao-bound ,ctx) ,vao-id)
-                     ,@body)
+                     (progn ,@body))
            (setf (vao-bound ,ctx) ,old-vao))))))
 
 (defun+ suitable-array-for-index-p (array)
