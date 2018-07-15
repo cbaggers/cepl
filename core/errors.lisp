@@ -836,6 +836,78 @@ The value must be one of the following
 or a vector of 3 of the above keywords.
 " sampler value)
 
+(deferror make-gpu-buffer-from-id-clashing-keys () (args)
+    "
+CEPL: When calling make-gpu-buffer-from-id you can pass in either
+initial-contents or layout, but not both.
+
+Args: ~s
+" args)
+
+(deferror invalid-gpu-buffer-layout () (layout)
+    "
+CEPL: When calling make-gpu-buffer-from-id and passing in layouts, each
+layout must be either:
+
+- A positive integer representing a size in bytes
+- A list contain both :dimensions and :element-type &key arguments.
+
+e.g.
+- 512
+- '(:dimensions (10 20) :element-type :uint8)
+
+layout: ~s
+" layout)
+
+(deferror invalid-gpu-arrays-layout () (layout)
+    "
+CEPL: When calling make-gpu-arrays-from-buffer-id each layout must be
+a list contain both :dimensions and :element-type &key arguments.
+
+e.g.
+- '(:dimensions (10 20) :element-type :uint8)
+
+layout: ~s
+" layout)
+
+(deferror gpu-array-from-id-missing-args () (element-type dimensions)
+    "
+CEPL: When calling make-gpu-array-from-buffer-id element-type and
+dimensions as mandatory.
+
+element-type: ~s
+dimensions: ~s
+" element-type dimensions)
+
+(deferror quote-in-buffer-layout () (layout)
+    "
+CEPL: The symbol 'quote' was found in the gpu-buffer layout, making the
+layout list invalid. This was probably a typo.
+
+layout: ~s
+" layout)
+
+(deferror make-arrays-layout-mismatch () (current-sizes requested-sizes)
+    "
+CEPL: When settting make-gpu-array-from-buffer's :recreate-storage argument
+to T you are requesting that the arrays are made using the existing contents
+of the buffer. However, in this case the byte size of the requested gpu arrays
+would not fit in the current available sections of the gpu-buffer.
+
+Current Section Sizes: ~a
+Requested gpu-array sizes: ~a
+" current-sizes requested-sizes)
+
+(deferror make-arrays-layout-count-mismatch () (current-count layouts)
+    "
+CEPL: When settting make-gpu-array-from-buffer's :recreate-storage argument
+to T you are requesting that the arrays are made using the existing contents
+of the buffer. However, in this case the number of layouts provided (~s) does
+not match the number of sections in the gpu-buffer (~s).
+
+Layouts: ~s
+" (length layouts) current-count layouts)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

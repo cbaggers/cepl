@@ -169,6 +169,7 @@
        (make-gpu-array-share-data dest src 0 (c-array-element-type c-array)
                                   (c-array-dimensions c-array)))))
 
+
 (defun+ make-gpu-arrays (c-arrays &key (access-style :static-draw))
   (let* ((buffer (cepl.gpu-buffers::make-gpu-buffer))
          (g-arrays (mapcar (lambda (c-array)
@@ -181,6 +182,93 @@
      (init-gpu-arrays-from-c-arrays %pre% c-arrays access-style)
      g-arrays
      (list buffer))))
+
+;;---------------------------------------------------------------
+
+(defun process-layout (layout)
+  (assert (listp layout) () 'invalid-gpu-arrays-layout :layout layout)
+  (when (eq (first layout) 'quote)
+    (error 'quote-in-buffer-layout :layout layout))
+  (assert (and (listp layout)
+               (find :dimensions layout)
+               (find :element-type layout))
+          () 'invalid-gpu-arrays-layout :layout layout)
+  (destructuring-bind (&key dimensions element-type) layout
+    (let* ((dimensions (listify dimensions))
+           (elem-count (reduce #'* dimensions))
+           (element-type (if (cepl.pixel-formats:pixel-format-p element-type)
+                             (pixel-format->lisp-type element-type)
+                             element-type))
+           (byte-size (* elem-count (gl-type-size element-type))))
+      (list element-type dimensions byte-size))))
+
+(defun+ make-gpu-arrays-from-buffer (buffer
+                                     layouts
+                                     &key (access-style :static-draw)
+                                     (recreate-storage t))
+  (check-type buffer gpu-buffer)
+  (let* ((processed (mapcar #'process-layout (listify layouts)))
+         (current-sizes (mapcar #'gpu-array-bb-byte-size
+                                (gpu-buffer-arrays buffer)))
+         (byte-sizes (mapcar #'third processed)))
+    (if recreate-storage
+        (cepl.gpu-buffers::buffer-reserve-blocks-from-sizes
+         buffer byte-sizes :array-buffer access-style)
+        (progn
+          (assert (= (length layouts) (length (gpu-buffer-arrays buffer))) ()
+                  'make-arrays-layout-count-mismatch
+                  :layouts layouts
+                  :current-count (length (gpu-buffer-arrays buffer)))
+          (assert (every #'<= byte-sizes current-sizes)
+                  () 'make-arrays-layout-mismatch
+                  :current-sizes current-sizes
+                  :requested-sizes byte-sizes)))
+    (loop
+       :for (element-type dimensions byte-size) :in processed
+       :for src :across (gpu-buffer-arrays buffer)
+       :for g-array := (%make-gpu-array-bb
+                        :buffer buffer
+                        :dimensions dimensions
+                        :access-style access-style)
+       :collect (make-gpu-array-share-data g-array
+                                           src
+                                           0
+                                           element-type
+                                           dimensions))))
+
+(defun+ make-gpu-arrays-from-buffer-id (gl-buffer-id
+                                        layouts
+                                        &key (access-style :static-draw))
+  (let* ((processed-layouts (mapcar #'process-layout (listify layouts)))
+         (buffer (make-gpu-buffer-from-id gl-buffer-id
+                                          :layouts layouts
+                                          :usage access-style)))
+    (loop
+       :for (element-type dimensions byte-size) :in processed-layouts
+       :for src :across (gpu-buffer-arrays buffer)
+       :for g-array := (%make-gpu-array-bb
+                        :buffer buffer
+                        :dimensions dimensions
+                        :access-style access-style)
+       :collect (make-gpu-array-share-data g-array
+                                           src
+                                           0
+                                           element-type
+                                           dimensions))))
+
+(defun+ make-gpu-array-from-buffer-id (gl-buffer-id
+                                       &key
+                                       element-type
+                                       dimensions
+                                       (access-style :static-draw))
+  (assert (and element-type dimensions) ()
+          'gpu-array-from-id-missing-args
+          :element-type element-type
+          :dimensions dimensions)
+  (first (make-gpu-arrays-from-buffer-id gl-buffer-id
+                                         `((:element-type ,element-type
+                                            :dimensions ,dimensions))
+                                         :access-style access-style)))
 
 ;;---------------------------------------------------------------
 

@@ -164,7 +164,14 @@
            :invalid-empty-fbo-declaration
            :quote-symbol-found-in-fbo-dimensions
            :attachment-viewport-empty-fbo
-           :invalid-sampler-wrap-value))
+           :invalid-sampler-wrap-value
+           :make-gpu-buffer-from-id-clashing-keys
+           :invalid-gpu-buffer-layout
+           :quote-in-buffer-layout
+           :invalid-gpu-arrays-layout
+           :gpu-array-from-id-missing-args
+           :make-arrays-layout-mismatch
+           :make-arrays-layout-count-mismatch))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -866,6 +873,8 @@
            :free-gpu-array
            :make-gpu-array
            :make-gpu-arrays
+           :make-gpu-arrays-from-buffer-id
+           :make-gpu-array-from-buffer-id
            :subseq-g
            :subseq-g-raw
            :adjust-gpu-array))
