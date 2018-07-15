@@ -160,10 +160,11 @@
                      (usage :static-draw)
                      (offset 0)
                      byte-size)
-  (buffer-data-raw (pointer c-array)
-                   (or byte-size (cepl.c-arrays::c-array-byte-size c-array))
-                   buffer target usage (* offset (element-byte-size c-array)))
-  (buffer-set-arrays-from-sizes buffer (list byte-size) usage))
+  (let ((byte-size (or byte-size (cepl.c-arrays::c-array-byte-size c-array))))
+    (buffer-data-raw (pointer c-array)
+                     byte-size
+                     buffer target usage (* offset (element-byte-size c-array)))
+    (buffer-set-arrays-from-sizes buffer (list byte-size) usage)))
 
 (defun+ multi-buffer-data (buffer c-arrays target usage)
   (let* ((c-array-byte-sizes (loop :for c-array :in c-arrays :collect
