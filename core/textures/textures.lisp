@@ -268,16 +268,53 @@
             :dimensions dims)
     dims))
 
-(defun+ make-texture-from-id (gl-object &key base-dimensions texture-type
-                                         element-type mipmap-levels
-                                         layer-count cubes allocated mutable-p
-                                         samples fixed-sample-locations)
-  (let ((fixed-sample-locations (not (null fixed-sample-locations))))
+(defun+ make-texture-from-id (gl-object
+                              &key
+                              base-dimensions
+                              texture-type
+                              element-type
+                              (mipmap-levels 1)
+                              (layer-count 1)
+                              cubes
+                              allocated
+                              mutable-p
+                              (samples 0)
+                              fixed-sample-locations)
+  (assert (or (and (symbolp base-dimensions)
+                   (string= base-dimensions "?"))
+              (and (listp base-dimensions)
+                   (every (lambda (x) (string= x "?")) base-dimensions))
+              (numberp base-dimensions)
+              (and (listp base-dimensions)
+                   (every #'numberp base-dimensions))))
+  (let* ((size-unknown nil)
+         (base-dimensions
+          (loop :for dim :in (listify base-dimensions)
+             :collect (if (and (symbolp dim) (string= dim "?"))
+                          (progn
+                            (setf size-unknown t)
+                            1)
+                          dim)))
+         (fixed-sample-locations (not (null fixed-sample-locations)))
+         (texture-type (or texture-type
+                           (establish-texture-type
+                            (if (listp base-dimensions)
+                                (length base-dimensions)
+                                1)
+                            (> mipmap-levels 1)
+                            (> layer-count 1)
+                            cubes
+                            (and (not size-unknown)
+                                 (every #'po2p base-dimensions))
+                            (> samples 0)
+                            nil
+                            nil))))
     (assert (typep gl-object 'gl-id))
     (cepl.context::register-texture
      (cepl-context)
      (%%make-texture
       :id gl-object
+      :cache-id (tex-kind->cache-index texture-type)
       :base-dimensions base-dimensions
       :type texture-type
       :image-format element-type
