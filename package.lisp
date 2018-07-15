@@ -173,7 +173,9 @@
            :make-arrays-layout-mismatch
            :make-arrays-layout-count-mismatch
            :gpu-array-from-buffer-missing-args
-           :cannot-keep-data-when-uploading))
+           :cannot-keep-data-when-uploading
+           :invalid-stream-layout
+           :index-on-buffer-stream-with-no-gpu-layouts))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -912,7 +914,8 @@
            :buffer-stream-gpu-arrays
            :buffer-stream-primitive
            :free-buffer-stream
-           :make-buffer-stream))
+           :make-buffer-stream
+           :make-buffer-stream-from-id-and-layouts))
 
 (uiop:define-package :cepl.ubos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo

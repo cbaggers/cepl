@@ -862,7 +862,7 @@ layout: ~s
 (deferror invalid-gpu-arrays-layout () (layout)
     "
 CEPL: When calling make-gpu-arrays-from-buffer-id each layout must be
-a list contain both :dimensions and :element-type &key arguments.
+a list containing both :dimensions and :element-type &key arguments.
 
 e.g.
 - '(:dimensions (10 20) :element-type :uint8)
@@ -931,6 +931,23 @@ the buffer, without changing what is actually there.
 initial-contents provided:
 ~s
 " data)
+
+(deferror invalid-stream-layout () (layout)
+    "
+CEPL: When calling make-buffer-stream-from-id-and-layouts each
+layout must be a list containing both :dimensions and :element-type
+&key arguments.
+
+e.g.
+- '(:dimensions (500) :element-type :vec3)
+
+layout: ~s
+" layout)
+
+(deferror index-on-buffer-stream-with-no-gpu-layouts () ()
+    "CEPL: Invalid attempt to make buffer-stream with an index layout even
+though there were no data layouts.")
+
 
 ;; Please remember the following 2 things
 ;;

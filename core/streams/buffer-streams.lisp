@@ -89,3 +89,43 @@
           (buffer-stream-gpu-arrays stream-obj) (when retain-arrays
                                                   (list gpu-arrays index-array)))
     stream-obj))
+
+(defun process-stream-layout (layout)
+  (assert (and (listp layout)
+               (find :dimensions layout)
+               (find :element-type layout))
+          ()  'invalid-stream-layout :layout layout)
+  (destructuring-bind (&key dimensions element-type) layout
+    (let* ((dimensions (listify dimensions)))
+      (assert (= (length dimensions) 1)
+              () "CEPL: You can only make buffer-streams from 1D layouts")
+      (list element-type (first dimensions)))))
+
+(defun+ make-buffer-stream-from-id-and-layouts (vao-gl-object
+                                                data-layouts
+                                                index-layout
+                                                &key
+                                                (start 0)
+                                                length
+                                                (primitive :triangles))
+  (when (not data-layouts)
+    (assert (not index-layout) () 'index-on-buffer-stream-with-no-gpu-layouts))
+  (let ((data-info (mapcar #'process-stream-layout data-layouts))
+        (index-info (when index-layout (process-stream-layout index-layout)))
+        (stream-obj (make-raw-buffer-stream :primitive primitive)))
+    (let* (;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
+           ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
+           ;; OF TRIANGLES
+           (length (if data-info
+                       length
+                       1))
+           (length (or length
+                       (when index-info (second index-info))
+                       (apply #'min (mapcar #'second data-info)))))
+      (setf (buffer-stream-start stream-obj) start
+            (buffer-stream-length stream-obj) length
+            (buffer-stream-managed stream-obj) nil
+            (buffer-stream-vao stream-obj) vao-gl-object
+            (buffer-stream-index-type stream-obj) (when index-info
+                                                    (first index-info)))
+      stream-obj)))
