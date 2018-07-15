@@ -208,8 +208,8 @@
                                      (recreate-storage t))
   (check-type buffer gpu-buffer)
   (let* ((processed (mapcar #'process-layout (listify layouts)))
-         (current-sizes (mapcar #'gpu-array-bb-byte-size
-                                (gpu-buffer-arrays buffer)))
+         (current-sizes (map 'list #'gpu-array-bb-byte-size
+                             (gpu-buffer-arrays buffer)))
          (byte-sizes (mapcar #'third processed)))
     (if recreate-storage
         (cepl.gpu-buffers::buffer-reserve-blocks-from-sizes
