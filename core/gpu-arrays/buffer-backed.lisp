@@ -205,15 +205,13 @@
 (defun+ make-gpu-arrays-from-buffer (buffer
                                      layouts
                                      &key (access-style :static-draw)
-                                     (recreate-storage t))
+                                     (keep-data nil))
   (check-type buffer gpu-buffer)
   (let* ((processed (mapcar #'process-layout (listify layouts)))
          (current-sizes (map 'list #'gpu-array-bb-byte-size
                              (gpu-buffer-arrays buffer)))
          (byte-sizes (mapcar #'third processed)))
-    (if recreate-storage
-        (cepl.gpu-buffers::buffer-reserve-blocks-from-sizes
-         buffer byte-sizes :array-buffer access-style)
+    (if keep-data
         (progn
           (assert (= (length layouts) (length (gpu-buffer-arrays buffer))) ()
                   'make-arrays-layout-count-mismatch
@@ -222,7 +220,9 @@
           (assert (every #'<= byte-sizes current-sizes)
                   () 'make-arrays-layout-mismatch
                   :current-sizes current-sizes
-                  :requested-sizes byte-sizes)))
+                  :requested-sizes byte-sizes))
+        (cepl.gpu-buffers::buffer-reserve-blocks-from-sizes
+         buffer byte-sizes :array-buffer access-style))
     (loop
        :for (element-type dimensions byte-size) :in processed
        :for src :across (gpu-buffer-arrays buffer)
@@ -241,7 +241,7 @@
                                     element-type
                                     dimensions
                                     (access-style :static-draw)
-                                    (recreate-storage t))
+                                    (keep-data nil))
   (assert (and element-type dimensions) ()
           'gpu-array-from-buffer-missing-args
           :element-type element-type
@@ -250,7 +250,7 @@
           buffer
           `((:element-type ,element-type :dimensions ,dimensions))
           :access-style access-style
-          :recreate-storage recreate-storage)))
+          :keep-data keep-data)))
 
 (defun+ make-gpu-arrays-from-buffer-id (gl-buffer-id
                                         layouts
@@ -335,11 +335,12 @@
             :array arr :shared-count (length buffer-arrays))
     ;;
     (if initial-contents
-        (with-c-array-freed (c-array (if (typep initial-contents 'c-array)
-                                   initial-contents
-                                   (make-c-array initial-contents
-                                                 :dimensions new-dimensions
-                                                 :element-type element-type)))
+        (with-c-array-freed
+            (c-array (if (typep initial-contents 'c-array)
+                         initial-contents
+                         (make-c-array initial-contents
+                                       :dimensions new-dimensions
+                                       :element-type element-type)))
           (init-gpu-array-from-c-array arr c-array access-style
                                        (c-array-dimensions c-array)))
         ;;

@@ -172,7 +172,8 @@
            :gpu-array-from-id-missing-args
            :make-arrays-layout-mismatch
            :make-arrays-layout-count-mismatch
-           :gpu-array-from-buffer-missing-args))
+           :gpu-array-from-buffer-missing-args
+           :cannot-keep-data-when-uploading))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

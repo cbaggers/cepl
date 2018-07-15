@@ -898,7 +898,7 @@ layout: ~s
 
 (deferror make-arrays-layout-mismatch () (current-sizes requested-sizes)
     "
-CEPL: When settting make-gpu-array-from-buffer's :recreate-storage argument
+CEPL: When settting make-gpu-array-from-buffer's :keep-data argument
 to T you are requesting that the arrays are made using the existing contents
 of the buffer. However, in this case the byte size of the requested gpu arrays
 would not fit in the current available sections of the gpu-buffer.
@@ -909,13 +909,28 @@ Requested gpu-array sizes: ~a
 
 (deferror make-arrays-layout-count-mismatch () (current-count layouts)
     "
-CEPL: When settting make-gpu-array-from-buffer's :recreate-storage argument
+CEPL: When settting make-gpu-array-from-buffer's :keep-data argument
 to T you are requesting that the arrays are made using the existing contents
 of the buffer. However, in this case the number of layouts provided (~s) does
 not match the number of sections in the gpu-buffer (~s).
 
 Layouts: ~s
 " (length layouts) current-count layouts)
+
+(deferror cannot-keep-data-when-uploading () (data)
+    "
+CEPL: When calling make-gpu-buffer-from-id with keep-data it is not valid
+to pass initial-contents. The reason is that we would be required to upload
+the data in those c-arrays, which means we would not be keeping our promise
+to 'keep-data'.
+
+keep-data can be used when passing layouts instead of initial-contents as
+there we are just replacing CEPL's understanding of the layout of data in
+the buffer, without changing what is actually there.
+
+initial-contents provided:
+~s
+" data)
 
 ;; Please remember the following 2 things
 ;;
