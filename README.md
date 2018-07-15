@@ -92,6 +92,16 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
 
+### 2018-07-15
+
+- added `make-gpu-arrays-from-buffer-id` which lets you speicify a gl buffer-id and layouts of the data and get a CEPL gpu-buffer in return
+- added `make-gpu-array-from-buffer-id` which in shorthand for the above when you only need one gpu-array.
+- added option to `make-gpu-buffer-from-id` so you can pass layouts instead of initial-contents. This is handy when you allocate and layout out the buffer storage without providing new data.
+- add a `keep-data` argument, to a bunch of buffer related functions which take layouts. This lets you create the buffer object, specifying the content layout without replacing the data.
+- added `make-buffer-stream-from-id-and-layouts`. Makes it possible to make streams out of vaos without having gpu-arrays.
+- print-object for `gpu-buffers`
+- misc bug fixes
+
 ### 2018-04-02
 
 Headlines:
