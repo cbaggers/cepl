@@ -175,7 +175,9 @@
            :gpu-array-from-buffer-missing-args
            :cannot-keep-data-when-uploading
            :invalid-stream-layout
-           :index-on-buffer-stream-with-no-gpu-layouts))
+           :index-on-buffer-stream-with-no-gpu-layouts
+           :cannot-extract-stream-length-from-layouts
+           :index-layout-with-unknown-length))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

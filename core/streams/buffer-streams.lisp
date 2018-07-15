@@ -116,12 +116,23 @@
     (let* (;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
            ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
            ;; OF TRIANGLES
+           (data-length-unknown (find "?" data-info
+                                      :key #'second
+                                      :test #'string=))
            (length (if data-info
                        length
                        1))
            (length (or length
-                       (when index-info (second index-info))
-                       (apply #'min (mapcar #'second data-info)))))
+                       (when index-info
+                         (if (and (symbolp (second index-info))
+                                  (string= (second index-info) "?"))
+                             (error 'index-layout-with-unknown-length
+                                    :layout index-layout)
+                             (second index-info)))
+                       (if data-length-unknown
+                           (error 'cannot-extract-stream-length-from-layouts
+                                    :layouts data-layouts)
+                           (apply #'min (mapcar #'second data-info))))))
       (setf (buffer-stream-start stream-obj) start
             (buffer-stream-length stream-obj) length
             (buffer-stream-managed stream-obj) nil

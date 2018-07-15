@@ -945,8 +945,24 @@ layout: ~s
 " layout)
 
 (deferror index-on-buffer-stream-with-no-gpu-layouts () ()
-    "CEPL: Invalid attempt to make buffer-stream with an index layout even
+    "
+CEPL: Invalid attempt to make buffer-stream with an index layout even
 though there were no data layouts.")
+
+(deferror cannot-extract-stream-length-from-layouts () (layouts)
+    "
+CEPL: We were unable to compute a suitable length for the buffer-stream
+as at least one of the data-layouts had an unknown length and there was
+no index-layout for us to take into account
+
+layouts: ~s" layouts)
+
+(deferror index-layout-with-unknown-length () (layout)
+    "
+CEPL: When make-buffer-stream-from-id-and-layouts is called and an index
+layout is provided, it may not have '?' as the dimensions.
+
+layout: ~s" layout)
 
 
 ;; Please remember the following 2 things
