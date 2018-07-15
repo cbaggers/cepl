@@ -119,10 +119,6 @@
     (map nil #'free (gpu-buffer-arrays buffer))
     (setf (gpu-buffer-bound (cepl-context) target) buffer)
     (buffer-reserve-block-raw buffer total-size target usage)
-    (buffer-data buffer (first c-arrays)
-                 :target target
-                 :usage usage
-                 :byte-size total-size)
     (let ((offset 0))
       (setf (gpu-buffer-arrays buffer)
             (make-array
