@@ -369,9 +369,10 @@ This is different from a regular 2d texture (which can also be rectangular)
 This texture only has one 2-dimensional `gpu-array`. The texture cannot have
 mipmapping. Texture coordinates used for these textures are not normalized.
 
-**-- :multisample --**
+**-- :samples --**
 
-This is not currently supported in CEPL
+Specify the number of samples in the texture (see the GL wiki for more details
+on multisample textures)
 
 **-- :immutable --**
 
@@ -396,7 +397,64 @@ Wrap and existing GL Texture Object in a CEPL `texture` struct.
 This function does not do ANY sanity checking on the values provided, use only
 if you are 100% sure of what you are setting.
 
-For details on the meaning of the arguments see the docstring for `make-texture`
+We will now go through the arguments and their behaviours:
+
+**-- :dimensions --**
+
+It is required that you provide dimensions when calling this function.
+
+The dimensions can be a single integer (for a 1D texture) or a list of
+integers (for a multi-dimensional texture).
+
+One differnce between make-texture and make-texture-from-id is that in this
+function it is valid to pass the symbol ? in place of a dimension when it is
+unknown. CEPL will not complain but will store 0 in place of the unknown dimension
+which may cause issues if you try and use any function that expects to be able
+to get valid size information.
+
+**-- :element-type --**
+
+It is required that you provide an element-type when calling this function.
+
+Unlike c-array and gpu-arrays (which use foreign types for their elements)
+textures have a different set of acceptable element-types. These are called
+'image formats'.
+
+NOTES: Unlike `make-texture`, `make-texture-from-id` does not attempt to
+convert lisp types or pixel-formats to GLSL image-formats
+
+
+**-- :mipmap-levels --**
+
+This tells CEPL the number of mipmap levels the texture has.
+
+1 is the default.
+
+**-- :layer-count --**
+
+If this is set to a value greater than 1 then the texture is one of
+the following:
+
+:texture-1d-array
+:texture-2d-array
+:texture-cube-map-array
+
+Which one is created depends on the dimensions provided and whether cubes is t.
+
+**-- :cubes --**
+
+If this is t then you are trying to make a cube-map texture
+
+**-- :samples --**
+
+Specify the number of samples in the texture (see the GL wiki for more details
+on multisample textures)
+
+**-- :mutable-p --**
+
+Speicifies if the texture is using mutable storage.
+
+See the docstring for `texture` for more details.
 ")
 
   (defun texref

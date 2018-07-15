@@ -293,7 +293,7 @@
              :collect (if (and (symbolp dim) (string= dim "?"))
                           (progn
                             (setf size-unknown t)
-                            1)
+                            0)
                           dim)))
          (fixed-sample-locations (not (null fixed-sample-locations)))
          (texture-type (or texture-type
