@@ -236,6 +236,22 @@
                                            element-type
                                            dimensions))))
 
+(defun+ make-gpu-array-from-buffer (buffer
+                                    &key
+                                    element-type
+                                    dimensions
+                                    (access-style :static-draw)
+                                    (recreate-storage t))
+  (assert (and element-type dimensions) ()
+          'gpu-array-from-buffer-missing-args
+          :element-type element-type
+          :dimensions dimensions)
+  (first (make-gpu-arrays-from-buffer
+          buffer
+          `((:element-type ,element-type :dimensions ,dimensions))
+          :access-style access-style
+          :recreate-storage recreate-storage)))
+
 (defun+ make-gpu-arrays-from-buffer-id (gl-buffer-id
                                         layouts
                                         &key (access-style :static-draw))
@@ -265,10 +281,10 @@
           'gpu-array-from-id-missing-args
           :element-type element-type
           :dimensions dimensions)
-  (first (make-gpu-arrays-from-buffer-id gl-buffer-id
-                                         `((:element-type ,element-type
-                                            :dimensions ,dimensions))
-                                         :access-style access-style)))
+  (first (make-gpu-arrays-from-buffer-id
+          gl-buffer-id
+          `((:element-type ,element-type :dimensions ,dimensions))
+          :access-style access-style)))
 
 ;;---------------------------------------------------------------
 

@@ -171,7 +171,8 @@
            :invalid-gpu-arrays-layout
            :gpu-array-from-id-missing-args
            :make-arrays-layout-mismatch
-           :make-arrays-layout-count-mismatch))
+           :make-arrays-layout-count-mismatch
+           :gpu-array-from-buffer-missing-args))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -875,6 +876,8 @@
            :make-gpu-arrays
            :make-gpu-arrays-from-buffer-id
            :make-gpu-array-from-buffer-id
+           :make-gpu-arrays-from-buffer
+           :make-gpu-array-from-buffer
            :subseq-g
            :subseq-g-raw
            :adjust-gpu-array))

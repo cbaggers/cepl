@@ -879,6 +879,15 @@ element-type: ~s
 dimensions: ~s
 " element-type dimensions)
 
+(deferror gpu-array-from-buffer-missing-args () (element-type dimensions)
+    "
+CEPL: When calling make-gpu-array-from-buffer element-type and
+dimensions as mandatory.
+
+element-type: ~s
+dimensions: ~s
+" element-type dimensions)
+
 (deferror quote-in-buffer-layout () (layout)
     "
 CEPL: The symbol 'quote' was found in the gpu-buffer layout, making the
