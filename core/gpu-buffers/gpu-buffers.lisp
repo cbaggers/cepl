@@ -8,7 +8,9 @@
 
 (defmethod print-object ((object gpu-buffer) stream)
   (if (initialized-p object)
-      (call-next-method object stream)
+      (format stream "#<GPU-BUFFER ~a ~@[~a~]>"
+              (gpu-buffer-id object)
+              (map 'list #'gpu-array-bb-byte-size (gpu-buffer-arrays object)))
       (format stream "#<GPU-BUFFER :UNINITIALIZED>")))
 
 (defmethod free ((object gpu-buffer))
