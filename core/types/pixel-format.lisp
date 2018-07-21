@@ -224,7 +224,8 @@
 
 (defun+ lisp-type->image-format (lisp-type)
   (let ((pformat (lisp-type->pixel-format lisp-type)))
-    (or (pixel-format->image-format pformat :error-if-missing nil)
+    (or (and pformat
+             (pixel-format->image-format pformat :error-if-missing nil))
         (error 'lisp-type->image-format-failed
                :type-name lisp-type))))
 
