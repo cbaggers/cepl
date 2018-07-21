@@ -1,6 +1,9 @@
 (in-package :cepl.memory)
 
-(defgeneric free (object))
+(defgeneric free (object)
+  (:method ((object null))
+    (declare (ignore object))
+    (error "CEPL: free was called on nil")))
 (defgeneric initialized-p (object))
 
 (defgeneric push-g (object destination))
