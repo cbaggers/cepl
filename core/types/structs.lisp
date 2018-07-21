@@ -326,7 +326,7 @@
       (format-array-slot-for-cstruct slot layout)
       `(,(s-name slot)
          ,(s-type slot)
-         ,@(when layout `(:offset ,(layout-base-offset layout))))))
+         ,@(when layout `(:offset ,(layout-aligned-offset layout))))))
 
 (defun+ format-array-slot-for-cstruct (slot layout)
   (when (> (length (s-dimensions slot)) 1)
