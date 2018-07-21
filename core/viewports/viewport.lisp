@@ -106,8 +106,25 @@
         (%viewport-resolution-y viewport) y)
   (%with-cepl-context-slots (default-viewport) (cepl-context)
     (when (eq viewport default-viewport)
-      (cepl.fbos::%update-default-framebuffer-dimensions x y)))
+      (%update-default-framebuffer-dimensions x y)))
   (values))
+
+;; whilst this is an fbo function it lives here to avoid the circular
+;; dependency that would result otherwise
+(defun+ %update-default-framebuffer-dimensions (x y)
+  (%with-cepl-context-slots (default-framebuffer) (cepl-context)
+    (let ((dimensions (list x y))
+          (fbo default-framebuffer))
+      (map nil
+           (lambda (x)
+             (setf (gpu-array-dimensions (att-array x)) dimensions)
+             (setf (viewport-dimensions (att-viewport x)) dimensions))
+           (%fbo-color-arrays fbo))
+      (when (%fbo-depth-array fbo)
+        (let ((arr (%fbo-depth-array fbo)))
+          (setf (gpu-array-dimensions (att-array arr)) dimensions)
+          (setf (viewport-dimensions (att-viewport arr)) dimensions)))
+      fbo)))
 
 ;;------------------------------------------------------------
 
