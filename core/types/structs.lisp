@@ -115,6 +115,35 @@
 
 ;;------------------------------------------------------------
 
+(defun assert-layout-consistent (g-struct-info target-layout)
+  (labels ((get-inconsistent-layout (slot)
+             (with-slots (type element-type) slot
+               (let ((type-info (cepl.types::g-struct-info
+                                 type :error-if-not-found nil))
+                     (elem-info (cepl.types::g-struct-info
+                                 element-type :error-if-not-found nil)))
+                 (or (when type-info
+                       (unless (string= (type-of (s-layout type-info))
+                                        target-layout)
+                         (list (s-name type-info)
+                               (type-of (s-layout type-info)))))
+                     (when elem-info
+                       (unless (string= (type-of (s-layout elem-info))
+                                        target-layout)
+                         (list (s-name elem-info)
+                               (type-of (s-layout elem-info))))))))))
+    (let* ((inconsistent-slots (mapcar #'get-inconsistent-layout
+                                       (s-slots g-struct-info)))
+           (inconsistent-slots (remove nil inconsistent-slots)))
+      (assert (not inconsistent-slots) ()
+              'inconsistent-struct-layout
+              :name (s-name g-struct-info)
+              :target target-layout
+              :slots inconsistent-slots)
+      t)))
+
+;;------------------------------------------------------------
+
 (defun potential-struct-layout (name layout-specifier slot-descriptions)
   (unless (string= layout-specifier :default)
     (calc-struct-layout-from-name-type-pairs
@@ -161,6 +190,7 @@
       (assert (= (length slot-layouts) (length slots)))
       (when (validate-defstruct-g-form name slots)
         (setf (g-struct-info name) struct-info)
+        (assert-layout-consistent struct-info layout-specifier)
         `(progn
            (setf (g-struct-info ',name) ',struct-info)
            (eval-when (:compile-toplevel :load-toplevel :execute)

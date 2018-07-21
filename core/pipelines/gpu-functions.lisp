@@ -116,7 +116,7 @@
    modified the uniforms. To this end we store the final uniforms and the forms
    that transform between the public uniform arguments and the internal ones.
 
-   [3] We call 'add-layout-to-structs' here to ensure that the ubo/ssbo
+   [3] We call 'add-layout-to-struct-uniforms' here to ensure that the ubo/ssbo
    arguments have the correct layout information. This is not important for
    the test compilation, but instead for the uniform information that is
    gathered from this test compile (actual-uniforms)."
@@ -247,7 +247,7 @@
        there is a clash
 
    Sidenote:
-   [X] We call 'add-layout-to-structs' here to ensure that the ubo/ssbo
+   [X] We call 'add-layout-to-struct-uniforms' here to ensure that the ubo/ssbo
        arguments have the correct layout information. This is not important for
        the test compilation, but instead for the uniform information that is
        gathered from this test compile (actual-uniforms)."

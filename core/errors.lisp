@@ -964,6 +964,12 @@ layout is provided, it may not have '?' as the dimensions.
 
 layout: ~s" layout)
 
+(deferror inconsistent-struct-layout () (name target slots)
+    "
+CEPL: the attempt to define the gpu-structs named ~a failed as, whilst it was
+defined to have a ~a layout, the following slots had different layouts:
+~{~%- ~a~}
+" name target slots)
 
 ;; Please remember the following 2 things
 ;;
