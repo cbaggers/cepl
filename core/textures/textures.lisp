@@ -136,12 +136,12 @@
                   pointer))
     (:texture-2d (gl:tex-image-2d
                   tex-type level-num (texture-image-format tex)
-                  (first dimensions) (second dimensions) 0
+                  (second dimensions) (first dimensions) 0
                   pix-format pix-type pointer))
     (:texture-3d (gl:tex-image-3d
                   tex-type level-num (texture-image-format tex)
-                  (first dimensions) (second dimensions)
-                  (third dimensions) 0 pix-format pix-type
+                  (third dimensions) (second dimensions)
+                  (first dimensions) 0 pix-format pix-type
                   pointer))
     (:texture-1d-array (gl:tex-image-2d
                         tex-type level-num
@@ -151,12 +151,12 @@
     (:texture-2d-array (gl:tex-image-3d
                         tex-type level-num
                         (texture-image-format tex)
-                        (first dimensions) (second dimensions)
+                        (second dimensions) (first dimensions)
                         layer-num 0 pix-format pix-type pointer))
     (:texture-cube-map (gl:tex-image-2d
                         (nth face-num +cube-face-order+)
                         level-num (texture-image-format tex)
-                        (first dimensions) (second dimensions) 0
+                        (second dimensions) (first dimensions) 0
                         pix-format pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))
 
@@ -168,22 +168,23 @@
     (:texture-1d (gl:tex-sub-image-1d tex-type level-num 0 (first dimensions)
                                       pix-format pix-type pointer))
     (:texture-2d (gl:tex-sub-image-2d tex-type level-num 0 0
-                                      (first dimensions) (second dimensions)
+                                      (second dimensions) (first dimensions)
                                       pix-format pix-type pointer))
     (:texture-1d-array (gl:tex-sub-image-2d tex-type level-num 0 0
                                             (first dimensions) layer-num
                                             pix-format pix-type pointer))
     (:texture-3d (gl:tex-sub-image-3d tex-type level-num 0 0 0
-                                      (first dimensions) (second dimensions)
-                                      (third dimensions) pix-format pix-type
+                                      (third dimensions) (second dimensions)
+                                      (first dimensions) pix-format pix-type
                                       pointer))
     (:texture-2d-array (gl:tex-sub-image-3d tex-type level-num 0 0 0
+                                            (second dimensions)
                                             (first dimensions)
-                                            (second dimensions) layer-num
+                                            layer-num
                                             pix-format pix-type pointer))
     (:texture-cube-map (gl:tex-sub-image-2d (nth face-num +cube-face-order+)
-                                            level-num 0 0 (first dimensions)
-                                            (second dimensions) pix-format
+                                            level-num 0 0 (second dimensions)
+                                            (first dimensions) pix-format
                                             pix-type pointer))
     (t (error "not currently supported for upload: ~a" tex-type))))
 
