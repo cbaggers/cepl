@@ -46,18 +46,14 @@
 (defun+ validate-dimensions (data dimensions)
   (let* ((dimensions (listify dimensions))
          (r (typecase data
-              (sequence (validate-seq-dimensions data dimensions))
               (array (validate-arr-dimensions data dimensions))
+              (sequence (validate-seq-dimensions data dimensions))
               (otherwise nil))))
     (when (and r (every #'identity r)) r)))
 
 (defun+ validate-arr-dimensions (data dimensions)
-  (let* ((actual-dims (array-dimensions data)))
-    (if (= (length actual-dims) (length dimensions))
-        (mapcar (lambda (d a) (if (eq d :?) a (when (= d a) d)))
-                dimensions
-                actual-dims)
-        nil)))
+  (equal (array-dimensions data)
+         dimensions))
 
 (defun+ validate-seq-dimensions (data dimensions &optional (orig-dim dimensions) accum)
   (if (null dimensions)
@@ -66,8 +62,9 @@
         (sequence
          (let* ((f (first dimensions))
                 (data-len (length data))
-                (d (if (eq :? f) data-len (when (= f data-len) f))))
-           (validate-seq-dimensions (when (> data-len 0) (elt data 0))
+                (d (when (= f data-len) f)))
+           (validate-seq-dimensions (when (> data-len 0)
+                                      (elt data 0))
                                     (rest dimensions)
                                     orig-dim
                                     (cons d accum))))
@@ -80,9 +77,9 @@
                       (c-array-dimensions c-array)))
 
 (defun+ %gl-calc-byte-size (elem-size dimensions)
-  (let* ((x-size (first dimensions)) (rest (rest dimensions))
-         (row-byte-size (* x-size elem-size)))
-    (values (* row-byte-size (max (reduce #'* rest) 1))
+  (let* ((row-length (last1 dimensions))
+         (row-byte-size (* row-length elem-size)))
+    (values (* (reduce #'* dimensions) elem-size)
             row-byte-size)))
 
 (defun+ gl-calc-byte-size (type dimensions)

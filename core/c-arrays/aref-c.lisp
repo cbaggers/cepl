@@ -16,13 +16,11 @@
                                          c-array))
                             x)))))
 
-(declaim (inline ptr-index-2d)
-         (ftype (function (c-array c-array-index c-array-index) cffi-sys:foreign-pointer)
-                ptr-index-2d))
-(defun ptr-index-2d (c-array x y)
-  (declare (c-array c-array)
-           (c-array-index x) (c-array-index y)
-           (optimize (speed 3) (safety 0) (debug 1))
+(defn-inline ptr-index-2d ((c-array c-array)
+                           (y c-array-index)
+                           (x c-array-index))
+    foreign-pointer
+  (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline inc-pointer c-array-pointer))
   (the cffi-sys:foreign-pointer
        (inc-pointer
@@ -39,13 +37,13 @@
          (ftype (function (c-array c-array-index c-array-index c-array-index)
                           cffi-sys:foreign-pointer)
                 ptr-index-3d))
-(defun ptr-index-3d (c-array x y z)
+(defun ptr-index-3d (c-array z y x)
   (declare (c-array c-array)
            (c-array-index x) (c-array-index y) (c-array-index z)
            (optimize (speed 3) (safety 0) (debug 1)))
   (let* ((row-size (the c-array-index (c-array-row-byte-size c-array)))
          (2d-size (the c-array-index
-                       (* (the c-array-index (third (c-array-dimensions c-array)))
+                       (* (the c-array-index (second (c-array-dimensions c-array)))
                           row-size)))
          (byte-offset (the c-array-index
                            (+ (the c-array-index (* z 2d-size))
@@ -60,7 +58,7 @@
          (ftype (function (c-array c-array-index c-array-index c-array-index c-array-index)
                           cffi-sys:foreign-pointer)
                 ptr-index-4d))
-(defun ptr-index-4d (c-array x y z w)
+(defun ptr-index-4d (c-array w z y x)
   (declare (c-array c-array)
            (c-array-index x) (c-array-index y) (c-array-index z) (c-array-index w)
            (optimize (speed 3) (safety 0) (debug 1)))
@@ -70,7 +68,7 @@
                        (* (the c-array-index (third dimensions))
                           row-size)))
          (3d-size (the c-array-index
-                       (* (the c-array-index (fourth dimensions))
+                       (* (the c-array-index (second dimensions))
                           2d-size)))
          (byte-offset
           (the c-array-index
@@ -85,21 +83,21 @@
                       byte-offset))))
 
 
-(defun ptr-index (c-array &optional (x 0) (y 0 y-set) (z 0 z-set) (w 0 w-set))
+(defun ptr-index (c-array &optional (a 0) (b 0 b-set) (c 0 c-set) (d 0 d-set))
   (declare (c-array c-array)
-           (c-array-index x y z w)
+           (c-array-index a b c d)
            (optimize (speed 3) (safety 0) (debug 1)))
-  (cond (w-set (ptr-index-4d c-array x y z w))
-        (z-set (ptr-index-3d c-array x y z))
-        (y-set (ptr-index-2d c-array x y))
-        (t (ptr-index-1d c-array x))))
+  (cond (d-set (ptr-index-4d c-array d c b a))
+        (c-set (ptr-index-3d c-array c b a))
+        (b-set (ptr-index-2d c-array b a))
+        (t (ptr-index-1d c-array a))))
 
 (define-compiler-macro ptr-index
-    (c-array &optional x (y 0 y-set) (z 0 z-set) (w 0 w-set))
-  (cond (w-set `(ptr-index-4d ,c-array ,x ,y ,z ,w))
-        (z-set `(ptr-index-3d ,c-array ,x ,y ,z))
-        (y-set `(ptr-index-2d ,c-array ,x ,y))
-        (t `(ptr-index-1d ,c-array ,x))))
+    (c-array &optional a (b 0 b-set) (c 0 c-set) (d 0 d-set))
+  (cond (d-set `(ptr-index-4d ,c-array ,d ,c ,b ,a))
+        (c-set `(ptr-index-3d ,c-array ,c ,b ,a))
+        (b-set `(ptr-index-2d ,c-array ,b ,a))
+        (t `(ptr-index-1d ,c-array ,a))))
 
 ;;----------------------------------------------------------------------
 
@@ -111,6 +109,8 @@
                                       (index c-array-index))
     t
   (setf (aref-c*-1d c-array index) value))
+
+;;----------------------------------------------------------------------
 
 (defun aref-c (c-array &rest subscripts)
   (case= (length subscripts)
@@ -130,14 +130,10 @@
 (define-compiler-macro aref-c (c-array &rest subscripts)
   (case= (length subscripts)
     (0 (error "aref-c: invalid number of subscripts: 0"))
-    (1 `(aref-c*-1d ,c-array ,(first subscripts)))
-    (2 `(aref-c*-2d
-         ,c-array ,(first subscripts) ,(second subscripts)))
-    (3 `(aref-c*-3d
-         ,c-array ,(first subscripts) ,(second subscripts) ,(third subscripts)))
-    (4 `(aref-c*-4d
-         ,c-array ,(first subscripts) ,(second subscripts)
-         ,(third subscripts) ,(fourth subscripts)))
+    (1 `(aref-c*-1d ,c-array ,@subscripts))
+    (2 `(aref-c*-2d ,c-array ,@subscripts))
+    (3 `(aref-c*-3d ,c-array ,@subscripts))
+    (4 `(aref-c*-4d ,c-array ,@subscripts))
     (otherwise (error 'c-array-4d-limit-aref
                       :c-arr c-array
                       :indices subscripts))))
@@ -182,19 +178,10 @@
 (define-compiler-macro (setf aref-c) (value c-array &rest subscripts)
   (case= (length subscripts)
     (0 (error "aref-c: invalid number of subscripts: 0"))
-    (1 `(setf (aref-c*-1d ,c-array ,(first subscripts))
-              ,value))
-    (2 `(setf (aref-c*-2d
-               ,c-array ,(first subscripts) ,(second subscripts))
-              ,value))
-    (3 `(setf (aref-c*-3d
-               ,c-array ,(first subscripts) ,(second subscripts)
-               ,(third subscripts))
-              ,value))
-    (4 `(setf (aref-c*-4d
-               ,c-array ,(first subscripts) ,(second subscripts)
-               ,(third subscripts) ,(fourth subscripts))
-              ,value))
+    (1 `(setf (aref-c*-1d ,c-array ,@subscripts) ,value))
+    (2 `(setf (aref-c*-2d ,c-array ,@subscripts) ,value))
+    (3 `(setf (aref-c*-3d ,c-array ,@subscripts) ,value))
+    (4 `(setf (aref-c*-4d ,c-array ,@subscripts) ,value))
     (otherwise (error 'c-array-4d-limit-aref
                       :c-arr c-array
                       :indices subscripts))))
@@ -240,81 +227,92 @@ github issue for this when it becomes a problem for you"
 
 ;;----------------------------------------------------------------------
 
-(defun aref-c*-1d (c-array x)
-  (declare (c-array c-array)
-           (c-array-index x)
-           (optimize (speed 3) (safety 0) (debug 1)))
+(defn-inline aref-c*-1d ((c-array c-array)
+                         (x c-array-index))
+    t
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (inline ptr-index-1d))
   (let ((ptr (ptr-index-1d c-array x))
         (ref (c-array-element-from-foreign c-array)))
     (funcall ref ptr)))
 
-(defun aref-c*-2d (c-array x y)
-  (declare (c-array c-array)
-           (c-array-index x)
-           (c-array-index y)
-           (optimize (speed 3) (safety 0) (debug 1)))
-  (let ((ptr (ptr-index-2d c-array x y))
+(defn-inline aref-c*-2d ((c-array c-array)
+                         (y c-array-index)
+                         (x c-array-index))
+    t
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (inline ptr-index-2d))
+  (let ((ptr (ptr-index-2d c-array y x))
         (ref (c-array-element-from-foreign c-array)))
     (funcall ref ptr)))
 
-(defun aref-c*-3d (c-array x y z)
-  (declare (c-array c-array)
-           (c-array-index x)
-           (c-array-index y)
-           (c-array-index z)
-           (optimize (speed 3) (safety 0) (debug 1)))
-  (let ((ptr (ptr-index-3d c-array x y z))
+(defn-inline aref-c*-3d ((c-array c-array)
+                         (z c-array-index)
+                         (y c-array-index)
+                         (x c-array-index))
+    t
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (inline ptr-index-3d))
+  (let ((ptr (ptr-index-3d c-array z y x))
         (ref (c-array-element-from-foreign c-array)))
     (funcall ref ptr)))
 
-(defun aref-c*-4d (c-array x y z w)
-  (declare (c-array c-array)
-           (c-array-index x)
-           (c-array-index y)
-           (c-array-index z)
-           (c-array-index w)
-           (optimize (speed 3) (safety 0) (debug 1)))
-  (let ((ptr (ptr-index-4d c-array x y z w))
+(defn-inline aref-c*-4d ((c-array c-array)
+                         (w c-array-index)
+                         (z c-array-index)
+                         (y c-array-index)
+                         (x c-array-index))
+    t
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (inline ptr-index-4d))
+  (let ((ptr (ptr-index-4d c-array w z y x))
         (ref (c-array-element-from-foreign c-array)))
     (funcall ref ptr)))
 
 ;;----------------------------------------------------------------------
 
-(defun (setf aref-c*-1d) (value c-array x)
-  (declare (c-array c-array)
-           (c-array-index x)
-           (optimize (speed 3) (safety 0) (debug 1)))
+(defn-inline (setf aref-c*-1d) ((value t)
+                                (c-array c-array)
+                                (x c-array-index))
+    t
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (inline ptr-index-1d))
   (let ((ptr (ptr-index-1d c-array x))
         (ref (c-array-element-to-foreign c-array)))
     (funcall ref ptr value)))
 
-(defun (setf aref-c*-2d) (value c-array x y)
-  (declare (c-array c-array)
-           (c-array-index x)
-           (c-array-index y)
-           (optimize (speed 3) (safety 0) (debug 1))
+(defn-inline (setf aref-c*-2d) ((value t)
+                                (c-array c-array)
+                                (y c-array-index)
+                                (x c-array-index))
+    t
+  (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-2d))
-  (let ((ptr (ptr-index-2d c-array x y))
+  (let ((ptr (ptr-index-2d c-array y x))
         (ref (c-array-element-to-foreign c-array)))
     (funcall ref ptr value)))
 
-(defun (setf aref-c*-3d) (value c-array x y z)
-  (declare (c-array c-array)
-           (c-array-index x)
-           (c-array-index y)
-           (c-array-index z)
-           (optimize (speed 3) (safety 0) (debug 1)))
-  (let ((ptr (ptr-index-3d c-array x y z))
+(defn-inline (setf aref-c*-3d) ((value t)
+                                (c-array c-array)
+                                (z c-array-index)
+                                (y c-array-index)
+                                (x c-array-index))
+    t
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (inline ptr-index-3d))
+  (let ((ptr (ptr-index-3d c-array z y x))
         (ref (c-array-element-to-foreign c-array)))
     (funcall ref ptr value)))
 
-(defun (setf aref-c*-4d) (value c-array x y z w)
-  (declare (c-array c-array)
-           (c-array-index x)
-           (c-array-index y)
-           (c-array-index z)
-           (c-array-index w)
-           (optimize (speed 3) (safety 0) (debug 1)))
-  (let ((ptr (ptr-index-4d c-array x y z w))
+(defn-inline (setf aref-c*-4d) ((value t)
+                                (c-array c-array)
+                                (w c-array-index)
+                                (z c-array-index)
+                                (y c-array-index)
+                                (x c-array-index))
+    t
+  (declare (optimize (speed 3) (safety 0) (debug 1))
+           (inline ptr-index-4d))
+  (let ((ptr (ptr-index-4d c-array w z y x))
         (ref (c-array-element-to-foreign c-array)))
     (funcall ref ptr value)))

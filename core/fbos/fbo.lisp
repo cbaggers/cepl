@@ -27,7 +27,7 @@
 
 (defn viewport-for-array ((arr (or null gpu-array))) (or null viewport)
   (when arr
-    (make-viewport (gpu-array-dimensions arr) (vec2 0f0 0f0))))
+    (make-viewport (reverse (gpu-array-dimensions arr)) (vec2 0f0 0f0))))
 
 ;;----------------------------------------------------------------------
 
@@ -105,13 +105,13 @@
 ;;----------------------------------------------------------------------
 
 (defun+ %make-default-framebuffer
-    (dimensions &optional (double-buffering t) (depth t))
+    (width height &optional (double-buffering t) (depth t))
   ;;
-  (labels ((gen-array (dimensions)
+  (labels ((gen-array ()
              (%make-gpu-array-t
               :texture +null-texture+
               :texture-type :gl-internal
-              :dimensions dimensions
+              :dimensions (list height width)
               :image-format :gl-internal)))
     (let ((result
            (%update-fbo-state
@@ -119,10 +119,10 @@
              (pre-gl-init
               (make-uninitialized-fbo)
               :is-default t
-              :color-arrays (cons (gen-array dimensions)
+              :color-arrays (cons (gen-array)
                                   (when double-buffering
-                                    (list (gen-array dimensions))))
-              :depth-array (when depth (gen-array dimensions)))
+                                    (list (gen-array))))
+              :depth-array (when depth (gen-array)))
              :id 0))))
       (update-clear-mask result)
       (%with-cepl-context-slots (default-framebuffer) (cepl-context)
@@ -139,12 +139,12 @@
       (loop :for a :across (%fbo-color-arrays fbo) :when a :do
          (setf (viewport-dimensions (att-viewport a)) new-dimensions)
          (cepl.textures::with-gpu-array-t (att-array a)
-           (setf dimensions new-dimensions)))
+           (setf dimensions (reverse new-dimensions))))
       ;; - - -
       (let ((d (%fbo-depth-array fbo)))
         (setf (viewport-dimensions (att-viewport d)) new-dimensions)
         (cepl.textures::with-gpu-array-t (att-array d)
-          (setf dimensions new-dimensions))))))
+          (setf dimensions (reverse new-dimensions)))))))
 
 (defn attachment-viewport-allowing-t
     ((fbo fbo) (attachment-name attachment-name))
@@ -553,7 +553,7 @@
                           depth
                           (append depth
                                   `(:dimensions
-                                    ,(dimensions
+                                    ,(spatial-dimensions
                                       (texref cube-tex :cube-face 0)))))))))))))
 
 
@@ -749,12 +749,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
        dimensions))
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t)
-     (gpu-array-dimensions (second pattern)))
+     (reverse (gpu-array-dimensions (second pattern))))
     ;; use the first gpu-array in texture
     ((typep (second pattern) 'texture)
-     (gpu-array-dimensions (texref (second pattern))))
+     (reverse (gpu-array-dimensions (texref (second pattern)))))
     ;; take the dimensions from some object
-    (t (dimensions (second pattern)))))
+    (t (spatial-dimensions (second pattern)))))
 
 ;;----------------------------------------------------------------------
 
@@ -862,7 +862,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
          (arr (when att (att-array att)))
          (tex (when arr (gpu-array-t-texture arr)))
          (dimensions (if arr
-                         (dimensions arr)
+                         (spatial-dimensions arr)
                          '(1 1)))
          (layer-count (if tex
                           (texture-layer-count tex)

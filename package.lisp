@@ -576,7 +576,13 @@
 
            ;;---
            :holds-gl-object-ref-p
-           :can-be-shared-between-contexts-p))
+           :can-be-shared-between-contexts-p
+
+           ;;---
+           :array-indexed-p
+           :spatially-indexed-p
+           :arrayd-dimensions
+           :spatial-dimensions))
 
 (uiop:define-package :cepl.memory
     (:use :cl :cepl-utils :glsl-symbols :cffi :%cepl.types :cepl.build)

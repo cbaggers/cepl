@@ -48,12 +48,14 @@
           (error "Texture index out of range"))))
 
 (defun+ reinit-on-context (gpu-array)
-  (let ((texture (gpu-array-t-texture gpu-array)))
-    (setf (gpu-array-t-texture-type gpu-array) (texture-type texture)
-          (gpu-array-dimensions gpu-array) (dimensions-at-mipmap-level
-                                            texture (gpu-array-t-level-num
-                                                     gpu-array))
-          (gpu-array-t-image-format gpu-array) (texture-image-format texture))))
+  (let ((texture (gpu-array-t-texture gpu-array))
+        (level (gpu-array-t-level-num gpu-array)))
+    (setf (gpu-array-t-texture-type gpu-array)
+          (texture-type texture))
+    (setf (gpu-array-dimensions gpu-array)
+          (array-dimensions-at-mipmap-level texture level))
+    (setf (gpu-array-t-image-format gpu-array)
+          (texture-image-format texture))))
 
 (defun+ valid-index-p (texture mipmap-level layer cube-face)
   (or (= 0 mipmap-level layer cube-face)
@@ -102,14 +104,17 @@
          (compiled-pf (or pixel-format (cepl.pixel-formats::compile-pixel-format
                                         element-pf)))
          (pix-format (first compiled-pf))
-         (pix-type (second compiled-pf)))
+         (pix-type (second compiled-pf))
+         (c-array-dims (c-array-dimensions c-array)))
     (with-gpu-array-t gpu-array
       (error-on-invalid-upload-formats texture-type image-format pix-format
                                        pix-type)
-      (unless (equal (dimensions c-array) dimensions)
-        (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a" (dimensions c-array) dimensions))
+      (unless (equal c-array-dims dimensions)
+        (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a"
+               c-array-dims dimensions))
       (%with-scratch-texture-bound (gpu-array-t-texture gpu-array)
-        (%upload-tex texture texture-type level-num (dimensions c-array)
+        (%upload-tex texture texture-type level-num
+                     (reverse c-array-dims)
                      layer-num face-num pix-format pix-type (pointer c-array)))))
   gpu-array)
 
@@ -129,63 +134,63 @@
 (defun+ %upload-to-mutable-tex (tex tex-type level-num dimensions layer-num
                                     face-num pix-format pix-type pointer)
   ;; border is an old (now unsupported) parameter and so is always be set to 0
-  (case tex-type
-    (:texture-1d (gl:tex-image-1d
-                  tex-type level-num (texture-image-format tex)
-                  (first dimensions) 0 pix-format pix-type
-                  pointer))
-    (:texture-2d (gl:tex-image-2d
-                  tex-type level-num (texture-image-format tex)
-                  (first dimensions) (second dimensions) 0
-                  pix-format pix-type pointer))
-    (:texture-3d (gl:tex-image-3d
-                  tex-type level-num (texture-image-format tex)
-                  (first dimensions) (second dimensions)
-                  (third dimensions) 0 pix-format pix-type
-                  pointer))
-    (:texture-1d-array (gl:tex-image-2d
-                        tex-type level-num
-                        (texture-image-format tex)
-                        (first dimensions) layer-num 0
-                        pix-format pix-type pointer))
-    (:texture-2d-array (gl:tex-image-3d
-                        tex-type level-num
-                        (texture-image-format tex)
-                        (first dimensions) (second dimensions)
-                        layer-num 0 pix-format pix-type pointer))
-    (:texture-cube-map (gl:tex-image-2d
-                        (nth face-num +cube-face-order+)
-                        level-num (texture-image-format tex)
-                        (first dimensions) (second dimensions) 0
-                        pix-format pix-type pointer))
-    (t (error "not currently supported for upload: ~a" tex-type))))
+  (destructuring-bind (&optional (width 1) (height 1) (depth 1)) dimensions
+    (case tex-type
+      (:texture-1d (gl:tex-image-1d
+                    tex-type level-num (texture-image-format tex)
+                    width 0 pix-format pix-type
+                    pointer))
+      (:texture-2d (gl:tex-image-2d
+                    tex-type level-num (texture-image-format tex)
+                    width height 0 pix-format pix-type pointer))
+      (:texture-3d (gl:tex-image-3d
+                    tex-type level-num (texture-image-format tex)
+                    width height depth 0 pix-format pix-type
+                    pointer))
+      (:texture-1d-array (gl:tex-image-2d
+                          tex-type level-num
+                          (texture-image-format tex)
+                          width layer-num 0
+                          pix-format pix-type pointer))
+      (:texture-2d-array (gl:tex-image-3d
+                          tex-type level-num
+                          (texture-image-format tex)
+                          width height
+                          layer-num 0 pix-format pix-type pointer))
+      (:texture-cube-map (gl:tex-image-2d
+                          (nth face-num +cube-face-order+)
+                          level-num (texture-image-format tex)
+                          width height 0
+                          pix-format pix-type pointer))
+      (t (error "not currently supported for upload: ~a" tex-type)))))
 
 
 (defun+ %upload-to-immutable-tex (tex tex-type level-num dimensions layer-num
                                  face-num pix-format pix-type pointer)
   (declare (ignore tex))
-  (case tex-type
-    (:texture-1d (gl:tex-sub-image-1d tex-type level-num 0 (first dimensions)
-                                      pix-format pix-type pointer))
-    (:texture-2d (gl:tex-sub-image-2d tex-type level-num 0 0
-                                      (first dimensions) (second dimensions)
-                                      pix-format pix-type pointer))
-    (:texture-1d-array (gl:tex-sub-image-2d tex-type level-num 0 0
-                                            (first dimensions) layer-num
-                                            pix-format pix-type pointer))
-    (:texture-3d (gl:tex-sub-image-3d tex-type level-num 0 0 0
-                                      (first dimensions) (second dimensions)
-                                      (third dimensions) pix-format pix-type
-                                      pointer))
-    (:texture-2d-array (gl:tex-sub-image-3d tex-type level-num 0 0 0
-                                            (first dimensions)
-                                            (second dimensions) layer-num
-                                            pix-format pix-type pointer))
-    (:texture-cube-map (gl:tex-sub-image-2d (nth face-num +cube-face-order+)
-                                            level-num 0 0 (first dimensions)
-                                            (second dimensions) pix-format
-                                            pix-type pointer))
-    (t (error "not currently supported for upload: ~a" tex-type))))
+  (destructuring-bind (&optional (width 1) (height 1) (depth 1)) dimensions
+    (case tex-type
+      (:texture-1d (gl:tex-sub-image-1d tex-type level-num 0 width
+                                        pix-format pix-type pointer))
+      (:texture-2d (gl:tex-sub-image-2d tex-type level-num 0 0
+                                        width height
+                                        pix-format pix-type pointer))
+      (:texture-1d-array (gl:tex-sub-image-2d tex-type level-num 0 0
+                                              width layer-num
+                                              pix-format pix-type pointer))
+      (:texture-3d (gl:tex-sub-image-3d tex-type level-num 0 0 0
+                                        width height depth pix-format pix-type
+                                        pointer))
+      (:texture-2d-array (gl:tex-sub-image-3d tex-type level-num 0 0 0
+                                              width
+                                              height
+                                              layer-num
+                                              pix-format pix-type pointer))
+      (:texture-cube-map (gl:tex-sub-image-2d (nth face-num +cube-face-order+)
+                                              level-num 0 0 width
+                                              height pix-format
+                                              pix-type pointer))
+      (t (error "not currently supported for upload: ~a" tex-type)))))
 
 (defun+ upload-from-buffer-to-gpu-array-t (&rest args)
   (declare (ignore args))
@@ -241,7 +246,10 @@
   (if (= level 0)
       (texture-base-dimensions texture)
       (loop :for i :in (texture-base-dimensions texture) :collect
-         (/ i (expt 2 level)))))
+           (/ i (expt 2 level)))))
+
+(defun+ array-dimensions-at-mipmap-level (texture level)
+  (reverse (dimensions-at-mipmap-level texture level)))
 
 ;;------------------------------------------------------------
 ;; {TODO} Texture sizes have a limit based on the GL
@@ -260,7 +268,7 @@
          (if initial-contents
              (if dimensions
                  (error "Cannot specify dimensions and initial-contents")
-                 (dimensions initial-contents))
+                 (spatial-dimensions initial-contents))
              (if dimensions dimensions (error "must specify dimensions if no initial-contents provided")))))
     ;; Early checks, move to own function if gets more extensive
     (assert (every (lambda (x) (> x 0)) dims) ()
@@ -383,21 +391,6 @@
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-(defun+ calc-dimensions (image-format dimensions cube-tex)
-  (declare (ignore image-format dimensions cube-tex)))
-
-;; other
-;; (listify dimensions)
-;;cube
-;; (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
-;;        (dim (if (every (lambda (_) (equal target-dim (dimensions _)))
-;;                        initial-contents)
-;;                 target-dim
-;;                 (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
-;;                        initial-contents)))))
-
-;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-
 (defun+ calc-image-format (element-type initial-contents)
   (cond
     ;; need to infer the type
@@ -464,13 +457,14 @@
 
 (defun+ %make-texture-with-lisp-data
     (tex-obj dimensions mipmap layer-count cubes buffer-storage
-     rectangle immutable initial-contents
-     generate-mipmaps element-type image-format pixel-format
-     samples fixed-sample-locations)
+             rectangle immutable initial-contents
+             generate-mipmaps element-type image-format pixel-format
+             samples fixed-sample-locations)
   (declare (ignore element-type))
   (let ((element-type (image-format->lisp-type image-format)))
-    (with-c-array-freed (tmp (make-c-array initial-contents :dimensions dimensions
-                                     :element-type element-type))
+    (with-c-array-freed (tmp (make-c-array initial-contents
+                                           :dimensions (reverse dimensions)
+                                           :element-type element-type))
       (make-texture-now tex-obj tmp nil nil mipmap layer-count cubes rectangle
                         immutable buffer-storage
                         generate-mipmaps pixel-format
@@ -482,8 +476,10 @@
                                     generate-mipmaps samples
                                     fixed-sample-locations)
   (assert (= 6 (length initial-contents)))
-  (let* ((target-dim (or dimensions (dimensions (first initial-contents))))
-         (dim (if (every (lambda (_) (equal target-dim (dimensions _)))
+  (let* ((target-dim (or dimensions
+                         (spatial-dimensions (first initial-contents))))
+         (dim (if (every (lambda (_)
+                           (equal target-dim (spatial-dimensions _)))
                          initial-contents)
                   target-dim
                   (error "Conflicting dimensions of c-arrays passed to make-texture with :cube t:~%~a"
@@ -572,7 +568,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                             (or pixel-format
                                 (lisp-type->pixel-format initial-contents)))))
            (texture-type (establish-texture-type
-                          (if (listp dimensions) (length dimensions) 1)
+                          (length dimensions)
                           (not (null mipmap)) (> layer-count 1) cubes
                           (every #'po2p dimensions) multisample
                           buffer-storage rectangle))
@@ -583,7 +579,8 @@ the width to see at what point the width reaches 0 or GL throws an error."
                                   1))))
       (if texture-type
           (if (and cubes (not (apply #'= dimensions)))
-              (error "Cube textures must be square")
+              (error "CEPL: Attept to make cube texture with invalid dimensions:~%~s"
+                     dimensions)
               (progn
                 (setf (texture-id tex-obj) (gen-texture)
                       (texture-base-dimensions tex-obj) dimensions
@@ -627,29 +624,33 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (when pixel-format
     (error 'pixel-format-in-bb-texture :pixel-format pixel-format))
   (let* ((element-type (when image-format
-                         (image-format->lisp-type image-format))))
+                         (image-format->lisp-type image-format)))
+         (dimensions (listify dimensions))
+         (rank (length dimensions)))
     (etypecase initial-contents
       (null
        (assert element-type)
-       (let* ((dimensions (listify dimensions))
-              (po2p (every #'po2p dimensions))
-              (texture-type (or (establish-texture-type (length dimensions) nil nil nil po2p nil t nil)
+       (let* ((po2p (every #'po2p dimensions))
+              (texture-type (or (establish-texture-type rank nil nil nil po2p nil t nil)
                                 (error "Could not extablish a buffer-texture-type with dimensions ~a"
                                        dimensions))))
          (assert-valid-args-for-buffer-backend-texture
           image-format cubes rectangle multisample mipmap layer-count
           texture-type)
-         (values (make-gpu-array nil :dimensions dimensions :element-type element-type)
+         (values (make-gpu-array nil
+                                 :dimensions (reverse dimensions)
+                                 :element-type element-type)
                  texture-type)))
       (c-array
        (when element-type
          (assert (eq element-type (element-type initial-contents))))
-       (let* ((dimensions (or (listify dimensions) (dimensions initial-contents)))
+       (let* ((spatial-content-dims (spatial-dimensions initial-contents))
+              (dimensions (or dimensions spatial-content-dims))
               (po2p (every #'po2p dimensions))
-              (texture-type (or (establish-texture-type (length dimensions) nil nil nil po2p nil t nil)
+              (texture-type (or (establish-texture-type rank nil nil nil po2p nil t nil)
                                 (error "Could not extablish a buffer-texture-type with dimensions ~a"
                                        dimensions))))
-         (assert (every #'= dimensions (dimensions initial-contents)))
+         (assert (every #'= dimensions spatial-content-dims))
          (assert-valid-args-for-buffer-backend-texture
           image-format cubes rectangle multisample mipmap layer-count
           texture-type)
@@ -657,31 +658,23 @@ the width to see at what point the width reaches 0 or GL throws an error."
       (gpu-array-bb
        (when element-type
          (assert (eq element-type (element-type initial-contents))))
-       (let* ((dimensions (or (listify dimensions) (dimensions initial-contents)))
+       (let* ((spatial-content-dims (spatial-dimensions initial-contents))
+              (dimensions (or dimensions spatial-content-dims))
               (po2p (every #'po2p dimensions))
-              (texture-type (or (establish-texture-type (length dimensions) nil nil nil po2p nil t nil)
+              (texture-type (or (establish-texture-type rank nil nil nil po2p nil t nil)
                                 (error "Could not extablish a buffer-texture-type with dimensions ~a"
                                        dimensions))))
-         (assert (every #'= dimensions (dimensions initial-contents)))
+         (assert (every #'= dimensions spatial-content-dims))
          (assert-valid-args-for-buffer-backend-texture
           image-format cubes rectangle multisample mipmap layer-count
           texture-type)
          (values initial-contents texture-type)))
       (t (with-c-array-freed (carr (make-c-array initial-contents
                                            :element-type element-type
-                                           :dimensions dimensions))
-           (when element-type
-             (assert (eq element-type (element-type carr))))
-           (let* ((dimensions (or (listify dimensions) (dimensions carr)))
-                  (po2p (every #'po2p dimensions))
-                  (texture-type (or (establish-texture-type (length dimensions) nil nil nil po2p nil t nil)
-                                    (error "Could not extablish a buffer-texture-type with dimensions ~a"
-                                           dimensions))))
-             (assert (every #'= dimensions (dimensions carr)))
-             (assert-valid-args-for-buffer-backend-texture
-              image-format cubes rectangle multisample mipmap layer-count
-              texture-type)
-             (values (make-gpu-array carr) texture-type)))))))
+                                           :dimensions (reverse dimensions)))
+           (gen-buffer-tex-initial-contents carr dimensions image-format
+                                            cubes rectangle multisample mipmap
+                                            layer-count pixel-format))))))
 
 (defun+ %make-buffer-texture (tex-obj dimensions image-format mipmap layer-count
                              cubes rectangle multisample immutable
@@ -746,77 +739,99 @@ the width to see at what point the width reaches 0 or GL throws an error."
   ;; {TODO} Well this is clearly missing a lot :p
   (let ((base-dimensions (texture-base-dimensions texture))
         (texture-type (texture-type texture)))
-    (case texture-type
-      (:texture-2d-multisample
-       (%gl:tex-image-2d-multisample
-        :texture-2d-multisample
-        (texture-samples texture)
-        (texture-image-format texture)
-        (first base-dimensions)
-        (or (second base-dimensions) 1)
-        (texture-fixed-sample-locations-p texture)))
-      (t (gl:tex-parameter (texture-type texture) :texture-base-level 0)
-         (gl:tex-parameter (texture-type texture) :texture-max-level
-                           (1- (texture-mipmap-levels texture))))))
+    (destructuring-bind (&optional (width 1) (height 1) (depth 1))
+        base-dimensions
+      (declare (ignore depth))
+      (case texture-type
+        (:texture-2d-multisample
+         (%gl:tex-image-2d-multisample
+          :texture-2d-multisample
+          (texture-samples texture)
+          (texture-image-format texture)
+          width
+          height
+          (texture-fixed-sample-locations-p texture)))
+        (t (gl:tex-parameter (texture-type texture) :texture-base-level 0)
+           (gl:tex-parameter (texture-type texture) :texture-max-level
+                             (1- (texture-mipmap-levels texture)))))))
   (setf (texture-allocated-p texture) t))
 
 (defun+ allocate-immutable-texture (texture)
+  (WARN "SUPER BROKEN ARGGGHHH")
   (if (texture-allocated-p texture)
       (error "Attempting to reallocate a previously allocated texture")
+
       (let ((base-dimensions (texture-base-dimensions texture))
             (texture-type (texture-type texture)))
-        (case texture-type
-          ((:texture-1d :proxy-texture-1d)
-           (tex-storage-1d texture-type
-                           (texture-mipmap-levels texture)
-                           (texture-image-format texture)
-                           (first base-dimensions)))
-          ((:texture-2d :proxy-texture-2d :texture-rectangle
-                        :proxy-texture-rectangle :texture-cube-map
-                        :proxy-texture-cube-map :proxy-texture-1d-array)
-           (tex-storage-2d texture-type
-                           (texture-mipmap-levels texture)
-                           (texture-image-format texture)
-                           (first base-dimensions)
-                           (or (second base-dimensions) 1)))
-          (:texture-2d-multisample
-           (tex-storage-2d-multisample
-            texture-type
-            (texture-image-format texture)
-            (first base-dimensions)
-            (or (second base-dimensions) 1)
-            (texture-samples texture)
-            (texture-fixed-sample-locations-p texture)))
-          (:texture-2d-multisample-array
-           (tex-storage-3d-multisample
-            texture-type
-            (texture-image-format texture)
-            (first base-dimensions)
-            (or (second base-dimensions) 1)
-            (or (third base-dimensions) 1)
-            (texture-samples texture)
-            (texture-fixed-sample-locations-p texture)))
-          (:texture-1d-array
-           (tex-storage-2d texture-type
-                           (texture-mipmap-levels texture)
-                           (texture-image-format texture)
-                           (first base-dimensions)
-                           (texture-layer-count texture)))
-          ((:texture-3d :proxy-texture-3d :texture-cube-array
-                        :proxy-texture-cube-array :proxy-texture-2d-array)
-           (tex-storage-3d texture-type
-                           (texture-mipmap-levels texture)
-                           (texture-image-format texture)
-                           (first base-dimensions)
-                           (or (second base-dimensions) 1)
-                           (or (third base-dimensions) 1)))
-          (:texture-2d-array
-           (tex-storage-3d texture-type
-                           (texture-mipmap-levels texture)
-                           (texture-image-format texture)
-                           (first base-dimensions)
-                           (or (second base-dimensions) 1)
-                           (texture-layer-count texture))))
+        (destructuring-bind (&optional (width 1) (height 1) (depth 1))
+            base-dimensions
+          (case texture-type
+            ((:texture-1d :proxy-texture-1d)
+             (tex-storage-1d texture-type
+                             (texture-mipmap-levels texture)
+                             (texture-image-format texture)
+                             width))
+            ((:texture-2d :proxy-texture-2d :texture-rectangle
+                          :proxy-texture-rectangle :texture-cube-map
+                          :proxy-texture-cube-map :proxy-texture-1d-array)
+             (tex-storage-2d texture-type
+                             (texture-mipmap-levels texture)
+                             (texture-image-format texture)
+                             width
+                             height))
+            (:texture-2d-multisample
+             ;;
+             ;; FIX ME!
+             ;;
+             (tex-storage-2d-multisample
+              texture-type
+              (texture-image-format texture)
+              width
+              height
+              (texture-samples texture)
+              (texture-fixed-sample-locations-p texture)))
+            (:texture-2d-multisample-array
+             ;;
+             ;; FIX ME!
+             ;;
+             (tex-storage-3d-multisample
+              texture-type
+              (texture-image-format texture)
+              width
+              height
+              depth
+              (texture-samples texture)
+              (texture-fixed-sample-locations-p texture)))
+            (:texture-1d-array
+             ;;
+             ;; FIX ME!
+             ;;
+             (tex-storage-2d texture-type
+                             (texture-mipmap-levels texture)
+                             (texture-image-format texture)
+                             width
+                             (texture-layer-count texture)))
+            ((:texture-3d :proxy-texture-3d :texture-cube-array
+                          :proxy-texture-cube-array :proxy-texture-2d-array)
+             ;;
+             ;; FIX ME!
+             ;;
+             (tex-storage-3d texture-type
+                             (texture-mipmap-levels texture)
+                             (texture-image-format texture)
+                             width
+                             height
+                             depth))
+            (:texture-2d-array
+             ;;
+             ;; FIX ME!
+             ;;
+             (tex-storage-3d texture-type
+                             (texture-mipmap-levels texture)
+                             (texture-image-format texture)
+                             width
+                             height
+                             (texture-layer-count texture)))))
         (setf (texture-allocated-p texture) t))))
 
 (defun+ tex-storage-1d (target levels image-format width)
@@ -846,10 +861,13 @@ the width to see at what point the width reaches 0 or GL throws an error."
 ;;------------------------------------------------------------
 
 (defmethod dimensions ((texture texture))
-  (dimensions (texref texture)))
+  (texture-base-dimensions texture))
 
 (defmethod resolution ((texture texture))
-  (resolution (texref texture)))
+  (let ((dim (texture-base-dimensions texture)))
+    (make-array (length dim) :element-type 'single-float
+                :initial-contents (mapcar (lambda (i) (coerce i 'single-float))
+                                          dim))))
 
 ;;------------------------------------------------------------
 
@@ -861,17 +879,19 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (push-g object (texref destination)))
 
 (defmethod push-g ((object list) (destination gpu-array-t))
-  (with-c-array-freed (c-a (make-c-array object
-                                   :dimensions (dimensions destination)
-                                   :element-type (image-format->pixel-format
-                                                  (gpu-array-t-image-format destination))))
+  (with-c-array-freed
+      (c-a (make-c-array object
+                         :dimensions (gpu-array-dimensions destination)
+                         :element-type (image-format->pixel-format
+                                        (gpu-array-t-image-format destination))))
     (push-g c-a destination)))
 
 (defmethod push-g ((object array) (destination gpu-array-t))
-  (with-c-array-freed (c-a (make-c-array object
-                                   :dimensions (dimensions destination)
-                                   :element-type (image-format->pixel-format
-                                                  (gpu-array-t-image-format destination))))
+  (with-c-array-freed
+      (c-a (make-c-array object
+                         :dimensions (gpu-array-dimensions destination)
+                         :element-type (image-format->pixel-format
+                                        (gpu-array-t-image-format destination))))
     (push-g c-a destination)))
 
 ;; [TODO] This feels like could create non-optimal solutions
@@ -892,7 +912,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (with-gpu-array-t object
     (let* ((p-format (image-format->pixel-format
                       (gpu-array-t-image-format object)))
-           (c-array (make-c-array nil :dimensions (dimensions object)
+           (c-array (make-c-array nil :dimensions (gpu-array-dimensions object)
                                   :element-type p-format)))
       (destructuring-bind (format type)
           (cepl.pixel-formats::compile-pixel-format p-format)

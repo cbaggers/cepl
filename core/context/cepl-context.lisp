@@ -309,7 +309,9 @@
                              default-framebuffer) cepl-context
     ;;
     (let* ((surface-size (cepl.host:window-size surface))
-           (fbo (cepl.fbos::%make-default-framebuffer surface-size t t)))
+           (width (first surface-size))
+           (height (second surface-size))
+           (fbo (cepl.fbos::%make-default-framebuffer width height t t)))
       ;;
       ;; Setup default fbo
       (setf (%cepl-context-default-framebuffer cepl-context) fbo
