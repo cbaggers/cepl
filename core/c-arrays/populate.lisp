@@ -1,33 +1,39 @@
 (in-package :cepl.c-arrays)
 
 (defun+ c-populate (c-array data &optional (check-sizes t))
-  (labels ((walk-to-dpop (data dimensions &optional structp pos)
-             (let ((still-to-walk (rest dimensions)))
-               (map nil (lambda (sublist i)
-                          (if still-to-walk
-                              (walk-to-dpop sublist still-to-walk structp (cons i pos))
-                              (if structp
-                                  (populate (aref-c* c-array (reverse (cons i pos)))
-                                            sublist)
-                                  (setf (aref-c* c-array (reverse (cons i pos)))
-                                        sublist))))
-                    data (range (length data)))))
-           (dpop-with-array (data dimensions &optional structp)
-             (loop :for i :below (array-total-size data)
-                :for coords = (rm-index-to-coords i dimensions) :do
-                (if structp
-                    (populate (aref-c* c-array coords) (row-major-aref data i))
-                    (setf (aref-c* c-array coords) (row-major-aref data i))))))
-    (when check-sizes
-      (unless (validate-dimensions data (c-array-dimensions c-array))
-        (error "Dimensions of array differs from that of the data:~%~a~%~a"
-               c-array data)))
-    (typecase data
-      (sequence (walk-to-dpop data (c-array-dimensions c-array)
-                              (c-array-struct-element-typep c-array)))
-      (array (dpop-with-array data (c-array-dimensions c-array)
-                              (c-array-struct-element-typep c-array))))
-    c-array))
+  (let ((structp (c-array-struct-element-typep c-array)))
+    (labels ((walk-to-dpop (data dimensions idx)
+               (let ((dim-size (first dimensions))
+                     (dims-rest (rest dimensions)))
+                 (if dims-rest
+                     (loop
+                        :for elem :in data
+                        :for i :below dim-size
+                        :do (setf idx (walk-to-dpop elem dims-rest idx)))
+                     (loop
+                        :for elem :in data
+                        :for i :below dim-size
+                        :do (if structp
+                                (populate (row-major-aref-c c-array idx) elem)
+                                (progn
+                                  (setf (row-major-aref-c c-array idx) elem)
+                                  (incf idx)))))
+                 idx))
+             (dpop-with-array (data)
+               (loop
+                  :for i :below (array-total-size data)
+                  :for elem := (row-major-aref data i)
+                  :do (if structp
+                          (populate (row-major-aref-c c-array i) elem)
+                          (setf (row-major-aref-c c-array i) elem)))))
+      (when check-sizes
+        (unless (validate-dimensions data (c-array-dimensions c-array))
+          (error "Dimensions of array differs from that of the data:~%~a~%~a"
+                 c-array data)))
+      (typecase data
+        (sequence (walk-to-dpop data (c-array-dimensions c-array) 0))
+        (array (dpop-with-array data)))
+      c-array)))
 
 (defun+ rm-index-to-coords (index subscripts)
   (let ((cur index))
@@ -61,10 +67,10 @@
          (let* ((f (first dimensions))
                 (data-len (length data))
                 (d (if (eq :? f) data-len (when (= f data-len) f))))
-           (validate-seq-dimensions
-            (when (> data-len 0)
-              (elt data 0)) (rest dimensions) orig-dim
-              (cons d accum))))
+           (validate-seq-dimensions (when (> data-len 0) (elt data 0))
+                                    (rest dimensions)
+                                    orig-dim
+                                    (cons d accum))))
         (otherwise nil))))
 
 ;;------------------------------------------------------------

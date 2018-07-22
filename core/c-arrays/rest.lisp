@@ -47,17 +47,52 @@
      :element-from-foreign (c-array-element-from-foreign array)
      :element-to-foreign (c-array-element-to-foreign array))))
 
+
 (defmethod pull1-g ((object c-array))
-  (let* ((dimensions (c-array-dimensions object))
-         (depth      (1- (length dimensions)))
-         (indices    (make-list (1+ depth))))
-    (labels ((recurse (n)
-               (loop for j below (nth n dimensions)
-                     do (setf (nth n indices) j)
-                     collect (if (= n depth)
-                                 (pull1-g (aref-c* object indices))
-                               (recurse (1+ n))))))
-      (recurse 0))))
+  (if (c-array-struct-element-typep object)
+      (pull-1-g-struct-elems object)
+      (pull-1-g-val-elems object)))
+
+(defun pull-1-g-struct-elems (c-array)
+  (labels ((inner (dims idx)
+             (let ((rest (rest dims)))
+               (if rest
+                   (values
+                    (loop
+                       :for i :below (first dims)
+                       :collect (multiple-value-bind (list nidx)
+                                    (inner rest idx)
+                                  (setf idx nidx)
+                                  list))
+                    idx)
+                   (let ((len (first dims)))
+                     (values
+                      (loop
+                         :for i :below len
+                         :collect (pull1-g
+                                   (row-major-aref-c c-array (+ idx i))))
+                      (+ idx len)))))))
+    (values (inner (c-array-dimensions c-array) 0))))
+
+(defun pull-1-g-val-elems (c-array)
+  (labels ((inner (dims idx)
+             (let ((rest (rest dims)))
+               (if rest
+                   (values
+                    (loop
+                       :for i :below (first dims)
+                       :collect (multiple-value-bind (list nidx)
+                                    (inner rest idx)
+                                  (setf idx nidx)
+                                  list))
+                    idx)
+                   (let ((len (first dims)))
+                     (values
+                      (loop
+                         :for i :below len
+                         :collect (row-major-aref-c c-array (+ idx i)))
+                      (+ idx len)))))))
+    (values (inner (c-array-dimensions c-array) 0))))
 
 (defmethod pull-g ((object c-array))
   (pull1-g object))
