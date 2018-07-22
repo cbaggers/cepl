@@ -106,6 +106,12 @@
 (defn-inline row-major-aref-c ((c-array c-array) (index c-array-index)) t
   (aref-c*-1d c-array index))
 
+(defn-inline (setf row-major-aref-c) ((value t)
+                                      (c-array c-array)
+                                      (index c-array-index))
+    t
+  (setf (aref-c*-1d c-array index) value))
+
 (defun aref-c (c-array &rest subscripts)
   (case= (length subscripts)
     (0 (error "aref-c: invalid number of subscripts: 0"))
