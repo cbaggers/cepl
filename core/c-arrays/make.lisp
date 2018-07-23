@@ -54,14 +54,15 @@
          (dimensions
           (if dimensions
               (if initial-contents
-                  (or (validate-dimensions initial-contents dimensions)
+                  (if (validate-dimensions initial-contents dimensions)
+                      dimensions
                       (error "Dimensions are invalid for initial-contents~%~a~%~a"
                              dimensions initial-contents))
                   dimensions)
               (if initial-contents
                   (typecase initial-contents
                     (sequence (list (length initial-contents)))
-                    (array (array-dimensions initial-contents)))
+                    (array (reverse (array-dimensions initial-contents))))
                   (error "make-c-array must be given initial-elements or dimensions"))))
          (p-format (cepl.pixel-formats:pixel-format-p element-type))
          (pixel-format (when p-format element-type))

@@ -72,7 +72,7 @@
                          :collect (pull1-g
                                    (row-major-aref-c c-array (+ idx i))))
                       (+ idx len)))))))
-    (values (inner (c-array-dimensions c-array) 0))))
+    (values (inner (reverse (c-array-dimensions c-array)) 0))))
 
 (defun pull-1-g-val-elems (c-array)
   (labels ((inner (dims idx)
@@ -92,7 +92,7 @@
                          :for i :below len
                          :collect (row-major-aref-c c-array (+ idx i)))
                       (+ idx len)))))))
-    (values (inner (c-array-dimensions c-array) 0))))
+    (values (inner (reverse (c-array-dimensions c-array)) 0))))
 
 (defmethod pull-g ((object c-array))
   (pull1-g object))

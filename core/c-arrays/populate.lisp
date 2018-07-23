@@ -31,8 +31,10 @@
           (error "Dimensions of array differs from that of the data:~%~a~%~a"
                  c-array data)))
       (typecase data
-        (sequence (walk-to-dpop data (c-array-dimensions c-array) 0))
-        (array (dpop-with-array data)))
+        (array (dpop-with-array data))
+        (sequence (walk-to-dpop data
+                                (reverse (c-array-dimensions c-array))
+                                0)))
       c-array)))
 
 (defun+ rm-index-to-coords (index subscripts)
@@ -44,34 +46,20 @@
           rem)))))
 
 (defun+ validate-dimensions (data dimensions)
-  (let* ((dimensions (listify dimensions))
-         (r (typecase data
-              (sequence (validate-seq-dimensions data dimensions))
-              (array (validate-arr-dimensions data dimensions))
-              (otherwise nil))))
-    (when (and r (every #'identity r)) r)))
-
-(defun+ validate-arr-dimensions (data dimensions)
-  (let* ((actual-dims (array-dimensions data)))
-    (if (= (length actual-dims) (length dimensions))
-        (mapcar (lambda (d a) (if (eq d :?) a (when (= d a) d)))
-                dimensions
-                actual-dims)
-        nil)))
-
-(defun+ validate-seq-dimensions (data dimensions &optional (orig-dim dimensions) accum)
-  (if (null dimensions)
-      (reverse accum)
+  (labels ((validate-arr-dimensions (data dimensions)
+             (when (equal (array-dimensions data)
+                          dimensions)
+               dimensions))
+           (validate-seq-dimensions (data dimensions)
+             (and (equal (length data) (first dimensions))
+                  (if (rest dimensions)
+                      (validate-seq-dimensions (first data) (rest dimensions))
+                      t))))
+    (let* ((dimensions (listify dimensions)))
       (typecase data
-        (sequence
-         (let* ((f (first dimensions))
-                (data-len (length data))
-                (d (if (eq :? f) data-len (when (= f data-len) f))))
-           (validate-seq-dimensions (when (> data-len 0) (elt data 0))
-                                    (rest dimensions)
-                                    orig-dim
-                                    (cons d accum))))
-        (otherwise nil))))
+                (array (validate-arr-dimensions data (reverse dimensions)))
+                (sequence (validate-seq-dimensions data (reverse dimensions)))
+                (otherwise nil)))))
 
 ;;------------------------------------------------------------
 
@@ -80,9 +68,9 @@
                       (c-array-dimensions c-array)))
 
 (defun+ %gl-calc-byte-size (elem-size dimensions)
-  (let* ((x-size (first dimensions)) (rest (rest dimensions))
-         (row-byte-size (* x-size elem-size)))
-    (values (* row-byte-size (max (reduce #'* rest) 1))
+  (let* ((row-length (first dimensions))
+         (row-byte-size (* row-length elem-size)))
+    (values (* (reduce #'* dimensions) elem-size)
             row-byte-size)))
 
 (defun+ gl-calc-byte-size (type dimensions)
