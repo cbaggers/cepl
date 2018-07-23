@@ -68,7 +68,7 @@
   (element-pixel-format nil :type (or null pixel-format))
   (element-from-foreign
    (error "cepl: c-array must be created with a from-foreign function")
-   :type function)
+   :type (function (foreign-pointer) t))
   (element-to-foreign
    (error "cepl: c-array must be created with a to-foreign function")
    :type (function (foreign-pointer t) t))

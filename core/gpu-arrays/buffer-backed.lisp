@@ -123,8 +123,7 @@
   (let ((dimensions (listify dimensions))
         (c-dimensions (c-array-dimensions c-array)))
     (when dimensions
-      (assert (and (every #'= c-dimensions dimensions)
-                   (= (length c-dimensions) (length dimensions)))
+      (assert (equal c-dimensions dimensions)
               ()
               'make-gpu-array-from-c-array-mismatched-dimensions
               :c-arr-dimensions c-dimensions
@@ -335,14 +334,15 @@
             :array arr :shared-count (length buffer-arrays))
     ;;
     (if initial-contents
-        (with-c-array-freed
-            (c-array (if (typep initial-contents 'c-array)
-                         initial-contents
-                         (make-c-array initial-contents
+        (if (typep initial-contents 'c-array)
+            (init-gpu-array-from-c-array arr initial-contents access-style
+                                         (c-array-dimensions initial-contents))
+            (with-c-array-freed
+                (c-array (make-c-array initial-contents
                                        :dimensions new-dimensions
-                                       :element-type element-type)))
-          (init-gpu-array-from-c-array arr c-array access-style
-                                       (c-array-dimensions c-array)))
+                                       :element-type element-type))
+              (init-gpu-array-from-c-array arr c-array access-style
+                                           (c-array-dimensions c-array))))
         ;;
         (let* ((buffer (buffer-reserve-block
                         (gpu-array-bb-buffer arr)
