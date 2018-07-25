@@ -21,14 +21,22 @@
 ;;---------------------------------------------------
 
 (defun+ make-ubo (data &optional element-type)
-  (let ((ubo (%make-ubo :id (get-free-ubo-id)
-                        :data (if (typep data 'gpu-array)
-                                  data
-                                  (make-gpu-array
-                                   (when data (vector data))
-                                   :dimensions 1
-                                   :element-type element-type))
-                        :index 0)))
+  (let* ((data (cond
+                 ((gpu-array-bb-p data)
+                  data)
+                 ((c-array-p data)
+                  (make-gpu-array
+                   data
+                   :dimensions 1
+                   :element-type element-type))
+                 (t (make-gpu-array
+                     (when data (vector data))
+                     :dimensions 1
+                     :element-type element-type))))
+         (ubo (%make-ubo
+               :id (get-free-ubo-id)
+               :data data
+               :index 0)))
     (%bind-ubo ubo)))
 
 

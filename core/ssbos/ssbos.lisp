@@ -21,12 +21,18 @@
 ;;---------------------------------------------------
 
 (defun+ make-ssbo (data &optional element-type)
-  (let* ((data (if (gpu-array-bb-p data)
+  (let* ((data (cond
+                 ((gpu-array-bb-p data)
+                  data)
+                 ((c-array-p data)
+                  (make-gpu-array
                    data
-                   (make-gpu-array
-                    (when data (vector data))
-                    :dimensions 1
-                    :element-type element-type)))
+                   :dimensions 1
+                   :element-type element-type))
+                 (t (make-gpu-array
+                     (when data (vector data))
+                     :dimensions 1
+                     :element-type element-type))))
          (ssbo (%make-ssbo :id (get-free-ssbo-id)
                            :data data
                            :index 0)))
