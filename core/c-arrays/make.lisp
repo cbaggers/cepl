@@ -39,12 +39,30 @@
          :total-size total-size
          :element-type element-type2
          :element-byte-size elem-size
+         :sizes (gen-c-array-sizes dimensions
+                                   elem-size
+                                   1)
          :struct-element-typep (symbol-names-cepl-structp element-type2)
          :row-byte-size row-byte-size
          :element-pixel-format (when p-format element-type)
          :element-from-foreign (get-typed-from-foreign element-type2)
          :element-to-foreign (get-typed-to-foreign element-type2)
          :free free)))))
+
+;;------------------------------------------------------------
+
+(defun gen-c-array-sizes (dimensions element-byte-size alignment)
+  (destructuring-bind (row-len &optional (y 0) (z 0) &rest r) dimensions
+    (declare (ignore r))
+    (let* ((row-size (* row-len element-byte-size))
+           (row+padding (* (ceiling row-size alignment) alignment))
+           (square (* y row+padding))
+           (cube (* z square)))
+      (make-array 4 :element-type 'c-array-index
+                  :initial-contents (list element-byte-size
+                                          row+padding
+                                          square
+                                          cube)))))
 
 ;;------------------------------------------------------------
 
@@ -88,6 +106,9 @@
                         :pointer (cffi::%foreign-alloc byte-size)
                         :dimensions dimensions
                         :total-size total-size
+                        :sizes (gen-c-array-sizes dimensions
+                                                  elem-size
+                                                  1)
                         :element-byte-size elem-size
                         :element-type element-type
                         :struct-element-typep (symbol-names-cepl-structp
@@ -114,6 +135,8 @@
      :total-size (c-array-total-size c-array)
      :element-byte-size (c-array-element-byte-size c-array)
      :element-type (c-array-element-type c-array)
+     :sizes (make-array 4 :element-type 'c-array-index
+                        :initial-contents (c-array-sizes c-array))
      :struct-element-typep (c-array-struct-element-typep c-array)
      :row-byte-size (c-array-row-byte-size c-array)
      :element-from-foreign (c-array-element-from-foreign c-array)

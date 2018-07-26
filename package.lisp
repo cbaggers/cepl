@@ -522,6 +522,7 @@
            :c-array-element-pixel-format
            :c-array-element-from-foreign
            :c-array-element-to-foreign
+           :c-array-sizes
 
            :%make-viewport
            :make-viewport

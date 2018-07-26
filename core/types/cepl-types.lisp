@@ -58,6 +58,9 @@
   (element-type
    (error "cepl: c-array must be created with an element-type")
    :type symbol)
+  (sizes
+   (error "CEPL (BUG): c-array created without internal sizes")
+   :type (simple-array c-array-index (4)))
   (element-byte-size
    (error "cepl: c-array must be created with an element-byte-size")
    :type elem-byte-size)
