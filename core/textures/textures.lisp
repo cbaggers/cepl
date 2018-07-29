@@ -851,48 +851,37 @@ the width to see at what point the width reaches 0 or GL throws an error."
 
 ;;------------------------------------------------------------
 
-(defmethod push-g ((object c-array) (destination texture))
-  (push-g object (texref destination)))
-(defmethod push-g ((object list) (destination texture))
-  (push-g object (texref destination)))
-(defmethod push-g ((object array) (destination texture))
-  (push-g object (texref destination)))
-
-(defmethod push-g ((object list) (destination gpu-array-t))
-  (with-c-array-freed
-      (c-a (make-c-array object
-                         :dimensions (gpu-array-dimensions destination)
-                         :element-type (image-format->pixel-format
-                                        (gpu-array-t-image-format destination))))
-    (push-g c-a destination)))
-
-(defmethod push-g ((object array) (destination gpu-array-t))
-  (with-c-array-freed
-      (c-a (make-c-array object
-                         :dimensions (gpu-array-dimensions destination)
-                         :element-type (image-format->pixel-format
-                                        (gpu-array-t-image-format destination))))
-    (push-g c-a destination)))
-
 ;; [TODO] This feels like could create non-optimal solutions
 ;;        So prehaps this should look at texture format, and
 ;;        find the most similar compatible format, with worst
 ;;        case being just do what we do below
-(defmethod push-g ((object c-array) (destination gpu-array-t))
+(defn copy-c-array-to-texture-backed-gpu-array ((src c-array)
+                                                (dst gpu-array-t))
+    gpu-array-t
   (upload-c-array-to-gpu-array-t
-   destination object
-   (cepl.pixel-formats::compile-pixel-format (lisp-type->pixel-format object))))
+   dst src
+   (cepl.pixel-formats::compile-pixel-format (lisp-type->pixel-format src)))
+  dst)
 
-(defmethod pull-g ((object texture))
-  (pull-g (texref object)))
+(defn copy-lisp-data-to-texture-backed-gpu-array ((src (or list array))
+                                                  (dst gpu-array-t))
+    gpu-array-t
+  (with-c-array-freed
+      (c-a (make-c-array src
+                         :dimensions (gpu-array-dimensions dst)
+                         :element-type (image-format->pixel-format
+                                        (gpu-array-t-image-format dst))))
+    (copy-c-array-to-texture-backed-gpu-array c-a dst))
+  dst)
 
 ;; [TODO] implement gl-fill and fill arguments
 ;; [TODO] Does not respect UNPACK_BUFFER
-(defmethod pull1-g ((object gpu-array-t))
-  (with-gpu-array-t object
+(defn copy-texture-backed-gpu-array-to-new-c-array ((src gpu-array-t))
+    c-array
+  (with-gpu-array-t src
     (let* ((p-format (image-format->pixel-format
-                      (gpu-array-t-image-format object)))
-           (c-array (make-c-array nil :dimensions (gpu-array-dimensions object)
+                      (gpu-array-t-image-format src)))
+           (c-array (make-c-array nil :dimensions (gpu-array-dimensions src)
                                   :element-type p-format)))
       (destructuring-bind (format type)
           (cepl.pixel-formats::compile-pixel-format p-format)
@@ -905,19 +894,54 @@ the width to see at what point the width reaches 0 or GL throws an error."
                              (pointer c-array))))
       c-array)))
 
-(defmethod pull1-g ((object texture))
-  (pull1-g (texref object)))
-
-;; [TODO] With-c-array-freed is wrong
-(defmethod pull-g ((object gpu-array-t))
-  (with-c-array-freed (c-array (pull1-g object))
+(defn copy-texture-backed-gpu-array-to-new-lisp-data ((src gpu-array-t))
+    t
+  (with-c-array-freed
+      (c-array (copy-texture-backed-gpu-array-to-new-c-array src))
     (pull1-g c-array)))
 
+
+(defmethod push-g ((object c-array) (destination texture))
+  (copy-c-array-to-texture-backed-gpu-array object (texref destination)))
+(defmethod push-g ((object c-array) (destination gpu-array-t))
+  (copy-c-array-to-texture-backed-gpu-array object destination))
+(defmethod push-g ((object list) (destination texture))
+  (copy-lisp-data-to-texture-backed-gpu-array object (texref destination)))
+(defmethod push-g ((object array) (destination texture))
+  (copy-lisp-data-to-texture-backed-gpu-array object (texref destination)))
+(defmethod push-g ((object list) (destination gpu-array-t))
+  (copy-lisp-data-to-texture-backed-gpu-array object destination))
+(defmethod push-g ((object array) (destination gpu-array-t))
+  (copy-lisp-data-to-texture-backed-gpu-array object destination))
+
+(defmethod pull-g ((object gpu-array-t))
+  (copy-texture-backed-gpu-array-to-new-lisp-data object))
+(defmethod pull-g ((object texture))
+  (copy-texture-backed-gpu-array-to-new-lisp-data (texref object)))
+
+(defmethod pull1-g ((object gpu-array-t))
+  (copy-texture-backed-gpu-array-to-new-c-array object))
+(defmethod pull1-g ((object texture))
+  (copy-texture-backed-gpu-array-to-new-c-array (texref object)))
+
+(defmethod copy-g ((source c-array) (destination gpu-array-t))
+  (copy-c-array-to-texture-backed-gpu-array source destination))
+(defmethod copy-g ((source list) (destination gpu-array-t))
+  (copy-lisp-data-to-texture-backed-gpu-array source destination))
+(defmethod copy-g ((source array) (destination gpu-array-t))
+  (copy-lisp-data-to-texture-backed-gpu-array source destination))
+(defmethod copy-g ((source gpu-array-t) (destination (eql :c-array)))
+  (declare (ignore destination))
+  (copy-texture-backed-gpu-array-to-new-c-array source))
+(defmethod copy-g ((source gpu-array-t) (destination (eql :lisp)))
+  (declare (ignore destination))
+  (copy-texture-backed-gpu-array-to-new-lisp-data source))
+
 ;; {TODO}
-;; copy data (from frame-buffer to texture image) - leave for now
-;; copy from buffer to texture glCopyTexSubImage2D
+;; copy data (from frame-buffer to texture image) - (glCopyTexSubImage2D)
+;; copy to tex from buffer (same as above but with GL_PIXEL_UNPACK_BUFFER)
+;; copy to buffer from tex (same as above but with GL_PIXEL_PACK_BUFFER)
 ;; set texture params
 ;; get texture params
 ;; texture views
-;; generate-mipmaps
-;; texsubimage*d - pushing data
+;; dedicated generate-mipmaps
