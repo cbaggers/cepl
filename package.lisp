@@ -758,7 +758,9 @@
            :surface-title
            :surface-fullscreen-p
            :gl-initialized-p
-           :with-context-state-restored))
+           :with-context-state-restored
+           :unpack-alignment
+           :pack-alignment))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo

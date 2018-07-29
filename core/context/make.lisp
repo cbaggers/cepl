@@ -42,6 +42,11 @@
         :ccw)
   ;; Default clear color
   (setf (clear-color cepl-context)
-        (vec4 0f0 0f0 0f0 0f0)))
+        (vec4 0f0 0f0 0f0 0f0))
+  ;; Default row-alignments
+  (setf (unpack-alignment t) 4)
+  (setf (pack-alignment t) 4)
+  ;; Done :)
+  t)
 
 ;;----------------------------------------------------------------------

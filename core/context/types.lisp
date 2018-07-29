@@ -123,7 +123,10 @@
   (depth-clamp nil :type boolean)
   (cull-face :unknown :type (or symbol function))
   (front-face :unknown :type symbol)
-  (clear-color (vec4 0f0 0f0 0f0 0f0) :type vec4))
+  (clear-color (vec4 0f0 0f0 0f0 0f0) :type vec4)
+  ;;
+  (pack-alignment 4 :type (integer 1 8))
+  (unpack-alignment 4 :type (integer 1 8)))
 
 (defmethod print-object ((context cepl-context) stream)
   (format stream "#<CEPL-CONTEXT ~a>" (slot-value context 'bound-thread)))
@@ -142,7 +145,8 @@
            front-face current-stencil-params-front current-stencil-params-back
            current-stencil-mask-front current-stencil-mask-back
            clear-color gl-version-float
-           array-of-ubo-binding-ranges array-of-ssbo-binding-ranges)))
+           array-of-ubo-binding-ranges array-of-ssbo-binding-ranges
+           pack-alignment unpack-alignment)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))
           (accessors (loop :for slot :in slots :collect
