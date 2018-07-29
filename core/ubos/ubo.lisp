@@ -90,7 +90,7 @@ should be ~s" data element-type)
          (type (ubo-data-type ubo))
          (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer data)
                     (cepl.c-arrays::gl-calc-byte-size
-                     type (list (ubo-index ubo)))))
+                     type (list (ubo-index ubo)) 1)))
          (size (gl-type-size type))
          (gpu-buffer (gpu-array-buffer data)))
     (cepl.context::ubo-bind-buffer-id-range

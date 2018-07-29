@@ -87,7 +87,7 @@ should be ~s" data element-type)
          (type (ssbo-data-type ssbo))
          (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer data)
                     (cepl.c-arrays::gl-calc-byte-size
-                     type (list (ssbo-index ssbo)))))
+                     type (list (ssbo-index ssbo)) 1)))
          (size (gl-type-size type))
          (gpu-buffer (gpu-array-buffer data)))
     (cepl.context::ssbo-bind-buffer-id-range

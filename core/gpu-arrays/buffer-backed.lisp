@@ -74,7 +74,9 @@
                                  (byte-offset-into-source-data integer)
                                  element-type
                                  dimensions
-                                 &optional byte-size)
+                                 &optional
+                                 byte-size
+                                 (row-alignment (integer 1 4) 1))
     gpu-array-bb
   (declare (profile t))
   (assert dimensions)
@@ -84,7 +86,7 @@
          (dimensions (listify dimensions))
          (byte-size (or byte-size
                         (cepl.c-arrays::gl-calc-byte-size
-                         element-type dimensions))))
+                         element-type dimensions row-alignment))))
     (setf (gpu-array-dimensions child) dimensions
           (gpu-array-bb-buffer child) (gpu-array-bb-buffer parent)
           (gpu-array-bb-access-style child) (gpu-array-bb-access-style parent)
@@ -175,7 +177,8 @@
                              (%make-gpu-array-bb
                               :buffer buffer
                               :dimensions (c-array-dimensions c-array)
-                              :access-style access-style))
+                              :access-style access-style
+                              :row-alignment (c-array-row-alignment c-array)))
                            c-arrays)))
     (cepl.context::if-gl-context
      (init-gpu-arrays-from-c-arrays %pre% c-arrays access-style)
@@ -228,7 +231,8 @@
        :for g-array := (%make-gpu-array-bb
                         :buffer buffer
                         :dimensions dimensions
-                        :access-style access-style)
+                        :access-style access-style
+                        :row-alignment 1)
        :collect (make-gpu-array-share-data g-array
                                            src
                                            0
@@ -264,7 +268,8 @@
        :for g-array := (%make-gpu-array-bb
                         :buffer buffer
                         :dimensions dimensions
-                        :access-style access-style)
+                        :access-style access-style
+                        :row-alignment 1)
        :collect (make-gpu-array-share-data g-array
                                            src
                                            0
@@ -305,6 +310,8 @@
     (let* ((source-len (first dimensions))
            (type (or new-element-type
                      (gpu-array-bb-element-type array)))
+           (row-alignment
+            (gpu-array-bb-row-alignment array))
            (end (or end source-len)))
       (assert (and (< start end)
                    (< start source-len)
@@ -312,7 +319,8 @@
               () "Invalid subseq start or end for c-array")
       (make-gpu-array-share-data
        (make-uninitialized-gpu-array-bb) array
-       (cepl.c-arrays::gl-calc-byte-size type start) type
+       (cepl.c-arrays::gl-calc-byte-size type start row-alignment)
+       type
        (list (- end start))))))
 
 ;; {TODO} copy buffer to buffer: glCopyBufferSubData

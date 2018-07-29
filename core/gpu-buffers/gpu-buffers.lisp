@@ -203,7 +203,7 @@ gpu-array: ~s (byte-size: ~s)"
   (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
   (setf (gpu-buffer-bound (cepl-context) target) buffer)
   (let* ((dimensions (listify dimensions))
-         (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions)))
+         (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions 1)))
     (buffer-reserve-block-raw buffer byte-size target usage)
     (buffer-set-arrays-from-sizes buffer (list byte-size) usage))
   buffer)
@@ -232,7 +232,8 @@ gpu-array: ~s (byte-size: ~s)"
                         :access-style usage
                         :element-type :uint8
                         :byte-size byte-size
-                        :offset-in-bytes-into-buffer offset)
+                        :offset-in-bytes-into-buffer offset
+                        :row-alignment 1)
               :do (incf offset byte-size)))))
   buffer)
 

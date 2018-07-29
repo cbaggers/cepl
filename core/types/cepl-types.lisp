@@ -120,7 +120,9 @@
   (element-type nil :type symbol) ;; data-type
   (byte-size 0 :type gbuf-byte-size) ;; data-index-length
   (element-byte-size 0 :type elem-byte-size)
-  (offset-in-bytes-into-buffer 0 :type gbuf-byte-size)) ;; offset-in-bytes-into-buffer
+  (offset-in-bytes-into-buffer 0 :type gbuf-byte-size)
+  ;; to match c-array and occasionaly used by pbos
+  (row-alignment 1 :type (integer 1 4)))
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)
                         (:include gpu-array))

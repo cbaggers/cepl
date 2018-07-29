@@ -34,10 +34,7 @@
     (values)
   (loop :for array :across (%tfs-arrays tfs)
      :for index :from 0 :do
-     (let* ((type (gpu-array-bb-element-type array))
-            (offset (+ (gpu-array-bb-offset-in-bytes-into-buffer array)
-                       (cepl.c-arrays::gl-calc-byte-size
-                        type 0)))
+     (let* ((offset (gpu-array-bb-offset-in-bytes-into-buffer array))
             (size (gpu-array-bb-byte-size array))
             (gpu-buffer (gpu-array-buffer array)))
        (cepl.context::transform-feedback-bind-buffer-id-range

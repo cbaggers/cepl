@@ -338,6 +338,7 @@
            :gpu-array-bb-p
            :gpu-array-bb-buffer
            :gpu-array-bb-access-style
+           :gpu-array-bb-row-alignment
            :gpu-array-bb-element-type
            :gpu-array-bb-element-byte-size
            :gpu-array-bb-byte-size

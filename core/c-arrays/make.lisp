@@ -105,7 +105,7 @@
     (check-c-array-dimensions dimensions total-size row-alignment)
     (let ((new-array (%make-c-array
                       :pointer (cffi::%foreign-alloc
-                                (%gl-calc-byte-size elem-size dimensions))
+                                (%gl-calc-byte-size elem-size dimensions row-alignment))
                       :dimensions dimensions
                       :total-size total-size
                       :sizes (gen-c-array-sizes dimensions
