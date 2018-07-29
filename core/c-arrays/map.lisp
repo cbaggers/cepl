@@ -3,6 +3,7 @@
 (defn map-c ((function function) (c-array c-array)
              &optional destination-element-type)
     (or null c-array)
+  (declare (ignore destination-element-type))
   (loop
      :for i :below (c-array-total-size c-array)
      :do (funcall function (row-major-aref-c c-array i))))

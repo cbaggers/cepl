@@ -88,114 +88,6 @@
 
 ;;----------------------------------------------------------------------
 
-(defn-inline row-major-aref-c ((c-array c-array) (index c-array-index)) t
-  (let ((row-len (first (c-array-dimensions c-array))))
-    (multiple-value-bind (row i) (floor index row-len)
-      (aref-c*-2d c-array i row))))
-
-(defn-inline (setf row-major-aref-c) ((value t)
-                                      (c-array c-array)
-                                      (index c-array-index))
-    t
-  (let ((row-len (first (c-array-dimensions c-array))))
-    (multiple-value-bind (row i) (floor index row-len)
-      (setf (aref-c*-2d c-array i row) value))))
-
-(defun aref-c (c-array &rest subscripts)
-  (case= (length subscripts)
-    (0 (error "aref-c: invalid number of subscripts: 0"))
-    (1 (aref-c*-1d c-array (first subscripts)))
-    (2 (aref-c*-2d
-        c-array (first subscripts) (second subscripts)))
-    (3 (aref-c*-3d
-        c-array (first subscripts) (second subscripts) (third subscripts)))
-    (4 (aref-c*-4d
-        c-array (first subscripts) (second subscripts)
-        (third subscripts) (fourth subscripts)))
-    (otherwise (error 'c-array-4d-limit-aref
-                      :c-arr c-array
-                      :indices subscripts))))
-
-(define-compiler-macro aref-c (c-array &rest subscripts)
-  (case= (length subscripts)
-    (0 (error "aref-c: invalid number of subscripts: 0"))
-    (1 `(aref-c*-1d ,c-array ,@subscripts))
-    (2 `(aref-c*-2d ,c-array ,@subscripts))
-    (3 `(aref-c*-3d ,c-array ,@subscripts))
-    (4 `(aref-c*-4d ,c-array ,@subscripts))
-    (otherwise (error 'c-array-4d-limit-aref
-                      :c-arr c-array
-                      :indices subscripts))))
-
-(defun aref-c* (c-array subscripts)
-  (declare (type c-array c-array))
-  (case= (length subscripts)
-    (0 (error "aref-c: invalid number of subscripts: 0"))
-    (1 (aref-c*-1d c-array (first subscripts)))
-    (2 (aref-c*-2d
-        c-array (first subscripts) (second subscripts)))
-    (3 (aref-c*-3d
-        c-array (first subscripts) (second subscripts) (third subscripts)))
-    (4 (aref-c*-4d
-        c-array (first subscripts) (second subscripts)
-        (third subscripts) (fourth subscripts)))
-    (otherwise (error 'c-array-4d-limit-aref
-                      :c-arr c-array
-                      :indices subscripts))))
-
-;;----------------------------------------------------------------------
-
-(defun (setf aref-c) (value c-array &rest subscripts)
-  (case= (length subscripts)
-    (0 (error "aref-c: invalid number of subscripts: 0"))
-    (1 (setf (aref-c*-1d c-array (first subscripts))
-             value))
-    (2 (setf (aref-c*-2d
-              c-array (first subscripts) (second subscripts))
-             value))
-    (3 (setf (aref-c*-3d
-              c-array (first subscripts) (second subscripts) (third subscripts))
-             value))
-    (4 (setf (aref-c*-4d
-              c-array (first subscripts) (second subscripts)
-              (third subscripts) (fourth subscripts))
-             value))
-    (otherwise (error 'c-array-4d-limit-aref
-                      :c-arr c-array
-                      :indices subscripts))))
-
-(define-compiler-macro (setf aref-c) (value c-array &rest subscripts)
-  (case= (length subscripts)
-    (0 (error "aref-c: invalid number of subscripts: 0"))
-    (1 `(setf (aref-c*-1d ,c-array ,@subscripts) ,value))
-    (2 `(setf (aref-c*-2d ,c-array ,@subscripts) ,value))
-    (3 `(setf (aref-c*-3d ,c-array ,@subscripts) ,value))
-    (4 `(setf (aref-c*-4d ,c-array ,@subscripts) ,value))
-    (otherwise (error 'c-array-4d-limit-aref
-                      :c-arr c-array
-                      :indices subscripts))))
-
-(defun (setf aref-c*) (value c-array subscripts)
-  (case= (length subscripts)
-    (0 (error "aref-c: invalid number of subscripts: 0"))
-    (1 (setf (aref-c*-1d c-array (first subscripts))
-             value))
-    (2 (setf (aref-c*-2d
-              c-array (first subscripts) (second subscripts))
-             value))
-    (3 (setf (aref-c*-3d
-              c-array (first subscripts) (second subscripts) (third subscripts))
-             value))
-    (4 (setf (aref-c*-4d
-              c-array (first subscripts) (second subscripts)
-              (third subscripts) (fourth subscripts))
-             value))
-    (otherwise (error 'c-array-4d-limit-aref
-                      :c-arr c-array
-                      :indices subscripts))))
-
-;;----------------------------------------------------------------------
-
 (deferror c-array-4d-limit () (dimensions)
     "Sorry, currently cepl only supports up to rank 4 c-arrays.
 Trying to make a c-array with the following dimensions: ~a
@@ -305,3 +197,111 @@ github issue for this when it becomes a problem for you"
   (let ((ptr (ptr-index-4d c-array x y z w))
         (ref (c-array-element-to-foreign c-array)))
     (funcall ref ptr value)))
+
+;;----------------------------------------------------------------------
+
+(defun (setf aref-c) (value c-array &rest subscripts)
+  (case= (length subscripts)
+    (0 (error "aref-c: invalid number of subscripts: 0"))
+    (1 (setf (aref-c*-1d c-array (first subscripts))
+             value))
+    (2 (setf (aref-c*-2d
+              c-array (first subscripts) (second subscripts))
+             value))
+    (3 (setf (aref-c*-3d
+              c-array (first subscripts) (second subscripts) (third subscripts))
+             value))
+    (4 (setf (aref-c*-4d
+              c-array (first subscripts) (second subscripts)
+              (third subscripts) (fourth subscripts))
+             value))
+    (otherwise (error 'c-array-4d-limit-aref
+                      :c-arr c-array
+                      :indices subscripts))))
+
+(define-compiler-macro (setf aref-c) (value c-array &rest subscripts)
+  (case= (length subscripts)
+    (0 (error "aref-c: invalid number of subscripts: 0"))
+    (1 `(setf (aref-c*-1d ,c-array ,@subscripts) ,value))
+    (2 `(setf (aref-c*-2d ,c-array ,@subscripts) ,value))
+    (3 `(setf (aref-c*-3d ,c-array ,@subscripts) ,value))
+    (4 `(setf (aref-c*-4d ,c-array ,@subscripts) ,value))
+    (otherwise (error 'c-array-4d-limit-aref
+                      :c-arr c-array
+                      :indices subscripts))))
+
+(defun (setf aref-c*) (value c-array subscripts)
+  (case= (length subscripts)
+    (0 (error "aref-c: invalid number of subscripts: 0"))
+    (1 (setf (aref-c*-1d c-array (first subscripts))
+             value))
+    (2 (setf (aref-c*-2d
+              c-array (first subscripts) (second subscripts))
+             value))
+    (3 (setf (aref-c*-3d
+              c-array (first subscripts) (second subscripts) (third subscripts))
+             value))
+    (4 (setf (aref-c*-4d
+              c-array (first subscripts) (second subscripts)
+              (third subscripts) (fourth subscripts))
+             value))
+    (otherwise (error 'c-array-4d-limit-aref
+                      :c-arr c-array
+                      :indices subscripts))))
+
+;;----------------------------------------------------------------------
+
+(defn-inline row-major-aref-c ((c-array c-array) (index c-array-index)) t
+  (let ((row-len (first (c-array-dimensions c-array))))
+    (multiple-value-bind (row i) (floor index row-len)
+      (aref-c*-2d c-array i row))))
+
+(defn-inline (setf row-major-aref-c) ((value t)
+                                      (c-array c-array)
+                                      (index c-array-index))
+    t
+  (let ((row-len (first (c-array-dimensions c-array))))
+    (multiple-value-bind (row i) (floor index row-len)
+      (setf (aref-c*-2d c-array i row) value))))
+
+(defun aref-c (c-array &rest subscripts)
+  (case= (length subscripts)
+    (0 (error "aref-c: invalid number of subscripts: 0"))
+    (1 (aref-c*-1d c-array (first subscripts)))
+    (2 (aref-c*-2d
+        c-array (first subscripts) (second subscripts)))
+    (3 (aref-c*-3d
+        c-array (first subscripts) (second subscripts) (third subscripts)))
+    (4 (aref-c*-4d
+        c-array (first subscripts) (second subscripts)
+        (third subscripts) (fourth subscripts)))
+    (otherwise (error 'c-array-4d-limit-aref
+                      :c-arr c-array
+                      :indices subscripts))))
+
+(define-compiler-macro aref-c (c-array &rest subscripts)
+  (case= (length subscripts)
+    (0 (error "aref-c: invalid number of subscripts: 0"))
+    (1 `(aref-c*-1d ,c-array ,@subscripts))
+    (2 `(aref-c*-2d ,c-array ,@subscripts))
+    (3 `(aref-c*-3d ,c-array ,@subscripts))
+    (4 `(aref-c*-4d ,c-array ,@subscripts))
+    (otherwise (error 'c-array-4d-limit-aref
+                      :c-arr c-array
+                      :indices subscripts))))
+
+(defun aref-c* (c-array subscripts)
+  (declare (type c-array c-array))
+  (case= (length subscripts)
+    (0 (error "aref-c: invalid number of subscripts: 0"))
+    (1 (aref-c*-1d c-array (first subscripts)))
+    (2 (aref-c*-2d
+        c-array (first subscripts) (second subscripts)))
+    (3 (aref-c*-3d
+        c-array (first subscripts) (second subscripts) (third subscripts)))
+    (4 (aref-c*-4d
+        c-array (first subscripts) (second subscripts)
+        (third subscripts) (fourth subscripts)))
+    (otherwise (error 'c-array-4d-limit-aref
+                      :c-arr c-array
+                      :indices subscripts))))
