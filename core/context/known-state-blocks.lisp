@@ -178,10 +178,10 @@
       (cepl.viewports::%set-current-viewport context current-viewport))
 
     (when unpack-alignment
-      (setf (unpack-alignment context) (unpack-alignment context)))
+      (setf (unpack-alignment t context) (unpack-alignment context)))
 
     (when pack-alignment
-      (setf (pack-alignment context) (pack-alignment context)))
+      (setf (pack-alignment t context) (pack-alignment context)))
 
     ;; color-masks
     (loop :for index :in color-mask-indices
