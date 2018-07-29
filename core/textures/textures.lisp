@@ -114,26 +114,31 @@
                c-array-dims dimensions))
       (%with-scratch-texture-bound (gpu-array-t-texture gpu-array)
         (%upload-tex texture texture-type level-num c-array-dims
-                     layer-num face-num pix-format pix-type (pointer c-array)))))
+                     layer-num face-num pix-format pix-type (pointer c-array)
+                     (c-array-row-alignment c-array)))))
   gpu-array)
 
 ;; [TODO] add offsets
 (defun+ %upload-tex (tex tex-type level-num dimensions layer-num face-num
-                         pix-format pix-type pointer)
+                         pix-format pix-type pointer row-alignment)
   (assert
    (not (multisample-texture-p tex)) ()
    "CEPL: Sorry can not yet upload data to a multisample texture in this fashion:~%~a"
    tex)
   (if (texture-mutable-p tex)
       (%upload-to-mutable-tex tex tex-type level-num dimensions layer-num
-                              face-num pix-format pix-type pointer)
+                              face-num pix-format pix-type pointer
+                              row-alignment)
       (%upload-to-immutable-tex tex tex-type level-num dimensions layer-num
-                                face-num pix-format pix-type pointer)))
+                                face-num pix-format pix-type pointer
+                                row-alignment)))
 
 (defun+ %upload-to-mutable-tex (tex tex-type level-num dimensions layer-num
-                                    face-num pix-format pix-type pointer)
+                                    face-num pix-format pix-type pointer
+                                    row-alignment)
   ;; border is an old (now unsupported) parameter and so is always be set to 0
   (destructuring-bind (&optional (width 1) (height 1) (depth 1)) dimensions
+    (setf (unpack-alignment) row-alignment)
     (case tex-type
       (:texture-1d (gl:tex-image-1d
                     tex-type level-num (texture-image-format tex)
@@ -167,9 +172,11 @@
 
 
 (defun+ %upload-to-immutable-tex (tex tex-type level-num dimensions layer-num
-                                 face-num pix-format pix-type pointer)
+                                      face-num pix-format pix-type pointer
+                                      row-alignment)
   (declare (ignore tex))
   (destructuring-bind (&optional (width 1) (height 1) (depth 1)) dimensions
+    (setf (unpack-alignment) row-alignment)
     (case tex-type
       (:texture-1d (gl:tex-sub-image-1d tex-type level-num 0 width
                                         pix-format pix-type pointer))
