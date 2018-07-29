@@ -22,9 +22,6 @@
 (deftype elem-byte-size ()
   '(unsigned-byte 32))
 
-(deftype row-byte-size ()
-  '(unsigned-byte 32))
-
 (deftype gbuf-byte-size ()
   '(unsigned-byte 32))
 
@@ -61,13 +58,7 @@
   (sizes
    (error "CEPL (BUG): c-array created without internal sizes")
    :type (simple-array c-array-index (4)))
-  (element-byte-size
-   (error "cepl: c-array must be created with an element-byte-size")
-   :type elem-byte-size)
   (struct-element-typep nil :type boolean)
-  (row-byte-size
-   (error "cepl: c-array must be created with a pointer")
-   :type row-byte-size)
   (element-pixel-format nil :type (or null pixel-format))
   (element-from-foreign
    (error "cepl: c-array must be created with a from-foreign function")
@@ -77,6 +68,10 @@
    :type (function (foreign-pointer t) t))
   (free #'cffi:foreign-free
    :type function))
+
+(defn-inline c-array-element-byte-size ((c-array c-array))
+    c-array-index
+  (aref (c-array-sizes c-array) 0))
 
 ;;------------------------------------------------------------
 

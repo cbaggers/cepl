@@ -25,72 +25,59 @@
   (the cffi-sys:foreign-pointer
        (inc-pointer
         (c-array-pointer c-array)
-        (the c-array-index
-             (+ (the c-array-index
-                     (* y (the c-array-index
-                               (c-array-row-byte-size c-array))))
-                (the c-array-index
-                     (* x (the c-array-index
-                               (c-array-element-byte-size c-array)))))))))
-
-(declaim (inline ptr-index-3d)
-         (ftype (function (c-array c-array-index c-array-index c-array-index)
-                          cffi-sys:foreign-pointer)
-                ptr-index-3d))
-(defun ptr-index-3d (c-array x y z)
-  (declare (c-array c-array)
-           (c-array-index x) (c-array-index y) (c-array-index z)
-           (optimize (speed 3) (safety 0) (debug 1)))
-  (let* ((row-size (the c-array-index (c-array-row-byte-size c-array)))
-         (2d-size (the c-array-index
-                       (* (the c-array-index (third (c-array-dimensions c-array)))
-                          row-size)))
-         (byte-offset (the c-array-index
-                           (+ (the c-array-index (* z 2d-size))
-                              (the c-array-index (* y row-size))
-                              (the c-array-index (* (c-array-element-byte-size c-array)
-                                             x))))))
-    (the cffi-sys:foreign-pointer
-         (inc-pointer (c-array-pointer c-array)
-                      byte-offset))))
-
-(declaim (inline ptr-index-4d)
-         (ftype (function (c-array c-array-index c-array-index c-array-index c-array-index)
-                          cffi-sys:foreign-pointer)
-                ptr-index-4d))
-(defun ptr-index-4d (c-array x y z w)
-  (declare (c-array c-array)
-           (c-array-index x) (c-array-index y) (c-array-index z) (c-array-index w)
-           (optimize (speed 3) (safety 0) (debug 1)))
-  (let* ((row-size (the c-array-index (c-array-row-byte-size c-array)))
-         (dimensions (c-array-dimensions c-array))
-         (2d-size (the c-array-index
-                       (* (the c-array-index (third dimensions))
-                          row-size)))
-         (3d-size (the c-array-index
-                       (* (the c-array-index (fourth dimensions))
-                          2d-size)))
-         (byte-offset
+        (vec-bind (elem-size row-size) (c-array-sizes c-array)
           (the c-array-index
-               (+ (the c-array-index (* w 3d-size))
-                  (the c-array-index
-                       (+ (the c-array-index (* z 2d-size))
-                          (the c-array-index (* y row-size))
-                          (the c-array-index (* (c-array-element-byte-size c-array)
-                                         x))))))))
-    (the cffi-sys:foreign-pointer
-         (inc-pointer (c-array-pointer c-array)
-                      byte-offset))))
+               (+ (the c-array-index (* y row-size))
+                  (the c-array-index (* x elem-size))))))))
+
+(defn-inline ptr-index-3d ((c-array c-array)
+                           (x c-array-index)
+                           (y c-array-index)
+                           (z c-array-index))
+    foreign-pointer
+  (declare (optimize (speed 3) (safety 0) (debug 1)))
+  (vec-bind (elem-size row-size 2d-size) (c-array-sizes c-array)
+    (let* ((byte-offset (the c-array-index
+                             (+ (the c-array-index (* z 2d-size))
+                                (the c-array-index (* y row-size))
+                                (the c-array-index (* x elem-size))))))
+      (the cffi-sys:foreign-pointer
+           (inc-pointer (c-array-pointer c-array)
+                        byte-offset)))))
+
+(defn-inline ptr-index-4d ((c-array c-array)
+                           (x c-array-index)
+                           (y c-array-index)
+                           (z c-array-index)
+                           (w c-array-index))
+    foreign-pointer
+  (declare(optimize (speed 3) (safety 0) (debug 1)))
+  (vec-bind (elem-size row-size 2d-size 3d-size) (c-array-sizes c-array)
+    (let* ((byte-offset
+            (the c-array-index
+                 (the c-array-index
+                      (+ (the c-array-index (* w 3d-size))
+                         (the c-array-index (* z 2d-size))
+                         (the c-array-index (* y row-size))
+                         (the c-array-index (* x elem-size)))))))
+      (the cffi-sys:foreign-pointer
+           (inc-pointer (c-array-pointer c-array)
+                        byte-offset)))))
 
 
-(defun ptr-index (c-array &optional (x 0) (y 0 y-set) (z 0 z-set) (w 0 w-set))
+(defn-inline ptr-index (c-array
+                        (x c-array-index 0)
+                        &optional
+                        (y c-array-index 0)
+                        (z c-array-index 0)
+                        (w c-array-index 0))
+    foreign-pointer
   (declare (c-array c-array)
            (c-array-index x y z w)
            (optimize (speed 3) (safety 0) (debug 1)))
-  (cond (w-set (ptr-index-4d c-array x y z w))
-        (z-set (ptr-index-3d c-array x y z))
-        (y-set (ptr-index-2d c-array x y))
-        (t (ptr-index-1d c-array x))))
+  ;; this is safe as all c-arrays will have 0 as the size for missing
+  ;; dimensions
+  (ptr-index-4d c-array x y z w))
 
 (define-compiler-macro ptr-index
     (c-array &optional x (y 0 y-set) (z 0 z-set) (w 0 w-set))

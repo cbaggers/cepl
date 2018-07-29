@@ -68,10 +68,7 @@
                       (c-array-dimensions c-array)))
 
 (defun+ %gl-calc-byte-size (elem-size dimensions)
-  (let* ((row-length (first dimensions))
-         (row-byte-size (* row-length elem-size)))
-    (values (* (reduce #'* dimensions) elem-size)
-            row-byte-size)))
+  (* (reduce #'* dimensions) elem-size))
 
 (defun+ gl-calc-byte-size (type dimensions)
   (%gl-calc-byte-size (gl-type-size type) (listify dimensions)))

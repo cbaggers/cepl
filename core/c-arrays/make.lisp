@@ -30,24 +30,19 @@
                               (pixel-format->lisp-type element-type)
                               element-type))
            (elem-size (or element-byte-size (gl-type-size element-type2))))
-      (multiple-value-bind (byte-size row-byte-size)
-          (%gl-calc-byte-size elem-size dimensions)
-        (declare (ignore byte-size))
-        (%make-c-array
-         :pointer pointer
-         :dimensions dimensions
-         :total-size total-size
-         :element-type element-type2
-         :element-byte-size elem-size
-         :sizes (gen-c-array-sizes dimensions
-                                   elem-size
-                                   1)
-         :struct-element-typep (symbol-names-cepl-structp element-type2)
-         :row-byte-size row-byte-size
-         :element-pixel-format (when p-format element-type)
-         :element-from-foreign (get-typed-from-foreign element-type2)
-         :element-to-foreign (get-typed-to-foreign element-type2)
-         :free free)))))
+      (%make-c-array
+       :pointer pointer
+       :dimensions dimensions
+       :total-size total-size
+       :element-type element-type2
+       :sizes (gen-c-array-sizes dimensions
+                                 elem-size
+                                 1)
+       :struct-element-typep (symbol-names-cepl-structp element-type2)
+       :element-pixel-format (when p-format element-type)
+       :element-from-foreign (get-typed-from-foreign element-type2)
+       :element-to-foreign (get-typed-to-foreign element-type2)
+       :free free))))
 
 ;;------------------------------------------------------------
 
@@ -100,28 +95,25 @@
          (elem-size (gl-type-size element-type))
          (total-size (reduce #'* dimensions)))
     (check-c-array-dimensions dimensions total-size)
-    (multiple-value-bind (byte-size row-byte-size)
-        (%gl-calc-byte-size elem-size dimensions)
-      (let ((new-array (%make-c-array
-                        :pointer (cffi::%foreign-alloc byte-size)
-                        :dimensions dimensions
-                        :total-size total-size
-                        :sizes (gen-c-array-sizes dimensions
-                                                  elem-size
-                                                  1)
-                        :element-byte-size elem-size
-                        :element-type element-type
-                        :struct-element-typep (symbol-names-cepl-structp
-                                               element-type)
-                        :row-byte-size row-byte-size
-                        :element-pixel-format pixel-format
-                        :element-from-foreign (get-typed-from-foreign
-                                               element-type)
-                        :element-to-foreign (get-typed-to-foreign
-                                             element-type))))
-        (when initial-contents
-          (c-populate new-array initial-contents nil))
-        new-array))))
+    (let ((new-array (%make-c-array
+                      :pointer (cffi::%foreign-alloc
+                                (%gl-calc-byte-size elem-size dimensions))
+                      :dimensions dimensions
+                      :total-size total-size
+                      :sizes (gen-c-array-sizes dimensions
+                                                elem-size
+                                                1)
+                      :element-type element-type
+                      :struct-element-typep (symbol-names-cepl-structp
+                                             element-type)
+                      :element-pixel-format pixel-format
+                      :element-from-foreign (get-typed-from-foreign
+                                             element-type)
+                      :element-to-foreign (get-typed-to-foreign
+                                           element-type))))
+      (when initial-contents
+        (c-populate new-array initial-contents nil))
+      new-array)))
 
 ;;------------------------------------------------------------
 
@@ -133,12 +125,10 @@
      :pointer new-pointer
      :dimensions (c-array-dimensions c-array)
      :total-size (c-array-total-size c-array)
-     :element-byte-size (c-array-element-byte-size c-array)
      :element-type (c-array-element-type c-array)
      :sizes (make-array 4 :element-type 'c-array-index
                         :initial-contents (c-array-sizes c-array))
      :struct-element-typep (c-array-struct-element-typep c-array)
-     :row-byte-size (c-array-row-byte-size c-array)
      :element-from-foreign (c-array-element-from-foreign c-array)
      :element-to-foreign (c-array-element-to-foreign c-array))))
 

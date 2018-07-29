@@ -40,7 +40,6 @@
                                 (* elem-size start))
      :dimensions (list (- end start))
      :total-size (c-array-total-size array)
-     :element-byte-size (c-array-element-byte-size array)
      :sizes (make-array
              4 :initial-contents (list (c-array-element-byte-size array)
                                        0
@@ -49,7 +48,6 @@
              :element-type 'c-array-index )
      :element-type (c-array-element-type array)
      :struct-element-typep (c-array-struct-element-typep array)
-     :row-byte-size (c-array-row-byte-size array)
      :element-from-foreign (c-array-element-from-foreign array)
      :element-to-foreign (c-array-element-to-foreign array))))
 

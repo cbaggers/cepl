@@ -66,7 +66,8 @@
            :consecutive-integers-p
            :hidden-symb
            :define-const
-           :assert-lambda-list)
+           :assert-lambda-list
+           :vec-bind)
   (:reexport :cepl.defn))
 
 (uiop:define-package :cepl.errors
