@@ -89,13 +89,17 @@
 ;;----------------------------------------------------------------------
 
 (defn-inline row-major-aref-c ((c-array c-array) (index c-array-index)) t
-  (aref-c*-1d c-array index))
+  (let ((row-len (first (c-array-dimensions c-array))))
+    (multiple-value-bind (row i) (floor index row-len)
+      (aref-c*-2d c-array i row))))
 
 (defn-inline (setf row-major-aref-c) ((value t)
                                       (c-array c-array)
                                       (index c-array-index))
     t
-  (setf (aref-c*-1d c-array index) value))
+  (let ((row-len (first (c-array-dimensions c-array))))
+    (multiple-value-bind (row i) (floor index row-len)
+      (setf (aref-c*-2d c-array i row) value))))
 
 (defun aref-c (c-array &rest subscripts)
   (case= (length subscripts)
