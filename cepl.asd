@@ -50,6 +50,7 @@
                (:file "core/stencil/mask")
                (:file "core/scissor/scissor")
                (:file "core/color/color")
+               (:file "core/pixel-store/pixel-store")
                (:file "core/depth/depth")
                (:file "core/face/face")
                (:file "core/types/initalized-p")
