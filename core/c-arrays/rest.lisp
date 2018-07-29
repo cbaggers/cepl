@@ -52,13 +52,13 @@
      :element-from-foreign (c-array-element-from-foreign array)
      :element-to-foreign (c-array-element-to-foreign array))))
 
+(defn copy-c-array-to-new-lisp-data ((src c-array))
+    list
+  (if (c-array-struct-element-typep src)
+      (c-arr-to-lisp-struct-elems src)
+      (c-arr-to-lisp-val-elems src)))
 
-(defmethod pull1-g ((object c-array))
-  (if (c-array-struct-element-typep object)
-      (pull-1-g-struct-elems object)
-      (pull-1-g-val-elems object)))
-
-(defun pull-1-g-struct-elems (c-array)
+(defun c-arr-to-lisp-struct-elems (c-array)
   (labels ((inner (dims idx)
              (let ((rest (rest dims)))
                (if rest
@@ -79,7 +79,7 @@
                       (+ idx len)))))))
     (values (inner (reverse (c-array-dimensions c-array)) 0))))
 
-(defun pull-1-g-val-elems (c-array)
+(defun c-arr-to-lisp-val-elems (c-array)
   (labels ((inner (dims idx)
              (let ((rest (rest dims)))
                (if rest
@@ -99,13 +99,23 @@
                       (+ idx len)))))))
     (values (inner (reverse (c-array-dimensions c-array)) 0))))
 
+(defmethod pull1-g ((object c-array))
+  (copy-c-array-to-new-lisp-data object))
+
 (defmethod pull-g ((object c-array))
-  (pull1-g object))
+  (copy-c-array-to-new-lisp-data object))
 
 (defmethod push-g (object (destination c-array))
   (unless (or (listp object) (arrayp object))
     (error "Can only push arrays or lists to c-arrays"))
-  (c-populate destination object))
+  (copy-lisp-data-to-c-array destination object))
+
+(defmethod copy-g ((source list) (destination c-array))
+  (copy-lisp-data-to-c-array destination source))
+(defmethod copy-g ((source array) (destination c-array))
+  (copy-lisp-data-to-c-array destination source))
+(defmethod copy-g ((source c-array) (destination (eql :lisp)))
+  (copy-c-array-to-new-lisp-data source))
 
 (defmethod lisp-type->pixel-format ((type c-array))
   (or (c-array-element-pixel-format type)

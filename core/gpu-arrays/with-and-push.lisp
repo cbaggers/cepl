@@ -48,46 +48,14 @@
            ,@body)))))
 
 
-(defmethod print-mem ((thing gpu-array-bb) &optional (size-in-bytes 64) (offset 0))
+(defmethod print-mem ((thing gpu-array-bb)
+                      &optional
+                        (size-in-bytes 64)
+                        (offset 0))
   (with-gpu-array-as-pointer (a thing :access-type :read-only)
     (print-mem (cffi:inc-pointer a offset) size-in-bytes)))
 
-(defun+ gpu-array-pull-1 (gpu-array)
-  "This function returns the contents of the gpu array as a c-array
-   Note that you often dont need to use this as the generic
-   function pull-g will call this function if given a gpu-array"
-  (with-gpu-array-as-c-array (x gpu-array :access-type :read-only)
-    (clone-c-array x)))
 
-;; allignmetn
-(defmethod push-g ((object list) (destination gpu-array-bb))
-  (with-c-array-freed (tmp (make-c-array
-                      object
-                      :dimensions (gpu-array-dimensions destination)
-                      :element-type (element-type destination)))
-    (push-g tmp destination)))
-
-(defmethod push-g ((object c-array) (destination gpu-array-bb))
-  (let* ((type (gpu-array-bb-element-type destination))
-         (ob-dimen (c-array-dimensions object))
-         (des-dimen (gpu-array-dimensions destination)))
-    (if (and (eq (element-type object) type)
-             (if (= 1 (length des-dimen) (length ob-dimen))
-                 (<= (first ob-dimen) (first des-dimen))
-                 (equal ob-dimen des-dimen)))
-        (cepl.gpu-buffers::gpu-array-sub-data
-         destination object :types-must-match t)
-        (error "If the arrays are 1D then the length of the source array must
-be <= length of the destination array. If the arrays have more than 1
-dimension then their sizes must match exactly"))
-    destination))
-
-(defmethod pull1-g ((object gpu-array-bb))
-  (gpu-array-pull-1 object))
-
-(defmethod pull-g ((object gpu-array-bb))
-  (with-gpu-array-as-c-array (x object :access-type :read-only)
-    (pull1-g x)))
 
 (defn-inline gpu-array-element-type ((gpu-array gpu-array)) symbol
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
@@ -102,6 +70,68 @@ dimension then their sizes must match exactly"))
   (etypecase gpu-array
     (gpu-array-t :texture)
     (gpu-array-bb :buffer)))
+
+
+
+(defn copy-buffer-backed-gpu-array-to-new-c-array ((src gpu-array-bb))
+    c-array
+  (with-gpu-array-as-c-array (x src :access-type :read-only)
+    (clone-c-array x)))
+
+(defn copy-buffer-backed-gpu-array-to-new-lisp-data ((src gpu-array-bb))
+    list
+  (with-gpu-array-as-c-array (x src :access-type :read-only)
+    (cepl.c-arrays::copy-c-array-to-new-lisp-data x)))
+
+(defn copy-c-array-to-buffer-backed-gpu-array ((src c-array)
+                                               (dst gpu-array-bb))
+    gpu-array-bb
+  (let* ((type (gpu-array-bb-element-type dst))
+         (ob-dimen (c-array-dimensions src))
+         (des-dimen (gpu-array-dimensions dst)))
+    (if (and (eq (element-type src) type)
+             (if (= 1 (length des-dimen) (length ob-dimen))
+                 (<= (first ob-dimen) (first des-dimen))
+                 (equal ob-dimen des-dimen)))
+        (cepl.gpu-buffers::gpu-array-sub-data dst src :types-must-match t)
+        (error "If the arrays are 1D then the length of the source array must
+be <= length of the destination array. If the arrays have more than 1
+dimension then their sizes must match exactly"))
+    dst))
+
+(defn copy-lisp-data-to-buffer-backed-gpu-array ((src (or list array))
+                                                 (dst gpu-array-bb))
+    gpu-array-bb
+  (with-c-array-freed
+      (tmp (make-c-array src
+                         :dimensions (gpu-array-dimensions dst)
+                         :element-type (element-type dst)))
+    (copy-c-array-to-buffer-backed-gpu-array tmp dst)))
+
+
+(defmethod push-g ((object list) (destination gpu-array-bb))
+  (copy-lisp-data-to-buffer-backed-gpu-array object destination))
+(defmethod push-g ((object c-array) (destination gpu-array-bb))
+  (copy-c-array-to-buffer-backed-gpu-array object destination))
+
+(defmethod pull1-g ((object gpu-array-bb))
+  (copy-buffer-backed-gpu-array-to-new-c-array object))
+
+(defmethod pull-g ((object gpu-array-bb))
+  (copy-buffer-backed-gpu-array-to-new-lisp-data object))
+
+(defmethod copy-g ((source list) (destination gpu-array-bb))
+  (copy-lisp-data-to-buffer-backed-gpu-array source destination))
+(defmethod copy-g ((source array) (destination gpu-array-bb))
+  (copy-lisp-data-to-buffer-backed-gpu-array source destination))
+(defmethod copy-g ((source c-array) (destination gpu-array-bb))
+  (copy-c-array-to-buffer-backed-gpu-array source destination))
+(defmethod copy-g ((source gpu-array-bb) (destination (eql :c-array)))
+  (declare (ignore destination))
+  (copy-buffer-backed-gpu-array-to-new-c-array source))
+(defmethod copy-g ((source gpu-array-bb) (destination (eql :lisp)))
+  (declare (ignore destination))
+  (copy-buffer-backed-gpu-array-to-new-lisp-data source))
 
 ;;------------------------------------------------------------------------
 

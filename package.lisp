@@ -589,7 +589,8 @@
            ;;---
            :pull-g
            :pull1-g
-           :push-g))
+           :push-g
+           :copy-g))
 
 (uiop:define-package :cepl.types.foreign
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo

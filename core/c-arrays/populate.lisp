@@ -1,6 +1,10 @@
 (in-package :cepl.c-arrays)
 
-(defun+ c-populate (c-array data &optional (check-sizes t))
+(defn copy-lisp-data-to-c-array ((c-array c-array)
+                                 (data (or list array))
+                                 &optional
+                                 (check-sizes boolean t))
+    c-array
   (let ((structp (c-array-struct-element-typep c-array)))
     (labels ((walk-to-dpop (data dimensions idx)
                (let ((dim-size (first dimensions))

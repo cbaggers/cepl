@@ -898,7 +898,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
     t
   (with-c-array-freed
       (c-array (copy-texture-backed-gpu-array-to-new-c-array src))
-    (pull1-g c-array)))
+    (cepl.c-arrays::copy-c-array-to-new-lisp-data c-array)))
 
 
 (defmethod push-g ((object c-array) (destination texture))

@@ -121,12 +121,13 @@
                       :element-to-foreign (get-typed-to-foreign
                                            element-type))))
       (when initial-contents
-        (c-populate new-array initial-contents nil))
+        (copy-lisp-data-to-c-array new-array initial-contents nil))
       new-array)))
 
 ;;------------------------------------------------------------
 
-(defun+ clone-c-array (c-array)
+(defn clone-c-array ((c-array c-array))
+    c-array
   (let* ((size (c-array-byte-size c-array))
          (new-pointer (cffi::%foreign-alloc size)))
     (cepl.types::%memcpy new-pointer (c-array-pointer c-array) size)

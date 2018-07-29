@@ -451,7 +451,9 @@
   (declare (ignore layout))
   `(,(s-def slot) (setf ,(s-writer slot))
      ,(s-slot-args slot `((value list) (wrapped-object ,type-name)))
-     (cepl.c-arrays::c-populate (,(s-reader slot) wrapped-object) value)))
+     (cepl.c-arrays::copy-lisp-data-to-c-array
+      (,(s-reader slot) wrapped-object)
+      value)))
 
 ;;------------------------------------------------------------
 
