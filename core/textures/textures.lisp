@@ -887,7 +887,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (pull-g (texref object)))
 
 ;; [TODO] implement gl-fill and fill arguments
-;; [TODO] Does not respect GL_PIXEL_PACK/UNPACK_BUFFER
+;; [TODO] Does not respect UNPACK_BUFFER
 (defmethod pull1-g ((object gpu-array-t))
   (with-gpu-array-t object
     (let* ((p-format (image-format->pixel-format
@@ -897,6 +897,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
       (destructuring-bind (format type)
           (cepl.pixel-formats::compile-pixel-format p-format)
         (%with-scratch-texture-bound texture
+          (setf (pack-alignment) (c-array-row-alignment c-array))
           (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
                              (coerce level-num 'real)
                              format
@@ -920,4 +921,3 @@ the width to see at what point the width reaches 0 or GL throws an error."
 ;; texture views
 ;; generate-mipmaps
 ;; texsubimage*d - pushing data
-;; glPixelStore — set pixel storage modes
