@@ -58,6 +58,7 @@
   (sizes
    (error "CEPL (BUG): c-array created without internal sizes")
    :type (simple-array c-array-index (4)))
+  (row-alignment 1 :type (integer 1 4))
   (struct-element-typep nil :type boolean)
   (element-pixel-format nil :type (or null pixel-format))
   (element-from-foreign

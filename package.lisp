@@ -524,6 +524,7 @@
            :c-array-element-from-foreign
            :c-array-element-to-foreign
            :c-array-sizes
+           :c-array-row-alignment
 
            :%make-viewport
            :make-viewport
