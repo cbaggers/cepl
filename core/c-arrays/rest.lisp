@@ -45,7 +45,8 @@
                                        0
                                        0
                                        0)
-             :element-type 'c-array-index )
+             :element-type 'c-array-index)
+     :row-alignment (c-array-row-alignment array)
      :element-type (c-array-element-type array)
      :struct-element-typep (c-array-struct-element-typep array)
      :element-from-foreign (c-array-element-from-foreign array)

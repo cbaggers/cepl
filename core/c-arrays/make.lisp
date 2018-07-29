@@ -2,9 +2,11 @@
 
 ;;------------------------------------------------------------
 
-(defun+ check-c-array-dimensions (dimensions total-size)
+(defun+ check-c-array-dimensions (dimensions total-size row-alignment)
   (labels ((valid-c-array-dimension-p (x)
              (typep x 'c-array-index)))
+    (assert (member row-alignment '(1 2 4)) ()
+            "c-arrays may their row alignment set to 1, 2 or 4")
     (assert (and (> (length dimensions) 0) (<= (length dimensions) 4)) ()
             "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
             (length dimensions))
@@ -19,12 +21,13 @@
                                    pointer
                                    &key
                                    (free #'cffi:foreign-free)
-                                   element-byte-size)
+                                   element-byte-size
+                                   (row-alignment 1))
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
   (let* ((dimensions (listify dimensions))
          (total-size (reduce #'* dimensions)))
-    (check-c-array-dimensions dimensions total-size)
+    (check-c-array-dimensions dimensions total-size row-alignment)
     (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
            (element-type2 (if p-format
                               (pixel-format->lisp-type element-type)
@@ -37,7 +40,8 @@
        :element-type element-type2
        :sizes (gen-c-array-sizes dimensions
                                  elem-size
-                                 1)
+                                 row-alignment)
+       :row-alignment row-alignment
        :struct-element-typep (symbol-names-cepl-structp element-type2)
        :element-pixel-format (when p-format element-type)
        :element-from-foreign (get-typed-from-foreign element-type2)
@@ -62,7 +66,11 @@
 ;;------------------------------------------------------------
 
 ;; [TODO] extract error messages
-(defun+ make-c-array (initial-contents &key dimensions element-type)
+(defun+ make-c-array (initial-contents
+                      &key
+                      dimensions
+                      element-type
+                      (row-alignment 1))
   (let* ((dimensions (listify dimensions))
          (dimensions
           (if dimensions
@@ -94,7 +102,7 @@
                                initial-contents))
          (elem-size (gl-type-size element-type))
          (total-size (reduce #'* dimensions)))
-    (check-c-array-dimensions dimensions total-size)
+    (check-c-array-dimensions dimensions total-size row-alignment)
     (let ((new-array (%make-c-array
                       :pointer (cffi::%foreign-alloc
                                 (%gl-calc-byte-size elem-size dimensions))
@@ -102,7 +110,8 @@
                       :total-size total-size
                       :sizes (gen-c-array-sizes dimensions
                                                 elem-size
-                                                1)
+                                                row-alignment)
+                      :row-alignment row-alignment
                       :element-type element-type
                       :struct-element-typep (symbol-names-cepl-structp
                                              element-type)
@@ -128,6 +137,7 @@
      :element-type (c-array-element-type c-array)
      :sizes (make-array 4 :element-type 'c-array-index
                         :initial-contents (c-array-sizes c-array))
+     :row-alignment (c-array-row-alignment c-array)
      :struct-element-typep (c-array-struct-element-typep c-array)
      :element-from-foreign (c-array-element-from-foreign c-array)
      :element-to-foreign (c-array-element-to-foreign c-array))))

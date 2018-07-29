@@ -58,7 +58,9 @@
   (sizes
    (error "CEPL (BUG): c-array created without internal sizes")
    :type (simple-array c-array-index (4)))
-  (row-alignment 1 :type (integer 1 4))
+  (row-alignment
+   (error "cepl: c-array must be created with a row-alignment")
+   :type (integer 1 4))
   (struct-element-typep nil :type boolean)
   (element-pixel-format nil :type (or null pixel-format))
   (element-from-foreign
@@ -414,7 +416,7 @@
     (unsigned-byte 8)
   (declare (profile t))
   (typecase prim
-    (varjo::patches (the (unsigned-byte 8) (varjo::vertex-count prim)))
+    (varjo::patches (coerce (varjo::vertex-count prim) '(unsigned-byte 8)))
     (varjo::triangles 3)
     (varjo::lines 2)
     (varjo::points 1)
