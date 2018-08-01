@@ -5,8 +5,8 @@
 (defun+ check-c-array-dimensions (dimensions total-size row-alignment)
   (labels ((valid-c-array-dimension-p (x)
              (typep x 'c-array-index)))
-    (assert (member row-alignment '(1 2 4)) ()
-            "c-arrays may their row alignment set to 1, 2 or 4")
+    (assert (member row-alignment '(1 2 4 8)) ()
+            "c-arrays may their row alignment set to 1, 2, 4 or 8")
     (assert (and (> (length dimensions) 0) (<= (length dimensions) 4)) ()
             "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
             (length dimensions))

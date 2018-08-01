@@ -74,7 +74,7 @@
                                  (byte-offset-into-source-data integer)
                                  element-type
                                  dimensions
-                                 (row-alignment (integer 1 4) 1))
+                                 (row-alignment (integer 1 8) 1))
     gpu-array-bb
   (declare (profile t))
   (assert dimensions)
