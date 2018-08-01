@@ -125,55 +125,13 @@
    (not (multisample-texture-p tex)) ()
    "CEPL: Sorry can not yet upload data to a multisample texture in this fashion:~%~a"
    tex)
-  (if (texture-mutable-p tex)
-      (%upload-to-mutable-tex tex tex-type level-num dimensions layer-num
-                              face-num pix-format pix-type pointer
-                              row-alignment)
-      (%upload-to-immutable-tex tex tex-type level-num dimensions layer-num
-                                face-num pix-format pix-type pointer
-                                row-alignment)))
+  (%upload-to-tex tex tex-type level-num dimensions layer-num
+                  face-num pix-format pix-type pointer
+                  row-alignment))
 
-(defun+ %upload-to-mutable-tex (tex tex-type level-num dimensions layer-num
-                                    face-num pix-format pix-type pointer
-                                    row-alignment)
-  ;; border is an old (now unsupported) parameter and so is always be set to 0
-  (destructuring-bind (&optional (width 1) (height 1) (depth 1)) dimensions
-    (setf (unpack-alignment) row-alignment)
-    (case tex-type
-      (:texture-1d (gl:tex-image-1d
-                    tex-type level-num (texture-image-format tex)
-                    width 0 pix-format pix-type
-                    pointer))
-      (:texture-2d (gl:tex-image-2d
-                    tex-type level-num (texture-image-format tex)
-                    width height 0
-                    pix-format pix-type pointer))
-      (:texture-3d (gl:tex-image-3d
-                    tex-type level-num (texture-image-format tex)
-                    width height
-                    depth 0 pix-format pix-type
-                    pointer))
-      (:texture-1d-array (gl:tex-image-2d
-                          tex-type level-num
-                          (texture-image-format tex)
-                          width layer-num 0
-                          pix-format pix-type pointer))
-      (:texture-2d-array (gl:tex-image-3d
-                          tex-type level-num
-                          (texture-image-format tex)
-                          width height
-                          layer-num 0 pix-format pix-type pointer))
-      (:texture-cube-map (gl:tex-image-2d
-                          (nth face-num +cube-face-order+)
-                          level-num (texture-image-format tex)
-                          width height 0
-                          pix-format pix-type pointer))
-      (t (error "not currently supported for upload: ~a" tex-type)))))
-
-
-(defun+ %upload-to-immutable-tex (tex tex-type level-num dimensions layer-num
-                                      face-num pix-format pix-type pointer
-                                      row-alignment)
+(defun+ %upload-to-tex (tex tex-type level-num dimensions layer-num
+                            face-num pix-format pix-type pointer
+                            row-alignment)
   (declare (ignore tex))
   (destructuring-bind (&optional (width 1) (height 1) (depth 1)) dimensions
     (setf (unpack-alignment) row-alignment)
