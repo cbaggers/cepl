@@ -619,7 +619,7 @@ source: ~s~%list-to-match: ~s" list list-to-match)
 (defun list-not-consp (x)
   (and (listp x) (or (null (cdr x)) (consp (cdr x)))))
 
-(defn gl-enum ((kwd symbol)) (unsigned-byte #.+gl-enum-size+)
+(defn-inline gl-enum ((kwd symbol)) (unsigned-byte #.+gl-enum-size+)
   (the (unsigned-byte #.+gl-enum-size+)
        (cffi:foreign-enum-value '%gl:enum kwd)))
 

@@ -12,6 +12,15 @@
       :texture-cube-map-negative-z)
   :type list)
 
+(define-const +cube-face-order-enums+
+    '(#.(gl-enum :texture-cube-map-positive-x)
+      #.(gl-enum :texture-cube-map-negative-x)
+      #.(gl-enum :texture-cube-map-positive-y)
+      #.(gl-enum :texture-cube-map-negative-y)
+      #.(gl-enum :texture-cube-map-positive-z)
+      #.(gl-enum :texture-cube-map-negative-z))
+  :type list)
+
 (defun+ check-immutable-feature ()
   (unless (has-feature "GL_ARB_texture_storage")
     (setf *immutable-available* nil)))
@@ -686,23 +695,147 @@ the width to see at what point the width reaches 0 or GL throws an error."
       (allocate-immutable-texture texture)))
 
 (defun+ allocate-mutable-texture (texture)
-  ;; {TODO} Well this is clearly missing a lot :p
   (let ((base-dimensions (texture-base-dimensions texture))
         (texture-type (texture-type texture)))
-    (destructuring-bind (&optional (width 1) (height 1) (depth 1))
-        base-dimensions
-      (declare (ignore depth))
+    (setf (gpu-buffer-bound (cepl-context) :pixel-unpack-buffer) nil)
+    (let ((tex-type (texture-type texture))
+          (image-format (gl-enum (texture-image-format texture)))
+          (number-of-layers (texture-layer-count texture))
+          (mipmap-levels (texture-mipmap-levels texture)))
       (case texture-type
+        (:texture-1d
+         (loop
+            :for level-num :below mipmap-levels
+            :for (width) := (dimensions-at-mipmap-level texture level-num)
+            :do (%gl:tex-image-1d
+                 tex-type
+                 level-num
+                 image-format
+                 width
+                 0
+                 :rgba
+                 :unsigned-byte
+                 (cffi:null-pointer))))
+        ((:texture-2d :texture-rectangle)
+         (loop
+            :for level-num :below mipmap-levels
+            :for (width height) := (dimensions-at-mipmap-level texture
+                                                               level-num)
+            :do (%gl:tex-image-2d
+                 tex-type
+                 level-num
+                 image-format
+                 width
+                 height
+                 0
+                 :rgba
+                 :unsigned-byte
+                 (cffi:null-pointer))))
+        (:texture-3d
+         (loop
+            :for level-num :below mipmap-levels
+            :for (width height depth) := (dimensions-at-mipmap-level texture
+                                                                     level-num)
+            :do (%gl:tex-image-3d
+                 tex-type
+                 level-num
+                 image-format
+                 width
+                 height
+                 depth
+                 0
+                 :rgba
+                 :unsigned-byte
+                 (cffi:null-pointer))))
+        (:texture-1d-array
+         (loop
+            :for level-num :below mipmap-levels
+            :for (width) := (dimensions-at-mipmap-level texture level-num)
+            :do (%gl:tex-image-2d
+                 tex-type
+                 level-num
+                 image-format
+                 width
+                 number-of-layers
+                 0
+                 :rgba
+                 :unsigned-byte
+                 (cffi:null-pointer))))
+        (:texture-3d-array
+         (loop
+            :for level-num :below mipmap-levels
+            :for (width height) := (dimensions-at-mipmap-level texture
+                                                               level-num)
+            :do (%gl:tex-image-3d
+                 tex-type
+                 level-num
+                 image-format
+                 width
+                 height
+                 number-of-layers
+                 0
+                 :rgba
+                 :unsigned-byte
+                 (cffi:null-pointer))))
+        (:texture-cube-map
+         (loop
+            :for level-num :below mipmap-levels
+            :for (width height) := (dimensions-at-mipmap-level texture
+                                                               level-num)
+            :do (loop
+                   :for face :in +cube-face-order-enums+
+                   :do (%gl:tex-image-2d
+                        face
+                        level-num
+                        image-format
+                        width
+                        height
+                        0
+                        :rgba
+                        :unsigned-byte
+                        (cffi:null-pointer)))))
+        (:texture-cube-array
+         (loop
+            :for level-num :below mipmap-levels
+            :for (width height) := (dimensions-at-mipmap-level texture
+                                                               level-num)
+            :do (loop
+                   :for face :in +cube-face-order-enums+
+                   :do (%gl:tex-image-3d
+                        face
+                        level-num
+                        image-format
+                        width
+                        height
+                        number-of-layers
+                        0
+                        :rgba
+                        :unsigned-byte
+                        (cffi:null-pointer)))))
         (:texture-2d-multisample
-         (%gl:tex-image-2d-multisample
-          :texture-2d-multisample
-          (texture-samples texture)
-          (texture-image-format texture)
-          width height
-          (texture-fixed-sample-locations-p texture)))
-        (t (gl:tex-parameter (texture-type texture) :texture-base-level 0)
-           (gl:tex-parameter (texture-type texture) :texture-max-level
-                             (1- (texture-mipmap-levels texture)))))))
+         (destructuring-bind (&optional (width 1) (height 1) (depth 1))
+             base-dimensions
+           (declare (ignore depth))
+           (%gl:tex-image-2d-multisample
+            :texture-2d-multisample
+            (texture-samples texture)
+            image-format
+            width height
+            (texture-fixed-sample-locations-p texture))))
+        (:texture-3d-multisample
+         (destructuring-bind (&optional (width 1) (height 1) (depth 1))
+             base-dimensions
+           (declare (ignore depth))
+           (%gl:tex-image-3d-multisample
+            :texture-2d-multisample
+            (texture-samples texture)
+            image-format
+            width height
+            (texture-fixed-sample-locations-p texture)))))
+      (unless (or (eq texture-type :texture-2d-multisample)
+                  (eq texture-type :texture-3d-multisample))
+        (gl:tex-parameter tex-type :texture-base-level 0)
+        (gl:tex-parameter tex-type :texture-max-level (1- mipmap-levels)))))
   (setf (texture-allocated-p texture) t))
 
 (defun+ allocate-immutable-texture (texture)
