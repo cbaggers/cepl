@@ -125,14 +125,6 @@
    (not (multisample-texture-p tex)) ()
    "CEPL: Sorry can not yet upload data to a multisample texture in this fashion:~%~a"
    tex)
-  (%upload-to-tex tex tex-type level-num dimensions layer-num
-                  face-num pix-format pix-type pointer
-                  row-alignment))
-
-(defun+ %upload-to-tex (tex tex-type level-num dimensions layer-num
-                            face-num pix-format pix-type pointer
-                            row-alignment)
-  (declare (ignore tex))
   (destructuring-bind (&optional (width 1) (height 1) (depth 1)) dimensions
     (setf (unpack-alignment) row-alignment)
     (case tex-type
@@ -157,6 +149,8 @@
                                               height pix-format
                                               pix-type pointer))
       (t (error "not currently supported for upload: ~a" tex-type)))))
+
+
 
 (defun+ upload-from-buffer-to-gpu-array-t (&rest args)
   (declare (ignore args))
