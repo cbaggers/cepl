@@ -479,7 +479,7 @@ Max is: ~s"
                level-count dimensions max-levels))))
 
 (defun+ calc-max-num-mipmap-levels (dimensions)
-  (floor (log (apply #'max dimensions) 2)))
+  (1+ (floor (log (apply #'max dimensions) 2))))
 
 (defun+ slow-query-mipmap-count (texture)
   "This is a hack, never use it in production code.
