@@ -2,9 +2,11 @@
 
 ;;------------------------------------------------------------
 
-(defun+ check-c-array-dimensions (dimensions total-size)
+(defun+ check-c-array-dimensions (dimensions total-size row-alignment)
   (labels ((valid-c-array-dimension-p (x)
              (typep x 'c-array-index)))
+    (assert (member row-alignment '(1 2 4 8)) ()
+            "c-arrays may their row alignment set to 1, 2, 4 or 8")
     (assert (and (> (length dimensions) 0) (<= (length dimensions) 4)) ()
             "c-arrays have a maximum of 4 dimensions: (attempted ~a)"
             (length dimensions))
@@ -19,49 +21,69 @@
                                    pointer
                                    &key
                                    (free #'cffi:foreign-free)
-                                   element-byte-size)
+                                   element-byte-size
+                                   (row-alignment 1))
   (assert dimensions ()
           "dimensions are not optional when making an array from a pointer")
   (let* ((dimensions (listify dimensions))
          (total-size (reduce #'* dimensions)))
-    (check-c-array-dimensions dimensions total-size)
+    (check-c-array-dimensions dimensions total-size row-alignment)
     (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
            (element-type2 (if p-format
                               (pixel-format->lisp-type element-type)
                               element-type))
            (elem-size (or element-byte-size (gl-type-size element-type2))))
-      (multiple-value-bind (byte-size row-byte-size)
-          (%gl-calc-byte-size elem-size dimensions)
-        (declare (ignore byte-size))
-        (%make-c-array
-         :pointer pointer
-         :dimensions dimensions
-         :total-size total-size
-         :element-type element-type2
-         :element-byte-size elem-size
-         :struct-element-typep (symbol-names-cepl-structp element-type2)
-         :row-byte-size row-byte-size
-         :element-pixel-format (when p-format element-type)
-         :element-from-foreign (get-typed-from-foreign element-type2)
-         :element-to-foreign (get-typed-to-foreign element-type2)
-         :free free)))))
+      (%make-c-array
+       :pointer pointer
+       :dimensions dimensions
+       :total-size total-size
+       :element-type element-type2
+       :sizes (gen-c-array-sizes dimensions
+                                 elem-size
+                                 row-alignment)
+       :row-alignment row-alignment
+       :struct-element-typep (symbol-names-cepl-structp element-type2)
+       :element-pixel-format (when p-format element-type)
+       :element-from-foreign (get-typed-from-foreign element-type2)
+       :element-to-foreign (get-typed-to-foreign element-type2)
+       :free free))))
+
+;;------------------------------------------------------------
+
+(defun gen-c-array-sizes (dimensions element-byte-size alignment)
+  (destructuring-bind (row-len &optional (y 0) (z 0) &rest r) dimensions
+    (declare (ignore r))
+    (let* ((row-size (* row-len element-byte-size))
+           (row+padding (* (ceiling row-size alignment) alignment))
+           (square (* y row+padding))
+           (cube (* z square)))
+      (make-array 4 :element-type 'c-array-index
+                  :initial-contents (list element-byte-size
+                                          row+padding
+                                          square
+                                          cube)))))
 
 ;;------------------------------------------------------------
 
 ;; [TODO] extract error messages
-(defun+ make-c-array (initial-contents &key dimensions element-type)
+(defun+ make-c-array (initial-contents
+                      &key
+                      dimensions
+                      element-type
+                      (row-alignment 1))
   (let* ((dimensions (listify dimensions))
          (dimensions
           (if dimensions
               (if initial-contents
-                  (or (validate-dimensions initial-contents dimensions)
+                  (if (validate-dimensions initial-contents dimensions)
+                      dimensions
                       (error "Dimensions are invalid for initial-contents~%~a~%~a"
                              dimensions initial-contents))
                   dimensions)
               (if initial-contents
                   (typecase initial-contents
                     (sequence (list (length initial-contents)))
-                    (array (array-dimensions initial-contents)))
+                    (array (reverse (array-dimensions initial-contents))))
                   (error "make-c-array must be given initial-elements or dimensions"))))
          (p-format (cepl.pixel-formats:pixel-format-p element-type))
          (pixel-format (when p-format element-type))
@@ -80,30 +102,32 @@
                                initial-contents))
          (elem-size (gl-type-size element-type))
          (total-size (reduce #'* dimensions)))
-    (check-c-array-dimensions dimensions total-size)
-    (multiple-value-bind (byte-size row-byte-size)
-        (%gl-calc-byte-size elem-size dimensions)
-      (let ((new-array (%make-c-array
-                        :pointer (cffi::%foreign-alloc byte-size)
-                        :dimensions dimensions
-                        :total-size total-size
-                        :element-byte-size elem-size
-                        :element-type element-type
-                        :struct-element-typep (symbol-names-cepl-structp
-                                               element-type)
-                        :row-byte-size row-byte-size
-                        :element-pixel-format pixel-format
-                        :element-from-foreign (get-typed-from-foreign
-                                               element-type)
-                        :element-to-foreign (get-typed-to-foreign
-                                             element-type))))
-        (when initial-contents
-          (c-populate new-array initial-contents nil))
-        new-array))))
+    (check-c-array-dimensions dimensions total-size row-alignment)
+    (let ((new-array (%make-c-array
+                      :pointer (cffi::%foreign-alloc
+                                (%gl-calc-byte-size elem-size dimensions row-alignment))
+                      :dimensions dimensions
+                      :total-size total-size
+                      :sizes (gen-c-array-sizes dimensions
+                                                elem-size
+                                                row-alignment)
+                      :row-alignment row-alignment
+                      :element-type element-type
+                      :struct-element-typep (symbol-names-cepl-structp
+                                             element-type)
+                      :element-pixel-format pixel-format
+                      :element-from-foreign (get-typed-from-foreign
+                                             element-type)
+                      :element-to-foreign (get-typed-to-foreign
+                                           element-type))))
+      (when initial-contents
+        (copy-lisp-data-to-c-array new-array initial-contents nil))
+      new-array)))
 
 ;;------------------------------------------------------------
 
-(defun+ clone-c-array (c-array)
+(defn clone-c-array ((c-array c-array))
+    c-array
   (let* ((size (c-array-byte-size c-array))
          (new-pointer (cffi::%foreign-alloc size)))
     (cepl.types::%memcpy new-pointer (c-array-pointer c-array) size)
@@ -111,10 +135,11 @@
      :pointer new-pointer
      :dimensions (c-array-dimensions c-array)
      :total-size (c-array-total-size c-array)
-     :element-byte-size (c-array-element-byte-size c-array)
      :element-type (c-array-element-type c-array)
+     :sizes (make-array 4 :element-type 'c-array-index
+                        :initial-contents (c-array-sizes c-array))
+     :row-alignment (c-array-row-alignment c-array)
      :struct-element-typep (c-array-struct-element-typep c-array)
-     :row-byte-size (c-array-row-byte-size c-array)
      :element-from-foreign (c-array-element-from-foreign c-array)
      :element-to-foreign (c-array-element-to-foreign c-array))))
 

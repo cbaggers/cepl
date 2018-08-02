@@ -20,9 +20,6 @@
   (error "CEPL: Cannot extract dimensions from ~s object:~%~s"
          (type-of object) object))
 
-(defmethod dimensions ((object array))
-  (array-dimensions object))
-
 ;;----------------------------------------------------------------------
 
 (defgeneric origin (object)) ;; returns a vec2

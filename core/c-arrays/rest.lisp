@@ -40,32 +40,82 @@
                                 (* elem-size start))
      :dimensions (list (- end start))
      :total-size (c-array-total-size array)
-     :element-byte-size (c-array-element-byte-size array)
+     :sizes (make-array
+             4 :initial-contents (list (c-array-element-byte-size array)
+                                       0
+                                       0
+                                       0)
+             :element-type 'c-array-index)
+     :row-alignment (c-array-row-alignment array)
      :element-type (c-array-element-type array)
      :struct-element-typep (c-array-struct-element-typep array)
-     :row-byte-size (c-array-row-byte-size array)
      :element-from-foreign (c-array-element-from-foreign array)
      :element-to-foreign (c-array-element-to-foreign array))))
 
+(defn copy-c-array-to-new-lisp-data ((src c-array))
+    list
+  (if (c-array-struct-element-typep src)
+      (c-arr-to-lisp-struct-elems src)
+      (c-arr-to-lisp-val-elems src)))
+
+(defun c-arr-to-lisp-struct-elems (c-array)
+  (labels ((inner (dims idx)
+             (let ((rest (rest dims)))
+               (if rest
+                   (values
+                    (loop
+                       :for i :below (first dims)
+                       :collect (multiple-value-bind (list nidx)
+                                    (inner rest idx)
+                                  (setf idx nidx)
+                                  list))
+                    idx)
+                   (let ((len (first dims)))
+                     (values
+                      (loop
+                         :for i :below len
+                         :collect (pull1-g
+                                   (row-major-aref-c c-array (+ idx i))))
+                      (+ idx len)))))))
+    (values (inner (reverse (c-array-dimensions c-array)) 0))))
+
+(defun c-arr-to-lisp-val-elems (c-array)
+  (labels ((inner (dims idx)
+             (let ((rest (rest dims)))
+               (if rest
+                   (values
+                    (loop
+                       :for i :below (first dims)
+                       :collect (multiple-value-bind (list nidx)
+                                    (inner rest idx)
+                                  (setf idx nidx)
+                                  list))
+                    idx)
+                   (let ((len (first dims)))
+                     (values
+                      (loop
+                         :for i :below len
+                         :collect (row-major-aref-c c-array (+ idx i)))
+                      (+ idx len)))))))
+    (values (inner (reverse (c-array-dimensions c-array)) 0))))
+
 (defmethod pull1-g ((object c-array))
-  (let* ((dimensions (c-array-dimensions object))
-         (depth      (1- (length dimensions)))
-         (indices    (make-list (1+ depth))))
-    (labels ((recurse (n)
-               (loop for j below (nth n dimensions)
-                     do (setf (nth n indices) j)
-                     collect (if (= n depth)
-                                 (pull1-g (aref-c* object indices))
-                               (recurse (1+ n))))))
-      (recurse 0))))
+  (copy-c-array-to-new-lisp-data object))
 
 (defmethod pull-g ((object c-array))
-  (pull1-g object))
+  (copy-c-array-to-new-lisp-data object))
 
 (defmethod push-g (object (destination c-array))
   (unless (or (listp object) (arrayp object))
     (error "Can only push arrays or lists to c-arrays"))
-  (c-populate destination object))
+  (copy-lisp-data-to-c-array destination object))
+
+(defmethod copy-g ((source list) (destination c-array))
+  (copy-lisp-data-to-c-array destination source))
+(defmethod copy-g ((source array) (destination c-array))
+  (copy-lisp-data-to-c-array destination source))
+(defmethod copy-g ((source c-array) (destination (eql :lisp)))
+  (copy-c-array-to-new-lisp-data source))
 
 (defmethod lisp-type->pixel-format ((type c-array))
   (or (c-array-element-pixel-format type)

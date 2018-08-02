@@ -66,7 +66,8 @@
            :consecutive-integers-p
            :hidden-symb
            :define-const
-           :assert-lambda-list)
+           :assert-lambda-list
+           :vec-bind)
   (:reexport :cepl.defn))
 
 (uiop:define-package :cepl.errors
@@ -337,6 +338,7 @@
            :gpu-array-bb-p
            :gpu-array-bb-buffer
            :gpu-array-bb-access-style
+           :gpu-array-bb-row-alignment
            :gpu-array-bb-element-type
            :gpu-array-bb-element-byte-size
            :gpu-array-bb-byte-size
@@ -522,6 +524,8 @@
            :c-array-element-pixel-format
            :c-array-element-from-foreign
            :c-array-element-to-foreign
+           :c-array-sizes
+           :c-array-row-alignment
 
            :%make-viewport
            :make-viewport
@@ -585,7 +589,8 @@
            ;;---
            :pull-g
            :pull1-g
-           :push-g))
+           :push-g
+           :copy-g))
 
 (uiop:define-package :cepl.types.foreign
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
@@ -754,7 +759,9 @@
            :surface-title
            :surface-fullscreen-p
            :gl-initialized-p
-           :with-context-state-restored))
+           :with-context-state-restored
+           :unpack-alignment
+           :pack-alignment))
 
 (uiop:define-package :cepl.viewports
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo

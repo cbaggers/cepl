@@ -752,3 +752,14 @@ Proposed Type: ~s" name (symbol-value name) type))
            (declare (ignore ,@hacky-vars))
            nil)
        (error () ,datum ,@arguments))))
+
+;;------------------------------------------------------------
+
+(defmacro vec-bind ((&rest vars) vec &body body)
+  (let ((gvec (gensym "vec")))
+    `(let* ((,gvec ,vec)
+            ,@(loop
+                 :for i :from 0
+                 :for var :in vars
+                 :collect `(,var (aref ,gvec ,i))))
+       ,@body)))

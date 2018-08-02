@@ -20,8 +20,6 @@
   (setf (c-array-pointer c-array) (cffi:null-pointer))
   (setf (c-array-dimensions c-array) nil)
   (setf (c-array-element-type c-array) nil)
-  (setf (c-array-element-byte-size c-array) 0)
-  (setf (c-array-row-byte-size c-array) 0)
   (setf (c-array-element-pixel-format c-array) nil))
 
 (defmethod free ((object c-array))

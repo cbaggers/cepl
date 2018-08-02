@@ -21,7 +21,10 @@
                                         buffer-targets
                                         scissor-viewport-indices
                                         ubo-indices
-                                        ssbo-indices)
+                                        ssbo-indices
+                                        ;;
+                                        pack-alignment
+                                        unpack-alignment)
                                        &body body)
   (assert (member program '(t nil)))
   (assert (member stencil '(t nil)))
@@ -35,6 +38,8 @@
   (assert (member cull-face '(t nil)))
   (assert (member front-face '(t nil)))
   (assert (member viewport '(t nil)))
+  (assert (member unpack-alignment '(t nil)))
+  (assert (member pack-alignment '(t nil)))
   (let ((color-mask-indices (uiop:ensure-list color-mask-indices))
         (tex-unit-ids (uiop:ensure-list tex-unit-ids))
         (buffer-targets (uiop:ensure-list buffer-targets))
@@ -68,7 +73,9 @@
                           ',buffer-targets
                           ',scissor-viewport-indices
                           ',ubo-indices
-                          ',ssbo-indices))))))
+                          ',ssbo-indices
+                          ,unpack-alignment
+                          ,pack-alignment))))))
 
 (defn restore-state ((context cepl-context)
                      (program boolean)
@@ -88,7 +95,9 @@
                      (buffer-targets list)
                      (scissor-viewport-indices list)
                      (ubo-indices list)
-                     (ssbo-indices list))
+                     (ssbo-indices list)
+                     (unpack-alignment boolean)
+                     (pack-alignment boolean))
     null
   (%with-cepl-context-slots (current-tfs
                              current-viewport
@@ -167,6 +176,12 @@
     ;; viewport
     (when viewport
       (cepl.viewports::%set-current-viewport context current-viewport))
+
+    (when unpack-alignment
+      (setf (unpack-alignment t context) (unpack-alignment context)))
+
+    (when pack-alignment
+      (setf (pack-alignment t context) (pack-alignment context)))
 
     ;; color-masks
     (loop :for index :in color-mask-indices

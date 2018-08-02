@@ -22,9 +22,6 @@
 (deftype elem-byte-size ()
   '(unsigned-byte 32))
 
-(deftype row-byte-size ()
-  '(unsigned-byte 32))
-
 (deftype gbuf-byte-size ()
   '(unsigned-byte 32))
 
@@ -58,22 +55,26 @@
   (element-type
    (error "cepl: c-array must be created with an element-type")
    :type symbol)
-  (element-byte-size
-   (error "cepl: c-array must be created with an element-byte-size")
-   :type elem-byte-size)
+  (sizes
+   (error "CEPL (BUG): c-array created without internal sizes")
+   :type (simple-array c-array-index (4)))
+  (row-alignment
+   (error "cepl: c-array must be created with a row-alignment")
+   :type (integer 1 8))
   (struct-element-typep nil :type boolean)
-  (row-byte-size
-   (error "cepl: c-array must be created with a pointer")
-   :type row-byte-size)
   (element-pixel-format nil :type (or null pixel-format))
   (element-from-foreign
    (error "cepl: c-array must be created with a from-foreign function")
-   :type function)
+   :type (function (foreign-pointer) t))
   (element-to-foreign
    (error "cepl: c-array must be created with a to-foreign function")
    :type (function (foreign-pointer t) t))
   (free #'cffi:foreign-free
    :type function))
+
+(defn-inline c-array-element-byte-size ((c-array c-array))
+    c-array-index
+  (aref (c-array-sizes c-array) 0))
 
 ;;------------------------------------------------------------
 
@@ -119,7 +120,9 @@
   (element-type nil :type symbol) ;; data-type
   (byte-size 0 :type gbuf-byte-size) ;; data-index-length
   (element-byte-size 0 :type elem-byte-size)
-  (offset-in-bytes-into-buffer 0 :type gbuf-byte-size)) ;; offset-in-bytes-into-buffer
+  (offset-in-bytes-into-buffer 0 :type gbuf-byte-size)
+  ;; to match c-array and occasionaly used by pbos
+  (row-alignment 1 :type (integer 1 8)))
 
 (defstruct (gpu-array-t (:constructor %make-gpu-array-t)
                         (:include gpu-array))
@@ -415,7 +418,7 @@
     (unsigned-byte 8)
   (declare (profile t))
   (typecase prim
-    (varjo::patches (the (unsigned-byte 8) (varjo::vertex-count prim)))
+    (varjo::patches (coerce (varjo::vertex-count prim) '(unsigned-byte 8)))
     (varjo::triangles 3)
     (varjo::lines 2)
     (varjo::points 1)
