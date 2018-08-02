@@ -13,11 +13,11 @@
                      (loop
                         :for elem :in data
                         :for i :below dim-size
-                        :do (if structp
-                                (populate (row-major-aref-c c-array idx) elem)
-                                (progn
-                                  (setf (row-major-aref-c c-array idx) elem)
-                                  (incf idx)))))
+                        :do (progn
+                              (if structp
+                                  (populate (row-major-aref-c c-array idx) elem)
+                                  (setf (row-major-aref-c c-array idx) elem))
+                              (incf idx))))
                  idx))
              (dpop-with-array (data)
                (loop
