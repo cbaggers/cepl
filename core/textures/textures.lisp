@@ -1118,13 +1118,22 @@ the width to see at what point the width reaches 0 or GL throws an error."
 
 
 (defmethod push-g ((object c-array) (destination texture))
-  (copy-c-array-to-texture-backed-gpu-array object (texref destination)))
+  (let ((arr (texref destination)))
+    (etypecase arr
+      (gpu-array-bb (cepl.gpu-arrays:copy-c-array-to-buffer-backed-gpu-array object arr))
+      (gpu-array-t (copy-c-array-to-texture-backed-gpu-array object arr)))))
 (defmethod push-g ((object c-array) (destination gpu-array-t))
   (copy-c-array-to-texture-backed-gpu-array object destination))
 (defmethod push-g ((object list) (destination texture))
-  (copy-lisp-data-to-texture-backed-gpu-array object (texref destination)))
+  (let ((arr (texref destination)))
+    (etypecase arr
+      (gpu-array-bb (cepl.gpu-arrays:copy-lisp-data-to-buffer-backed-gpu-array object arr))
+      (gpu-array-t (copy-lisp-data-to-texture-backed-gpu-array object arr)))))
 (defmethod push-g ((object array) (destination texture))
-  (copy-lisp-data-to-texture-backed-gpu-array object (texref destination)))
+  (let ((arr (texref destination)))
+    (etypecase arr
+      (gpu-array-bb (cepl.gpu-arrays:copy-lisp-data-to-buffer-backed-gpu-array object arr))
+      (gpu-array-t (copy-lisp-data-to-texture-backed-gpu-array object arr)))))
 (defmethod push-g ((object list) (destination gpu-array-t))
   (copy-lisp-data-to-texture-backed-gpu-array object destination))
 (defmethod push-g ((object array) (destination gpu-array-t))
@@ -1133,12 +1142,18 @@ the width to see at what point the width reaches 0 or GL throws an error."
 (defmethod pull-g ((object gpu-array-t))
   (copy-texture-backed-gpu-array-to-new-lisp-data object))
 (defmethod pull-g ((object texture))
-  (copy-texture-backed-gpu-array-to-new-lisp-data (texref object)))
+  (let ((arr (texref object)))
+    (etypecase arr
+      (gpu-array-bb (cepl.gpu-arrays:copy-buffer-backed-gpu-array-to-new-lisp-data arr))
+      (gpu-array-t (copy-texture-backed-gpu-array-to-new-lisp-data arr)))))
 
 (defmethod pull1-g ((object gpu-array-t))
   (copy-texture-backed-gpu-array-to-new-c-array object))
 (defmethod pull1-g ((object texture))
-  (copy-texture-backed-gpu-array-to-new-c-array (texref object)))
+  (let ((arr (texref object)))
+    (etypecase arr
+      (gpu-array-bb (cepl.gpu-arrays:copy-buffer-backed-gpu-array-to-new-c-array arr))
+      (gpu-array-t (copy-texture-backed-gpu-array-to-new-c-array arr)))))
 
 (defmethod copy-g ((source c-array) (destination gpu-array-t))
   (copy-c-array-to-texture-backed-gpu-array source destination))
