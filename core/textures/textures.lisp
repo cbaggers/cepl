@@ -108,52 +108,53 @@
 (defun+ multisample-texture-p (texture)
   (not (= 0 (texture-samples texture))))
 
-(defun+ upload-c-array-to-gpu-array-t (gpu-array c-array pixel-format)
-  (let* ((element-pf (lisp-type->pixel-format c-array))
-         (compiled-pf (or pixel-format
-                          (cepl.pixel-formats::compile-pixel-format
-                           element-pf)))
-         (pix-format (first compiled-pf))
-         (pix-type (second compiled-pf))
-         (c-array-dims (c-array-dimensions c-array)))
-    (with-gpu-array-t gpu-array
-      (error-on-invalid-upload-formats texture-type image-format pix-format
-                                       pix-type)
-      (unless (equal c-array-dims dimensions)
-        (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a"
-               c-array-dims dimensions))
-      (%with-scratch-texture-bound (gpu-array-t-texture gpu-array)
-        (%upload-tex texture texture-type level-num c-array-dims
-                     layer-num face-num pix-format pix-type (pointer c-array)
-                     (c-array-row-alignment c-array)))))
+(defun+ upload-c-array-to-gpu-array-t (gpu-array
+                                       c-array
+                                       &optional
+                                       pixel-format)
+  (destructuring-bind (pix-format pix-type)
+      (cepl.pixel-formats::compile-pixel-format
+       (or pixel-format
+           (c-array-element-pixel-format c-array)
+           (lisp-type->pixel-format (c-array-element-type c-array))))
+    (let* ((c-array-dims (c-array-dimensions c-array)))
+      (with-gpu-array-t gpu-array
+        (error-on-invalid-upload-formats texture-type image-format pix-format
+                                         pix-type)
+        (unless (equal c-array-dims dimensions)
+          (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a"
+                 c-array-dims dimensions))
+        (%with-scratch-texture-bound (gpu-array-t-texture gpu-array)
+          (%upload-tex texture texture-type level-num c-array-dims
+                       layer-num face-num pix-format pix-type (pointer c-array)
+                       (c-array-row-alignment c-array))))))
   gpu-array)
 
 (defun+ upload-gpu-array-bb-to-gpu-array-t (gpu-array-t
                                             gpu-array-bb
+                                            &optional
                                             pixel-format)
-  (let* ((element-pf (lisp-type->pixel-format gpu-array-bb))
-         (compiled-pf (or pixel-format
-                          (cepl.pixel-formats::compile-pixel-format
-                           element-pf)))
-         (pix-format (first compiled-pf))
-         (pix-type (second compiled-pf))
-         (array-dims (gpu-array-dimensions gpu-array-bb)))
-    (with-gpu-array-t gpu-array-t
-      (error-on-invalid-upload-formats texture-type image-format pix-format
-                                       pix-type)
-      (unless (equal array-dims dimensions)
-        (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a"
-               array-dims dimensions))
-      (%with-scratch-texture-bound (gpu-array-t-texture gpu-array-t)
-        (setf (gpu-buffer-bound (cepl-context) :pixel-unpack-buffer)
-              (gpu-array-bb-buffer gpu-array-bb))
-        (%upload-tex texture texture-type level-num array-dims
-                     layer-num face-num pix-format pix-type
-                     (gpu-array-bb-offset-in-bytes-into-buffer gpu-array-bb)
-                     (gpu-array-bb-row-alignment gpu-array-bb)))))
+  (destructuring-bind (pix-format pix-type)
+      (cepl.pixel-formats::compile-pixel-format
+       (or pixel-format
+           (gpu-array-bb-element-pixel-format gpu-array-bb)
+           (lisp-type->pixel-format (gpu-array-bb-element-type gpu-array-bb))))
+    (let ((array-dims (gpu-array-dimensions gpu-array-bb)))
+      (with-gpu-array-t gpu-array-t
+        (error-on-invalid-upload-formats texture-type image-format pix-format
+                                         pix-type)
+        (unless (equal array-dims dimensions)
+          (error "dimensions of c-array and gpu-array must match~%c-array:~a gpu-array:~a"
+                 array-dims dimensions))
+        (%with-scratch-texture-bound (gpu-array-t-texture gpu-array-t)
+          (setf (gpu-buffer-bound (cepl-context) :pixel-unpack-buffer)
+                (gpu-array-bb-buffer gpu-array-bb))
+          (%upload-tex texture texture-type level-num array-dims
+                       layer-num face-num pix-format pix-type
+                       (gpu-array-bb-offset-in-bytes-into-buffer gpu-array-bb)
+                       (gpu-array-bb-row-alignment gpu-array-bb))))))
   gpu-array-t)
 
-;; (gpu-buffer-bound (cepl-context) :pixel-unpack-buffer)
 ;; [TODO] add offsets
 (defun+ %upload-tex (tex tex-type level-num dimensions layer-num face-num
                          pix-format pix-type pointer/offset row-alignment)
@@ -217,11 +218,6 @@
                                                pix-type pointer/offset))
       (t (error "not currently supported for upload: ~a" tex-type)))))
 
-
-
-(defun+ upload-from-buffer-to-gpu-array-t (&rest args)
-  (declare (ignore args))
-  (error "upload-from-buffer-to-gpu-array-t is not implemented yet"))
 
 ;;------------------------------------------------------------
 
@@ -440,7 +436,9 @@
   (typecase initial-contents
     (null (error 'make-tex-no-content-no-type))
     (c-array (lisp-type->image-format
-              (element-type initial-contents)))
+              (c-array-element-type initial-contents)))
+    (gpu-array-bb (lisp-type->image-format
+                   (gpu-array-bb-element-type initial-contents)))
     (uploadable-lisp-seq (lisp-type->image-format
                           (cepl.c-arrays::lisp->gl-type
                            (cepl.c-arrays::scan-for-type initial-contents))))))
@@ -454,6 +452,7 @@
   (typecase initial-contents
     (null image-format)
     (c-array image-format)
+    (gpu-array-bb image-format)
     (uploadable-lisp-seq image-format)
     (t (error 'make-tex-array-not-match-type2
               :element-type element-type
@@ -572,6 +571,14 @@ the width to see at what point the width reaches 0 or GL throws an error."
     (:texture-2d-multisample #.(gl-enum :texture-2d-multisample))
     (:texture-2d-multisample-array #.(gl-enum :texture-2d-multisample-array))))
 
+(defgeneric pixel-format-from-array (array)
+  (:method ((arr c-array))
+    (or (c-array-element-pixel-format arr)
+        (lisp-type->pixel-format (c-array-element-type arr))))
+  (:method ((arr gpu-array-bb))
+    (or (gpu-array-bb-element-pixel-format arr)
+        (lisp-type->pixel-format (gpu-array-bb-element-type arr)))))
+
 (defun+ %make-texture (tex-obj dimensions mipmap layer-count cubes
                                buffer-storage rectangle immutable
                                initial-contents image-format
@@ -587,7 +594,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                            (validate-pixel-format
                             initial-contents
                             (or pixel-format
-                                (lisp-type->pixel-format initial-contents)))))
+                                (pixel-format-from-array initial-contents)))))
            (texture-type (establish-texture-type
                           (length dimensions)
                           (not (null mipmap)) (> layer-count 1) cubes
@@ -619,8 +626,14 @@ the width to see at what point the width reaches 0 or GL throws an error."
                 (%with-scratch-texture-bound tex-obj
                   (allocate-texture tex-obj)
                   (when initial-contents
-                    (upload-c-array-to-gpu-array-t
-                     (texref tex-obj) initial-contents pixel-format))
+                    (etypecase initial-contents
+                      (null nil)
+                      (c-array
+                       (upload-c-array-to-gpu-array-t
+                        (texref tex-obj) initial-contents pixel-format))
+                      (gpu-array-bb
+                       (upload-gpu-array-bb-to-gpu-array-t
+                        (texref tex-obj) initial-contents pixel-format))))
                   (when (and generate-mipmaps (> mipmap-levels 1))
                     ;; It may look like we are just going to generate as many
                     ;; mipmap levels as possible here. But #'allocate-texture
@@ -654,7 +667,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
               (texture-type (or (establish-texture-type rank nil nil nil po2p nil t nil)
                                 (error "Could not extablish a buffer-texture-type with dimensions ~a"
                                        dimensions))))
-         (assert-valid-args-for-buffer-backend-texture
+         (assert-valid-args-for-buffer-backed-texture
           image-format cubes rectangle multisample mipmap layer-count
           texture-type)
          (values (make-gpu-array nil :dimensions dimensions :element-type element-type)
@@ -668,7 +681,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                                 (error "Could not extablish a buffer-texture-type with dimensions ~a"
                                        dimensions))))
          (assert (every #'= dimensions (dimensions initial-contents)))
-         (assert-valid-args-for-buffer-backend-texture
+         (assert-valid-args-for-buffer-backed-texture
           image-format cubes rectangle multisample mipmap layer-count
           texture-type)
          (values (make-gpu-array initial-contents) texture-type)))
@@ -681,7 +694,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
                                 (error "Could not extablish a buffer-texture-type with dimensions ~a"
                                        dimensions))))
          (assert (every #'= dimensions (dimensions initial-contents)))
-         (assert-valid-args-for-buffer-backend-texture
+         (assert-valid-args-for-buffer-backed-texture
           image-format cubes rectangle multisample mipmap layer-count
           texture-type)
          (values initial-contents texture-type)))
@@ -724,7 +737,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
       (setf (texture-allocated-p tex-obj) t)
       tex-obj)))
 
-(defun+ assert-valid-args-for-buffer-backend-texture
+(defun+ assert-valid-args-for-buffer-backed-texture
     (image-format cubes rectangle multisample mipmap layer-count
      texture-type)
   (when (or mipmap (not (= layer-count 1)) cubes rectangle multisample)
@@ -1000,9 +1013,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
 (defn copy-c-array-to-texture-backed-gpu-array ((src c-array)
                                                 (dst gpu-array-t))
     gpu-array-t
-  (upload-c-array-to-gpu-array-t
-   dst src
-   (lisp-type->pixel-format src))
+  (upload-c-array-to-gpu-array-t dst src)
   dst)
 
 (defn copy-lisp-data-to-texture-backed-gpu-array ((src (or list array))
@@ -1016,25 +1027,91 @@ the width to see at what point the width reaches 0 or GL throws an error."
     (copy-c-array-to-texture-backed-gpu-array c-a dst))
   dst)
 
+(defn pack-pixels-from-texture ((tex-array gpu-array-t)
+                                (pixel-format pixel-format)
+                                row-alignment
+                                pointer/offset)
+    (values)
+  (with-gpu-array-t tex-array
+    (destructuring-bind (pix-format pix-type)
+        (cepl.pixel-formats::compile-pixel-format pixel-format)
+      (%with-scratch-texture-bound texture
+        (setf (pack-alignment) row-alignment)
+        (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
+                           (coerce level-num 'real)
+                           pix-format
+                           pix-type
+                           pointer/offset))))
+  (values))
+
 ;; [TODO] implement gl-fill and fill arguments
-;; [TODO] Does not respect UNPACK_BUFFER
 (defn copy-texture-backed-gpu-array-to-new-c-array ((src gpu-array-t))
     c-array
-  (with-gpu-array-t src
-    (let* ((p-format (image-format->pixel-format
-                      (gpu-array-t-image-format src)))
-           (c-array (make-c-array nil :dimensions (gpu-array-dimensions src)
-                                  :element-type p-format)))
-      (destructuring-bind (format type)
-          (cepl.pixel-formats::compile-pixel-format p-format)
-        (%with-scratch-texture-bound texture
-          (setf (pack-alignment) (c-array-row-alignment c-array))
-          (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
-                             (coerce level-num 'real)
-                             format
-                             type
-                             (pointer c-array))))
-      c-array)))
+  (let* ((p-format (image-format->pixel-format
+                    (gpu-array-t-image-format src)))
+         (c-array (make-c-array nil
+                                :dimensions (gpu-array-dimensions src)
+                                :element-type p-format
+                                :row-alignment 1)))
+    (setf (gpu-buffer-bound (cepl-context) :pixel-pack-buffer) nil)
+    (pack-pixels-from-texture src p-format 1 (c-array-pointer c-array))
+    c-array))
+
+(defn copy-texture-backed-gpu-array-to-c-array ((src gpu-array-t)
+                                                (dst c-array))
+    c-array
+  ;; {TODO} loosen up the type requirement. Pixel transfers can do a bunch
+  ;;        of transforms
+  (check-array-types-for-copy (image-format->lisp-type
+                               (gpu-array-t-image-format src))
+                              (c-array-element-type dst))
+  (check-array-sizes-for-copy (gpu-array-dimensions src)
+                              (c-array-dimensions dst))
+  (let ((pixel-format (lisp-type->pixel-format dst)))
+    (setf (gpu-buffer-bound (cepl-context) :pixel-pack-buffer) nil)
+    (pack-pixels-from-texture src
+                              pixel-format
+                              (c-array-row-alignment dst)
+                              (c-array-pointer dst)))
+  dst)
+
+(defn copy-texture-backed-gpu-array-to-new-buffer-backed-gpu-array
+    ((src gpu-array-t))
+    gpu-array-bb
+  (let* ((p-format (image-format->pixel-format
+                    (gpu-array-t-image-format src)))
+         (gpu-array-bb (make-gpu-array nil
+                                  :dimensions (gpu-array-dimensions src)
+                                  :element-type p-format
+                                  :row-alignment 1)))
+    (setf (gpu-buffer-bound (cepl-context) :pixel-pack-buffer)
+          (gpu-array-bb-buffer gpu-array-bb))
+    (pack-pixels-from-texture
+     src
+     p-format
+     1
+     (gpu-array-bb-offset-in-bytes-into-buffer gpu-array-bb))
+    gpu-array-bb))
+
+(defn copy-texture-backed-gpu-array-to-buffer-backed-gpu-array
+    ((src gpu-array-t)
+     (dst gpu-array-bb))
+    gpu-array-bb
+  ;; {TODO} loosen up the type requirement. Pixel transfers can do a bunch
+  ;;        of transforms
+  (check-array-types-for-copy (image-format->lisp-type
+                               (gpu-array-t-image-format src))
+                              (gpu-array-bb-element-type dst))
+  (check-array-sizes-for-copy (gpu-array-dimensions src)
+                              (gpu-array-dimensions dst))
+  (let ((pixel-format (lisp-type->pixel-format dst)))
+    (setf (gpu-buffer-bound (cepl-context) :pixel-pack-buffer)
+          (gpu-array-bb-buffer dst))
+    (pack-pixels-from-texture src
+                              pixel-format
+                              (gpu-array-bb-row-alignment dst)
+                              (gpu-array-bb-offset-in-bytes-into-buffer dst)))
+  dst)
 
 (defn copy-texture-backed-gpu-array-to-new-lisp-data ((src gpu-array-t))
     t
@@ -1045,9 +1122,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
 (defn copy-buffer-backed-gpu-array-to-texture-backed-gpu-array
     ((src gpu-array-bb) (dst gpu-array-t))
     gpu-array-t
-  (upload-gpu-array-bb-to-gpu-array-t
-   dst src
-   (gpu-array-bb-element-pixel-format src))
+  (upload-gpu-array-bb-to-gpu-array-t dst src)
   dst)
 
 
@@ -1080,14 +1155,22 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (copy-lisp-data-to-texture-backed-gpu-array source destination))
 (defmethod copy-g ((source array) (destination gpu-array-t))
   (copy-lisp-data-to-texture-backed-gpu-array source destination))
+(defmethod copy-g ((source gpu-array-t) (destination c-array))
+  (copy-texture-backed-gpu-array-to-c-array source destination))
 (defmethod copy-g ((source gpu-array-t) (destination (eql :c-array)))
   (declare (ignore destination))
   (copy-texture-backed-gpu-array-to-new-c-array source))
 (defmethod copy-g ((source gpu-array-t) (destination (eql :lisp)))
   (declare (ignore destination))
   (copy-texture-backed-gpu-array-to-new-lisp-data source))
+(defmethod copy-g ((source gpu-array-t) (destination (eql :gpu-array-bb)))
+  (declare (ignore destination))
+  (copy-texture-backed-gpu-array-to-new-buffer-backed-gpu-array source))
 (defmethod copy-g ((source gpu-array-bb) (destination gpu-array-t))
   (copy-buffer-backed-gpu-array-to-texture-backed-gpu-array
+   source destination))
+(defmethod copy-g ((source gpu-array-t) (destination gpu-array-bb))
+  (copy-texture-backed-gpu-array-to-buffer-backed-gpu-array
    source destination))
 
 ;; {TODO}
@@ -1098,3 +1181,8 @@ the width to see at what point the width reaches 0 or GL throws an error."
 ;; get texture params
 ;; texture views
 ;; dedicated generate-mipmaps
+;; Use with-cepl-context and pass ctx expliciting to internal funcs
+
+;; can we always make a pixel format on array creation?
+
+;; make %calc-image-format-with-declared-format do something :D
