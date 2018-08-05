@@ -1060,14 +1060,10 @@ the width to see at what point the width reaches 0 or GL throws an error."
 (defn copy-texture-backed-gpu-array-to-c-array ((src gpu-array-t)
                                                 (dst c-array))
     c-array
-  ;; {TODO} loosen up the type requirement. Pixel transfers can do a bunch
-  ;;        of transforms
-  (check-array-types-for-copy (image-format->lisp-type
-                               (gpu-array-t-image-format src))
-                              (c-array-element-type dst))
   (check-array-sizes-for-copy (gpu-array-dimensions src)
                               (c-array-dimensions dst))
-  (let ((pixel-format (lisp-type->pixel-format dst)))
+  (let ((pixel-format (lisp-type->pixel-format
+                       (c-array-element-type dst))))
     (setf (gpu-buffer-bound (cepl-context) :pixel-pack-buffer) nil)
     (pack-pixels-from-texture src
                               pixel-format
@@ -1097,11 +1093,6 @@ the width to see at what point the width reaches 0 or GL throws an error."
     ((src gpu-array-t)
      (dst gpu-array-bb))
     gpu-array-bb
-  ;; {TODO} loosen up the type requirement. Pixel transfers can do a bunch
-  ;;        of transforms
-  (check-array-types-for-copy (image-format->lisp-type
-                               (gpu-array-t-image-format src))
-                              (gpu-array-bb-element-type dst))
   (check-array-sizes-for-copy (gpu-array-dimensions src)
                               (gpu-array-dimensions dst))
   (let ((pixel-format (lisp-type->pixel-format dst)))
