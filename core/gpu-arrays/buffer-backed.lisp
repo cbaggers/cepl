@@ -39,7 +39,8 @@
         (gpu-array-bb-access-style gpu-array) :uninitialized
         (gpu-array-bb-element-type gpu-array) nil
         (gpu-array-bb-byte-size gpu-array) 0
-        (gpu-array-bb-offset-in-bytes-into-buffer gpu-array) 0))
+        (gpu-array-bb-offset-in-bytes-into-buffer gpu-array) 0
+        (gpu-array-bb-element-pixel-format gpu-array) nil))
 
 ;; we only set the buffer slot type as undefined as the size and
 ;; offset dont change
@@ -74,7 +75,8 @@
                                  (byte-offset-into-source-data integer)
                                  element-type
                                  dimensions
-                                 (row-alignment (integer 1 8) 1))
+                                 (row-alignment (integer 1 8) 1)
+                                 (pixel-format (or null pixel-format)))
     gpu-array-bb
   (declare (profile t))
   (assert dimensions)
@@ -90,7 +92,8 @@
           (gpu-array-bb-element-type child) element-type
           (gpu-array-bb-element-byte-size child) (gl-type-size element-type)
           (gpu-array-bb-byte-size child) byte-size
-          (gpu-array-bb-row-alignment child) row-alignment)
+          (gpu-array-bb-row-alignment child) row-alignment
+          (gpu-array-bb-element-pixel-format child) pixel-format)
     (setf (gpu-array-bb-offset-in-bytes-into-buffer child)
           (+ (gpu-array-bb-offset-in-bytes-into-buffer parent) offset))
     child))
@@ -103,14 +106,20 @@
                                 element-type
                                 access-style
                                 row-alignment)
-  (let* ((buffer (buffer-reserve-block
+  (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
+         (pixel-format (when p-format element-type))
+         (element-type (if p-format
+                           (pixel-format->lisp-type element-type)
+                           element-type))
+         (buffer (buffer-reserve-block
                   (cepl.gpu-buffers::make-gpu-buffer)
                   element-type dimensions :array-buffer
                   access-style
                   :row-alignment row-alignment))
          (base-arr (aref (gpu-buffer-arrays buffer) 0)))
+    (setf (gpu-array-bb-element-pixel-format array) pixel-format)
     (make-gpu-array-share-data
-     array base-arr 0 element-type dimensions row-alignment)))
+     array base-arr 0 element-type dimensions row-alignment pixel-format)))
 
 (defmethod make-gpu-array ((initial-contents null)
                            &key element-type dimensions
@@ -128,8 +137,10 @@
 ;;---------------------------------------------------------------
 ;; from c-array
 
-(defun+ init-gpu-array-from-c-array (arr c-array access-style
-                                    dimensions)
+(defun+ init-gpu-array-from-c-array (arr
+                                     c-array
+                                     access-style
+                                     dimensions)
   (let ((dimensions (listify dimensions))
         (c-dimensions (c-array-dimensions c-array))
         (row-alignment (c-array-row-alignment c-array)))
@@ -143,7 +154,8 @@
                                 c-array :usage access-style))
            (base-arr (aref (gpu-buffer-arrays source) 0)))
       (make-gpu-array-share-data arr base-arr 0 (c-array-element-type c-array)
-                                 c-dimensions row-alignment))))
+                                 c-dimensions row-alignment
+                                 (c-array-element-pixel-format c-array)))))
 
 (defmethod make-gpu-array ((initial-contents c-array)
                            &key (access-style :static-draw) dimensions)
@@ -182,7 +194,8 @@
                                       0
                                       (c-array-element-type c-array)
                                       (c-array-dimensions c-array)
-                                      (c-array-row-alignment c-array)))))
+                                      (c-array-row-alignment c-array)
+                                      (c-array-element-pixel-format c-array)))))
 
 
 (defun+ make-gpu-arrays (c-arrays &key (access-style :static-draw))
@@ -252,7 +265,8 @@
                                            0
                                            element-type
                                            dimensions
-                                           1))))
+                                           1
+                                           (lisp-type->pixel-format element-type)))))
 
 (defun+ make-gpu-array-from-buffer (buffer
                                     &key
@@ -290,7 +304,8 @@
                                            0
                                            element-type
                                            dimensions
-                                           1))))
+                                           1
+                                           (lisp-type->pixel-format element-type)))))
 
 (defun+ make-gpu-array-from-buffer-id (gl-buffer-id
                                        &key
@@ -338,7 +353,8 @@
        (cepl.c-arrays::gl-calc-byte-size type start row-alignment)
        type
        (list (- end start))
-       row-alignment))))
+       row-alignment
+       (gpu-array-bb-element-pixel-format array)))))
 
 ;; {TODO} copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData
@@ -354,6 +370,7 @@
          (old-dim (gpu-array-dimensions arr))
          (buffer-arrays (gpu-buffer-arrays (gpu-array-bb-buffer arr)))
          (element-type (gpu-array-bb-element-type arr))
+         (pixel-format (gpu-array-bb-element-pixel-format arr))
          (row-alignment (or row-alignment (gpu-array-bb-row-alignment arr))))
     (assert (= (length (gpu-array-dimensions arr)) (length new-dimensions))
             (new-dimensions) 'adjust-gpu-array-mismatched-dimensions
@@ -379,6 +396,13 @@
                         :row-alignment row-alignment))
                (base-arr (aref (gpu-buffer-arrays buffer) 0)))
           (make-gpu-array-share-data
-           arr base-arr 0 element-type new-dimensions row-alignment)))))
+           arr base-arr 0 element-type new-dimensions
+           row-alignment pixel-format)))))
+
+;;---------------------------------------------------------------
+
+(defmethod lisp-type->pixel-format ((type gpu-array-bb))
+  (or (gpu-array-bb-element-pixel-format type)
+      (lisp-type->pixel-format (gpu-array-bb-element-type type))))
 
 ;;---------------------------------------------------------------

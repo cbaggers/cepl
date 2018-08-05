@@ -343,6 +343,7 @@
            :gpu-array-bb-element-byte-size
            :gpu-array-bb-byte-size
            :gpu-array-bb-offset-in-bytes-into-buffer
+           :gpu-array-bb-element-pixel-format
            :+null-buffer-backed-gpu-array+
 
            :%make-gpu-buffer

@@ -121,6 +121,7 @@
   (byte-size 0 :type gbuf-byte-size) ;; data-index-length
   (element-byte-size 0 :type elem-byte-size)
   (offset-in-bytes-into-buffer 0 :type gbuf-byte-size)
+  (element-pixel-format nil :type (or null pixel-format))
   ;; to match c-array and occasionaly used by pbos
   (row-alignment 1 :type (integer 1 8)))
 
