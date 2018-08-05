@@ -117,8 +117,4 @@
 (defmethod copy-g ((source c-array) (destination (eql :lisp)))
   (copy-c-array-to-new-lisp-data source))
 
-(defmethod lisp-type->pixel-format ((type c-array))
-  (or (c-array-element-pixel-format type)
-      (lisp-type->pixel-format (c-array-element-type type))))
-
 ;;------------------------------------------------------------

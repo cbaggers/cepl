@@ -400,9 +400,3 @@
            row-alignment pixel-format)))))
 
 ;;---------------------------------------------------------------
-
-(defmethod lisp-type->pixel-format ((type gpu-array-bb))
-  (or (gpu-array-bb-element-pixel-format type)
-      (lisp-type->pixel-format (gpu-array-bb-element-type type))))
-
-;;---------------------------------------------------------------
