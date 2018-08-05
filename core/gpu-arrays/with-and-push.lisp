@@ -86,18 +86,12 @@
 (defn copy-c-array-to-buffer-backed-gpu-array ((src c-array)
                                                (dst gpu-array-bb))
     gpu-array-bb
-  (let* ((type (gpu-array-bb-element-type dst))
-         (ob-dimen (c-array-dimensions src))
-         (des-dimen (gpu-array-dimensions dst)))
-    (if (and (eq (element-type src) type)
-             (if (= 1 (length des-dimen) (length ob-dimen))
-                 (<= (first ob-dimen) (first des-dimen))
-                 (equal ob-dimen des-dimen)))
-        (cepl.gpu-buffers::gpu-array-sub-data dst src :types-must-match t)
-        (error "If the arrays are 1D then the length of the source array must
-be <= length of the destination array. If the arrays have more than 1
-dimension then their sizes must match exactly"))
-    dst))
+  (check-array-types-for-copy (c-array-element-type src)
+                              (gpu-array-bb-element-type dst))
+  (check-array-sizes-for-copy (c-array-dimensions src)
+                              (gpu-array-dimensions dst))
+  (cepl.gpu-buffers::gpu-array-sub-data dst src :types-must-match t)
+  dst)
 
 (defn copy-lisp-data-to-buffer-backed-gpu-array ((src (or list array))
                                                  (dst gpu-array-bb))

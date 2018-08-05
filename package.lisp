@@ -581,7 +581,9 @@
 
            ;;---
            :holds-gl-object-ref-p
-           :can-be-shared-between-contexts-p))
+           :can-be-shared-between-contexts-p
+           :check-array-sizes-for-copy
+           :check-array-types-for-copy))
 
 (uiop:define-package :cepl.memory
     (:use :cl :cepl-utils :glsl-symbols :cffi :%cepl.types :cepl.build)
