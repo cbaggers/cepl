@@ -179,25 +179,24 @@
                        :comp-length component-length)))
 
 ;; [TODO] swap intern for cepl-utils:kwd
-(defun+ compile-pixel-format (pixel-format)
-  (when pixel-format
-    (let* ((components (pixel-format-components pixel-format))
-           (components (if (eq components :depth) :depth-component components))
-           (gl-comps (or (rest (assoc components '((:r . :red) (:g . :green)
-                                                   (:b . :blue))))
-                         components))
-           (sizes (pixel-format-sizes pixel-format))
-           (type (pixel-format-type pixel-format))
-           (expanded-type (cffi-type->gl-type (if (eq type :int8) :uint8 type))))
-      (let ((format (if (pixel-format-normalize pixel-format)
-                        gl-comps
-                        (intern (format nil "~a-INTEGER" gl-comps) 'keyword)))
-            (type (if sizes
-                      (intern (format nil "~a~{-~a~}~@[-REV~]" expanded-type sizes
-                                      (pixel-format-reversed pixel-format))
-                              'keyword)
-                      expanded-type)))
-        (list format type)))))
+(defn compile-pixel-format ((pixel-format pixel-format)) list
+  (let* ((components (pixel-format-components pixel-format))
+         (components (if (eq components :depth) :depth-component components))
+         (gl-comps (or (rest (assoc components '((:r . :red) (:g . :green)
+                                                 (:b . :blue))))
+                       components))
+         (sizes (pixel-format-sizes pixel-format))
+         (type (pixel-format-type pixel-format))
+         (expanded-type (cffi-type->gl-type (if (eq type :int8) :uint8 type))))
+    (let ((format (if (pixel-format-normalize pixel-format)
+                      gl-comps
+                      (intern (format nil "~a-INTEGER" gl-comps) 'keyword)))
+          (type (if sizes
+                    (intern (format nil "~a~{-~a~}~@[-REV~]" expanded-type sizes
+                                    (pixel-format-reversed pixel-format))
+                            'keyword)
+                    expanded-type)))
+      (list format type))))
 
 (defun+ pixel-format->lisp-type (pixel-format)
   (if (pixel-format-sizes pixel-format)
