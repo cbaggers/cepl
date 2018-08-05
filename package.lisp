@@ -857,7 +857,9 @@
            :map-c-into
            :map-c
            :ptr-index
-           :c-array-index))
+           :c-array-index
+           :copy-lisp-data-to-c-array
+           :copy-c-array-to-new-lisp-data))
 
 (uiop:define-package :cepl.gpu-buffers
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
@@ -981,6 +983,15 @@
            :buffer-texture
            :buffer-texture-p
 
+           :copy-c-array-to-texture-backed-gpu-array
+           :copy-lisp-data-to-texture-backed-gpu-array
+           :copy-texture-backed-gpu-array-to-new-c-array
+           :copy-texture-backed-gpu-array-to-c-array
+           :copy-texture-backed-gpu-array-to-new-buffer-backed-gpu-array
+           :copy-texture-backed-gpu-array-to-buffer-backed-gpu-array
+           :copy-texture-backed-gpu-array-to-new-lisp-data
+           :copy-buffer-backed-gpu-array-to-texture-backed-gpu-array
+
            :make-texture-from-id
            :make-texture
            :free-texture
@@ -1028,7 +1039,11 @@
            :with-gpu-array-as-c-array
            :with-gpu-array-range-as-pointer
            :with-gpu-array-range-as-c-array
-           :reallocate-gpu-array))
+           :reallocate-gpu-array
+           :copy-buffer-backed-gpu-array-to-new-c-array
+           :copy-buffer-backed-gpu-array-to-new-lisp-data
+           :copy-c-array-to-buffer-backed-gpu-array
+           :copy-lisp-data-to-buffer-backed-gpu-array))
 
 (uiop:define-package :cepl.samplers
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
