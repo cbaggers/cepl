@@ -1181,12 +1181,9 @@ the width to see at what point the width reaches 0 or GL throws an error."
 
 ;; {TODO}
 ;; copy data (from frame-buffer to texture image) - (glCopyTexSubImage2D)
-;; copy to tex from buffer (same as above but with GL_PIXEL_UNPACK_BUFFER)
-;; copy to buffer from tex (same as above but with GL_PIXEL_PACK_BUFFER)
 ;; set texture params
 ;; get texture params
 ;; texture views
-;; dedicated generate-mipmaps
 ;; Use with-cepl-context and pass ctx expliciting to internal funcs
 
 ;; can we always make a pixel format on array creation?
