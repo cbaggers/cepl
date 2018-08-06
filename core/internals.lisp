@@ -44,11 +44,6 @@
 (defmethod symbol-names-cepl-structp ((sym t))
   nil)
 
-(defn-inline draw-buffer-enum ((buffer-num (signed-byte 32))) (signed-byte 32)
-  (declare (optimize (speed 3) (safety 1) (debug 1))
-           (profile t))
-  (+ buffer-num #.(gl-enum :draw-buffer0)))
-
 (defun+ surface-dimensions (surface)
   (cepl.host:window-size surface))
 

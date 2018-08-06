@@ -1037,7 +1037,7 @@ the width to see at what point the width reaches 0 or GL throws an error."
         (cepl.pixel-formats::compile-pixel-format pixel-format)
       (%with-scratch-texture-bound texture
         (setf (pack-alignment) row-alignment)
-        (%gl:get-tex-image (foreign-enum-value '%gl:enum texture-type)
+        (%gl:get-tex-image (gl-enum texture-type)
                            (coerce level-num 'real)
                            pix-format
                            pix-type

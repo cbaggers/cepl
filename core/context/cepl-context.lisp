@@ -403,7 +403,7 @@
 (defn-inline set-buffer-bound-static ((ctx cepl-context)
                                       (buffer (or null gpu-buffer))
                                       (index (integer 0 11))
-                                      (enum (unsigned-byte 32)))
+                                      (enum gl-enum-value))
     (or null gpu-buffer)
   (declare (optimize (speed 3) (safety 1) (debug 0) (compilation-speed 0))
            (profile t))
@@ -435,7 +435,7 @@
     (:shader-storage-buffer 10)
     (:texture-buffer 11)))
 
-(defn-inline buffer-kind->enum ((kind keyword)) (signed-byte 32)
+(defn-inline buffer-kind->enum ((kind keyword)) gl-enum-value
   ;; :atomic-counter-buffer
   ;; :shader-storage-buffer
   (declare (optimize (speed 3) (safety 1) (debug 0) (compilation-speed 0))

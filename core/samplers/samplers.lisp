@@ -367,7 +367,7 @@
 (defun+ %set-magnify-filter (sampler value)
   (setf (%sampler-magnify-filter sampler) value)
   (%gl::sampler-parameter-i (%sampler-id sampler) :texture-mag-filter
-                            (%gl::foreign-enum-value '%gl:enum value))
+                            (gl-enum value))
   sampler)
 
 (defun+ %set-minify-filter (sampler value)
@@ -378,7 +378,7 @@
                                    :nearest-mipmap-nearest)))))
   (setf (%sampler-minify-filter sampler) value)
   (%gl::sampler-parameter-i (%sampler-id sampler) :texture-min-filter
-                            (%gl::foreign-enum-value '%gl:enum value))
+                            (gl-enum value))
   sampler)
 
 (defun+ %set-wrap (sampler value)
@@ -403,11 +403,11 @@
                        value))))
       (setf (%sampler-wrap sampler) value)
       (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-s
-                                (%gl::foreign-enum-value '%gl:enum (aref value 0)))
+                                (gl-enum (aref value 0)))
       (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-t
-                                (%gl::foreign-enum-value '%gl:enum (aref value 1)))
+                                (gl-enum (aref value 1)))
       (%gl::sampler-parameter-i (%sampler-id sampler) :texture-wrap-r
-                                (%gl::foreign-enum-value '%gl:enum (aref value 2)))))
+                                (gl-enum (aref value 2)))))
   sampler)
 
 (defun+ %set-compare (sampler value)
@@ -417,11 +417,10 @@
       (progn
         (%gl:sampler-parameter-i
          (%sampler-id sampler) :texture-compare-mode
-         (%gl::foreign-enum-value '%gl:enum :compare-ref-to-texture))
+         (gl-enum :compare-ref-to-texture))
         (%gl:sampler-parameter-i
          (%sampler-id sampler) :texture-compare-func
-         (%gl::foreign-enum-value
-          '%gl:enum
+         (gl-enum
           (case value
             ((:never nil) :never)
             ((:always t) :always)
@@ -434,7 +433,7 @@
             (otherwise (error "Invalid compare func for sampler ~a" value))))))
       (%gl:sampler-parameter-i
        (%sampler-id sampler) :texture-compare-mode
-       (%gl::foreign-enum-value '%gl:enum :none)))
+       (gl-enum :none)))
   sampler)
 
 ;;----------------------------------------------------------------------

@@ -187,7 +187,7 @@
 ;;----------------------------------------------------------------------
 
 (defn-inline color-attachment-enum ((attachment-num attachment-num))
-    (signed-byte 32)
+    gl-enum-value
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
   (+ attachment-num #.(gl-enum :color-attachment0)))
@@ -211,14 +211,14 @@
   fbo)
 
 (defn-inline default-fbo-attachment-enum ((attachment-num (integer 0 3)))
-    (signed-byte 32)
+    gl-enum-value
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
-  (let ((vals #(#.(gl-enum :back-left)
-                #.(gl-enum :front-left)
-                #.(gl-enum :back-right)
-                #.(gl-enum :front-right))))
-    (declare (type (simple-array (signed-byte 32) (4))))
+  (let ((vals (make-array 4 :element-type 'gl-enum-value
+                          :initial-contents '(#.(gl-enum :back-left)
+                                              #.(gl-enum :front-left)
+                                              #.(gl-enum :back-right)
+                                              #.(gl-enum :front-right)))))
     (aref vals attachment-num)))
 
 (defun+ update-draw-buffer-map (fbo)

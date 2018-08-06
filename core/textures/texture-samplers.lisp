@@ -37,14 +37,14 @@
   (assert (member value '(:linear :nearest)))
   (%with-scratch-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-mag-filter
-                          (%gl::foreign-enum-value '%gl:enum value)))
+                          (gl-enum value)))
   texture)
 
 
 (defun+ (setf tex-minify-filter) (value texture)
   (%with-scratch-texture-bound texture
     (%gl::tex-parameter-i (texture-type texture) :texture-min-filter
-                          (%gl::foreign-enum-value '%gl:enum value)))
+                          (gl-enum value)))
   texture)
 
 (defun+ (setf tex-wrap) (value texture)
@@ -58,11 +58,11 @@
                  (every (lambda (x) (member x options)) value)))
     (%with-scratch-texture-bound texture
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-s
-                            (%gl::foreign-enum-value '%gl:enum (aref value 0)))
+                            (gl-enum (aref value 0)))
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-t
-                            (%gl::foreign-enum-value '%gl:enum (aref value 1)))
+                            (gl-enum (aref value 1)))
       (%gl::tex-parameter-i (texture-type texture) :texture-wrap-r
-                            (%gl::foreign-enum-value '%gl:enum (aref value 2)))))
+                            (gl-enum (aref value 2)))))
   texture)
 
 
@@ -72,12 +72,10 @@
         (progn
           (%gl:tex-parameter-i
            (texture-type texture) :texture-compare-mode
-           (%gl::foreign-enum-value
-            '%gl:enum :compare-ref-to-texture))
+           (gl-enum :compare-ref-to-texture))
           (%gl:tex-parameter-i
            (texture-type texture) :texture-compare-func
-           (%gl::foreign-enum-value
-            '%gl:enum
+           (gl-enum
             (case value
               ((:never nil) :never)
               ((:always t) :always)
@@ -90,7 +88,7 @@
               (otherwise (error "Invalid compare func for texture ~a" value))))))
         (%gl:tex-parameter-i
          (texture-type texture) :texture-compare-mode
-         (%gl::foreign-enum-value '%gl:enum :none))))
+         (gl-enum :none))))
   texture)
 
 (defun+ fallback-sampler-set (sampler)
