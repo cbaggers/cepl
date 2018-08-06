@@ -22,6 +22,9 @@
 (deftype elem-byte-size ()
   '(unsigned-byte 32))
 
+(deftype gl-enum-value ()
+  '(unsigned-byte #.+gl-enum-size+))
+
 (deftype gbuf-byte-size ()
   '(unsigned-byte 32))
 

@@ -266,9 +266,11 @@
           :split-sequence :named-readtables
           :cepl.documentation-functions
           :cepl.errors :cepl.build)
+  (:import-from :cepl-utils :+gl-enum-size+)
   (:reexport :cepl.documentation-functions)
   (:export :+gl-id-bit-size+
            :gl-id
+           :gl-enum-value
            :+unknown-gl-id+
            :+null-gl-id+
            :unknown-gl-id-p
