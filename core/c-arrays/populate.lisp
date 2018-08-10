@@ -59,7 +59,7 @@
                   (cond
                     ((rest dimensions)
                      (validate-seq-dimensions (first data) (rest dimensions)))
-                    ((listp data) nil)
+                    ((listp (first data)) nil)
                     (t t)))))
     (let* ((dimensions (listify dimensions)))
       (typecase data

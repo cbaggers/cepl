@@ -440,7 +440,7 @@
     (gpu-array-bb (lisp-type->image-format
                    (gpu-array-bb-element-type initial-contents)))
     (uploadable-lisp-seq (lisp-type->image-format
-                          (cepl.c-arrays::lisp->gl-type
+                          (second
                            (cepl.c-arrays::scan-for-type initial-contents))))))
 
 ;;-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
