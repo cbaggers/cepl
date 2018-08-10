@@ -56,9 +56,11 @@
                dimensions))
            (validate-seq-dimensions (data dimensions)
              (and (equal (length data) (first dimensions))
-                  (if (rest dimensions)
-                      (validate-seq-dimensions (first data) (rest dimensions))
-                      t))))
+                  (cond
+                    ((rest dimensions)
+                     (validate-seq-dimensions (first data) (rest dimensions)))
+                    ((listp data) nil)
+                    (t t)))))
     (let* ((dimensions (listify dimensions)))
       (typecase data
         (array (validate-arr-dimensions data (reverse dimensions)))
