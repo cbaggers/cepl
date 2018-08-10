@@ -1228,17 +1228,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
     (otherwise (color-renderable-formatp image-format))))
 
-(defn-inline clear (&optional (target fbo)) (values)
-  (declare (profile t))
-  (if target
-      (clear-fbo target)
-      (multiple-value-bind (read draw) (fbo-bound (cepl-context))
-        (clear-fbo read)
-        (unless (eq read draw)
-          (clear-fbo draw))))
-  (values))
-
-(defn clear-fbo ((fbo fbo)) fbo
+(defn-inline clear-fbo ((fbo fbo)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
   (with-fbo-bound (fbo :target :draw-framebuffer
@@ -1250,6 +1240,18 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 (defun+ clear-attachment (attachment)
   (declare (ignore attachment))
   (error "CEPL: clear-attachment is not yet implemented"))
+
+(defn-inline clear (&optional (target fbo)) (values)
+  (declare (profile t))
+  (if target
+      (clear-fbo target)
+      (%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context)))))
+  (values))
+
+(define-compiler-macro clear (&optional target)
+  (if target
+      `(clear-fbo ,target)
+      `(%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context))))))
 
 ;;--------------------------------------------------------------
 
