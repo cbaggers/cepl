@@ -3,24 +3,28 @@
 ;;------------------------------------------------------------
 
 (defun funcall-g (name &rest args)
-  (multiple-value-bind (in-vals uniform-keys-and-vals)
-      (split-args-for-dyn-call args)
-    (let* ((spec (find-gpu-func-spec-by-name-and-vals name in-vals))
-           (in-arg-names (with-gpu-func-spec spec
-                           (mapcar #'first in-args)))
-           (in-arg-keys (mapcar #'kwd in-arg-names))
-           (in-arg-keys-and-vals (mapcan #'list in-arg-keys in-vals))
-           (call-args (append in-arg-keys-and-vals
-                              uniform-keys-and-vals))
-           (*suppress-upload-message* t))
-      (multiple-value-bind (pline stages)
-          (dyn-code-to-pipeline-and-stages
-           (gen-vertex-stage-code-calling-func
-            spec))
-        (unwind-protect
-             (let* ((ret-types (get-dyn-return-types-from-stage (first stages))))
-               (dispatch-dyn-gpu-call pline call-args ret-types))
-          (free-pipeline pline))))))
+  (if (functionp name)
+      (apply name args)
+      (multiple-value-bind (in-vals uniform-keys-and-vals)
+          (split-args-for-dyn-call args)
+        (let* ((spec (if (typep name 'gpu-func-spec)
+                         name
+                         (find-gpu-func-spec-by-name-and-vals name in-vals)))
+               (in-arg-names (with-gpu-func-spec spec
+                               (mapcar #'first in-args)))
+               (in-arg-keys (mapcar #'kwd in-arg-names))
+               (in-arg-keys-and-vals (mapcan #'list in-arg-keys in-vals))
+               (call-args (append in-arg-keys-and-vals
+                                  uniform-keys-and-vals))
+               (*suppress-upload-message* t))
+          (multiple-value-bind (pline stages)
+              (dyn-code-to-pipeline-and-stages
+               (gen-vertex-stage-code-calling-func
+                spec))
+            (unwind-protect
+                 (let* ((ret-types (get-dyn-return-types-from-stage (first stages))))
+                   (dispatch-dyn-gpu-call pline call-args ret-types))
+              (free-pipeline pline)))))))
 
 (defun split-args-for-dyn-call (args)
   (let* ((split (or (position-if #'keywordp args)

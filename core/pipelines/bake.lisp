@@ -44,7 +44,7 @@
             (mapcar (lambda (x)
                       (typecase x
                         (func-key (func-key->name x))
-                        (gpu-lambda (lambda-g->varjo-lambda-code x))
+                        (function (lambda-g->varjo-lambda-code x))
                         (otherwise x)))
                     uniform-vals-to-bake))
            (final-uniform-pairs

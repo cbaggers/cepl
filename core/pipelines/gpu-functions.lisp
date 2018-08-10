@@ -429,7 +429,7 @@
   (cond
     ((and (listp stage-designator) (eq (first stage-designator) 'function))
      (get-stage-key (second stage-designator)))
-    ((typep stage-designator 'gpu-lambda)
+    ((functionp stage-designator)
      (lambda-g->func-spec stage-designator))
     ((symbolp stage-designator)
      (let* ((name stage-designator)
@@ -445,7 +445,8 @@
                                       funcs)
                 :env options-on-error))))
     ((listp stage-designator)
-     (let ((key (new-func-key (first stage-designator) (rest stage-designator))))
+     (let ((key (new-func-key (first stage-designator)
+                              (rest stage-designator))))
        (if (gpu-func-spec key)
            key
            (error 'stage-not-found :designator stage-designator))))

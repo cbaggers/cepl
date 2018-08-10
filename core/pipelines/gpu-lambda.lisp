@@ -2,7 +2,9 @@
 
 ;;------------------------------------------------------------
 
-(defclass gpu-lambda ()
+(defvar *get-gpu-lambda-state* nil)
+
+(defclass gpu-lambda-state ()
   ((in-args :initarg :in-args)
    (uniforms :initarg :uniforms)
    (body :initarg :body)
@@ -10,15 +12,16 @@
    (doc-string :initarg :doc-string)
    (declarations :initarg :declarations)
    (context :initarg :context)
-   (func-spec :initarg :func-spec :initform nil))
-  (:metaclass closer-mop:funcallable-standard-class))
+   (func-spec :initarg :func-spec :initform nil)))
 
-(defmethod lambda-g->func-spec ((lambda-g gpu-lambda))
-  (slot-value lambda-g 'func-spec))
+(defmethod lambda-g->func-spec ((lambda-g function))
+  (let ((*get-gpu-lambda-state* t))
+    (handler-case
+        (slot-value (funcall lambda-g nil) 'func-spec)
+      (error () (error "CEPL: ~a does not appear to be a gpu-lambda"
+                       lambda-g)))))
 
-(defmethod initialize-instance :after ((lambda-g gpu-lambda) &key)
-  ;; need to emit warning if called
-  (closer-mop:set-funcallable-instance-function lambda-g #'%lambda-g)
+(defmethod initialize-instance :after ((lambda-g gpu-lambda-state) &key)
   ;; need to make the func-spec so can be used in pipelines
   (with-slots (in-args uniforms body shared doc-string
                        declarations context func-spec) lambda-g
@@ -29,31 +32,41 @@
             nil doc-string declarations nil (get-gpu-func-spec-tag))
            :cache-spec nil))))
 
-(defun+ %lambda-g (&rest args)
-  (declare (ignore args))
-  (warn "GPU Functions cannot currently be used from the cpu"))
-
 ;;------------------------------------------------------------
 
-(defun+ make-gpu-lambda  (args body)
+(defun+ make-gpu-lambda (args body)
   ;; seperate any doc-string or declarations from the body
-  (let ((doc-string (when (stringp (first body)) (pop body))))
-    ;; split the argument list into the categoried we care aboutn
-    (assoc-bind ((in-args nil) (uniforms :&uniform) (raw-context :&context)
-                 (shared :&shared))
-        (varjo.utils:lambda-list-split '(:&uniform :&context :&shared) args)
-      ;; check the arguments are sanely formatted
-      (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
-      (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
-      (make-instance 'gpu-lambda
-                     :in-args in-args
-                     :uniforms uniforms
-                     :body body
-                     :shared shared
-                     :doc-string doc-string
-                     :declarations nil
-                     :context (parse-compile-context nil raw-context
-                                                     :pipeline)))))
+  (multiple-value-bind (body declarations doc-string)
+      (alexandria:parse-body body :documentation t)
+    (let ((body (append declarations body)))
+      ;; split the argument list into the categoried we care about
+      (assoc-bind ((in-args nil)
+                   (uniforms :&uniform)
+                   (raw-context :&context)
+                   (shared :&shared))
+          (varjo.utils:lambda-list-split
+           '(:&uniform :&context :&shared) args)
+        ;; check the arguments are sanely formatted
+        (mapcar #'(lambda (x) (assert-arg-format nil x)) in-args)
+        (mapcar #'(lambda (x) (assert-arg-format nil x)) uniforms)
+        (let ((state
+               (make-instance
+                'gpu-lambda-state
+                :in-args in-args
+                :uniforms uniforms
+                :body body
+                :shared shared
+                :doc-string doc-string
+                :declarations nil
+                :context (parse-compile-context nil
+                                                raw-context
+                                                :pipeline))))
+          (lambda (&rest cepl.pipelines::args)
+            (if *get-gpu-lambda-state*
+                state
+                (apply #'funcall-g
+                       (slot-value state 'func-spec)
+                       args))))))))
 
 (defmacro lambda-g (args &body body)
   (make-gpu-lambda args body)
@@ -61,15 +74,18 @@
 
 (defun compile-g (name &optional definition)
   (assert (and (not name) (eq (first definition) 'lambda-g)) ()
-          'compile-g-missing-requested-feature :form (cons name definition))
+          'compile-g-missing-requested-feature
+          :form (cons name definition))
   (destructuring-bind (l args &body body) definition
     (declare (ignore l))
     (make-gpu-lambda args body)))
 
 (defun lambda-g->varjo-lambda-code (glambda)
-  (with-slots (in-args uniforms body) glambda
-    `(lambda (,@in-args ,@(when uniforms (cons '&uniform uniforms)))
-       ,@body)))
+  (let* ((*get-gpu-lambda-state* t)
+         (state (funcall glambda)))
+    (with-slots (in-args uniforms body) state
+      `(lambda (,@in-args ,@(when uniforms (cons '&uniform uniforms)))
+         ,@body))))
 
 ;;------------------------------------------------------------
 
@@ -435,15 +451,17 @@
 
 ;;------------------------------------------------------------
 
-(defmethod pull-g ((object gpu-lambda))
-  (let ((vresult (pull1-g object)))
-    (when vresult
-      (varjo:glsl-code vresult))))
-
-(defmethod pull1-g ((object gpu-lambda))
-  (with-slots (func-spec) object
-    (let ((compiled (slot-value func-spec 'cached-compile-results)))
-      (if compiled
-          compiled
-          (warn 'func-keyed-pipeline-not-found
-                :callee 'pull-g :func object)))))
+;; No pull for new gpu-lambda will review later
+;;
+;; (defmethod pull-g ((object gpu-lambda))
+;;   (let ((vresult (pull1-g object)))
+;;     (when vresult
+;;       (varjo:glsl-code vresult))))
+;;
+;; (defmethod pull1-g ((object gpu-lambda))
+;;   (with-slots (func-spec) object
+;;     (let ((compiled (slot-value func-spec 'cached-compile-results)))
+;;       (if compiled
+;;           compiled
+;;           (warn 'func-keyed-pipeline-not-found
+;;                 :callee 'pull-g :func object)))))
