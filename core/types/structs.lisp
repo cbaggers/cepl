@@ -457,14 +457,14 @@
 
 ;;------------------------------------------------------------
 
-(defun+ buffer-stream-comptible-typep (slot)
+(defun+ buffer-stream-compatible-typep (slot)
   (when (not (s-arrayp slot))
     (let* ((type-spec (s-type slot)))
       (or (not (null (cdr (assoc type-spec +cpu->gpu-vec-mappings+))))
           (core-typep (type-spec->type type-spec))))))
 
 (defun+ make-struct-attrib-assigner (type-name slots)
-  (when (every #'buffer-stream-comptible-typep slots)
+  (when (every #'buffer-stream-compatible-typep slots)
     (let* ((stride (if (> (length slots) 1)
                        `(cepl.internals:gl-type-size ',type-name)
                        0))
