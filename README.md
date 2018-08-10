@@ -92,6 +92,19 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
 
+### 2018-08-10
+
+- added `copy-g` as an more general alternative to `push-g` & `pull-g` for moving data.
+- exported the many typed functions `copy-g`, `push-g` & `pull-g` use behind the scenes for transfers
+- fixed serious bug in clear which, when passed no fbo, would try to clear both the read & draw fbo attachments. Now only clears draw as per the gl spec.
+- `make-texture` can now take `gpu-array`s as the 'initial-contents' argument.
+- transfers between buffer & texture backed gpu arrays now work
+- c-arrays & gpu-arrays now accept a row-alignment value on creation. This defaults to 1 but can be 1, 2, 4 or 8
+- texture uploads/downloads now correctly take row alignment into account.
+- Fixes to ensure mutable textures are 'complete' on creation
+- fix issues when creating c-arrays from lisp arrays that stemed from specification of dimensions being (x-size y-size) in CEPL/GL and (column-size row-size) in lisp.
+
+
 ### 2018-07-15
 
 - added `make-gpu-arrays-from-buffer-id` which lets you speicify a gl buffer-id and layouts of the data and get a CEPL gpu-buffer in return
