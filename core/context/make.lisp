@@ -8,8 +8,11 @@
         (make-array (gl:get* :max-combined-texture-image-units)
                     :element-type '(or null sampler)
                     :initial-element nil))
-
-  (let ((len (gl:get* :max-draw-buffers)))
+  ;;
+  (let ((len (coerce (gl:get* :max-draw-buffers)
+                     '(unsigned-byte 16))))
+    (setf (%cepl-context-max-draw-buffer-count cepl-context)
+          len)
     (setf (%cepl-context-color-masks cepl-context)
           (make-array len :element-type '(simple-array boolean (4))
                       :initial-contents

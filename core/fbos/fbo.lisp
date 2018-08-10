@@ -91,9 +91,8 @@
   (setf (%fbo-draw-buffer-map fbo-obj)
         (or draw-buffer-map
             (foreign-alloc '%gl:enum :count
-                           (max-draw-buffers
-                            (cepl.context::%cepl-context-gl-context
-                             (cepl-context)))
+                           (cepl.context::%cepl-context-max-draw-buffer-count
+                            (cepl-context))
                            :initial-element :none)))
   (setf (%fbo-clear-mask fbo-obj)
         (or clear-mask
@@ -368,22 +367,23 @@
 (defun+ (setf attachment) (value fbo attachment-name)
   (assert (not (%fbo-is-default fbo)) ()
           "Cannot modify attachments of default-framebuffer")
-  (let ((current-value (%attachment fbo attachment-name))
-        (initialized (initialized-p fbo)))
-    ;; update the fbo
-    (setf (%attachment fbo attachment-name) value)
-    (when initialized
-      ;; update gl
-      (when current-value
-        (fbo-detach fbo attachment-name))
-      (when value
-        (etypecase value
-          (gpu-array-t
-           (fbo-attach-array fbo value attachment-name))
-          (render-buffer
-           (fbo-attach-render-buffer fbo value attachment-name))))
-      ;; update cached gl details
-      (%update-fbo-state fbo)))
+  (with-cepl-context (ctx)
+    (let ((current-value (%attachment fbo attachment-name))
+          (initialized (initialized-p fbo)))
+      ;; update the fbo
+      (setf (%attachment fbo attachment-name) value)
+      (when initialized
+        ;; update gl
+        (when current-value
+          (fbo-detach ctx fbo attachment-name))
+        (when value
+          (etypecase value
+            (gpu-array-t
+             (fbo-attach-array ctx fbo value attachment-name))
+            (render-buffer
+             (fbo-attach-render-buffer ctx fbo value attachment-name))))
+        ;; update cached gl details
+        (%update-fbo-state fbo))))
   ;;
   value)
 
@@ -394,34 +394,27 @@
 
 ;;----------------------------------------------------------------------
 
-;; The caching of the value is janky, use the cepl-context
-(let ((max-draw-buffers -1))
-  (declare (type (signed-byte 32) max-draw-buffers))
-  (defn get-gl-attachment-keyword ((fbo fbo) (x attachment-name))
-      (signed-byte 32)
-    (declare (optimize (speed 3) (safety 1) (debug 1))
-             (profile t))
-    (let ((gl-ctx (when (cepl-context)
-                    (cepl.context::%cepl-context-gl-context
-                     (cepl-context)))))
-      (unless (> max-draw-buffers 0)
-        (when gl-ctx
-          (setf max-draw-buffers (max-draw-buffers gl-ctx))))
-      (case x
-        (:d #.(gl-enum :depth-attachment))
-        (:s (if (att-array (%fbo-depth-array fbo))
-                #.(gl-enum  :depth-stencil-attachment)
-                #.(gl-enum :stencil-attachment)))
-        (otherwise
-         (if (<= x max-draw-buffers)
-             (color-attachment-enum x)
-             (if gl-ctx
-                 (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
-                        x max-draw-buffers)
-                 (color-attachment-enum x))))))))
+(defn get-gl-attachment-enum ((cepl-context cepl-context)
+                              (fbo fbo)
+                              (x attachment-name))
+    (signed-byte 32)
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (%with-cepl-context-slots (gl-context max-draw-buffer-count)
+      cepl-context
+    (case x
+      (:d #.(gl-enum :depth-attachment))
+      (:s (if (att-array (%fbo-depth-array fbo))
+              #.(gl-enum :depth-stencil-attachment)
+              #.(gl-enum :stencil-attachment)))
+      (otherwise
+       (if (<= x max-draw-buffer-count)
+           (color-attachment-enum x)
+           (error "Requested attachment ~s is outside the range of 0-~s supported by your current context"
+                  x max-draw-buffer-count))))))
 
-(define-compiler-macro get-gl-attachment-keyword (&whole whole fbo x)
-  (declare (ignore fbo))
+(define-compiler-macro get-gl-attachment-enum (&whole whole ctx fbo x)
+  (declare (ignore fbo ctx))
   (if (numberp x)
       (color-attachment-enum x)
       (case x
@@ -929,8 +922,10 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;;----------------------------------------------------------------------
 
-(defun fbo-attach-render-buffer (fbo render-buffer attachment-name)
-  (let ((attach-enum (get-gl-attachment-keyword fbo attachment-name)))
+(defun fbo-attach-render-buffer (cepl-context fbo render-buffer attachment-name)
+  (let ((attach-enum (get-gl-attachment-enum cepl-context
+                                                fbo
+                                                attachment-name)))
     (with-fbo-bound (fbo :target :read-framebuffer :with-viewport nil :draw-buffers nil)
       (%gl:framebuffer-renderbuffer :read-framebuffer
                                     attach-enum
@@ -946,12 +941,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;; {TODO} Ensure image formats are color-renderable for color attachments
 ;;
-(defun+ fbo-attach-array (fbo tex-array attachment-name)
+(defun+ fbo-attach-array (cepl-context fbo tex-array attachment-name)
   ;; To attach images to an FBO, we must first bind the FBO to the context.
   ;; target could be any of '(:framebuffer :read-framebuffer :draw-framebuffer)
   ;; but we just pick :read-framebuffer as in this case it makes no difference
   ;; to us
-  (let ((attach-enum (get-gl-attachment-keyword fbo attachment-name)))
+  (let ((attach-enum (get-gl-attachment-enum cepl-context fbo attachment-name)))
     (with-fbo-bound (fbo :target :read-framebuffer :with-viewport nil :draw-buffers nil)
       ;; FBOs have the following attachment points:
       ;; GL_COLOR_ATTACHMENTi: These are an implementation-dependent number of
@@ -1075,7 +1070,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; set gl_Layer to (2 * 6) + 4, or 16.
             (:texture-cube-map-array (error "attaching to cube-map-array textures has not been implemented yet"))))))))
 
-(defun+ fbo-detach (fbo attachment-name)
+(defun+ fbo-detach (cepl-context fbo attachment-name)
   ;; The texture argument is the texture object name you want to attach from.
   ;; If you pass zero as texture, this has the effect of clearing the attachment
   ;; for this attachment, regardless of what kind of image was attached there.
@@ -1084,7 +1079,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   ;;
   ;; {TODO} when using GL v4.5 use %gl:named-framebuffer-texture-layer,
   ;;        avoids binding
-  (let ((enum (get-gl-attachment-keyword fbo attachment-name)))
+  (let ((enum (get-gl-attachment-enum cepl-context fbo attachment-name)))
     (with-fbo-bound (fbo :target :read-framebuffer
                          :with-viewport nil
                          :with-blending nil

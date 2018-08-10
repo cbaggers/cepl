@@ -276,6 +276,9 @@
         (setf gl-context wrapped-context)
         (setf gl-version-float ver-f)
         ;;
+        ;; Set GL Defaults
+        (set-context-defaults cepl-context)
+        ;;
         ;; {TODO} this is ugly, find a better way
         (funcall 'cepl.samplers::sampler-on-context)
         (funcall 'cepl.textures::check-immutable-feature)
@@ -283,9 +286,6 @@
         ;; Set the default
         (%set-default-fbo-and-viewport surface cepl-context)
         (setf current-surface surface)
-        ;;
-        ;; Set GL Defaults
-        (set-context-defaults cepl-context)
         ;;
         ;; initialize all the pending objects
         (initialize-all-delay-items-in-context cepl-context)
