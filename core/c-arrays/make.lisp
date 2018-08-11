@@ -119,6 +119,8 @@
                                initial-contents))
          (elem-size (gl-type-size element-type))
          (total-size (reduce #'* dimensions)))
+    (when (and initial-contents (not struct-type-p))
+      (check-single-element-not-list initial-contents dimensions element-type))
     (check-c-array-dimensions dimensions total-size row-alignment)
     (let ((new-array (%make-c-array
                       :pointer (cffi::%foreign-alloc
@@ -139,6 +141,32 @@
       (when initial-contents
         (copy-lisp-data-to-c-array new-array initial-contents nil))
       new-array)))
+
+(defun check-single-element-not-list (initial-contents dimensions element-type)
+  (labels ((check-arr ()
+             (row-major-aref initial-contents 0))
+           (check-list ()
+             (loop
+                :for i :below (length dimensions)
+                :with curr := initial-contents
+                :do (setf curr (first curr))
+                :finally (return curr))))
+    (let ((elem (etypecase initial-contents
+                  (array (check-arr))
+                  (list (check-list)))))
+      (assert (not (listp elem)) () 'bad-c-array-element
+              :incorrect-type :list
+              :correct-type element-type
+              :elem elem
+              :initial-contents initial-contents
+              :extra-info-string nil)
+      (assert (not (symbolp elem)) () 'bad-c-array-element
+              :incorrect-type :symbol
+              :correct-type element-type
+              :elem elem
+              :initial-contents initial-contents
+              :extra-info-string "Perhaps a misplaced QUOTE?")
+      (not (symbolp elem)))))
 
 ;;------------------------------------------------------------
 

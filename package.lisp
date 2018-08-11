@@ -180,7 +180,8 @@
            :cannot-extract-stream-length-from-layouts
            :index-layout-with-unknown-length
            :inconsistent-struct-layout
-           :not-a-gpu-lambda))
+           :not-a-gpu-lambda
+           :bad-c-array-element))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

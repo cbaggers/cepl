@@ -976,6 +976,23 @@ defined to have a ~a layout, the following slots had different layouts:
     "CEPL: ~a does not appear to be a gpu-lambda"
   thing)
 
+(deferror bad-c-array-element () (incorrect-type
+                                  correct-type
+                                  elem
+                                  initial-contents
+                                  extra-info-string)
+    "
+CEPL: The first element in the initial-contents to the array being created
+is a ~a, this is not valid for an array of ~a
+
+First Value: ~s
+Initial-Contents: ~s~@[~%~%~a~]"
+  incorrect-type
+  correct-type
+  elem
+  initial-contents
+  extra-info-string)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
