@@ -624,7 +624,7 @@
    this function should only be used from another function which
    is handling the binding."
   `(let ((draw-mode ,(if (typep primitive 'varjo::dynamic)
-                         `(buffer-stream-draw-mode-val stream-symb)
+                         `(buffer-stream-draw-mode-val ,stream-symb)
                          (varjo::lisp-name primitive))))
      (handle-transform-feedback ,ctx-symb draw-mode prog-id tfs-primitive
                                 tfs-array-count)
