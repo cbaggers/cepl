@@ -17,7 +17,6 @@
                #:documentation-utils
                #:ieee-floats
                #:varjo
-               #:closer-mop
                #:bordeaux-threads
                #:cepl.build
                #:alexandria)
