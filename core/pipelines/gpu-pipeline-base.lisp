@@ -602,27 +602,24 @@ names are depended on by the functions named later in the list"
       (use-value ()
         (%gpu-function (interactive-pick-gpu-function asset-name))))))
 
-(defmethod pull-g ((pipeline-func function))
-  (let ((pipeline (function-keyed-pipeline pipeline-func)))
-    (etypecase pipeline
-      (null (warn 'func-keyed-pipeline-not-found
-                  :callee 'pull-g :func pipeline-func))
-      ((or pipeline-spec lambda-pipeline-spec)
-       (let ((compiled (slot-value pipeline 'cached-compile-results)))
-         (if compiled
-             (mapcar #'varjo:glsl-code compiled)
-             (warn 'func-keyed-pipeline-not-found
-                   :callee 'pull-g :func pipeline-func)))))))
+(defmethod pull-g ((func function))
+  (let ((compiled (listify (pull1-g func))))
+    (when compiled
+      (mapcar #'varjo:glsl-code compiled))))
 
-(defmethod pull1-g ((pipeline-func function))
-  (let ((pipeline (function-keyed-pipeline pipeline-func)))
-    (etypecase pipeline
-      (null (warn 'func-keyed-pipeline-not-found
-                  :callee 'pull1-g :func pipeline-func))
-      ((or pipeline-spec lambda-pipeline-spec)
-       (or (slot-value pipeline 'cached-compile-results)
-           (warn 'func-keyed-pipeline-not-found
-                 :callee 'pull1-g :func pipeline-func))))))
+(defmethod pull1-g ((func function))
+  (handler-case
+      (let ((spec (lambda-g->func-spec func)))
+        (slot-value spec 'cached-compile-results))
+    (not-a-gpu-lambda ()
+      (let ((pipeline (function-keyed-pipeline func)))
+        (etypecase pipeline
+          (null (warn 'func-keyed-pipeline-not-found
+                      :callee 'pull1-g :func func))
+          ((or pipeline-spec lambda-pipeline-spec)
+           (or (slot-value pipeline 'cached-compile-results)
+               (warn 'func-keyed-pipeline-not-found
+                     :callee 'pull1-g :func func))))))))
 
 ;;--------------------------------------------------
 

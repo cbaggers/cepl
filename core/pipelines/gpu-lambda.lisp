@@ -14,13 +14,6 @@
    (context :initarg :context)
    (func-spec :initarg :func-spec :initform nil)))
 
-(defmethod lambda-g->func-spec ((lambda-g function))
-  (let ((*get-gpu-lambda-state* t))
-    (handler-case
-        (slot-value (funcall lambda-g nil) 'func-spec)
-      (error () (error "CEPL: ~a does not appear to be a gpu-lambda"
-                       lambda-g)))))
-
 (defmethod initialize-instance :after ((lambda-g gpu-lambda-state) &key)
   ;; need to make the func-spec so can be used in pipelines
   (with-slots (in-args uniforms body shared doc-string
@@ -30,7 +23,31 @@
            (%make-gpu-func-spec
             nil in-args uniforms context body shared nil nil
             nil doc-string declarations nil (get-gpu-func-spec-tag))
-           :cache-spec nil))))
+           :cache-spec t))))
+
+(defun lambda-g->state (lambda-g)
+  (check-type lambda-g function)
+  (let ((*get-gpu-lambda-state* t))
+    (handler-case
+        (funcall lambda-g nil)
+      (error () (error 'not-a-gpu-lambda :thing lambda-g)))))
+
+(defmethod lambda-g->func-spec ((lambda-g function))
+  (slot-value (lambda-g->state lambda-g) 'func-spec))
+
+(defun lambda-g->varjo-lambda-code (glambda)
+  (let* ((*get-gpu-lambda-state* t)
+         (state (funcall glambda)))
+    (with-slots (in-args uniforms body) state
+      `(lambda (,@in-args ,@(when uniforms (cons '&uniform uniforms)))
+         ,@body))))
+
+(defun lambda-g->lisp-code (glambda)
+  (let* ((*get-gpu-lambda-state* t)
+         (state (funcall glambda)))
+    (with-slots (in-args uniforms body) state
+      `(lambda-g (,@in-args ,@(when uniforms (cons '&uniform uniforms)))
+         ,@body))))
 
 ;;------------------------------------------------------------
 
@@ -79,13 +96,6 @@
   (destructuring-bind (l args &body body) definition
     (declare (ignore l))
     (make-gpu-lambda args body)))
-
-(defun lambda-g->varjo-lambda-code (glambda)
-  (let* ((*get-gpu-lambda-state* t)
-         (state (funcall glambda)))
-    (with-slots (in-args uniforms body) state
-      `(lambda (,@in-args ,@(when uniforms (cons '&uniform uniforms)))
-         ,@body))))
 
 ;;------------------------------------------------------------
 
@@ -450,18 +460,3 @@
               `(draw-fbo-bound ,ctx))))))
 
 ;;------------------------------------------------------------
-
-;; No pull for new gpu-lambda will review later
-;;
-;; (defmethod pull-g ((object gpu-lambda))
-;;   (let ((vresult (pull1-g object)))
-;;     (when vresult
-;;       (varjo:glsl-code vresult))))
-;;
-;; (defmethod pull1-g ((object gpu-lambda))
-;;   (with-slots (func-spec) object
-;;     (let ((compiled (slot-value func-spec 'cached-compile-results)))
-;;       (if compiled
-;;           compiled
-;;           (warn 'func-keyed-pipeline-not-found
-;;                 :callee 'pull-g :func object)))))

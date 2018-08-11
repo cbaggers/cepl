@@ -179,7 +179,8 @@
            :index-on-buffer-stream-with-no-gpu-layouts
            :cannot-extract-stream-length-from-layouts
            :index-layout-with-unknown-length
-           :inconsistent-struct-layout))
+           :inconsistent-struct-layout
+           :not-a-gpu-lambda))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

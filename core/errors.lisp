@@ -228,11 +228,12 @@ See the *cache-last-compile-result* var for more details")
 (defwarning func-keyed-pipeline-not-found () (callee func)
     "CEPL: ~a was called with ~a.
 
-When functions are passed to ~a we assume this is a pipeline function and looked
-for the details for that pipeline. However we didn't find anything.
+When functions are passed to ~a we assume this is a either pipeline function
+or a gpu-lambda. After checking that is wasnt a gpu-lambda we looked for the
+details for a matching pipeline. However we didn't find anything.
 
-Please note that you cannot lookup gpu-functions in this way as, due to
-overloading, many gpu-functions map to a single function object."
+Please note that you cannot lookup non-lambda gpu-functions in this way as,
+due to overloading, many gpu-functions map to a single function object."
   callee func callee)
 
 (deferror attachments-with-different-sizes (:print-circle nil) (args sizes)
@@ -970,6 +971,10 @@ CEPL: the attempt to define the gpu-structs named ~a failed as, whilst it was
 defined to have a ~a layout, the following slots had different layouts:
 ~{~%- ~a~}
 " name target slots)
+
+(deferror not-a-gpu-lambda () (thing)
+    "CEPL: ~a does not appear to be a gpu-lambda"
+  thing)
 
 ;; Please remember the following 2 things
 ;;
