@@ -78,22 +78,7 @@
                       dimensions
                       element-type
                       (row-alignment 1))
-  (let* ((dimensions (listify dimensions))
-         (dimensions
-          (if dimensions
-              (if initial-contents
-                  (if (validate-dimensions initial-contents dimensions)
-                      dimensions
-                      (error "Dimensions are invalid for initial-contents~%~a~%~a"
-                             dimensions initial-contents))
-                  dimensions)
-              (if initial-contents
-                  (reverse
-                   (typecase initial-contents
-                     (sequence (forgiving-list-dimension-guess initial-contents))
-                     (array (array-dimensions initial-contents))))
-                  (error "make-c-array must be given initial-elements or dimensions"))))
-         (p-format (cepl.pixel-formats:pixel-format-p element-type))
+  (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
                            (pixel-format->lisp-type element-type)
@@ -106,6 +91,29 @@
          (element-type (if inferred-lisp-type
                            (second inferred-lisp-type)
                            element-type))
+         (struct-type-p (symbol-names-cepl-structp element-type))
+         (dimensions (listify dimensions))
+         (dimensions
+          (if dimensions
+              (if initial-contents
+                  (if (validate-dimensions initial-contents
+                                           dimensions
+                                           struct-type-p)
+                      dimensions
+                      (error "Dimensions are invalid for initial-contents~%~a~%~a"
+                             dimensions initial-contents))
+                  dimensions)
+              (if initial-contents
+                  (reverse
+                   (typecase initial-contents
+                     (sequence
+                      (let ((guess (forgiving-list-dimension-guess initial-contents)))
+                        (if struct-type-p
+                            (butlast guess)
+                            guess)))
+                     (array
+                      (array-dimensions initial-contents))))
+                  (error "make-c-array must be given initial-elements or dimensions"))))
          (initial-contents (if inferred-lisp-type
                                (update-data initial-contents inferred-lisp-type)
                                initial-contents))
@@ -122,8 +130,7 @@
                                                 row-alignment)
                       :row-alignment row-alignment
                       :element-type element-type
-                      :struct-element-typep (symbol-names-cepl-structp
-                                             element-type)
+                      :struct-element-typep struct-type-p
                       :element-pixel-format pixel-format
                       :element-from-foreign (get-typed-from-foreign
                                              element-type)

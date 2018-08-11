@@ -31,7 +31,8 @@
                           (populate (row-major-aref-c c-array i) elem)
                           (setf (row-major-aref-c c-array i) elem)))))
       (when check-sizes
-        (unless (validate-dimensions data (c-array-dimensions c-array))
+        (unless (validate-dimensions data (c-array-dimensions c-array)
+                                     structp)
           (error "Dimensions of array differs from that of the data:~%~a~%~a"
                  c-array data)))
       (typecase data
@@ -49,7 +50,7 @@
           (setq cur x)
           rem)))))
 
-(defun+ validate-dimensions (data dimensions)
+(defun+ validate-dimensions (data dimensions struct-elem-type-p)
   (labels ((validate-arr-dimensions (data dimensions)
              (when (equal (array-dimensions data)
                           dimensions)
@@ -59,7 +60,7 @@
                   (cond
                     ((rest dimensions)
                      (validate-seq-dimensions (first data) (rest dimensions)))
-                    ((listp (first data)) nil)
+                    ((listp (first data)) struct-elem-type-p)
                     (t t)))))
     (let* ((dimensions (listify dimensions)))
       (typecase data
