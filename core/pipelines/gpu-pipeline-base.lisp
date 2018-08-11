@@ -658,14 +658,15 @@ names are depended on by the functions named later in the list"
 
 ;;--------------------------------------------------
 
-(declaim (type c-array-index |*instance-count*|))
-(defvar |*instance-count*| 0)
-
 (defmacro with-instances (count &body body)
-  `(let ((|*instance-count*| ,count))
-     (unless (> |*instance-count*| 0)
-       (error "Instance count must be greater than 0"))
-     ,@body))
+  (alexandria:with-gensyms (ctx cnt old-cnt)
+    `(with-cepl-context (,ctx)
+       (%with-cepl-context-slots (instance-count) ,ctx
+         (let ((,cnt ,count)
+               (,old-cnt instance-count))
+           (setf instance-count ,cnt)
+           (unwind-protect (progn ,@body)
+             (setf instance-count ,old-cnt)))))))
 
 ;;--------------------------------------------------
 

@@ -127,7 +127,8 @@
   ;;
   (pack-alignment 4 :type (integer 1 8))
   (unpack-alignment 4 :type (integer 1 8))
-  (max-draw-buffer-count 0 :type (unsigned-byte 16)))
+  (max-draw-buffer-count 0 :type (unsigned-byte 16))
+  (instance-count 0 :type c-array-index))
 
 (defmethod print-object ((context cepl-context) stream)
   (format stream "#<CEPL-CONTEXT ~a>" (slot-value context 'bound-thread)))
@@ -148,7 +149,7 @@
            clear-color gl-version-float
            array-of-ubo-binding-ranges array-of-ssbo-binding-ranges
            pack-alignment unpack-alignment
-           max-draw-buffer-count)))
+           max-draw-buffer-count instance-count)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))
           (accessors (loop :for slot :in slots :collect
