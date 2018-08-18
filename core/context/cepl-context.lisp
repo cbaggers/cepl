@@ -393,6 +393,8 @@
 
 ;; Raw Cache indexed part
 
+(defconstant +buf-unbound-id+ 13)
+
 (defn-inline buffer-bound-static ((ctx cepl-context) (index (integer 0 11)))
     (or gpu-buffer null)
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
@@ -408,10 +410,21 @@
   (declare (optimize (speed 3) (safety 1) (debug 0) (compilation-speed 0))
            (profile t))
   (%with-cepl-context-slots (array-of-bound-gpu-buffers) ctx
-    (when (not (eq buffer (aref array-of-bound-gpu-buffers index)))
-      (let ((id (if buffer (gpu-buffer-id buffer) 0)))
-        (%gl:bind-buffer enum id))
-      (setf (aref array-of-bound-gpu-buffers index) buffer))
+    (let ((current (aref array-of-bound-gpu-buffers index)))
+      (when (not (eq buffer current))
+        (let ((id (if buffer
+                      (let ((curr-target (gpu-buffer-cache-id buffer)))
+                        (when (and (/= curr-target +buf-unbound-id+)
+                                   (eq (aref array-of-bound-gpu-buffers
+                                             curr-target)
+                                       buffer))
+                          (setf (aref array-of-bound-gpu-buffers curr-target)
+                                nil))
+                        (setf (gpu-buffer-cache-id buffer) index)
+                        (gpu-buffer-id buffer))
+                      0)))
+          (%gl:bind-buffer enum id))
+        (setf (aref array-of-bound-gpu-buffers index) buffer)))
     buffer))
 
 ;; User friendly part
@@ -433,7 +446,8 @@
     (:pixel-unpack-buffer 8)
     (:query-buffer 9)
     (:shader-storage-buffer 10)
-    (:texture-buffer 11)))
+    (:texture-buffer 11)
+    (:uniform-buffer 11)))
 
 (defn-inline buffer-kind->enum ((kind keyword)) gl-enum-value
   ;; :atomic-counter-buffer
@@ -464,6 +478,8 @@
     (:shader-storage-buffer
      #.(gl-enum :shader-storage-buffer))
     (:texture-buffer
+     #.(gl-enum :texture-buffer))
+    (:uniform-buffer
      #.(gl-enum :texture-buffer))))
 
 (defn gpu-buffer-bound ((cepl-context cepl-context) (target symbol))

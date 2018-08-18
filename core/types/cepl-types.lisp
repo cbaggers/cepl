@@ -43,6 +43,11 @@
 (defun+ indexp (x)
   (typep x 'c-array-index))
 
+(defconstant +reserved-buffer-index-count+ 13)
+
+(deftype buffer-binding-array-index ()
+  '(integer 0 #.(- array-dimension-limit +reserved-buffer-index-count+ 1)))
+
 ;;------------------------------------------------------------
 
 (defstruct (c-array (:constructor %make-c-array))
@@ -107,6 +112,11 @@
 
 (defstruct (gpu-buffer (:constructor %make-gpu-buffer))
   (id 0 :type gl-id)
+  ;; it is important not to rely of cache-id being correct. It is
+  ;; allowed to be out of sync as it is checked before being used.
+  ;; This results in the same number of conditionals in
+  ;; set-buffer-bound-static but we are hoping we get slightly
+  ;; better cache behaviour.
   (cache-id 0 :type (integer 0 13))
   (arrays (error "") :type (array gpu-array-bb (*))))
 
