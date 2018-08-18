@@ -275,6 +275,7 @@
   (:export :+gl-id-bit-size+
            :gl-id
            :gl-enum-value
+           :gl-sizei
            :+unknown-gl-id+
            :+null-gl-id+
            :unknown-gl-id-p

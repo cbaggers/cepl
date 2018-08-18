@@ -25,6 +25,10 @@
 (deftype gl-enum-value ()
   '(unsigned-byte #.+gl-enum-size+))
 
+(deftype gl-sizei ()
+  ;; value has to be unsigned but the type is still signed
+  '(signed-byte 32))
+
 (deftype gbuf-byte-size ()
   '(unsigned-byte 32))
 
