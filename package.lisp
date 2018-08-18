@@ -181,7 +181,8 @@
            :index-layout-with-unknown-length
            :inconsistent-struct-layout
            :not-a-gpu-lambda
-           :bad-c-array-element))
+           :bad-c-array-element
+           :no-named-stages))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

@@ -993,6 +993,19 @@ Initial-Contents: ~s~@[~%~%~a~]"
   initial-contents
   extra-info-string)
 
+(deferror no-named-stages () (stages)
+    "
+CEPL: Small issue in a pipeline definition. Only a pipeline with 2 stages can
+be implicitly named, others must have explicit named stages.
+
+In this case we recieved the following for the stages:
+
+~{~s~%~}
+Each of these stages will need to be named with one each of the following:
+~{~%- ~a~}"
+  stages
+  varjo.api:*stage-names*)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

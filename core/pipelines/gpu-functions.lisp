@@ -472,7 +472,11 @@
             ((and (= len 2) (not (some #'keywordp args)))
              (parse-gpipe-args-implicit args))
             ((= len 1) (error 'one-stage-non-explicit))
-            (t (parse-gpipe-args-explicit args))))
+            (t
+             (assert (= (count-if #'keywordp args)
+                        (floor len 2))
+                     () 'no-named-stages :stages args)
+             (parse-gpipe-args-explicit args))))
          post)))))
 
 (defun+ parse-gpipe-args-implicit (args)
