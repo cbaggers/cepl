@@ -16,7 +16,8 @@
                                                        stride-override
                                                        normalized
                                                        instance-divisor)
-  (let ((type (varjo:type-spec->type array-type)))
+  (let ((type (or (varjo.internals::try-type-spec->type array-type nil)
+                  (error 'bad-type-for-buffer-stream-data :type array-type))))
     (if (and (varjo:core-typep type) (not (varjo:v-typep type 'v-sampler)))
         (let ((slot-layout (cepl.types::expand-slot-to-layout
                             nil type normalized))

@@ -182,7 +182,8 @@
            :inconsistent-struct-layout
            :not-a-gpu-lambda
            :bad-c-array-element
-           :no-named-stages))
+           :no-named-stages
+           :bad-type-for-buffer-stream-data))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

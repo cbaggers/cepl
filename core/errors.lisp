@@ -1006,6 +1006,14 @@ Each of these stages will need to be named with one each of the following:
   stages
   varjo.api:*stage-names*)
 
+(deferror bad-type-for-buffer-stream-data () (type)
+    "
+CEPL: ~s is not a type we can use for the data passed to the shader in a
+buffer-stream or vao as glsl does not directly support that type.~@[~%~%~a~]"
+  type
+  (when (find type '(:short :ushort :signed-short :unsigned-short))
+    "Perhaps this was meant to be used as the index?"))
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export
