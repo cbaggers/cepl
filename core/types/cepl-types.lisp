@@ -275,12 +275,12 @@
 ;;------------------------------------------------------------
 
 (defstruct pixel-format
-  (components (error "") :type symbol)
-  (type (error "") :type symbol)
-  (normalize t :type boolean)
-  (sizes nil :type list)
-  (reversed nil :type boolean)
-  (comp-length 0 :type (unsigned-byte 8)))
+  (components (error "") :type symbol :read-only t)
+  (type (error "") :type symbol :read-only t)
+  (normalize t :type boolean :read-only t)
+  (sizes nil :type list :read-only t)
+  (reversed nil :type boolean :read-only t)
+  (comp-length 0 :type (unsigned-byte 8) :read-only t))
 
 ;;------------------------------------------------------------
 
