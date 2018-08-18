@@ -245,27 +245,48 @@
           (error 'pixel-format->image-format-failed
                  :type-name pixel-format)))))
 
+(declaim (type hash-table *iformat-to-pix*))
+(defparameter *iformat-to-pix*
+  (let ((ht (make-hash-table :test #'eq)))
+    (loop
+       :for ((components normalize type sizes) iformat)
+       :in +gl-pixel-to-internal-map+
+       :do (setf (gethash iformat ht)
+                 (make-pixel-format
+                  :components components
+                  :type type
+                  :normalize normalize
+                  :sizes sizes
+                  :reversed nil
+                  :comp-length (get-component-length components))))
+    ht))
+
 ;; [TODO] REVERSED??
 (defun+ image-format->pixel-format
     (image-format &key (error-if-missing t))
-  (let ((pf (first (rassoc image-format +gl-pixel-to-internal-map+
-                           :key #'car :test #'eq))))
-    (if pf
-        (destructuring-bind (components normalize type sizes)
-            pf
-          (make-pixel-format
-           :components components :type type :normalize normalize
-           :sizes sizes :reversed nil
-           :comp-length (get-component-length components)))
-        (when error-if-missing
-          (error 'image-format->pixel-format-failed
-                 :type-name image-format)))))
+  (flet ((err ()
+           (when error-if-missing
+             (error 'image-format->pixel-format-failed
+                    :type-name image-format))))
+    (values
+     (or (and (keywordp image-format)
+              (gethash image-format *iformat-to-pix*))
+         (err)))))
 
 
 ;;--------------------------------------------------------------
 ;; Lisp Types
 ;;------------
 
+(declaim (type hash-table *lisp-to-pix*))
+(defvar *lisp-to-pix*
+  (let ((ht (make-hash-table :test #'eq)))
+    (loop
+       :for type :in +valid-pixel-types+
+       :do (setf (gethash type ht)
+                 (pixel-format! :r type)))
+    ht))
+
 (defmethod lisp-type->pixel-format ((type t))
-  (when (find type +valid-pixel-types+)
-    (cepl.pixel-formats::pixel-format! :r type)))
+  (when (keywordp type)
+    (values (gethash type *lisp-to-pix*))))
