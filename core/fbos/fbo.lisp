@@ -1253,6 +1253,143 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       `(clear-fbo ,target)
       `(%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context))))))
 
+(defn calc-read-pixel-data-size ((width (signed-byte 32))
+                                 (height (signed-byte 32))
+                                 (format symbol)
+                                 (type symbol)
+                                 (row-alignment (integer 1 8)))
+    gl-sizei
+  (let ((elem-size
+         (ecase type
+           (:unsigned-byte 1)
+           (:byte 1)
+           (:unsigned-short 2)
+           (:short 2)
+           (:unsigned-int 4)
+           (:int 4)
+           (:half-float 2)
+           (:float 4)
+           (:unsigned-byte-3-3-2 1)
+           (:unsigned-byte-2-3-3-rev 1)
+           (:unsigned-short-5-6-5 2)
+           (:unsigned-short-5-6-5-rev 2)
+           (:unsigned-short-4-4-4-4 2)
+           (:unsigned-short-4-4-4-4-rev 2)
+           (:unsigned-short-5-5-5-1 2)
+           (:unsigned-short-1-5-5-5-rev 2)
+           (:unsigned-int-8-8-8-8 4)
+           (:unsigned-int-8-8-8-8-rev 4)
+           (:unsigned-int-10-10-10-2 4)
+           (:unsigned-int-2-10-10-10-rev 4)
+           (:unsigned-int-24-8 4)
+           (:unsigned-int-10f-11f-11f-rev 4)
+           (:unsigned-int-5-9-9-9-rev 4)
+           (:float-32-unsigned-int-24-8-rev 4)))
+        (components
+         (ecase format
+           ((:rgb :bgr) 3)
+           ((:rgba :bgra) 4)
+           (t 1))))
+    (coerce
+     (cepl.c-arrays::%gl-calc-byte-size (* elem-size components)
+                                         (list width height)
+                                         row-alignment)
+     'gl-sizei)))
+
+(defn read-pixels-common ((fbo fbo)
+                          (attachment attachment-name)
+                          (x (signed-byte 32))
+                          (y (signed-byte 32))
+                          (width (signed-byte 32))
+                          (height (signed-byte 32))
+                          (pointer/offset cffi:foreign-pointer))
+    (values)
+  (with-fbo-bound (fbo :target :read-framebuffer
+                       :with-viewport nil
+                       :with-blending nil
+                       :draw-buffers nil)
+    (when (numberp attachment)
+      (let* ((defaultp (%fbo-is-default fbo))
+             (read-enum (if defaultp
+                            (default-fbo-attachment-enum attachment)
+                            (color-attachment-enum attachment))))
+        (gl:read-buffer read-enum)))
+    ;; %attachment gets the att object
+    (destructuring-bind (format type)
+        (if (%fbo-is-default fbo)
+            '(:rgb :unsigned-byte)
+            (cepl.pixel-formats::compile-pixel-format
+             (image-format->pixel-format
+              (cepl.textures::texture-image-format
+               (attachment-tex fbo attachment)))))
+      (%gl:read-pixels x y width height format type pointer/offset)))
+  (values))
+
+(defn read-pixels-into-c-array ((fbo fbo)
+                                (attachment attachment-name)
+                                (c-array c-array)
+                                (x (signed-byte 32))
+                                (y (signed-byte 32))
+                                (width (signed-byte 32))
+                                (height (signed-byte 32)))
+    c-array
+  (with-cepl-context (ctx)
+    (setf (pack-alignment nil ctx) (c-array-row-alignment c-array))
+    (read-pixels-common fbo attachment x y width height
+                        (c-array-pointer c-array))
+    c-array))
+
+(defn read-pixels-into-buffer-backed-gpu-array ((fbo fbo)
+                                                (attachment attachment-name)
+                                                (gpu-array gpu-array-bb)
+                                                (x (signed-byte 32))
+                                                (y (signed-byte 32))
+                                                (width (signed-byte 32))
+                                                (height (signed-byte 32)))
+    gpu-array-bb
+  (with-cepl-context (ctx)
+    (setf (gpu-buffer-bound ctx :pixel-pack-buffer)
+          (gpu-array-bb-buffer gpu-array))
+    (setf (pack-alignment nil ctx) (gpu-array-bb-row-alignment gpu-array))
+    (read-pixels-common fbo attachment x y width height
+                        (cffi:make-pointer
+                         (gpu-array-bb-offset-in-bytes-into-buffer gpu-array)))
+    gpu-array))
+
+(defn-inline read-pixels-into ((fbo fbo)
+                               (attachment attachment-name)
+                               (target (or c-array gpu-array-bb))
+                               (x (signed-byte 32))
+                               (y (signed-byte 32))
+                               (width (signed-byte 32))
+                               (height (signed-byte 32)))
+    (or c-array gpu-array-bb)
+  (etypecase target
+    (c-array
+     (read-pixels-into-c-array
+      fbo attachment target x y width height))
+    (gpu-array-bb
+     (read-pixels-into-buffer-backed-gpu-array
+      fbo attachment target x y width height))))
+
+(defn read-pixels ((fbo fbo)
+                   (attachment attachment-name)
+                   (x (signed-byte 32))
+                   (y (signed-byte 32))
+                   (width (signed-byte 32))
+                   (height (signed-byte 32)))
+    c-array
+  (let ((elem-type
+         (if (%fbo-is-default fbo)
+             :uint8-vec3
+             (image-format->lisp-type
+              (cepl.textures::texture-image-format
+               (attachment-tex fbo attachment))))))
+    (let* ((c-array (make-c-array nil :dimensions (list width height)
+                                  :element-type elem-type)))
+      (read-pixels-into-c-array
+       fbo attachment c-array x y width height))))
+
 ;;--------------------------------------------------------------
 
 (defmethod print-object ((object fbo) stream)
