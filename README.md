@@ -93,6 +93,7 @@ This mainly covers features & news rather than individual bugfixes. When we are 
 
 ### 2018-08-10
 
+- `wait-on-gpu-fence` now expects an `(unsigned-byte 64)` or `nil`. `nil` is used to indicate no timeout and anything else is the timeout in nanoseconds
 - added `copy-g` as an more general alternative to `push-g` & `pull-g` for moving data.
 - exported the many typed functions `copy-g`, `push-g` & `pull-g` use behind the scenes for transfers
 - fixed serious bug in clear which, when passed no fbo, would try to clear both the read & draw fbo attachments. Now only clears draw as per the gl spec.

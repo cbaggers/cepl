@@ -25,14 +25,16 @@
 
 
 (defn wait-on-gpu-fence ((fence gpu-fence)
-                         &optional (timeout (signed-byte 64) 0)
+                         &optional (timeout (unsigned-byte 64))
                          (flush boolean))
     symbol
-  (assert (>= timeout -1))
   (let ((sync (%gpu-fence-obj fence)))
     (flet ((no-timeout ()
              (when flush (gl:flush))
-             (%gl:wait-sync sync 0 #.(gl-enum :timeout-ignored))
+             (%gl:wait-sync sync 0 #xFFFFFFFFFFFFFFFF)
+             ;; would use #.(gl-enum :timeout-ignored) but bug in cl-opengl
+             ;; is stopping that for now.
+             ;; (https://github.com/3b/cl-opengl/issues/80)
              :condition-satisfied)
            (with-timeout ()
              (let* ((flags (if flush
@@ -50,9 +52,9 @@
                   (error "CEPL: Unknown status code from wait-on-fence: ~a"
                          status))))))
       ;;
-      (if (= timeout -1)
-          (no-timeout)
-          (with-timeout)))))
+      (if timeout
+          (with-timeout)
+          (no-timeout)))))
 
 
 (defn gpu-fence-signalled-p ((fence gpu-fence)) boolean
