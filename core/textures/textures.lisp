@@ -895,12 +895,13 @@ the width to see at what point the width reaches 0 or GL throws an error."
         (:texture-3d-multisample
          (destructuring-bind (&optional (width 1) (height 1) (depth 1))
              base-dimensions
-           (declare (ignore depth))
            (%gl:tex-image-3d-multisample
             :texture-2d-multisample
             (texture-samples texture)
             image-format
-            width height
+            width
+            height
+            depth
             (texture-fixed-sample-locations-p texture)))))
       (unless (or (eq texture-type :texture-2d-multisample)
                   (eq texture-type :texture-3d-multisample))

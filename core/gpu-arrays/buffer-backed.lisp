@@ -253,7 +253,7 @@
         (cepl.gpu-buffers::buffer-reserve-blocks-from-sizes
          buffer byte-sizes :array-buffer access-style))
     (loop
-       :for (element-type dimensions byte-size) :in processed
+       :for (element-type dimensions) :in processed
        :for src :across (gpu-buffer-arrays buffer)
        :for g-array := (%make-gpu-array-bb
                         :buffer buffer
@@ -292,7 +292,7 @@
                                           :layouts layouts
                                           :usage access-style)))
     (loop
-       :for (element-type dimensions byte-size) :in processed-layouts
+       :for (element-type dimensions) :in processed-layouts
        :for src :across (gpu-buffer-arrays buffer)
        :for g-array := (%make-gpu-array-bb
                         :buffer buffer
