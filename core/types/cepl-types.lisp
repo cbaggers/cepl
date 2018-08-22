@@ -275,6 +275,8 @@
 ;;------------------------------------------------------------
 
 (defstruct pixel-format
+  (type-enum (error "") :type gl-enum-value :read-only t)
+  (format-enum (error "") :type gl-enum-value :read-only t)
   (components (error "") :type symbol :read-only t)
   (type (error "") :type symbol :read-only t)
   (normalize t :type boolean :read-only t)

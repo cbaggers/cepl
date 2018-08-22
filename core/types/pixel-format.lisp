@@ -109,6 +109,32 @@
       ((:rgb t :uint8 (3 3 2)) :r3-g3-b2))
   :type list)
 
+
+(defn pixel-format-components ((pixel-format pixel-format))
+    (values)
+  (values))
+
+(defn pixel-format-type ((pixel-format pixel-format))
+    (values)
+  (values))
+
+(defn pixel-format-normalize ((pixel-format pixel-format))
+    (values)
+  (values))
+
+(defn pixel-format-sizes ((pixel-format pixel-format))
+    (values)
+  (values))
+
+(defn pixel-format-reversed ((pixel-format pixel-format))
+    (values)
+  (values))
+
+(defn pixel-format-comp-length ((pixel-format pixel-format))
+    (values)
+  (values))
+
+
 (defun+ describe-pixel-format (object)
   (let ((pf (if (pixel-format-p object)
                 object
@@ -143,40 +169,38 @@
                        (or (assoc (if reversed (cons :r type) type)
                                   +valid-pixel-packed-sizes+ :test #'equal)
                            '(nil nil)))))
-        (when (and type (not (and (not normalize)
-                                  (not (find type +gl-integral-pixel-types+)))))
-          (list components type (if reversed (rest sizes) sizes)
-                normalize reversed component-length))))))
-
-(defun+ process-pixel-format (components type normalize reversed)
-  (unless (find components +valid-pixel-components+)
-    (error "Not a valid pixel component layout.~%~s not found in '~s"
-           components +valid-pixel-components+))
-  (let ((component-length (get-component-length components)))
-    (when (listp type) (unless (eql component-length (length type))
-                         (error "Number of sizes and components do not match")))
-    (destructuring-bind (sizes type)
-        (if (keywordp type)
-            (list nil (find type +valid-pixel-types+))
-            (and (eql component-length (length type))
-                 (or (assoc (if reversed (cons :r type) type)
-                            +valid-pixel-packed-sizes+ :test #'equal)
-                     '(nil nil))))
-      (unless type (error "Not a known pixel type: <components:~a type:~a>"
-                          components type))
-      (when (and (not normalize) (not (find type +gl-integral-pixel-types+)))
-        (error "The type ~a cannot hold un-normalized integers" type))
-      (list components type (if reversed (rest sizes) sizes)
-            normalize reversed component-length))))
+        (declare (ignore sizes))
+        (and type (not (and (not normalize)
+                            (not (find type +gl-integral-pixel-types+)))))))))
 
 (defun+ pixel-format! (components &optional (type :uint8) (normalize t) reversed)
-  (destructuring-bind
-        (components type sizes normalize reversed component-length)
-      (process-pixel-format components type normalize reversed)
-    (make-pixel-format :components components :type type
-                       :sizes (if reversed (rest sizes) sizes)
-                       :normalize normalize :reversed reversed
-                       :comp-length component-length)))
+  (labels ((process-pixel-format (components type normalize reversed)
+             (unless (find components +valid-pixel-components+)
+               (error "Not a valid pixel component layout.~%~s not found in '~s"
+                      components +valid-pixel-components+))
+             (let ((component-length (get-component-length components)))
+               (when (listp type) (unless (eql component-length (length type))
+                                    (error "Number of sizes and components do not match")))
+               (destructuring-bind (sizes type)
+                   (if (keywordp type)
+                       (list nil (find type +valid-pixel-types+))
+                       (and (eql component-length (length type))
+                            (or (assoc (if reversed (cons :r type) type)
+                                       +valid-pixel-packed-sizes+ :test #'equal)
+                                '(nil nil))))
+                 (unless type (error "Not a known pixel type: <components:~a type:~a>"
+                                     components type))
+                 (when (and (not normalize) (not (find type +gl-integral-pixel-types+)))
+                   (error "The type ~a cannot hold un-normalized integers" type))
+                 (list components type (if reversed (rest sizes) sizes)
+                       normalize reversed component-length)))))
+    (destructuring-bind
+          (components type sizes normalize reversed component-length)
+        (process-pixel-format components type normalize reversed)
+      (make-pixel-format :components components :type type
+                         :sizes (if reversed (rest sizes) sizes)
+                         :normalize normalize :reversed reversed
+                         :comp-length component-length))))
 
 ;; [TODO] swap intern for cepl-utils:kwd
 (defn compile-pixel-format ((pixel-format pixel-format)) list

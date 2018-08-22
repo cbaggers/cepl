@@ -486,6 +486,8 @@
            :make-pixel-format
            :pixel-format
            :pixel-format-p
+           :pixel-format-tformat
+           :pixel-format-ttype
            :pixel-format-components
            :pixel-format-type
            :pixel-format-normalize
