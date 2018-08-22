@@ -54,7 +54,7 @@ CEPL abstracts working with OpenGL but is not responsible for creating a window 
 
 ### Getting Started
 
-_Note:_ On `macOS`, `slime` users may want to add the code specifed in `docs/single-thread-swank.md` to their Emacs config file, and use the command `slime-style` which will start `slime` in a more OpenGL friendly mode. Then follow the rest of this as usual.
+_Note:_ On `macOS`, `slime` users will need to read `docs/single-thread-swank.md` to deal with a complication specific to projects interacting with the window manager. You can then follow the rest of this guide as usual.
 
 To load CEPL and the default host (`sdl2`) do the following:
 
