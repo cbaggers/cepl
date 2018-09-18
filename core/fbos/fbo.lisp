@@ -636,6 +636,55 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (%bind-fbo default-framebuffer :framebuffer)))
 
+(defn-inline attachment-pattern (&rest (vals gl-enum-value))
+    (simple-array gl-enum-value (*))
+  (declare (optimize (speed 3) (safety 1) (debug 0)))
+  (make-array (length vals)
+              :element-type 'gl-enum-value
+              :initial-contents vals))
+
+(defn attachment-pattern* ((vals list))
+    (simple-array gl-enum-value (*))
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (make-array (length vals)
+              :element-type 'gl-enum-value
+              :initial-contents vals))
+
+(defparameter *expand-fbo-pattern-to-c-array* t)
+
+(defun gen-draw-buffer-call-from-pattern (draw-buffers)
+  (let ((pattern (rest draw-buffers)))
+    (alexandria:with-gensyms (l-arr ptr)
+      (if *expand-fbo-pattern-to-c-array*
+          `(with-foreign-object (,ptr '%gl::enum ,(length pattern))
+             #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+             (setf ,@(loop
+                        :for elem :in pattern
+                        :for i :from 0
+                        :append `((mem-aref ,ptr '%gl::enum ,i) ,elem)))
+             (%gl:draw-buffers ,(length pattern) ,ptr))
+          `(let ((,l-arr (make-array ,(length pattern)
+                                     :element-type 'gl-enum-value
+                                     :initial-contents ',pattern)))
+             (declare (dynamic-extent ,l-arr))
+             (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+               #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+               (%gl:draw-buffers ,(length pattern) ,ptr)))))))
+
+(defun gen-draw-buffer-call-from-array-form (form)
+  (alexandria:with-gensyms (l-arr ptr)
+    `(let ((,l-arr ,form))
+       (declare (type (simple-array gl-enum-value (*)) ,l-arr))
+       (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+         #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+         (%gl:draw-buffers (array-total-size ,l-arr)
+                           ,ptr)))))
+
+(defun draw-buffer-pattern-p (draw-buffers)
+  (and (listp draw-buffers)
+       (eq (first draw-buffers) 'attachment-pattern)
+       (every #'integerp (rest draw-buffers))))
+
 (defmacro with-fbo-bound ((fbo &key (target :draw-framebuffer)
                                (with-viewport t) (attachment-for-size 0)
                                (with-blending t) (draw-buffers t))
@@ -658,14 +707,14 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                        ,(if with-blending
                              `(cepl.blending::%with-blending ,fbo t nil ,@body)
                              `(progn ,@body))))
-                   ((listp draw-buffers)
-                    (destructuring-bind (pointer len attachments) draw-buffers
-                      (assert (numberp len))
-                      `(progn
-                         (%gl:draw-buffers ,len ,pointer)
-                         (%with-blending ,fbo ,attachments nil ,@body)
-                         (cffi:incf-pointer
-                          ,pointer ,(* len (foreign-type-size '%gl:enum)))))))))
+                   ((draw-buffer-pattern-p draw-buffers)
+                    `(progn
+                       ,(gen-draw-buffer-call-from-pattern draw-buffers)
+                       ,@body))
+                   (t
+                    `(progn
+                       ,(gen-draw-buffer-call-from-array-form draw-buffers)
+                       ,@body)))))
     (if (eq target :framebuffer)
         (alexandria:with-gensyms (old-read-fbo old-draw-fbo new-fbo ctx)
           `(with-cepl-context (,ctx)
