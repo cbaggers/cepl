@@ -1112,6 +1112,7 @@
            :fbo-p
            :fbo-blending-params
            :attachment
+           :attachment-pattern
            :attachment-viewport
            :attachment-blending
            :per-attachment-blending-available-p
