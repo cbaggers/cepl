@@ -662,8 +662,9 @@ names are depended on by the functions named later in the list"
   (alexandria:with-gensyms (ctx cnt old-cnt)
     `(with-cepl-context (,ctx)
        (%with-cepl-context-slots (instance-count) ,ctx
-         (let ((,cnt ,count)
-               (,old-cnt instance-count))
+         (let* ((,cnt ,count)
+                (,cnt (if (= ,cnt 0) 1 ,cnt))
+                (,old-cnt instance-count))
            (setf instance-count ,cnt)
            (unwind-protect (progn ,@body)
              (setf instance-count ,old-cnt)))))))

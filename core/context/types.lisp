@@ -128,7 +128,7 @@
   (pack-alignment 4 :type (integer 1 8))
   (unpack-alignment 4 :type (integer 1 8))
   (max-draw-buffer-count 0 :type (unsigned-byte 16))
-  (instance-count 0 :type c-array-index))
+  (instance-count 1 :type c-array-index))
 
 (defmethod print-object ((context cepl-context) stream)
   (format stream "#<CEPL-CONTEXT ~a>" (slot-value context 'bound-thread)))

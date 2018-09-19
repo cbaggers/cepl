@@ -106,8 +106,9 @@
        ,(gen-update-spec name stage-pairs raw-context)
        ;;
        ;; generate the dummy dispatch func
-       (defun ,name (mapg-context stream ,@(when uniform-names `(&key ,@uniform-names)))
-         (declare (ignore mapg-context) (ignorable ,@uniform-names))
+       (defun ,name (mapg-context draw-array stream
+                     ,@(when uniform-names `(&key ,@uniform-names)))
+         (declare (ignore mapg-context draw-array) (ignorable ,@uniform-names))
          (error 'mapping-over-partial-pipeline
                 :name ',name
                 :args ',(function-uniforms func-specs))
@@ -243,17 +244,19 @@
          (signature (if static
                         `(((,ctx cepl-context)
                            (,stream-symb (or null ,stream-type))
+                           (draw-array (or null c-array gpu-array-bb))
                            ,@(when uniform-names `(&key ,@typed-uniforms)))
                           ,return-type)
                         `((,ctx
                            ,stream-symb
+                           draw-array
                            ,@(when uniform-names `(&key ,@uniform-names))))))
          (def (if static 'defn 'defun+)))
     ;;
     ;; draw-function
     `(,def ,name ,@signature
        (declare (speed 3) (safety 1) (debug 1) (compilation-speed 0)
-                (ignorable ,ctx ,@uniform-names)
+                (ignorable ,ctx draw-array ,@uniform-names)
                 (inline pipeline-state-prog-ids
                         pipeline-state-implicit-uniform-upload-func
                         pipeline-state-tfs-primitive
@@ -638,34 +641,56 @@
                (draw-mode ,draw-mode-symb)
                (index-type (buffer-stream-index-type stream))
                (instance-count
-                (cepl.context::%cepl-context-instance-count ,ctx-symb))
-               (instance-count (if (= instance-count 0)
-                                   1
-                                   instance-count)))
+                (cepl.context::%cepl-context-instance-count ,ctx-symb)))
           ,@(when (typep primitive 'varjo::patches)
               `((assert (= (buffer-stream-patch-length stream)
                            ,(varjo::vertex-count primitive)))
                 (%gl:patch-parameter-i
                  :patch-vertices ,(varjo::vertex-count primitive))))
           (with-vao-bound (buffer-stream-vao stream)
-            (if index-type
-                (locally (declare (optimize (speed 3) (safety 0))
-                                  #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                  (%gl:draw-elements-instanced
-                   draw-mode
-                   (buffer-stream-length stream)
-                   (cffi-type->gl-type index-type)
-                   (%cepl.types:buffer-stream-start-byte stream)
-                   instance-count))
-                (locally (declare (optimize (speed 3) (safety 0))
-                                  #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                  (%gl:draw-arrays-instanced
-                   draw-mode
-                   (buffer-stream-start stream)
-                   (buffer-stream-length stream)
-                   instance-count))))))
+            (if draw-array
+                (etypecase draw-array
+                  (c-array
+                   ;;(assert is-1d-array yada yada )
+                   (%gl:multi-draw-arrays-indirect
+                    draw-mode
+                    (c-array-pointer draw-array)
+                    (c-array-total-size draw-array)
+                    #.(cffi:foreign-type-size 'indirect-command)))
+                  (gpu-array-bb
+                   ;;(assert is-1d-array yada yada )
+                   (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
+                         (gpu-array-bb-buffer draw-array))
+                   (%gl:multi-draw-arrays-indirect
+                    draw-mode
+                    (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
+                    (first (gpu-array-dimensions draw-array))
+                    #.(cffi:foreign-type-size 'indirect-command))))
+                (if index-type
+                    (locally (declare (optimize (speed 3) (safety 0))
+                                      #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
+                      (%gl:draw-elements-instanced
+                       draw-mode
+                       (buffer-stream-length stream)
+                       (cffi-type->gl-type index-type)
+                       (%cepl.types:buffer-stream-start-byte stream)
+                       instance-count))
+                    (locally (declare (optimize (speed 3) (safety 0))
+                                      #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
+                      (%gl:draw-arrays-instanced
+                       draw-mode
+                       (buffer-stream-start stream)
+                       (buffer-stream-length stream)
+                       instance-count)))))))
      (when (not has-fragment-stage)
        (gl:disable :rasterizer-discard))))
+
+;; void glMultiDrawArraysIndirect(
+;;       GLenum mode,
+;;       const void* indirect,
+;;       GLsizei drawcount,
+;;       GLsizei stride);
+
 
 (defun compute-expander (profile-name space-symb)
   "This runs the compute function over the provided space using the
@@ -673,6 +698,7 @@
    this function should only be used from another function which
    is handling the binding."
   `(progn
+     (assert (not draw-array))
      (,@(if profile-name
             `(profile-block (,profile-name :draw))
             '(progn))

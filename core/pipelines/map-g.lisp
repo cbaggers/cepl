@@ -20,7 +20,7 @@
                                  (compilation-speed 0)))
        #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
        (with-cepl-context (,mapg-ctx)
-         (funcall ,pipeline-func ,mapg-ctx ,stream ,@uniforms)))))
+         (funcall ,pipeline-func ,mapg-ctx ,stream nil ,@uniforms)))))
 
 (defmacro map-g-into (fbo pipeline-func stream &rest uniforms)
   `(with-fbo-bound (,fbo :target :draw-framebuffer)
