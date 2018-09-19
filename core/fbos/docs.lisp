@@ -313,6 +313,22 @@ and they will inherit their params from attachment 0
 For more details see `cepl.blending`
 ")
 
+  (defun attachment-pattern
+      "
+This function returns a typed simple-array with is suitable to pass as
+the :draw-buffers argument in `with-fbo-bound`.
+
+The arguments must evaluate to numbers of type (unsigned-byte 32).
+
+When called inline in a `with-fbo-bound` form there is an opportunity
+for CEPL to optimize the code. For example in this case
+
+    (defun foo (fbo)
+      (with-fbo-bound (fbo :draw-buffers (attachment-pattern 0 2))
+        ..
+        etc))
+")
+
   (defmacro with-fbo-bound
       "
 This is one macro you use when you want to capture the output from a pipeline in
@@ -338,6 +354,18 @@ t -  Which means the all attachments will be available to be drawn into
      this will happen in order, so the first output from the fragment shader
      will draw into the first attachment, the second output to the second
      attachment, etc
+
+an array produced by called attachment-pattern -
+     This option allows you to control which attachments are bound to
+     which outputs. For example in the following..
+
+        (defun foo (fbo)
+          (with-fbo-bound (fbo :draw-buffers (attachment-pattern 0 2))
+            ..
+            etc))
+
+    output 0 is bound to attachment 0 but output 1 is bound to
+    attachment 2.
 
 
 **-- with-viewport --**
