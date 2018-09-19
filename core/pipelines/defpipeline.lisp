@@ -638,38 +638,32 @@
                (draw-mode ,draw-mode-symb)
                (index-type (buffer-stream-index-type stream))
                (instance-count
-                (cepl.context::%cepl-context-instance-count ,ctx-symb)))
+                (cepl.context::%cepl-context-instance-count ,ctx-symb))
+               (instance-count (if (= instance-count 0)
+                                   1
+                                   instance-count)))
           ,@(when (typep primitive 'varjo::patches)
               `((assert (= (buffer-stream-patch-length stream)
                            ,(varjo::vertex-count primitive)))
                 (%gl:patch-parameter-i
                  :patch-vertices ,(varjo::vertex-count primitive))))
           (with-vao-bound (buffer-stream-vao stream)
-            (if (= (the c-array-index instance-count) 0)
-                (if index-type
-                    (locally (declare (optimize (speed 3) (safety 0))
-                                      #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                      (%gl:draw-elements draw-mode
-                                         (buffer-stream-length stream)
-                                         (cffi-type->gl-type index-type)
-                                         (%cepl.types:buffer-stream-start-byte stream)))
-                    (locally (declare (optimize (speed 3) (safety 0))
-                                      #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                      (%gl:draw-arrays draw-mode
-                                       (buffer-stream-start stream)
-                                       (buffer-stream-length stream))))
-                (if index-type
-                    (%gl:draw-elements-instanced
-                     draw-mode
-                     (buffer-stream-length stream)
-                     (cffi-type->gl-type index-type)
-                     (%cepl.types:buffer-stream-start-byte stream)
-                     instance-count)
-                    (%gl:draw-arrays-instanced
-                     draw-mode
-                     (buffer-stream-start stream)
-                     (buffer-stream-length stream)
-                     instance-count))))))
+            (if index-type
+                (locally (declare (optimize (speed 3) (safety 0))
+                                  #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
+                  (%gl:draw-elements-instanced
+                   draw-mode
+                   (buffer-stream-length stream)
+                   (cffi-type->gl-type index-type)
+                   (%cepl.types:buffer-stream-start-byte stream)
+                   instance-count))
+                (locally (declare (optimize (speed 3) (safety 0))
+                                  #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
+                  (%gl:draw-arrays-instanced
+                   draw-mode
+                   (buffer-stream-start stream)
+                   (buffer-stream-length stream)
+                   instance-count))))))
      (when (not has-fragment-stage)
        (gl:disable :rasterizer-discard))))
 
