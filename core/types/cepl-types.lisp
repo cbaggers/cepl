@@ -377,7 +377,7 @@
   (%start 0 :type (unsigned-byte 64))
   (%start-byte 0 :type (unsigned-byte 64))
   (length 1 :type unsigned-byte)
-  (%index-type nil :type symbol)
+  (%index-type-enum 0 :type gl-enum-value)
   (%index-type-size 0 :type (unsigned-byte 8))
   (gpu-arrays nil :type list)
   (%primitive nil :type symbol)
@@ -452,7 +452,7 @@
                       (* start (foreign-type-size index-type))
                       0)
      :length (or length 1)
-     :%index-type index-type
+     :%index-type-enum (%cffi-type->gl-enum index-type)
      :%index-type-size (if (%valid-index-type-p index-type)
                            (foreign-type-size index-type)
                            0)
@@ -463,13 +463,36 @@
      :patch-length patch-length
      :gpu-arrays gpu-arrays)))
 
+(defn %cffi-type->gl-enum ((cffi-type-name symbol)) gl-enum-value
+  (ecase cffi-type-name
+    (nil 0)
+    ((:char :signed-char) #.(gl-enum :byte))
+    ((:uchar :unsigned-char) #.(gl-enum :unsigned-byte))
+    ((:short :signed-short) #.(gl-enum :short))
+    ((:ushort :unsigned-short) #.(gl-enum :unsigned-short))
+    ((:int :signed-int) #.(gl-enum :int))
+    ((:uint :unsigned-int) #.(gl-enum :unsigned-int))
+    (:float #.(gl-enum :float))
+    (:double #.(gl-enum :double))))
+
 (defn-inline buffer-stream-index-type ((stream buffer-stream)) symbol
   (declare (optimize (speed 3) (safety 1) (debug 1)
                      (compilation-speed 0))
            (profile t))
-  (buffer-stream-%index-type stream))
+  (ecase (buffer-stream-%index-type-enum stream)
+    (0 nil)
+    (#.(gl-enum :byte) :int8)
+    (#.(gl-enum :unsigned-byte) :uint8)
+    (#.(gl-enum :short) :short)
+    (#.(gl-enum :unsigned-short) :ushort)
+    (#.(gl-enum :int) :int)
+    (#.(gl-enum :unsigned-int) :uint)
+    (#.(gl-enum :float) :float)
+    (#.(gl-enum :double) :double)))
 
-(defn-inline buffer-stream-start ((stream buffer-stream)) (unsigned-byte 64)
+(defn-inline buffer-stream-start ((stream buffer-stream))
+    (unsigned-byte 64)
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 1) (debug 1)
                      (compilation-speed 0))
            (profile t))
@@ -480,17 +503,18 @@
     (unsigned-byte 64)
   (declare (profile t) (inline buffer-stream-index-type))
   (setf (buffer-stream-%start stream) value)
-  (let ((index-type (buffer-stream-index-type stream))
-        (type-size (buffer-stream-%index-type-size stream)))
-    (when (%valid-index-type-p index-type)
-      (setf (buffer-stream-%start-byte stream) (* value type-size))))
+  (let ((type-size (buffer-stream-%index-type-size stream)))
+    (setf (buffer-stream-%start-byte stream) (* value type-size)))
   value)
 
-(defn (setf buffer-stream-index-type) ((value symbol) (stream buffer-stream))
+(defn (setf buffer-stream-index-type)
+    ((value symbol) (stream buffer-stream))
     symbol
   (declare (profile t))
-  (setf (buffer-stream-%index-type stream) value)
+  (setf (buffer-stream-%index-type-enum stream)
+        (%cffi-type->gl-enum value))
   ;; doing this vv forces recalculation of start-byte
+
   (when (%valid-index-type-p value)
     (setf (buffer-stream-%index-type-size stream) (foreign-type-size value)
           (buffer-stream-start stream) (buffer-stream-start stream)))

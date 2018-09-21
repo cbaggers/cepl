@@ -639,7 +639,8 @@
             '(progn))
         (let* ((stream ,stream-symb)
                (draw-mode ,draw-mode-symb)
-               (index-type (buffer-stream-index-type stream))
+               (index-type (%cepl.types::buffer-stream-%index-type-enum
+                            stream))
                (instance-count
                 (cepl.context::%cepl-context-instance-count ,ctx-symb)))
           ,@(when (typep primitive 'varjo::patches)
@@ -654,10 +655,10 @@
                    ;; {TODO} (assert is-1d-array yada yada )
                    ;; (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
                    ;;       nil)
-                   ;; (if index-type
+                   ;; (if (/= index-type 0)
                    ;;     (%gl:multi-draw-elements-indirect
                    ;;      draw-mode
-                   ;;      (cffi-type->gl-type index-type)
+                   ;;      index-type
                    ;;      (c-array-pointer draw-array)
                    ;;      (c-array-total-size draw-array)
                    ;;      #.(cffi:foreign-type-size 'elements-indirect-command))
@@ -671,10 +672,10 @@
                    ;;(assert is-1d-array yada yada )
                    (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
                          (gpu-array-bb-buffer draw-array))
-                   (if index-type
+                   (if (/= index-type 0)
                        (%gl:multi-draw-elements-indirect
                         draw-mode
-                        (cffi-type->gl-type index-type)
+                        index-type
                         (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
                         (first (gpu-array-dimensions draw-array))
                         #.(cffi:foreign-type-size 'elements-indirect-command))
@@ -689,7 +690,7 @@
                       (%gl:draw-elements-instanced
                        draw-mode
                        (buffer-stream-length stream)
-                       (cffi-type->gl-type index-type)
+                       index-type
                        (%cepl.types:buffer-stream-start-byte stream)
                        instance-count))
                     (locally (declare (optimize (speed 3) (safety 0))
