@@ -227,11 +227,12 @@
           ;; wraps the state and calls the pipeline it holds.
           ;; The above magic will swap out that function whenever
           ;; it needs to handle change.
-          (let ((wrapper (lambda (ctx stream &rest uniforms)
+          (let ((wrapper (lambda (ctx stream draw-array &rest uniforms)
                            (declare (optimize (speed 3) (safety 1) (debug 1)))
                            (apply (glambda-state-pipeline state)
                                   ctx
                                   stream
+                                  draw-array
                                   uniforms))))
             ;; Note that we register the wrapper as the key as this
             ;; is what the user will have access to. When they call
@@ -431,10 +432,11 @@
        ;;
        ;; generate the code that actually renders
        (%post-init ,post)
-       (lambda (,ctx ,stream-symb ,@(when uniform-names `(&key ,@uniform-names)))
+       (lambda (,ctx ,stream-symb draw-array
+                ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (optimize (speed 3) (safety 1))
                   (type (or null ,stream-type) ,stream-symb)
-                  (ignorable ,ctx ,@uniform-names))
+                  (ignorable ,ctx ,@uniform-names draw-array))
          #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
          ,@(unless (or compute (typep primitive 'varjo::dynamic))
              `((when ,stream-symb

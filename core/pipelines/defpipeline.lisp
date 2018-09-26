@@ -652,6 +652,8 @@
                 (etypecase draw-array
                   (c-array
                    ;;(assert is-1d-array yada yada )
+                   (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
+                         nil)
                    (if index-type
                        (%gl:multi-draw-elements-indirect
                         draw-mode

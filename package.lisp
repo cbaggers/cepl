@@ -1271,7 +1271,19 @@
            :delete-gpu-function
            :bake-uniforms
            :free-pipeline
-           :funcall-g))
+           :funcall-g
+           :arrays-indirect-command
+           :elements-indirect-command
+           :arrays-indirect-command-count
+           :arrays-indirect-command-instance-count
+           :arrays-indirect-command-first
+           :arrays-indirect-command-base-instance
+           :elements-indirect-command-count
+           :elements-indirect-command-instance-count
+           :elements-indirect-command-first-index
+           :elements-indirect-command-base-vertex
+           :elements-indirect-command-base-instance
+           :multi-map-g))
 
 (uiop:define-package :cepl
     (:use :cl
