@@ -1,9 +1,16 @@
 (in-package :cepl.pipelines)
 
-(defstruct-g indirect-command
+(defstruct-g arrays-indirect-command
   (count :uint)
   (instance-count :uint)
   (first :uint)
+  (base-instance :uint))
+
+(defstruct-g elements-indirect-command
+  (count :uint)
+  (instance-count :uint)
+  (first-index :uint)
+  (base-vertex :uint)
   (base-instance :uint))
 
 (defmacro multi-map-g (pipeline-func

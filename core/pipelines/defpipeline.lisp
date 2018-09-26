@@ -652,20 +652,34 @@
                 (etypecase draw-array
                   (c-array
                    ;;(assert is-1d-array yada yada )
-                   (%gl:multi-draw-arrays-indirect
-                    draw-mode
-                    (c-array-pointer draw-array)
-                    (c-array-total-size draw-array)
-                    #.(cffi:foreign-type-size 'indirect-command)))
+                   (if index-type
+                       (%gl:multi-draw-elements-indirect
+                        draw-mode
+                        (cffi-type->gl-type index-type)
+                        (c-array-pointer draw-array)
+                        (c-array-total-size draw-array)
+                        #.(cffi:foreign-type-size 'elements-indirect-command))
+                       (%gl:multi-draw-arrays-indirect
+                        draw-mode
+                        (c-array-pointer draw-array)
+                        (c-array-total-size draw-array)
+                        #.(cffi:foreign-type-size 'arrays-indirect-command))))
                   (gpu-array-bb
                    ;;(assert is-1d-array yada yada )
                    (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
                          (gpu-array-bb-buffer draw-array))
-                   (%gl:multi-draw-arrays-indirect
-                    draw-mode
-                    (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
-                    (first (gpu-array-dimensions draw-array))
-                    #.(cffi:foreign-type-size 'indirect-command))))
+                   (if index-type
+                       (%gl:multi-draw-elements-indirect
+                        draw-mode
+                        (cffi-type->gl-type index-type)
+                        (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
+                        (first (gpu-array-dimensions draw-array))
+                        #.(cffi:foreign-type-size 'elements-indirect-command))
+                       (%gl:multi-draw-arrays-indirect
+                        draw-mode
+                        (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
+                        (first (gpu-array-dimensions draw-array))
+                        #.(cffi:foreign-type-size 'arrays-indirect-command)))))
                 (if index-type
                     (locally (declare (optimize (speed 3) (safety 0))
                                       #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
@@ -684,12 +698,6 @@
                        instance-count)))))))
      (when (not has-fragment-stage)
        (gl:disable :rasterizer-discard))))
-
-;; void glMultiDrawArraysIndirect(
-;;       GLenum mode,
-;;       const void* indirect,
-;;       GLsizei drawcount,
-;;       GLsizei stride);
 
 
 (defun compute-expander (profile-name space-symb)
