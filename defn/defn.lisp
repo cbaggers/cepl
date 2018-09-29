@@ -53,10 +53,11 @@
             `(function ,(reverse f-sigs) ,result-types)
             (reverse f-decls))))
 
-(defvar *standard-declarations*
+(defparameter *standard-declarations*
   '(dynamic-extent  ignore     optimize
     ftype           inline     special
-    ignorable       notinline  type))
+    ignorable       notinline  type
+    #+sbcl sb-ext:muffle-conditions))
 
 (defgeneric handle-defn-declaration (name %func-name args)
   (:method (name %func-name args)
