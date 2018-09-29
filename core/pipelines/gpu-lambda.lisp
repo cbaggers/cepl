@@ -435,6 +435,8 @@
        (lambda (,ctx ,stream-symb draw-array
                 ,@(when uniform-names `(&key ,@uniform-names)))
          (declare (optimize (speed 3) (safety 1))
+                  (type cepl-context ,ctx)
+                  (type (or null gpu-array-bb) draw-array)
                   (type (or null ,stream-type) ,stream-symb)
                   (ignorable ,ctx ,@uniform-names draw-array))
          #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
