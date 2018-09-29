@@ -684,11 +684,10 @@
                         (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
                         (first (gpu-array-dimensions draw-array))
                         #.(cffi:foreign-type-size 'arrays-indirect-command)))))
-                (if index-type
+                (if (/= index-type 0)
                     (locally (declare (optimize (speed 3) (safety 0))
                                       #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
                       (%gl:draw-elements-instanced-base-vertex
-                       draw-mode
                        draw-mode
                        (buffer-stream-length stream)
                        index-type
