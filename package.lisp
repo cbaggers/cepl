@@ -945,7 +945,8 @@
            :buffer-stream-primitive
            :free-buffer-stream
            :make-buffer-stream
-           :make-buffer-stream-from-id-and-layouts))
+           :make-buffer-stream-from-id-and-layouts
+           :make-buffer-stream-sharing))
 
 (uiop:define-package :cepl.ubos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
