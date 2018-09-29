@@ -651,21 +651,22 @@
             (if draw-array
                 (etypecase draw-array
                   (c-array
-                   ;;(assert is-1d-array yada yada )
-                   (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
-                         nil)
-                   (if index-type
-                       (%gl:multi-draw-elements-indirect
-                        draw-mode
-                        (cffi-type->gl-type index-type)
-                        (c-array-pointer draw-array)
-                        (c-array-total-size draw-array)
-                        #.(cffi:foreign-type-size 'elements-indirect-command))
-                       (%gl:multi-draw-arrays-indirect
-                        draw-mode
-                        (c-array-pointer draw-array)
-                        (c-array-total-size draw-array)
-                        #.(cffi:foreign-type-size 'arrays-indirect-command))))
+                   ;; {TODO} (assert is-1d-array yada yada )
+                   ;; (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
+                   ;;       nil)
+                   ;; (if index-type
+                   ;;     (%gl:multi-draw-elements-indirect
+                   ;;      draw-mode
+                   ;;      (cffi-type->gl-type index-type)
+                   ;;      (c-array-pointer draw-array)
+                   ;;      (c-array-total-size draw-array)
+                   ;;      #.(cffi:foreign-type-size 'elements-indirect-command))
+                   ;;     (%gl:multi-draw-arrays-indirect
+                   ;;      draw-mode
+                   ;;      (c-array-pointer draw-array)
+                   ;;      (c-array-total-size draw-array)
+                   ;;      #.(cffi:foreign-type-size 'arrays-indirect-command)))
+                   (error "CEPL: Sorry, but multi-map-g takin c-arrays is not yet supported"))
                   (gpu-array-bb
                    ;;(assert is-1d-array yada yada )
                    (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
