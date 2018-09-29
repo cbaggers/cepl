@@ -91,6 +91,10 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
 
+### 2018-09-29
+- Added support for MultiDrawIndirect using `multi-draw-g`
+- Added support for base-vertex in buffer-streams
+
 ### 2018-08-10
 
 - `wait-on-gpu-fence` now expects an `(unsigned-byte 64)` or `nil`. `nil` is used to indicate no timeout and anything else is the timeout in nanoseconds
