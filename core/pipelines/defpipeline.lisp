@@ -244,7 +244,7 @@
          (signature (if static
                         `(((,ctx cepl-context)
                            (,stream-symb (or null ,stream-type))
-                           (draw-array (or null c-array gpu-array-bb))
+                           (draw-array (or null gpu-array-bb))
                            ,@(when uniform-names `(&key ,@typed-uniforms)))
                           ,return-type)
                         `((,ctx
@@ -650,40 +650,22 @@
                  :patch-vertices ,(varjo::vertex-count primitive))))
           (with-vao-bound (buffer-stream-vao stream)
             (if draw-array
-                (etypecase draw-array
-                  (c-array
-                   ;; {TODO} (assert is-1d-array yada yada )
-                   ;; (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
-                   ;;       nil)
-                   ;; (if (/= index-type 0)
-                   ;;     (%gl:multi-draw-elements-indirect
-                   ;;      draw-mode
-                   ;;      index-type
-                   ;;      (c-array-pointer draw-array)
-                   ;;      (c-array-total-size draw-array)
-                   ;;      #.(cffi:foreign-type-size 'elements-indirect-command))
-                   ;;     (%gl:multi-draw-arrays-indirect
-                   ;;      draw-mode
-                   ;;      (c-array-pointer draw-array)
-                   ;;      (c-array-total-size draw-array)
-                   ;;      #.(cffi:foreign-type-size 'arrays-indirect-command)))
-                   (error "CEPL: Sorry, but multi-map-g takin c-arrays is not yet supported"))
-                  (gpu-array-bb
-                   ;;(assert is-1d-array yada yada )
-                   (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
-                         (gpu-array-bb-buffer draw-array))
-                   (if (/= index-type 0)
-                       (%gl:multi-draw-elements-indirect
-                        draw-mode
-                        index-type
-                        (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
-                        (first (gpu-array-dimensions draw-array))
-                        #.(cffi:foreign-type-size 'elements-indirect-command))
-                       (%gl:multi-draw-arrays-indirect
-                        draw-mode
-                        (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
-                        (first (gpu-array-dimensions draw-array))
-                        #.(cffi:foreign-type-size 'arrays-indirect-command)))))
+                (progn
+                  ;;(assert is-1d-array yada yada )
+                 (setf (gpu-buffer-bound ,ctx-symb :draw-indirect-buffer)
+                       (gpu-array-bb-buffer draw-array))
+                 (if (/= index-type 0)
+                     (%gl:multi-draw-elements-indirect
+                      draw-mode
+                      index-type
+                      (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
+                      (first (gpu-array-dimensions draw-array))
+                      #.(cffi:foreign-type-size 'elements-indirect-command))
+                     (%gl:multi-draw-arrays-indirect
+                      draw-mode
+                      (gpu-array-bb-offset-in-bytes-into-buffer draw-array)
+                      (first (gpu-array-dimensions draw-array))
+                      #.(cffi:foreign-type-size 'arrays-indirect-command))))
                 (if (/= index-type 0)
                     (locally (declare (optimize (speed 3) (safety 0))
                                       #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
