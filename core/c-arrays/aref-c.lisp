@@ -7,6 +7,7 @@
 
 (defn-inline ptr-index-1d ((c-array c-array) (x c-array-index))
     cffi-sys:foreign-pointer
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (profile t))
   (the cffi-sys:foreign-pointer
@@ -20,6 +21,7 @@
                            (x c-array-index)
                            (y c-array-index))
     foreign-pointer
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline inc-pointer c-array-pointer))
   (the cffi-sys:foreign-pointer
@@ -36,6 +38,7 @@
                            (z c-array-index))
     foreign-pointer
   (declare (optimize (speed 3) (safety 0) (debug 1)))
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (vec-bind (elem-size row-size 2d-size) (c-array-sizes c-array)
     (let* ((byte-offset (the c-array-index
                              (+ (the c-array-index (* z 2d-size))
@@ -51,6 +54,7 @@
                            (z c-array-index)
                            (w c-array-index))
     foreign-pointer
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare(optimize (speed 3) (safety 0) (debug 1)))
   (vec-bind (elem-size row-size 2d-size 3d-size) (c-array-sizes c-array)
     (let* ((byte-offset
@@ -72,6 +76,7 @@
                         (z c-array-index 0)
                         (w c-array-index 0))
     foreign-pointer
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (c-array c-array)
            (c-array-index x y z w)
            (optimize (speed 3) (safety 0) (debug 1)))
@@ -111,6 +116,7 @@ github issue for this when it becomes a problem for you"
 (defn-inline aref-c*-1d ((c-array c-array)
                          (x c-array-index))
     t
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-1d))
   (let ((ptr (ptr-index-1d c-array x))
@@ -121,6 +127,7 @@ github issue for this when it becomes a problem for you"
                          (x c-array-index)
                          (y c-array-index))
     t
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-2d))
   (let ((ptr (ptr-index-2d c-array x y))
@@ -132,6 +139,7 @@ github issue for this when it becomes a problem for you"
                          (y c-array-index)
                          (z c-array-index))
     t
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-3d))
   (let ((ptr (ptr-index-3d c-array x y z))
@@ -144,6 +152,7 @@ github issue for this when it becomes a problem for you"
                          (z c-array-index)
                          (w c-array-index))
     t
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-4d))
   (let ((ptr (ptr-index-4d c-array x y z w))
@@ -156,6 +165,7 @@ github issue for this when it becomes a problem for you"
                                 (c-array c-array)
                                 (x c-array-index))
     t
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-1d))
   (let ((ptr (ptr-index-1d c-array x))
@@ -167,6 +177,7 @@ github issue for this when it becomes a problem for you"
                                 (x c-array-index)
                                 (y c-array-index))
     t
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-2d))
   (let ((ptr (ptr-index-2d c-array x y))
@@ -179,6 +190,7 @@ github issue for this when it becomes a problem for you"
                                 (y c-array-index)
                                 (z c-array-index))
     t
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-3d))
   (let ((ptr (ptr-index-3d c-array x y z))
@@ -192,6 +204,7 @@ github issue for this when it becomes a problem for you"
                                 (z c-array-index)
                                 (w c-array-index))
     t
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
   (declare (optimize (speed 3) (safety 0) (debug 1))
            (inline ptr-index-4d))
   (let ((ptr (ptr-index-4d c-array x y z w))
