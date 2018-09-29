@@ -14,6 +14,16 @@
   (%gl:uniform-1i location image-unit)
   (values))
 
+(defn-inline uniform-1b ((location (signed-byte 32))
+                         (value boolean))
+    (values)
+  (declare (optimize (speed 3) (safety 1) (debug 0)
+                     (compilation-speed 0))
+           (profile t))
+  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+  (%gl:uniform-1i location (if value 1 0))
+  (values))
+
 (defn-inline uniform-1i ((location (signed-byte 32))
                          (value (signed-byte 32)))
     (values)
@@ -191,7 +201,8 @@
 (defun+ get-uniform-function-name (type)
   "Used when uploading lisp data"
   (case type
-    ((:int :int32 :int-arb :bool :bool-arb) 'uniform-1i)
+    ((:bool :bool-arb) 'uniform-1b)
+    ((:int :int32 :int-arb) 'uniform-1i)
     ((:float :float-arb) 'uniform-1f)
     ((:int-vec2 :int-vec2-arb :bool-vec2 :bool-vec2-arb) 'uniform-2i)
     ((:int-vec3 :int-vec3-arb :bool-vec3 :bool-vec3-arb) 'uniform-3i)
