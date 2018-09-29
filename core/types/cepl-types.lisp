@@ -466,7 +466,7 @@
 
 (defn %cffi-type->gl-enum ((cffi-type-name symbol)) gl-enum-value
   (ecase cffi-type-name
-    (nil 0)
+    ((nil :uninitialized) 0)
     ((:char :signed-char) #.(gl-enum :byte))
     ((:uchar :unsigned-char) #.(gl-enum :unsigned-byte))
     ((:short :signed-short) #.(gl-enum :short))
