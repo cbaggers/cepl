@@ -687,12 +687,14 @@
                 (if index-type
                     (locally (declare (optimize (speed 3) (safety 0))
                                       #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
-                      (%gl:draw-elements-instanced
+                      (%gl:draw-elements-instanced-base-vertex
+                       draw-mode
                        draw-mode
                        (buffer-stream-length stream)
                        index-type
                        (%cepl.types:buffer-stream-start-byte stream)
-                       instance-count))
+                       instance-count
+                       (buffer-stream-base-vertex stream)))
                     (locally (declare (optimize (speed 3) (safety 0))
                                       #+sbcl(sb-ext:muffle-conditions sb-ext:compiler-note))
                       (%gl:draw-arrays-instanced

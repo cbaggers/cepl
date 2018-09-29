@@ -512,10 +512,16 @@
            :buffer-stream-patch-length
            :buffer-stream-start
            :buffer-stream-start-byte
+           :buffer-stream-base-vertex
            :buffer-stream-length
            :buffer-stream-index-type
            :buffer-stream-gpu-arrays
            :buffer-stream-managed
+           :buffer-stream-%primitive
+           :buffer-stream-%start
+           :buffer-stream-%start-byte
+           :buffer-stream-%index-type-enum
+           :buffer-stream-%index-type-size
 
            :%make-c-array
            :c-array
@@ -932,6 +938,7 @@
            :buffer-stream-p
            :buffer-stream-vao
            :buffer-stream-length
+           :buffer-stream-base-vertex
            :buffer-stream-index-type
            :buffer-stream-gpu-arrays
            :buffer-stream-primitive

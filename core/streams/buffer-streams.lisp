@@ -27,33 +27,81 @@
   ;;   (mapcar #'free-gpu-array-bb (buffer-stream-gpu-arrays buffer-stream)))
   (blank-buffer-stream buffer-stream))
 
+(defn make-buffer-stream-sharing ((stream buffer-stream)
+                                  &optional (base-vertex c-array-index))
+    buffer-stream
+  (cepl.context::if-gl-context
+   (init-buffer-stream-from-shared %pre% stream base-vertex)
+   (make-uninitialized-buffer-stream
+    (buffer-stream-primitive stream))
+   stream))
+
+(defn init-buffer-stream-from-shared ((new-stream buffer-stream)
+                                      (src-stream buffer-stream)
+                                      (base-vertex (or null c-array-index)))
+    buffer-stream
+  ;; the change we actually care about
+  (setf (buffer-stream-base-vertex new-stream)
+        (or base-vertex
+            (buffer-stream-base-vertex src-stream)))
+  (setf (buffer-stream-managed new-stream) nil)
+  ;; copy the rest
+  (setf (buffer-stream-vao new-stream)
+        (buffer-stream-vao src-stream))
+  (setf (buffer-stream-%start new-stream)
+        (buffer-stream-%start src-stream))
+  (setf (buffer-stream-%start-byte new-stream)
+        (buffer-stream-%start-byte src-stream))
+  (setf (buffer-stream-length new-stream)
+        (buffer-stream-length src-stream))
+  (setf (buffer-stream-%index-type-enum new-stream)
+        (buffer-stream-%index-type-enum src-stream))
+  (setf (buffer-stream-%index-type-size new-stream)
+        (buffer-stream-%index-type-size src-stream))
+  (setf (buffer-stream-gpu-arrays new-stream)
+        (buffer-stream-gpu-arrays src-stream))
+  (setf (buffer-stream-%primitive new-stream)
+        (buffer-stream-%primitive src-stream))
+  (setf (buffer-stream-primitive-group-id new-stream)
+        (buffer-stream-primitive-group-id src-stream))
+  (setf (buffer-stream-draw-mode-val new-stream)
+        (buffer-stream-draw-mode-val src-stream))
+  (setf (buffer-stream-patch-length new-stream)
+        (buffer-stream-patch-length src-stream))
+  (setf (buffer-stream-managed new-stream)
+        (buffer-stream-managed src-stream))
+  new-stream)
+
 
 (defun+ make-buffer-stream (gpu-arrays
                            &key index-array (start 0) length
-                             (retain-arrays t) (primitive :triangles))
+                           (retain-arrays t) (primitive :triangles)
+                           (base-vertex 0))
   (when (not gpu-arrays)
     (assert (not index-array) () 'index-on-buffer-stream-with-no-gpu-arrays))
   (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
     (cepl.context::if-gl-context
      (init-buffer-stream-from-id %pre% (make-vao gpu-arrays index-array)
                                  gpu-arrays index-array start length
-                                 retain-arrays)
+                                 base-vertex retain-arrays)
      (make-uninitialized-buffer-stream primitive)
      gpu-arrays)))
 
 (defun+ make-buffer-stream-from-id (vao-gl-object gpu-arrays
                                    &key index-array (start 0) length
-                                     retain-arrays (primitive :triangles))
+                                   retain-arrays (primitive :triangles)
+                                   (base-vertex 0))
   (when (not gpu-arrays)
     (assert (not index-array) () 'index-on-buffer-stream-with-no-gpu-arrays))
   (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
     (init-buffer-stream-from-id
      (make-raw-buffer-stream :primitive primitive) vao-gl-object gpu-arrays
-     index-array start length retain-arrays)))
+     index-array start length base-vertex retain-arrays)))
 
 (defun+ init-buffer-stream-from-id (stream-obj
                                     vao-gl-object gpu-arrays
-                                    index-array start length retain-arrays)
+                                    index-array start length
+                                    base-vertex retain-arrays)
   (when (not gpu-arrays)
     (assert (not index-array) () 'index-on-buffer-stream-with-no-gpu-arrays))
   (let* ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays))
@@ -77,7 +125,7 @@
     (setf (buffer-stream-start stream-obj) start
           (buffer-stream-length stream-obj) length
           (buffer-stream-managed stream-obj) t
-
+          (buffer-stream-base-vertex stream-obj) base-vertex
           (buffer-stream-vao stream-obj) (make-vao-from-id vao-gl-object
                                                            gpu-arrays
                                                            index-array)

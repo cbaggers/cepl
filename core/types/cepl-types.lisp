@@ -376,6 +376,7 @@
   (vao 0 :type gl-id)
   (%start 0 :type (unsigned-byte 64))
   (%start-byte 0 :type (unsigned-byte 64))
+  (base-vertex 0 :type (unsigned-byte 32))
   (length 1 :type unsigned-byte)
   (%index-type-enum 0 :type gl-enum-value)
   (%index-type-size 0 :type (unsigned-byte 8))
