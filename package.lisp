@@ -138,6 +138,7 @@
            :mixed-pipelines-in-with-tb
            :incorrect-number-of-arrays-in-tfs
            :invalid-args-in-make-tfs
+           :invalid-sizes-in-make-tfs
            :tfs-setf-arrays-whilst-bound
            :one-stage-non-explicit
            :invalid-stage-for-single-stage-pipeline

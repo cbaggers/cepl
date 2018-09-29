@@ -5,6 +5,13 @@
                  buffer-backed-gpu-arrays)
           (buffer-backed-gpu-arrays) 'invalid-args-in-make-tfs
           :args buffer-backed-gpu-arrays)
+  (assert (every (lambda (arr)
+                   (gpu-array-bb-element-type arr)
+                   (= (mod (gpu-array-bb-byte-size arr) 4)
+                      0))
+                 buffer-backed-gpu-arrays)
+          (buffer-backed-gpu-arrays) 'invalid-sizes-in-make-tfs
+          :args buffer-backed-gpu-arrays)
   (let ((arrs (make-array (length buffer-backed-gpu-arrays)
                           :element-type 'gpu-array-bb
                           :initial-contents buffer-backed-gpu-arrays)))

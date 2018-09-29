@@ -526,6 +526,10 @@ The stream in question was:~%~a"
     "CEPL: make-transform-feedback-stream was called with some arguments that
 are not buffer-backed gpu-arrays:~{~%~s~}" args)
 
+(deferror invalid-sizes-in-make-tfs () (args)
+    "CEPL: Some of the gpu-arrays passed to make tfs have sizes which
+are not multiples of 4, GL does not allow this:~{~%~s~}" args)
+
 (defwarning tfs-setf-arrays-whilst-bound () ()
     "CEPL: There was an attempt to setf the arrays attached to the
 transform-feedback-stream whilst it is bound inside with-transform-feedback.
