@@ -125,7 +125,7 @@
     (setf (buffer-stream-start stream-obj) start
           (buffer-stream-length stream-obj) length
           (buffer-stream-managed stream-obj) t
-          (buffer-stream-base-vertex stream-obj) base-vertex
+          (buffer-stream-base-vertex stream-obj) (or base-vertex 0)
           (buffer-stream-vao stream-obj) (make-vao-from-id vao-gl-object
                                                            gpu-arrays
                                                            index-array)
