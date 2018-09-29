@@ -77,7 +77,7 @@
     (unwind-protect
          (let ((tfs (apply #'cepl:make-transform-feedback-stream garrays)))
            (cepl:with-transform-feedback (tfs)
-             (apply pline (cepl-context) single-point-stream
+             (apply pline (cepl-context) single-point-stream nil
                     call-args))
            (values-list (mapcar (lambda (arr) (first (pull-g arr)))
                                 garrays)))
