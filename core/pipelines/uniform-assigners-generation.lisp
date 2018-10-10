@@ -9,7 +9,9 @@
    (arg-name :initform nil :initarg :arg-name :accessor arg-name)
    (local-arg-name  :initform nil :initarg :local-arg-name
                     :accessor local-arg-name)
-   (cleanup :initform nil :initarg :cleanup :accessor cleanup)))
+   (cleanup :initform nil :initarg :cleanup :accessor cleanup)
+   (always-uploadp :initform nil :initarg :always-uploadp
+                   :accessor always-uploadp)))
 
 (defclass assigner-let-form ()
   ((index :initarg :index :accessor assigner-index)
@@ -48,8 +50,11 @@
       (remove nil (mapcar #'inner uniform-args)))))
 
 (defmethod gen-uploaders-block ((assigner assigner))
-  (with-slots (arg-name local-arg-name) assigner
-    `(when ,arg-name
+  (with-slots (arg-name local-arg-name always-uploadp) assigner
+
+    `(,@(if always-uploadp
+            '(progn)
+            `(when ,arg-name))
        (let ((,local-arg-name ,(if (pointer-arg assigner)
                                    `(pointer ,arg-name)
                                    arg-name)))
@@ -192,6 +197,7 @@
                              &optional (byte-offset 0))
   (let ((id-name (gensym)))
     (make-assigner
+     :always-uploadp (varjo:v-typep type :bool)
      :let-forms
      (list (make-assigner-let
             :name id-name
@@ -255,11 +261,13 @@
 
 
 (defun+ make-assigner (&key let-forms uploaders pointer-arg
-                        arg-name local-arg-name cleanup)
+                            arg-name local-arg-name cleanup
+                            always-uploadp)
   (make-instance 'assigner :let-forms let-forms :uploaders uploaders
                  :pointer-arg pointer-arg :arg-name arg-name
                  :local-arg-name local-arg-name
-                 :cleanup cleanup))
+                 :cleanup cleanup
+                 :always-uploadp always-uploadp))
 
 (defun+ merge-into-assigner (pointer-arg assingers)
   (make-assigner :let-forms (mapcat #'let-forms assingers)
