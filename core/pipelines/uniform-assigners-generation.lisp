@@ -157,8 +157,7 @@
      `((when (and (< ,id-name +unknown-uniform-uint-id+)
                   (>= ,id-name 0))
          (if (and (typep ,arg-name 'ubo)
-                  (v-type-eq (varjo:type-spec->type ',type-spec)
-                             (ubo-data-type ,arg-name)))
+                  (eq ',type-spec (ubo-data-type ,arg-name)))
              (%gl:uniform-block-binding prog-id ,id-name (ubo-id ,arg-name))
              (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
                     ',type-spec (ubo-data-type ,arg-name))))))))
@@ -178,8 +177,7 @@
      `((when (and (< ,id-name +unknown-uniform-uint-id+)
                   (>= ,id-name 0))
          (if (and (typep ,arg-name 'ssbo)
-                  (v-type-eq (varjo:type-spec->type ',type-spec)
-                             (ssbo-data-type ,arg-name)))
+                  (eq ',type-spec (ssbo-data-type ,arg-name)))
              (%gl:shader-storage-block-binding prog-id ,id-name (ssbo-id ,arg-name))
              (error "Invalid type for ssbo argument:~%Required:~a~%Recieved:~a~%"
                     ',type-spec (ssbo-data-type ,arg-name))))))))
