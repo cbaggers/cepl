@@ -1,5 +1,6 @@
 (defmacro profile-all-cepl ()
-  (let ((packages '(:cepl-utils
+  (let ((packages '(:cl
+                    :cepl-utils
                     :cepl.errors
                     :cepl.host
                     :cepl.lifecycle
@@ -10,7 +11,7 @@
                     :cepl.types
                     :cepl.types.predefined
                     :cepl.internals
-                    :cepl.render-state
+                    ;; :cepl.render-state
                     :cepl.context
                     :cepl.viewports
                     :cepl.image-formats
@@ -40,7 +41,8 @@
                 :collect s))))))
 
 (defmacro unprofile-all-cepl ()
-  (let ((packages '(:cepl-utils
+  (let ((packages '(:cl
+                    :cepl-utils
                     :cepl.errors
                     :cepl.host
                     :cepl.lifecycle
@@ -51,7 +53,7 @@
                     :cepl.types
                     :cepl.types.predefined
                     :cepl.internals
-                    :cepl.render-state
+                    ;; :cepl.render-state
                     :cepl.context
                     :cepl.viewports
                     :cepl.image-formats
