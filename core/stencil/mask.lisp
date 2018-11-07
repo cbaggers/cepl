@@ -65,7 +65,7 @@
 (defn %apply-stencil-mask ((face (signed-byte 32))
                            (mask stencil-mask)
                            (cepl-context cepl-context))
-    (values)
+    stencil-mask
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
   (%with-cepl-context-slots (current-stencil-mask-front
@@ -85,4 +85,4 @@
       (t (setf current-stencil-mask-front mask)
          (setf current-stencil-mask-back mask)
          (gl:stencil-mask-separate face mask))))
-  (values))
+  mask)
