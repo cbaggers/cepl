@@ -61,9 +61,9 @@
   (labels ((get-lisp-type (f-type)
              (case f-type
                (bool 'boolean) ;;{TODO} why not :bool?
-               (:int 'integer)
-               (:uint 'integer)
-               (:double 'float)
+               (:int '(signed-byte 32))
+               (:uint '(unsigned-byte 32))
+               (:double 'double-float)
                (:int8 '(signed-byte 8))
                (:uint8 '(unsigned-byte 8))
                (:float 'single-float)
