@@ -4,9 +4,7 @@ SLIME, by default, creates a bunch of threads to help with its internal operatio
 
 Luckily `slime` can be run with different communication `styles`, including a single threaded mode.
 
-Create a `~/.swank.lisp` file (if you dont already have one) and add the following code:
-
-By default this is a little fiddly from Emacs, so if you add the following to your `.emacs` file:
+By default this can be a little fiddly from Emacs, so the easier way is to create a `~/.swank.lisp` file (if you dont already have one) and add the following code:
 
 ```
 (setf swank:*communication-style* nil)
