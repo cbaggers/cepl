@@ -2,6 +2,14 @@
 
 ;;----------------------------------------------------------------------
 
+(defvar *anisotrophy-available* t)
+
+(defun+ check-anisotrophy-feature ()
+  (unless (has-feature "GL_EXT_texture_filter_anisotropic")
+    (setf *anisotrophy-available* nil)))
+
+;;----------------------------------------------------------------------
+
 (defun+ sampler-texture (sampler)
   (%sampler-texture sampler))
 
