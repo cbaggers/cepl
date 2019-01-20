@@ -420,6 +420,7 @@
            :%sampler-wrap
            :%sampler-expects-depth
            :%sampler-compare
+           :%sampler-anisotropy
 
            :sampler-id-box
            :sampler-shared-p
@@ -1090,6 +1091,7 @@
            :set-minify-filter
            :wrap
            :compare
+           :anisotropy
            :free-sampler
            :with-temp-sampler))
 

@@ -135,14 +135,15 @@
 (defun+ sample (texture &key (lod-bias 0.0) (min-lod -1000.0) (max-lod 1000.0)
                          (minify-filter :linear-mipmap-linear)
                          (magnify-filter :linear)
-                         (wrap #(:repeat :repeat :repeat)) (compare :none))
+                         (wrap #(:repeat :repeat :repeat)) (compare :none)
+                         (anisotropy 1f0))
   (unless (and texture (typep texture 'texture))
     (error
      "CEPL: Attempted to sample ~s but it is only legal to sample textures."
      texture))
   (cepl.context::if-gl-context
    (make-sampler-now %pre% lod-bias min-lod max-lod minify-filter
-                     magnify-filter wrap compare)
+                     magnify-filter wrap compare anisotropy)
    (make-uninitialized-sampler texture)
    (list texture)))
 
@@ -209,7 +210,7 @@
 
 
 (defun+ make-sampler-now (sampler-obj lod-bias min-lod max-lod minify-filter
-                         magnify-filter wrap compare)
+                         magnify-filter wrap compare anisotropy)
   (let* ((texture (%sampler-texture sampler-obj))
          (sampler-type (cepl.samplers::calc-sampler-type
                         (texture-type texture)
@@ -227,7 +228,12 @@
     (%set-wrap sampler-obj (if (keywordp wrap)
                                (vector wrap wrap wrap)
                                wrap))
-    (%set-compare sampler-obj compare))
+    (%set-compare sampler-obj compare)
+    (when (and anisotropy (> anisotropy 1f0))
+      ;; from the spec:
+      ;; 'Any value greater than 1.0f counts as a use of anisotropic filtering'
+      ;; 1f0 is the default in the sampler
+      (%set-anisotrophy sampler-obj (coerce anisotropy 'single-float))))
   sampler-obj)
 
 (defmethod print-object ((object sampler) stream)
@@ -326,6 +332,15 @@
   (unless (eq (compare sampler) value)
     (let ((sampler (note-change sampler)))
       (%set-compare sampler value)))
+  value)
+
+(defn anisotropy ((sampler sampler)) single-float
+  (%sampler-anisotropy sampler))
+(defn (setf anisotropy) ((value single-float) (sampler sampler))
+    single-float
+  (unless (eql (%sampler-anisotropy sampler) value)
+    (let ((sampler (note-change sampler)))
+      (%set-anisotrophy sampler value)))
   value)
 
 ;;----------------------------------------------------------------------
@@ -434,6 +449,13 @@
       (%gl:sampler-parameter-i
        (%sampler-id sampler) :texture-compare-mode
        (gl-enum :none)))
+  sampler)
+
+(defn %set-anisotrophy ((sampler sampler) (value single-float))
+    sampler
+  (%gl::sampler-parameter-f (%cepl.types::%sampler-id sampler)
+                            :texture-max-anisotropy-ext value)
+  (setf (%sampler-anisotropy sampler) value)
   sampler)
 
 ;;----------------------------------------------------------------------

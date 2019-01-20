@@ -10,13 +10,13 @@ texture).
 They are created by calling `sample` on a texture. You can then modify the
 various parameters and the pass the sampler to a pipeline as a uniform.
 
-Sampling Parameters cover four main aspects of how the values are read:
+Sampling Parameters cover five main aspects of how the values are read:
 
 - Wrapping
 - Filtering
 - LOD
 - Comparison
-
+- Anisotrophy
 
 We will dive into these topics below.
 
@@ -235,6 +235,35 @@ Where ref is the reference value given to the texture lookup function by
 GLSL, and texture is the value fetched from the texture. So :LESS will be
 true if the reference value is strictly less than the value pulled from the
 texture.
+
+**-- Anisotrophy --*
+
+The GL spec says the following
+
+> Anisotropic filtering is an advanced filtering technique that takes
+> multiple samples, blending the results together. Exactly how this is
+> done is implementation-dependent, but control over the feature is
+> specific: the user provides a maximum number of samples that can be
+> taken of the texture during any one texture fetch. Note that this is
+> the 'maximum' number of samples; a particular texture fetch may take
+> fewer samples. Hardware generally attempts to determine the best
+> number of samples to take, clamped to the user-provided maximum.
+
+To enable anisotropic filtering on creation of a sampler you can use
+the `:anisotropy` keyword argument to the `sample` function. The default value
+is 1f0.
+
+To set the value after creation you can use the following:
+
+    (setf (anisotrophy sampler) new-value)
+
+Where 'new-value' must be a `single-float`
+
+To get the current anisotropic filtering setting of a sampler simply pass it to
+the `anisotrophy` function.
+
+In all of the above cases a value of 1f0 means no anisotropic filtering and any
+value higher than 1f0 counts as a use of anisotropic filtering.
 ")
 
   (defun sample
@@ -563,6 +592,30 @@ example:
     (setf (wrap texture-or-sampler) :clamp-to-edge)
 
 
+")
+
+    (defun anisotrophy
+        "
+The GL spec says the following
+
+> Anisotropic filtering is an advanced filtering technique that takes
+> multiple samples, blending the results together. Exactly how this is
+> done is implementation-dependent, but control over the feature is
+> specific: the user provides a maximum number of samples that can be
+> taken of the texture during any one texture fetch. Note that this is
+> the 'maximum' number of samples; a particular texture fetch may take
+> fewer samples. Hardware generally attempts to determine the best
+> number of samples to take, clamped to the user-provided maximum.
+
+This function lets you get and set the anisotropic filtering value on the
+sampler.
+
+A value of 1f0 means no anisotropic filtering and any value higher than 1f0
+counts as a use of anisotropic filtering.
+
+The anisotropic filtering setting can also be set during creation of a sampler
+you can use the `:anisotropy` keyword argument to the `sample` function.
+The default value is 1f0.
 ")
 
     (defun sampler-p
