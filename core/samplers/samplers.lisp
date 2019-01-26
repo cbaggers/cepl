@@ -2,11 +2,11 @@
 
 ;;----------------------------------------------------------------------
 
-(defvar *anisotrophy-available* t)
+(defvar *anisotropy-available* t)
 
-(defun+ check-anisotrophy-feature ()
+(defun+ check-anisotropy-feature ()
   (unless (has-feature "GL_EXT_texture_filter_anisotropic")
-    (setf *anisotrophy-available* nil)))
+    (setf *anisotropy-available* nil)))
 
 ;;----------------------------------------------------------------------
 
@@ -241,7 +241,7 @@
       ;; from the spec:
       ;; 'Any value greater than 1.0f counts as a use of anisotropic filtering'
       ;; 1f0 is the default in the sampler
-      (%set-anisotrophy sampler-obj (coerce anisotropy 'single-float))))
+      (%set-anisotropy sampler-obj (coerce anisotropy 'single-float))))
   sampler-obj)
 
 (defmethod print-object ((object sampler) stream)
@@ -348,7 +348,7 @@
     single-float
   (unless (eql (%sampler-anisotropy sampler) value)
     (let ((sampler (note-change sampler)))
-      (%set-anisotrophy sampler value)))
+      (%set-anisotropy sampler value)))
   value)
 
 ;;----------------------------------------------------------------------
@@ -459,7 +459,7 @@
        (gl-enum :none)))
   sampler)
 
-(defn %set-anisotrophy ((sampler sampler) (value single-float))
+(defn %set-anisotropy ((sampler sampler) (value single-float))
     sampler
   (%gl::sampler-parameter-f (%cepl.types::%sampler-id sampler)
                             :texture-max-anisotropy-ext value)

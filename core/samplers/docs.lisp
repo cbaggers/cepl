@@ -16,7 +16,7 @@ Sampling Parameters cover five main aspects of how the values are read:
 - Filtering
 - LOD
 - Comparison
-- Anisotrophy
+- Anisotropy
 
 We will dive into these topics below.
 
@@ -236,7 +236,7 @@ GLSL, and texture is the value fetched from the texture. So :LESS will be
 true if the reference value is strictly less than the value pulled from the
 texture.
 
-**-- Anisotrophy --*
+**-- Anisotropy --*
 
 The GL spec says the following
 
@@ -255,12 +255,12 @@ is 1f0.
 
 To set the value after creation you can use the following:
 
-    (setf (anisotrophy sampler) new-value)
+    (setf (anisotropy sampler) new-value)
 
 Where 'new-value' must be a `single-float`
 
 To get the current anisotropic filtering setting of a sampler simply pass it to
-the `anisotrophy` function.
+the `anisotropy` function.
 
 In all of the above cases a value of 1f0 means no anisotropic filtering and any
 value higher than 1f0 counts as a use of anisotropic filtering.
@@ -594,7 +594,7 @@ example:
 
 ")
 
-    (defun anisotrophy
+    (defun anisotropy
         "
 The GL spec says the following
 

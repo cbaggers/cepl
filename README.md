@@ -92,7 +92,7 @@ If you are having issues getting the C libraries to load and just need to rule o
 This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
 
 ### 2019-01-20
-- Return from work crunch to add anisotrophy support to samplers :)
+- Return from work crunch to add anisotropy support to samplers :)
 
 ### 2018-09-29
 - Added support for MultiDrawIndirect using `multi-draw-g`
