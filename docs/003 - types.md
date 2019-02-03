@@ -43,13 +43,13 @@ So without further ado, lets look at each type, the size in bytes, and the lisp 
 | :mat3       | 36    | :float         | (simple-array single-float (9)) |
 | :mat4       | 64    | :float         | (simple-array single-float (16)) |
 
-To be 100% accurate I have to say, that for all the types with `*` at the end, the type returned is actually implementation specific. But you get the idea :)
+To be 100% accurate, I have to say that for all the types with `*` at the end, the type returned is actually implementation specific. But you get the idea :)
 
 See the [CFFI documentation for details](https://common-lisp.net/project/cffi/manual/cffi-manual.html#Built_002dIn-Types)
 
 ### Supported CFFI types
 
-Of course we also support some of the CFFI types. For completeness here is a list:
+Of course we also support some of the CFFI types. For completeness, here is a list:
 
 |                                        |
 |:---------------------------------------|
@@ -66,8 +66,8 @@ Of course we also support some of the CFFI types. For completeness here is a lis
 
 ### No limits
 
-Of course, if this was all we could use, it would be a bit limiting. Luckily, we can have arrays of this data as well as user defined structs (which is what we will look at in the next chapter).
+Of course, if this were all we could use, it would be a bit limiting. Luckily, we can have arrays of this data as well as user defined structs (which is what we will look at in the next chapter).
 
 ### p.s
 
-For the sake of brevity we will refer to *all the above types* PLUS *all cepl structs* PLUS *all cepl arrays of these types* using the phrase 'CEPL-compatible types'
+For the sake of brevity we will refer to *all the above types* PLUS *all cepl structs* PLUS *all cepl arrays of these types* using the phrase 'CEPL-compatible types'.
