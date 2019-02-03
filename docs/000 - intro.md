@@ -26,4 +26,4 @@ The strategy, therefore, is to always have a codepath that is optimized as hard 
 
 Any commonly used features of modern OpenGL that are either impossible or prohibitively slow in CEPL are likely to be considered a bug.
 
-Another goal is to document all unsupported features in [wont-support.md](./wont-support.md) along with the justification for not supporting it. We can't guarentee that the reason will be satisfying, but it should be in keeping with the project.
+Another goal is to document all unsupported features in [wont-support.md](./wont-support.md) along with the justifications for not supporting them. We can't guarentee that the reason will be satisfying, but it should be in keeping with the project.
