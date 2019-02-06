@@ -282,7 +282,7 @@
         ;; {TODO} this is ugly, find a better way
         (funcall 'cepl.samplers::sampler-on-context)
         (funcall 'cepl.textures::check-immutable-feature)
-        (funcall 'cepl.samplers::check-anisotrophy-feature)
+        (funcall 'cepl.samplers::check-anisotropy-feature)
         ;;
         ;; Set the default
         (%set-default-fbo-and-viewport surface cepl-context)
