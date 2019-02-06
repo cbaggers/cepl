@@ -1130,6 +1130,7 @@
            :make-fbo
            :check-framebuffer-status
            :with-fbo-bound
+           :default-fbo
            :clear
            :clear-fbo
            :clear-attachment
