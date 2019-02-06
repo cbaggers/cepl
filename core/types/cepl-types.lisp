@@ -171,7 +171,8 @@
   (magnify-filter :linear :type keyword)
   (wrap #(:repeat :repeat :repeat) :type vector)
   (expects-depth nil :type boolean)
-  (compare nil :type symbol))
+  (compare nil :type symbol)
+  (anisotropy 1f0 :type single-float))
 
 (defn-inline %sampler-id ((sampler sampler)) (signed-byte 32)
   (declare (profile t))
