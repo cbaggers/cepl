@@ -269,9 +269,9 @@
                         (%stencil-params-mask current)))
           (gl:stencil-func-separate
            face
-           (stencil-params-test params)
-           (stencil-params-value params)
-           (stencil-params-mask params)))
+           (%stencil-params-test params)
+           (%stencil-params-value params)
+           (%stencil-params-mask params)))
         (unless (or (/= (%stencil-params-on-stencil-test-fail params)
                         (%stencil-params-on-stencil-test-fail current))
                     (/= (%stencil-params-on-stencil-pass-depth-test-fail
