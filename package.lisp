@@ -268,7 +268,7 @@
 
 (uiop:define-package :%cepl.types
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :split-sequence :named-readtables
+          :named-readtables
           :cepl.documentation-functions
           :cepl.errors :cepl.build)
   (:import-from :cepl-utils :+gl-enum-size+)
@@ -611,12 +611,12 @@
 
 (uiop:define-package :cepl.types.foreign
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :split-sequence :named-readtables
+          :named-readtables
           :cepl.errors :%cepl.types :cepl.memory :cepl.build))
 
 (uiop:define-package :cepl.types
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :split-sequence :named-readtables
+          :named-readtables
           :cepl.errors :%cepl.types :cepl.memory :cepl.build)
   (:export :defstruct-g
            :lisp-type->pixel-format
@@ -636,7 +636,7 @@
 
 (uiop:define-package :cepl.types.predefined
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :split-sequence :named-readtables :cepl.types
+          :named-readtables :cepl.types
           :cepl.errors :%cepl.types :cepl.memory :cepl.build)
   (:export :g-pc
            :g-pn
@@ -698,7 +698,7 @@
 
 (uiop:define-package :cepl.internals
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :%cepl.types :split-sequence
+          :cepl.types :%cepl.types
           :named-readtables :cepl.errors :cepl.measurements
           :cepl.build)
   (:export :1d-p
@@ -728,7 +728,7 @@
 
 (uiop:define-package :cepl.context
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.memory :cepl.types :%cepl.types :split-sequence
+          :cepl.memory :cepl.types :%cepl.types
           :named-readtables :cepl.errors :cepl.internals
           :cepl.build)
   (:export :gl-context
@@ -782,7 +782,7 @@
 
 (uiop:define-package :cepl.viewports
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :%cepl.types :split-sequence :cepl.measurements
+          :cepl.types :%cepl.types  :cepl.measurements
           :named-readtables :cepl.errors :cepl.internals :cepl.context
           :cepl.build)
   (:import-from :cepl.context :%with-cepl-context-slots)
@@ -844,7 +844,7 @@
 
 (uiop:define-package :cepl.c-arrays
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :%cepl.types :split-sequence
+          :cepl.types :%cepl.types
           :named-readtables :cepl.errors :cepl.internals :cepl.image-formats
           :cepl.pixel-formats :cepl.memory :cepl.measurements
           :cepl.build)
@@ -877,7 +877,7 @@
 
 (uiop:define-package :cepl.gpu-buffers
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.memory :cepl.build)
   (:export :gpu-buffer
@@ -896,7 +896,7 @@
 
 (uiop:define-package :cepl.gpu-arrays.buffer-backed
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.errors :%cepl.types :cepl.internals :cepl.image-formats
           :cepl.c-arrays :cepl.gpu-buffers :cepl.memory :cepl.measurements
           :cepl.build)
@@ -916,7 +916,7 @@
 
 (uiop:define-package :cepl.vaos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :%cepl.types :split-sequence :cepl.context
+          :cepl.types :%cepl.types  :cepl.context
           :named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
           :cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed
           :cepl.build)
@@ -928,7 +928,7 @@
 
 (uiop:define-package :cepl.streams
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :%cepl.types :split-sequence
+          :cepl.types :%cepl.types
           :named-readtables :cepl.errors :cepl.c-arrays :cepl.internals
           :cepl.gpu-buffers :cepl.gpu-arrays.buffer-backed :cepl.vaos
           :cepl.measurements :cepl.memory :cepl.build)
@@ -950,7 +950,7 @@
 
 (uiop:define-package :cepl.ubos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :%cepl.types :split-sequence :cepl.context
+          :cepl.types :%cepl.types  :cepl.context
           :named-readtables :cepl.errors :cepl.c-arrays :cepl.memory
           :cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers
           :cepl.build)
@@ -965,7 +965,7 @@
 
 (uiop:define-package :cepl.ssbos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :%cepl.types :split-sequence :cepl.context
+          :cepl.types :%cepl.types  :cepl.context
           :named-readtables :cepl.errors :cepl.c-arrays :cepl.memory
           :cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers
           :cepl.build)
@@ -980,7 +980,7 @@
 
 (uiop:define-package :cepl.textures
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.pixel-formats
           :cepl.image-formats :cepl.gpu-buffers :cepl.measurements
@@ -1017,7 +1017,7 @@
 
 (uiop:define-package :cepl.gpu-arrays.texture-backed
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables :cepl.errors
+          :cepl.types  :named-readtables :cepl.errors
           :cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
           :cepl.textures :%cepl.types :cepl.memory :cepl.measurements
           :cepl.build)
@@ -1030,7 +1030,7 @@
 (uiop:define-package :cepl.gpu-arrays
     ;; a place to put things that cross both kinds of gpu-array
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables :cepl.errors
+          :cepl.types  :named-readtables :cepl.errors
           :cepl.internals :cepl.image-formats :cepl.c-arrays :cepl.gpu-buffers
           :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays.texture-backed
           :cepl.textures :%cepl.types :cepl.measurements :cepl.memory
@@ -1063,7 +1063,7 @@
 
 (uiop:define-package :cepl.samplers
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays
           :cepl.internals :%cepl.types :cepl.memory
           :cepl.build)
@@ -1095,7 +1095,7 @@
 
 (uiop:define-package :cepl.render-buffers
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.image-formats :cepl.textures
           :cepl.viewports :cepl.measurements :cepl.memory
@@ -1111,7 +1111,7 @@
 
 (uiop:define-package :cepl.fbos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.image-formats :cepl.textures
           :cepl.viewports :cepl.measurements :cepl.memory
@@ -1142,7 +1142,7 @@
 
 (uiop:define-package :cepl.blending
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.build)
   (:import-from :cepl.context :%with-cepl-context-slots
@@ -1162,7 +1162,7 @@
 
 (uiop:define-package :cepl.stencil
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.build)
   (:import-from :cepl.context :%with-cepl-context-slots)
@@ -1181,7 +1181,7 @@
 
 (uiop:define-package :cepl.scissor
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.build)
   (:import-from :cepl.context :%with-cepl-context-slots :define-context-func)
@@ -1189,7 +1189,7 @@
 
 (uiop:define-package :cepl.transform-feedback
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.build
           :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays)
@@ -1199,7 +1199,7 @@
 
 (uiop:define-package :cepl.sync
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.build
           :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays
@@ -1210,7 +1210,7 @@
 
 (uiop:define-package :cepl.queries
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.build
           :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays)
@@ -1238,7 +1238,7 @@
 
 (uiop:define-package :cepl.compute
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
-          :cepl.types :split-sequence :named-readtables
+          :cepl.types  :named-readtables
           :cepl.context :cepl.errors :cepl.c-arrays :%cepl.types
           :cepl.internals :cepl.fbos :cepl.build
           :cepl.gpu-arrays.buffer-backed :cepl.gpu-arrays
@@ -1253,7 +1253,7 @@
            :compute-space-as-uvec3))
 
 (uiop:define-package :cepl.pipelines
-    (:use :cl :glsl-symbols :cffi :varjo :split-sequence
+    (:use :cl :glsl-symbols :cffi :varjo
           :named-readtables :cepl-utils :cepl.errors :%cepl.types :cepl.types
           :cepl.internals :cepl.viewports :cepl.context
           :cepl.image-formats :cepl.pixel-formats :cepl.c-arrays

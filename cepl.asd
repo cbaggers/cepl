@@ -19,7 +19,8 @@
                #:varjo
                #:bordeaux-threads
                #:cepl.build
-               #:alexandria)
+               #:alexandria
+               #:split-sequence)
   :components ((:file "package")
                (:file "host/api-api")
                (:file "host/api-generics")
