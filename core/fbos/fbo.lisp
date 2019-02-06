@@ -1330,3 +1330,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   object)
 
 ;;----------------------------------------------------------------------
+
+(defn default-fbo (&optional (cepl-context cepl-context (cepl-context)))
+    fbo
+  (%with-cepl-context-slots (default-framebuffer) cepl-context
+    default-framebuffer))
