@@ -95,4 +95,4 @@ This time the name is inside a list along with one or more options. This is much
 - nil means that you will not get a `populate` function for this type.
 
 
-Some of the above options are redundant in combination with others. For example, the `push-g` method uses `#'populate` behind the scenes, so with `populate` disabled `#'push-g` is created this type. CEPL needs to do a better job at communicating these conflicts to the user.
+Some of the above options are redundant in combination with others. For example, the `push-g` method uses `#'populate` behind the scenes, so with `populate` disabled, no `#'push-g` is created for this type. CEPL needs to do a better job at communicating these conflicts to the user.
