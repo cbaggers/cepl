@@ -153,7 +153,7 @@ So two big patterns in GPU data usage are how we read vertex data and how we rea
 OpenGL provides textures (which we will get into later) and 'Buffer Objects' which we will refer to as `buffers` from now on.
 `buffers` allow you to allocate a block of `buffer memory` and then upload data there. There is no real limit of what you can stick up there, but there are *effective limits*, as there are only certain things you can *do* with the data once it's there.
 
-So while we could just expose these buffers (and we do, see chapter [007]("./007 - Buffers.md")) in CEPL, we choose to also expose objects that map more directly to what you do with this data.  `gpu-arrays` are one case of this. All 3d models have their vertex data stored sequentially in a buffer object; this data has a length and a definite layout of the 'elements'. This is pretty much the definition for a kind of array.
+So while we could just expose these buffers (and we do, see chapter [007](./007 - Buffers.md)) in CEPL, we choose to also expose objects that map more directly to what you do with this data.  `gpu-arrays` are one case of this. All 3d models have their vertex data stored sequentially in a buffer object; this data has a length and a definite layout of the 'elements'. This is pretty much the definition for a kind of array.
 
 As we will soon see, the `gpu-array` abstraction is also useful with textures, so we need a way to show you whether this `gpu-array` is `backed-by` a `buffer memory` or `texture memory`.
 
