@@ -21,7 +21,7 @@ So a layout for a buffer containing 3 `:floats` and 140 instances of our `our-da
 `((:float 3 0) ('our-data 140 12))
 ```
 
-With this knowledge we can now start working with buffers:
+With this knowledge, we can now start working with buffers:
 
 ### Making Buffers
 ```lisp
