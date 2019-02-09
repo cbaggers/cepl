@@ -46,7 +46,7 @@ The reason to use `access-style` hint is that it enables the OpenGL implementati
 `Access-Style` is a compound of two words joined with an underscore, :
 
 - prefix, the frequency of access (modification and usage)
-- suffix the nature of that access.
+- suffix, the nature of that access.
 
 The frequency of access may be one of these:
 
@@ -108,7 +108,7 @@ Imagine you have a model of a goat with 3000 vertices. Each vertex has a positio
 
 This would work, but it means that when the GPU renders the first vertex, it has to jump to 3 places in memory to get the data. That's gonna hurt performance.
 
-Instead, if we make an struct like this:
+Instead, if we make a struct like this:
 ```lisp
  (defstruct-g goat-vertex
    (position :vec3)
@@ -129,7 +129,7 @@ This really helps the gpu, and CEPL makes it easy; do it :)
 
 ### subseq-g
 
-`#'subseq-g` is a just like `#'subseq-c`: it takes a `gpu-array` and gives you a new `gpu-array` which shares a subset of the GPU memory of the original. Like with `#'subseq-c` **the data is shared** so you have to be super careful not to mangle or free the data.
+`#'subseq-g` is a just like `#'subseq-c`: it takes a `gpu-array` and gives you a new `gpu-array` which shares a subset of the GPU memory of the original. Like with `#'subseq-c`, **the data is shared** so you have to be super careful not to mangle or free the data.
 
 
 ### What is this 'Backed-By' stuff?
@@ -151,7 +151,7 @@ Well, what you are seeing is information about what kind of GPU memory your data
 So two big patterns in GPU data usage are how we read vertex data and how we read texture data. Having two different pools with different access styles allows GPU designers to optimize the hell out of it. Ι don't want to get too deep so let's get back to `:backed-by`.
 
 OpenGL provides textures (which we will get into later) and 'Buffer Objects' which we will refer to as `buffers` from now on.
-`buffers` allow you to allocate a block of `buffer memory` and then upload data there. There is no real limit of what you can stick up there, but there are *effective limits* as there only certain things you can *do* with the data once it's there.
+`buffers` allow you to allocate a block of `buffer memory` and then upload data there. There is no real limit of what you can stick up there, but there are *effective limits*, as there are only certain things you can *do* with the data once it's there.
 
 So while we could just expose these buffers (and we do, see chapter [007]("./007 - Buffers.md")) in CEPL, we choose to also expose objects that map more directly to what you do with this data.  `gpu-arrays` are one case of this. All 3d models have their vertex data stored sequentially in a buffer object; this data has a length and a definite layout of the 'elements'. This is pretty much the definition for a kind of array.
 
