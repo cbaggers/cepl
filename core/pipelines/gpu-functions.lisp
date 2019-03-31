@@ -86,9 +86,10 @@
        (varjo:add-external-function ',name ',in-args ',uniforms ',body
                                     ',valid-glsl-versions);;[1]
        ,(unless equiv (make-stand-in-lisp-func spec));;[3]
-       (%test-&-process-spec ,spec);;[2]
+       (%test-&-process-spec ,(dump-gpu-func-spec-to-init-form spec));;[2]
        ,(when changedp
-          `(%recompile-gpu-function-and-pipelines ,spec-key));;[4]
+          `(%recompile-gpu-function-and-pipelines
+            ,(dump-func-key-init-form spec-key)));;[4]
        (update-specs-with-missing-dependencies);;[5]
        ',name)))
 

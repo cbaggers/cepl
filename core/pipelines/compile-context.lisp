@@ -6,10 +6,10 @@
   (stage (error "BUG: context without stage"))
   (static-p (error "BUG: context without 'static' boolean")))
 
-(defmethod make-load-form ((ctx compile-context) &optional environment)
-  (declare (ignore environment))
+(defun dump-compile-context-to-init-form (ctx)
   `(make-compile-context
-    :primitive ,(compile-context-primitive ctx)
+    :primitive ,(varjo.internals::dump-primitive-to-instance
+                 (compile-context-primitive ctx))
     :versions ',(compile-context-versions ctx)
     :stage ',(compile-context-stage ctx)
     :static-p ',(compile-context-static-p ctx)))

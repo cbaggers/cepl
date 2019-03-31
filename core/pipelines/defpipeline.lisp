@@ -505,7 +505,10 @@
                                      new-prog-ids
                                      tfb-group-count)
                    (%compile-link-and-upload
-                    ',name ',primitive ,(serialize-stage-pairs stage-pairs))
+                    ',name
+                    ,(varjo.internals::dump-primitive-to-instance
+                      primitive)
+                    ,(serialize-stage-pairs stage-pairs))
                  (declare (ignorable compiled-stages))
 
 
@@ -593,7 +596,8 @@
 (defun+ serialize-stage-pairs (stage-pairs)
   `(pairs-key-to-stage
     (list ,@(loop :for (k . v) :in stage-pairs :collect
-               `(cons ,k ,(spec->func-key v))))))
+                 `(cons ,k ,(dump-func-key-init-form
+                             (spec->func-key v)))))))
 
 (defn-inline handle-transform-feedback
     (ctx draw-mode prog-id tfs-primitive tfs-array-count)

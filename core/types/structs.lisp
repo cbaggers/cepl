@@ -31,14 +31,14 @@
    (layout :initarg :layout :reader s-layout)
    (slots :initarg :slots :reader s-slots)))
 
-(defmethod make-load-form ((obj cepl-struct-definition) &optional environment)
-  (declare (ignore environment))
+(defun dump-cepl-struct-def-init-form (obj)
   (with-slots (name foreign-name layout slots) obj
-    `(make-instance 'cepl-struct-definition
-                    :name ',name
-                    :foreign-name ',foreign-name
-                    :layout ',layout
-                    :slots ',slots)))
+    `(make-instance
+      'cepl-struct-definition
+      :name ',name
+      :foreign-name ',foreign-name
+      :layout ',layout
+      :slots ,(cons 'list (mapcar #'dump-gl-struct-slot-init-form slots)))))
 
 ;;------------------------------------------------------------
 
@@ -58,8 +58,7 @@
    (layout :initarg :layout :reader s-layout)
    (parent-ffi-name :initarg :parent-ffi-name :reader s-parent-ffi-name)))
 
-(defmethod make-load-form ((slot gl-struct-slot) &optional environment)
-  (declare (ignore environment))
+(defun dump-gl-struct-slot-init-form (slot)
   (with-slots (name
                type
                element-type
@@ -192,7 +191,8 @@
         (setf (g-struct-info name) struct-info)
         (assert-layout-consistent struct-info layout-specifier)
         `(progn
-           (setf (g-struct-info ',name) ',struct-info)
+           (setf (g-struct-info ',name)
+                 ,(dump-cepl-struct-def-init-form struct-info))
            (eval-when (:compile-toplevel :load-toplevel :execute)
              ,(make-varjo-struct-def name slots))
            ,@(make-instance-wrapper-def name

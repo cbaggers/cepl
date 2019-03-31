@@ -165,11 +165,11 @@
      (declare (ignorable name in-args uniforms outputs context compiled))
      ,@body))
 
-(defmethod make-load-form ((spec gpu-func-spec) &optional environment)
-  (declare (ignore environment))
+(defun dump-gpu-func-spec-to-init-form (spec)
   (with-gpu-func-spec spec
     `(%make-gpu-func-spec
-      ',name ',in-args ',uniforms ',context ',body
+      ',name ',in-args ',uniforms
+      ,(dump-compile-context-to-init-form context) ',body
       ',shared ',equivalent-inargs ',equivalent-uniforms
       ',actual-uniforms
       ,doc-string ',declarations ',missing-dependencies
@@ -242,8 +242,7 @@
 (defmethod func-key->name ((key func-key))
   (cons (name key) (in-args key)))
 
-(defmethod make-load-form ((key func-key) &optional environment)
-  (declare (ignore environment))
+(defun dump-func-key-init-form (key)
   `(new-func-key ',(name key) ',(in-args key)))
 
 (defun+ new-func-key (name in-args-types)

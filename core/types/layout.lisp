@@ -42,8 +42,7 @@
 (defclass std-430 (gl-layout) ())
 
 
-(defmethod make-load-form ((layout gl-layout) &optional environment)
-  (declare (ignore environment))
+(defun dump-gl-layout-init-form (layout)
   (with-slots (name
                varjo-type
                base-offset
