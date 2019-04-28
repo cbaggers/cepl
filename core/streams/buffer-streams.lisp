@@ -108,17 +108,14 @@
          ;; THIS SEEMS WEIRD BUT IF HAVE INDICES ARRAY THEN
          ;; LENGTH MUST BE LENGTH OF INDICES ARRAY NOT NUMBER
          ;; OF TRIANGLES
+         (per-vert-gpu-arrays (remove-if #'consp gpu-arrays))
          (length (if gpu-arrays
                      length
                      1))
          (length (or length
                      (when index-array (first (dimensions index-array)))
-                     (apply #'min (mapcar #'(lambda (x)
-                                              (let ((x (if (consp x)
-                                                           (car x)
-                                                           x)))
-                                                (first (dimensions x))))
-                                          gpu-arrays)))))
+                     (apply #'min (mapcar #'(lambda (x) (first (dimensions x)))
+                                          per-vert-gpu-arrays)))))
     (assert (and (every #'cons-aware-1d-p gpu-arrays)
                  (if index-array (1d-p index-array) t))
             () "You can only make buffer-streams from 1D arrays")
