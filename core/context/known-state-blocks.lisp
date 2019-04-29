@@ -103,6 +103,7 @@
 ;;----------------------------------------------------------------------
 
 (defn runtime-restore-block-checks ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   ;; I'd like to handle the stuff below but Im not sure how yet
   ;;
   ;; I dont think these 2 can be done:
@@ -118,10 +119,12 @@
   (values))
 
 (defn-inline restore-program ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (cepl.pipelines::force-use-program context 0)
   (values))
 
 (defn restore-stencil ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (cepl.stencil:current-stencil-params :front context)
         (cepl.stencil:current-stencil-params :front context))
 
@@ -136,62 +139,74 @@
 
 ;; vao-binding-id
 (defn-inline restore-vao ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (force-bind-vao (vao-bound context) context)
   (values))
 
 ;; fbo-bindings
 (defn-inline restore-fbo-bindings ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (%set-read-fbo-no-check context (read-fbo-bound context))
   (%set-draw-fbo-no-check context (draw-fbo-bound context))
   (values))
 
 ;; depth-func
 (defn-inline restore-depth-test-function ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (force-depth-test-function (depth-test-function context) context)
   (values))
 
 ;; depth-mask
 (defn-inline restore-depth-mask ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (depth-mask context) (depth-mask context))
   (values))
 
 ;; depth-range
 (defn-inline restore-depth-range ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (depth-range-vec2 context) (depth-range-vec2 context))
   (values))
 
 ;; depth-clamp
 (defn-inline restore-depth-clamp ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (depth-clamp context) (depth-clamp context))
   (values))
 
 ;; cull-face
 (defn-inline restore-cull-face ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (cull-face context) (cull-face context))
   (values))
 
 ;; front-face
 (defn-inline restore-front-face ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (front-face context) (front-face context))
   (values))
 
 ;; clear-color
 (defn-inline restore-clear-color ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (clear-color context) (clear-color context))
   (values))
 
 ;; viewport
 (defn-inline restore-viewport ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (%with-cepl-context-slots (current-viewport)
       context
     (cepl.viewports::%set-current-viewport context current-viewport)
     (values)))
 
 (defn-inline restore-unpack-alignment ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (unpack-alignment t context) (unpack-alignment context))
   (values))
 
 (defn-inline restore-pack-alignment ((context cepl-context)) (values)
+  (declare (speed 3) (safety 1) (debug 1))
   (setf (pack-alignment t context) (pack-alignment context))
   (values))
 
