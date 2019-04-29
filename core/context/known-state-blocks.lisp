@@ -18,16 +18,15 @@
                                         cull-face
                                         front-face
                                         viewport
+                                        pack-alignment
+                                        unpack-alignment
                                         ;;
                                         color-mask-indices
                                         tex-unit-ids
                                         buffer-targets
                                         scissor-viewport-indices
                                         ubo-indices
-                                        ssbo-indices
-                                        ;;
-                                        pack-alignment
-                                        unpack-alignment)
+                                        ssbo-indices)
                                        &body body)
   (assert (member program '(t nil)))
   (assert (member stencil '(t nil)))
