@@ -1293,15 +1293,16 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 (defn-inline clear (&optional (target fbo)) (values)
   (declare (profile t))
-  (if target
-      (clear-fbo target)
-      (%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context)))))
+  (clear-fbo (or target (draw-fbo-bound (cepl-context))))
   (values))
 
-(define-compiler-macro clear (&optional target)
-  (if target
-      `(clear-fbo ,target)
-      `(%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context))))))
+(define-compiler-macro clear (&whole whole &optional target)
+  (if (null target)
+      `(locally
+           (declare (optimize (speed 3) (safety 1) (debug 0)))
+         (%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context))))
+         (values))
+      whole))
 
 ;;--------------------------------------------------------------
 
