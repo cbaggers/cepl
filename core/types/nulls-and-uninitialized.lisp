@@ -46,7 +46,7 @@
 (defun+ make-uninitialized-fbo ()
   (%%make-fbo
    :draw-buffer-map nil
-   :clear-mask -13))
+   :clear-mask #.+unknown-clear-mask+))
 
 (defun+ make-uninitialized-texture (&optional buffer-backed-p)
   (if buffer-backed-p

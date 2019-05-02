@@ -44,6 +44,14 @@
 (deftype stencil-mask ()
   '(unsigned-byte 8))
 
+(defconstant +gl-color-mask-bit-size+
+  #.(* 8 (cffi:foreign-type-size '%gl::clearbuffermask)))
+(defconstant +unknown-clear-mask+
+  #.(1- (expt 2 +gl-color-mask-bit-size+)))
+(deftype clear-buffer-mask ()
+  '(unsigned-byte #.+gl-color-mask-bit-size+))
+
+
 (defun+ indexp (x)
   (typep x 'c-array-index))
 
@@ -573,7 +581,7 @@
    (error "draw-buffer array must be provided when initializing an fbo"))
   (clear-mask (cffi:foreign-bitfield-value
                '%gl::ClearBufferMask '(:color-buffer-bit))
-              :type fixnum)
+              :type clear-buffer-mask)
   (is-default nil :type boolean)
   (attachment-count 0 :type (unsigned-byte 8))
   (blending-params (make-blending-params :mode-rgb :func-add

@@ -18,4 +18,4 @@
            :uninitialized)))
 
 (defmethod initialized-p ((object fbo))
-  (not (= (%fbo-clear-mask object) -13)))
+  (not (= (%fbo-clear-mask object) %cepl.types::+unknown-clear-mask+)))
