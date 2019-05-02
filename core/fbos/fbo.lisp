@@ -79,7 +79,9 @@
                                                             x)))
                                                     (make-att :array x
                                                               :viewport v)))
-                                                color-arrays))))
+                                                color-arrays)))
+    (setf (%fbo-color-arrays-fill-pointer fbo-obj)
+          (length color-arrays)))
   ;;
   (when depth-array
     (setf (%fbo-depth-array fbo-obj)
