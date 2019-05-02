@@ -20,8 +20,11 @@
 
 ;;----------------------------------------------------------------------
 
-(defun+ fbo-color-arrays (fbo)
-  (loop :for i :across (%fbo-color-arrays fbo) :collect (att-array i)))
+(defn fbo-color-arrays ((fbo fbo)) list
+  (loop
+     :with col-arrs := (%fbo-color-arrays fbo)
+     :for i :below (%fbo-color-arrays-fill-pointer fbo)
+     :collect (att-array (aref col-arrs i))))
 
 ;;----------------------------------------------------------------------
 
@@ -31,14 +34,35 @@
 
 ;;----------------------------------------------------------------------
 
-(defun+ ensure-fbo-array-size (fbo desired-size)
+;; {TODO}
+;; Check if there is a higher up the stack where we know what the full
+;; size will be (to save ourselves from multiple reallocations)
+
+(defn ensure-fbo-array-size ((fbo fbo) (desired-size c-array-index))
+    (simple-array att (*))
   (let* ((arr (%fbo-color-arrays fbo))
-         (len (length arr)))
-    (if (< len desired-size)
-        (progn
-          (loop :for i :below (- desired-size len) :do
-             (vector-push-extend (make-att) arr))
-          arr)
+         (fptr (%fbo-color-arrays-fill-pointer fbo)))
+    (if (> desired-size fptr)
+        (if (>= (length arr) desired-size)
+            (progn
+              (loop
+                 :for i :from fptr :below desired-size
+                 :do (setf (aref arr i) (make-att)))
+              (setf (%fbo-color-arrays-fill-pointer fbo) desired-size)
+              arr)
+            (let ((new-array
+                   (make-array
+                    (* 4 (ceiling desired-size 4))
+                    :element-type 'att
+                    :initial-element (symbol-value '%cepl.types::+null-att+))))
+              (loop
+                 :for i :below fptr
+                 :do (setf (aref new-array i) (aref arr i)))
+              (loop
+                 :for i :from fptr :below desired-size
+                 :do (setf (aref new-array i) (make-att)))
+              (setf (%fbo-color-arrays-fill-pointer fbo) desired-size)
+              (setf (%fbo-color-arrays fbo) new-array)))
         arr)))
 
 ;;----------------------------------------------------------------------
@@ -135,10 +159,15 @@
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (let ((fbo default-framebuffer))
       ;; - - -
-      (loop :for a :across (%fbo-color-arrays fbo) :when a :do
-         (setf (viewport-dimensions (att-viewport a)) new-dimensions)
-         (cepl.textures::with-gpu-array-t (att-array a)
-           (setf dimensions new-dimensions)))
+      (loop
+         :with col-arrs := (%fbo-color-arrays fbo)
+         :for i :below (%fbo-color-arrays-fill-pointer fbo)
+         :for a := (aref col-arrs i)
+         :when a
+         :do
+           (setf (viewport-dimensions (att-viewport a)) new-dimensions)
+           (cepl.textures::with-gpu-array-t (att-array a)
+             (setf dimensions new-dimensions)))
       ;; - - -
       (let ((d (%fbo-depth-array fbo)))
         (setf (viewport-dimensions (att-viewport d)) new-dimensions)
@@ -162,7 +191,7 @@
     (:s (att-viewport (%fbo-stencil-array fbo)))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo)))
-       (if (< attachment-name (length arr))
+       (if (< attachment-name (%fbo-color-arrays-fill-pointer fbo))
            (att-viewport (aref arr attachment-name))
            (error "No attachment at ~a" attachment-name))))))
 
@@ -179,7 +208,7 @@
     (:s (att-viewport (%fbo-stencil-array fbo)))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo)))
-       (if (< attachment-name (length arr))
+       (if (< attachment-name (%fbo-color-arrays-fill-pointer fbo))
            (att-viewport (aref arr attachment-name))
            (error "No attachment at ~a" attachment-name))))))
 
@@ -223,14 +252,18 @@
 (defun+ update-draw-buffer-map (fbo)
   (let ((ptr (%fbo-draw-buffer-map fbo))
         (default-fbo (%fbo-is-default fbo)))
-    (loop :for i :from 0 :for att :across (%fbo-color-arrays fbo) :do
-       (let ((arr (att-array att)))
-         (setf (mem-aref ptr '%gl:enum i)
-               (if arr
-                   (if default-fbo
-                       (default-fbo-attachment-enum i)
-                       (color-attachment-enum i))
-                   :none)))))
+    (loop
+       :with col-arrs := (%fbo-color-arrays fbo)
+       :for i :below (%fbo-color-arrays-fill-pointer fbo)
+       :for att := (aref col-arrs i)
+       :do
+         (let ((arr (att-array att)))
+           (setf (mem-aref ptr '%gl:enum i)
+                 (if arr
+                     (if default-fbo
+                         (default-fbo-attachment-enum i)
+                         (color-attachment-enum i))
+                     :none)))))
   fbo)
 
 ;;----------------------------------------------------------------------
@@ -246,9 +279,8 @@
     (:d (setf (att-owned-p (%fbo-depth-array fbo)) value))
     (:s (setf (att-owned-p (%fbo-stencil-array fbo)) value))
     (otherwise
-     (let ((arr (%fbo-color-arrays fbo))
-           (index attachment-name))
-       (ensure-fbo-array-size fbo (1+ index))
+     (let* ((index attachment-name)
+            (arr (ensure-fbo-array-size fbo (1+ index))))
        (setf (att-owned-p (aref arr index)) value)))))
 
 ;;----------------------------------------------------------------------
@@ -280,8 +312,7 @@
                (:d (%fbo-depth-array fbo))
                (:s (error "Cannot specifiy blending params for the stencil attachment"))
                (otherwise
-                (let ((arr (%fbo-color-arrays fbo)))
-                  (ensure-fbo-array-size fbo (1+ attachment-name))
+                (let ((arr (ensure-fbo-array-size fbo (1+ attachment-name))))
                   (aref arr attachment-name))))))
     ;;
     (if (blending-params-p value)
@@ -342,8 +373,7 @@
                (viewport-for-array value))
          (setf (att-array (%fbo-stencil-array fbo)) value)))
       (otherwise
-       (let ((arr (%fbo-color-arrays fbo)))
-         (ensure-fbo-array-size fbo (1+ attachment-name))
+       (let ((arr (ensure-fbo-array-size fbo (1+ attachment-name))))
          (let* ((att (aref arr attachment-name))
                 (current (att-array att)))
            (if value
@@ -426,7 +456,7 @@
 (defun+ %fbo-draw-buffers (fbo)
   (let ((len (if (%fbo-is-default fbo)
                  1
-                 (length (%fbo-color-arrays fbo)))))
+                 (%fbo-color-arrays-fill-pointer fbo))))
     (%gl:draw-buffers len (%fbo-draw-buffer-map fbo))))
 
 ;;--------------------------------------------------------------
@@ -961,9 +991,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
       fbo)))
 
 (defn initialize-regular-fbo ((fbo-obj fbo)) (values)
-  (loop :for a :across (%fbo-color-arrays fbo-obj)
-     :for i :from 0 :do
-     (when a (setf (attachment fbo-obj i) (att-array a))))
+  (loop
+     :with col-arrs := (%fbo-color-arrays fbo-obj)
+     :for i :below (%fbo-color-arrays-fill-pointer fbo-obj)
+     :for a := (aref col-arrs i)
+     :do
+       (when a (setf (attachment fbo-obj i) (att-array a))))
   (when (attachment fbo-obj :d)
     (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
   (when (attachment fbo-obj :s)
@@ -1337,19 +1370,3 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     fbo
   (%with-cepl-context-slots (default-framebuffer) cepl-context
     default-framebuffer))
-
-;; {TODO}
-;; The %fbo-color-arrays is never given to the public or shared with other
-;; objects. This means we dont need the array to be extendable, we can
-;; just replace the array each time (which is what's going on internally
-;; anyway)
-;; I wonder how many other places do this?
-;;
-;; Ok let's look at ensure-fbo-array-size, I think we can remake the array each
-;; time it needs resizing. Check if there is a higher up the stack where we
-;; know what the full size will be (to save ourselves from multiple
-;; reallocations), check if make-fbo knows the number of color arrays and if it
-;; could (in some cases) pass the count to make-uninitialized-fbo, this would
-;; avoid even more cases where ensure-fbo-array-size will take the slow path.
-;; Finally go to %cepl-types and change the type to (simple-array att (*))
-;; With all that we should be able to get rid of the optimization warning ♥

@@ -569,11 +569,10 @@
   ;; Once empty info is set we never remove it, we track emptiness with the
   ;; attachment-count slot
   (empty-params nil :type (or null empty-fbo-params))
+  (color-arrays-fill-pointer 0 :type c-array-index)
   (color-arrays (make-array 0 :element-type 'att
-                            :initial-element (symbol-value '+null-att+)
-                            :adjustable t
-                            :fill-pointer 0)
-                :type (array att (*)))
+                            :initial-element (symbol-value '+null-att+))
+                :type (simple-array att (*)))
   (depth-array (make-att) :type att)
   (stencil-array (make-att) :type att)
   ;;

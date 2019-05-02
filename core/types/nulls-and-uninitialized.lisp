@@ -45,6 +45,9 @@
 
 (defun+ make-uninitialized-fbo ()
   (%%make-fbo
+   :color-arrays (make-array 0
+                             :element-type 'att
+                             :initial-element (symbol-value '+null-att+))
    :draw-buffer-map nil
    :clear-mask #.+unknown-clear-mask+))
 

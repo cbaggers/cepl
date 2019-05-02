@@ -445,6 +445,7 @@
            :%fbo-id
            :%fbo-empty-params
            :%fbo-color-arrays
+           :%fbo-color-arrays-fill-pointer
            :%fbo-depth-array
            :%fbo-stencil-array
            :%fbo-draw-buffer-map
