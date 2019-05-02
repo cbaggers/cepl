@@ -41,6 +41,17 @@
   (surface nil :type t)
   (surfaces nil :type list))
 
+;;
+;; {TODO} I believe that if we store the lengths of adjustable
+;;        arrays we could avoid the use of adjust-array and,
+;;        in doing so, allow them to be simple-arrays which would
+;;        give us a significant perf boost
+;;        One concern is shared-contexts..but actually that will
+;;        already be an issue so we should add locks anyhoo.
+;;        (as the number of threads will be minimal maybe we can
+;;        use one lock for all the arrays :/)
+;;
+
 (defstruct (cepl-context (:constructor %make-cepl-context)
                          (:conc-name %cepl-context-))
   (id (error "Context missing an ID") :type context-id)

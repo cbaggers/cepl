@@ -573,7 +573,7 @@
                             :initial-element (symbol-value '+null-att+)
                             :adjustable t
                             :fill-pointer 0)
-                :type (array att *))
+                :type (array att (*)))
   (depth-array (make-att) :type att)
   (stencil-array (make-att) :type att)
   ;;

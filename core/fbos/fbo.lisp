@@ -1337,3 +1337,19 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     fbo
   (%with-cepl-context-slots (default-framebuffer) cepl-context
     default-framebuffer))
+
+;; {TODO}
+;; The %fbo-color-arrays is never given to the public or shared with other
+;; objects. This means we dont need the array to be extendable, we can
+;; just replace the array each time (which is what's going on internally
+;; anyway)
+;; I wonder how many other places do this?
+;;
+;; Ok let's look at ensure-fbo-array-size, I think we can remake the array each
+;; time it needs resizing. Check if there is a higher up the stack where we
+;; know what the full size will be (to save ourselves from multiple
+;; reallocations), check if make-fbo knows the number of color arrays and if it
+;; could (in some cases) pass the count to make-uninitialized-fbo, this would
+;; avoid even more cases where ensure-fbo-array-size will take the slow path.
+;; Finally go to %cepl-types and change the type to (simple-array att (*))
+;; With all that we should be able to get rid of the optimization warning ♥
