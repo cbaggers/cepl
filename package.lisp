@@ -903,6 +903,7 @@
           :cepl.c-arrays :cepl.gpu-buffers :cepl.memory :cepl.measurements
           :cepl.build)
   (:export :gpu-array-buffer
+           :gpu-array-buffer-id
            :gpu-array-format
            :gpu-array-access-style
            :free-gpu-array
