@@ -28,6 +28,11 @@
            (profile t))
   (%cepl.types::gpu-array-bb-buffer gpu-array))
 
+(defn-inline gpu-array-buffer-id ((gpu-array gpu-array-bb)) gl-id
+  (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
+           (profile t))
+  (gpu-buffer-id (%cepl.types::gpu-array-bb-buffer gpu-array)))
+
 (defn-inline gpu-array-access-style ((gpu-array gpu-array-bb)) symbol
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (profile t))
