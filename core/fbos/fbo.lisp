@@ -960,14 +960,15 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             (empty-fbo-params-fixed-sample-locations-p info))
       fbo)))
 
-(defun+ initialize-regular-fbo (fbo-obj)
+(defn initialize-regular-fbo ((fbo-obj fbo)) (values)
   (loop :for a :across (%fbo-color-arrays fbo-obj)
      :for i :from 0 :do
      (when a (setf (attachment fbo-obj i) (att-array a))))
   (when (attachment fbo-obj :d)
     (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
   (when (attachment fbo-obj :s)
-    (setf (attachment fbo-obj :s) (attachment fbo-obj :s))))
+    (setf (attachment fbo-obj :s) (attachment fbo-obj :s)))
+  (values))
 
 ;;----------------------------------------------------------------------
 
