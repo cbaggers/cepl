@@ -229,15 +229,20 @@
    (update-draw-buffer-map
     fbo)))
 
-(defun+ update-clear-mask (fbo)
+(defn update-clear-mask ((fbo fbo)) fbo
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
   (setf (%fbo-clear-mask fbo)
-        (cffi:foreign-bitfield-value
-         '%gl::ClearBufferMask
-         `(:color-buffer-bit
-           ,@(when (att-array (%fbo-depth-array fbo))
-               '(:depth-buffer-bit))
-           ,@(when (att-array (%fbo-stencil-array fbo))
-               '(:stencil-buffer-bit)))))
+        (logior
+         #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                        '(:color-buffer-bit))
+         (if (%fbo-depth-array fbo)
+             #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                            '(:depth-buffer-bit))
+             0)
+         (if (att-array (%fbo-stencil-array fbo))
+             #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                            '(:stencil-buffer-bit))
+             0)))
   fbo)
 
 (defn-inline default-fbo-attachment-enum ((attachment-num (integer 0 3)))
