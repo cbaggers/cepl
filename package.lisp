@@ -1138,6 +1138,7 @@
            :clear
            :clear-fbo
            :clear-attachment
+           :clear-attachments
            :empty-fbo-params
            :empty-fbo-params-dimensions
            :empty-fbo-params-layer-count
