@@ -77,6 +77,8 @@
   (default-framebuffer nil :type (or null fbo))
   (read-fbo-binding nil :type (or null fbo))
   (draw-fbo-binding nil :type (or null fbo))
+  (current-draw-buffers-ptr (cffi:null-pointer) :type cffi:foreign-pointer)
+  (current-draw-buffers-len 0 :type c-array-index)
   (current-stencil-params-front nil :type (or null stencil-params))
   (current-stencil-params-back nil :type (or null stencil-params))
   (current-stencil-mask-front #xFF :type stencil-mask)
@@ -152,7 +154,8 @@
            clear-color gl-version-float
            array-of-ubo-binding-ranges array-of-ssbo-binding-ranges
            pack-alignment unpack-alignment
-           max-draw-buffer-count instance-count)))
+           max-draw-buffer-count instance-count
+           current-draw-buffers-ptr current-draw-buffers-len)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))
           (accessors (loop :for slot :in slots :collect
