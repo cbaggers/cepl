@@ -149,7 +149,6 @@
                                     (list (gen-array dimensions))))
               :depth-array (when depth (gen-array dimensions)))
              :id 0))))
-      (update-clear-mask result)
       (%with-cepl-context-slots (default-framebuffer) (cepl-context)
         (setf default-framebuffer result))
       result)))
