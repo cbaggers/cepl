@@ -828,6 +828,81 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                        old-draw-buffer-ptr
                        old-draw-buffer-len)))))))))
 
+(defmacro %with-draw-buffers (draw-buffers &body body)
+  (labels ((draw-buffer-pattern-p (draw-buffers)
+             (and (listp draw-buffers)
+                  (eq (first draw-buffers) 'attachment-pattern)
+                  (every #'integerp (rest draw-buffers))))
+           (gen-draw-buffer-call-from-pattern (ctx draw-buffers)
+             (let ((pattern (rest draw-buffers)))
+               (alexandria:with-gensyms (l-arr ptr)
+                 (if *expand-fbo-pattern-to-c-array*
+                     `(locally
+                          (declare #+sbcl(sb-ext:muffle-conditions
+                                          sb-ext:compiler-note))
+                        (with-foreign-object (,ptr '%gl::enum ,(length pattern))
+                          (setf ,@(loop
+                                     :for elem :in pattern
+                                     :for i :from 0
+                                     :append `((mem-aref ,ptr '%gl::enum ,i)
+                                               ,elem)))
+                          (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                                ,ptr)
+                          (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                                ,(length pattern))
+                          (%gl:draw-buffers ,(length pattern) ,ptr)))
+                     `(let ((,l-arr (make-array ,(length pattern)
+                                                :element-type 'gl-enum-value
+                                                :initial-contents ',pattern)))
+                        (declare (dynamic-extent ,l-arr)
+                                 #+sbcl(sb-ext:muffle-conditions
+                                        sb-ext:compiler-note))
+                        (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+
+                          (%gl:draw-buffers ,(length pattern) ,ptr)))))))
+           (gen-draw-buffer-call-from-array-form (ctx form)
+             (alexandria:with-gensyms (l-arr l-arr-len ptr)
+               `(let* ((,l-arr ,form)
+                       (,l-arr-len (array-total-size ,l-arr)))
+                  (declare (type (simple-array gl-enum-value (*)) ,l-arr)
+                           #+sbcl(sb-ext:muffle-conditions
+                                  sb-ext:compiler-note))
+                  (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+                    (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                          ,ptr)
+                    (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                          ,l-arr-len)
+                    (%gl:draw-buffers ,l-arr-len ,ptr)))))
+           (%write-restore-draw-buffers (ctx old-ptr old-len)
+             (unless (null draw-buffers)
+               `((%gl:draw-buffers ,old-len ,old-ptr)
+                 (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                       ,old-ptr)
+                 (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                       ,old-len)))))
+    (alexandria:with-gensyms (old-draw-buffer-ptr old-draw-buffer-len ctx)
+      `(with-cepl-context (,ctx)
+         (let* (,@(unless (null draw-buffers)
+                    `((,old-draw-buffer-ptr
+                       (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx))
+                      (,old-draw-buffer-len
+                       (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)))))
+           (release-unwind-protect
+               ,(cond ((null draw-buffers)
+                       `(progn
+                          ,@body))
+                      ((draw-buffer-pattern-p draw-buffers)
+                       `(progn
+                          ,(gen-draw-buffer-call-from-pattern ctx draw-buffers)
+                          ,@body))
+                      (t
+                       `(progn
+                          ,(gen-draw-buffer-call-from-array-form ctx draw-buffers)
+                          ,@body)))
+             ,@(%write-restore-draw-buffers
+                ctx
+                old-draw-buffer-ptr
+                old-draw-buffer-len)))))))
 
 
 (defun+ fbo-gen-attach (fbo check-dimensions-matchp &rest args)
