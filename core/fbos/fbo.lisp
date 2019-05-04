@@ -223,7 +223,7 @@
 
 ;;----------------------------------------------------------------------
 
-(defun+ %update-fbo-state (fbo)
+(defn %update-fbo-state ((fbo fbo)) fbo
   (update-clear-mask
    (update-draw-buffer-map
     fbo)))
