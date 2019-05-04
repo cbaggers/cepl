@@ -256,7 +256,7 @@
                                               #.(gl-enum :front-right)))))
     (aref vals attachment-num)))
 
-(defun+ update-draw-buffer-map (fbo)
+(defn update-draw-buffer-map ((fbo fbo)) fbo
   (let ((ptr (%fbo-draw-buffer-map fbo))
         (default-fbo (%fbo-is-default fbo)))
     (loop
