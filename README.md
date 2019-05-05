@@ -91,6 +91,16 @@ If you are having issues getting the C libraries to load and just need to rule o
 
 This mainly covers features & news rather than individual bugfixes. When we are out of beta these will be covered more often
 
+### 2019-05-05
+- Added `#'clear-attachments`
+- `clear-fbo` now let's you specify attachments to clear
+
+### 2019-04-XX
+- stability work on `with-context-state-restored`. More coming to this soon.
+
+### 2019-02-XX
+- Add #'default-fbo accessor
+
 ### 2019-01-20
 - Return from work crunch to add anisotropy support to samplers :)
 

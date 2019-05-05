@@ -20,25 +20,53 @@
 
 ;;----------------------------------------------------------------------
 
-(defun+ fbo-color-arrays (fbo)
-  (loop :for i :across (%fbo-color-arrays fbo) :collect (att-array i)))
+(defn fbo-color-arrays ((fbo fbo)) list
+  (loop
+     :with col-arrs := (%fbo-color-arrays fbo)
+     :for i :below (%fbo-color-arrays-fill-pointer fbo)
+     :collect (att-array (aref col-arrs i))))
 
 ;;----------------------------------------------------------------------
 
 (defn viewport-for-array ((arr (or null gpu-array))) (or null viewport)
   (when arr
-    (make-viewport (gpu-array-dimensions arr) (vec2 0f0 0f0))))
+    (let* ((dims (gpu-array-dimensions arr))
+           (vdims (if (= (length dims) 1)
+                      (list (first dims) 1)
+                      dims)))
+      (make-viewport vdims (vec2 0f0 0f0)))))
 
 ;;----------------------------------------------------------------------
 
-(defun+ ensure-fbo-array-size (fbo desired-size)
+;; {TODO}
+;; Check if there is a higher up the stack where we know what the full
+;; size will be (to save ourselves from multiple reallocations)
+
+(defn ensure-fbo-array-size ((fbo fbo) (desired-size c-array-index))
+    (simple-array att (*))
   (let* ((arr (%fbo-color-arrays fbo))
-         (len (length arr)))
-    (if (< len desired-size)
-        (progn
-          (loop :for i :below (- desired-size len) :do
-             (vector-push-extend (make-att) arr))
-          arr)
+         (fptr (%fbo-color-arrays-fill-pointer fbo)))
+    (if (> desired-size fptr)
+        (if (>= (length arr) desired-size)
+            (progn
+              (loop
+                 :for i :from fptr :below desired-size
+                 :do (setf (aref arr i) (make-att)))
+              (setf (%fbo-color-arrays-fill-pointer fbo) desired-size)
+              arr)
+            (let ((new-array
+                   (make-array
+                    (* 4 (ceiling desired-size 4))
+                    :element-type 'att
+                    :initial-element (symbol-value '%cepl.types::+null-att+))))
+              (loop
+                 :for i :below fptr
+                 :do (setf (aref new-array i) (aref arr i)))
+              (loop
+                 :for i :from fptr :below desired-size
+                 :do (setf (aref new-array i) (make-att)))
+              (setf (%fbo-color-arrays-fill-pointer fbo) desired-size)
+              (setf (%fbo-color-arrays fbo) new-array)))
         arr)))
 
 ;;----------------------------------------------------------------------
@@ -55,7 +83,9 @@
                                                             x)))
                                                     (make-att :array x
                                                               :viewport v)))
-                                                color-arrays))))
+                                                color-arrays)))
+    (setf (%fbo-color-arrays-fill-pointer fbo-obj)
+          (length color-arrays)))
   ;;
   (when depth-array
     (setf (%fbo-depth-array fbo-obj)
@@ -123,7 +153,6 @@
                                     (list (gen-array dimensions))))
               :depth-array (when depth (gen-array dimensions)))
              :id 0))))
-      (update-clear-mask result)
       (%with-cepl-context-slots (default-framebuffer) (cepl-context)
         (setf default-framebuffer result))
       result)))
@@ -135,10 +164,15 @@
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (let ((fbo default-framebuffer))
       ;; - - -
-      (loop :for a :across (%fbo-color-arrays fbo) :when a :do
-         (setf (viewport-dimensions (att-viewport a)) new-dimensions)
-         (cepl.textures::with-gpu-array-t (att-array a)
-           (setf dimensions new-dimensions)))
+      (loop
+         :with col-arrs := (%fbo-color-arrays fbo)
+         :for i :below (%fbo-color-arrays-fill-pointer fbo)
+         :for a := (aref col-arrs i)
+         :when a
+         :do
+           (setf (viewport-dimensions (att-viewport a)) new-dimensions)
+           (cepl.textures::with-gpu-array-t (att-array a)
+             (setf dimensions new-dimensions)))
       ;; - - -
       (let ((d (%fbo-depth-array fbo)))
         (setf (viewport-dimensions (att-viewport d)) new-dimensions)
@@ -162,7 +196,7 @@
     (:s (att-viewport (%fbo-stencil-array fbo)))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo)))
-       (if (< attachment-name (length arr))
+       (if (< attachment-name (%fbo-color-arrays-fill-pointer fbo))
            (att-viewport (aref arr attachment-name))
            (error "No attachment at ~a" attachment-name))))))
 
@@ -179,7 +213,7 @@
     (:s (att-viewport (%fbo-stencil-array fbo)))
     (otherwise
      (let ((arr (%fbo-color-arrays fbo)))
-       (if (< attachment-name (length arr))
+       (if (< attachment-name (%fbo-color-arrays-fill-pointer fbo))
            (att-viewport (aref arr attachment-name))
            (error "No attachment at ~a" attachment-name))))))
 
@@ -187,50 +221,58 @@
 
 (defn-inline color-attachment-enum ((attachment-num attachment-num))
     gl-enum-value
-  (declare (optimize (speed 3) (safety 1) (debug 1))
-           (profile t))
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
   (+ attachment-num #.(gl-enum :color-attachment0)))
 
 ;;----------------------------------------------------------------------
 
-(defun+ %update-fbo-state (fbo)
+(defn %update-fbo-state ((fbo fbo)) fbo
   (update-clear-mask
    (update-draw-buffer-map
     fbo)))
 
-(defun+ update-clear-mask (fbo)
+(defn update-clear-mask ((fbo fbo)) fbo
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
   (setf (%fbo-clear-mask fbo)
-        (cffi:foreign-bitfield-value
-         '%gl::ClearBufferMask
-         `(:color-buffer-bit
-           ,@(when (att-array (%fbo-depth-array fbo))
-               '(:depth-buffer-bit))
-           ,@(when (att-array (%fbo-stencil-array fbo))
-               '(:stencil-buffer-bit)))))
+        (logior
+         #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                        '(:color-buffer-bit))
+         (if (%fbo-depth-array fbo)
+             #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                            '(:depth-buffer-bit))
+             0)
+         (if (att-array (%fbo-stencil-array fbo))
+             #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                            '(:stencil-buffer-bit))
+             0)))
   fbo)
 
 (defn-inline default-fbo-attachment-enum ((attachment-num (integer 0 3)))
     gl-enum-value
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
-  (let ((vals (make-array 4 :element-type 'gl-enum-value
-                          :initial-contents '(#.(gl-enum :back-left)
-                                              #.(gl-enum :front-left)
-                                              #.(gl-enum :back-right)
-                                              #.(gl-enum :front-right)))))
+  (let ((vals #.(make-array 4 :element-type 'gl-enum-value
+                            :initial-contents '(#.(gl-enum :back-left)
+                                                #.(gl-enum :front-left)
+                                                #.(gl-enum :back-right)
+                                                #.(gl-enum :front-right)))))
     (aref vals attachment-num)))
 
-(defun+ update-draw-buffer-map (fbo)
+(defn update-draw-buffer-map ((fbo fbo)) fbo
   (let ((ptr (%fbo-draw-buffer-map fbo))
         (default-fbo (%fbo-is-default fbo)))
-    (loop :for i :from 0 :for att :across (%fbo-color-arrays fbo) :do
-       (let ((arr (att-array att)))
-         (setf (mem-aref ptr '%gl:enum i)
-               (if arr
-                   (if default-fbo
-                       (default-fbo-attachment-enum i)
-                       (color-attachment-enum i))
-                   :none)))))
+    (loop
+       :with col-arrs := (%fbo-color-arrays fbo)
+       :for i :below (%fbo-color-arrays-fill-pointer fbo)
+       :for att := (aref col-arrs i)
+       :do
+         (let ((arr (att-array att)))
+           (setf (mem-aref ptr '%gl:enum i)
+                 (if arr
+                     (if default-fbo
+                         (default-fbo-attachment-enum i)
+                         (color-attachment-enum i))
+                     :none)))))
   fbo)
 
 ;;----------------------------------------------------------------------
@@ -246,9 +288,8 @@
     (:d (setf (att-owned-p (%fbo-depth-array fbo)) value))
     (:s (setf (att-owned-p (%fbo-stencil-array fbo)) value))
     (otherwise
-     (let ((arr (%fbo-color-arrays fbo))
-           (index attachment-name))
-       (ensure-fbo-array-size fbo (1+ index))
+     (let* ((index attachment-name)
+            (arr (ensure-fbo-array-size fbo (1+ index))))
        (setf (att-owned-p (aref arr index)) value)))))
 
 ;;----------------------------------------------------------------------
@@ -280,8 +321,7 @@
                (:d (%fbo-depth-array fbo))
                (:s (error "Cannot specifiy blending params for the stencil attachment"))
                (otherwise
-                (let ((arr (%fbo-color-arrays fbo)))
-                  (ensure-fbo-array-size fbo (1+ attachment-name))
+                (let ((arr (ensure-fbo-array-size fbo (1+ attachment-name))))
                   (aref arr attachment-name))))))
     ;;
     (if (blending-params-p value)
@@ -342,8 +382,7 @@
                (viewport-for-array value))
          (setf (att-array (%fbo-stencil-array fbo)) value)))
       (otherwise
-       (let ((arr (%fbo-color-arrays fbo)))
-         (ensure-fbo-array-size fbo (1+ attachment-name))
+       (let ((arr (ensure-fbo-array-size fbo (1+ attachment-name))))
          (let* ((att (aref arr attachment-name))
                 (current (att-array att)))
            (if value
@@ -423,14 +462,6 @@
 
 ;;--------------------------------------------------------------
 
-(defun+ %fbo-draw-buffers (fbo)
-  (let ((len (if (%fbo-is-default fbo)
-                 1
-                 (length (%fbo-color-arrays fbo)))))
-    (%gl:draw-buffers len (%fbo-draw-buffer-map fbo))))
-
-;;--------------------------------------------------------------
-
 (defmacro with-fbo-slots (attachment-bindings expression &body body)
   (let ((expr (gensym "expression")))
     `(let* ((,expr ,expression)
@@ -504,7 +535,10 @@
           (fixed-sample-locations nil))
       (or (first args) '(nil))
     (let ((dimensions (or (listify dimensions)
-                          (viewport-dimensions (current-viewport)))))
+                          (viewport-dimensions (current-viewport))))
+          (viewport-dims (if (= (length dimensions) 1)
+                             (list (first dimensions) 1)
+                             dimensions)))
       (assert (not (eq (first dimensions) 'quote)) ()
               'quote-symbol-found-in-fbo-dimensions
               :form (first args))
@@ -518,7 +552,7 @@
              :dimensions dimensions
              :layer-count layer-count
              :samples samples
-             :viewport (make-viewport dimensions)
+             :viewport (make-viewport viewport-dims)
              :fixed-sample-locations-p (not (null fixed-sample-locations))))
       ;; return nil as we have nothing that needs to be initialized
       ;; before the fbo can be initialized (no dependancies).
@@ -650,40 +684,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
               :element-type 'gl-enum-value
               :initial-contents vals))
 
-(defparameter *expand-fbo-pattern-to-c-array* t)
-
-(defun gen-draw-buffer-call-from-pattern (draw-buffers)
-  (let ((pattern (rest draw-buffers)))
-    (alexandria:with-gensyms (l-arr ptr)
-      (if *expand-fbo-pattern-to-c-array*
-          `(with-foreign-object (,ptr '%gl::enum ,(length pattern))
-             #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-             (setf ,@(loop
-                        :for elem :in pattern
-                        :for i :from 0
-                        :append `((mem-aref ,ptr '%gl::enum ,i) ,elem)))
-             (%gl:draw-buffers ,(length pattern) ,ptr))
-          `(let ((,l-arr (make-array ,(length pattern)
-                                     :element-type 'gl-enum-value
-                                     :initial-contents ',pattern)))
-             (declare (dynamic-extent ,l-arr))
-             (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
-               #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-               (%gl:draw-buffers ,(length pattern) ,ptr)))))))
-
-(defun gen-draw-buffer-call-from-array-form (form)
-  (alexandria:with-gensyms (l-arr ptr)
-    `(let ((,l-arr ,form))
-       (declare (type (simple-array gl-enum-value (*)) ,l-arr))
-       (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
-         #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-         (%gl:draw-buffers (array-total-size ,l-arr)
-                           ,ptr)))))
-
-(defun draw-buffer-pattern-p (draw-buffers)
-  (and (listp draw-buffers)
-       (eq (first draw-buffers) 'attachment-pattern)
-       (every #'integerp (rest draw-buffers))))
 
 (defmacro with-fbo-bound ((fbo &key (target :draw-framebuffer)
                                (with-viewport t) (attachment-for-size 0)
@@ -692,7 +692,52 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (assert (member target +valid-fbo-targets+) (target)
           'fbo-target-not-valid-constant
           :target target)
-  (labels ((%write-draw-buffer-pattern-call (fbo body)
+  (labels (;;--------------------------------------------------------------
+           (draw-buffer-pattern-p (draw-buffers)
+             (and (listp draw-buffers)
+                  (eq (first draw-buffers) 'attachment-pattern)
+                  (every #'integerp (rest draw-buffers))))
+           (gen-draw-buffers-from-fbo (ctx fbo)
+             (alexandria:with-gensyms (ptr len)
+               `(let ((,ptr (%fbo-draw-buffer-map ,fbo))
+                      (,len (if (%fbo-is-default ,fbo)
+                                1
+                                (%fbo-color-arrays-fill-pointer ,fbo))))
+                  (%gl:draw-buffers ,len ,ptr)
+                  (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                        ,ptr)
+                  (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                        ,len)
+                  (values))))
+           (gen-draw-buffer-call-from-pattern (ctx draw-buffers)
+             (let ((pattern (rest draw-buffers)))
+               (alexandria:with-gensyms (l-arr ptr)
+                 `(let ((,l-arr ,(make-array (length pattern)
+                                             :element-type 'gl-enum-value
+                                             :initial-contents pattern)))
+                    (declare (dynamic-extent ,l-arr)
+                             #+sbcl(sb-ext:muffle-conditions
+                                    sb-ext:compiler-note))
+                    (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+                      (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                            ,ptr)
+                      (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                            ,(length pattern))
+                      (%gl:draw-buffers ,(length pattern) ,ptr))))))
+           (gen-draw-buffer-call-from-array-form (ctx form)
+             (alexandria:with-gensyms (l-arr l-arr-len ptr)
+               `(let* ((,l-arr ,form)
+                       (,l-arr-len (array-total-size ,l-arr)))
+                  (declare (type (simple-array gl-enum-value (*)) ,l-arr)
+                           #+sbcl(sb-ext:muffle-conditions
+                                  sb-ext:compiler-note))
+                  (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+                    (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                          ,ptr)
+                    (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                          ,l-arr-len)
+                    (%gl:draw-buffers ,l-arr-len ,ptr)))))
+           (%write-draw-buffer-pattern-call (ctx fbo body)
              "This plays with the dispatch call from compose-pipelines
               The idea is that the dispatch func can preallocate one array
               with the draw-buffers patterns for ALL the passes in it, then
@@ -703,42 +748,64 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                        ,@body))
                    ((equal draw-buffers t)
                     `(progn
-                       (%fbo-draw-buffers ,fbo)
+                       ,(gen-draw-buffers-from-fbo ctx fbo)
                        ,(if with-blending
                              `(cepl.blending::%with-blending ,fbo t nil ,@body)
                              `(progn ,@body))))
                    ((draw-buffer-pattern-p draw-buffers)
                     `(progn
-                       ,(gen-draw-buffer-call-from-pattern draw-buffers)
+                       ,(gen-draw-buffer-call-from-pattern ctx draw-buffers)
                        ,@body))
                    (t
                     `(progn
-                       ,(gen-draw-buffer-call-from-array-form draw-buffers)
-                       ,@body)))))
+                       ,(gen-draw-buffer-call-from-array-form ctx draw-buffers)
+                       ,@body))))
+           (%write-restore-draw-buffers (ctx old-ptr old-len)
+             (unless (null draw-buffers)
+               `((%gl:draw-buffers ,old-len ,old-ptr)
+                 (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                       ,old-ptr)
+                 (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                       ,old-len)))))
     (if (eq target :framebuffer)
-        (alexandria:with-gensyms (old-read-fbo old-draw-fbo new-fbo ctx)
+        (alexandria:with-gensyms
+            (old-read-fbo old-draw-fbo new-fbo old-draw-buffer-ptr old-draw-buffer-len ctx)
           `(with-cepl-context (,ctx)
              (let* ((,new-fbo ,fbo)
                     (,old-read-fbo (read-fbo-bound ,ctx))
-                    (,old-draw-fbo (draw-fbo-bound ,ctx)))
+                    (,old-draw-fbo (draw-fbo-bound ,ctx))
+                    ,@(unless (null draw-buffers)
+                        `((,old-draw-buffer-ptr
+                           (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx))
+                          (,old-draw-buffer-len
+                           (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)))))
                (,@(if with-viewport
                       `(with-fbo-viewport (,new-fbo ,attachment-for-size))
                       '(progn))
                   (release-unwind-protect
                       (progn
                         (setf (fbo-bound ,ctx) ,new-fbo)
-                        ,(%write-draw-buffer-pattern-call new-fbo body))
+                        ,(%write-draw-buffer-pattern-call ctx new-fbo body))
                     (if (eq ,old-read-fbo ,old-draw-fbo)
                         (setf (fbo-bound ,ctx) ,old-read-fbo)
                         (progn
                           (setf (read-fbo-bound ,ctx) ,old-read-fbo)
-                          (setf (draw-fbo-bound ,ctx) ,old-draw-fbo))))))))
-        (alexandria:with-gensyms (old-fbo new-fbo ctx)
+                          (setf (draw-fbo-bound ,ctx) ,old-draw-fbo)
+                          ,@(%write-restore-draw-buffers
+                             ctx
+                             old-draw-buffer-ptr
+                             old-draw-buffer-len))))))))
+        (alexandria:with-gensyms (old-fbo new-fbo old-draw-buffer-ptr old-draw-buffer-len ctx)
           `(with-cepl-context (,ctx)
              (let* ((,new-fbo ,fbo)
                     (,old-fbo ,(if (eq target :read-framebuffer)
                                    `(read-fbo-bound ,ctx)
-                                   `(draw-fbo-bound ,ctx))))
+                                   `(draw-fbo-bound ,ctx)))
+                    ,@(unless (null draw-buffers)
+                        `((,old-draw-buffer-ptr
+                           (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx))
+                          (,old-draw-buffer-len
+                           (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)))))
                (,@(if with-viewport
                       `(with-fbo-viewport (,new-fbo ,attachment-for-size))
                       '(progn))
@@ -747,10 +814,14 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                         ,(if (eq target :read-framebuffer)
                              `(setf (read-fbo-bound ,ctx) ,new-fbo)
                              `(setf (draw-fbo-bound ,ctx) ,new-fbo))
-                        ,(%write-draw-buffer-pattern-call new-fbo body))
+                        ,(%write-draw-buffer-pattern-call ctx new-fbo body))
                     ,(if (eq target :read-framebuffer)
                          `(setf (read-fbo-bound ,ctx) ,old-fbo)
-                         `(setf (draw-fbo-bound ,ctx) ,old-fbo))))))))))
+                         `(setf (draw-fbo-bound ,ctx) ,old-fbo))
+                    ,@(%write-restore-draw-buffers
+                       ctx
+                       old-draw-buffer-ptr
+                       old-draw-buffer-len)))))))))
 
 
 (defun+ fbo-gen-attach (fbo check-dimensions-matchp &rest args)
@@ -960,14 +1031,18 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             (empty-fbo-params-fixed-sample-locations-p info))
       fbo)))
 
-(defun+ initialize-regular-fbo (fbo-obj)
-  (loop :for a :across (%fbo-color-arrays fbo-obj)
-     :for i :from 0 :do
-     (when a (setf (attachment fbo-obj i) (att-array a))))
+(defn initialize-regular-fbo ((fbo-obj fbo)) (values)
+  (loop
+     :with col-arrs := (%fbo-color-arrays fbo-obj)
+     :for i :below (%fbo-color-arrays-fill-pointer fbo-obj)
+     :for a := (aref col-arrs i)
+     :do
+       (when a (setf (attachment fbo-obj i) (att-array a))))
   (when (attachment fbo-obj :d)
     (setf (attachment fbo-obj :d) (attachment fbo-obj :d)))
   (when (attachment fbo-obj :s)
-    (setf (attachment fbo-obj :s) (attachment fbo-obj :s))))
+    (setf (attachment fbo-obj :s) (attachment fbo-obj :s)))
+  (values))
 
 ;;----------------------------------------------------------------------
 
@@ -1277,30 +1352,371 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ((:ds :depth-stencil-attachment) (depth-stencil-formatp image-format))
     (otherwise (color-renderable-formatp image-format))))
 
-(defn-inline clear-fbo ((fbo fbo)) fbo
+;;----------------------------------------------------------------------
+;; clear
+
+(defn %clear-attachments ((attachments list)) boolean
+  (let ((mask 0))
+    (declare (type %cepl.types::clear-buffer-mask mask))
+    (with-foreign-object (db-ptr '%gl::enum (length attachments))
+      (let ((col-len
+             (loop
+                :with i :of-type fixnum := 0
+                :for c :in attachments
+                :do
+                  (cond
+                    ((eq c :d)
+                     (setf mask (logior mask #.(cffi:foreign-bitfield-value
+                                                '%gl::ClearBufferMask
+                                                :depth-buffer-bit))))
+                    ((eq c :s)
+                     (setf mask (logior mask #.(cffi:foreign-bitfield-value
+                                                '%gl::ClearBufferMask
+                                                :stencil-buffer-bit))))
+                    ((typep c 'attachment-num)
+                     (setf (mem-aref db-ptr '%gl::enum i)
+                           (color-attachment-enum c))
+                     (incf i))
+                    (t
+                     (error "clear-attachments: unknown attachment name ~a"
+                            c)))
+                :finally (return i))))
+        (if (> col-len 0)
+            (progn
+              (%gl:draw-buffers col-len db-ptr)
+              (%gl:clear (logior mask #.(cffi:foreign-bitfield-value
+                                         '%gl::ClearBufferMask
+                                         :color-buffer-bit)))
+              t)
+            (progn
+              (%gl:clear mask)
+              nil))))))
+
+(defn-inline %clear-known-attachments-no-restore
+    ((mask %cepl.types::clear-buffer-mask)
+     (bufs (simple-array gl-enum-value (*)))
+     (len gl-sizei))
+    boolean
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
-  (with-fbo-bound (fbo :target :draw-framebuffer
-                       :with-blending nil
-                       :with-viewport nil)
-    (%gl:clear (%fbo-clear-mask fbo)))
+  (cffi:with-pointer-to-vector-data (db-ptr bufs)
+    (locally (declare #+sbcl(sb-ext:muffle-conditions
+                             sb-ext:compiler-note))
+      (%gl:draw-buffers len db-ptr))
+    (%gl:clear mask)
+    t))
+
+(defn-inline %clear-known-attachments
+    ((mask %cepl.types::clear-buffer-mask)
+     (bufs (simple-array gl-enum-value (*)))
+     (len gl-sizei))
+    (values)
+  (let ((should-restore t))
+    (unwind-protect
+         (setf should-restore
+               (%clear-known-attachments-no-restore mask bufs len))
+      (when should-restore
+        (with-cepl-context (ctx)
+          (%with-cepl-context-slots
+              (current-draw-buffers-ptr current-draw-buffers-len)
+              ctx
+            (%gl:draw-buffers current-draw-buffers-len
+                              current-draw-buffers-ptr))))))
+    (values))
+
+(defn %clear-unknown-attachments-no-restore
+    ((mask %cepl.types::clear-buffer-mask)
+     (known (simple-array gl-enum-value (*)))
+     (attachments (simple-array t (*)))
+     (total-attachment-len gl-sizei))
+    (values)
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (let ((col-len (length known)))
+    (declare (type (unsigned-byte 16) col-len))
+    (with-foreign-object (db-ptr '%gl::enum total-attachment-len)
+      (loop
+         :for c :across known
+         :for i :of-type fixnum :from 0
+         :do (setf (mem-aref db-ptr '%gl::enum i) c))
+      (loop
+         :for c :across attachments
+         :do
+           (cond
+             ((eq c :d)
+              (setf mask (logior mask #.(cffi:foreign-bitfield-value
+                                         '%gl::ClearBufferMask
+                                         :depth-buffer-bit))))
+             ((eq c :s)
+              (setf mask (logior mask #.(cffi:foreign-bitfield-value
+                                         '%gl::ClearBufferMask
+                                         :stencil-buffer-bit))))
+             ((typep c 'attachment-num)
+              (setf (mem-aref db-ptr '%gl::enum col-len)
+                    (color-attachment-enum c))
+              (incf col-len))
+             (t
+              (error "clear-attachments: unknown attachment name ~a"
+                     c))))
+      (if (> col-len 0)
+          (progn
+            (%gl:draw-buffers col-len db-ptr)
+            (%gl:clear (logior mask #.(cffi:foreign-bitfield-value
+                                       '%gl::ClearBufferMask
+                                       :color-buffer-bit)))
+            t)
+          (progn
+            (%gl:clear mask)
+            nil))
+      (values))))
+
+(defn %clear-unknown-attachments ((mask %cepl.types::clear-buffer-mask)
+                                  (known (simple-array gl-enum-value (*)))
+                                  (attachments (simple-array t (*)))
+                                  (total-attachment-len gl-sizei))
+    (values)
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (let ((should-restore t))
+    (unwind-protect
+         (setf should-restore
+               (%clear-unknown-attachments-no-restore
+                mask known attachments total-attachment-len))
+      (when should-restore
+        (with-cepl-context (ctx)
+          (%with-cepl-context-slots
+              (current-draw-buffers-ptr current-draw-buffers-len)
+              ctx
+            (%gl:draw-buffers current-draw-buffers-len
+                              current-draw-buffers-ptr)))))))
+
+(defn-inline clear-attachments (&rest attachments) (values)
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (profile t))
+  (let ((should-restore t)
+        ;; ↑ defaults to t so we will force restore if %clear-attachments
+        ;;   throws an error
+        )
+    (unwind-protect
+         (setf should-restore (%clear-attachments attachments))
+      (when should-restore
+        (with-cepl-context (ctx)
+          (%with-cepl-context-slots
+              (current-draw-buffers-ptr current-draw-buffers-len)
+              ctx
+            (%gl:draw-buffers current-draw-buffers-len
+                              current-draw-buffers-ptr)))))))
+
+(defun early-compute-mask (attachments)
+  (labels ((aname-p (x) (or (numberp x) (find x #(:d :s :ds)))))
+    (let* ((known-attrs (remove-if-not #'aname-p attachments))
+           (unknown-attrs (remove-if #'aname-p attachments))
+           (mask (logior
+                  (if (find-if #'numberp known-attrs)
+                      #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                                     :color-buffer-bit)
+                      0)
+                  (if (find :d known-attrs)
+                      #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                                     :depth-buffer-bit)
+                      0)
+                  (if (find :s known-attrs)
+                      #.(cffi:foreign-bitfield-value '%gl::ClearBufferMask
+                                                     :stencil-buffer-bit)
+                      0)))
+           (known-col-enums
+            (loop
+               :for k :in known-attrs
+               :when (numberp k)
+               :collect (color-attachment-enum k))))
+      (values mask known-col-enums unknown-attrs))))
+
+(define-compiler-macro clear-attachments (&rest attachments)
+  (multiple-value-bind (mask known-col-enums unknown-attrs)
+      (early-compute-mask attachments)
+    (if unknown-attrs
+        `(%clear-unknown-attachments
+          ,mask
+          ,(make-array
+            (length known-col-enums)
+            :element-type 'gl-enum-value
+            :initial-contents known-col-enums)
+          (make-array
+           ,(length unknown-attrs)
+           :initial-contents (list ,@unknown-attrs))
+          (the gl-sizei ,(+ (length unknown-attrs)
+                            (length known-col-enums))))
+        (if known-col-enums
+            `(%clear-known-attachments
+              ,mask ,(make-array
+                      (length known-col-enums)
+                      :element-type 'gl-enum-value
+                      :initial-contents known-col-enums)
+              (the gl-sizei ,(length known-col-enums)))
+            `(%gl:clear ,mask)))))
+
+(defn-inline %clear-fbos-attachments ((fbo fbo)) (values)
+  (with-cepl-context (ctx)
+    (%with-cepl-context-slots
+        (current-draw-buffers-ptr current-draw-buffers-len)
+        ctx
+      (let* ((fbo fbo)
+             (old-fbo (draw-fbo-bound ctx)))
+        (unwind-protect
+             (progn
+               (setf (draw-fbo-bound ctx) fbo)
+               (let ((ptr (%fbo-draw-buffer-map fbo)))
+                 (if (%fbo-is-default fbo)
+                     (%gl:draw-buffers 1 ptr)
+                     (%gl:draw-buffers (%fbo-color-arrays-fill-pointer fbo)
+                                       ptr)))
+               (%gl:clear (%fbo-clear-mask fbo)))
+          (setf (draw-fbo-bound ctx) old-fbo)
+          (%gl:draw-buffers
+           current-draw-buffers-len
+           current-draw-buffers-ptr))))
+    (values)))
+
+(defn %clear-fbo-with-explicit-attachments ((fbo fbo) (attachments list)) fbo
+  (with-cepl-context (ctx)
+    (let* ((new-fbo fbo)
+           (old-fbo (draw-fbo-bound ctx))
+           (should-restore t)
+           ;; ↑ defaults to t so we will force restore if %clear-attachments
+           ;;   throws an error
+           )
+      (unwind-protect
+           (progn
+             (setf (draw-fbo-bound ctx) new-fbo)
+             (setf should-restore (%clear-attachments attachments)))
+        (setf (draw-fbo-bound ctx) old-fbo)
+        (when should-restore
+          (%with-cepl-context-slots
+              (current-draw-buffers-ptr current-draw-buffers-len)
+              ctx
+            (%gl:draw-buffers current-draw-buffers-len
+                              current-draw-buffers-ptr))))
+      fbo)))
+
+(defn-inline clear-fbo ((fbo fbo) &rest attachments) fbo
+  (declare (optimize (speed 3) (safety 1) (debug 1))
+           (not-inline %clear-fbos-attachments
+                       %clear-fbo-with-explicit-attachments)
+           (profile t))
+  (if attachments
+      (%clear-fbo-with-explicit-attachments fbo attachments)
+      (%clear-fbos-attachments fbo))
   fbo)
 
-(defun+ clear-attachment (attachment)
-  (declare (ignore attachment))
-  (error "CEPL: clear-attachment is not yet implemented"))
+(defn %clear-fbo-unknown-attachments ((fbo fbo)
+                                      (mask %cepl.types::clear-buffer-mask)
+                                      (known (simple-array gl-enum-value (*)))
+                                      (attachments (simple-array t (*)))
+                                      (total-attachment-len gl-sizei))
+    fbo
+  (with-cepl-context (ctx)
+    (let* ((new-fbo fbo)
+           (old-fbo (draw-fbo-bound ctx))
+           (should-restore t)
+           ;; ↑ defaults to t so we will force restore if %clear-attachments
+           ;;   throws an error
+           )
+      (unwind-protect
+           (progn
+             (setf (draw-fbo-bound ctx) new-fbo)
+             (setf should-restore (%clear-unknown-attachments-no-restore
+                                   mask
+                                   known
+                                   attachments
+                                   total-attachment-len)))
+        (setf (draw-fbo-bound ctx) old-fbo)
+        (when should-restore
+          (%with-cepl-context-slots
+              (current-draw-buffers-ptr current-draw-buffers-len)
+              ctx
+            (%gl:draw-buffers current-draw-buffers-len
+                              current-draw-buffers-ptr))))
+      fbo)))
 
-(defn-inline clear (&optional (target fbo)) (values)
-  (declare (profile t))
+(defn %clear-fbo-known-attachments ((fbo fbo)
+                                    (mask %cepl.types::clear-buffer-mask)
+                                    (bufs (simple-array gl-enum-value (*)))
+                                    (len gl-sizei))
+    fbo
+  (with-cepl-context (ctx)
+    (let* ((new-fbo fbo)
+           (old-fbo (draw-fbo-bound ctx))
+           (should-restore t)
+           ;; ↑ defaults to t so we will force restore if %clear-attachments
+           ;;   throws an error
+           )
+      (unwind-protect
+           (progn
+             (setf (draw-fbo-bound ctx) new-fbo)
+             (setf should-restore
+                   (%clear-known-attachments-no-restore mask bufs len)))
+        (setf (draw-fbo-bound ctx) old-fbo)
+        (when should-restore
+          (%with-cepl-context-slots
+              (current-draw-buffers-ptr current-draw-buffers-len)
+              ctx
+            (%gl:draw-buffers current-draw-buffers-len
+                              current-draw-buffers-ptr))))
+      fbo)))
+
+(define-compiler-macro clear-fbo (fbo &rest attachments)
+  (let ((gfbo (gensym "fbo")))
+    `(let ((,gfbo ,fbo))
+       (declare (optimize (speed 3) (safety 1) (debug 1)))
+       ,(if attachments
+            (multiple-value-bind (mask known-col-enums unknown-attrs)
+                (early-compute-mask attachments)
+              (if unknown-attrs
+                  `(%clear-fbo-unknown-attachments
+                    ,gfbo
+                    ,mask
+                    ,(make-array
+                      (length known-col-enums)
+                      :element-type 'gl-enum-value
+                      :initial-contents known-col-enums)
+                    (make-array
+                     ,(length unknown-attrs)
+                     :initial-contents (list ,@unknown-attrs))
+                    (the gl-sizei ,(+ (length unknown-attrs)
+                                      (length known-col-enums))))
+                  (if known-col-enums
+                      `(%clear-fbo-known-attachments
+                        ,gfbo
+                        ,mask
+                        ,(make-array
+                          (length known-col-enums)
+                          :element-type 'gl-enum-value
+                          :initial-contents known-col-enums)
+                        (the gl-sizei ,(length known-col-enums)))
+                      `(with-fbo-bound (,gfbo :target :draw-framebuffer
+                                              :with-blending nil
+                                              :with-viewport nil
+                                              :draw-buffers nil)
+                         (%gl:clear ,mask)))))
+            `(%clear-fbos-attachments ,gfbo))
+       ,gfbo)))
+
+(defn-inline %clear-current-fbo () (values)
+  (declare (optimize (speed 3) (safety 1) (debug 0)))
+  (%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context))))
+  (values))
+
+(defn clear (&optional (target fbo)) (values)
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (profile t))
   (if target
       (clear-fbo target)
-      (%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context)))))
+      (%clear-current-fbo))
   (values))
 
 (define-compiler-macro clear (&optional target)
   (if target
-      `(clear-fbo ,target)
-      `(%gl:clear (%fbo-clear-mask (draw-fbo-bound (cepl-context))))))
+      `(progn (clear-fbo ,target) (values))
+      '(%clear-current-fbo)))
 
 ;;--------------------------------------------------------------
 
@@ -1335,3 +1751,73 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     fbo
   (%with-cepl-context-slots (default-framebuffer) cepl-context
     default-framebuffer))
+
+;;----------------------------------------------------------------------
+
+;; Gotta decide if I want this public and what kinds of safety checks it
+;; should do
+
+#+nil
+(defmacro %with-draw-buffers (draw-buffers &body body)
+  (labels ((draw-buffer-pattern-p (draw-buffers)
+             (and (listp draw-buffers)
+                  (eq (first draw-buffers) 'attachment-pattern)
+                  (every #'integerp (rest draw-buffers))))
+           (gen-draw-buffer-call-from-pattern (ctx draw-buffers)
+             (let ((pattern (rest draw-buffers)))
+               (alexandria:with-gensyms (l-arr ptr)
+                 `(let ((,l-arr ,(make-array (length pattern)
+                                            :element-type 'gl-enum-value
+                                            :initial-contents pattern)))
+                    (declare (dynamic-extent ,l-arr)
+                             #+sbcl(sb-ext:muffle-conditions
+                                    sb-ext:compiler-note))
+                    (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+                      (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                            ,ptr)
+                      (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                            ,(length pattern))
+                      (%gl:draw-buffers ,(length pattern) ,ptr))))))
+           (gen-draw-buffer-call-from-array-form (ctx form)
+             (alexandria:with-gensyms (l-arr l-arr-len ptr)
+               `(let* ((,l-arr ,form)
+                       (,l-arr-len (array-total-size ,l-arr)))
+                  (declare (type (simple-array gl-enum-value (*)) ,l-arr)
+                           #+sbcl(sb-ext:muffle-conditions
+                                  sb-ext:compiler-note))
+                  (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+                    (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                          ,ptr)
+                    (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                          ,l-arr-len)
+                    (%gl:draw-buffers ,l-arr-len ,ptr)))))
+           (%write-restore-draw-buffers (ctx old-ptr old-len)
+             (unless (null draw-buffers)
+               `((%gl:draw-buffers ,old-len ,old-ptr)
+                 (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
+                       ,old-ptr)
+                 (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
+                       ,old-len)))))
+    (alexandria:with-gensyms (old-draw-buffer-ptr old-draw-buffer-len ctx)
+      `(with-cepl-context (,ctx)
+         (let* (,@(unless (null draw-buffers)
+                    `((,old-draw-buffer-ptr
+                       (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx))
+                      (,old-draw-buffer-len
+                       (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)))))
+           (release-unwind-protect
+               ,(cond ((null draw-buffers)
+                       `(progn
+                          ,@body))
+                      ((draw-buffer-pattern-p draw-buffers)
+                       `(progn
+                          ,(gen-draw-buffer-call-from-pattern ctx draw-buffers)
+                          ,@body))
+                      (t
+                       `(progn
+                          ,(gen-draw-buffer-call-from-array-form ctx draw-buffers)
+                          ,@body)))
+             ,@(%write-restore-draw-buffers
+                ctx
+                old-draw-buffer-ptr
+                old-draw-buffer-len)))))))

@@ -41,6 +41,17 @@
   (surface nil :type t)
   (surfaces nil :type list))
 
+;;
+;; {TODO} I believe that if we store the lengths of adjustable
+;;        arrays we could avoid the use of adjust-array and,
+;;        in doing so, allow them to be simple-arrays which would
+;;        give us a significant perf boost
+;;        One concern is shared-contexts..but actually that will
+;;        already be an issue so we should add locks anyhoo.
+;;        (as the number of threads will be minimal maybe we can
+;;        use one lock for all the arrays :/)
+;;
+
 (defstruct (cepl-context (:constructor %make-cepl-context)
                          (:conc-name %cepl-context-))
   (id (error "Context missing an ID") :type context-id)
@@ -66,42 +77,37 @@
   (default-framebuffer nil :type (or null fbo))
   (read-fbo-binding nil :type (or null fbo))
   (draw-fbo-binding nil :type (or null fbo))
+  (current-draw-buffers-ptr (cffi:null-pointer) :type cffi:foreign-pointer)
+  (current-draw-buffers-len 0 :type c-array-index)
   (current-stencil-params-front nil :type (or null stencil-params))
   (current-stencil-params-back nil :type (or null stencil-params))
   (current-stencil-mask-front #xFF :type stencil-mask)
   (current-stencil-mask-back #xFF :type stencil-mask)
   (current-blend-params nil :type (or null blending-params))
   (fbos
-   (make-array 0 :element-type 'fbo :initial-element +null-fbo+
-               :adjustable t :fill-pointer 0)
-   :type (array fbo (*)))
+   (make-array 0 :element-type 'fbo :initial-element +null-fbo+)
+   :type (simple-array fbo (*)))
   (array-of-bound-gpu-buffers
    (make-array 12 :element-type '(or gpu-buffer null) :initial-element nil)
    :type (simple-array (or gpu-buffer null) (12)))
   (array-of-gpu-buffers
-   (make-array 0 :element-type 'gpu-buffer :initial-element +null-gpu-buffer+
-               :adjustable t :fill-pointer 0)
-   :type (array gpu-buffer (*)))
+   (make-array 10 :element-type 'gpu-buffer :initial-element +null-gpu-buffer+)
+   :type (simple-array gpu-buffer (*)))
   (array-of-ubo-bindings-buffer-ids
-   (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
-               :adjustable t :fill-pointer 0)
-   :type (array gl-id (*)))
+   (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+)
+   :type (simple-array gl-id (*)))
   (array-of-ubo-binding-ranges
-   (make-array 0 :element-type '(unsigned-byte 32)
-               :initial-element 0 :adjustable t :fill-pointer 0)
-   :type (array (unsigned-byte 32) (*)))
+   (make-array 0 :element-type '(unsigned-byte 32) :initial-element 0)
+   :type (simple-array (unsigned-byte 32) (*)))
   (array-of-ssbo-bindings-buffer-ids
-   (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
-               :adjustable t :fill-pointer 0)
-   :type (array gl-id (*)))
+   (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+)
+   :type (simple-array gl-id (*)))
   (array-of-ssbo-binding-ranges
-   (make-array 0 :element-type '(unsigned-byte 32)
-               :initial-element 0 :adjustable t :fill-pointer 0)
-   :type (array (unsigned-byte 32) (*)))
+   (make-array 0 :element-type '(unsigned-byte 32) :initial-element 0)
+   :type (simple-array (unsigned-byte 32) (*)))
   (array-of-transform-feedback-bindings-buffer-ids
-   (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+
-               :adjustable t :fill-pointer 0)
-   :type (array gl-id (*)))
+   (make-array 0 :element-type 'gl-id :initial-element +null-gl-id+)
+   :type (simple-array gl-id (*)))
 
   (array-of-bound-samplers
    (make-array 0 :element-type '(or null sampler) :initial-element nil)
@@ -112,9 +118,8 @@
    :type (simple-array (or null gpu-query) (7)))
 
   (array-of-textures
-   (make-array 0 :element-type 'texture :initial-element +null-texture+
-               :adjustable t :fill-pointer 0)
-   :type (array texture (*)))
+   (make-array 0 :element-type 'texture :initial-element +null-texture+)
+   :type (simple-array texture (*)))
   (depth-func :unknown :type (or symbol function))
   (depth-mask nil :type boolean)
   (color-masks (make-array 0 :element-type '(simple-array boolean (4)))
@@ -149,7 +154,8 @@
            clear-color gl-version-float
            array-of-ubo-binding-ranges array-of-ssbo-binding-ranges
            pack-alignment unpack-alignment
-           max-draw-buffer-count instance-count)))
+           max-draw-buffer-count instance-count
+           current-draw-buffers-ptr current-draw-buffers-len)))
     (assert (every (lambda (x) (member x context-slots :test #'string=)) slots))
     (let ((slots (remove-duplicates slots))
           (accessors (loop :for slot :in slots :collect

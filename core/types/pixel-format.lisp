@@ -48,10 +48,15 @@
   :type list)
 
 (define-const +gl-pixel-to-internal-map+
+    ;; Note: :depth-component24 is deliberately after :depth-component32
+    ;;       so that assoc will prefer :depth-component32
+    ;;
     ;; (components normalize type sizes)
     '(((:depth t :short nil) :depth-component16)
       ((:depth t :int nil) :depth-component32)
+      ((:depth t :int nil) :depth-component24)
       ((:depth t :float nil) :depth-component32f)
+      ((:depth t :float nil) :depth-component24f)
       ((:stencil-only t :int nil) :stencil-index8)
       ((:r t :uint8 nil) :r8)
       ((:r t :int8 nil) :r8-snorm)

@@ -340,7 +340,14 @@
             'gpu-buffer)
     (%with-cepl-context-slots (array-of-gpu-buffers)
         cepl-context
-      (ensure-vec-index array-of-gpu-buffers id +null-gpu-buffer+)
+      (let ((curr-len (length array-of-gpu-buffers)))
+        (when (>= id curr-len)
+          (let ((new-arr (make-array (+ id 10) :element-type 'gpu-buffer
+                                     :initial-element +null-gpu-buffer+)))
+            (loop
+               :for i :below curr-len
+               :do (setf (aref new-arr i) (aref array-of-gpu-buffers i)))
+            (setf array-of-gpu-buffers new-arr))))
       (setf (aref array-of-gpu-buffers id) gpu-buffer))))
 
 (defn register-texture ((cepl-context cepl-context) (texture texture))
@@ -353,7 +360,14 @@
       (declare (type gl-id id))
       (assert (> id 0) (id)
               "Attempted to register ~s before id fully initialized" 'texture)
-      (ensure-vec-index array-of-textures id +null-texture+)
+      (let ((curr-len (length array-of-textures)))
+        (when (>= id curr-len)
+          (let ((new-arr (make-array (+ id 10) :element-type 'texture
+                                     :initial-element +null-texture+)))
+            (loop
+               :for i :below curr-len
+               :do (setf (aref new-arr i) (aref array-of-textures i)))
+            (setf array-of-textures new-arr))))
       (setf (aref array-of-textures id) texture))))
 
 (defn register-fbo ((cepl-context cepl-context) (fbo fbo)) fbo
@@ -361,7 +375,14 @@
            (profile t))
   (%with-cepl-context-slots (fbos) cepl-context
     (let ((id (%fbo-id fbo)))
-      (ensure-vec-index fbos id +null-fbo+)
+      (let ((curr-len (length fbos)))
+        (when (>= id curr-len)
+          (let ((new-arr (make-array (+ id 10) :element-type 'fbo
+                                     :initial-element +null-fbo+)))
+            (loop
+               :for i :below curr-len
+               :do (setf (aref new-arr i) (aref fbos i)))
+            (setf fbos new-arr))))
       (setf (aref fbos id) fbo))))
 
 (defn forget-gpu-buffer ((cepl-context cepl-context)
@@ -472,8 +493,7 @@
   (declare (optimize (speed 3) (safety 1) (debug 1) (compilation-speed 0))
            (inline buffer-bound-static)
            (profile t))
-  (%with-cepl-context-slots (array-of-gpu-buffers gl-context) cepl-context
-    (buffer-bound-static cepl-context (buffer-kind->cache-index target))))
+  (buffer-bound-static cepl-context (buffer-kind->cache-index target)))
 
 (define-compiler-macro gpu-buffer-bound (&whole whole ctx target)
   (if (keywordp target)
@@ -516,11 +536,38 @@
 ;; binding-points trying to mix them in the cache above was more confusing than
 ;; helpful.
 
+(defn-inline ensure-array-of-ubo-bindings-buffer-ids
+    ((ctx cepl-context) (id array-index)) (values)
+  (%with-cepl-context-slots (array-of-ubo-bindings-buffer-ids) ctx
+    (let ((curr-len (length array-of-ubo-bindings-buffer-ids)))
+      (when (>= id curr-len)
+        (let ((new-arr (make-array (+ id 10) :element-type 'gl-id
+                                   :initial-element +null-gl-id+)))
+          (loop
+             :for i :below curr-len
+             :do (setf (aref new-arr i)
+                       (aref array-of-ubo-bindings-buffer-ids i)))
+          (setf array-of-ubo-bindings-buffer-ids new-arr)))))
+  (values))
+
+(defn-inline ensure-array-of-ubo-binding-ranges
+    ((ctx cepl-context) (id array-index)) (values)
+  (%with-cepl-context-slots (array-of-ubo-binding-ranges) ctx
+    (let ((curr-len (length array-of-ubo-binding-ranges)))
+      (when (>= id curr-len)
+        (let ((new-arr
+               (make-array (+ id 10) :element-type '(unsigned-byte 32)
+                           :initial-element 0)))
+          (loop
+             :for i :below curr-len
+             :do (setf (aref new-arr i)
+                       (aref array-of-ubo-binding-ranges i)))
+          (setf array-of-ubo-binding-ranges new-arr)))))
+  (values))
+
 (defn %register-ubo-id ((ctx cepl-context) (ubo-binding-point array-index))
     (values)
-  (%with-cepl-context-slots (array-of-ubo-bindings-buffer-ids) ctx
-    (ensure-vec-index array-of-ubo-bindings-buffer-ids ubo-binding-point
-                      +null-gl-id+ gl-id))
+  (ensure-array-of-ubo-bindings-buffer-ids ctx ubo-binding-point)
   (values))
 
 (defn ubo-bind-buffer-id-range ((ctx cepl-context)
@@ -540,10 +587,8 @@
       ctx
     (let ((bind-id (if (unknown-gl-id-p id) 0 id))
           (range-index (the array-index (+ (* id 2) 1))))
-      (ensure-vec-index array-of-ubo-bindings-buffer-ids ubo-binding-point
-                        +null-gl-id+ gl-id)
-      (ensure-vec-index array-of-ubo-binding-ranges range-index
-                        0 (unsigned-byte 32))
+      (ensure-array-of-ubo-bindings-buffer-ids ctx ubo-binding-point)
+      (ensure-array-of-ubo-binding-ranges ctx range-index)
       (%gl:bind-buffer-range
        #.(gl-enum :uniform-buffer)
        ubo-binding-point
@@ -555,11 +600,38 @@
       (setf (aref array-of-ubo-binding-ranges range-index) size)
       id)))
 
+(defn-inline ensure-array-of-ssbo-bindings-buffer-ids
+    ((ctx cepl-context) (id array-index)) (values)
+  (%with-cepl-context-slots (array-of-ssbo-bindings-buffer-ids) ctx
+    (let ((curr-len (length array-of-ssbo-bindings-buffer-ids)))
+      (when (>= id curr-len)
+        (let ((new-arr (make-array (+ id 10) :element-type 'gl-id
+                                   :initial-element +null-gl-id+)))
+          (loop
+             :for i :below curr-len
+             :do (setf (aref new-arr i)
+                       (aref array-of-ssbo-bindings-buffer-ids i)))
+          (setf array-of-ssbo-bindings-buffer-ids new-arr)))))
+  (values))
+
+(defn-inline ensure-array-of-ssbo-binding-ranges
+    ((ctx cepl-context) (id array-index)) (values)
+  (%with-cepl-context-slots (array-of-ssbo-binding-ranges) ctx
+    (let ((curr-len (length array-of-ssbo-binding-ranges)))
+      (when (>= id curr-len)
+        (let ((new-arr
+               (make-array (+ id 10) :element-type '(unsigned-byte 32)
+                           :initial-element 0)))
+          (loop
+             :for i :below curr-len
+             :do (setf (aref new-arr i)
+                       (aref array-of-ssbo-binding-ranges i)))
+          (setf array-of-ssbo-binding-ranges new-arr)))))
+  (values))
+
 (defn %register-ssbo-id ((ctx cepl-context) (ssbo-binding-point array-index))
     (values)
-  (%with-cepl-context-slots (array-of-ssbo-bindings-buffer-ids) ctx
-    (ensure-vec-index array-of-ssbo-bindings-buffer-ids ssbo-binding-point
-                      +null-gl-id+ gl-id))
+  (ensure-array-of-ssbo-bindings-buffer-ids ctx ssbo-binding-point)
   (values))
 
 (defn ssbo-bind-buffer-id-range ((ctx cepl-context)
@@ -579,10 +651,8 @@
       ctx
     (let ((bind-id (if (unknown-gl-id-p id) 0 id))
           (range-index (the array-index (+ (* id 2) 1))))
-      (ensure-vec-index array-of-ssbo-bindings-buffer-ids ssbo-binding-point
-                        +null-gl-id+ gl-id)
-      (ensure-vec-index array-of-ssbo-binding-ranges range-index
-                        0 (unsigned-byte 32))
+      (ensure-array-of-ssbo-bindings-buffer-ids ctx ssbo-binding-point)
+      (ensure-array-of-ssbo-binding-ranges ctx range-index)
       (%gl:bind-buffer-range
        #.(gl-enum :shader-storage-buffer)
        ssbo-binding-point
@@ -615,10 +685,15 @@
   ;; don't worry about checking cache for avoiding rebinding as we dont want to
   ;; cache ranges (yet?)
   (%with-cepl-context-slots (array-of-transform-feedback-bindings-buffer-ids) ctx
-    (ensure-vec-index array-of-transform-feedback-bindings-buffer-ids
-                      tfb-binding-point
-                      +null-gl-id+
-                      gl-id)
+    (let ((curr-len (length array-of-transform-feedback-bindings-buffer-ids)))
+        (when (>= tfb-binding-point curr-len)
+          (let ((new-arr (make-array (+ 10 tfb-binding-point) :element-type 'gl-id
+                                     :initial-element +null-gl-id+)))
+            (loop
+               :for i :below curr-len
+               :do (setf (aref new-arr i)
+                         (aref array-of-transform-feedback-bindings-buffer-ids i)))
+            (setf array-of-transform-feedback-bindings-buffer-ids new-arr))))
     (let ((bind-id (if (unknown-gl-id-p id) 0 id)))
       (%gl:bind-buffer-range
        #.(gl-enum :transform-feedback-buffer)

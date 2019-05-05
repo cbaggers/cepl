@@ -44,6 +44,14 @@
 (deftype stencil-mask ()
   '(unsigned-byte 8))
 
+(defconstant +gl-color-mask-bit-size+
+  #.(* 8 (cffi:foreign-type-size '%gl::clearbuffermask)))
+(defconstant +unknown-clear-mask+
+  #.(1- (expt 2 +gl-color-mask-bit-size+)))
+(deftype clear-buffer-mask ()
+  '(unsigned-byte #.+gl-color-mask-bit-size+))
+
+
 (defun+ indexp (x)
   (typep x 'c-array-index))
 
@@ -537,8 +545,8 @@
 (defstruct (transform-feedback-stream
              (:constructor %make-tfs)
              (:conc-name %tfs-))
-  (arrays nil :type (or null (array gpu-array-bb (*))))
-  (pending-arrays nil :type (or null (array gpu-array-bb (*))))
+  (arrays nil :type (or null (simple-array gpu-array-bb (*))))
+  (pending-arrays nil :type (or null (simple-array gpu-array-bb (*))))
   (bound nil :type boolean)
   (current-prog-id +unknown-gl-id+ :type gl-id))
 
@@ -561,11 +569,10 @@
   ;; Once empty info is set we never remove it, we track emptiness with the
   ;; attachment-count slot
   (empty-params nil :type (or null empty-fbo-params))
+  (color-arrays-fill-pointer 0 :type c-array-index)
   (color-arrays (make-array 0 :element-type 'att
-                            :initial-element (symbol-value '+null-att+)
-                            :adjustable t
-                            :fill-pointer 0)
-                :type (array att *))
+                            :initial-element (symbol-value '+null-att+))
+                :type (simple-array att (*)))
   (depth-array (make-att) :type att)
   (stencil-array (make-att) :type att)
   ;;
@@ -573,7 +580,7 @@
    (error "draw-buffer array must be provided when initializing an fbo"))
   (clear-mask (cffi:foreign-bitfield-value
                '%gl::ClearBufferMask '(:color-buffer-bit))
-              :type fixnum)
+              :type clear-buffer-mask)
   (is-default nil :type boolean)
   (attachment-count 0 :type (unsigned-byte 8))
   (blending-params (make-blending-params :mode-rgb :func-add

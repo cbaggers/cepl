@@ -445,6 +445,7 @@
            :%fbo-id
            :%fbo-empty-params
            :%fbo-color-arrays
+           :%fbo-color-arrays-fill-pointer
            :%fbo-depth-array
            :%fbo-stencil-array
            :%fbo-draw-buffer-map
@@ -1137,6 +1138,7 @@
            :clear
            :clear-fbo
            :clear-attachment
+           :clear-attachments
            :empty-fbo-params
            :empty-fbo-params-dimensions
            :empty-fbo-params-layer-count
