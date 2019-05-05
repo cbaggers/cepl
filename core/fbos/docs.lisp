@@ -355,7 +355,7 @@ t -  Which means the all attachments will be available to be drawn into
      will draw into the first attachment, the second output to the second
      attachment, etc
 
-an array produced by called attachment-pattern -
+an array produced by calling `attachment-pattern` -
      This option allows you to control which attachments are bound to
      which outputs. For example in the following..
 
@@ -399,6 +399,36 @@ You normally dont need to worry about the target as the last two are only used
 when you need certain GL read and write operations to happen to different
 buffers. It remains for those who know they need this but otherwise you can
 let CEPL handle it.
+")
+
+  (defmacro with-outputs-to-attachments
+      "
+This macro lets you rebind which pipeline output map to which of the color
+attachments in the current fbo.
+
+To use it you must have already bound and fbo (see `with-fbo-bound`), you
+then pass an attachment pattern (created using `attachment-pattern`) as the
+primary argument.
+
+For example:
+
+    (with-outputs-to-attachments ((attachment-pattern 2 0))
+      ..
+      etc)
+
+Here output 0 is bound to attachment 2 and output 1 is bound to attachment 0.
+
+The :check keyword argument with `with-outputs-to-attachments` informs CEPL
+whether you want to check that the attachment pattern provided is valid for the
+currently bound fbo.
+
+Note: If you want to bind the fbo and immediately set these mappings then instead
+use the :gpu-buffers argument to `with-fbo-bound`. For example the above mapping
+can be achieved with:
+
+    (with-fbo-bound (fbo :draw-buffers (attachment-pattern 2 0))
+      ..
+      etc)
 ")
 
   (defun attachment-tex

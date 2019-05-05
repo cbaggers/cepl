@@ -1018,6 +1018,15 @@ buffer-stream or vao as glsl does not directly support that type.~@[~%~%~a~]"
   (when (find type '(:short :ushort :signed-short :unsigned-short))
     "Perhaps this was meant to be used as the index?"))
 
+(deferror fbo-missing-outputs () (missing fbo)
+    "CEPL - with-outputs-to-attachment~s: The current fbo does not have
+the following color attachments: ~{~a~^, ~}
+
+Fbo: ~a"
+  (if (= (length missing) 1) "" "s")
+  missing
+  fbo)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

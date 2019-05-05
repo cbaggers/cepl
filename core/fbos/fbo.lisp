@@ -1783,72 +1783,51 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;;----------------------------------------------------------------------
 
-;; Gotta decide if I want this public and what kinds of safety checks it
-;; should do
+(defun throw-missing-col-attrs (pattern fbo col-arrs fp)
+  (let* ((base #.(gl-enum :color-attachment0))
+         (missing
+          (loop
+             :for c :across pattern
+             :for index := (- c base)
+             :unless (and (< index fp) (att-array (aref col-arrs index)))
+             :collect c)))
+    (error 'fbo-missing-outputs :missing missing :fbo fbo)))
 
-;; Remake this, it's out of date
-
-#+nil
-(defmacro %with-draw-buffers (draw-buffers &body body)
-  (labels ((draw-buffer-pattern-p (draw-buffers)
-             (and (listp draw-buffers)
-                  (eq (first draw-buffers) 'attachment-pattern)
-                  (every #'integerp (rest draw-buffers))))
-           (gen-draw-buffer-call-from-pattern (ctx draw-buffers)
-             (let ((pattern (rest draw-buffers)))
-               (alexandria:with-gensyms (l-arr ptr)
-                 `(let ((,l-arr ,(make-array (length pattern)
-                                            :element-type 'gl-enum-value
-                                            :initial-contents pattern)))
-                    (declare (dynamic-extent ,l-arr)
-                             #+sbcl(sb-ext:muffle-conditions
-                                    sb-ext:compiler-note))
-                    (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
-                      (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
-                            ,ptr)
-                      (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
-                            ,(length pattern))
-                      (%gl:draw-buffers ,(length pattern) ,ptr))))))
-           (gen-draw-buffer-call-from-array-form (ctx form)
-             (alexandria:with-gensyms (l-arr l-arr-len ptr)
-               `(let* ((,l-arr ,form)
-                       (,l-arr-len (array-total-size ,l-arr)))
-                  (declare (type (simple-array gl-enum-value (*)) ,l-arr)
-                           #+sbcl(sb-ext:muffle-conditions
-                                  sb-ext:compiler-note))
-                  (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
-                    (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
-                          ,ptr)
-                    (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
-                          ,l-arr-len)
-                    (%gl:draw-buffers ,l-arr-len ,ptr)))))
-           (%write-restore-draw-buffers (ctx old-ptr old-len)
-             (unless (null draw-buffers)
-               `((%gl:draw-buffers ,old-len ,old-ptr)
-                 (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
-                       ,old-ptr)
-                 (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
-                       ,old-len)))))
-    (alexandria:with-gensyms (old-draw-buffer-ptr old-draw-buffer-len ctx)
-      `(with-cepl-context (,ctx)
-         (let* (,@(unless (null draw-buffers)
-                    `((,old-draw-buffer-ptr
-                       (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx))
-                      (,old-draw-buffer-len
-                       (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)))))
+(defmacro with-outputs-to-attachments ((draw-buffers &key (check t))
+                                       &body body)
+  (alexandria:with-gensyms
+      (old-draw-buffer-ptr old-draw-buffer-len l-arr l-arr-len ptr ctx)
+    `(with-cepl-context (,ctx)
+       (%with-cepl-context-slots
+           (current-draw-buffers-ptr current-draw-buffers-len)
+           ,ctx
+         (let* ((,old-draw-buffer-ptr current-draw-buffers-ptr)
+                (,old-draw-buffer-len current-draw-buffers-len)
+                (,l-arr ,draw-buffers))
+           ,@(unless (null check)
+               `((when ,check
+                   (let* ((current-fbo (draw-fbo-bound (cepl-context)))
+                          (arrs (%fbo-color-arrays current-fbo))
+                          (fp (%fbo-color-arrays-fill-pointer current-fbo))
+                          (base #.(gl-enum :color-attachment0)))
+                     (loop
+                        :for c :across ,l-arr
+                        :for index := (- c base)
+                        :unless (and (< index fp)
+                                     (att-array (aref arrs index)))
+                        :do (throw-missing-col-attrs
+                             ,l-arr current-fbo arrs fp))))))
            (release-unwind-protect
-               ,(cond ((null draw-buffers)
-                       `(progn
-                          ,@body))
-                      ((draw-buffer-pattern-p draw-buffers)
-                       `(progn
-                          ,(gen-draw-buffer-call-from-pattern ctx draw-buffers)
-                          ,@body))
-                      (t
-                       `(progn
-                          ,(gen-draw-buffer-call-from-array-form ctx draw-buffers)
-                          ,@body)))
-             ,@(%write-restore-draw-buffers
-                ctx
-                old-draw-buffer-ptr
-                old-draw-buffer-len)))))))
+               (progn
+                 (let* ((,l-arr-len (array-total-size ,l-arr)))
+                   (declare (type (simple-array gl-enum-value (*)) ,l-arr)
+                            #+sbcl(sb-ext:muffle-conditions
+                                   sb-ext:compiler-note))
+                   (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+                     (setf current-draw-buffers-ptr ,ptr)
+                     (setf current-draw-buffers-len ,l-arr-len)
+                     (%gl:draw-buffers ,l-arr-len ,ptr)))
+                 ,@body)
+             (%gl:draw-buffers ,old-draw-buffer-len ,old-draw-buffer-ptr)
+             (setf current-draw-buffers-ptr ,old-draw-buffer-ptr)
+             (setf current-draw-buffers-len ,old-draw-buffer-len)))))))

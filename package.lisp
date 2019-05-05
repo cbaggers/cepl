@@ -184,7 +184,8 @@
            :not-a-gpu-lambda
            :bad-c-array-element
            :no-named-stages
-           :bad-type-for-buffer-stream-data))
+           :bad-type-for-buffer-stream-data
+           :fbo-missing-outputs))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -1134,6 +1135,7 @@
            :make-fbo
            :check-framebuffer-status
            :with-fbo-bound
+           :with-outputs-to-attachments
            :default-fbo
            :clear
            :clear-fbo

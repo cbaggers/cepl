@@ -94,6 +94,7 @@ This mainly covers features & news rather than individual bugfixes. When we are 
 ### 2019-05-05
 - Added `#'clear-attachments`
 - `clear-fbo` now let's you specify attachments to clear
+- Added `with-outputs-to-attachments` which lets you rebind which outputs from your pipelines map to which of the currently bound fbo attachments
 
 ### 2019-04-XX
 - stability work on `with-context-state-restored`. More coming to this soon.
