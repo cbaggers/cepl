@@ -728,10 +728,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
           'fbo-target-not-valid-constant
           :target target)
   (labels (;;--------------------------------------------------------------
-           (draw-buffer-pattern-p (draw-buffers)
-             (and (listp draw-buffers)
-                  (eq (first draw-buffers) 'color-attachments)
-                  (every #'integerp (rest draw-buffers))))
            (gen-draw-buffers-from-fbo (ctx fbo)
              (alexandria:with-gensyms (ptr len)
                `(let ((,ptr (%fbo-draw-buffer-map ,fbo))
@@ -744,19 +740,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                   (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
                         ,len)
                   (values))))
-           (gen-draw-buffer-call-from-pattern (ctx draw-buffers)
-             (let ((pattern (rest draw-buffers)))
-               (alexandria:with-gensyms (l-arr ptr)
-                 `(let ((,l-arr ,draw-buffers))
-                    (declare (dynamic-extent ,l-arr)
-                             #+sbcl(sb-ext:muffle-conditions
-                                    sb-ext:compiler-note))
-                    (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
-                      (setf (cepl.context::%cepl-context-current-draw-buffers-ptr ,ctx)
-                            ,ptr)
-                      (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
-                            ,(length pattern))
-                      (%gl:draw-buffers ,(length pattern) ,ptr))))))
            (gen-draw-buffer-call-from-array-form (ctx form)
              (alexandria:with-gensyms (l-arr l-arr-len ptr)
                `(let* ((,l-arr ,form)
@@ -785,10 +768,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                        ,(if with-blending
                              `(cepl.blending::%with-blending ,fbo t nil ,@body)
                              `(progn ,@body))))
-                   ((draw-buffer-pattern-p draw-buffers)
-                    `(progn
-                       ,(gen-draw-buffer-call-from-pattern ctx draw-buffers)
-                       ,@body))
                    (t
                     `(progn
                        ,(gen-draw-buffer-call-from-array-form ctx draw-buffers)
