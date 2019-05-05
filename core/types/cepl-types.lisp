@@ -38,6 +38,9 @@
 (deftype attachment-num ()
   '(unsigned-byte 16))
 
+(deftype extended-attachment-num ()
+  '(signed-byte 32))
+
 (deftype attachment-name ()
   '(or attachment-num symbol))
 

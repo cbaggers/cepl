@@ -285,6 +285,7 @@
            :tex-unit
            :stencil-mask
            :attachment-num
+           :extended-attachment-num
            :attachment-name
            :indexp
 
@@ -1122,7 +1123,8 @@
           :cepl.viewports :cepl.measurements :cepl.memory
           :cepl.build)
   (:import-from :cepl.context :%with-cepl-context-slots)
-  (:export :fbo
+  (:export :+discard-attachment+
+           :fbo
            :fbo-p
            :fbo-blending-params
            :attachment

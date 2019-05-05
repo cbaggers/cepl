@@ -367,6 +367,8 @@ an array produced by calling `attachment-pattern` -
     output 0 is bound to attachment 0 but output 1 is bound to
     attachment 2.
 
+To specify that an output is discarded use +discard-attachment+ in place of an
+color attachment number.
 
 **-- with-viewport --**
 
@@ -421,6 +423,9 @@ Here output 0 is bound to attachment 2 and output 1 is bound to attachment 0.
 The :check keyword argument with `with-outputs-to-attachments` informs CEPL
 whether you want to check that the attachment pattern provided is valid for the
 currently bound fbo.
+
+To specify that an output is discarded use +discard-attachment+ in place of an
+color attachment number.
 
 Note: If you want to bind the fbo and immediately set these mappings then instead
 use the :gpu-buffers argument to `with-fbo-bound`. For example the above mapping

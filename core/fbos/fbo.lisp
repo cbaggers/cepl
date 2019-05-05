@@ -219,7 +219,9 @@
 
 ;;----------------------------------------------------------------------
 
-(defn-inline color-attachment-enum ((attachment-num attachment-num))
+(defconstant +discard-attachment+ #.(- (gl-enum :color-attachment0)))
+
+(defn-inline color-attachment-enum ((attachment-num extended-attachment-num))
     gl-enum-value
   (declare (optimize (speed 3) (safety 1) (debug 1)))
   (+ attachment-num #.(gl-enum :color-attachment0)))
@@ -686,7 +688,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
        :do (setf (aref arr i) (color-attachment-enum v)))
     arr))
 
-(defn-inline color-attachments (&rest (vals attachment-num))
+(defn-inline color-attachments (&rest (vals extended-attachment-num))
     (simple-array gl-enum-value (*))
   (declare (optimize (speed 3) (safety 1) (debug 1)))
   (let* ((len (length vals))
@@ -708,7 +710,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
         `(%color-attachments ,known-array (list ,@unknown) ,(length vals))
         known-array)))
 
-(defn attachment-pattern (&rest (vals attachment-num))
+(defn attachment-pattern (&rest (vals extended-attachment-num))
     (simple-array gl-enum-value (*))
   (declare (optimize (speed 3) (safety 1) (debug 1)))
   (warn "CEPL: attachment-pattern is deprecated, please use color-attachments instead")
