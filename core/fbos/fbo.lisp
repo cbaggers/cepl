@@ -30,7 +30,11 @@
 
 (defn viewport-for-array ((arr (or null gpu-array))) (or null viewport)
   (when arr
-    (make-viewport (gpu-array-dimensions arr) (vec2 0f0 0f0))))
+    (let* ((dims (gpu-array-dimensions arr))
+           (vdims (if (= (length dims) 1)
+                      (list (first dims) 1)
+                      dims)))
+      (make-viewport vdims (vec2 0f0 0f0)))))
 
 ;;----------------------------------------------------------------------
 
@@ -531,7 +535,10 @@
           (fixed-sample-locations nil))
       (or (first args) '(nil))
     (let ((dimensions (or (listify dimensions)
-                          (viewport-dimensions (current-viewport)))))
+                          (viewport-dimensions (current-viewport))))
+          (viewport-dims (if (= (length dimensions) 1)
+                             (list (first dimensions) 1)
+                             dimensions)))
       (assert (not (eq (first dimensions) 'quote)) ()
               'quote-symbol-found-in-fbo-dimensions
               :form (first args))
@@ -545,7 +552,7 @@
              :dimensions dimensions
              :layer-count layer-count
              :samples samples
-             :viewport (make-viewport dimensions)
+             :viewport (make-viewport viewport-dims)
              :fixed-sample-locations-p (not (null fixed-sample-locations))))
       ;; return nil as we have nothing that needs to be initialized
       ;; before the fbo can be initialized (no dependancies).
