@@ -95,6 +95,8 @@ This mainly covers features & news rather than individual bugfixes. When we are 
 - Added `#'clear-attachments`
 - `clear-fbo` now let's you specify attachments to clear
 - Added `with-outputs-to-attachments` which lets you rebind which outputs from your pipelines map to which of the currently bound fbo attachments
+- Deprecated `attachment-pattern` in favor of `color-attachments`
+- Can now specify a discarded attachment in `color-attachments` with `+discard-attachment+`
 
 ### 2019-04-XX
 - stability work on `with-context-state-restored`. More coming to this soon.
