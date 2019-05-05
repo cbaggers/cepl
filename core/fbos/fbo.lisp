@@ -670,12 +670,43 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (%bind-fbo default-framebuffer :framebuffer)))
 
-(defn-inline attachment-pattern (&rest (vals gl-enum-value))
+(defn-inline %attachment-pattern ((processed (simple-array gl-enum-value (*)))
+                                  (unprocessed list)
+                                  (total-len gl-sizei))
     (simple-array gl-enum-value (*))
-  (declare (optimize (speed 3) (safety 1) (debug 0)))
-  (make-array (length vals)
-              :element-type 'gl-enum-value
-              :initial-contents vals))
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (let* ((arr (make-array total-len :element-type 'gl-enum-value))
+         (proc-len (length processed)))
+    (loop
+       :for i :below proc-len
+       :do (setf (aref arr i) (aref processed i)))
+    (loop
+       :for v :in unprocessed
+       :for i :from proc-len
+       :do (setf (aref arr i) (color-attachment-enum v)))
+    arr))
+
+(defn-inline attachment-pattern (&rest (vals attachment-num))
+    (simple-array gl-enum-value (*))
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (let* ((len (length vals))
+         (arr (make-array len :element-type 'gl-enum-value)))
+    (loop
+       :for v :in vals
+       :for i :from 0
+       :do (setf (aref arr i) (color-attachment-enum v)))
+    arr))
+
+(define-compiler-macro attachment-pattern (&rest vals)
+  (let* ((known (remove-if-not #'numberp vals))
+         (unknown (remove-if #'numberp vals))
+         (known-array
+          (make-array
+           (length known) :element-type 'gl-enum-value
+           :initial-contents (mapcar #'color-attachment-enum known))))
+    (if unknown
+        `(%attachment-pattern ,known-array (list ,@unknown) ,(length vals))
+        known-array)))
 
 (defn attachment-pattern* ((vals list))
     (simple-array gl-enum-value (*))
@@ -712,9 +743,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
            (gen-draw-buffer-call-from-pattern (ctx draw-buffers)
              (let ((pattern (rest draw-buffers)))
                (alexandria:with-gensyms (l-arr ptr)
-                 `(let ((,l-arr ,(make-array (length pattern)
-                                             :element-type 'gl-enum-value
-                                             :initial-contents pattern)))
+                 `(let ((,l-arr ,draw-buffers))
                     (declare (dynamic-extent ,l-arr)
                              #+sbcl(sb-ext:muffle-conditions
                                     sb-ext:compiler-note))
@@ -1756,6 +1785,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
 
 ;; Gotta decide if I want this public and what kinds of safety checks it
 ;; should do
+
+;; Remake this, it's out of date
 
 #+nil
 (defmacro %with-draw-buffers (draw-buffers &body body)

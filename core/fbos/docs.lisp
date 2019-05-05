@@ -318,7 +318,7 @@ For more details see `cepl.blending`
 This function returns a typed simple-array with is suitable to pass as
 the :draw-buffers argument in `with-fbo-bound`.
 
-The arguments must evaluate to numbers of type (unsigned-byte 32).
+The arguments must evaluate to numbers of type (unsigned-byte 16).
 
 When called inline in a `with-fbo-bound` form there is an opportunity
 for CEPL to optimize the code. For example in this case
