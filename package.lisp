@@ -1129,6 +1129,7 @@
            :attachment-pattern
            :attachment-viewport
            :attachment-blending
+           :color-attachments
            :per-attachment-blending-available-p
            :attachment-tex
            :make-fbo-from-id

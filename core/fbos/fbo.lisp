@@ -670,7 +670,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (%bind-fbo default-framebuffer :framebuffer)))
 
-(defn-inline %attachment-pattern ((processed (simple-array gl-enum-value (*)))
+(defn-inline %color-attachments ((processed (simple-array gl-enum-value (*)))
                                   (unprocessed list)
                                   (total-len gl-sizei))
     (simple-array gl-enum-value (*))
@@ -686,7 +686,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
        :do (setf (aref arr i) (color-attachment-enum v)))
     arr))
 
-(defn-inline attachment-pattern (&rest (vals attachment-num))
+(defn-inline color-attachments (&rest (vals attachment-num))
     (simple-array gl-enum-value (*))
   (declare (optimize (speed 3) (safety 1) (debug 1)))
   (let* ((len (length vals))
@@ -697,7 +697,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
        :do (setf (aref arr i) (color-attachment-enum v)))
     arr))
 
-(define-compiler-macro attachment-pattern (&rest vals)
+(define-compiler-macro color-attachments (&rest vals)
   (let* ((known (remove-if-not #'numberp vals))
          (unknown (remove-if #'numberp vals))
          (known-array
@@ -705,16 +705,20 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
            (length known) :element-type 'gl-enum-value
            :initial-contents (mapcar #'color-attachment-enum known))))
     (if unknown
-        `(%attachment-pattern ,known-array (list ,@unknown) ,(length vals))
+        `(%color-attachments ,known-array (list ,@unknown) ,(length vals))
         known-array)))
 
-(defn attachment-pattern* ((vals list))
+(defn attachment-pattern (&rest (vals attachment-num))
     (simple-array gl-enum-value (*))
   (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (make-array (length vals)
-              :element-type 'gl-enum-value
-              :initial-contents vals))
-
+  (warn "CEPL: attachment-pattern is deprecated, please use color-attachments instead")
+  (let* ((len (length vals))
+         (arr (make-array len :element-type 'gl-enum-value)))
+    (loop
+       :for v :in vals
+       :for i :from 0
+       :do (setf (aref arr i) (color-attachment-enum v)))
+    arr))
 
 (defmacro with-fbo-bound ((fbo &key (target :draw-framebuffer)
                                (with-viewport t) (attachment-for-size 0)
@@ -726,7 +730,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (labels (;;--------------------------------------------------------------
            (draw-buffer-pattern-p (draw-buffers)
              (and (listp draw-buffers)
-                  (eq (first draw-buffers) 'attachment-pattern)
+                  (eq (first draw-buffers) 'color-attachments)
                   (every #'integerp (rest draw-buffers))))
            (gen-draw-buffers-from-fbo (ctx fbo)
              (alexandria:with-gensyms (ptr len)
