@@ -672,22 +672,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   (%with-cepl-context-slots (default-framebuffer) (cepl-context)
     (%bind-fbo default-framebuffer :framebuffer)))
 
-(defn-inline %color-attachments ((processed (simple-array gl-enum-value (*)))
-                                  (unprocessed list)
-                                  (total-len gl-sizei))
-    (simple-array gl-enum-value (*))
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (let* ((arr (make-array total-len :element-type 'gl-enum-value))
-         (proc-len (length processed)))
-    (loop
-       :for i :below proc-len
-       :do (setf (aref arr i) (aref processed i)))
-    (loop
-       :for v :in unprocessed
-       :for i :from proc-len
-       :do (setf (aref arr i) (color-attachment-enum v)))
-    arr))
-
 (defn-inline color-attachments (&rest (vals extended-attachment-num))
     (simple-array gl-enum-value (*))
   (declare (optimize (speed 3) (safety 1) (debug 1)))
@@ -700,15 +684,26 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     arr))
 
 (define-compiler-macro color-attachments (&rest vals)
-  (let* ((known (remove-if-not #'numberp vals))
-         (unknown (remove-if #'numberp vals))
-         (known-array
-          (make-array
-           (length known) :element-type 'gl-enum-value
-           :initial-contents (mapcar #'color-attachment-enum known))))
-    (if unknown
-        `(%color-attachments ,known-array (list ,@unknown) ,(length vals))
-        known-array)))
+  (if (every #'constantp vals)
+      (make-array
+       (length vals) :element-type 'gl-enum-value
+       :initial-contents
+       (loop
+          :for v :in vals
+          :if (symbolp v) :collect (color-attachment-enum (symbol-value v))
+          :else :collect (color-attachment-enum v)))
+      `(make-array
+        ,(length vals) :element-type 'gl-enum-value
+        :initial-contents
+        (list
+         ,@(loop
+              :for v :in vals
+              :collect
+                (if (constantp v)
+                    (if (symbolp v)
+                        (color-attachment-enum (symbol-value v))
+                        (color-attachment-enum v))
+                    `(color-attachment-enum ,v)))))))
 
 (defn attachment-pattern (&rest (vals extended-attachment-num))
     (simple-array gl-enum-value (*))
@@ -1798,8 +1793,9 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                      (loop
                         :for c :across ,l-arr
                         :for index := (- c base)
-                        :unless (and (< index fp)
-                                     (att-array (aref arrs index)))
+                        :unless (or (= index +discard-attachment+)
+                                    (and (< index fp)
+                                         (att-array (aref arrs index))))
                         :do (throw-missing-col-attrs
                              ,l-arr current-fbo arrs fp))))))
            (release-unwind-protect
