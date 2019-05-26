@@ -115,7 +115,7 @@
 
 (defn-inline active-texture-num ((num (unsigned-byte 16))) (values)
   (declare (profile t))
-  (%gl:active-texture (+ #x84C0 num))
+  (%gl:active-texture (+ #.(gl-enum :texture0) num))
   (values))
 
 ;;------------------------------------------------------------
