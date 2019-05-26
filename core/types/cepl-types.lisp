@@ -50,9 +50,9 @@
 (defconstant +gl-color-mask-bit-size+
   #.(* 8 (cffi:foreign-type-size '%gl::clearbuffermask)))
 (defconstant +unknown-clear-mask+
-  #.(1- (expt 2 +gl-color-mask-bit-size+)))
+  #.(1- (expt 2 (* 8 (cffi:foreign-type-size '%gl::clearbuffermask)))))
 (deftype clear-buffer-mask ()
-  '(unsigned-byte #.+gl-color-mask-bit-size+))
+  '(unsigned-byte #.(* 8 (cffi:foreign-type-size '%gl::clearbuffermask))))
 
 
 (defun+ indexp (x)
