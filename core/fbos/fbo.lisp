@@ -737,7 +737,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                   (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
                         ,len)
                   (values))))
-           (gen-draw-buffer-call-from-array-form (ctx form)
+           (gen-draw-buffer-call-from-array-form (ctx form body)
              (alexandria:with-gensyms (l-arr l-arr-len ptr)
                `(let* ((,l-arr ,form)
                        (,l-arr-len (array-total-size ,l-arr)))
@@ -749,7 +749,8 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                           ,ptr)
                     (setf (cepl.context::%cepl-context-current-draw-buffers-len ,ctx)
                           ,l-arr-len)
-                    (%gl:draw-buffers ,l-arr-len ,ptr)))))
+                    (%gl:draw-buffers ,l-arr-len ,ptr)
+                    ,@body))))
            (%write-draw-buffer-pattern-call (ctx fbo body)
              "This plays with the dispatch call from compose-pipelines
               The idea is that the dispatch func can preallocate one array
@@ -765,10 +766,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                        ,(if with-blending
                              `(cepl.blending::%with-blending ,fbo t nil ,@body)
                              `(progn ,@body))))
-                   (t
-                    `(progn
-                       ,(gen-draw-buffer-call-from-array-form ctx draw-buffers)
-                       ,@body))))
+                   (t (gen-draw-buffer-call-from-array-form ctx draw-buffers body))))
            (%write-restore-draw-buffers (ctx old-ptr old-len)
              (unless (null draw-buffers)
                `((%gl:draw-buffers ,old-len ,old-ptr)
@@ -1799,16 +1797,15 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                         :do (throw-missing-col-attrs
                              ,l-arr current-fbo arrs fp))))))
            (release-unwind-protect
-               (progn
-                 (let* ((,l-arr-len (array-total-size ,l-arr)))
-                   (declare (type (simple-array gl-enum-value (*)) ,l-arr)
-                            #+sbcl(sb-ext:muffle-conditions
-                                   sb-ext:compiler-note))
-                   (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
-                     (setf current-draw-buffers-ptr ,ptr)
-                     (setf current-draw-buffers-len ,l-arr-len)
-                     (%gl:draw-buffers ,l-arr-len ,ptr)))
-                 ,@body)
+               (let* ((,l-arr-len (array-total-size ,l-arr)))
+                 (declare (type (simple-array gl-enum-value (*)) ,l-arr)
+                          #+sbcl(sb-ext:muffle-conditions
+                                 sb-ext:compiler-note))
+                 (cffi:with-pointer-to-vector-data (,ptr ,l-arr)
+                   (setf current-draw-buffers-ptr ,ptr)
+                   (setf current-draw-buffers-len ,l-arr-len)
+                   (%gl:draw-buffers ,l-arr-len ,ptr)
+                   ,@body))
              (%gl:draw-buffers ,old-draw-buffer-len ,old-draw-buffer-ptr)
              (setf current-draw-buffers-ptr ,old-draw-buffer-ptr)
              (setf current-draw-buffers-len ,old-draw-buffer-len)))))))
