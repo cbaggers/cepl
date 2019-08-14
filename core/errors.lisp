@@ -563,7 +563,7 @@ by passing nil as the name and the source for the lambda like this:
     (lambda-g ((vert :vec4) &uniform (factor :float))
       (* vert factor))
 
-We recieved:
+We received:
 ~a
 " form)
 
@@ -1002,7 +1002,7 @@ Initial-Contents: ~s~@[~%~%~a~]"
 CEPL: Small issue in a pipeline definition. Only a pipeline with 2 stages can
 be implicitly named, others must have explicit named stages.
 
-In this case we recieved the following for the stages:
+In this case we received the following for the stages:
 
 ~{~s~%~}
 Each of these stages will need to be named with one each of the following:

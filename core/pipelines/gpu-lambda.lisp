@@ -125,7 +125,7 @@
                                     gpipe-args
                                     compile-context)
   (assert lambda-pipeline-spec ()
-          "Lambda pipeline did not recieve the spec object so cannot make recompilable")
+          "Lambda pipeline did not receive the spec object so cannot make recompilable")
   (flet ((transplant-data-to-our-spec (our-spec new-spec)
            (with-slots ((new-res cached-compile-results)
                         (new-prog-ids prog-ids))

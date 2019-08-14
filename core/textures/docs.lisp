@@ -22,7 +22,7 @@ understand your usecase.
 `Buffer-texture`s are a special kind of `texture` where the data resides, not in
 texture memory, but in buffer memory.
 
-This means that when you call texref on this texture you will recieve a
+This means that when you call texref on this texture you will receive a
 buffer-backed texture instead of the usual texture-backed ones.
 
 buffer-textures are created by calling `make-texture` with the :buffer key
