@@ -185,7 +185,8 @@
            :bad-c-array-element
            :no-named-stages
            :bad-type-for-buffer-stream-data
-           :fbo-missing-outputs))
+           :fbo-missing-outputs
+           :pipeline-invalid-null-stage))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)

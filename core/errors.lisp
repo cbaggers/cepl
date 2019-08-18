@@ -1027,6 +1027,16 @@ Fbo: ~a"
   missing
   fbo)
 
+(deferror pipeline-invalid-null-stage () (name args)
+    "CEPL - An attempt was found to make a pipeline which explicitly used
+nil as the stage designator. This is only valid for :fragment stages
+where you still want to write to the depth buffer
+
+Pipeline name: ~a
+Arguments given: ~s"
+  (or name "<lambda pipeline>")
+  args)
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

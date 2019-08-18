@@ -148,7 +148,7 @@
       ;; To be able to be recompiled we need to store the functions we use as
       ;; stages, we parse those out here so they can be stored on the spec
       ;; object
-      (dbind (stage-pairs post) (parse-gpipe-args gpipe-args)
+      (dbind (stage-pairs post) (parse-gpipe-args nil gpipe-args)
         (declare (ignore post))
         (labels (;; When CEPL wants to recompile the 'recompiler' function is
                  ;; called. It is store on the spec object so it can be
@@ -269,7 +269,7 @@
 
 (defun+ make-lambda-pipeline-inner
     (gpipe-args compile-context &key (register-lambda-pipeline t))
-  (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
+  (destructuring-bind (stage-pairs post) (parse-gpipe-args nil gpipe-args)
     (let* ((func-specs
             (mapcar #'cdr stage-pairs)))
       (if (stages-require-partial-pipeline func-specs)
@@ -297,7 +297,9 @@
                                                  :pipeline
                                                  func-specs
                                                  t))
-         (primitive (compile-context-primitive compile-context)))
+         (primitive (compile-context-primitive compile-context))
+         (enable-rasterizer
+          (not (null (find :fragment stage-pairs :key #'car)))))
     (multiple-value-bind (compiled-stages
                           prog-id
                           prog-ids
@@ -362,7 +364,8 @@
                                        u-cleanup
                                        u-lets
                                        u-uploads
-                                       uniform-names))
+                                       uniform-names
+                                       enable-rasterizer))
                          compiled-stages
                          prog-id
                          tfb-group-count))
@@ -395,22 +398,18 @@
                                           u-cleanup
                                           u-lets
                                           u-uploads
-                                          uniform-names)
+                                          uniform-names
+                                          enable-rasterizer)
   `(lambda (compiled-stages prog-id tfb-group-count)
      (use-program (cepl-context) prog-id)
-     (let* ( ;; all image units will be >0 as 0 is used as scratch tex-unit
+     (let* (;; all image units will be >0 as 0 is used as scratch tex-unit
             (image-unit 0)
             ;; The primitive used by transform feedback. When nil
             ;; the primitive comes from the render-mode
             (tfs-primitive (when (> tfb-group-count 0)
                              (get-transform-feedback-primitive compiled-stages)))
             (tfs-array-count tfb-group-count)
-            ;; If there are no implicit-uniforms we need a no-op
-            ;; function to call
-            (has-fragment-stage
-             (not (null (find-if (lambda (x)
-                                   (typep x 'compiled-fragment-stage))
-                                 compiled-stages))))
+            (enable-rasterizer ,enable-rasterizer)
             ;;
             ;; {todo} explain
             ,@(mapcar (lambda (x)
@@ -422,7 +421,7 @@
        (declare (ignorable image-unit
                            tfs-primitive
                            tfs-array-count
-                           has-fragment-stage)
+                           enable-rasterizer)
                 (type symbol tfs-primitive)
                 (type (unsigned-byte 8) tfs-array-count)
                 ,@(mapcar (lambda (x)

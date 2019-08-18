@@ -108,6 +108,22 @@
   (bt:with-lock-held (*gpu-func-specs-lock*)
     (incf *gpu-func-diff-tag*)))
 
+(defun+ null-func-spec ()
+  (make-instance 'gpu-func-spec
+                 :name nil
+                 :in-args nil
+                 :uniforms nil
+                 :context nil
+                 :body nil
+                 :shared nil
+                 :equivalent-inargs nil
+                 :equivalent-uniforms nil
+                 :actual-uniforms nil
+                 :doc-string "<null stage>"
+                 :declarations nil
+                 :missing-dependencies nil
+                 :diff-tag 0))
+
 (defun+ %make-gpu-func-spec (name in-args uniforms context body shared
                             equivalent-inargs equivalent-uniforms
                             actual-uniforms
@@ -268,8 +284,9 @@
   key)
 
 (defmethod spec->func-key ((spec gpu-func-spec))
-  (new-func-key (slot-value spec 'name)
-                (mapcar #'second (slot-value spec 'in-args))))
+  (let ((name (slot-value spec 'name)))
+    (when name
+      (new-func-key name (mapcar #'second (slot-value spec 'in-args))))))
 
 (defmethod spec->func-key ((spec func-key))
   spec)

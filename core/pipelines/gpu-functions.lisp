@@ -308,6 +308,7 @@
       (varjo:rolling-translate
        (loop
           :for (stage-type . func-spec) :in parsed-gpipe-args
+          :when func-spec
           :collect (parsed-gpipe-args->v-translate-args name
                                                         primitive
                                                         stage-type
@@ -452,7 +453,7 @@
            (error 'stage-not-found :designator stage-designator))))
     (t (error "CEPL: Bug in get-stage-key - ~s" stage-designator))))
 
-(defun+ parse-gpipe-args (args)
+(defun+ parse-gpipe-args (pipeline-name args)
   "Gets the stage pairs and context for the given gpipe form.
    If there are only two gpu functions named and no explicit stages then
    it is assumed that the first is the vertex stage and the second the fragment
@@ -476,7 +477,7 @@
              (assert (= (count-if #'keywordp args)
                         (floor len 2))
                      () 'no-named-stages :stages args)
-             (parse-gpipe-args-explicit args))))
+             (parse-gpipe-args-explicit pipeline-name args))))
          post)))))
 
 (defun+ parse-gpipe-args-implicit (args)
@@ -509,11 +510,23 @@
      `(function (,(second name))))
     (t name)))
 
-(defun+ parse-gpipe-args-explicit (args)
-  (dbind (&key vertex tessellation-control tessellation-evaluation
-               geometry fragment compute) args
+(defun+ parse-gpipe-args-explicit (pipeline-name args)
+  (dbind (&key (vertex nil vertex-set)
+               (tessellation-control nil tess-control-set)
+               (tessellation-evaluation nil tess-evaluation-set)
+               (geometry nil geometry-set)
+               (fragment nil fragment-set)
+               (compute nil compute-set)) args
     (let ((compute (when compute
                      (massage-compute-stage-name compute))))
+      (when (or (and (not vertex) vertex-set)
+                (and (not tessellation-control) tess-control-set)
+                (and (not tessellation-evaluation) tess-evaluation-set)
+                (and (not geometry) geometry-set)
+                (and (not compute) compute-set))
+        (error 'pipeline-invalid-null-stage
+               :name pipeline-name
+               :args args))
       (dbind (v-key tc-key te-key g-key f-key c-key)
           (validate-stage-names (list vertex tessellation-control
                                       tessellation-evaluation
@@ -528,7 +541,7 @@
                                (cons :tessellation-evaluation te-key))
                              (when geometry
                                (cons :geometry g-key))
-                             (when fragment
+                             (when fragment-set
                                (cons :fragment f-key))
                              (when compute
                                (cons :compute c-key))))))

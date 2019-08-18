@@ -62,7 +62,8 @@
   ;; The heart of defpipeline-g. It is seperate from defpipeline-g so that
   ;; it can be used from the recompile func with having to deal with the
   ;; outer macro
-  (destructuring-bind (stage-pairs post) (parse-gpipe-args gpipe-args)
+  (destructuring-bind (stage-pairs post)
+      (parse-gpipe-args name gpipe-args)
     ;;
     (let* ((func-specs (mapcar #'cdr stage-pairs))
            (aggregate-actual-uniforms (aggregate-uniforms name
@@ -135,7 +136,7 @@
   (tfs-array-count 0 :type (unsigned-byte 8))
   ;;
   ;; When nil we enable fragment-discard
-  (has-fragment-stage t :type boolean)
+  (enable-rasterizer t :type boolean)
   ;;
   ;; Uniform IDs
   (uniform-int-ids
@@ -261,7 +262,7 @@
                         pipeline-state-implicit-uniform-upload-func
                         pipeline-state-tfs-primitive
                         pipeline-state-tfs-array-count
-                        pipeline-state-has-fragment-stage)
+                        pipeline-state-enable-rasterizer)
                 ,@(when static `((profile t))))
        #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
        ,@(unless (or compute (typep primitive 'varjo::dynamic))
@@ -297,8 +298,8 @@
                       (pipeline-state-tfs-primitive state))
                      (tfs-array-count
                       (pipeline-state-tfs-array-count state))
-                     (has-fragment-stage
-                      (pipeline-state-has-fragment-stage state))))
+                     (enable-rasterizer
+                      (pipeline-state-enable-rasterizer state))))
                ;; Uniforms vars
                ,@(mapcan #'unpack-arrayd-assigner uniform-assigners))
 
@@ -361,7 +362,8 @@
             (dbind (name . key) pair
               (etypecase key
                 (func-key (cons name (gpu-func-spec key)))
-                (gpu-func-spec pair))))
+                (gpu-func-spec pair)
+                (null (cons name (null-func-spec))))))
           stage-pairs))
 
 (defun+ swap-versions (stage-pairs glsl-version)
@@ -483,7 +485,10 @@
                            aggregate-public-uniforms
                            uniform-assigners
                            state-tag)
-  (let ((uniform-names (mapcar #'first aggregate-public-uniforms)))
+  (let ((uniform-names
+         (mapcar #'first aggregate-public-uniforms))
+        (enable-raster
+         (not (null (find :fragment stage-pairs :key #'car)))))
     (multiple-value-bind (upload-forms int-arr-size uint-arr-size)
         (generate-uniform-upload-forms uniform-assigners)
       `(prog1
@@ -538,12 +543,8 @@
                          (get-transform-feedback-primitive compiled-stages))
                    (setf (pipeline-state-tfs-array-count state)
                          tfb-group-count))
-
-                 (let ((frag (find-if (lambda (x)
-                                        (typep x 'compiled-fragment-stage))
-                                      compiled-stages)))
-                   (setf (pipeline-state-has-fragment-stage state)
-                         (not (null frag))))
+                 (setf (pipeline-state-enable-rasterizer state)
+                       ,enable-raster)
                  (setf (pipeline-state-diff-tag state)
                        ,state-tag)
                  new-prog-ids)))
@@ -632,7 +633,7 @@
      (handle-transform-feedback ,ctx-symb draw-mode prog-id tfs-primitive
                                 tfs-array-count)
 
-     (when (not has-fragment-stage)
+     (when (not enable-rasterizer)
        (gl:enable :rasterizer-discard))
      (,@(if profile-name
             `(profile-block (,profile-name :draw))
@@ -683,7 +684,7 @@
                        (buffer-stream-start stream)
                        (buffer-stream-length stream)
                        instance-count)))))))
-     (when (not has-fragment-stage)
+     (when (not enable-rasterizer)
        (gl:disable :rasterizer-discard))))
 
 
