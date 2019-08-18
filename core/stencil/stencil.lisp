@@ -1,5 +1,11 @@
 (in-package :cepl.stencil)
 
+;; {TODO} CEPL seems to have no way to ask about whether stencil is
+;;        enabled (e.g. (gl:enable :stencil-test))
+;;        This is a tricky as then how do we reset it? Could this be
+;;        messing up the nuklear tests we did before?
+
+
 (define-const +valid-stencil-tests+
     '(:never :always :less :lequal :greater :gequal :equal :notequal
       #'never #'always #'< #'<= #'> #'>= #'= #'/=)
@@ -111,6 +117,7 @@
 (defn stencil-test-enum-to-func ((enum (signed-byte 32))) function
   (declare (optimize (speed 3) (safety 1) (debug 1))
            (profile t))
+  ;; {TODO} ALL CASES ARE CONSECUTIVE. TURN INTO ARRAY
   (ecase enum
     (#.(gl-enum :never) #'never)
     (#.(gl-enum :always) #'always)
