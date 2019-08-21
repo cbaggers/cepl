@@ -374,7 +374,9 @@
        (cons stage-name (clone-stage-spec spec :new-context new-context)))))
 
 (defun+ %compile-link-and-upload (name primitive stage-pairs)
-  (let* ((glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
+  (let* ((stage-pairs (remove-if (lambda (x) (not(slot-value (cdr x) 'name)))
+                                 stage-pairs))
+         (glsl-version (compute-glsl-version-from-stage-pairs stage-pairs))
          (stage-pairs (swap-versions stage-pairs glsl-version))
          (compiled-stages (%varjo-compile-as-pipeline name primitive stage-pairs))
          (stages-objects (mapcar #'%gl-make-shader-from-varjo compiled-stages)))
