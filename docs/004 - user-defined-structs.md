@@ -33,13 +33,13 @@ will return a fully populated struct **in c memory**.
 
 For those who havent seen it yet, the `v!` syntax is used to make vectors. Here we are making a vector3.
 
-Notice that we are passing Lisp data into the `make` function and CEPL is transparently translating it to *c data*. More on this later.
+Notice that we are passing Lisp data into the `make` function, and CEPL is transparently translating it to *c data*. More on this later.
 
 Remember that, like in C, not providing values for the slots leaves the field undefined. The value in the slot will be garbage, and trying to retrieve it may crash CEPL.
 
 ### Accessors
 
-In our `our-data` example, the slot named `position` doesn't have an accesor but the `val` slot does. What is going on here?
+In our `our-data` example, the slot named `position` doesn't have an accesor, but the `val` slot does. What is going on here?
 
 Well, both slots will get lisp-struct-style accessor functions, so you can use `(our-data-position x)` and `(our-data-val x)` to get the slot values.
 
@@ -47,9 +47,9 @@ However, because of the `:accessor` in `val`s slot definition, you can also use 
 
 #### Performance niggle
 
-Because the result of using `:accessor` is a method there will be a performance difference between `#'our-data-val` and `#'val` when called on the cpu.  This may not be a problem for your project, but do it keep it in mind.
+Because the result of using `:accessor` is a method, there will be a performance difference between `#'our-data-val` and `#'val` when called on the cpu.  This may not be a problem for your project, but do it keep it in mind.
 
-Also note that I said "on the cpu". As we shall see, our shaders are statically typed so there is *zero* performace penatly for using `#'val` on the gpu (so do it!).
+Also note that I said "on the cpu". As we shall see, our shaders are statically typed so there is *zero* performace penalty for using `#'val` on the gpu (so do it!).
 
 ### Options
 
@@ -62,7 +62,7 @@ Let's look at another example struct:
        ...)
 ```
 
-This time the name is inside a list along with one or more options. This much like providing options to regular Lisp structs. These options are rather technical, and are not likely to be of interest to most people.  OK with that out of the way, let's have a look at these options:
+This time the name is inside a list along with one or more options. This is much like providing options to regular Lisp structs. These options are rather technical, and are not likely to be of interest to most people.  OK with that out of the way, let's have a look at these options:
 
 **:constructor**
 
@@ -95,4 +95,4 @@ This time the name is inside a list along with one or more options. This much li
 - nil means that you will not get a `populate` function for this type.
 
 
-Some of the above options are redundant in combination with others. For example, the `push-g` method uses `#'populate` behind the scenes, so with `populate` disabled `#'push-g` is created this type. CEPL needs to do a better job at communicating these conflicts to the user.
+Some of the above options are redundant in combination with others. For example, the `push-g` method uses `#'populate` behind the scenes, so with `populate` disabled, no `#'push-g` is created for this type. CEPL needs to do a better job at communicating these conflicts to the user.

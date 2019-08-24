@@ -18,10 +18,10 @@ Buffer layouts are defined as lists of the format:
 
 So a layout for a buffer containing 3 `:floats` and 140 instances of our `our-data` struct type looks like this:
 ```lisp
-`((:float 3 0) ('vert-data 140 12))
+`((:float 3 0) ('our-data 140 12))
 ```
 
-With this knowledge we can now start working with buffers:
+With this knowledge, we can now start working with buffers:
 
 ### Making Buffers
 ```lisp

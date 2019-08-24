@@ -1,6 +1,6 @@
 # Blam! Code
 
-Rather than mess around with a lot more introductions let's just look at a simple code example. Don't expect to understand the details right away; it will take a little getting used to.
+Rather than mess around with a lot more introductions, let's just look at a simple code example. Don't expect to understand the details right away; it will take a little getting used to.
 
 Below is the standard OpenGL version of 'hello world', a colored triangle.
 ```lisp

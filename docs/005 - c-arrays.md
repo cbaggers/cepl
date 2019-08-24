@@ -4,7 +4,7 @@ Let me take a second before getting into our scheduled programming to praise the
 
 ### Right, back to the snooker:
 
-When dealing with graphics we are very often working with large arrays of information, information like the vertices of our meshes or positions of lights. CFFI allows us to allocate arrays of different types, but in CEPL we also want to attach extra metadata that will be used behind the scenes.  To this end CEPL has its own c-array type that uses CFFI behind the scenes.
+When dealing with graphics, we are very often working with large arrays of information, like the vertices of our meshes or positions of lights. CFFI allows us to allocate arrays of different types, but in CEPL we also want to attach extra metadata that will be used behind the scenes.  To this end, CEPL has its own c-array type that uses CFFI behind the scenes.
 
 In this document, the terms "C arrays" and "c-array" refer to the special CFFI arrays that are managed by CEPL.
 
@@ -34,7 +34,7 @@ We will go through these one by one and talk about what is going on:
 
 **0:** In example `0` we make a c-array of 100 floats with *no initial-contents*.
 
-As you probably guessed, that first `nil` argument is where you can provide data to be used as the initial contents. By not providing it we, are leaving those values uninitialized, so the normal rules apply (it may be full of garbage)
+As you probably guessed, that first `nil` argument is where you can provide data to be used as the initial contents. By not providing it, we are leaving those values uninitialized, so the normal rules apply (it may be full of garbage).
 
 **1:**
 This is simply to show that we can use our structs from the previous chapter in c-arrays.
@@ -51,18 +51,18 @@ You can even provide Lisp data when the `element-type` is a CEPL struct. In this
        (val :int :accessor val))
 ```
 
-In this case we end up with a c-array with two elements of type `our-data`. The first struct has the `position` `(v! 1 2 3)` and the `val` `10`; the second struct has the `position` `(v! 4 5 6)` and the `val` 20.
+In this case we end up with a c-array with two elements of type `our-data`. The first struct has the `position` `(v! 1 2 3)` and the `val` `10`; the second struct has the `position` `(v! 4 5 6)` and the `val` `20`.
 
 **4:**
 Hey now, this is odd; we only provide the lisp data. How does CEPL know what to do?  Here `#'make-c-array` scans each element of the Lisp data and tries to find the *smallest cepl compatible type* that will hold all the values. In this case, because of the number `3.0`, the array has to have `element-type` `:float`.
 
-Now this feature is very handy (especially in the repl) but there are some caveats.
+Now this feature is very handy (especially in the repl), but there are some caveats.
 
 - It can only infer a few types:
   `:uint8` `:int8` `:int` `:float` & `:double`
 
 - Scanning for types is not fast:
-  This is a great feature to use at the REPL, because odds are CEPL can work out the type fast enough that you won't notice a delay. **However** -- this is not good in performance-critical code, so if you need the speed, always specify your `element-type`.
+  This is a great feature to use at the REPL because odds are CEPL can work out the type fast enough that you won't notice a delay. **However** -- this is not good in performance-critical code, so if you need the speed, always specify your `element-type`.
 
 **5:**
 This demonstrates two points:
@@ -79,7 +79,7 @@ the resulting `element-type` would be `:int8`.
 
 ### Getting and Setting
 
-There's not point having an array we can't access so let's do that now.  In CL we normally use `(aref some-array subscripts ..)` to get an element from the array and `(setf (aref some-array subscripts ..) val)` to set an element.
+There's not point having an array we can't access, so let's do that now.  In CL we normally use `(aref some-array subscripts ..)` to get an element from the array and `(setf (aref some-array subscripts ..) val)` to set an element.
 
 In CEPL we use `(aref-c some-array subscripts ..)` to get an element and `(setf (aref-c some-array subscripts ..) val)` to set an element.
 

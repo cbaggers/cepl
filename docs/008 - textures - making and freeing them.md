@@ -15,7 +15,7 @@ So a texture is a datastructure that contains a number of 'images'.
 
 #### Image
 
-But *image* is well named, right? NO! An *image* in opengl can be 1-, 2-, or 3-dimensional. It can contain bytes, floats, doubles, vectors... these are starting to sounds just like arrays again! Actually that is really what they are: arrays, with some extra features of course, but arrays none the less. In fact the GL wiki makes this very clear:
+But *image* is well named, right? NO! An *image* in opengl can be 1-, 2-, or 3-dimensional. It can contain bytes, floats, doubles, vectors... these are starting to sounds just like arrays again! Actually, that is really what they are: arrays, with some extra features of course, but arrays none the less. In fact, the GL wiki makes this very clear:
 
 > an image is defined as a single array of pixels of a certain dimensionality (1D, 2D, or 3D), with a particular size, and a specific format.
 
@@ -36,16 +36,16 @@ gives us this:
 
 Which is a `gpu-array` *backed by* an OpenGL buffer, which means that the data for the array is stored in an OpenGL buffer.
 
-When we access a `gpu-array` from a texture we will see it is *backed-by* `:texture`... But we are getting ahead of ourselves, let's recap.
+When we access a `gpu-array` from a texture, we will see it is *backed-by* `:texture`... But we are getting ahead of ourselves, let's recap.
 
 #### Where were we?
 
-OK, so in CEPL terminology, a *texture* is a datastructure that contains 1 or more gpu-arrays. OpenGL textures can a have a bewildering number of options applied to them and while CEPL can make the experience easier, some things are just going to be confusing at first. Rest assured that you can get useful stuff done without knowing all of it. If you want to survey your options check out this pages:
+OK, so in CEPL terminology, a *texture* is a datastructure that contains 1 or more gpu-arrays. OpenGL textures can a have a bewildering number of options applied to them and while CEPL can make the experience easier, some things are just going to be confusing at first. Rest assured that you can get useful stuff done without knowing all of it. If you want to survey your options, check out these pages:
 
-https://www.opengl.org/wiki/Texture
-https://www.opengl.org/wiki/Texture_Storage
+*https://www.opengl.org/wiki/Texture
+*https://www.opengl.org/wiki/Texture_Storage
 
-With that said let's begin. I'm going to start with a bunch of simple examples to show things informally, and then we can do the rigourous version later.
+With that said, let's begin. I'm going to start with a bunch of simple examples to show things informally, and then we can do the rigourous version later.
 
 #### 1D Texture
 
@@ -76,14 +76,14 @@ As does `push-g`:
 (push-g '(5 6 7 8) a)
 #<GPU-ARRAY :element-type :R8 :dimensions (4) :backed-by :TEXTURE>
 ```
-As before we can make an array without initializing the contents:
+As before, we can make an array without initializing the contents:
 ```lisp
 CEPL> (make-texture nil :dimensions 10 :element-type :uint8)
 #<GL-TEXTURE-1D (10)>
 CEPL> (texref *)
 #<GPU-ARRAY :element-type :R8 :dimensions (10) :backed-by :TEXTURE>
 ```
-Eagle-eyed readers will notice that the `:element-type` we provided was `:uint8`, yet the `:element-type` of the gpu-array is `:r8`. Textures have special type names for their data and CEPL is just picking the matching type. OpenGL's texture types are a topic of their own so I'll cover it a bit later. For now just know that CEPL lets you use regular types when it can work out the equivalent **or** the official OpenGL names.
+Eagle-eyed readers will notice that the `:element-type` we provided was `:uint8`, yet the `:element-type` of the gpu-array is `:r8`. Textures have special type names for their data, and CEPL is just picking the matching type. OpenGL's texture types are a topic of their own, so I'll cover it a bit later. For now just know that CEPL lets you use regular types when it can work out the equivalent **or** the official OpenGL names.
 
 #### More dimensions
 
@@ -118,7 +118,7 @@ I'll just paste chunks of the GL wiki's description of mipmaps as it is very goo
 
 > The base level of a texture does not have to be loaded. As long as you specify the range of mipmaps correctly, you can leave out any mipmap levels you want.
 
-There are two mipmap related `&keys` in `#'make-texture`, `:mipmap` and `:generate-mipmaps`.
+There are two mipmap related `&keys` in `#'make-texture`: `:mipmap` and `:generate-mipmaps`.
 
 - `:mipmap` let's you pick the number of mipmap levels there will be
 - `:generate-mipmaps` is either `t` or `nil` and specifies whether GL will generate the mipmap images for you or not.
@@ -128,7 +128,7 @@ CEPL> (defvar x2d (make-texture nil :dimensions '(512 512) :element-type :uint8-
 #<GL-TEXTURE-2D (512x512) mip-levels:4>
 ```
 
-To get those different gpu-arrays we can still use `texref` but we can now use the mipmap-level `&key`
+To get those different gpu-arrays we can still use `texref`, but we can now use the mipmap-level `&key`
 ```lisp
 CEPL> (texref x2d :mipmap-level 0)
 #<GPU-ARRAY :element-type :RGBA8 :dimensions (512 512) :backed-by :TEXTURE>
@@ -138,7 +138,7 @@ CEPL> (texref x2d :mipmap-level 2)
 #<GPU-ARRAY :element-type :RGBA8 :dimensions (85 85) :backed-by :TEXTURE>
 ```
 
-Remember each level is just a `gpu-array` so `pull-g`ing and `push-g`ing to them work just fine.
+Remember each level is just a `gpu-array`, so `pull-g`ing and `push-g`ing to them work just fine.
 
 If you want to generate mipmaps for an existing texture, simply call `#'generate-mipmaps` on it.
 
@@ -150,9 +150,9 @@ Cube textures are pretty cool, as the GL wiki puts it:
 
 So in our parlance, a cubemap texture has 6 2D `gpu-arrays` at each mipmap level.
 
-The way we sample the data from cube textures is cool, you can read all the gory details here: https://www.opengl.org/wiki/Cubemap_Texture#Samplers
+The way we sample the data from cube textures is cool. You can read all the gory details here: https://www.opengl.org/wiki/Cubemap_Texture#Samplers
 
-To make a cube-texture in CEPL we can write the following:
+To make a cube-texture in CEPL, we can write the following:
 ```lisp
 CEPL> (defvar c (make-texture nil :dimensions '(10 10) :element-type :uint8-vec4 :cubes t))
 #<GL-TEXTURE-CUBE-MAP (10x10)>
@@ -172,11 +172,11 @@ Textures can hold also arrays of `gpu-arrays`. The description from the wiki is 
 
 > An Array Texture is a Texture where each mipmap level contains an array of images of the same size. Array textures may have Mipmaps, but each mipmap in the texture has the same number of levels.
 
-Notice they use the term **layers** when talking about the elements of the array, and number of layers when talking about the length. This is a bit odd but it is OpenGL parlance so (for now at least) Cepl is using it.
+Notice they use the term **layers** when talking about the elements of the array and **number of layers** when talking about the length. This is a bit odd, but it is OpenGL parlance, so (for now at least) Cepl is using it.
 
-As always, the source of truth on these matters in the GL spec and https://www.opengl.org/wiki/Array_Texture
+As always, the source of truth on these matters is the GL spec and https://www.opengl.org/wiki/Array_Texture
 
-Array-Textures can be arrays of 1D, 2D, 3D or Cube texture. Cepl tries to get this right but, to be honest, it gets rather confusing. If you find a combination that should work (according to the GL spec) and doesnt, please let us know on github.
+Array-Textures can be arrays of 1D, 2D, 3D or Cube texture. Cepl tries to get this right, but to be honest, it gets rather confusing. If you find a combination that should work (according to the GL spec) and doesnt, please let us know on github.
 
 To make an array texture we use the `:layer-count` `&key` argument:
 ```lisp
@@ -278,7 +278,7 @@ Arghh, too many formats. The short version is that `pixel formats` are not equal
 
 See here for details: https://www.opengl.org/wiki/Pixel_Transfer#Format_conversion
 
-There are only certain combinations that make sense and CEPL should just **do the right thing**. Any cases where it doesn't are considered a bug.
+There are only certain combinations that make sense, and CEPL should just **do the right thing**. Any cases where it doesn't are considered a bug.
 
 
 #### Freeing
