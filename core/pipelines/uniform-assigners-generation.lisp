@@ -159,7 +159,7 @@
          (if (and (typep ,arg-name 'ubo)
                   (eq ',type-spec (ubo-data-type ,arg-name)))
              (%gl:uniform-block-binding prog-id ,id-name (ubo-id ,arg-name))
-             (error "Invalid type for ubo argument:~%Required:~a~%Recieved:~a~%"
+             (error "Invalid type for ubo argument:~%Required:~a~%Received:~a~%"
                     ',type-spec (ubo-data-type ,arg-name))))))))
 
 (defun+ make-ssbo-assigner (indexes arg-name varjo-type glsl-name)
@@ -179,7 +179,7 @@
          (if (and (typep ,arg-name 'ssbo)
                   (eq ',type-spec (ssbo-data-type ,arg-name)))
              (%gl:shader-storage-block-binding prog-id ,id-name (ssbo-id ,arg-name))
-             (error "Invalid type for ssbo argument:~%Required:~a~%Recieved:~a~%"
+             (error "Invalid type for ssbo argument:~%Required:~a~%Received:~a~%"
                     ',type-spec (ssbo-data-type ,arg-name))))))))
 
 (defun+ get-uniform-block-index (program name)
