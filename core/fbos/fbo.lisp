@@ -28,12 +28,24 @@
 
 ;;----------------------------------------------------------------------
 
-(defn viewport-for-array ((arr (or null gpu-array))) (or null viewport)
-  (when arr
-    (let* ((dims (gpu-array-dimensions arr))
-           (vdims (if (= (length dims) 1)
-                      (list (first dims) 1)
-                      dims)))
+(defn viewport-for-attachment
+    ((obj (or null gpu-array-t render-buffer layered-set)))
+    (or null viewport)
+  (when obj
+    (let* ((dims
+            (typecase obj
+              (gpu-array-t
+               (gpu-array-dimensions obj))
+              (render-buffer
+               (cepl.render-buffers:render-buffer-dimensions obj))
+              (layered-set
+               (gpu-array-dimensions
+                (texref (layered-set-texture obj)
+                        :mipmap-level (layered-set-level-num obj))))))
+           (vdims
+            (if (= (length dims) 1)
+                (list (first dims) 1)
+                dims)))
       (make-viewport vdims (vec2 0f0 0f0)))))
 
 (defn empty-fbo-params-viewport ((params empty-fbo-params))
@@ -83,7 +95,7 @@
           (make-array (length color-arrays)
                       :element-type 'att
                       :initial-contents (mapcar (lambda (x)
-                                                  (let ((v (viewport-for-array
+                                                  (let ((v (viewport-for-attachment
                                                             x)))
                                                     (make-att :array x
                                                               :viewport v)))
@@ -94,7 +106,7 @@
   (when depth-array
     (setf (%fbo-depth-array fbo-obj)
           (make-att :array depth-array
-                    :viewport (viewport-for-array depth-array))))
+                    :viewport (viewport-for-attachment depth-array))))
   (when stencil-array
     (if depth-array
         (assert (and (eq depth-array stencil-array)
@@ -105,7 +117,7 @@
 
     (setf (%fbo-stencil-array fbo-obj)
           (make-att :array stencil-array
-                    :viewport (viewport-for-array stencil-array))))
+                    :viewport (viewport-for-attachment stencil-array))))
   ;;
   (setf (%fbo-is-default fbo-obj) is-default)
   ;;
@@ -338,7 +350,7 @@
 ;;----------------------------------------------------------------------
 
 (defn %attachment ((fbo fbo) (attachment-name attachment-name))
-    (or null gpu-array-t)
+    (or null gpu-array-t render-buffer layered-set)
   (case attachment-name
     (:d (att-array (%fbo-depth-array fbo)))
     (:s (att-array (%fbo-stencil-array fbo)))
@@ -348,10 +360,11 @@
            (att-array (aref arr attachment-name))
            nil)))))
 
-(defn (setf %attachment) ((value (or null gpu-array-t render-buffer))
-                          (fbo fbo)
-                          (attachment-name attachment-name))
-    (or null gpu-array-t)
+(defn (setf %attachment)
+    ((value (or null gpu-array-t render-buffer layered-set))
+     (fbo fbo)
+     (attachment-name attachment-name))
+    (or null gpu-array-t render-buffer layered-set)
   (declare (optimize (speed 3) (debug 1) (safety 1)))
   ;; we dont remove the empty-info if an empty fbo has something
   ;; attached to it. emptiness is tracked using attachment-count
@@ -369,7 +382,7 @@
              (unless current
                (incf-att-count)
                (setf (att-viewport (%fbo-depth-array fbo))
-                     (viewport-for-array value))
+                     (viewport-for-attachment value))
                (setf (att-array (%fbo-depth-array fbo)) value))
              (when current
                (decf-att-count)
@@ -385,7 +398,7 @@
              (when current
                (decf-att-count)))
          (setf (att-viewport (%fbo-stencil-array fbo))
-               (viewport-for-array value))
+               (viewport-for-attachment value))
          (setf (att-array (%fbo-stencil-array fbo)) value)))
       (otherwise
        (let ((arr (ensure-fbo-array-size fbo (1+ attachment-name))))
@@ -398,18 +411,22 @@
                  (decf-att-count)
                  (setf (att-blend att) nil)
                  (setf (att-bparams att) nil)))
-           (setf (att-viewport att) (viewport-for-array value))
+           (setf (att-viewport att) (viewport-for-attachment value))
            (setf (att-array att) value)))))))
 
 
 ;; NOTE: The following seperation is to allow shadowing in compose-pipelines
 (defn-inline attachment ((fbo fbo) (attachment-name attachment-name))
-    (or null gpu-array-t)
+    (or null gpu-array-t render-buffer layered-set)
   (assert (not (fbo-empty-p fbo)) ()
           "Empty FBOs have no attachments: ~a" fbo)
   (%attachment fbo attachment-name))
 
-(defun+ (setf attachment) (value fbo attachment-name)
+(defn (setf attachment)
+    ((value (or null gpu-array-t render-buffer layered-set))
+     (fbo fbo)
+     (attachment-name attachment-name))
+    (or null gpu-array-t render-buffer layered-set)
   (assert (not (%fbo-is-default fbo)) ()
           "Cannot modify attachments of default-framebuffer")
   (with-cepl-context (ctx)
@@ -426,7 +443,9 @@
             (gpu-array-t
              (fbo-attach-array ctx fbo value attachment-name))
             (render-buffer
-             (fbo-attach-render-buffer ctx fbo value attachment-name))))
+             (fbo-attach-render-buffer ctx fbo value attachment-name))
+            (layered-set
+             (fbo-attach-layered-set ctx fbo value attachment-name))))
         ;; update cached gl details
         (%update-fbo-state fbo))))
   ;;
@@ -503,6 +522,11 @@
      (make-fbo-now %pre%)
      fbo-obj
      (append
+      (reduce (lambda (a x)
+                (if (typep x 'layered-set)
+                    (cons (layered-set-texture x) a)
+                    a))
+              fuzzy-attach-args)
       (remove-if-not #'holds-gl-object-ref-p
                      (cepl-utils:flatten fuzzy-attach-args))
       arrays))))
@@ -841,6 +865,7 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
      with size of (current-viewport) and attaches
    - (keyword texarray): attaches the tex-array
    - (keyword texture): attaches the root tex-array
+   - (keyword layered-set): attaches the layered-set
    - (keyword some-type) any types that supports the generic dimensions function
                          creates a new texture at the framesize of the object
                          and attaches it to attachment named by keyword"
@@ -852,10 +877,10 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                :args args
                :sizes dims))))
   (mapcar (lambda (processed-pattern)
-            (dbind (attachment-name tex-array owned-by-fbo) processed-pattern
+            (dbind (attachment-name att-value owned-by-fbo) processed-pattern
               (setf (%fbo-owns fbo attachment-name) owned-by-fbo)
-              (setf (attachment fbo attachment-name) tex-array)
-              tex-array))
+              (setf (attachment fbo attachment-name) att-value)
+              att-value))
           (process-fbo-init-pattern args)))
 
 (defun+ extract-dimension-from-make-fbo-pattern (pattern)
@@ -874,6 +899,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t)
      (gpu-array-dimensions (second pattern)))
+    ;; use an existing layered-set
+    ((typep (second pattern) 'layered-set)
+     (let ((ls (second pattern)))
+       (gpu-array-dimensions
+        (texref (layered-set-texture ls)
+                :mipmap-level (layered-set-level-num ls)))))
     ;; use the first gpu-array in texture
     ((typep (second pattern) 'texture)
      (gpu-array-dimensions (texref (second pattern))))
@@ -1200,6 +1231,23 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
             ;; set gl_Layer to (2 * 6) + 4, or 16.
             (:texture-cube-map-array (error "attaching to cube-map-array textures has not been implemented yet"))))))))
 
+(defun+ fbo-attach-layered-set (cepl-context fbo layered-set attachment-name)
+  ;; To attach images to an FBO, we must first bind the FBO to the context.
+  ;; target could be any of '(:framebuffer :read-framebuffer :draw-framebuffer)
+  ;; but we just pick :read-framebuffer as in this case it makes no difference
+  ;; to us
+  (let ((attach-enum (get-gl-attachment-enum cepl-context fbo attachment-name)))
+    (with-fbo-bound (fbo :target :read-framebuffer :with-viewport nil :draw-buffers nil)
+      (let* ((texture (layered-set-texture layered-set))
+             (level-num (layered-set-level-num layered-set))
+             (tex-id (texture-id texture))
+             (image-format (texture-image-format texture)))
+        (assert (attachment-compatible attachment-name image-format t)
+                ()  "attachment is not compatible with the layered-set~%~a~%~a"
+                image-format layered-set)
+        (%gl:framebuffer-texture :read-framebuffer
+                                 attach-enum tex-id level-num)))))
+
 (defun+ fbo-detach (cepl-context fbo attachment-name)
   ;; The texture argument is the texture object name you want to attach from.
   ;; If you pass zero as texture, this has the effect of clearing the attachment
@@ -1224,11 +1272,12 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
   :type list)
 
 (defun+ process-fbo-init-pattern (pattern)
-  (labels ((name (x) (if (listp x) (first x) x))
-           (for-color (x) (numberp (name x)))
-           (for-depth (x) (eq (name x) :d))
-           (for-stencil (x) (eq (name x) :s)))
-
+  (labels ((p-name (x) (if (listp x) (first x) x))
+           ;;
+           (for-color (x) (numberp (p-name x)))
+           (for-depth (x) (eq (p-name x) :d))
+           (for-stencil (x) (eq (p-name x) :s)))
+    ;;
     (let* ((c (remove-if-not #'for-color pattern))
            (d (remove-if-not #'for-depth pattern))
            (s (remove-if-not #'for-stencil pattern))
@@ -1326,6 +1375,10 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
                t))))
     ;; use an existing gpu-array
     ((typep (second pattern) 'gpu-array-t) (list (first pattern)
+                                                 (second pattern)
+                                                 t))
+    ;; use an existing gpu-array
+    ((typep (second pattern) 'layered-set) (list (first pattern)
                                                  (second pattern)
                                                  t))
     ;; use the first gpu-array in texture

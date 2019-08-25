@@ -187,7 +187,10 @@
            :bad-type-for-buffer-stream-data
            :fbo-missing-outputs
            :pipeline-invalid-null-stage
-           :invalid-gpu-function-args))
+           :invalid-gpu-function-args
+           :invalid-texture-for-layered-set
+           :unspecified-level-for-layered-set
+           :invalid-mipmap-index))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
@@ -293,6 +296,12 @@
            :extended-attachment-num
            :attachment-name
            :indexp
+
+           :layered-set
+           :%make-layered-set
+           :layered-set-texture
+           :layered-set-level-num
+           :layered-set-face-num
 
            :gpu-fence
            :%make-gpu-fence
@@ -1019,6 +1028,9 @@
            :texture-mutable-p
            :buffer-texture
            :buffer-texture-p
+
+           :layered-set
+           :layered-set-ref
 
            :copy-c-array-to-texture-backed-gpu-array
            :copy-lisp-data-to-texture-backed-gpu-array

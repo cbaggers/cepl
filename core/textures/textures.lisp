@@ -28,33 +28,44 @@
 ;;------------------------------------------------------------
 
 (defun+ texref (texture &key (mipmap-level 0) (layer 0) (cube-face 0))
-  (when (and (> cube-face 0) (not (texture-cubes-p texture)))
+  (when (and cube-face
+             (> cube-face 0)
+             (not (texture-cubes-p texture)))
     (error "Cannot get the cube-face from a texture that wasnt made with :cubes-p t:~%~a" texture))
-  (if (eq (texture-type texture) :texture-buffer)
-      (if (> (+ mipmap-level layer cube-face) 0)
-          (error "Texture index out of range")
-          (buffer-texture-backing-array texture))
-      (if (valid-index-p texture mipmap-level layer cube-face)
-          (let ((result
-                 (%make-gpu-array-t
-                  :texture texture
-                  :texture-type (texture-type texture)
-                  :level-num mipmap-level
-                  :layer-num layer
-                  :face-num cube-face
-                  :dimensions (dimensions-at-mipmap-level
-                               texture mipmap-level)
-                  :image-format (texture-image-format texture))))
+  (cond
+    ((or (null cube-face) (null layer)) ;; layered
+     (assert (not (null mipmap-level)) ()
+             'unspecified-level-for-layered-set
+             :texture texture
+             :level mipmap-level
+             :layer layer
+             :face cube-face)
+     (make-layered-set texture mipmap-level))
+    ((eq (texture-type texture) :texture-buffer)
+     (if (> (+ mipmap-level layer cube-face) 0)
+         (error "Texture index out of range")
+         (buffer-texture-backing-array texture)))
+    ((valid-index-p texture mipmap-level layer cube-face)
+     (let ((result
+            (%make-gpu-array-t
+             :texture texture
+             :texture-type (texture-type texture)
+             :level-num mipmap-level
+             :layer-num layer
+             :face-num cube-face
+             :dimensions (dimensions-at-mipmap-level
+                          texture mipmap-level)
+             :image-format (texture-image-format texture))))
 
-            (when (or (null (cepl-context))
-                      (null (cepl.context::%cepl-context-gl-context
-                             (cepl-context))))
-              (cepl.context::delay-initialization
-               (cepl-context)
-               (lambda () (reinit-on-context result))
-               (list texture)))
-            result)
-          (error "Texture index out of range"))))
+       (when (or (null (cepl-context))
+                 (null (cepl.context::%cepl-context-gl-context
+                        (cepl-context))))
+         (cepl.context::delay-initialization
+          (cepl-context)
+          (lambda () (reinit-on-context result))
+          (list texture)))
+       result))
+    (t (error "Texture index out of range"))))
 
 (defun+ reinit-on-context (gpu-array)
   (let ((texture (gpu-array-t-texture gpu-array))
@@ -69,10 +80,11 @@
 (defun+ valid-index-p (texture mipmap-level layer cube-face)
   (or (= 0 mipmap-level layer cube-face)
       (and (< mipmap-level (texture-mipmap-levels texture))
-           (< layer (texture-layer-count texture))
-           (if (texture-cubes-p texture)
-               (<= cube-face 6)
-               (= 0 cube-face)))))
+           (or (null layer) (< layer (texture-layer-count texture)))
+           (or (null cube-face)
+               (if (texture-cubes-p texture)
+                   (<= cube-face 6)
+                   (= 0 cube-face))))))
 
 ;;------------------------------------------------------------
 
@@ -269,7 +281,7 @@
   (if (= level 0)
       (texture-base-dimensions texture)
       (loop :for i :in (texture-base-dimensions texture) :collect
-         (/ i (expt 2 level)))))
+           (floor (/ i (expt 2 level))))))
 
 ;;------------------------------------------------------------
 ;; {TODO} Texture sizes have a limit based on the GL
@@ -1004,6 +1016,66 @@ the width to see at what point the width reaches 0 or GL throws an error."
     (make-array (length dim) :element-type 'single-float
                 :initial-contents (mapcar (lambda (i) (coerce i 'single-float))
                                           dim))))
+
+;;------------------------------------------------------------
+;; layered sets
+
+(defvar *layered-texture-types*
+  '(:texture-1d-array
+    :texture-2d-array
+    :texture-3d
+    :texture-cube-map
+    :texture-cube-map-array))
+
+(defun make-layered-set (texture mipmap-level)
+  (let ((type (texture-type texture))
+        (mip-count (texture-mipmap-levels texture)))
+    (assert (find type *layered-texture-types*) ()
+            'invalid-texture-for-layered-set
+            :type type
+            :texture texture)
+    (assert (< mipmap-level mip-count) ()
+            'invalid-mipmap-index
+            :texture texture
+            :mipmap-requested mipmap-level
+            :mipmap-count mip-count)
+    (%make-layered-set
+     :texture texture
+     :level-num mipmap-level)))
+
+(defmethod print-object ((obj layered-set) stream)
+  (let ((tex (layered-set-texture obj))
+        (mip (layered-set-level-num obj)))
+    (format stream "#<LAYERED-SET ~a ~a :MIPMAP-LEVEL ~a>"
+            (texture-type tex)
+            (dimensions-at-mipmap-level tex mip)
+            (layered-set-level-num obj))))
+
+;; - single mipmap level of a 1d or 2d array texture
+;; - single mipmap level of a 3d texture
+;; - single mipmap level of a cubemap texture
+;; - single mipmap level of cubemap array texture
+
+(defun layered-set-ref (layered-set index)
+  (let* ((texture (layered-set-texture layered-set))
+         (type (texture-type texture))
+         (level (layered-set-level-num layered-set)))
+    (ecase type
+      (:texture-1d-array
+       (texref texture :mipmap-level level :layer index))
+      (:texture-2d-array
+       (texref texture :mipmap-level level :layer index))
+      (:texture-3d
+       (error "We cannot return a portion of a 3d gpu-array so we are
+unable to return a single layer of a texture-3d backed layered-set"))
+      (:texture-cube-map
+       (texref texture :mipmap-level level :cube-face index))
+      (:texture-cube-map-array
+       (multiple-value-bind (layer face) (floor index 6)
+         (texref texture
+                 :mipmap-level level
+                 :layer layer
+                 :cube-face face))))))
 
 ;;------------------------------------------------------------
 
