@@ -24,12 +24,15 @@
                               (incf idx))))
                  idx))
              (dpop-with-array (data)
-               (loop
-                  :for i :below (array-total-size data)
-                  :for elem := (row-major-aref data i)
-                  :do (if structp
-                          (populate (row-major-aref-c c-array i) elem)
-                          (setf (row-major-aref-c c-array i) elem)))))
+               (let ((size (if (array-has-fill-pointer-p data)
+                               (fill-pointer data)
+                               (array-total-size data))))
+                 (loop
+                    :for i :below size
+                    :for elem := (row-major-aref data i)
+                    :do (if structp
+                            (populate (row-major-aref-c c-array i) elem)
+                            (setf (row-major-aref-c c-array i) elem))))))
       (when check-sizes
         (unless (validate-dimensions data (c-array-dimensions c-array)
                                      structp)

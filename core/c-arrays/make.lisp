@@ -105,14 +105,16 @@
                   dimensions)
               (if initial-contents
                   (reverse
-                   (typecase initial-contents
-                     (sequence
+                   (etypecase initial-contents
+                     (array
+                      (if (array-has-fill-pointer-p initial-contents)
+                          (list (fill-pointer initial-contents))
+                          (array-dimensions initial-contents)))
+                     (list
                       (let ((guess (forgiving-list-dimension-guess initial-contents)))
                         (if struct-type-p
                             (butlast guess)
-                            guess)))
-                     (array
-                      (array-dimensions initial-contents))))
+                            guess)))))
                   (error "make-c-array must be given initial-elements or dimensions"))))
          (initial-contents (if inferred-lisp-type
                                (update-data initial-contents inferred-lisp-type)
