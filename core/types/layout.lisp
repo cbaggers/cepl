@@ -397,14 +397,14 @@
   ;; rows, the matrix is stored identically to an array of C column
   ;; vectors with R components each, according to rule (4).
   (let* ((array-type-spec
-          (or (assocr type
-                      '((v-mat2 . (v-vec2 2))
-                        (v-mat3 . (v-vec3 3))
-                        (v-mat4 . (v-vec4 4))
-                        (v-dmat2 . (v-dvec2 2))
-                        (v-dmat3 . (v-dvec3 3))
-                        (v-dmat4 . (v-dvec4 4))))
-              (error 'could-not-layout-type :type type)))
+          (typecase type
+            (v-mat2 '(v-vec2 2))
+            (v-mat3 '(v-vec3 3))
+            (v-mat4 '(v-vec4 4))
+            (v-dmat2 '(v-dvec2 2))
+            (v-dmat3 '(v-dvec3 3))
+            (v-dmat4 '(v-dvec4 4))
+            (t (error 'could-not-layout-type :type type))))
          (array-type (type-spec->type array-type-spec)))
     (calc-layout layout-specifier
                  name
