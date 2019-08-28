@@ -381,8 +381,11 @@
                                         last-slot-aligned-offset
                                         last-slot-machine-size
                                         equiv-array-type)))
-        (with-slots (varjo-type) equiv-layout
-          (setf varjo-type type))
+        (with-slots (varjo-type element-layout) equiv-layout
+          (setf varjo-type type)
+          (with-slots (machine-unit-size varjo-type) element-layout
+            (setf machine-unit-size (* machine-unit-size rows))
+            (setf varjo-type elem-type)))
         equiv-layout))))
 
 (defun calc-col-mat-layout (layout-specifier
@@ -396,7 +399,7 @@
   ;; 5. If the member is a column-major matrix with C columns and R
   ;; rows, the matrix is stored identically to an array of C column
   ;; vectors with R components each, according to rule (4).
-  (let* ((array-type-spec
+  (let* ((equiv-array-type-spec
           (typecase type
             (v-mat2 '(v-vec2 2))
             (v-mat3 '(v-vec3 3))
@@ -405,15 +408,19 @@
             (v-dmat3 '(v-dvec3 3))
             (v-dmat4 '(v-dvec4 4))
             (t (error 'could-not-layout-type :type type))))
-         (array-type (type-spec->type array-type-spec)))
-    (calc-layout layout-specifier
-                 name
-                 parent-type-base-offset
-                 parent-type-aligned-offset
-                 last-slot-base-offset
-                 last-slot-aligned-offset
-                 last-slot-machine-size
-                 array-type)))
+         (equiv-array-type (type-spec->type equiv-array-type-spec))
+         (equiv-layout (calc-layout layout-specifier
+                                    name
+                                    parent-type-base-offset
+                                    parent-type-aligned-offset
+                                    last-slot-base-offset
+                                    last-slot-aligned-offset
+                                    last-slot-machine-size
+                                    equiv-array-type)))
+    (with-slots (varjo-type element-layout) equiv-layout
+      (setf varjo-type type)
+      (setf element-layout nil))
+    equiv-layout))
 
 (defun calc-array-of-structs-layout (layout-specifier
                                      name
