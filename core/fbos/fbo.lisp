@@ -36,6 +36,10 @@
                       dims)))
       (make-viewport vdims (vec2 0f0 0f0)))))
 
+(defn empty-fbo-params-viewport ((params empty-fbo-params))
+    viewport
+  (%empty-fbo-params-viewport params))
+
 ;;----------------------------------------------------------------------
 
 ;; {TODO}
@@ -228,11 +232,6 @@
 
 ;;----------------------------------------------------------------------
 
-(defn %update-fbo-state ((fbo fbo)) fbo
-  (update-clear-mask
-   (update-draw-buffer-map
-    fbo)))
-
 (defn update-clear-mask ((fbo fbo)) fbo
   (declare (optimize (speed 3) (safety 1) (debug 1)))
   (setf (%fbo-clear-mask fbo)
@@ -276,6 +275,11 @@
                          (color-attachment-enum i))
                      :none)))))
   fbo)
+
+(defn %update-fbo-state ((fbo fbo)) fbo
+  (update-clear-mask
+   (update-draw-buffer-map
+    fbo)))
 
 ;;----------------------------------------------------------------------
 
@@ -968,11 +972,6 @@ the value of :TEXTURE-FIXED-SAMPLE-LOCATIONS is not the same for all attached te
        :framebuffer-default-fixed-sample-locations (if value 1 0))
       (setf (%empty-fbo-params-fixed-sample-locations-p params)
             value))))
-
-(defn empty-fbo-params-viewport ((params empty-fbo-params))
-    viewport
-  (%empty-fbo-params-viewport params))
-
 
 (defun+ make-existing-fbo-empty (fbo last-attachment)
   (assert (>= (version-float (cepl-context)) 4.3) ()

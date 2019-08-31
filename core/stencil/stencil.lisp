@@ -62,57 +62,6 @@
 
 
 ;;------------------------------------------------------------
-;; Accessors
-
-(defn-inline stencil-params-test ((params stencil-params)) function
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (stencil-test-enum-to-func (%stencil-params-test params)))
-
-(defn-inline stencil-params-value ((params stencil-params)) (unsigned-byte 8)
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (%stencil-params-value params))
-
-(defn-inline stencil-params-mask ((params stencil-params)) (unsigned-byte 8)
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (%stencil-params-mask params))
-
-(defn-inline stencil-params-on-stencil-test-fail
-    ((params stencil-params)) function
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (stencil-operation-enum-to-func
-   (%stencil-params-on-stencil-test-fail params)))
-
-(defn-inline stencil-params-on-stencil-pass-depth-test-fail
-    ((params stencil-params)) function
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (stencil-operation-enum-to-func
-   (%stencil-params-on-stencil-pass-depth-test-fail params)))
-
-(defn-inline stencil-params-on-stencil-pass-depth-test-pass
-    ((params stencil-params)) function
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (stencil-operation-enum-to-func
-   (%stencil-params-on-stencil-pass-depth-test-pass params)))
-
-(defn-inline stencil-params-on-sfail
-    ((params stencil-params)) function
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (stencil-operation-enum-to-func
-   (%stencil-params-on-stencil-test-fail params)))
-
-(defn-inline stencil-params-on-dpfail
-    ((params stencil-params)) function
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (stencil-operation-enum-to-func
-   (%stencil-params-on-stencil-pass-depth-test-fail params)))
-
-(defn-inline stencil-params-on-dppass
-    ((params stencil-params)) function
-  (declare (optimize (speed 3) (safety 1) (debug 1)))
-  (stencil-operation-enum-to-func
-   (%stencil-params-on-stencil-pass-depth-test-pass params)))
-
-;;------------------------------------------------------------
 
 (defn stencil-test-enum-to-func ((enum (signed-byte 32))) function
   (declare (optimize (speed 3) (safety 1) (debug 1))
@@ -169,6 +118,58 @@
    :on-stencil-pass-depth-test-pass
    (stencil-operation-to-enum on-stencil-pass-depth-test-pass)))
 
+;;------------------------------------------------------------
+;; Accessors
+
+(defn-inline stencil-params-test ((params stencil-params)) function
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (stencil-test-enum-to-func (%stencil-params-test params)))
+
+(defn-inline stencil-params-value ((params stencil-params)) (unsigned-byte 8)
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (%stencil-params-value params))
+
+(defn-inline stencil-params-mask ((params stencil-params)) (unsigned-byte 8)
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (%stencil-params-mask params))
+
+(defn-inline stencil-params-on-stencil-test-fail
+    ((params stencil-params)) function
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (stencil-operation-enum-to-func
+   (%stencil-params-on-stencil-test-fail params)))
+
+(defn-inline stencil-params-on-stencil-pass-depth-test-fail
+    ((params stencil-params)) function
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (stencil-operation-enum-to-func
+   (%stencil-params-on-stencil-pass-depth-test-fail params)))
+
+(defn-inline stencil-params-on-stencil-pass-depth-test-pass
+    ((params stencil-params)) function
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (stencil-operation-enum-to-func
+   (%stencil-params-on-stencil-pass-depth-test-pass params)))
+
+(defn-inline stencil-params-on-sfail
+    ((params stencil-params)) function
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (stencil-operation-enum-to-func
+   (%stencil-params-on-stencil-test-fail params)))
+
+(defn-inline stencil-params-on-dpfail
+    ((params stencil-params)) function
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (stencil-operation-enum-to-func
+   (%stencil-params-on-stencil-pass-depth-test-fail params)))
+
+(defn-inline stencil-params-on-dppass
+    ((params stencil-params)) function
+  (declare (optimize (speed 3) (safety 1) (debug 1)))
+  (stencil-operation-enum-to-func
+   (%stencil-params-on-stencil-pass-depth-test-pass params)))
+
+;;------------------------------------------------------------
 
 (defmethod print-object ((sp stencil-params) stream)
   (print-unreadable-object (sp stream)

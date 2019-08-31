@@ -328,12 +328,6 @@
 
 ;;---------------------------------------------------------------
 
-(defn subseq-g ((array gpu-array-bb) (start c-array-index)
-                &optional (end c-array-index))
-    gpu-array-bb
-  (declare (profile t))
-  (subseq-g-raw array start end :new-element-type nil))
-
 (defn subseq-g-raw ((array gpu-array-bb)
                     (start c-array-index)
                     (end (or null c-array-index))
@@ -360,6 +354,12 @@
        (list (- end start))
        row-alignment
        (gpu-array-bb-element-pixel-format array)))))
+
+(defn subseq-g ((array gpu-array-bb) (start c-array-index)
+                &optional (end c-array-index))
+    gpu-array-bb
+  (declare (profile t))
+  (subseq-g-raw array start end :new-element-type nil))
 
 ;; {TODO} copy buffer to buffer: glCopyBufferSubData
 ;; http://www.opengl.org/wiki/GLAPI/glCopyBufferSubData

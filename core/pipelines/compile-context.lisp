@@ -50,9 +50,7 @@
                             (remove :static raw-context)
                             raw-context))
            (primitive-symb (get-prim-type raw-context))
-           (raw-context (if primitive-symb
-                            (remove primitive-symb raw-context)
-                            raw-context))
+           (raw-context (remove primitive-symb raw-context))
            (stage (first (intersection raw-context varjo:*stage-names*)))
            (raw-context (if stage
                             (remove stage raw-context)

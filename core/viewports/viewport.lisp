@@ -130,7 +130,6 @@
 
 (defn viewport-origin ((viewport viewport)) vec2
   (declare (optimize (speed 3) (debug 1) (safety 1))
-           (inline %current-viewport)
            (profile t))
   (vec2 (float (%viewport-origin-x viewport) 0f0)
         (float (%viewport-origin-y viewport) 0f0)))
@@ -138,10 +137,20 @@
 (defn (setf viewport-origin) ((value (or vec2 uvec2)) (viewport viewport))
     (or vec2 uvec2)
   (declare (optimize (speed 3) (debug 1) (safety 1))
-           (inline %current-viewport)
            (profile t))
-  (setf (%viewport-origin-x viewport) (floor (aref value 0))
-        (%viewport-origin-y viewport) (floor (aref value 1)))
+  (etypecase value
+    (vec2
+     (locally
+         #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+         ;; muffled unavoidable checks that new value is in the
+         ;; (unsigned-byte 16) range.
+         (setf (%viewport-origin-x viewport) (floor (aref value 0))
+               (%viewport-origin-y viewport) (floor (aref value 1)))))
+    (uvec2
+     (setf (%viewport-origin-x viewport) (aref value 0)
+           (%viewport-origin-y viewport) (aref value 1))))
+  value)
+
   value)
 
 (defmethod origin ((viewport viewport))

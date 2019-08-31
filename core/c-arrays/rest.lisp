@@ -52,13 +52,7 @@
      :element-from-foreign (c-array-element-from-foreign array)
      :element-to-foreign (c-array-element-to-foreign array))))
 
-(defn copy-c-array-to-new-lisp-data ((src c-array))
-    list
-  (if (c-array-struct-element-typep src)
-      (c-arr-to-lisp-struct-elems src)
-      (c-arr-to-lisp-val-elems src)))
-
-(defun c-arr-to-lisp-struct-elems (c-array)
+(defn c-arr-to-lisp-struct-elems ((c-array c-array)) list
   (labels ((inner (dims idx)
              (let ((rest (rest dims)))
                (if rest
@@ -79,7 +73,7 @@
                       (+ idx len)))))))
     (values (inner (reverse (c-array-dimensions c-array)) 0))))
 
-(defun c-arr-to-lisp-val-elems (c-array)
+(defn c-arr-to-lisp-val-elems ((c-array c-array)) list
   (labels ((inner (dims idx)
              (let ((rest (rest dims)))
                (if rest
@@ -98,6 +92,12 @@
                          :collect (row-major-aref-c c-array (+ idx i)))
                       (+ idx len)))))))
     (values (inner (reverse (c-array-dimensions c-array)) 0))))
+
+(defn copy-c-array-to-new-lisp-data ((src c-array))
+    list
+  (if (c-array-struct-element-typep src)
+      (c-arr-to-lisp-struct-elems src)
+      (c-arr-to-lisp-val-elems src)))
 
 (defmethod pull1-g ((object c-array))
   (copy-c-array-to-new-lisp-data object))

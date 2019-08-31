@@ -156,9 +156,9 @@
     access-set))
 
 (defun+ %process-with-gpu-array-range-runtime (gpu-array start length)
-  (unless (typep gpu-array 'gpu-array)
+  (unless (typep gpu-array 'gpu-array-bb)
     (if (typep gpu-array 'gpu-array-t)
-        (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it should, and it will...But not today. Prod me with a github issue if you need this urgently")
+        (error "Unfortunately cepl doesnt not support texture backed gpu-array right now, it would be neat...But doesn't today. Prod me with a github issue if you need this urgently")
         (error "with-gpu-array-* does not support the type ~s"
                (type-of gpu-array))))
   (assert (= (length (gpu-array-dimensions gpu-array)) 1) ()

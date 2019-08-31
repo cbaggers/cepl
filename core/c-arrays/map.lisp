@@ -21,14 +21,6 @@
 
 ;;----------------------------------------------------------------------
 
-(defn across-c ((function function) (c-array c-array))
-    c-array
-  (ecase= (c-array-rank c-array)
-    (1 (%across-c-1d function c-array))
-    (2 (%across-c-2d function c-array))
-    (3 (%across-c-3d function c-array))
-    (4 (%across-c-4d function c-array))))
-
 (defn %across-c-1d ((func function) (arr c-array))
     c-array
   (declare (optimize (speed 3) (safety 0) (debug 1)))
@@ -36,7 +28,6 @@
     (loop :for i :below (the c-array-index (first dim)) :do
        (funcall func arr i)))
   arr)
-
 
 (defn %across-c-2d ((func function) (arr c-array))
     c-array
@@ -46,6 +37,7 @@
        (loop :for x :below (the c-array-index (first dim)) :do
           (funcall func arr x y))))
   arr)
+
 
 (defn %across-c-3d ((func function) (arr c-array))
     c-array
@@ -68,15 +60,15 @@
                 (funcall func arr x y z w))))))
   arr)
 
-;;----------------------------------------------------------------------
-
-(defn across-c-ptr ((function function) (c-array c-array))
+(defn across-c ((function function) (c-array c-array))
     c-array
   (ecase= (c-array-rank c-array)
-    (1 (%across-c-ptr-1d function c-array))
-    (2 (%across-c-ptr-2d function c-array))
-    (3 (%across-c-ptr-3d function c-array))
-    (4 (%across-c-ptr-4d function c-array))))
+    (1 (%across-c-1d function c-array))
+    (2 (%across-c-2d function c-array))
+    (3 (%across-c-3d function c-array))
+    (4 (%across-c-4d function c-array))))
+
+;;----------------------------------------------------------------------
 
 (defn %across-c-ptr-1d ((func function) (arr c-array))
     c-array
@@ -123,3 +115,11 @@
                 (let ((ptr (ptr-index arr x y z w)))
                   (funcall func ptr x y z w)))))))
   arr)
+
+(defn across-c-ptr ((function function) (c-array c-array))
+    c-array
+  (ecase= (c-array-rank c-array)
+    (1 (%across-c-ptr-1d function c-array))
+    (2 (%across-c-ptr-2d function c-array))
+    (3 (%across-c-ptr-3d function c-array))
+    (4 (%across-c-ptr-4d function c-array))))

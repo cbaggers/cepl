@@ -47,18 +47,6 @@
 (defun+ cons-aware-1d-p (x)
   (1d-p (if (consp x) (car x) x)))
 
-(defn make-vao ((gpu-arrays list) &optional (index-array gpu-array-bb))
-    gl-id
-  (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
-    (the gl-id
-         (make-vao-from-id
-          (progn (assert (and (every #'cons-aware-1d-p gpu-arrays)
-                              (or (null index-array)
-                                  (suitable-array-for-index-p
-                                   index-array))))
-                 (gl:gen-vertex-array))
-          gpu-arrays index-array))))
-
 (defn make-vao-from-id ((gl-object gl-id)
                         (gpu-arrays (or list gpu-array-bb))
                         &optional (index-array gpu-array-bb))
@@ -105,3 +93,15 @@
             (setf (gpu-buffer-bound ctx :element-array-buffer)
                   element-buffer)))
         vao))))
+
+(defn make-vao ((gpu-arrays list) &optional (index-array gpu-array-bb))
+    gl-id
+  (let ((gpu-arrays (preprocess-gpu-arrays-for-vao gpu-arrays)))
+    (the gl-id
+         (make-vao-from-id
+          (progn (assert (and (every #'cons-aware-1d-p gpu-arrays)
+                              (or (null index-array)
+                                  (suitable-array-for-index-p
+                                   index-array))))
+                 (gl:gen-vertex-array))
+          gpu-arrays index-array))))
