@@ -151,6 +151,19 @@
            (%viewport-origin-y viewport) (aref value 1))))
   value)
 
+(defn viewport-origin-i ((viewport viewport)) uvec2
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (profile t))
+  (make-array 2 :element-type '(unsigned-byte 32)
+              :initial-contents (list (%viewport-origin-x viewport)
+                                      (%viewport-origin-y viewport))))
+
+(defn (setf viewport-origin-i) ((value uvec2) (viewport viewport))
+    (or vec2 uvec2)
+  (declare (optimize (speed 3) (debug 1) (safety 1))
+           (profile t))
+  (setf (%viewport-origin-x viewport) (aref value 0)
+        (%viewport-origin-y viewport) (aref value 1))
   value)
 
 (defmethod origin ((viewport viewport))

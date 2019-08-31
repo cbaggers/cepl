@@ -803,6 +803,7 @@
            :viewport-dimensions
            :viewport-resolution
            :viewport-origin
+           :viewport-origin-i
            :with-viewport
            :with-fbo-viewport
            :copy-viewport
