@@ -419,7 +419,7 @@
     (cond
       ((or (member (s-type slot) cffi:*built-in-foreign-types*)
            (member (s-type slot) '(:uint :bool))
-           (assoc (s-type slot) cffi::*extra-primitive-types*))
+           (assoc (s-type slot) %cepl.types::*extra-primitive-types*))
        (make-eprim-slot-setter slot type-name foreign-struct-name layout))
       ((not (s-arrayp slot))
        (make-t-slot-setter slot type-name layout))

@@ -24,39 +24,6 @@
 
 ;;----------------------------------------------------------------
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *extra-primitive-types*
-    '((:vec2 2 :float single-float)
-      (:vec3 3 :float single-float)
-      (:vec4 4 :float single-float)
-      (:half-vec2 2 :half-float single-float)
-      (:half-vec3 3 :half-float single-float)
-      (:half-vec4 4 :half-float single-float)
-      (:ivec2 2 :int (signed-byte 32))
-      (:ivec3 3 :int (signed-byte 32))
-      (:ivec4 4 :int (signed-byte 32))
-      (:uvec2 2 :uint (unsigned-byte 32))
-      (:uvec3 3 :uint (unsigned-byte 32))
-      (:uvec4 4 :uint (unsigned-byte 32))
-      (:mat2 4 :float single-float)
-      (:mat3 9 :float single-float)
-      (:mat4 16 :float single-float)
-      (:mat2x2 4 :float single-float)
-      (:mat2x3 6 :float single-float)
-      (:mat2x4 8 :float single-float)
-      (:mat3x2 6 :float single-float)
-      (:mat3x3 9 :float single-float)
-      (:mat3x4 12 :float single-float)
-      (:mat4x2 8 :float single-float)
-      (:mat4x3 12 :float single-float)
-      (:mat4x4 16 :float single-float)
-      (:uint8-vec2 2 :uint8 (unsigned-byte 8))
-      (:uint8-vec3 3 :uint8 (unsigned-byte 8))
-      (:uint8-vec4 4 :uint8 (unsigned-byte 8))
-      (:int8-vec2 2 :int8 (signed-byte 8))
-      (:int8-vec3 3 :int8 (signed-byte 8))
-      (:int8-vec4 4 :int8 (signed-byte 8)))))
-
 (defmacro make-new-types ()
   (labels ((get-lisp-type (f-type)
              (case f-type
@@ -70,12 +37,12 @@
                (:half-float 'single-float)
                (t (error "How is there a cffi type with components of ~a" f-type)))))
     `(progn
-       ,@(loop :for (type len comp-type) :in *extra-primitive-types*
+       ,@(loop :for (type len comp-type) :in %cepl.types::*extra-primitive-types*
             :collect
             (let* ((name (cepl-utils:symb 'cepl- type))
                    (type-name (cepl-utils:symb name '-type)))
               `(progn
-                 (cffi:defcstruct ,name (components ,comp-type :count ,len))
+                 (defcstruct ,name (components ,comp-type :count ,len))
                  (define-foreign-type ,type-name ()
                    ()
                    (:actual-type :struct ,name)

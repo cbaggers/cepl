@@ -275,7 +275,9 @@
           :cepl.errors :cepl.build)
   (:import-from :cepl-utils :+gl-enum-size+)
   (:reexport :cepl.documentation-functions)
-  (:export :+gl-id-bit-size+
+  (:intern :*extra-primitive-types*)
+  (:export :*extra-primitive-types*
+           :+gl-id-bit-size+
            :gl-id
            :gl-enum-value
            :gl-sizei
