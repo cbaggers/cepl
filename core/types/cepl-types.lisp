@@ -389,7 +389,7 @@
   (%start 0 :type (unsigned-byte 64))
   (%start-byte 0 :type (unsigned-byte 64))
   (base-vertex 0 :type (unsigned-byte 32))
-  (length 1 :type unsigned-byte)
+  (length 1 :type (unsigned-byte 64))
   (%index-type-enum 0 :type gl-enum-value)
   (%index-type-size 0 :type (unsigned-byte 8))
   (gpu-arrays nil :type list)
