@@ -843,3 +843,41 @@
     (:int8-vec3 3 :int8 (signed-byte 8))
     (:int8-vec4 4 :int8 (signed-byte 8))))
 
+;;------------------------------------------------------------
+
+(declaim
+ (ftype (function (single-float) (unsigned-byte 16)) %encode-half-float)
+ (inline %encode-half-float)
+ (ftype (function ((unsigned-byte 16)) single-float) %decode-half-float)
+ (inline %decode-half-float))
+(ieee-floats:make-float-converters %encode-half-float %decode-half-float
+                                   5 10 nil)
+
+(defn encode-half-float ((float single-float)) (unsigned-byte 16)
+  (declare
+   (optimize (speed 3) (safety 1) (debug 0))
+   (inline %encode-half-float))
+  (cond
+    ((float-nan-p float)
+     31745)
+    ((eql float single-float-positive-infinity)
+     31744)
+    ((eql float single-float-negative-infinity)
+     64512)
+    (t (locally
+           #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+         (%encode-half-float float)))))
+
+(defn decode-half-float ((bits (unsigned-byte 16))) single-float
+  (declare
+   (optimize (speed 3) (safety 1) (debug 0))
+   (inline %decode-half-float))
+  (let* ((sign (ldb (byte 1 15) bits))
+         (exponent (ldb (byte 5 10) bits))
+         (significand (ldb (byte 10 0) bits)))
+    (if (= exponent 31)
+        (cond ((not (zerop significand))
+               (the single-float (float-features:bits-single-float -4194304)))
+              ((zerop sign) single-float-positive-infinity)
+              (t single-float-negative-infinity))
+        (%decode-half-float bits))))

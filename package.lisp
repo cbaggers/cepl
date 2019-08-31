@@ -272,7 +272,8 @@
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
           :named-readtables
           :cepl.documentation-functions
-          :cepl.errors :cepl.build)
+          :cepl.errors :cepl.build
+          :float-features)
   (:import-from :cepl-utils :+gl-enum-size+)
   (:reexport :cepl.documentation-functions)
   (:intern :*extra-primitive-types*)

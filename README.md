@@ -38,6 +38,7 @@ All of the following will be downloaded automatically by quicklisp
 - cl-ppcre
 - documentation-utils
 - ieee-floats
+- float-features
 - named-readtables
 - varjo
 - bordeaux-threads

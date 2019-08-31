@@ -6,21 +6,18 @@
                      (:actual-type :ushort)
                      (:simple-parser :half-float))
 
-(ieee-floats:make-float-converters encode-half-float decode-half-float
-                                   5 10 t)
-
 (defmethod expand-to-foreign (value (type gl-half-float))
-  `(encode-half-float ,value))
+  `(%cepl.types::encode-half-float ,value))
 
 (defmethod expand-from-foreign (value (type gl-half-float))
-  `(decode-half-float ,value))
+  `(%cepl.types::decode-half-float ,value))
 
 (defmethod translate-to-foreign (value (type gl-half-float))
   (declare (type float value))
-  (encode-half-float value))
+  (%cepl.types::encode-half-float value))
 
 (defmethod translate-from-foreign (ptr (type gl-half-float))
-  (decode-half-float ptr))
+  (%cepl.types::decode-half-float ptr))
 
 ;;----------------------------------------------------------------
 

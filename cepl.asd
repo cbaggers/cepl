@@ -20,7 +20,8 @@
                #:bordeaux-threads
                #:cepl.build
                #:alexandria
-               #:split-sequence)
+               #:split-sequence
+               #:float-features)
   :components ((:file "package")
                (:file "host/api-api")
                (:file "host/api-generics")
