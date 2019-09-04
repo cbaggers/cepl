@@ -1308,7 +1308,14 @@
            :elements-indirect-command-first-index
            :elements-indirect-command-base-vertex
            :elements-indirect-command-base-instance
-           :multi-map-g))
+           :multi-map-g
+           :make-draw-command-c-array
+           :make-draw-command-gpu-array
+           :set-draw-command
+           :instance-count
+           :first-index
+           :base-vertex
+           :base-instance))
 
 (uiop:define-package :cepl
     (:use :cl
