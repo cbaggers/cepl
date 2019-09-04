@@ -73,11 +73,12 @@
     (inner list)))
 
 ;; [TODO] extract error messages
-(defun+ make-c-array (initial-contents
-                      &key
-                      dimensions
-                      element-type
-                      (row-alignment 1))
+(defn make-c-array (initial-contents
+                    &key
+                    dimensions
+                    element-type
+                    (row-alignment t 1))
+    c-array
   (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
