@@ -539,7 +539,6 @@
            :c-array-dimensions
            :c-array-total-size
            :c-array-element-type
-           :c-array-element-type
            :c-array-element-byte-size
            :c-array-free
            :c-array-row-byte-size
@@ -871,6 +870,7 @@
            :c-array-dimensions
            :c-array-total-size
            :c-array-element-type
+           :c-array-element-byte-size
            :clone-c-array
            :free-c-array
            :make-c-array
@@ -949,6 +949,7 @@
            :buffer-stream-p
            :buffer-stream-vao
            :buffer-stream-length
+           :buffer-stream-start
            :buffer-stream-base-vertex
            :buffer-stream-index-type
            :buffer-stream-gpu-arrays
