@@ -34,10 +34,11 @@
                      ,@body)))))))))
 
 (defmacro with-gpu-array-as-c-array
-    ((temp-name gpu-array &key (access-type :read-write)) &body body)
+    ((temp-name gpu-array &key (access-type :read-write) (target :array-buffer))
+     &body body)
   (let ((ggpu-array (gensym "gpu-array")))
     `(let ((,ggpu-array ,gpu-array))
-       (with-gpu-array-as-pointer (,temp-name ,ggpu-array :access-type ,access-type)
+       (with-gpu-array-as-pointer (,temp-name ,ggpu-array :access-type ,access-type :target ,target)
          (let ((,temp-name
                 (make-c-array-from-pointer
                  (gpu-array-dimensions ,ggpu-array)
