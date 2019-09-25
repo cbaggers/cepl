@@ -651,6 +651,10 @@
            :g-pnt
            :g-pntc
            :g-pt
+           :g-pnb
+           :g-pncb
+           :g-pntb
+           :g-pntcb
            ;;---
            :make-g-pc
            :make-g-pn
@@ -658,6 +662,10 @@
            :make-g-pnt
            :make-g-pntc
            :make-g-pt
+           :make-g-pnb
+           :make-g-pncb
+           :make-g-pntb
+           :make-g-pntcb
            ;;---
            :bi-tangent
            :col
