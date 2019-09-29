@@ -1037,6 +1037,26 @@ Arguments given: ~s"
   (or name "<lambda pipeline>")
   args)
 
+(deferror invalid-gpu-function-args () (name
+                                        unknown-key-arguments
+                                        invalid-syntax
+                                        constant-names
+                                        incorrectly-typed-args)
+    "
+CEPL - Invalid arguments found in lambda list for ~a~@[ ~s~]
+~@[~%The following items are not valid lamda-list keywords:~{~%- ~s~}~%The valid keywords are :&uniform, :&context and :&shared~]~@[~%~%Invalid syntax found in the following arguments, each element must be a list of~%the format (name type &rest qualifiers):~{~%- ~s~}~]~@[~%~%The following symbols are already defined as constants and so cannot be~%used as argument names: ~{~s~^, ~}~]~@[~%~%The following args have types we didnt recognise:~%~{> ~s~}~]~@[~%~%Here are some types we think may have been meant: ~{~a~}~]
+"
+  (if name "the gpu-function named" "a gpu-lambda")
+  name
+  unknown-key-arguments
+  invalid-syntax
+  constant-names
+  incorrectly-typed-args
+  (loop :for (name type) :in incorrectly-typed-args
+     :for suggestion := (varjo.internals::find-alternative-types-for-spec type)
+     :when suggestion
+     :collect (format nil "~%> ~s~{~%~s~}" name suggestion)))
+
 ;; Please remember the following 2 things
 ;;
 ;; - add your condition's name to the package export

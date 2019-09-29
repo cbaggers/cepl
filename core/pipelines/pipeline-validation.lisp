@@ -42,6 +42,47 @@
         (error 'invalid-stages :invalid-names invalid-names)))))
 
 ;;--------------------------------------------------
+;; Gpu Function Arg Validation
+
+(defun assert-valid-gpu-function-args (function-name args)
+  (let* ((allowed-lone-symbols (copy-list '(:&uniform :&context :&shared)))
+         (unknown-key-arguments nil)
+         (invalid-syntax nil)
+         (constant-names nil)
+         (incorrectly-typed-args nil))
+    (loop
+       :for arg :in args
+       :do (cond
+             ((symbolp arg)
+              (if (find arg allowed-lone-symbols)
+                  (setf allowed-lone-symbols
+                        (remove arg allowed-lone-symbols))
+                  (push arg unknown-key-arguments)))
+             ((not (listp arg))
+              (push arg invalid-syntax))
+             ((< (length arg) 2)
+              (push arg invalid-syntax))
+             (t (destructuring-bind (name type &rest qualifiers) arg
+                  (declare (ignore qualifiers))
+                  (if (constantp name)
+                      (push name constant-names)
+                      (handler-case (type-spec->type type)
+                        (varjo.internals::unknown-type-spec (e)
+                          (push (list name (slot-value e 'varjo.internals::type-spec))
+                                incorrectly-typed-args))))))))
+    (assert (and (null unknown-key-arguments)
+                 (null invalid-syntax)
+                 (null constant-names)
+                 (null incorrectly-typed-args))
+            ()
+            'invalid-gpu-function-args
+            :name function-name
+            :unknown-key-arguments unknown-key-arguments
+            :invalid-syntax invalid-syntax
+            :constant-names constant-names
+            :incorrectly-typed-args incorrectly-typed-args)))
+
+;;--------------------------------------------------
 ;; Helper funcs
 
 (defun+ find-invalid-defpipeline-options (options valid-keys)

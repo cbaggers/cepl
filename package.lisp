@@ -186,7 +186,8 @@
            :no-named-stages
            :bad-type-for-buffer-stream-data
            :fbo-missing-outputs
-           :pipeline-invalid-null-stage))
+           :pipeline-invalid-null-stage
+           :invalid-gpu-function-args))
 
 (uiop:define-package :cepl.host
     (:use :cl :alexandria :cepl.build :cepl.defn)
