@@ -184,9 +184,9 @@
       (:texture-1d-array (%gl:tex-sub-image-2d (gl-enum tex-type)
                                                level-num
                                                0
-                                               0
-                                               width
                                                layer-num
+                                               width
+                                               1
                                                pix-format
                                                pix-type
                                                pointer/offset))
@@ -205,10 +205,10 @@
                                                level-num
                                                0
                                                0
-                                               0
+                                               layer-num
                                                width
                                                height
-                                               layer-num
+                                               1
                                                pix-format
                                                pix-type
                                                pointer/offset))
