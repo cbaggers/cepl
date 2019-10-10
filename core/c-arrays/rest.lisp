@@ -30,16 +30,18 @@
   (declare (profile t))
   (let* ((dimensions (c-array-dimensions array))
          (length (the c-array-index (first dimensions)))
-         (elem-size (c-array-element-byte-size array)))
+         (elem-size (c-array-element-byte-size array))
+         (sub-len (the c-array-index (- end start))))
     (assert (= (length dimensions) 1) ()
             "Cannot take subseq of multidimensional array")
     (assert (and (< start end) (< start length) (<= end length)) ()
             "Invalid subseq start or end for c-array")
     (%make-c-array
      :pointer (cffi:inc-pointer (c-array-pointer array)
-                                (* elem-size start))
-     :dimensions (list (- end start))
-     :total-size (c-array-total-size array)
+                                (the c-array-index (* elem-size start)))
+     :dimensions (list sub-len)
+     :byte-size (* (c-array-element-byte-size array) sub-len)
+     :total-size sub-len
      :sizes (make-array
              4 :initial-contents (list (c-array-element-byte-size array)
                                        0

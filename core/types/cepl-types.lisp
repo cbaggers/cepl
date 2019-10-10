@@ -70,6 +70,9 @@
   (total-size
    (error "cepl: c-array must be created with total-size")
    :type c-array-index)
+  (byte-size
+   (error "cepl: c-array must be created with byte-size")
+   :type c-array-index)
   (element-type
    (error "cepl: c-array must be created with an element-type")
    :type symbol)

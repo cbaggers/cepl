@@ -32,11 +32,14 @@
            (element-type2 (if p-format
                               (pixel-format->lisp-type element-type)
                               element-type))
-           (elem-size (or element-byte-size (gl-type-size element-type2))))
+           (elem-size (or element-byte-size (gl-type-size element-type2)))
+           (total-size-bytes
+            (%gl-calc-byte-size elem-size dimensions row-alignment)))
       (%make-c-array
        :pointer pointer
        :dimensions dimensions
        :total-size total-size
+       :byte-size total-size-bytes
        :element-type element-type2
        :sizes (gen-c-array-sizes dimensions
                                  elem-size
@@ -121,15 +124,17 @@
                                (update-data initial-contents inferred-lisp-type)
                                initial-contents))
          (elem-size (gl-type-size element-type))
-         (total-size (reduce #'* dimensions)))
+         (total-size (reduce #'* dimensions))
+         (total-size-bytes
+          (%gl-calc-byte-size elem-size dimensions row-alignment)))
     (when (and initial-contents (not struct-type-p))
       (check-single-element-not-list initial-contents dimensions element-type))
     (check-c-array-dimensions dimensions total-size row-alignment)
     (let ((new-array (%make-c-array
-                      :pointer (cffi::%foreign-alloc
-                                (%gl-calc-byte-size elem-size dimensions row-alignment))
+                      :pointer (cffi::%foreign-alloc total-size-bytes)
                       :dimensions dimensions
                       :total-size total-size
+                      :byte-size total-size-bytes
                       :sizes (gen-c-array-sizes dimensions
                                                 elem-size
                                                 row-alignment)
@@ -182,6 +187,7 @@
      :pointer new-pointer
      :dimensions (c-array-dimensions c-array)
      :total-size (c-array-total-size c-array)
+     :byte-size (c-array-byte-size c-array)
      :element-type (c-array-element-type c-array)
      :sizes (make-array 4 :element-type 'c-array-index
                         :initial-contents (c-array-sizes c-array))

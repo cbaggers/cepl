@@ -878,6 +878,7 @@
            :c-array-pointer
            :c-array-dimensions
            :c-array-total-size
+           :c-array-byte-size
            :c-array-element-type
            :c-array-element-byte-size
            :clone-c-array

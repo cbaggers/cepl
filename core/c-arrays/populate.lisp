@@ -73,11 +73,6 @@
 
 ;;------------------------------------------------------------
 
-(defun+ c-array-byte-size (c-array)
-  (%gl-calc-byte-size (c-array-element-byte-size c-array)
-                      (c-array-dimensions c-array)
-                      (c-array-row-alignment c-array)))
-
 (defun+ %gl-calc-byte-size (elem-size dimensions row-alignment)
   (let* ((row-consumes (* (first dimensions) elem-size))
          (row-size-with-padding (* (ceiling row-consumes row-alignment)
