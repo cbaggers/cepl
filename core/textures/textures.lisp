@@ -1030,19 +1030,46 @@ the width to see at what point the width reaches 0 or GL throws an error."
 
 (defn pack-pixels-from-texture ((tex-array gpu-array-t)
                                 (pixel-format pixel-format)
-                                row-alignment
-                                pointer/offset)
+                                (row-alignment (integer 1 8))
+                                (pointer/offset foreign-pointer)
+                                (single-image-size c-array-index))
     (values)
   (with-gpu-array-t tex-array
     (destructuring-bind (pix-format pix-type)
         (cepl.pixel-formats::compile-pixel-format pixel-format)
       (%with-scratch-texture-bound texture
         (setf (pack-alignment) row-alignment)
-        (%gl:get-tex-image (gl-enum texture-type)
-                           (coerce level-num 'real)
-                           pix-format
-                           pix-type
-                           pointer/offset))))
+        (if (or (texture-cubes-p texture)
+                (> (texture-layer-count texture) 0))
+            (let* ((img-size-padded
+                    (* row-alignment
+                       (ceiling single-image-size row-alignment)))
+                   (face-count
+                    (if (texture-cubes-p texture) 6 1))
+                   (layer-face-count
+                    (* face-count
+                       (texture-layer-count texture)))
+                   (tmp-size
+                    (* img-size-padded layer-face-count))
+                   (img-index
+                    (+ (* (gpu-array-t-layer-num tex-array) face-count)
+                       (gpu-array-t-face-num tex-array) ))
+                   (img-offset (* img-index img-size-padded)))
+              (with-foreign-object (tmp-ptr :uint8 tmp-size)
+                (%gl:get-tex-image (gl-enum texture-type)
+                                   (coerce level-num '(signed-byte 32))
+                                   pix-format
+                                   pix-type
+                                   tmp-ptr)
+                (cepl.types::%memcpy
+                 pointer/offset
+                 (cffi:inc-pointer tmp-ptr img-offset)
+                 single-image-size)))
+            (%gl:get-tex-image (gl-enum texture-type)
+                               (coerce level-num 'real)
+                               pix-format
+                               pix-type
+                               pointer/offset)))))
   (values))
 
 ;; [TODO] implement gl-fill and fill arguments
@@ -1055,7 +1082,8 @@ the width to see at what point the width reaches 0 or GL throws an error."
                                 :element-type p-format
                                 :row-alignment 1)))
     (setf (gpu-buffer-bound (cepl-context) :pixel-pack-buffer) nil)
-    (pack-pixels-from-texture src p-format 1 (c-array-pointer c-array))
+    (pack-pixels-from-texture src p-format 1 (c-array-pointer c-array)
+                              (cepl.c-arrays:c-array-byte-size c-array))
     c-array))
 
 (defn copy-texture-backed-gpu-array-to-c-array ((src gpu-array-t)
@@ -1066,10 +1094,15 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (let ((pixel-format (lisp-type->pixel-format
                        (c-array-element-type dst))))
     (setf (gpu-buffer-bound (cepl-context) :pixel-pack-buffer) nil)
-    (pack-pixels-from-texture src
-                              pixel-format
-                              (c-array-row-alignment dst)
-                              (c-array-pointer dst)))
+    (pack-pixels-from-texture
+     src
+     pixel-format
+     (c-array-row-alignment dst)
+     (c-array-pointer dst)
+     (cepl.c-arrays::%gl-calc-byte-size
+      (c-array-element-byte-size dst)
+      (gpu-array-dimensions src)
+      (c-array-row-alignment dst))))
   dst)
 
 (defn copy-texture-backed-gpu-array-to-new-buffer-backed-gpu-array
@@ -1087,7 +1120,9 @@ the width to see at what point the width reaches 0 or GL throws an error."
      src
      p-format
      1
-     (gpu-array-bb-offset-in-bytes-into-buffer gpu-array-bb))
+     (cffi:make-pointer
+      (gpu-array-bb-offset-in-bytes-into-buffer gpu-array-bb))
+     (gpu-array-bb-byte-size gpu-array-bb))
     gpu-array-bb))
 
 (defn copy-texture-backed-gpu-array-to-buffer-backed-gpu-array
@@ -1099,10 +1134,16 @@ the width to see at what point the width reaches 0 or GL throws an error."
   (let ((pixel-format (lisp-type->pixel-format dst)))
     (setf (gpu-buffer-bound (cepl-context) :pixel-pack-buffer)
           (gpu-array-bb-buffer dst))
-    (pack-pixels-from-texture src
-                              pixel-format
-                              (gpu-array-bb-row-alignment dst)
-                              (gpu-array-bb-offset-in-bytes-into-buffer dst)))
+    (pack-pixels-from-texture
+     src
+     pixel-format
+     (gpu-array-bb-row-alignment dst)
+     (cffi:make-pointer
+      (gpu-array-bb-offset-in-bytes-into-buffer dst))
+     (cepl.c-arrays::%gl-calc-byte-size
+      (gpu-array-bb-element-byte-size dst)
+      (gpu-array-dimensions src)
+      (gpu-array-bb-row-alignment dst))))
   dst)
 
 (defn copy-texture-backed-gpu-array-to-new-lisp-data ((src gpu-array-t))
