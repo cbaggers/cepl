@@ -72,7 +72,7 @@ It calls #'initialize-cepl to make a resizable window and prints out a message
 in the repl.
 ")
 
-  (defun init
+  (defun initialize-cepl
       "
 This is how we initialize CEPL. It is important to do this before using any api
 that touches the gpu.
