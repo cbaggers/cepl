@@ -220,7 +220,7 @@
     (merge-into-assigner
      t
      (loop :for i :below array-length
-        :if (varjo:v-typep element-type 'varjo:v-user-struct) :append
+        :if (varjo:v-typep element-type 'varjo:v-user-struct) :collect
         (make-struct-assigners indexes arg-name element-type
                                (format nil "~a[~a]" glsl-name-path i)
                                byte-offset)
