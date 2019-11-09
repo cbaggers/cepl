@@ -511,11 +511,14 @@
 
 (defun machine-unit-size (type &optional stride)
   (if (typep type 'v-array)
-      (progn
+      (labels ((unsized-p (type)
+                 (equal (v-dimensions type) '(*))))
         (assert stride)
         (* (round-to-next-multiple (machine-unit-size (v-element-type type))
                                    stride)
-           (reduce #'* (v-dimensions type))))
+           (if (unsized-p type)
+               0
+               (reduce #'* (v-dimensions type)))))
       (let* ((spec (type->type-spec type))
              (spec (or (first (find spec varjo.internals::*type-shorthand*
                                     :key #'cdr))

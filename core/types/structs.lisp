@@ -51,6 +51,7 @@
    (type :initarg :type :reader s-type)
    (element-type :initarg :element-type :reader s-element-type)
    (dimensions :initarg :dimensions :initform 1 :reader s-dimensions)
+   (unsized :initarg :unsized :initform nil :reader s-unsized-p)
    (normalized :initarg :normalized :reader s-normalizedp)
    (reader :initarg :reader :reader s-reader)
    (writer :initarg :writer :reader s-writer)
@@ -132,14 +133,22 @@
                                         target-layout)
                          (list (s-name elem-info)
                                (type-of (s-layout elem-info))))))))))
-    (let* ((inconsistent-slots (mapcar #'get-inconsistent-layout
-                                       (s-slots g-struct-info)))
+    (let* ((slots (s-slots g-struct-info))
+           (inconsistent-slots (mapcar #'get-inconsistent-layout
+                                       slots))
            (inconsistent-slots (remove nil inconsistent-slots)))
       (assert (not inconsistent-slots) ()
               'inconsistent-struct-layout
               :name (s-name g-struct-info)
               :target target-layout
               :slots inconsistent-slots)
+
+      (loop
+         :for slot :in (butlast slots)
+         :do (assert (not (s-unsized-p slot))))
+      (when (s-unsized-p (last1 slots))
+        (assert (eq target-layout :std-430) ()
+                "The only layout that supports the last slot being an unsized array is :std-430"))
       t)))
 
 ;;------------------------------------------------------------
@@ -156,10 +165,12 @@
              slot-descriptions))))
 
 (defmacro defstruct-g (name-and-options &body slot-descriptions)
-  (dbind (name &key (accessors t) (constructor (symb 'make- name))
+  (dbind (name &key (accessors t) constructor
                (readers t) (writers t) (pull-push t) (attribs t) (populate t)
                (layout :default))
       (listify name-and-options)
+    (when constructor
+      (warn "constructor option in defstruct-g is no longer used and will be removed in a future update"))
     (let* (;; names
            (foreign-struct-name (hidden-symb name :foreign))
            (qualified-struct-name `(:struct ,foreign-struct-name))
@@ -173,15 +184,17 @@
            (slot-layouts (if layout
                              (layout-members layout)
                              (n-of nil (length slot-descriptions))))
-           (slots (mapcar (lambda (desc layout)
-                            (normalize-slot-description qualified-struct-name
-                                                        desc
-                                                        layout
-                                                        name
-                                                        (and readers accessors)
-                             (and writers accessors)))
-                          slot-descriptions
-                          slot-layouts))
+           (slots (loop
+                     :for desc :in slot-descriptions
+                     :for layout :in slot-layouts
+                     :for i :from 0
+                     :collect (normalize-slot-description
+                               qualified-struct-name
+                               desc
+                               layout
+                               name
+                               (and readers accessors)
+                               (and writers accessors))))
            (struct-info (make-instance 'cepl-struct-definition
                                        :name name
                                        :foreign-name foreign-struct-name
@@ -213,10 +226,6 @@
                                                        slot-layout))
                                    slots
                                    slot-layouts)))
-           ,(when constructor (make-make-struct constructor
-                                                wrapper-constructor-name
-                                                name
-                                                slots))
            ,(when attribs (make-struct-attrib-assigner name slots))
            ,@(when populate (make-populate name typed-populate slots))
            ,(make-struct-pixel-format name slots)
@@ -233,9 +242,15 @@
   (destructuring-bind (name type &key normalized accessor) slot-description
     (let* ((type (listify type))
            (dimensions (listify (or (second type) 1)))
-           (arrayp (> (first dimensions) 1))
+           (unsized (find-if (lambda (x) (and (symbolp x) (string= x :*)))
+                             dimensions))
+           (arrayp (let ((fd (first dimensions)))
+                     (or (and (symbolp fd) (string= fd :*))
+                         (> fd 1))))
            (element-type (when arrayp (first type)))
            (type (if arrayp :array (first type))))
+      (when unsized
+        (assert (= (length dimensions) 1)))
       (make-instance 'gl-struct-slot
                      :name name
                      :type type
@@ -247,6 +262,7 @@
                      :uses-method-p (not (null accessor))
                      :element-type element-type
                      :dimensions dimensions
+                     :unsized unsized
                      :layout slot-layout
                      :parent-ffi-name qualified-struct-name))))
 
@@ -296,9 +312,6 @@
 
 (defmethod cepl.c-arrays:pointer ((wrapper base-gstruct-wrapper))
   (base-gstruct-wrapper-pointer wrapper))
-
-(defmethod free ((wrapper base-gstruct-wrapper))
-  (foreign-free (base-gstruct-wrapper-pointer wrapper)))
 
 (defun+ make-instance-wrapper-def (name
                                    foreign-struct-name
@@ -369,19 +382,6 @@
          :offset ,(layout-base-offset layout))
       `(,(s-name slot)
          (:array ,(s-element-type slot) ,(reduce #'* (s-dimensions slot))))))
-
-;;{TODO} should be setting fields here
-(defun+ make-make-struct (constructor-name
-                          wrapper-constructor-name
-                          awrap-type-name
-                          slots)
-  (let ((vars (loop :for s :in slots :collect (s-name s))))
-    `(defun+ ,constructor-name ,(cons '&key vars)
-       (let ((result (,wrapper-constructor-name
-                      (foreign-alloc ',awrap-type-name))))
-         ,@(loop :for s :in slots :for v :in vars :collect
-              `(when ,v (setf (,(s-writer s) result) ,v)))
-         result))))
 
 ;;------------------------------------------------------------
 

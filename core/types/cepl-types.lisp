@@ -203,6 +203,15 @@
 
 ;;------------------------------------------------------------
 
+(defstruct (box (:constructor %make-box))
+  (data (error "data must be provided when making box")
+        :type c-array)
+  (index 0 :type c-array-index)
+  (last-slot-length 0 :type c-array-index)
+  (owns-c-array nil :type boolean))
+
+;;------------------------------------------------------------
+
 (defstruct (ubo (:constructor %make-ubo))
   (id 0 :type gl-id)
   (data (error "gpu-array must be provided when making ubo")

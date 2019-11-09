@@ -485,6 +485,13 @@
            :ubo-index
            :ubo-owns-gpu-array
 
+           :%make-box
+           :box
+           :box-p
+           :box-data
+           :box-index
+           :box-owns-c-array
+
            :%make-ssbo
            :ssbo
            :ssbo-p
@@ -970,6 +977,20 @@
            :make-buffer-stream-from-id-and-layouts
            :make-buffer-stream-sharing))
 
+(uiop:define-package :cepl.boxes
+    (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
+          :cepl.types :%cepl.types  :cepl.context
+          :named-readtables :cepl.errors :cepl.c-arrays :cepl.memory
+          :cepl.gpu-arrays.buffer-backed :cepl.internals :cepl.gpu-buffers
+          :cepl.build)
+  (:export :box
+           :make-box
+           :make-box-from
+           :box-data
+           :box-data-type
+           :box-index
+           :box-owns-c-array))
+
 (uiop:define-package :cepl.ubos
     (:use :cl :glsl-symbols :cffi :cepl-utils :varjo
           :cepl.types :%cepl.types  :cepl.context
@@ -1362,6 +1383,7 @@
           :cepl.textures
           :cepl.types
           :cepl.types.predefined
+          :cepl.boxes
           :cepl.ubos
           :cepl.ssbos
           :cepl.viewports
@@ -1398,6 +1420,7 @@
              :cepl.gpu-arrays.texture-backed
              :cepl.gpu-arrays
              :cepl.streams
+             :cepl.boxes
              :cepl.ubos
              :cepl.ssbos
              :cepl.context
