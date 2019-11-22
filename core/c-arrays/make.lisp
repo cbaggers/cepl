@@ -82,6 +82,18 @@
                     element-type
                     (row-alignment t 1))
     c-array
+  (make-c-array-internal initial-contents
+                         dimensions
+                         element-type
+                         row-alignment
+                         0))
+
+(defn make-c-array-internal (initial-contents
+                             dimensions
+                             element-type
+                             (row-alignment t 1)
+                             (trailing-size c-array-index))
+    c-array
   (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
@@ -126,7 +138,8 @@
          (elem-size (gl-type-size element-type))
          (total-size (reduce #'* dimensions))
          (total-size-bytes
-          (%gl-calc-byte-size elem-size dimensions row-alignment)))
+          (+ (%gl-calc-byte-size elem-size dimensions row-alignment)
+             trailing-size)))
     (when (and initial-contents (not struct-type-p))
       (check-single-element-not-list initial-contents dimensions element-type))
     (check-c-array-dimensions dimensions total-size row-alignment)

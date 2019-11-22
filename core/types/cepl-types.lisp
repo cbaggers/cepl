@@ -226,6 +226,7 @@
   (data (error "gpu-array must be provided when making ssbo")
         :type gpu-array-bb)
   (index 0 :type c-array-index)
+  (last-slot-length 0 :type c-array-index)
   (owns-gpu-array nil :type boolean))
 
 ;;------------------------------------------------------------

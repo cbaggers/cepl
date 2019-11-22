@@ -74,6 +74,7 @@
                (:file "core/types/structs")
                (:file "core/gpu-buffers/gpu-buffers")
                (:file "core/gpu-arrays/buffer-backed")
+               (:file "core/box/box")
                (:file "core/vaos/vaos")
                (:file "core/streams/buffer-streams")
                (:file "core/transform-feedback/transform-feedback")

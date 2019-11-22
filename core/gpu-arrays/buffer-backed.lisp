@@ -110,7 +110,8 @@
                                 dimensions
                                 element-type
                                 access-style
-                                row-alignment)
+                                row-alignment
+                                trailing-size)
   (let* ((p-format (cepl.pixel-formats:pixel-format-p element-type))
          (pixel-format (when p-format element-type))
          (element-type (if p-format
@@ -120,7 +121,8 @@
                   (cepl.gpu-buffers::make-gpu-buffer)
                   element-type dimensions :array-buffer
                   access-style
-                  :row-alignment row-alignment))
+                  :row-alignment row-alignment
+                  :trailing-size (or trailing-size 0)))
          (base-arr (aref (gpu-buffer-arrays buffer) 0)))
     (setf (gpu-array-bb-element-pixel-format array) pixel-format)
     (make-gpu-array-share-data
@@ -137,6 +139,20 @@
                            element-type
                            access-style
                            row-alignment)
+   (make-uninitialized-gpu-array-bb)))
+
+(defun make-gpu-array-internal (element-type
+                                dimensions
+                                access-style
+                                row-alignment
+                                trailing-size)
+  (cepl.context::if-gl-context
+   (init-gpu-array-no-data %pre%
+                           dimensions
+                           element-type
+                           access-style
+                           row-alignment
+                           trailing-size)
    (make-uninitialized-gpu-array-bb)))
 
 ;;---------------------------------------------------------------

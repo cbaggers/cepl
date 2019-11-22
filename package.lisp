@@ -986,8 +986,8 @@
   (:export :box
            :make-box
            :make-box-from
-           :box-data
-           :box-data-type
+           :box-value
+           :box-value-type
            :box-index
            :box-owns-c-array))
 
@@ -1017,7 +1017,8 @@
            :make-ssbo-from-array
            :ssbo-id
            :ssbo-data
-           :ssbo-data-type
+           :ssbo-value-type
+           :make-ssbo-from
            :ssbo-index
            :ssbo-owns-gpu-array))
 

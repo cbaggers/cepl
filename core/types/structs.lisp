@@ -50,6 +50,7 @@
   ((name :initarg :name :reader s-name)
    (type :initarg :type :reader s-type)
    (element-type :initarg :element-type :reader s-element-type)
+   (element-byte-size :initarg :element-byte-size :reader s-element-byte-size)
    (dimensions :initarg :dimensions :initform 1 :reader s-dimensions)
    (unsized :initarg :unsized :initform nil :reader s-unsized-p)
    (normalized :initarg :normalized :reader s-normalizedp)
@@ -70,6 +71,8 @@
                writer
                uses-method-p
                layout
+               element-byte-size
+               unsized
                parent-ffi-name)
       slot
     `(make-instance 'gl-struct-slot
@@ -79,6 +82,8 @@
                     :reader ',reader
                     :writer ',writer
                     :element-type ',element-type
+                    :element-byte-size ',element-byte-size
+                    :unsized ',unsized
                     :dimensions ',dimensions
                     :layout ',layout
                     :parent-ffi-name ',parent-ffi-name)))
@@ -242,12 +247,13 @@
   (destructuring-bind (name type &key normalized accessor) slot-description
     (let* ((type (listify type))
            (dimensions (listify (or (second type) 1)))
-           (unsized (find-if (lambda (x) (and (symbolp x) (string= x :*)))
-                             dimensions))
-           (arrayp (let ((fd (first dimensions)))
-                     (or (and (symbolp fd) (string= fd :*))
-                         (> fd 1))))
+           (unsized
+            (not (null (find-if (lambda (x) (and (symbolp x) (string= x :*)))
+                                dimensions))))
+           (arrayp (or unsized (> (first dimensions) 1)))
            (element-type (when arrayp (first type)))
+           (element-byte-size (when element-type
+                                (cffi:foreign-type-size element-type)))
            (type (if arrayp :array (first type))))
       (when unsized
         (assert (= (length dimensions) 1)))
@@ -261,6 +267,7 @@
                                (or accessor (symb type-name '- name)))
                      :uses-method-p (not (null accessor))
                      :element-type element-type
+                     :element-byte-size element-byte-size
                      :dimensions dimensions
                      :unsized unsized
                      :layout slot-layout
@@ -402,17 +409,23 @@
                          ',(s-name slot))))
 
 (defun+ make-array-slot-getter (slot type-name foreign-struct-name layout)
-  `(,(s-def slot) ,(s-reader slot)
-     ,(s-slot-args slot `((wrapped-object ,type-name)))
-     (cepl.c-arrays::make-c-array-from-pointer
-      ',(s-dimensions slot) ',(s-element-type slot)
-      (foreign-slot-pointer (base-gstruct-wrapper-pointer
-                             wrapped-object)
-                            ',foreign-struct-name
-                            ',(s-name slot))
-      ,@(when layout `(:element-byte-size
-                       ,(layout-machine-unit-size
-                         (layout-element-layout layout)))))))
+  (let* ((args (s-slot-args slot `((wrapped-object ,type-name))))
+         (args (if (s-unsized-p slot)
+                   (append args '(&optional (unsized-array-len 0)))
+                   args)))
+    `(,(s-def slot) ,(s-reader slot) ,args
+       (cepl.c-arrays::make-c-array-from-pointer
+        ,@(if (s-unsized-p slot)
+              '(unsized-array-len)
+              `(',(s-dimensions slot)))
+        ',(s-element-type slot)
+        (foreign-slot-pointer (base-gstruct-wrapper-pointer
+                               wrapped-object)
+                              ',foreign-struct-name
+                              ',(s-name slot))
+        ,@(when layout `(:element-byte-size
+                         ,(layout-machine-unit-size
+                           (layout-element-layout layout))))))))
 
 (defun+ make-slot-setter (slot type-name foreign-struct-name layout)
   (when (s-writer slot)
@@ -577,6 +590,20 @@
                     components type t nil))
           `(defmethod lisp-type->pixel-format ((type (eql ',name)))
              (cepl.pixel-formats::pixel-format! ,components ',type)))))))
+
+;;------------------------------------------------------------
+
+(defun unsized-slot-info (struct-name)
+  (let ((struct-info (g-struct-info struct-name)))
+    (when struct-name
+      (let* ((last-slot-info (last1 (s-slots struct-info))))
+        (when (and last-slot-info (s-unsized-p last-slot-info))
+          last-slot-info)))))
+
+(defun unsized-slot-element-byte-size (struct-name)
+  (let ((info (unsized-slot-info struct-name)))
+    (when info
+      (s-element-byte-size info))))
 
 ;;------------------------------------------------------------
 

@@ -20,22 +20,40 @@
 
 ;;---------------------------------------------------
 
-(defun+ make-ssbo (data &optional element-type)
-  (let* ((data (cond
-                 ((gpu-array-bb-p data)
-                  data)
-                 ((c-array-p data)
-                  (make-gpu-array
-                   data
-                   :dimensions 1
-                   :element-type element-type))
-                 (t (make-gpu-array
-                     (when data (vector data))
-                     :dimensions 1
-                     :element-type element-type))))
+(defun+ make-ssbo (type &key (last-slot-length 0))
+  (let* ((trailing-element-size
+          (cepl.types::unsized-slot-element-byte-size type))
+         (trailing-size
+          (if trailing-element-size
+              (* last-slot-length trailing-element-size)
+              (error "~s does not have a unsized array in the last slot"
+                     type)))
+         (data (cepl.gpu-arrays.buffer-backed::make-gpu-array-internal
+                type 1 :static-draw 1 trailing-size))
          (ssbo (%make-ssbo :id (get-free-ssbo-id)
                            :data data
-                           :index 0)))
+                           :index 0
+                           :owns-gpu-array t
+                           :last-slot-length (or last-slot-length 0))))
+    (%bind-ssbo ssbo)))
+
+(defgeneric make-ssbo-from (data)
+  (:method ((data box))
+    (make-ssbo-from-box data))
+  (:method ((data c-array))
+    (make-ssbo-from-array data))
+  (:method ((data gpu-array))
+    (make-ssbo-from-array data))
+  (:method ((data array))
+    (make-ssbo-from-array data))
+  (:method ((data list))
+    (make-ssbo-from-array data)))
+
+(defun+ make-ssbo-from-box (data)
+  (let ((ssbo (%make-ssbo
+                :id (get-free-ssbo-id)
+                :data (make-gpu-array (box-data data))
+                :index 0)))
     (%bind-ssbo ssbo)))
 
 
@@ -65,7 +83,11 @@
                                 :element-type (element-type data))
                          :index 0))
             (uploadable-lisp-seq
-             (make-ssbo (elt data index) element-type)))))
+             (make-ssbo-from-array
+              (make-gpu-array
+               (when data (vector data))
+               :dimensions 1
+               :element-type element-type))))))
     (%bind-ssbo ssbo)))
 
 (defun+ make-ssbo-from-buffer (&rest not-yet-implemented)
@@ -80,7 +102,10 @@ should be ~s" data element-type)
 
 ;;---------------------------------------------------
 
-(defun+ ssbo-data-type (ssbo)
+(defun ssbo-backing-array (ssbo)
+  (ssbo-data ssbo))
+
+(defun+ ssbo-value-type (ssbo)
   (gpu-array-bb-element-type (ssbo-data ssbo)))
 
 ;;---------------------------------------------------

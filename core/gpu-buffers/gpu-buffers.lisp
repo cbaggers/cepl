@@ -200,12 +200,14 @@ gpu-array: ~s (byte-size: ~s)"
   buffer)
 
 (defun+ buffer-reserve-block (buffer type dimensions target usage
-                                     &key (row-alignment 1))
+                                     &key (row-alignment 1)
+                                     (trailing-size 0))
   (unless dimensions (error "dimensions are not optional when reserving a buffer block"))
   (setf (gpu-buffer-bound (cepl-context) target) buffer)
   (let* ((dimensions (listify dimensions))
-         (byte-size (cepl.c-arrays::gl-calc-byte-size type dimensions
-                                                      row-alignment)))
+         (byte-size (+ (cepl.c-arrays::gl-calc-byte-size type dimensions
+                                                         row-alignment)
+                       trailing-size)))
     (buffer-reserve-block-raw buffer byte-size target usage)
     (buffer-set-arrays-from-sizes buffer (list byte-size) usage))
   buffer)
