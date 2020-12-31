@@ -53,7 +53,7 @@ quickproject and then run this again.")
                              depends-on))
              ;; with skitter.sdl2 there are two input packages that are
              ;; good to have :use'd by default so we add them
-             (skitter-sdl-p (member ::cepl.skitter.sdl2 depends-on))
+             (skitter-sdl-p (member :cepl.skitter.sdl2 depends-on))
              (swank-p (or (eq repl :swank) (eq repl :slime)))
              (slynk-p (or (eq repl :sly) (eq repl :slynk)))
              (livesupport-p (or swank-p slynk-p)))
