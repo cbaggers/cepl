@@ -15,4 +15,4 @@ True, but I wanted to make it clear that hosts are totally seperate from CEPL an
 
 #### Q: Why are 'hosts' called 'hosts' and not something like 'backends'?
 
-To me this implies that CEPL is a frontend.  This feels wrong as CEPL is just a tool; the frontend to you application is yours to define.
+To me this implies that CEPL is a frontend.  This feels wrong as CEPL is just a tool; the frontend to your application is yours to define.
