@@ -222,7 +222,7 @@ please see the empty FBO section below.
 **-- (make-fbo 0) --**
 
 Make an fbo with one color attachment in attachment slot 0.
-CEPL with make a `texture` with dimensions equal to that of the current `viewport`
+CEPL will make a `texture` with dimensions equal to that of the current `viewport`
 and with the element-type :rgba (which is a sensible default for a color
 attachment)
 
