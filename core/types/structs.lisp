@@ -260,7 +260,7 @@
 
 (defun+ make-varjo-struct-def (name slots)
   (let ((hidden-name (symb-package (symbol-package name)
-                                   'v_ name )))
+                                   'v_ name)))
     `(v-defstruct
          (,name :shadowing ,hidden-name)
          ()
@@ -465,11 +465,16 @@
 
 (defun+ make-struct-attrib-assigner (type-name slots)
   (when (every #'buffer-stream-compatible-typep slots)
-    (let* ((stride (if (> (length slots) 1)
+    (let* ((def-sets (mapcat #'expand-slot-to-layout slots))
+           (stride (if (> (length slots) 1)
                        `(cepl.internals:gl-type-size ',type-name)
-                       0))
+                       (reduce (lambda (accum attr)
+                                 (incf accum (* (first attr)
+                                                (cepl.internals:gl-type-size
+                                                 (second attr)))))
+                               def-sets
+                               :initial-value 0)))
            (stride-sym (gensym "stride"))
-           (def-sets (mapcat #'expand-slot-to-layout slots))
            (definitions
             (loop :for (len cffi-type normalized gl-type)
                :in def-sets
