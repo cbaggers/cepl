@@ -26,7 +26,6 @@
                                                 (gl-type-size (second attr)))))
                                slot-layout
                                :initial-value 0)))
-          (break)
           (loop :for attr :in slot-layout
              :for i :from 0
              :with offset = 0
