@@ -728,6 +728,7 @@
            :symbol-names-cepl-structp
            :*expanded-gl-type-names*
            :cffi-type->gl-type
+           :maybe-cffi-type->gl-type
            :color-attachment-enum
            :draw-buffer-enum
            :gl-type-size

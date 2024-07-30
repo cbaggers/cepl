@@ -535,7 +535,10 @@
               :append (expand-mappable-slot-to-layout
                        nil (v-element-type type) normalize)))
           ;;
-          (t `((1 ,(type->type-spec type) ,normalize))))))
+          (t
+           (let* ((type-spec (type->type-spec type))
+                  (gl-type (cepl.internals::maybe-cffi-type->gl-type type-spec)))
+             `((1 ,type-spec ,normalize ,gl-type)))))))
 
 ;;------------------------------------------------------------
 

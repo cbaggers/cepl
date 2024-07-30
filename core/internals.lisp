@@ -65,6 +65,9 @@
   (cffi:foreign-type-size type))
 
 (defun+ cffi-type->gl-type (type)
+  (or (maybe-cffi-type->gl-type type) type))
+
+(defun+ maybe-cffi-type->gl-type (type)
   (case type
     ((:char :signed-char) :byte)
     ((:uchar :unsigned-char) :unsigned-byte)
@@ -76,6 +79,6 @@
     (:uint8 :unsigned-byte)
     (:float :float)
     (:double :double)
-    (otherwise type)))
+    (otherwise nil)))
 
 (deftype uploadable-lisp-seq () '(or list vector array))
