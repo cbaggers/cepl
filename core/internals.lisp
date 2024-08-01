@@ -19,9 +19,13 @@
   (let ((type (or (varjo.internals::try-type-spec->type array-type nil)
                   (error 'bad-type-for-buffer-stream-data :type array-type))))
     (if (and (varjo:core-typep type) (not (varjo:v-typep type 'v-sampler)))
-        (let ((slot-layout (cepl.types::expand-slot-to-layout
-                            nil type normalized))
-              (stride 0))
+        (let* ((slot-layout (cepl.types::expand-slot-to-layout
+                             nil type normalized))
+               (stride (reduce (lambda (accum attr)
+                                 (incf accum (* (first attr)
+                                                (gl-type-size (second attr)))))
+                               slot-layout
+                               :initial-value 0)))
           (loop :for attr :in slot-layout
              :for i :from 0
              :with offset = 0
