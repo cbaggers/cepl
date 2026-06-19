@@ -10,7 +10,7 @@ A host only needs to satisfy a very basic API, so it's easy for you to make your
 
 #### Q: Why are no hosts included by default? You could have them as part of this repo
 
-True, but I wanted to make it clear that hosts are totally seperate from CEPL and that any project can host it, if it satifies the cepl.host API.
+True, but I wanted to make it clear that hosts are totally separate from CEPL and that any project can host it, if it satifies the cepl.host API.
 
 
 #### Q: Why are 'hosts' called 'hosts' and not something like 'backends'?
